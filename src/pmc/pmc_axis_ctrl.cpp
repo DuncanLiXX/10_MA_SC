@@ -1,0 +1,604 @@
+/**Copyright(C) 2020 ADX. All Rights Reserved.
+ *Information in this file is the intellectual property of ADX, and may
+ *contains trade secrets that must be stored and viewed confidentially.
+ *
+ *@file pmc_axis_ctrl.cpp
+ *@author gonghao
+ *@date 2021/03/31
+ *@brief 本头文件包含PMC轴控制类的声明
+ *@version
+ */
+
+#include <pmc_axis_ctrl.h>
+#include "channel_engine.h"
+#include "mi_communication.h"
+
+/**
+ * @brief 构造函数
+ */
+PmcAxisCtrl::PmcAxisCtrl() {
+	// TODO Auto-generated constructor stub
+	this->m_n_group_index = 0xFF;    //未初始化
+	this->m_n_buf_exec = 0;
+	this->m_b_active = false;
+	this->m_n_cmd_count = 0;
+	this->m_p_f_reg = nullptr;
+	this->m_p_g_reg = nullptr;
+	this->m_b_buffer = true;  //默认缓冲有效
+	m_b_step_stop = false;   //默认无效
+	m_b_pause = false;      //默认不在暂停状态
+
+	this->m_p_channel_engine = nullptr;
+	this->m_p_mi_comm = nullptr;
+
+}
+
+/**
+ * @brief 析构函数
+ */
+PmcAxisCtrl::~PmcAxisCtrl() {
+	// TODO Auto-generated destructor stub
+}
+
+/**
+ * @brief 设置轴控制寄存器组号
+ * @param index : 组号, 0-15
+ * return true--成功    false--失败
+ */
+bool PmcAxisCtrl::SetGroupIndex(uint8_t index){
+
+	if(index >= kMaxPmcAxisCtrlGroup)
+		return false;
+
+	this->m_p_channel_engine = ChannelEngine::GetInstance();
+	this->m_p_mi_comm = MICommunication::GetInstance();
+
+	this->m_n_group_index = index;
+	this->m_p_f_reg = m_p_channel_engine->GetChnFRegBits(index/4);
+	this->m_p_g_reg = m_p_channel_engine->GetChnGRegBits(index/4);
+
+	//设置通道物理轴号
+	this->m_n_phy_axis = this->m_p_channel_engine->GetPmcAxis(index);
+
+	switch(this->m_n_group_index%4){
+	case 0:
+		this->m_p_f_reg->EADEN1 = 1;
+		break;
+	case 1:
+		this->m_p_f_reg->EADEN2 = 1;
+		break;
+	case 2:
+		this->m_p_f_reg->EADEN3 = 1;
+		break;
+	case 3:
+		this->m_p_f_reg->EADEN4 = 1;
+		break;
+	}
+
+	return true;
+}
+
+/**
+ * @brief 激活此PMC控制通道
+ * @param flag : true--激活    false--禁止
+ * @return true--成功   false--失败
+ */
+bool PmcAxisCtrl::Active(bool flag){
+	if(this->m_b_active == flag)
+		return true;
+
+	printf("PmcAxisCtrl::Active[%hhu]:%hhu\n", this->m_n_group_index, flag);
+
+	//检查_EAXSL信号
+	FRegBits *freg0 = m_p_channel_engine->GetChnFRegBits(0);
+	if(freg0->_EAXSL == 1)
+		return false;  //
+
+	this->m_b_active = flag;
+
+	if(flag){
+		switch(this->m_n_group_index%4){
+		case 0:
+			this->m_p_f_reg->EADEN1 = 1;
+			break;
+		case 1:
+			this->m_p_f_reg->EADEN2 = 1;
+			break;
+		case 2:
+			this->m_p_f_reg->EADEN3 = 1;
+			break;
+		case 3:
+			this->m_p_f_reg->EADEN4 = 1;
+			break;
+		}
+	}
+	return true;
+}
+
+/**
+ * @brief 获得当前接收缓冲的索引号
+ * @return 返回当前可用的接收缓冲的索引号，从0开始，0xFF表示无可用缓冲
+ */
+uint8_t PmcAxisCtrl::GetRecvBufIndex(){
+	uint8_t index = 0xFF;
+	if(this->m_n_cmd_count < 3){
+		index = this->m_n_buf_exec + m_n_cmd_count;
+		if(index >= 3)
+			index -= 3;
+	}
+	return index;
+}
+
+/**
+ * @brief 设置缓冲状态
+ * @param flag : true--缓冲有效   false--缓冲无效
+ */
+void PmcAxisCtrl::SetBuffState(bool flag){
+	if(flag == m_b_buffer)
+		return;
+	if(this->m_n_cmd_count > 1){//TODO 告警
+		return;
+	}
+	printf("PmcAxisCtrl::SetBuffState[%hhu]:%hhu\n", m_n_group_index, flag);
+
+	this->m_b_buffer = flag;
+	if(flag && m_n_cmd_count==1){//当前有数据，缓冲切换至有效，则翻转EBSYg信号
+		switch(this->m_n_group_index%4){
+		case 0:
+			this->m_p_f_reg->EBSYA = m_p_f_reg->EBSYA?0:1;
+			break;
+		case 1:
+			this->m_p_f_reg->EBSYB = m_p_f_reg->EBSYB?0:1;
+			break;
+		case 2:
+			this->m_p_f_reg->EBSYC = m_p_f_reg->EBSYC?0:1;
+			break;
+		case 3:
+			this->m_p_f_reg->EBSYD = m_p_f_reg->EBSYD?0:1;
+			break;
+		}
+	}
+}
+
+/**
+ * @brief 设置程序段停止
+ * @param flag : true--程序段停止有效     false--程序段停止无效
+ */
+void PmcAxisCtrl::SetStepStop(bool flag){
+	if(flag == this->m_b_step_stop)
+		return;
+
+	this->m_b_step_stop = flag;
+	if(!flag && this->m_n_cmd_count > 0){  //执行当前缓存指令
+		this->ExecuteCmd();
+	}
+}
+
+/**
+ * @brief 执行复位动作
+ */
+void PmcAxisCtrl::Reset(){
+	printf("PmcAxisCtrl::Reset, axis=%hhu, cmdcount = %hhu\n", m_n_phy_axis, m_n_cmd_count);
+	if(this->m_n_cmd_count > 0){  //停止当前指令执行，清空缓冲
+		this->m_p_channel_engine->ManualMoveStop(this->m_n_phy_axis);
+		this->m_n_cmd_count = 0;
+		this->m_b_pause = false;
+
+		switch(this->m_n_group_index%4){
+		case 0:
+			printf("EBSYA = %hhu, EBUFA = %hhu\n", this->m_p_f_reg->EBSYA, this->m_p_g_reg->EBUFA);
+			this->m_p_f_reg->EACNT1 = 0;
+			if(!m_b_buffer)//检查EMBUFg缓存无效信号
+				this->m_p_f_reg->EBSYA = m_p_f_reg->EBSYA?0:1;
+
+			printf("PmcAxisCtrl::Reset over, EBSYA = %hhu, EBUFA = %hhu\n", this->m_p_f_reg->EBSYA, this->m_p_g_reg->EBUFA);
+			break;
+		case 1:
+			printf("EBSYB = %hhu, EBUFB = %hhu\n", this->m_p_f_reg->EBSYB, this->m_p_g_reg->EBUFB);
+			this->m_p_f_reg->EACNT2 = 0;
+			if(!m_b_buffer)//检查EMBUFg缓存无效信号
+				this->m_p_f_reg->EBSYB = m_p_f_reg->EBSYB?0:1;
+
+			printf("PmcAxisCtrl::Reset over, EBSYB = %hhu, EBUFB = %hhu\n", this->m_p_f_reg->EBSYB, this->m_p_g_reg->EBUFB);
+			break;
+		case 2:
+			printf("EBSYC = %hhu, EBUFC = %hhu\n", this->m_p_f_reg->EBSYC, this->m_p_g_reg->EBUFC);
+			this->m_p_f_reg->EACNT3 = 0;
+			if(!m_b_buffer)//检查EMBUFg缓存无效信号
+				this->m_p_f_reg->EBSYC = m_p_f_reg->EBSYC?0:1;
+
+			printf("PmcAxisCtrl::Reset over, EBSYC = %hhu, EBUFC = %hhu\n", this->m_p_f_reg->EBSYC, this->m_p_g_reg->EBUFC);
+			break;
+		case 3:
+			printf("EBSYD = %hhu, EBUFD = %hhu\n", this->m_p_f_reg->EBSYD, this->m_p_g_reg->EBUFD);
+			this->m_p_f_reg->EACNT4 = 0;
+			if(!m_b_buffer)//检查EMBUFg缓存无效信号
+				this->m_p_f_reg->EBSYD = m_p_f_reg->EBSYD?0:1;
+
+			printf("PmcAxisCtrl::Reset over, EBSYD = %hhu, EBUFD = %hhu\n", this->m_p_f_reg->EBSYD, this->m_p_g_reg->EBUFD);
+			break;
+		}
+
+		//检查_EAXSL信号
+		FRegBits *freg0 = m_p_channel_engine->GetChnFRegBits(0);
+		FRegBits *freg = nullptr;
+		bool flag = false;
+		for(uint8_t i = 0; i < kMaxChnCount; i++){
+			freg = m_p_channel_engine->GetChnFRegBits(i);
+			if(freg->EACNT1 || freg->EACNT2 || freg->EACNT3 || freg->EACNT4){
+				flag = true;
+				break;
+			}
+		}
+		if(!flag)
+			freg0->_EAXSL = 0;
+
+		switch(this->m_n_group_index%4){
+		case 0:
+			this->m_p_f_reg->EABUFA = 0;
+			this->m_p_f_reg->EIALA = 0;
+			break;
+		case 1:
+			this->m_p_f_reg->EABUFB = 0;
+			this->m_p_f_reg->EIALB = 0;
+			break;
+		case 2:
+			this->m_p_f_reg->EABUFC = 0;
+			this->m_p_f_reg->EIALC = 0;
+			break;
+		case 3:
+			this->m_p_f_reg->EABUFD = 0;
+			this->m_p_f_reg->EIALD = 0;
+			break;
+		}
+
+	}
+
+
+
+}
+
+/**
+ * @brief 轴暂停
+ * @flag : true--激活暂停      false--取消暂停
+ */
+void PmcAxisCtrl::Pause(bool flag){
+	//轴暂停
+	if(this->m_n_cmd_count == 0 || this->m_b_pause == flag)
+		return;
+
+	this->m_b_pause = flag;
+
+//	printf("PmcAxisCtrl::Pause: %hhu\n", flag);
+	this->m_p_channel_engine->PausePmcAxis(this->m_n_phy_axis, flag);
+
+	switch(this->m_n_group_index%4){
+	case 0:
+		this->m_p_f_reg->EGENA = flag?0:1;
+		break;
+	case 1:
+		this->m_p_f_reg->EGENB = flag?0:1;
+		break;
+	case 2:
+		this->m_p_f_reg->EGENC = flag?0:1;
+		break;
+	case 3:
+		this->m_p_f_reg->EGEND = flag?0:1;
+		break;
+	}
+
+}
+
+/**
+ * @brief 写入PMC指令
+ * @param cmd
+ * @return   true--成功    false--失败
+ */
+bool PmcAxisCtrl::WriteCmd(PmcAxisCtrlCmd &cmd){
+	//写入PMC指令
+	if(!this->m_b_buffer && this->m_n_cmd_count > 0)  //缓冲无效
+		return false;
+	if(this->m_n_cmd_count == 3 || !this->IsActive())  //缓冲已满,或者未激活
+		return false;
+
+	printf("PmcAxisCtrl::WriteCmd:axis = %hhu, cmd=%hhu, spd=%hu, dis=%d\n", this->m_n_phy_axis, cmd.cmd, cmd.speed, cmd.distance);
+
+//	switch(this->m_n_group_index%4){
+//	case 0:
+//		printf("PmcAxisCtrl::WriteCmd:axis = %hhu, cmd=%hhu, spd=%hu, dis=%d, [%hhu, %hhu]\n", this->m_n_phy_axis, cmd.cmd, cmd.speed, cmd.distance,
+//					this->m_p_f_reg->EBSYA, this->m_p_g_reg->EBUFA);
+//		break;
+//	case 1:
+//		printf("PmcAxisCtrl::WriteCmd:axis = %hhu, cmd=%hhu, spd=%hu, dis=%d, [%hhu, %hhu]\n", this->m_n_phy_axis, cmd.cmd, cmd.speed, cmd.distance,
+//					this->m_p_f_reg->EBSYB, this->m_p_g_reg->EBUFB);
+//		break;
+//	case 2:
+//		printf("PmcAxisCtrl::WriteCmd:axis = %hhu, cmd=%hhu, spd=%hu, dis=%d, [%hhu, %hhu]\n", this->m_n_phy_axis, cmd.cmd, cmd.speed, cmd.distance,
+//					this->m_p_f_reg->EBSYC, this->m_p_g_reg->EBUFC);
+//		break;
+//	case 3:
+//		printf("PmcAxisCtrl::WriteCmd:axis = %hhu, cmd=%hhu, spd=%hu, dis=%d, [%hhu, %hhu]\n", this->m_n_phy_axis, cmd.cmd, cmd.speed, cmd.distance,
+//					this->m_p_f_reg->EBSYD, this->m_p_g_reg->EBUFD);
+//		break;
+//	}
+
+	uint8_t index = this->GetRecvBufIndex();
+	this->m_pmc_cmd_buffer[index] = cmd;
+
+	this->m_n_cmd_count++;  //命令计数加一
+
+	if(this->m_n_cmd_count == 1 && !this->m_b_step_stop){  //将当前命令发送至MI执行
+		this->ExecuteCmd();
+	}else if(this->m_n_cmd_count == 3){//缓冲满
+		switch(this->m_n_group_index%4){
+		case 0:
+			this->m_p_f_reg->EABUFA = 1;
+			break;
+		case 1:
+			this->m_p_f_reg->EABUFB = 1;
+			break;
+		case 2:
+			this->m_p_f_reg->EABUFC = 1;
+			break;
+		case 3:
+			this->m_p_f_reg->EABUFD = 1;
+			break;
+		}
+	}
+
+	//翻转EBSYg信号,置位EACNTg信号
+	FRegBits *chn0_freg = m_p_channel_engine->GetChnFRegBits(0);
+	switch(this->m_n_group_index%4){
+	case 0:
+		if(this->m_b_buffer)//检查EMBUFg缓存无效信号
+			this->m_p_f_reg->EBSYA = m_p_f_reg->EBSYA?0:1;
+		this->m_p_f_reg->EACNT1 = 1;
+		chn0_freg->_EAXSL = 1;
+		break;
+	case 1:
+		if(m_p_g_reg->EMBUFB == 0)//检查EMBUFg缓存无效信号
+			this->m_p_f_reg->EBSYB = m_p_f_reg->EBSYB?0:1;
+		this->m_p_f_reg->EACNT2 = 1;
+		chn0_freg->_EAXSL = 1;
+		break;
+	case 2:
+		if(m_p_g_reg->EMBUFC == 0)//检查EMBUFg缓存无效信号
+			this->m_p_f_reg->EBSYC = m_p_f_reg->EBSYC?0:1;
+		this->m_p_f_reg->EACNT3 = 1;
+		chn0_freg->_EAXSL = 1;
+		break;
+	case 3:
+		if(m_p_g_reg->EMBUFD == 0)//检查EMBUFg缓存无效信号
+			this->m_p_f_reg->EBSYD = m_p_f_reg->EBSYD?0:1;
+		this->m_p_f_reg->EACNT4 = 1;
+		chn0_freg->_EAXSL = 1;
+		break;
+	}
+
+	return true;
+}
+
+/**
+ * @brief 指令执行完毕
+ * @param res : 执行结果  true--成功   false--失败
+ */
+void PmcAxisCtrl::ExecCmdOver(bool res){
+	if(this->m_n_cmd_count == 0)
+		return;
+	this->m_n_cmd_count--;
+	printf("PmcAxisCtrl::ExecCmdOver(), cmd_count = %hhu\n", this->m_n_cmd_count);
+	if(this->m_n_cmd_count > 0){ //继续执行下一条指令
+		this->m_n_buf_exec++;
+		if(this->m_n_buf_exec == 3)
+			this->m_n_buf_exec = 0;
+
+		if(!this->m_b_step_stop)
+			this->ExecuteCmd();
+	}else{//缓冲无数据
+		switch(this->m_n_group_index%4){
+		case 0:
+			this->m_p_f_reg->EACNT1 = 0;
+			if(!m_b_buffer)//检查EMBUFg缓存无效信号
+				this->m_p_f_reg->EBSYA = m_p_f_reg->EBSYA?0:1;
+			break;
+		case 1:
+			this->m_p_f_reg->EACNT2 = 0;
+			if(!m_b_buffer)//检查EMBUFg缓存无效信号
+				this->m_p_f_reg->EBSYB = m_p_f_reg->EBSYB?0:1;
+			break;
+		case 2:
+			this->m_p_f_reg->EACNT3 = 0;
+			if(!m_b_buffer)//检查EMBUFg缓存无效信号
+				this->m_p_f_reg->EBSYC = m_p_f_reg->EBSYC?0:1;
+			break;
+		case 3:
+			this->m_p_f_reg->EACNT4 = 0;
+			if(!m_b_buffer)//检查EMBUFg缓存无效信号
+				this->m_p_f_reg->EBSYD = m_p_f_reg->EBSYD?0:1;
+			break;
+		}
+
+		//检查_EAXSL信号
+		FRegBits *freg0 = m_p_channel_engine->GetChnFRegBits(0);
+		FRegBits *freg = nullptr;
+		bool flag = false;
+		for(uint8_t i = 0; i < kMaxChnCount; i++){
+			freg = m_p_channel_engine->GetChnFRegBits(i);
+			if(freg->EACNT1 || freg->EACNT2 || freg->EACNT3 || freg->EACNT4){
+				flag = true;
+				break;
+			}
+		}
+		if(!flag)
+			freg0->_EAXSL = 0;
+	}
+
+	switch(this->m_n_group_index%4){
+	case 0:
+		this->m_p_f_reg->EABUFA = 0;
+		this->m_p_f_reg->EINPA = 1;
+		this->m_p_f_reg->EIALA = res?0:1;
+		break;
+	case 1:
+		this->m_p_f_reg->EABUFB = 0;
+		this->m_p_f_reg->EINPB = 1;
+		this->m_p_f_reg->EIALB = res?0:1;
+		break;
+	case 2:
+		this->m_p_f_reg->EABUFC = 0;
+		this->m_p_f_reg->EINPC = 1;
+		this->m_p_f_reg->EIALC = res?0:1;
+		break;
+	case 3:
+		this->m_p_f_reg->EABUFD = 0;
+		this->m_p_f_reg->EINPD = 1;
+		this->m_p_f_reg->EIALD = res?0:1;
+		break;
+	}
+
+}
+
+/**
+ * @brief 执行当前执行缓冲中的指令
+ */
+void PmcAxisCtrl::ExecuteCmd(){
+	if(this->m_n_cmd_count == 0)
+		return;
+	uint8_t cmd = m_pmc_cmd_buffer[this->m_n_buf_exec].cmd;   //指令
+	if(cmd == 0x00 || cmd == 0x01 || cmd == 0x10 || cmd == 0x11){  //快速定位、切削进给
+		uint32_t speed = m_pmc_cmd_buffer[this->m_n_buf_exec].speed*1000/60;   //速度，单位转换：mm/min-->um/s
+		int64_t dis = m_pmc_cmd_buffer[this->m_n_buf_exec].distance*1e4;       //移动距离，单位转换：um-->0.1nm
+
+		if(cmd == 0x00 && speed == 0){  //PMC设定的定位速度为0，则取参数设定定位速度
+			speed = this->m_p_channel_engine->GetPmcAxisRapidSpeed(m_n_phy_axis);
+			speed = speed*1000/60;  //单位转换：mm/min-->um/s
+		}
+
+		PmcCmdFrame pmc_cmd;
+		pmc_cmd.data.cmd = 0x0100;   //增量坐标模式
+		pmc_cmd.data.axis_index = this->m_n_phy_axis+1;
+		pmc_cmd.data.axis_index |= 0xFF00;      //标志通道引擎
+		pmc_cmd.data.data[0] = 0;
+		memcpy(&pmc_cmd.data.data[1], &dis, sizeof(dis));
+		memcpy(&pmc_cmd.data.data[5], &speed, sizeof(speed));
+
+		if(cmd == 0x10 || cmd == 0x11){
+			pmc_cmd.data.cmd = 0x00;    //绝对坐标模式
+		}
+
+//		printf("pmc axis execute cmd: speed = %u, dis = %lld\n", speed, dis);
+
+		this->m_p_channel_engine->SendPmcAxisCmd(pmc_cmd);
+
+		//设置状态
+		switch(this->m_n_group_index%4){
+		case 0:
+			this->m_p_f_reg->EADEN1 = 0;   //分配完成信号
+			this->m_p_f_reg->EGENA = 1;    //轴移动信号
+			this->m_p_f_reg->EINPA = 0;    //轴到位信号
+			break;
+		case 1:
+			this->m_p_f_reg->EADEN2 = 0;
+			this->m_p_f_reg->EGENB = 1;
+			this->m_p_f_reg->EINPB = 0;
+			break;
+		case 2:
+			this->m_p_f_reg->EADEN3 = 0;
+			this->m_p_f_reg->EGENC = 1;
+			this->m_p_f_reg->EINPC = 0;
+			break;
+		case 3:
+			this->m_p_f_reg->EADEN4 = 0;
+			this->m_p_f_reg->EGEND = 1;
+			this->m_p_f_reg->EINPD = 0;
+			break;
+		}
+	}else if(cmd == 0x04){   //暂停  G04
+
+	}else if(cmd == 0x05){   //回参考点动作
+		this->m_p_channel_engine->ProcessPmcAxisFindRef(m_n_phy_axis);
+
+		//设置状态
+		switch(this->m_n_group_index%4){
+		case 0:
+			this->m_p_f_reg->EADEN1 = 0;   //分配完成信号
+			this->m_p_f_reg->EGENA = 1;    //轴移动信号
+			this->m_p_f_reg->EINPA = 0;    //轴到位信号
+			break;
+		case 1:
+			this->m_p_f_reg->EADEN2 = 0;
+			this->m_p_f_reg->EGENB = 1;
+			this->m_p_f_reg->EINPB = 0;
+			break;
+		case 2:
+			this->m_p_f_reg->EADEN3 = 0;
+			this->m_p_f_reg->EGENC = 1;
+			this->m_p_f_reg->EINPC = 0;
+			break;
+		case 3:
+			this->m_p_f_reg->EADEN4 = 0;
+			this->m_p_f_reg->EGEND = 1;
+			this->m_p_f_reg->EINPD = 0;
+			break;
+		}
+	}else if(cmd == 0x06){    //JOG进给，连续进给JOG
+		uint32_t speed = m_pmc_cmd_buffer[this->m_n_buf_exec].speed*1000/60;   //速度，单位转换：mm/min-->um/s
+		int64_t dir = m_pmc_cmd_buffer[this->m_n_buf_exec].distance & 0x80000000 ? 1 : -1;
+		int64_t dis = dir * 9999 * 1e7;
+
+		PmcCmdFrame pmc_cmd;
+		pmc_cmd.data.cmd = 0x0100;   //增量坐标模式
+		pmc_cmd.data.axis_index = this->m_n_phy_axis+1;
+		pmc_cmd.data.axis_index |= 0xFF00;      //标志通道引擎
+		pmc_cmd.data.data[0] = 0;
+		memcpy(&pmc_cmd.data.data[1], &dis, sizeof(dis));
+		memcpy(&pmc_cmd.data.data[5], &speed, sizeof(speed));
+
+//		printf("pmc axis execute cmd: speed = %u, dis = %lld\n", speed, dis);
+
+		this->m_p_channel_engine->SendPmcAxisCmd(pmc_cmd);
+
+		//JOG指令不缓冲
+		this->m_n_cmd_count--;
+		this->m_n_buf_exec++;
+		if(this->m_n_buf_exec == 3)
+			this->m_n_buf_exec = 0;
+
+		//设置状态
+		switch(this->m_n_group_index%4){
+		case 0:
+			this->m_p_f_reg->EADEN1 = 0;   //分配完成信号
+			this->m_p_f_reg->EGENA = 1;    //轴移动信号
+			this->m_p_f_reg->EINPA = 0;    //轴到位信号
+			this->m_p_f_reg->EABUFA = 0;   //缓冲满信号复位
+			if(!m_b_buffer)//检查EMBUFg缓存无效信号
+				this->m_p_f_reg->EBSYA = m_p_f_reg->EBSYA?0:1;
+			break;
+		case 1:
+			this->m_p_f_reg->EADEN2 = 0;
+			this->m_p_f_reg->EGENB = 1;
+			this->m_p_f_reg->EINPB = 0;
+			this->m_p_f_reg->EABUFB = 0;
+			if(!m_b_buffer)//检查EMBUFg缓存无效信号
+				this->m_p_f_reg->EBSYB = m_p_f_reg->EBSYB?0:1;
+			break;
+		case 2:
+			this->m_p_f_reg->EADEN3 = 0;
+			this->m_p_f_reg->EGENC = 1;
+			this->m_p_f_reg->EINPC = 0;
+			this->m_p_f_reg->EABUFC = 0;
+			if(!m_b_buffer)//检查EMBUFg缓存无效信号
+				this->m_p_f_reg->EBSYC = m_p_f_reg->EBSYC?0:1;
+			break;
+		case 3:
+			this->m_p_f_reg->EADEN4 = 0;
+			this->m_p_f_reg->EGEND = 1;
+			this->m_p_f_reg->EINPD = 0;
+			this->m_p_f_reg->EABUFD = 0;
+			if(!m_b_buffer)//检查EMBUFg缓存无效信号
+				this->m_p_f_reg->EBSYD = m_p_f_reg->EBSYD?0:1;
+			break;
+		}
+	}
+
+}

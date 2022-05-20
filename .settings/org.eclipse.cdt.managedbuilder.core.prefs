@@ -1,0 +1,11 @@
+eclipse.preferences.version=1
+environment/buildEnvironmentInclude/xilinx.gnu.armv7.linux.exe.release.956080055/CPATH/delimiter=;
+environment/buildEnvironmentInclude/xilinx.gnu.armv7.linux.exe.release.956080055/CPATH/operation=remove
+environment/buildEnvironmentInclude/xilinx.gnu.armv7.linux.exe.release.956080055/C_INCLUDE_PATH/delimiter=;
+environment/buildEnvironmentInclude/xilinx.gnu.armv7.linux.exe.release.956080055/C_INCLUDE_PATH/operation=remove
+environment/buildEnvironmentInclude/xilinx.gnu.armv7.linux.exe.release.956080055/append=true
+environment/buildEnvironmentInclude/xilinx.gnu.armv7.linux.exe.release.956080055/appendContributed=true
+environment/buildEnvironmentLibrary/xilinx.gnu.armv7.linux.exe.release.956080055/LIBRARY_PATH/delimiter=;
+environment/buildEnvironmentLibrary/xilinx.gnu.armv7.linux.exe.release.956080055/LIBRARY_PATH/operation=remove
+environment/buildEnvironmentLibrary/xilinx.gnu.armv7.linux.exe.release.956080055/append=true
+environment/buildEnvironmentLibrary/xilinx.gnu.armv7.linux.exe.release.956080055/appendContributed=true

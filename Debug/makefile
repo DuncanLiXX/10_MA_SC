@@ -55,7 +55,7 @@ all: 10MA_SC_Module.elf secondary-outputs
 10MA_SC_Module.elf: $(OBJS)  $(USER_OBJS)
 	@echo 'Building target: $@'
 	@echo 'Invoking: ARM v7 Linux g++ linker'
-	arm-linux-gnueabihf-g++ -L"D:\FPGA\10MA_SC_Module_MultiChn\lib\debug" -o "10MA_SC_Module.elf" $(OBJS) $(USER_OBJS) $(LIBS)
+	arm-linux-gnueabihf-g++ -L"D:\FPGA\SC_Module\lib\debug" -o "10MA_SC_Module.elf" $(OBJS) $(USER_OBJS) $(LIBS)
 	@echo 'Finished building target: $@'
 	@echo ' '
 

@@ -49,6 +49,7 @@ public:
 	void ResetLocalVar();  //局部变量复位
 
 	bool SaveKeepComm(int index);		//保存非易失性公共变量
+	bool SaveMacroComm(int index);		//保存用户宏变量
 
 //	void Save();   //关闭非易失性公共变量的文件句柄
 
@@ -60,6 +61,7 @@ public:
 
 private:
 	void InitKeepVar();					//初始化非易失性宏变量
+	void InitMacroVar();
 	bool GetSysVar(int index, double &value);		//获取系统变量，double型
 	bool GetSysVar(int index, int &value);		//获取系统变量，int型
 
@@ -70,13 +72,16 @@ private:
 	uint8_t m_n_channel_index;                  //所属通道
 	bool m_b_init_local[kMaxLocalVarCount];		//局部变量初始化标志
 	bool m_b_init_common[kMaxCommVarCount]; 	//非保持型公共变量初始化标志
-	bool m_b_init_common_keep[kMaxCommKeepVarCount];	//保持型公共变量
+	bool m_b_init_common_keep[kMaxCommKeepVarCount];  //保持型公共变量
+	bool m_b_init_user_macro[kMaxUserMacroVarCount];  //用户宏变量
 	double m_df_local[kMaxLocalVarCount];  		//局部变量
 	double m_df_common[kMaxCommVarCount];		//非保持型公共变量
 	double m_df_common_keep[kMaxCommKeepVarCount]; 	//保持型公共变量
+	double m_df_user_macro[kMaxUserMacroVarCount];  //用户宏变量
 	DataStack<LocalVarScene> m_stack_local;         //局部变量保存堆栈
 
 	FILE *m_fp_keep_var;  //保持型公共变量的文件对象指针
+	FILE *m_fp_macro_var; //宏变量文件对象指针
 	bool m_b_save_keep;  //是否需要保存非易失宏变量
 
 };

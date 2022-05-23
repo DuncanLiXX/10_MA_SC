@@ -70,7 +70,8 @@ enum TraceModule {
 	COMPILER_CHN,				//编译模块
 	PMC_REGISTER,				//PMC寄存器模块
 	AD_COMMUNICATION,			//辅助设备通讯模块
-	MACRO_VARIABLE				//宏变量
+	MACRO_VARIABLE,				//宏变量
+	USER_MACRO_VARIABLE			//用户宏变量
 
 };
 

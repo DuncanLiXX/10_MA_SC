@@ -22,16 +22,18 @@ Variable::Variable() {
 	memset(this->m_b_init_local, 0x00, sizeof(this->m_b_init_local));   //初始化标志置为false，即空值
 	memset(this->m_b_init_common, 0x00, sizeof(this->m_b_init_common));
 	memset(this->m_b_init_common_keep, 0x00, sizeof(this->m_b_init_common_keep));
+	memset(this->m_b_init_user_macro, 0x00, sizeof(this->m_b_init_user_macro));
 
 	memset(this->m_df_local, 0x00, sizeof(this->m_df_local));
 	memset(this->m_df_common, 0x00, sizeof(this->m_df_common));
 	memset(this->m_df_common_keep, 0x00, sizeof(this->m_df_common_keep));
+	memset(this->m_df_user_macro, 0x00, sizeof(this->m_df_user_macro));
 
 	this->m_stack_local.empty();   //清空局部变量堆栈
 
 	m_fp_keep_var = nullptr;
+	m_fp_macro_var = nullptr;
     this->m_b_save_keep = false;  //默认无更改
-
 }
 
 
@@ -46,6 +48,11 @@ Variable::~Variable() {
 		fsync(fileno(m_fp_keep_var));
 		fclose(m_fp_keep_var);
 	}
+
+	if(m_fp_macro_var != nullptr){
+		fsync(fileno(m_fp_macro_var));
+		fclose(m_fp_macro_var);
+	}
 }
 
 /**
@@ -59,17 +66,33 @@ void Variable::SetChnIndex(uint8_t chn){
 	char path[kMaxPathLen];
 	memset(path, 0x00, kMaxPathLen);
 	sprintf(path, PATH_MACRO_VAR_KEEP, chn);
-	if(access(path, F_OK) == -1){	//文件不存在
+	if(access(path, F_OK) == -1) 	//文件不存在
 		this->m_fp_keep_var = fopen(path, "wb+");//打开文件
-	}else
+	else
 		this->m_fp_keep_var = fopen(path, "rb+");//打开文件
+
+
+	memset(path, 0x00, kMaxPathLen);
+	sprintf(path, PATH_USER_MACRO_VAR, chn);
+
+	if(access(path, F_OK) == -1)
+		this->m_fp_macro_var = fopen(path, "wb+");
+	else
+		this->m_fp_macro_var = fopen(path, "rb+");
+
 
 	if(m_fp_keep_var == nullptr){
 		g_ptr_trace->PrintTrace(TRACE_ERROR, MACRO_VARIABLE, "打开非易失性宏变量保存文件失败！");
 		return;//文件打开失败
 	}
 
+	if(m_fp_macro_var == nullptr){
+			g_ptr_trace->PrintTrace(TRACE_ERROR, USER_MACRO_VARIABLE, "打开用户宏变量失败！");
+			return;//文件打开失败
+	}
+
 	this->InitKeepVar();  //初始化非易失性变量
+	this->InitMacroVar();  //初始化非易失性变量
 }
 
 /**
@@ -119,7 +142,56 @@ void Variable::InitKeepVar(){
 		return;
 	}
 	printf("succeed to initialize macro variable\n");
+}
 
+/**
+ * @brief 初始化用户宏变量
+ */
+void Variable::InitMacroVar()
+{
+	uint64_t total_size = 0;	//升级文件总长度
+	uint64_t offset = kMaxUserMacroVarCount*(sizeof(double)+1);   //总大小  数据+bool flag
+	fseek(m_fp_macro_var, 0L, SEEK_END);
+	total_size = ftell(m_fp_macro_var);   //获取文件长度
+
+	if(total_size < offset)
+	{
+		g_ptr_trace->PrintTrace(TRACE_ERROR, USER_MACRO_VARIABLE, "文件长度不够[%lld, %lld]！", total_size, offset);
+
+		//初始化写入数据
+		fseek(m_fp_keep_var, 0L, SEEK_SET);
+		size_t count  = fwrite(m_b_init_user_macro, 1, kMaxUserMacroVarCount, m_fp_macro_var);
+
+		if(count != kMaxCommKeepVarCount){//写入错误
+			g_ptr_trace->PrintTrace(TRACE_ERROR, USER_MACRO_VARIABLE, "初始化写入用户宏变量失败！");
+			return;
+		}
+
+		count = fwrite(m_df_user_macro, 8, kMaxUserMacroVarCount, m_fp_macro_var);
+		if(count != kMaxUserMacroVarCount){//写入错误
+			g_ptr_trace->PrintTrace(TRACE_ERROR, USER_MACRO_VARIABLE, "初始化写入用户宏变量失败！");
+			return;
+		}
+		fflush(m_fp_macro_var);
+		fsync(fileno(m_fp_macro_var));
+		return;
+	}
+
+	fseek(m_fp_macro_var, 0L, SEEK_SET);
+
+	size_t count  = fread(this->m_b_init_user_macro, sizeof(bool), kMaxUserMacroVarCount, m_fp_macro_var);
+
+	if(count != kMaxUserMacroVarCount){//读取错误
+		g_ptr_trace->PrintTrace(TRACE_ERROR, USER_MACRO_VARIABLE, "读取用户宏变量失败1！");
+		return;
+	}
+
+	count = fread(this->m_df_user_macro, sizeof(double), kMaxUserMacroVarCount, m_fp_macro_var);
+	if(count != kMaxUserMacroVarCount){//写入错误
+		g_ptr_trace->PrintTrace(TRACE_ERROR, USER_MACRO_VARIABLE, "读取用户宏变量失败2！");
+		return;
+	}
+	printf("succeed to initialize user macro variable\n");
 }
 
 /**
@@ -153,7 +225,7 @@ bool Variable::GetVarValue(int index, double &value, bool &init){
 	}else if(index >= 500 && index <1000){	//保持型公共变量
 		init = this->m_b_init_common_keep[index-500];
 		value = this->m_df_common_keep[index-500];
-	}else if(index >= 1000){	//系统变量
+	}else if(index >= 1000 && index < 50000){	//系统变量
 
 		if((index >= 5061 && index <= 5080) ||
 				(index >= 5421 && index <= 5440)){
@@ -168,7 +240,11 @@ bool Variable::GetVarValue(int index, double &value, bool &init){
 			init = false;
 			return false;
 		}
-	}else{
+	}else if(index >=50000 && index < 55000){
+		init = this->m_b_init_user_macro[index-50000];
+		value = this->m_df_user_macro[index-50000];
+	}
+	else{
 		g_ptr_trace->PrintLog(LOG_ALARM, "变量索引号[%d]非法，获取变量值失败！", index);
 		return false;
 	}
@@ -216,9 +292,14 @@ bool Variable::SetVarValue(int index, double value){
 		this->m_b_init_common_keep[index-500] = true;
 		this->m_df_common_keep[index-500] = value;
 		this->SaveKeepComm(index);   //保存到文件
-	}else if(index >= 1000){	//系统变量
+	}else if(index >= 1000 && index < 50000){	//系统变量
 		return this->SetSysVar(index, value);
-	}else{
+	}else if(index >= 50000 && index < 55000){
+		this->m_b_init_user_macro[index-50000] = true;
+		this->m_df_user_macro[index-50000] = value;
+		this->SaveMacroComm(index);   //保存到文件
+	}
+	else{
 		g_ptr_trace->PrintLog(LOG_ALARM, "变量索引号[%d]非法，设置变量值失败！", index);
 		return false;
 	}
@@ -234,7 +315,6 @@ bool Variable::SetVarValue(int index, double value){
  */
 bool Variable::SetVarValue(int index, int value){
 	//
-
 	return this->SetVarValue(index, static_cast<double>(value));
 }
 
@@ -257,7 +337,12 @@ bool Variable::ResetVariable(int index){
 		this->m_b_init_common_keep[index-500] = false;
 		this->m_df_common_keep[index-500] = 0.0;
 		this->SaveKeepComm(index);
-	}else{
+	}else if(index >= 50000 && index < 55000){
+		this->m_b_init_user_macro[index-50000] = false;
+		this->m_df_user_macro[index-50000] = 0.0;
+		this->SaveMacroComm(index);
+	}
+	else{
 		g_ptr_trace->PrintLog(LOG_ALARM, "变量索引号[%d]非法，复位变量值失败！", index);
 		return false;
 	}
@@ -335,9 +420,21 @@ int Variable::CopyVar(char *buf, uint32_t max_size, uint32_t start_index, uint8_
 		//拷贝变量值
 		memcpy(buf+count, &m_df_common_keep[start_index-500], count*sizeof(double));
 
-	}else if(start_index >=1000){//系统变量
+	}else if(start_index >=1000 && start_index < 50000){//系统变量
 		return res;
-	}else{//非法地址
+	}else if(start_index >= 50000 && start_index < 55000){
+		if(start_index+count > 55000)
+			count = 55000-start_index;
+		if(max_size < (sizeof(double)+1)*count){
+			g_ptr_trace->PrintLog(LOG_ALARM, "Variable::CopyVar()缓冲不足！");
+			return res;
+		}
+		//拷贝初始化标志
+		memcpy(buf, &m_b_init_user_macro[start_index-50000], count);
+		//拷贝变量值
+		memcpy(buf+count, &m_df_user_macro[start_index-50000], count*sizeof(double));
+	}
+	else{//非法地址
 		g_ptr_trace->PrintLog(LOG_ALARM, "Variable::CopyVar()非法地址！起始地址[%u]", start_index);
 		return res;
 	}
@@ -581,6 +678,36 @@ bool Variable::SaveKeepComm(int index){
 
 //	fflush(m_fp_keep_var);
 //	fsync(fileno(m_fp_keep_var));
+	return true;
+}
+
+bool Variable::SaveMacroComm(int index){
+
+	if(index < 50000 || index >= 55000)
+		return false;
+
+	int idx = index - 50000;
+
+	uint64_t offset = idx*sizeof(bool);   //偏移
+	fseek(this->m_fp_macro_var, offset, SEEK_SET);
+
+	size_t count  = fwrite(&m_b_init_user_macro[idx], 1, 1, m_fp_macro_var);
+
+	if(count != 1){//写入错误
+		g_ptr_trace->PrintTrace(TRACE_ERROR, USER_MACRO_VARIABLE, "写入用户宏变量失败！");
+		return false;
+	}
+
+	offset = kMaxUserMacroVarCount*sizeof(bool)+idx*sizeof(double);   //偏移
+	fseek(this->m_fp_macro_var, offset, SEEK_SET);
+	count = fwrite(&m_df_user_macro[idx], 8, 1, m_fp_macro_var);
+
+	if(count != 1){//写入错误
+		g_ptr_trace->PrintTrace(TRACE_ERROR, USER_MACRO_VARIABLE, "写入用户宏变量失败！");
+		return false;
+	}
+
+	this->m_b_save_keep = true;
 	return true;
 }
 

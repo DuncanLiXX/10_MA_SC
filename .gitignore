@@ -8,6 +8,7 @@
 *.so
 *.dylib
 *.dll
+*.d
 
 # Compiled Static libraries
 *.lai
@@ -19,3 +20,4 @@
 *.exe
 *.out
 *.app
+*.elf

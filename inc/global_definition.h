@@ -87,6 +87,7 @@
 #define PATH_MODBUS_PROGRAM "/cnc/bin/SCModbus_upd.elf"     //Modbus模块程序升级文件
 #define PATH_PMC_REG "/cnc/pmc/pmc_register.dat"		//PMC非易失性寄存器保存文件
 #define PATH_MACRO_VAR_KEEP "/cnc/config/macro_var/macro_variable_%hhu.dat"   //非易失性宏变量保存文件
+#define PATH_USER_MACRO_VAR "/cnc/config/macro_var/user_macro_variable_%hhu.dat"
 #define PATH_PHY_AXIS_ENCODER "/cnc/config/phy_encoder.dat"   //物理轴当前编码器反馈
 #define PATH_CONFIG_PACK_TMP "/cnc/config/config_pack_tmp.cpu"   //参数打包文件临时存放路径
 #define PATH_PC_DATA_TMP "/cnc/config/pc_data_input_tmp.dat"    //螺补导入文件临时存放路径

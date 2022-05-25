@@ -632,7 +632,8 @@ bool PmcRegister::SetRegValue(PmcRegSection sec, uint16_t index, uint8_t value){
 	case PMC_REG_G:
 		if(index >= G_REG_COUNT)
 			return false;
-		this->m_g_reg.all[index] = value;
+		// 为了 cnclib 修改G寄存器能正常切换通道  修改MI 再通过刷新同步到SC
+//		this->m_g_reg.all[index] = value;
 		break;
 	case PMC_REG_R:
 		if(index >= R_REG_COUNT)

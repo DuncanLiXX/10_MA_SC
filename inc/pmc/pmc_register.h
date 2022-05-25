@@ -596,7 +596,8 @@ struct FRegBits{
 	//F218
 	uint8_t :8;
 	//F219
-	uint8_t :8;
+	uint8_t CHNC:4;
+	uint8_t : 4;
 	//F220
 	uint8_t TF2:1;           //刀具功能选通信号2 F220.0
 	uint8_t TF3:1;           //刀具功能选通信号3 F220.1
@@ -1226,7 +1227,8 @@ struct GRegBits{
 	//G217~G218
 	uint16_t MPCS:16;       //PMC调用宏程序编号     G217~G218
 	//G219
-	uint8_t :8;
+	uint8_t CHNC:4;         //当前通道号
+	uint8_t :4;
 	//G220
 	uint8_t MFIN4:1;				//MFIN4信号，第4M功能结束信号  G220.0
 	uint8_t MFIN5:1;				//MFIN5信号，第5M功能结束信号  G220.1

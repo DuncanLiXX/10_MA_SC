@@ -3478,6 +3478,7 @@ void ChannelEngine::ProcessHmiGetPmcUuid(HMICmdFrame &cmd){
  * @param cmd
  */
 void ChannelEngine::ProcessHmiSetPmcReg(HMICmdFrame &cmd){
+
 	uint16_t reg_sec = 0, reg_index = 0;
 	uint8_t reg_value8 = 0;
 	uint8_t bit_index = 0;
@@ -3971,7 +3972,7 @@ bool ChannelEngine::Stop(uint8_t chn, bool reset){
  */
 bool ChannelEngine::SetCurWorkChanl(uint8_t work_chan){
 
-//	int chn_count = this->m_p_general_config->chn_count;
+	//	int chn_count = this->m_p_general_config->chn_count;
 	if(work_chan == CHANNEL_ENGINE_INDEX)
 		return true;
 
@@ -3979,6 +3980,12 @@ bool ChannelEngine::SetCurWorkChanl(uint8_t work_chan){
 		return false;
 	
     m_n_cur_channle_index = work_chan;
+
+    // 通道变化时 将F219 前4位赋值
+    for(int i = 0; i < this->m_p_general_config->chn_count; i++){
+    		m_p_pmc_reg->FReg().bits[i].CHNC = work_chan;
+    }
+
     this->m_n_cur_chn_group_index = this->m_p_channel_config[work_chan].chn_group_index;
 
     this->SetMiCurChannel();
@@ -7098,7 +7105,9 @@ bool ChannelEngine::RefreshMiStatusFun(){
 
 		//更新写入F寄存器， 更新周期8ms
 		this->m_p_mi_comm->WritePmcReg(PMC_REG_F, p_f_reg);
-		memcpy(m_g_reg_last.all, p_g_reg, sizeof(m_g_reg_last.all));   //备份G寄存器
+
+		memcpy(m_g_reg_last.all, p_g_reg, sizeof(m_g_reg_last.all));
+		//备份G寄存器
 		this->m_p_mi_comm->ReadPmcReg(PMC_REG_G, p_g_reg);
 		this->m_p_mi_comm->ReadPmcReg(PMC_REG_K, p_k_reg);
 
@@ -7114,7 +7123,6 @@ bool ChannelEngine::RefreshMiStatusFun(){
 		this->m_p_mi_comm->ReadPmcReg(PMC_REG_T, p_t_reg);
 		this->m_p_mi_comm->ReadPmcReg(PMC_REG_E, p_e_reg);
 #endif
-
 
 		//读取最新的PMC寄存器值
 		if(count % 10 == 0){	//更新周期80ms
@@ -7364,6 +7372,12 @@ void ChannelEngine::ProcessPmcSignal(){
 //			printf("ChannelEngine::ProcessPmcSignal(), emergency stop!\n");
 
 			this->Emergency();
+		}
+
+		// 处理G信号 切换当前通道
+		if(g_reg_last->CHNC != g_reg->CHNC)
+		{
+			this->SetCurWorkChanl(g_reg->CHNC);
 		}
 
 		if((g_reg->ST && g_reg_last->ST == 0) && g_reg->_SP == 1 && f_reg->STL == 0){ //循环启动
@@ -7845,9 +7859,20 @@ void ChannelEngine::ProcessPmcSignal(){
 	//处理PMC的告警，即A地址寄存器
 	this->ProcessPmcAlarm();
 	
+	// 处理G信号 切换当前通道
+	/*static uint8_t previous_chn_num = 0;
+	if(g_reg->CHNC != previous_chn_num)
+	{
 
-	//
+		previous_chn_num = g_reg->CHNC;
+		this->SetCurWorkChanl(previous_chn_num);
 
+		printf("freg chnc --------------- %d\n", f_reg->CHNC);
+
+		uint8_t value;
+		m_p_pmc_reg->GetRegValue(PMC_REG_F, 219, value);
+		printf("f_reg f219--------------- %d\n", value);
+	}*/
 }
 
 /**

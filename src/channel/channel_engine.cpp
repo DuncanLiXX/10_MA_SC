@@ -20,7 +20,6 @@
 #include "alarm_processor.h"
 #include "channel_mode_group.h"
 
-
 //#include <unistd.h>
 //#include <stropts.h>
 
@@ -3275,6 +3274,7 @@ void ChannelEngine::SaveToolInfo(){
  */
 bool ChannelEngine::UpdateHmiPitchCompData(HMICmdFrame &cmd){
 
+	printf("----------------- %d\n", cmd.data_len);
 	uint8_t axis_index = cmd.data[0];
 	bool dir = (cmd.data[1]==0)?true:false;   //正向螺补标志
 	uint16_t offset, count;
@@ -3316,6 +3316,7 @@ bool ChannelEngine::UpdateHmiPitchCompData(HMICmdFrame &cmd){
 				offset_tmp -= this->m_p_axis_config[node->data.axis_index].pc_count;
 			}
 		}
+
 		if(!g_ptr_parm_manager->UpdatePcData(node->data.axis_index, dir, offset_tmp, count, data)){
 			printf("UpdateHmiPitchCompData: failed to update pc data\n");
 			return false;
@@ -3337,6 +3338,7 @@ bool ChannelEngine::UpdateHmiPitchCompData(HMICmdFrame &cmd){
 	this->SendMiPcParam(axis_index);
 	this->SendMiPcParam2(axis_index);
 
+	printf("------------------------------send data to mc\n");
 
 	return true;
 }
@@ -3983,7 +3985,7 @@ bool ChannelEngine::SetCurWorkChanl(uint8_t work_chan){
 
     // 通道变化时 将F219 前4位赋值
     for(int i = 0; i < this->m_p_general_config->chn_count; i++){
-    		m_p_pmc_reg->FReg().bits[i].CHNC = work_chan;
+    	m_p_pmc_reg->FReg().bits[i].CHNC = work_chan;
     }
 
     this->m_n_cur_chn_group_index = this->m_p_channel_config[work_chan].chn_group_index;
@@ -4008,6 +4010,11 @@ bool ChannelEngine::SetWorkMode(uint8_t work_mode){
 */	
 
 	uint8_t chn_count = m_p_channel_mode_group[m_n_cur_chn_group_index].GetChannelCount();
+
+
+	printf("----------------> channel engine chn_count: %d\n", chn_count);
+	printf("----------------> channel engine set workmode: %d\n", work_mode);
+
 	for(uint8_t i = 0; i < chn_count; i++)
 		this->m_p_channel_control[m_p_channel_mode_group[m_n_cur_chn_group_index].GetChannel(i)].SetWorkMode(work_mode);
 
@@ -7410,6 +7417,7 @@ void ChannelEngine::ProcessPmcSignal(){
 //#ifdef USES_PHYSICAL_MOP
 		//方式选择信号
 		if(g_reg->MD != g_reg_last->MD){
+			printf("PMC SIGNAL -----> %d\n", g_reg->MD);
 			if(g_reg->MD == 0){  //MDA
 				this->SetWorkMode(MDA_MODE);
 			}else if(g_reg->MD == 1){   //自动
@@ -8180,6 +8188,7 @@ bool ChannelEngine::GetMacroVarValue(uint8_t chn, uint32_t index, bool &init, do
  * @return
  */
 bool ChannelEngine::SetMacroVarValue(uint8_t chn, uint32_t index, bool init, double value){
+
 	if(chn >= m_p_general_config->chn_count)
 		return false;
 

@@ -198,11 +198,15 @@ enum MacroCmd{
 	MACRO_CMD_GOTO,		    //强制跳转
 	MACRO_CMD_WHILE,
 	MACRO_CMD_DO,
+	MACRO_CMD_ELSE,
+	MACRO_CMD_ELSEIF,
+	MACRO_CMD_ENDIF,
 	MACRO_CMD_END,          //循环尾部
 	MACRO_CMD_IF_GOTO,		//条件跳转
 	MACRO_CMD_IF_THEN,		//条件执行
 	MACRO_CMD_WHILE_DO,     //循环
 	MACRO_CMD_EXP,			//纯表达式行
+
 	MACRO_CMD_GUARD			//卫兵
 };
 
@@ -485,6 +489,24 @@ struct SubProgOffset{
 typedef ListBuffer<SubProgOffset> SubProgOffsetList;     //子程序位置队列
 
 /**
+ * @brief IF ELSE OFFSET
+ */
+struct IfElseOffset{
+	uint64_t offset;    //文件指针偏移
+	uint64_t line_no;	//行号
+
+	IfElseOffset& operator=( const IfElseOffset& c);
+	bool operator ==( const IfElseOffset &one){  //判断运算符
+		if(one.offset == this->offset and one.line_no == this->line_no)
+			return true;
+		return false;
+	}
+};
+
+typedef ListBuffer<IfElseOffset> IfElseOffsetList;
+
+
+/**
  * @brief 循环体起末点位置记录
  */
 struct LoopRec{
@@ -574,6 +596,11 @@ struct CompilerScene{
 	SubProgOffsetList list_subprog;	//本文件内部子程序偏移位置存储队列
 	LoopRecList list_loop;		//循环体队列,记录本文件内的所有循环体起始位置
 	LoopOffsetStack stack_loop;     //循环位置数据
+
+	/*****if else 处理 ******/
+	vector<IfElseOffsetList> ifelse_vector;  // 链表容器
+	/*****if else 处理 ******/
+
 #ifdef USES_WOOD_MACHINE
 	SpindleStartList list_spd_start;   //主轴启动命令队列
 #endif

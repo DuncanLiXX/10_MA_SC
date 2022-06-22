@@ -58,10 +58,10 @@
 
 #define USES_WOOD_MACHINE     //支持木工专机
 
-#define USES_ADDITIONAL_PROGRAM     //支持前置、后置程序调用
+//#define USES_ADDITIONAL_PROGRAM     //支持前置、后置程序调用
 
 
-#define USES_SIMULATION_TEST   //仿真测试，仿真数据保存为文件
+// #define USES_SIMULATION_TEST   //仿真测试，仿真数据保存为文件
 
 
 //版本信息

@@ -513,9 +513,7 @@ bool HMICommunication::SendCmd(HMICmdFrame &cmd){
 //			if(ListNode<HMICmdResendNode *>::new_count > 0)
 //				printf("HMICmdResendNode new count :%d\n", ListNode<HMICmdResendNode *>::new_count);
 		}
-
 	}
-
 
 	return true;
 }
@@ -787,8 +785,6 @@ void HMICommunication::RecvHmiCmd(){
 			break;
 		}
 
-
-
 		if(data.cmd == CMD_HMI_HEART_BEAT){  //在此处处理心跳，保证优先处理，不会因为处理耗时命令而误发心跳丢失
 
 			if(g_sys_state.hmi_comm_ready){
@@ -824,6 +820,7 @@ void HMICommunication::RecvHmiCmd(){
 			break;
 		}
 	}
+
 }
 
 /**
@@ -833,7 +830,6 @@ void HMICommunication::RecvHmiCmd(){
 int HMICommunication::ProcessHmiCmd(){
 	int res = ERR_NONE;
 //	struct timespec time_out= {0, 10000000};   //信号等待超时时间
-
 
 	HMICmdRecvNode cmd_node;
 	HMICmdFrame &cmd = cmd_node.cmd;

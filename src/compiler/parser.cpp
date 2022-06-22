@@ -151,7 +151,6 @@ bool Parser::Compile(){
 	return res;
 }
 
-
 /**
  * @brief 编译宏指令
  * @return true--成功  false--失败
@@ -251,16 +250,35 @@ bool Parser::CheckGCode(LexerGCode *gcode){
 		printf("Parser::CheckGCode, too many t code! tcode_count = %hhu\n", gcode->tcode_count);
 		return false;
 	}
-
+/*int exp_index = static_cast<int>(g_code->value[addr]);
+			while(!this->GetExpressionResult(g_code->macro_expression[exp_index], res))
+ * */
 	//进行模式检查
 	uint64_t mode_mask = GMODE_NONE;
-	int code = 0, count = 0;
+	int code = 0, count = 0, exp_index = 0;
+	MacroVarValue res;
 	//int code_limit = kMaxGCodeCount;
 	//int mode_code[kMaxGModeCount];
 	memset(m_mode_code, 0x00, sizeof(int)*kMaxGModeCount);
 	this->m_b_has_g53 = false;
 	for(int i = 0; i < gcode->gcode_count; i++){
+		if(gcode->g_value[i] < 0){//为负值，说明此G代码含有宏表达式
+			exp_index = abs(gcode->g_value[i] + 1);
+			while(!this->GetExpressionResult(gcode->macro_expression[exp_index], res)){
+				if(this->m_error_code != ERR_NONE)
+					return false;
+				usleep(10000);  //休眠10ms，等待MC运行到位
+			}
+			if(res.init){
+				gcode->g_value[i] = res.value*10;  //放大十倍
+			}else{
+				m_error_code = ERR_G_EXP_NULL;   //G指令表达式为空
+				return false;
+			}
+
+		}
 		code = gcode->g_value[i]/10;
+
 
 		if((code >=5401 && code <=5499) &&
 				(0x00 == (mode_mask & (0x01<<14)))){   //特殊处理G5401~G5499
@@ -325,9 +343,27 @@ bool Parser::CheckGCode(LexerGCode *gcode){
 		}
 	}
 
+	// 若存在 M#XXX 先计算出宏表达式的值
+	for(int i=0; i<gcode->mcode_count; i++){
+		if(gcode->m_value[i] < 0){//为负值，说明此M代码含有宏表达式
+			exp_index = abs(gcode->m_value[i] + 1);
+			while(!this->GetExpressionResult(gcode->macro_expression[exp_index], res)){
+				if(this->m_error_code != ERR_NONE)
+					return false;
+				usleep(10000);  //休眠10ms，等待MC运行到位
+			}
+			if(res.init){
+				gcode->m_value[i] = res.value;
+			}else{
+				m_error_code = ERR_M_EXP_NULL;   //
+				return false;
+			}
 
-	//检查M代码
-	if(gcode->mcode_count > 1){//是否存在不能同行的M代码
+		}
+	}
+
+	//是否存在不能同行的M代码
+	if(gcode->mcode_count > 1){
 		for(int i = 0; i < gcode->mcode_count; i++){
 			for(int j = 0; j < kSeparatedMCodeCount; j++){
 				if(gcode->m_value[i] == kSeparatedMCodeArray[j]){
@@ -337,6 +373,26 @@ bool Parser::CheckGCode(LexerGCode *gcode){
 			}
 		}
 	}
+
+	/***************/
+	// 若存在 T#XXX 先计算宏表达式
+	for(int i=0; i<gcode->tcode_count; i++){
+		if(gcode->t_value[i] < 0){//为负值，说明此T代码含有宏表达式
+			exp_index = abs(gcode->t_value[i] + 1);
+			while(!this->GetExpressionResult(gcode->macro_expression[exp_index], res)){
+				if(this->m_error_code != ERR_NONE)
+					return false;
+				usleep(10000);  //休眠10ms，等待MC运行到位
+			}
+			if(res.init){
+				gcode->t_value[i] = res.value;
+			}else{
+				m_error_code = ERR_T_EXP_NULL;   //
+				return false;
+			}
+		}
+	}
+	/*********************/
 
 	//检查是否存在自定义指令及系统定义的宏程序指令
 	this->m_b_call_macro_prog = this->HasMacroProgCall();
@@ -378,6 +434,16 @@ bool Parser::HasMacroProgCall(){
 	return false;
 }
 
+bool Parser::IsSysVar(int index){
+
+	if(index < 1000 || (index >= 50000 && index <55000))
+		return false;
+	else if(index >= 1000)
+		return true;
+	return false;
+}
+
+
 /**
  * @brief 分析GCode并生成对应的Message
  * @param gcode : 词法分析结果指针
@@ -406,7 +472,6 @@ bool Parser::AnalyzeGCode(LexerGCode *gcode){
 			if(!this->CreateFeedMsg())
 				return false;
 		}
-
 
 		//处理T指令,预选刀
 		if(!m_b_call_macro_prog && (gcode->mask_value & (0x01<<T_DATA))){
@@ -1875,7 +1940,6 @@ bool Parser::CreateFeedMsg(){
 
 	m_b_f_code = true;
 	m_p_parser_result->Append(new_msg);
-
 	ProcessLastBlockRec(new_msg);
 
 	return true;
@@ -3407,9 +3471,14 @@ bool Parser::CreateMacroMsg(LexerMacroCmd *macro){
 	}
 
 //	printf("create macro message\n");
-
 	new_msg->SetLineNo(this->m_p_lexer_result->line_no);  //设置当前行号
 	(static_cast<MacroCmdMsg *>(new_msg))->SetOffset(this->m_p_lexer_result->offset);
+
+	if(macro->cmd == MACRO_CMD_IF){
+		new_msg->SetFlag(FLAG_WAIT_MOVE_OVER, true);
+	}
+
+
 	if(this->m_p_compiler_status->jump_flag)
 		new_msg->SetFlag(FLAG_JUMP, true);
 

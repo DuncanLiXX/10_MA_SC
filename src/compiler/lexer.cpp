@@ -11,7 +11,7 @@
 #include "global_include.h"
 #include <lexer.h>
 
-const char *MacroKeys[] = {"IF","THEN","GOTO","WHILE","DO","END",nullptr};  //宏指令，定义顺序于MacroCmd对应
+const char *MacroKeys[] = {"IF","THEN","GOTO","WHILE","DO","ELSE","ELSEIF","ENDIF","END",nullptr};  //宏指令，定义顺序于MacroCmd对应
 const char *MacroFuncs[] = {"FIX","FUP","ROUND","ABS","SIN","COS","TAN","ASIN","ACOS","ATAN","SQRT","POW","BIN","BCD","LN",
 							"EXP","EQ","NE","GT","LT","GE","LE","OR","XOR","AND","MOD",nullptr};  //宏运算命令，定义顺序与MacroOpt对应
 
@@ -94,12 +94,9 @@ bool MacroExpProcessor::PushOpt(MacroOpt opt){
 				else
 					m_top_opt = tmp.opt;
 			}
-
 		}
 		else
 			res = false;  //括号不匹配
-
-
 	}
 	else if(opt == MACRO_OPT_WR){//'='
 		//逐个弹出栈内数据
@@ -231,9 +228,7 @@ bool MacroExpProcessor::PushOpt(MacroOpt opt){
 			}
 		}
 		m_top_opt = opt;
-
 	}
-
 	return res;
 }
 
@@ -395,7 +390,7 @@ bool Lexer::Compile(){
 	while(*comp_buf != '\0'){
 //		printf("lexer::compile char [%c]\n", *comp_buf);
 		if(isalpha(*comp_buf)){//字母
-			if(m_in_digit){//处理以识别的地址值对
+			if(m_in_digit){//处理已识别的地址值对
 				if(!this->ProcessValue()){
 					res = false;  //出错退出
 					break;
@@ -666,6 +661,10 @@ bool Lexer::Compile(){
 			if(!this->ProcessWord()){
 				res = false;
 			}
+			// ELSE   ENDIF  独立占一行  要特殊处理
+			if(strcasecmp(comp_buf, "ELSE") == 0 or strcasecmp(comp_buf, "ENDIF")){
+				m_in_macro_exp = true;
+			}
 		}
 
 		if(m_p_lexer_result->error_code == ERR_NONE && m_in_macro_exp){
@@ -746,7 +745,7 @@ bool Lexer::GetOneGCode(){
 
 				if(m_cur_domain == 'G'){
 					if(g_code->gcode_count < kMaxGCodeInLine)
-						g_code->g_value[g_code->gcode_count++] = m_macro_count* -1;  //存放索引的负值
+						g_code->g_value[g_code->gcode_count++] = m_macro_count*-1;  //存放索引的负值
 					else{//G指令个数超限
 						m_p_lexer_result->error_code = ERR_TOO_MANY_G_CODE;
 					}
@@ -832,6 +831,8 @@ bool Lexer::GetOneGCode(){
  * @return  true--成功  false--失败
  */
 bool Lexer::GetOneMacroCmd(){
+
+	//printf()
 	bool res = true;
 	LexerMacroCmd *macro_cmd = &(m_p_lexer_result->nc_code.macro_cmd);
 	MacroRec rec;
@@ -932,7 +933,6 @@ bool Lexer::GetOneMacroExp(){
 	bool res = true;
 	LexerMacroCmd *macro_code = &(m_p_lexer_result->nc_code.macro_cmd);
 
-
 	if(m_p_lexer_result->macro_flag){
 		printf("@@@@@@ERR_NC_FORMAT_5\n");
 		m_p_lexer_result->error_code = ERR_NC_FORMAT;
@@ -981,7 +981,6 @@ bool Lexer::ProcessWord(){
 			m_in_alph = false;
 		}
 		else{//字符串长度大于1
-
 			m_macro_cmd = this->IsMacroKeys(m_alph_buf);  //判断是否为宏指令
 			if(m_macro_cmd == MACRO_CMD_INVALID){
 				//告警
@@ -989,6 +988,7 @@ bool Lexer::ProcessWord(){
 				g_ptr_trace->PrintTrace(TRACE_ERROR, COMPILER_LEXER, "错误：无法解析的宏指令[%s]！", m_alph_buf);
 			}
 			else{//合法宏指令
+
 				m_has_macro_cmd = true;
 				m_in_alph = false;
 //				printf("GET Macro cmd = %d\n", m_macro_cmd);
@@ -1002,7 +1002,6 @@ bool Lexer::ProcessWord(){
 			m_has_domain = true;
 			m_cur_domain = m_alph_buf[0];
 			m_in_alph = false;
-
 
 		}
 		else{
@@ -1020,8 +1019,9 @@ bool Lexer::ProcessWord(){
 
 	}
 
-	if(m_p_lexer_result->error_code != ERR_NONE)
+	if(m_p_lexer_result->error_code != ERR_NONE){
 		printf("lexer::process word, err_code = %d\n", m_p_lexer_result->error_code);
+	}
 
 	return res;
 }

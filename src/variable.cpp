@@ -36,7 +36,6 @@ Variable::Variable() {
     this->m_b_save_keep = false;  //默认无更改
 }
 
-
 /**
  * @brief 析构函数
  */

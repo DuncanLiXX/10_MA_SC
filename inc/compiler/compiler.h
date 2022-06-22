@@ -187,6 +187,8 @@ private://私有接口
 	void SaveLoopParam(LoopMsg *loop);    //保存循环指令的参数到宏变量#171~#195
 	void ResetLoopParam();                //复位循环指令参数对应的宏变量#171~#195
 
+	bool JumpLine(int line_no, uint64_t offset, MacroCmdMsg *tmp);
+
 #ifdef USES_FIVE_AXIS_FUNC
 	void ProcessFiveAxisRotPos(DPoint &tar, DPoint &src, uint32_t mask);    //处理五轴无限旋转轴就近路径功能
 	void ProcessFiveAxisRotPos(DPointChn &tar, DPointChn &src, uint32_t mask);    //处理五轴无限旋转轴就近路径功能
@@ -269,6 +271,19 @@ private://私有成员
 	SubProgOffsetList *m_p_list_subprog;	//本文件内部子程序偏移位置存储队列
 	LoopRecList *m_p_list_loop;			//循环体起末点位置记录队列，预扫描时生成
 	LoopOffsetStack m_stack_loop;        //循环位置存储栈，运行时使用
+
+	/************预扫描 if else  **********************/
+	IfElseOffsetList *m_p_list_ifelse;   //单个 if else 偏移记录链表
+	vector<IfElseOffsetList> m_ifelse_vector;
+	int if_index_cur=-1, if_index_len=0;
+	DataStack<int> m_stack_if_record;    //处理 if endif配对 元素为此条链表在数组中的索引
+	int m_else_count = 0;           	// 一个 if 不能出现两个 else
+	DataStack<int> m_stack_else_count;  // 存在嵌套 if 时处理 暂存else记数
+	/*** 执行 if else *****************/
+	DataStack<ListNode<IfElseOffset> *> m_stack_ifelse_node;  //运行(if elseif else endif)消息时 记录偏移信息节点栈
+	bool m_b_else_jump = false;         // 若if 条件为真  则遇到else elseif 后要直接跳转到 endif行。
+	DataStack<bool> m_stack_else_jump_record;
+
 #ifdef USES_WOOD_MACHINE
 	SpindleStartList *m_p_list_spd_start;         //主轴启动命令队列
 

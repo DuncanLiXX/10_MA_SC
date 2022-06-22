@@ -3152,6 +3152,7 @@ bool ParmManager::ActiveToolOffsetParam(uint8_t chn_index){
  * @return
  */
 bool ParmManager::UpdatePcData(uint8_t axis_index, bool dir_flag, uint16_t offset, uint16_t count, double *data){
+
 	if(data == nullptr || axis_index >= m_sc_system_config->axis_count){
 		printf("ParmManager::UpdatePcData return false, axis_index = %hhu\n", axis_index);
 		return false;

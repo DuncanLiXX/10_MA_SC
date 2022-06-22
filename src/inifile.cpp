@@ -247,7 +247,7 @@ int IniFile::Load(const string &filePath)
 
 int IniFile::Save()
 {
-    return SaveAs(iniFilePath);
+	return SaveAs(iniFilePath);
 }
 
 int IniFile::SaveAs(const string &filePath)

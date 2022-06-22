@@ -57,8 +57,6 @@ Compiler::Compiler(ChannelControl *chn_ctrl) {
 	if (m_error_code != ERR_NONE) {
 		printf("Failed to init compiler!\n");
 	}
-	
-
 }
 
 /**
@@ -110,6 +108,12 @@ Compiler::~Compiler() {
 	if(this->m_p_list_loop){
 		delete m_p_list_loop;
 		m_p_list_loop=nullptr;
+	}
+
+	// 单个if else 数据记录链表
+	if(this->m_p_list_ifelse){
+		delete m_p_list_ifelse;
+		m_p_list_ifelse = nullptr;
 	}
 
 #ifdef USES_WOOD_MACHINE
@@ -165,7 +169,7 @@ void Compiler::InitCompiler() {
 		return;
 	}
 
-	//初始化表现队列
+	//初始化标签队列
 	this->m_p_list_label = new LabelOffsetList();
 	if (m_p_list_label == nullptr) {
 		g_ptr_trace->PrintLog(LOG_ALARM, "CHN[%d]编译器创建标签队列失败!",
@@ -174,7 +178,7 @@ void Compiler::InitCompiler() {
 		return;
 	}
 
-	//初始化表现队列
+	//初始化标签队列
 	this->m_p_list_subprog = new SubProgOffsetList();
 	if (m_p_list_subprog == nullptr) {
 		g_ptr_trace->PrintLog(LOG_ALARM, "CHN[%d]编译器创建标签队列失败!",
@@ -191,6 +195,8 @@ void Compiler::InitCompiler() {
 		m_error_code = ERR_SC_INIT;
 		return;
 	}
+
+	this->m_p_list_ifelse = nullptr;   // 在preScan时 碰到if再new碰到endif存入到数组中
 
 #ifdef USES_WOOD_MACHINE
 	//初始化主轴启动指令记录队列
@@ -376,6 +382,9 @@ bool Compiler::SaveScene() {
 	scene.list_loop = *m_p_list_loop;
 	scene.stack_loop = m_stack_loop;
 
+	scene.ifelse_vector.clear();
+	scene.ifelse_vector  = m_ifelse_vector;
+
 #ifdef USES_WOOD_MACHINE
 	scene.list_spd_start = *m_p_list_spd_start;
 //	printf("Compiler::SaveScene(), spd_count=%d, scene=%d\n", m_p_list_spd_start->GetLength(), scene.list_spd_start.GetLength());
@@ -451,6 +460,11 @@ bool Compiler::ReloadScene(bool bRecPos) {
 	*m_p_list_subprog = scene.list_subprog;
 	*m_p_list_loop = scene.list_loop;
 	m_stack_loop = scene.stack_loop;
+
+
+	m_ifelse_vector.clear();
+	m_ifelse_vector = scene.ifelse_vector;
+
 
 #ifdef USES_WOOD_MACHINE
 	*m_p_list_spd_start = scene.list_spd_start;
@@ -699,6 +713,28 @@ void Compiler::PreScan() {
 			count = 0;
 		}
 	}
+
+
+	/*** test if else */
+	printf("----------------------------------------------\n");
+
+	for(unsigned int i=0; i<m_ifelse_vector.size(); i++){
+		IfElseOffsetList data = m_ifelse_vector.at(i);
+		ListNode<IfElseOffset> *node = data.HeadNode();
+
+		printf("node number: %d\n", i+1);
+
+		while(node->next != nullptr){
+			IfElseOffset offset = node->data;
+			printf("lino: %lld --", offset.line_no);
+			node = node->next;
+		}
+		IfElseOffset offset = node->data;
+		printf("line no: %lld --\n", offset.line_no);
+	}
+
+	/*** test if else */
+
 	if (total_size != read_size) { //没有完整读取文件，告警
 		g_ptr_trace->PrintLog(LOG_ALARM, "CHN[%d]预扫描第一遍执行失败！文件未完整分析！%llu, %llu",
 				m_n_channel_index, total_size, read_size);
@@ -772,6 +808,7 @@ void Compiler::PreScan() {
  * @param line_no : 行号
  * @param flag : 跨行注释状态
  */
+
 void Compiler::PreScanLine1(char *buf, uint64_t offset, uint64_t line_no,
 		bool &flag, LoopOffsetStack &loop_stack, CompilerScene *scene) {
 
@@ -785,6 +822,11 @@ void Compiler::PreScanLine1(char *buf, uint64_t offset, uint64_t line_no,
 	bool goto_cmd = false;   //GOTO指令
 	bool loop_do = false;   //循环头
 	bool loop_end = false;  //循环尾
+
+	bool if_cmd = false;    //存在 IF 指令
+	bool endif_cmd = false;
+	bool elseif_cmd = false;
+	bool else_cmd = false;
 
 	int digit_count = 0;  //数字计数
 	ListNode < LabelOffset > *node = nullptr;
@@ -802,6 +844,9 @@ void Compiler::PreScanLine1(char *buf, uint64_t offset, uint64_t line_no,
 	memset(digit_buf, 0, kMaxDigitBufLen+1);
 
 	StrUpper(buf);
+
+	//printf("lino: %llu -- %s", line_no, buf);
+
 	while (*pc != '\0') {
 		if (flag) {  //处于注释状态
 			if (*pc == ')') {  //结束注释状态
@@ -838,7 +883,7 @@ void Compiler::PreScanLine1(char *buf, uint64_t offset, uint64_t line_no,
 			continue;
 		}
 
-		if (strchr("XYZABCJKUV", *pc) != nullptr){  //加快扫描速度
+		if (strchr("XYZBCJKUV", *pc) != nullptr){  //加快扫描速度
 			return;
 		}
 		else if (*pc == '(') { //进入跨行注释
@@ -855,10 +900,28 @@ void Compiler::PreScanLine1(char *buf, uint64_t offset, uint64_t line_no,
 				digit_count = 0;
 				memset(digit_buf, 0, kMaxDigitBufLen+1);
 			}
-		} else if (*pc == 'G' && *(pc + 1) == 'O' && *(pc + 2) == 'T' && *(pc + 3) == 'O' && !isalpha(*(pc+4))) { //goto指令
+		}else if(*pc == 'I' && *(pc + 1) == 'F' && first_alpha){
+			if_cmd = true;
+			pc += 2;
+			continue;
+		}else if(*pc == 'E' && *(pc + 1) == 'N'&& *(pc + 2) == 'D'&& *(pc + 3) == 'I' && *(pc + 4) == 'F' && first_alpha){
+			endif_cmd = true;
+			pc += 5;
+			continue;
+		}else if(*pc == 'E' && *(pc + 1) == 'L'&& *(pc + 2) == 'S'&& *(pc + 3) == 'E' && *(pc + 4) == 'I'  && *(pc + 5) == 'F' && first_alpha){
+			elseif_cmd = true;
+			pc += 6;
+			continue;
+		}else if(*pc == 'E' && *(pc + 1) == 'L'&& *(pc + 2) == 'S'&& *(pc + 3) == 'E'  && first_alpha){
+			else_cmd = true;
+			pc += 4;
+			continue;
+		}
+		else if (*pc == 'G' && *(pc + 1) == 'O' && *(pc + 2) == 'T' && *(pc + 3) == 'O' && !isalpha(*(pc+4))) { //goto指令
 
 			if (first_alpha || pc == buf || !isalpha(*(pc - 1))) {
 				goto_cmd = true;
+				if_cmd = false;
 				digit_count = 0;
 				memset(digit_buf, 0, kMaxDigitBufLen+1);
 				pc += 4;
@@ -884,7 +947,6 @@ void Compiler::PreScanLine1(char *buf, uint64_t offset, uint64_t line_no,
 				pc += 3;
 				continue;
 			}
-
 		}
 #ifdef USES_WOOD_MACHINE
 		else if(*pc == 'M' && !isalpha(*(pc+1))){  //M03/M04指令
@@ -1020,7 +1082,7 @@ void Compiler::PreScanLine1(char *buf, uint64_t offset, uint64_t line_no,
 
 		if(this->m_b_prescan_in_stack){   //堆栈文件预扫描
 			if (!scene->list_label.HasData(label_offset)){
-				//按升序排列
+				//按升序排列 (从头到尾 从小到大?)
 				node = scene->list_label.HeadNode();
 				while (node != nullptr) {
 					if (node->data.label > label_offset.label) {
@@ -1054,10 +1116,12 @@ void Compiler::PreScanLine1(char *buf, uint64_t offset, uint64_t line_no,
 		LoopOffset loop_offset;
 		loop_offset.line_no = line_no;
 		loop_offset.offset = offset;
+
 		if(digit_count > 0)
 			loop_offset.loop_index = atoi(digit_buf);
 		else
 			loop_offset.loop_index = 0;
+
 		loop_stack.push(loop_offset);
 	//	printf("push do cmd: %lld\n", line_no);
 	}else if(loop_end){		//找到END指令
@@ -1076,12 +1140,127 @@ void Compiler::PreScanLine1(char *buf, uint64_t offset, uint64_t line_no,
 				this->m_p_list_loop->Append(loop_rec);
 			}
 
-
 	//		printf("find loop rec: s[%lld, %lld] e[%lld, %lld]\n", loop_rec.start_line_no, loop_rec.start_offset, line_no, offset);
 		}
 	}
+	// 找到 if 指令
+	if(this->m_b_prescan_in_stack){
+		if(if_cmd){
+			if_index_cur = if_index_len;
+			m_stack_if_record.push(if_index_len);
+			++ if_index_len;  // if 链表数组 链表个数
+			IfElseOffsetList ifelse_list;
+			IfElseOffset ifnode;
+			ifnode.offset = offset;
+			ifnode.line_no = line_no;
+			ifelse_list.Append(ifnode);
+			scene->ifelse_vector.push_back(ifelse_list);
+			m_p_list_ifelse = &scene->ifelse_vector.back();
+			//scene->ifelse_record[scene->if_index_cur] = scene->list_ifelse;
+			if_cmd = false;
+			// 第一个 栈底记数永远为0  没用
+			m_stack_else_count.push(m_else_count);
+			m_else_count = 0;
+		}else if(endif_cmd){
+
+			IfElseOffset ifnode;
+			ifnode.offset = offset;
+			ifnode.line_no = line_no;
+			m_p_list_ifelse->Append(ifnode);
+			m_stack_if_record.pop();
+
+			if(m_stack_if_record.size() != 0){
+				m_stack_if_record.cur(if_index_cur);
+				//scene->list_ifelse = scene->ifelse_record[scene->if_index_cur];
+				m_p_list_ifelse = &scene->ifelse_vector.at(if_index_cur);
+			}
+			endif_cmd = false;
+
+			m_stack_else_count.pop(m_else_count);
+
+		}else if(else_cmd or elseif_cmd){
+
+			if(else_cmd){
+				++ m_else_count;
+				if(m_else_count > 1){
+					// @Todo 一个 if 有两个 else 语法错误
+					printf("prescan1 error: one if but two else ...\n");
+					return;
+				}
+			}
+
+			IfElseOffset ifnode;
+			ifnode.offset = offset;
+			ifnode.line_no = line_no;
+			m_p_list_ifelse->Append(ifnode);
+
+			else_cmd = false;
+			elseif_cmd = false;
+		}
+	}else{
+		if(if_cmd){
+			m_else_count = 0;
+			if_index_cur = if_index_len;
+			m_stack_if_record.push(if_index_len);  // 存储if链表头在vector中的索引
+			++ if_index_len;  // if 链表数组 链表个数
+			IfElseOffsetList ifelse_list; // 新建链表
+			IfElseOffset ifnode;  // 建立节点
+			ifnode.offset = offset;
+			ifnode.line_no = line_no;
+			ifelse_list.Append(ifnode);
+
+			m_ifelse_vector.push_back(ifelse_list);  //  vector中存入链表对象
+			m_p_list_ifelse = &m_ifelse_vector.back();
+
+			if_cmd = false;
+
+			// 第一个 栈底记数永远为0  没用
+			m_stack_else_count.push(m_else_count);
+		}else if(endif_cmd){
+
+			IfElseOffset ifnode;
+			ifnode.offset = offset;
+			ifnode.line_no = line_no;
+			m_p_list_ifelse->Append(ifnode);
+			// 这条if链表记录结束 弹栈
+			if(m_stack_if_record.size() > 0)
+				m_stack_if_record.pop();
+			else
+				printf("编译错误！！！ IF ENDIF不匹配  -- %llu\n", line_no);
+
+			if(m_stack_if_record.size() != 0){
+				// 存在嵌套关系 指针指向外层 if链表
+				m_stack_if_record.cur(if_index_cur);
+				m_p_list_ifelse = &m_ifelse_vector.at(if_index_cur);
+			}
+			endif_cmd = false;
+			// else记数 弹栈  栈顶为外层 if中 else出现次数
+			m_stack_else_count.pop(m_else_count);
+
+		}else if(else_cmd or elseif_cmd){
+
+			IfElseOffset ifnode;
+			ifnode.offset = offset;
+			ifnode.line_no = line_no;
+			m_p_list_ifelse->Append(ifnode);
+
+			if(else_cmd){
+				++ m_else_count;
+				if(m_else_count > 1){
+					printf("prescan1 error: one if but two else ...%llu\n", line_no);
+					g_ptr_trace->PrintLog(LOG_ALARM, "一个 if 遇到两个 else ！！！\n");
+					return;
+				}
+			}
+
+			else_cmd = false;
+			elseif_cmd = false;
+		}
+	}
+
+
 #ifdef USES_WOOD_MACHINE
-	else if(m_code && digit_count > 0){
+	if(m_code && digit_count > 0){
 		m_digit = atoi(digit_buf);
 		if(m_digit == 3 || m_digit == 4){  //只处理M04和M03
 			m_msg = true;
@@ -1314,6 +1493,17 @@ bool Compiler::OpenFile(const char *file, bool sub_flag) {
 	this->m_p_list_loop->Clear();
 	m_stack_loop.empty();  //清空循环位置数据
 
+
+	for(unsigned int i=0; i<m_ifelse_vector.size(); i++){
+		// 清空链表数组 释放空间
+		m_ifelse_vector.at(i).Clear();
+	}
+	m_ifelse_vector.clear();
+
+	if_index_cur=-1;
+	if_index_len=0;
+	m_stack_if_record.empty();
+
 #ifdef USES_WOOD_MACHINE
 	m_p_list_spd_start->Clear();
 #endif
@@ -1518,6 +1708,12 @@ bool Compiler::CompileOver() {
 	m_b_left = false;
 	m_b_compile_over = false;
 
+	m_b_else_jump = false;
+
+	while(m_stack_ifelse_node.size() > 0){
+		m_stack_ifelse_node.pop2();
+	}
+
 	printf("exit compiler::compileover\n");
 	return true;
 }
@@ -1645,6 +1841,15 @@ void Compiler::Reset() {
 				scene.ptr_cur_file_pos = nullptr;
 				scene.stack_loop.empty();
 
+				/*scene.list_ifelse.Clear();
+				for(int i=0; i<scene.if_index_len; i++){
+					scene.ifelse_record[i].Clear();
+				}
+				scene.if_index_cur = -1;
+				scene.if_index_len = 0;
+				scene.stack_if_record.empty();*/
+
+
 				m_stack_scene.push(scene);
 				printf("reset compiler stack:%d\n", m_stack_scene.size());
 				break;
@@ -1695,6 +1900,12 @@ void Compiler::Reset() {
 	m_p_block_msg_list_mda->Clear();
 
 	m_stack_loop.empty();  //清空循环位置数据
+
+	while(m_stack_ifelse_node.size() > 0){
+		m_stack_ifelse_node.pop2();
+	}
+	m_b_else_jump = false;
+	m_stack_else_jump_record.empty();
 
 }
 
@@ -1858,7 +2069,7 @@ bool Compiler::GetLineData() {
 //	printf("enter getlinedata4444444444444444444\n");
 
 	this->m_lexer_result.line_no = this->m_ln_cur_line_no;   //更新行号
-	this->m_lexer_result.offset = this->m_ln_read_size;  //保存行首偏移量
+	this->m_lexer_result.offset = this->m_ln_read_size;      //保存行首偏移量
 //	printf("getline lineno = %lld\n", this->m_lexer_result.line_no);
 	while (!m_b_eof && (c_cur != '\r' || c_next != '\n') &&//兼容两种换行格式（\r\n和\n）
 			(c_cur != '\n')) {
@@ -2067,7 +2278,6 @@ bool Compiler::CompileLine() {
 	return res;
 }
 
-
 /**
  * @brief 执行编译产生的Msg,修改编译器状态
  * @return true--成功   false--失败
@@ -2075,6 +2285,8 @@ bool Compiler::CompileLine() {
 bool Compiler::RunMessage() {
 	bool res = true;
 	RecordMsg *msg = nullptr;
+
+	//uint64_t lineNo = 0;
 
 //	int count = m_p_parser_result->GetLength();
 
@@ -2084,12 +2296,16 @@ bool Compiler::RunMessage() {
 		msg = static_cast<RecordMsg *>(node->data);
 		if (msg != nullptr) {
 			if(msg->CheckFlag(FLAG_JUMP) && this->m_p_channel_control->CheckFuncState(FS_BLOCK_SKIP)){  //跳段激活,则当前指令取消
+
 				this->m_p_parser_result->RemoveHead();
 				delete node;
 				node = this->m_p_parser_result->HeadNode();  //取下一个消息
 				continue;
 			}
 			msg_type = msg->GetMsgType();
+
+			//lineNo = msg->GetLineNo();
+
 			switch (msg_type) {
 			case AUX_MSG:
 				res = RunAuxMsg(msg);
@@ -2198,6 +2414,7 @@ bool Compiler::RunMessage() {
 	node = this->m_p_block_msg_list->HeadNode();
 	while (node != nullptr) {
 		msg = static_cast<RecordMsg *>(node->data);
+
 		if (msg != nullptr) { //出错情况下，全部输出
 			if (msg == this->m_p_last_move_msg
 					&& this->m_error_code == ERR_NONE &&
@@ -2215,6 +2432,11 @@ bool Compiler::RunMessage() {
 		node = this->m_p_block_msg_list->HeadNode();  //取下一个消息
 	}
 
+	/*if(res){
+		printf("----compiler run message %llu success\n", lineNo);
+	}else{
+		printf("----compiler run message %llu failed\n", lineNo);
+	}*/
 
 	return res;
 }
@@ -3040,7 +3262,6 @@ bool Compiler::RunMacroMsg(RecordMsg *msg) {
 	bool flag = true;
 	int res = 0;
 
-//	printf("run macro msg: cmd = %d\n", macro_cmd);
 	switch (macro_cmd) {
 	case MACRO_CMD_GOTO:	//跳转指令则跳转到相应代码处
 		if(!tmp->GetMacroExpCalFlag(0)){
@@ -3319,12 +3540,209 @@ bool Compiler::RunMacroMsg(RecordMsg *msg) {
 			return false;
 		}
 		break;
+	case MACRO_CMD_IF:{
+
+		if(!tmp->GetMacroExpCalFlag(0)){
+			if(!m_p_parser->GetExpressionResult(tmp->GetMacroExp(0), tmp->GetMacroExpResult(0))) {//表达式运算失败
+				m_error_code = m_p_parser->GetErrorCode();
+				if (m_error_code != ERR_NONE) {
+					CreateErrorMsg(m_error_code, tmp->GetLineNo());  //表达式计算异常
+					return false;
+				}
+
+				//没有错误，则说明表达式中需要访问系统变量，必须等待MC运行到位
+				return false;
+			}
+
+			tmp->SetMacroExpCalFlag(0, true);
+
+			// 找出 if 偏移信息链表
+			ListNode<IfElseOffset> *node = nullptr;
+
+			for(unsigned int i=0; i<m_ifelse_vector.size(); i++){
+				if(tmp->GetLineNo() == m_ifelse_vector.at(i).HeadNode()->data.line_no){
+					node = m_ifelse_vector.at(i).HeadNode();
+				}
+			}
+			/*************************************************/
+			if(node == nullptr){
+				/*** test if else */
+				printf("-------------------------------------\n");
+
+				for(unsigned int i=0; i<m_ifelse_vector.size(); i++){
+					IfElseOffsetList data = m_ifelse_vector.at(i);
+					ListNode<IfElseOffset> *node = data.HeadNode();
+
+					printf("node number: %d\n", i+1);
+
+					while(node->next != nullptr){
+						IfElseOffset offset = node->data;
+						printf("lino: %lld --", offset.line_no);
+						node = node->next;
+					}
+					IfElseOffset offset = node->data;
+					printf("line no: %lld --\n", offset.line_no);
+				}
+
+					/*** test if else */
+				return false;
+			}
+			/****************************************************/
+
+			// 条件成立
+			if(static_cast<int>(tmp->GetMacroExpResult(0).value) == 1){
+
+				while(node->next != nullptr){
+					node = node->next;
+				}
+				// if 之后碰到 else elseif 直接跳到 endif 行
+				m_b_else_jump = true;                     // 遇到 else elseif 跳转到对应的endif上
+
+			}else{
+				//条件不成立     往下一个节点跳转
+				if(node->next != nullptr) node = node->next;
+				m_b_else_jump = false;
+
+				if(!JumpLine(node->data.line_no, node->data.offset, tmp))
+					printf("------ jump line failed!!!\n");
+			}
+			m_stack_ifelse_node.push(node);
+			m_stack_else_jump_record.push(m_b_else_jump);
+
+			//finished = true;
+		}
+		break;
+	}
+	case MACRO_CMD_ELSEIF:{
+
+		if(m_stack_ifelse_node.size() == 0){
+			printf("IF ELSE 不匹配, 没有if入栈但遇到  else/ elseif\n");
+			CreateErrorMsg(IF_ELSE_MATCH_FAILED, tmp->GetLineNo());
+			return false;
+		}
+
+		ListNode<IfElseOffset> *node = nullptr;
+		m_stack_ifelse_node.cur(node);
+		if(node == nullptr){
+			printf("m_stack_ifelse_node 栈出错！！！\n");
+			break;
+		}
+
+		// 之前的 if 已经满足条件  直接跳转到 endif
+		if(m_b_else_jump){
+
+			if(!JumpLine(node->data.line_no, node->data.offset, tmp))
+				printf("------ jump line failed!!!\n");
+
+			break;
+		}
+
+		if(!tmp->GetMacroExpCalFlag(0)){
+			if(!m_p_parser->GetExpressionResult(tmp->GetMacroExp(0), tmp->GetMacroExpResult(0))) {//表达式运算失败
+				m_error_code = m_p_parser->GetErrorCode();
+				if (m_error_code != ERR_NONE) {
+					CreateErrorMsg(m_error_code, tmp->GetLineNo());  //表达式计算异常
+					return false;
+				}
+
+				//没有错误，则说明表达式中需要访问系统变量，必须等待MC运行到位
+				return false;
+			}
+			tmp->SetMacroExpCalFlag(0, true);
+
+			// 条件成立
+			if(static_cast<int>(tmp->GetMacroExpResult(0).value) == 1){
+				printf("cmd  elseif: 1111\n");
+				m_b_else_jump = true;
+				m_stack_else_jump_record.pop();
+				m_stack_else_jump_record.push(m_b_else_jump);
+
+				while(node->next != nullptr){
+					node = node->next;
+				}
+				m_stack_ifelse_node.pop2();
+				m_stack_ifelse_node.push(node);
+
+			// 条件不成立
+			}else{
+				printf("cmd  elseif: 0000\n");
+				if(node->next != nullptr){
+					node = node->next;
+					m_stack_ifelse_node.pop2();
+					m_stack_ifelse_node.push(node);
+					if(!JumpLine(node->data.line_no, node->data.offset, tmp))
+						printf("------ jump line failed!!!\n");
+				}
+			}
+		}
+
+		break;
+	}
+	case MACRO_CMD_ELSE:{
+
+		if(m_stack_ifelse_node.size() == 0){
+			printf("IF ELSE 不匹配, 没有if入栈但遇到  else/ elseif 222\n");
+			CreateErrorMsg(IF_ELSE_MATCH_FAILED, tmp->GetLineNo());
+			return false;
+		}
+
+		if(m_b_else_jump){
+			ListNode<IfElseOffset> *node = nullptr;
+			m_stack_ifelse_node.cur(node);
+			if(node == nullptr){
+				printf("m_stack_ifelse_node 栈出错！！！\n");
+				break;
+			}
+
+			if(!JumpLine(node->data.line_no, node->data.offset, tmp))
+				printf("------ jump line failed!!!\n");
+
+			break;
+		}
+		break;
+	}
+	case MACRO_CMD_ENDIF:{
+
+		if(m_stack_ifelse_node.size() == 0){
+			printf("IF ELSE 不匹配, 没有if入栈但遇到  endif \n");
+			CreateErrorMsg(IF_ELSE_MATCH_FAILED, tmp->GetLineNo());
+			return false;
+		}
+
+		m_stack_ifelse_node.pop2();
+		m_stack_else_jump_record.pop();
+		m_stack_else_jump_record.cur(m_b_else_jump);
+
+		printf("cmd endif pop m_b_else_jump: %d\n", m_b_else_jump);
+
+		break;
+	}
 	default:
 		printf("@@@@@@ERR_NC_FORMAT_7\n");
 		CreateErrorMsg(ERR_NC_FORMAT, tmp->GetLineNo());  //无法解析的宏指令
 		return false;
 	}
 
+	return true;
+}
+
+bool Compiler::JumpLine(int line_no, uint64_t offset, MacroCmdMsg *tmp){
+	//检查跳转合法性
+	if(!this->CheckJumpGoto(tmp->GetLineNo(), line_no)){
+		CreateErrorMsg(ERR_JUMP_GOTO_ILLIGAL, tmp->GetLineNo());
+		return false;
+	}
+
+	if (!this->m_p_file_map_info->JumpTo(offset)) {  //映射失败
+		CreateErrorMsg(ERR_JUMP_GOTO, tmp->GetLineNo());  //子程序跳转失败
+		return false;
+	}
+
+	this->m_ln_read_size = offset;
+	this->m_p_cur_file_pos = m_p_file_map_info->ptr_map_file
+			+ m_ln_read_size - m_p_file_map_info->ln_map_start;
+
+	this->m_ln_cur_line_no = line_no;
 	return true;
 }
 
@@ -4235,6 +4653,34 @@ bool Compiler::CheckJumpGoto(uint64_t line_src, uint64_t line_des){
 		node = node->next;
 	}
 
+	//  处理 if 中 goto
+	for(int i=0; i<if_index_len; i++){
+		// 跳转终点在 一组 if (elseif\else\endif) 之间
+		if(line_des > m_ifelse_vector.at(i).HeadNode()->data.line_no and
+				line_des < m_ifelse_vector.at(i).HeadNode()->next->data.line_no)
+		{
+			// 跳转起点不在 这组 if (elseif\else\endif) 之间
+			if(line_src < m_ifelse_vector.at(i).HeadNode()->data.line_no or
+					line_src > m_ifelse_vector.at(i).HeadNode()->next->data.line_no){
+				res = false;
+				break;
+			}
+		}
+	}
+	//m_stack_ifelse_node.push(node);
+	//m_stack_else_jump_record.push(m_b_else_jump);
+	ListNode<IfElseOffset> *ifelse_node = nullptr;
+
+	while(m_stack_ifelse_node.size() != 0){
+		m_stack_ifelse_node.cur(ifelse_node);
+		// 目标行号 大于 栈顶节点记录行号  弹出
+		if(ifelse_node != nullptr and line_des > ifelse_node->data.line_no){
+			m_stack_ifelse_node.pop2();
+			m_stack_else_jump_record.pop();
+		}else{
+			break;
+		}
+	}
 	return res;
 }
 

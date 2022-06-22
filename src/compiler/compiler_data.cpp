@@ -528,6 +528,19 @@ LoopOffset& LoopOffset::operator=( const LoopOffset& c){
 	return *this;
 }
 
+/**
+ * @brief 赋值运算符
+ * @param c
+ * @return
+ */
+IfElseOffset& IfElseOffset::operator=( const IfElseOffset& c){
+	if(&c == this)
+		return *this;
+	this->line_no = c.line_no;
+	this->offset = c.offset;
+	return *this;
+}
+
 
 #ifdef USES_WOOD_MACHINE
 SpindleStartOffset& SpindleStartOffset::operator=( const SpindleStartOffset& c){
@@ -571,6 +584,13 @@ CompilerScene& CompilerScene::operator=( const CompilerScene& c){
 	this->list_label = c.list_label;
 	this->list_subprog = c.list_subprog;
 	this->stack_loop = c.stack_loop;
+
+	/***********if else 处理***************/
+
+	this->ifelse_vector.clear();
+	ifelse_vector = c.ifelse_vector;
+	/***********if else 处理***************/
+
 
 #ifdef USES_WOOD_MACHINE
 	this->list_spd_start = c.list_spd_start;

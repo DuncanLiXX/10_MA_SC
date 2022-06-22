@@ -487,6 +487,12 @@ enum ErrorType {
 	ERR_TOO_MANY_T_CODE, 			//单行NC代码中T指令个数超限
 	ERR_TOO_LONG_WORD,              //超长词语，无法解析
 	ERR_TOO_LONG_DIGIT,             //超长数值，无法解析
+	ERR_G_EXP_NULL,                 //G指令表达式为空值
+	ERR_M_EXP_NULL,                 //M指令表达式为空值
+	ERR_T_EXP_NULL,                 //T指令表达式为空值
+
+
+	IF_ELSE_MATCH_FAILED,           // if else 匹配失败 栈中没有if 却碰到了 else
 
 
 	//刀补告警	5000~6999

@@ -32,6 +32,7 @@ public://公共接口函数
 
 	bool pop(T &data);       //弹出栈顶数据
 	void pop();             //弹出栈顶数据并丢弃
+	void pop2();			//弹出栈顶元素但不清除或释放空间
 	bool cur(T &data);     //获取栈顶数据，但是不弹出
 	bool bottom(T &data);  //获取栈底数据，但不弹出
 	bool push(T &data);  //入栈操作
@@ -156,7 +157,23 @@ void DataStack<T>::pop()
     m_p_top = p;
     m_n_count--;
 
+    if( m_n_count == 0 ) m_p_bottom = nullptr;
+}
 
+/**
+ * @brief 弹出栈顶元素但不清除或释放空间
+ * @return
+ */
+template<class T>
+void DataStack<T>::pop2()
+{
+    if( m_n_count <= 0 ) return;
+
+    StackRec<T> *p = m_p_top->down;
+    if(p != nullptr)
+    	p->up = nullptr;
+    m_p_top = p;
+    m_n_count--;
 
     if( m_n_count == 0 ) m_p_bottom = nullptr;
 }

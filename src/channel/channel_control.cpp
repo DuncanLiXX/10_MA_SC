@@ -1147,7 +1147,21 @@ bool ChannelControl::GetSysVarValue(const int index, double&value){
 	}else if(index >= 5421 && index <= 5440){//G31捕获的轴位置，机械坐标系
 		if(index - 5421 < kMaxAxisChn)
 			value = m_point_capture.m_df_point[index-5421];
-	}else if(index >= 12001 && index <= 12999){   //刀具半径磨损补偿
+	}else if(index >= 7001 && index <= 8980){
+		int coord = (index - 7001)/20;  //  G540X  求X值
+
+		if(coord < this->m_p_channel_config->ex_coord_count){
+			int id = (index - 7001)%20;
+			if(id < this->m_p_channel_config->chn_axis_count)
+				value = m_p_chn_ex_coord_config[coord].offset[id];
+			else
+				value = 0.0;
+		}else{
+			return false;
+		}
+
+	}
+	else if(index >= 12001 && index <= 12999){   //刀具半径磨损补偿
 		int id = index - 12001;
 		if(id < kMaxToolCount)
 			value = this->m_p_chn_tool_config->radius_wear[id];
@@ -1317,7 +1331,27 @@ bool ChannelControl::SetSysVarValue(const int index, const double &value){
 		}
 		else
 			return false;
-	}else if(index >= 12001 && index <= 12999){   //刀具半径磨损补偿
+	}else if(index >= 7001 && index <= 8980){
+		int coord = (index - 7001)/20;  //  G540X  求X值
+		// 超过了最大扩展坐标数量
+		if(coord < this->m_p_channel_config->ex_coord_count){
+			int id = (index - 7001)%20;
+			if(id < this->m_p_channel_config->chn_axis_count){
+				this->m_p_chn_ex_coord_config[coord].offset[id] = value;
+				HmiCoordConfig cfg;
+				memcpy(&cfg, &this->m_p_chn_ex_coord_config[coord], sizeof(HmiCoordConfig));
+				g_ptr_parm_manager->UpdateExCoordConfig(m_n_channel_index, coord, cfg, true);
+				this->NotifyHmiWorkcoordChanged(coord);
+				if(this->m_channel_status.gmode[14] == (G5401_CMD+10*coord))
+					this->SetMcCoord(true);
+			}else{
+				return false;
+			}
+		}else{
+			return false;
+		}
+	}
+	else if(index >= 12001 && index <= 12999){   //刀具半径磨损补偿
 		int id = index - 12001;
 		if(id < kMaxToolCount){
 			this->m_p_chn_tool_config->radius_wear[id] = value;
@@ -2249,6 +2283,7 @@ void ChannelControl::SendSimulateDataToHmi(MonitorDataType type, SimulateData &d
  * @param cmd ：待处理的HMI命令包
  */
 void ChannelControl::ProcessHmiCmd(HMICmdFrame &cmd){
+
 	switch(cmd.cmd){
 	case CMD_HMI_GET_CHN_STATE:   //HMI获取通道当前状态
 		ProcessHmiGetChnStateCmd(cmd);
@@ -2393,10 +2428,10 @@ void ChannelControl::ProcessHmiSetMacroVarCmd(HMICmdFrame &cmd){
 	for(int i = 0; i < count; i++){
 		if(init[i]){
 			this->m_macro_variable.SetVarValue(start_index+i, value[i]);
-	//		printf("set macro var: %u, %lf\n", start_index+i, value[i]);
+			//printf("set macro var: %u, %lf\n", start_index+i, value[i]);
 		}else{
 			this->m_macro_variable.ResetVariable(start_index+i);
-	//		printf("reset macro var: %u\n", start_index+i);
+			//printf("reset macro var: %u\n", start_index+i);
 		}
 	}
 
@@ -2405,7 +2440,6 @@ void ChannelControl::ProcessHmiSetMacroVarCmd(HMICmdFrame &cmd){
 	cmd.cmd_extension = SUCCEED;
 
 	this->m_p_hmi_comm->SendCmd(cmd);
-
 
 }
 
@@ -3157,7 +3191,6 @@ void ChannelControl::ProcessHmiSimulateCmd(HMICmdFrame &cmd){
  * @param cmd
  */
 void ChannelControl::ProcessHmiSetNcFileCmd(HMICmdFrame &cmd){
-
 	cmd.frame_number |= 0x8000;   //设置回复标志
 	if(this->m_channel_status.chn_work_mode != AUTO_MODE){   //非自动模式
 		strcpy(m_channel_status.cur_nc_file_name, cmd.data);
@@ -3175,7 +3208,7 @@ void ChannelControl::ProcessHmiSetNcFileCmd(HMICmdFrame &cmd){
 		strcpy(path, PATH_NC_FILE);
 		strcat(path, m_channel_status.cur_nc_file_name);   //拼接文件绝对路径
 		this->m_p_compiler->OpenFileInScene(path);
-		printf("set nc file cmd : %s\n", path);
+		printf("set nc file cmd1 : %s\n", path);
 	}else if(m_channel_status.machining_state == MS_RUNNING ||
 			m_channel_status.machining_state == MS_OUTLINE_SIMULATING ||
 			m_channel_status.machining_state == MS_TOOL_PATH_SIMULATING ||
@@ -3201,7 +3234,7 @@ void ChannelControl::ProcessHmiSetNcFileCmd(HMICmdFrame &cmd){
 		strcpy(path, PATH_NC_FILE);
 		strcat(path, m_channel_status.cur_nc_file_name);   //拼接文件绝对路径
 		this->m_p_compiler->OpenFile(path);
-		printf("set nc file cmd : %s\n", path);
+		printf("set nc file cmd2 : %s\n", path);
 	}
 }
 
@@ -3647,6 +3680,7 @@ void ChannelControl::SetWorkMode(uint8_t work_mode){
 	this->m_p_f_reg->MJ = 0;
 	this->m_p_f_reg->MH = 0;
 	//切换模式
+	printf("-----------------> channel control set work mode: %d\n", work_mode);
 	switch(work_mode){
 	case AUTO_MODE:
 	case MDA_MODE:
@@ -3890,8 +3924,10 @@ void *ChannelControl::CompileThread(void *args){
  * @brief G代码运行行函数
  * @return 执行结果
  */
+//static bool get_line_flag;
 int ChannelControl::Run(){
 	int res = ERR_NONE;
+
 	//初始化
 	printf("chn[%hhu] start compiler run, thread id = %ld\n",m_n_channel_index, syscall(SYS_gettid));
 
@@ -3901,6 +3937,7 @@ int ChannelControl::Run(){
 
 	bool bf = true;
 	int compile_count = 0;  //连续编译代码行计数
+	//get_line_flag = true;
 
 	//执行循环
 	while(!g_sys_state.system_quit)
@@ -3908,6 +3945,11 @@ int ChannelControl::Run(){
 
 		if(m_n_run_thread_state == RUN)
 		{
+			/*if(!get_line_flag){
+				m_n_run_thread_state = WAIT_RUN;
+				continue;
+			}*/
+
 			pthread_mutex_lock(&m_mutex_change_state);
 //			if(this->m_ln_cur_line_no%10000 == 1)
 //				gettimeofday(&tvStart, NULL);
@@ -3963,6 +4005,7 @@ int ChannelControl::Run(){
 					}
 					else{
 						m_n_run_thread_state = WAIT_RUN;//执行失败，状态切换到WAIT_RUN
+						//get_line_flag = false;
 					}
 				}
 
@@ -4037,7 +4080,7 @@ int ChannelControl::Run(){
 			}
 		}
 		else if(m_n_run_thread_state == WAIT_RUN){
-		//	printf("m_n_run_thread_state = WAIT_RUN\n");
+			//printf("m_n_run_thread_state = WAIT_RUN\n");
 			pthread_mutex_lock(&m_mutex_change_state);
 			bf = m_p_compiler->RunMessage();
 			if(!ExecuteMessage()){
@@ -4047,10 +4090,16 @@ int ChannelControl::Run(){
 				}
 			}
 			pthread_mutex_unlock(&m_mutex_change_state);
-			if(!bf)
+			if(!bf){
 				usleep(10000);
-			else if(m_n_run_thread_state != ERROR)
+				m_n_run_thread_state = WAIT_RUN;
+			}
+			else if(m_n_run_thread_state != ERROR){
+				//printf("m_n_run_thread_state = RUN\n");
+				//get_line_flag = true;
 				m_n_run_thread_state = RUN; //等待执行完成， 状态切回RUN
+			}
+
 		}
 		else
 		{
@@ -4563,7 +4612,7 @@ bool ChannelControl::OutputData(RecordMsg *msg, bool flag_block){
 	//最后一个数据，修改Ext_Type中的bit0，表示block已结束
 	if(msg->CheckFlag(FLAG_BLOCK_OVER) || flag_block){
 		data_frame.data.ext_type |= 0x0001;
-		printf("line %llu send block over@@@@@@@\n", msg->GetLineNo());
+		//printf("line %llu send block over@@@@@@@\n", msg->GetLineNo());
 	//	is_last = true;
 	}
 	//bit2bit1
@@ -5015,6 +5064,8 @@ bool ChannelControl::ExecuteMessage(){
 
 		flag = false;
 		msg_type = msg->GetMsgType();
+
+		printf("----channel control excute message line no: %llu\n", msg->GetLineNo());
 		switch(msg_type){
 		case AUX_MSG:
 #ifdef USES_WOOD_MACHINE

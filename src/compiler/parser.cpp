@@ -3470,7 +3470,7 @@ bool Parser::CreateMacroMsg(LexerMacroCmd *macro){
 		return false;
 	}
 
-//	printf("create macro message\n");
+//	printf("create macro message   %llu\n", this->m_p_lexer_result->line_no);
 	new_msg->SetLineNo(this->m_p_lexer_result->line_no);  //设置当前行号
 	(static_cast<MacroCmdMsg *>(new_msg))->SetOffset(this->m_p_lexer_result->offset);
 

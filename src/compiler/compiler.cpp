@@ -382,8 +382,26 @@ bool Compiler::SaveScene() {
 	scene.list_loop = *m_p_list_loop;
 	scene.stack_loop = m_stack_loop;
 
+	/***************************************/
 	scene.ifelse_vector.clear();
 	scene.ifelse_vector  = m_ifelse_vector;
+	DataStack<ListNode<IfElseOffset>> stack_ifelse_node;  //运行ifelse时节点存放栈
+	scene.meet_else_jump = m_b_else_jump;
+	scene.stack_else_jump_record = m_stack_else_jump_record;
+
+	while(m_stack_ifelse_node.size() > 0){
+
+		ListNode<IfElseOffset> *node;
+		m_stack_ifelse_node.cur(node);
+		scene.stack_ifelse_node.push(*node);
+		printf("66666666666666666666666666 vec index: %d --- node index: %d\n", node->data.vec_index, node->data.node_index);
+		m_stack_ifelse_node.pop2();
+	}
+
+	printf("stack else jump size: %d\n", scene.stack_else_jump_record.size());
+	printf("scene.stack_ifelse_node size: %d\n", scene.stack_ifelse_node.size());
+
+	/***************************************/
 
 #ifdef USES_WOOD_MACHINE
 	scene.list_spd_start = *m_p_list_spd_start;
@@ -461,9 +479,23 @@ bool Compiler::ReloadScene(bool bRecPos) {
 	*m_p_list_loop = scene.list_loop;
 	m_stack_loop = scene.stack_loop;
 
-
+	/***********************************/
 	m_ifelse_vector.clear();
 	m_ifelse_vector = scene.ifelse_vector;
+	m_b_else_jump = scene.meet_else_jump;
+	m_stack_else_jump_record = scene.stack_else_jump_record;
+	while(scene.stack_ifelse_node.size() > 0){
+		ListNode<IfElseOffset> node;
+		scene.stack_ifelse_node.pop(node);
+
+		ListNode<IfElseOffset> *node2 = nullptr;
+		node2 = m_ifelse_vector.at(node.data.vec_index).HeadNode();
+
+		for(int i=0; i<node.data.node_index; i++)
+			node2 = node2->next;
+		m_stack_ifelse_node.push(node2);
+	}
+	/***********************************/
 
 
 #ifdef USES_WOOD_MACHINE
@@ -1153,6 +1185,8 @@ void Compiler::PreScanLine1(char *buf, uint64_t offset, uint64_t line_no,
 			IfElseOffset ifnode;
 			ifnode.offset = offset;
 			ifnode.line_no = line_no;
+			ifnode.vec_index = if_index_cur;
+			ifnode.node_index = ifelse_list.GetLength();
 			ifelse_list.Append(ifnode);
 			scene->ifelse_vector.push_back(ifelse_list);
 			m_p_list_ifelse = &scene->ifelse_vector.back();
@@ -1166,6 +1200,8 @@ void Compiler::PreScanLine1(char *buf, uint64_t offset, uint64_t line_no,
 			IfElseOffset ifnode;
 			ifnode.offset = offset;
 			ifnode.line_no = line_no;
+			ifnode.vec_index = if_index_cur;
+			ifnode.node_index = m_p_list_ifelse->GetLength();
 			m_p_list_ifelse->Append(ifnode);
 			m_stack_if_record.pop();
 
@@ -1192,6 +1228,8 @@ void Compiler::PreScanLine1(char *buf, uint64_t offset, uint64_t line_no,
 			IfElseOffset ifnode;
 			ifnode.offset = offset;
 			ifnode.line_no = line_no;
+			ifnode.vec_index = if_index_cur;
+			ifnode.node_index = m_p_list_ifelse->GetLength();
 			m_p_list_ifelse->Append(ifnode);
 
 			else_cmd = false;
@@ -1207,6 +1245,9 @@ void Compiler::PreScanLine1(char *buf, uint64_t offset, uint64_t line_no,
 			IfElseOffset ifnode;  // 建立节点
 			ifnode.offset = offset;
 			ifnode.line_no = line_no;
+			ifnode.vec_index = if_index_cur;
+			ifnode.node_index = ifelse_list.GetLength();
+
 			ifelse_list.Append(ifnode);
 
 			m_ifelse_vector.push_back(ifelse_list);  //  vector中存入链表对象
@@ -1221,6 +1262,8 @@ void Compiler::PreScanLine1(char *buf, uint64_t offset, uint64_t line_no,
 			IfElseOffset ifnode;
 			ifnode.offset = offset;
 			ifnode.line_no = line_no;
+			ifnode.vec_index = if_index_cur;
+			ifnode.node_index = m_p_list_ifelse->GetLength();
 			m_p_list_ifelse->Append(ifnode);
 			// 这条if链表记录结束 弹栈
 			if(m_stack_if_record.size() > 0)
@@ -1242,6 +1285,8 @@ void Compiler::PreScanLine1(char *buf, uint64_t offset, uint64_t line_no,
 			IfElseOffset ifnode;
 			ifnode.offset = offset;
 			ifnode.line_no = line_no;
+			ifnode.vec_index = if_index_cur;
+			ifnode.node_index = m_p_list_ifelse->GetLength();
 			m_p_list_ifelse->Append(ifnode);
 
 			if(else_cmd){
@@ -2304,7 +2349,13 @@ bool Compiler::RunMessage() {
 			}
 			msg_type = msg->GetMsgType();
 
-			//lineNo = msg->GetLineNo();
+			/***************************
+			static uint64_t lino = 0;
+			if(lino != msg->GetLineNo()){
+				printf("-------------- RUN MSG: %d --> %llu\n ", msg->GetMsgType(), msg->GetLineNo());
+				lino = msg->GetLineNo();
+			}
+			****************************/
 
 			switch (msg_type) {
 			case AUX_MSG:
@@ -3264,6 +3315,7 @@ bool Compiler::RunMacroMsg(RecordMsg *msg) {
 
 	switch (macro_cmd) {
 	case MACRO_CMD_GOTO:	//跳转指令则跳转到相应代码处
+		printf("---------------- goto cmd -------> %llu\n", tmp->GetLineNo());
 		if(!tmp->GetMacroExpCalFlag(0)){
 			if(!m_p_parser->GetExpressionResult(tmp->GetMacroExp(0), tmp->GetMacroExpResult(0))) {//表达式运算失败
 				m_error_code = m_p_parser->GetErrorCode();

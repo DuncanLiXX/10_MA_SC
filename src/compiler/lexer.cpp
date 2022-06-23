@@ -991,7 +991,7 @@ bool Lexer::ProcessWord(){
 
 				m_has_macro_cmd = true;
 				m_in_alph = false;
-//				printf("GET Macro cmd = %d\n", m_macro_cmd);
+//				printf("GET Macro cmd = %d  %s\n", m_macro_cmd, m_alph_buf);
 			}
 		}
 	}else{//表达式状态，解析为操作符

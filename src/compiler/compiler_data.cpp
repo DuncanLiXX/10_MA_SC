@@ -538,6 +538,8 @@ IfElseOffset& IfElseOffset::operator=( const IfElseOffset& c){
 		return *this;
 	this->line_no = c.line_no;
 	this->offset = c.offset;
+	this->vec_index = c.vec_index;
+	this->node_index = c.node_index;
 	return *this;
 }
 
@@ -586,9 +588,11 @@ CompilerScene& CompilerScene::operator=( const CompilerScene& c){
 	this->stack_loop = c.stack_loop;
 
 	/***********if else 处理***************/
-
 	this->ifelse_vector.clear();
 	ifelse_vector = c.ifelse_vector;
+	meet_else_jump = c.meet_else_jump;
+	stack_else_jump_record = c.stack_else_jump_record;
+	stack_ifelse_node = c.stack_ifelse_node;
 	/***********if else 处理***************/
 
 

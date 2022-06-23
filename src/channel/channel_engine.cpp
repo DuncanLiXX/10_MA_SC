@@ -7417,7 +7417,7 @@ void ChannelEngine::ProcessPmcSignal(){
 //#ifdef USES_PHYSICAL_MOP
 		//方式选择信号
 		if(g_reg->MD != g_reg_last->MD){
-			printf("PMC SIGNAL -----> %d\n", g_reg->MD);
+//			printf("PMC SIGNAL -----> %d\n", g_reg->MD);
 			if(g_reg->MD == 0){  //MDA
 				this->SetWorkMode(MDA_MODE);
 			}else if(g_reg->MD == 1){   //自动

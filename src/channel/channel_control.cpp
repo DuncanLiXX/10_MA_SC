@@ -5065,7 +5065,15 @@ bool ChannelControl::ExecuteMessage(){
 		flag = false;
 		msg_type = msg->GetMsgType();
 
-		printf("----channel control excute message line no: %llu\n", msg->GetLineNo());
+		/**********************test**********************/
+		static uint64_t lino = 0;
+		if(lino != msg->GetLineNo()){
+			printf("----channel control excute message line no: %llu\n", msg->GetLineNo());
+			lino = msg->GetLineNo();
+		}
+		/*********************************************/
+
+
 		switch(msg_type){
 		case AUX_MSG:
 #ifdef USES_WOOD_MACHINE

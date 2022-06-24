@@ -7365,6 +7365,7 @@ void ChannelEngine::CheckBattery(){
  */
 void ChannelEngine::ProcessPmcSignal(){
 
+	printf("-----------------------> pmc signal\n");
 	const GRegBits *g_reg = nullptr;
 	GRegBits *g_reg_last = nullptr;
 	FRegBits *f_reg = nullptr;

@@ -398,6 +398,9 @@ bool Compiler::SaveScene() {
 		m_stack_ifelse_node.pop2();
 	}
 
+	printf("stack else jump size: %d\n", scene.stack_else_jump_record.size());
+	printf("scene.stack_ifelse_node size: %d\n", scene.stack_ifelse_node.size());
+
 	/***************************************/
 
 #ifdef USES_WOOD_MACHINE
@@ -484,7 +487,6 @@ bool Compiler::ReloadScene(bool bRecPos) {
 	while(scene.stack_ifelse_node.size() > 0){
 		ListNode<IfElseOffset> node;
 		scene.stack_ifelse_node.pop(node);
-		printf("8888888888888888888888888888888\n");
 
 		ListNode<IfElseOffset> *node2 = nullptr;
 		node2 = m_ifelse_vector.at(node.data.vec_index).HeadNode();
@@ -1884,16 +1886,7 @@ void Compiler::Reset() {
 				scene.ptr_cur_file_pos = nullptr;
 				scene.stack_loop.empty();
 
-				scene.meet_else_jump = false;
-				scene.stack_else_jump_record.empty();
-				scene.stack_ifelse_node.empty();
-				scene.ifelse_vector.clear();
-				/*
-				 * vector<IfElseOffsetList> ifelse_vector;  // 链表容器
-					DataStack<ListNode<IfElseOffset>> stack_ifelse_node;  //运行ifelse时节点存放栈
-					bool meet_else_jump;         // 若if 条件为真  则遇到else elseif 后要直接跳转到 endif行。
-					DataStack<bool> stack_else_jump_record;
-				 * scene.list_ifelse.Clear();
+				/*scene.list_ifelse.Clear();
 				for(int i=0; i<scene.if_index_len; i++){
 					scene.ifelse_record[i].Clear();
 				}
@@ -3665,7 +3658,6 @@ bool Compiler::RunMacroMsg(RecordMsg *msg) {
 				if(!JumpLine(node->data.line_no, node->data.offset, tmp))
 					printf("------ jump line failed!!!\n");
 			}
-			printf("55555555555555555555555555555555555\n");
 			m_stack_ifelse_node.push(node);
 			m_stack_else_jump_record.push(m_b_else_jump);
 

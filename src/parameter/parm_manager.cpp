@@ -592,6 +592,8 @@ bool ParmManager::ReadChnConfig(){
 			m_sc_channel_config[i].debug_param_3 = m_ini_chn->GetIntValueOrDefault(sname, "debug_param_3", 0);  //调试参数3
 			m_sc_channel_config[i].debug_param_4 = m_ini_chn->GetIntValueOrDefault(sname, "debug_param_4", 0);  //调试参数4
 			m_sc_channel_config[i].debug_param_5 = m_ini_chn->GetIntValueOrDefault(sname, "debug_param_5", 0);  //调试参数5
+			
+			m_sc_channel_config[i].flip_comp_value = m_ini_chn->GetIntValueOrDefault(sname, "flip_comp_value", 0);  //挑角补偿值
 #endif
 
 		}
@@ -673,6 +675,8 @@ bool ParmManager::ReadChnConfig(){
 			m_sc_channel_config[i].debug_param_3 = 0;  //调试参数3
 			m_sc_channel_config[i].debug_param_4 = 0;  //调试参数4
 			m_sc_channel_config[i].debug_param_5 = 0;  //调试参数5
+			
+			m_sc_channel_config[i].flip_comp_value = 0;   //挑角补偿值
 #endif
 
 			//生成默认ini配置
@@ -756,6 +760,8 @@ bool ParmManager::ReadChnConfig(){
 			m_ini_chn->AddKeyValuePair(string("debug_param_3"), string("0"), ns);
 			m_ini_chn->AddKeyValuePair(string("debug_param_4"), string("0"), ns);
 			m_ini_chn->AddKeyValuePair(string("debug_param_5"), string("0"), ns);
+			
+			m_ini_chn->AddKeyValuePair(string("flip_comp_value"), string("0"), ns);
 #endif
 		}
 
@@ -876,6 +882,12 @@ bool ParmManager::ReadChnProcParam(){
 				memset(kname, 0x00, sizeof(kname));
 				sprintf(kname, "rapid_plan_mode_%d", j+1);
 				m_p_chn_process_param[i].chn_param[j].rapid_plan_mode = m_ini_proc_chn->GetIntValueOrDefault(sname, kname, 1);	//默认S型
+				
+#ifdef USES_WOOD_MACHINE
+				memset(kname, 0x00, sizeof(kname));
+				sprintf(kname, "flip_comp_value_%d", j+1);
+				m_p_chn_process_param[i].chn_param[j].flip_comp_value = m_ini_proc_chn->GetIntValueOrDefault(sname, kname, 0);	//默认0
+#endif
 			}
 
 		}
@@ -991,6 +1003,13 @@ bool ParmManager::ReadChnProcParam(){
 				sprintf(kname, "rapid_plan_mode_%d", j+1);
 				m_p_chn_process_param[i].chn_param[j].rapid_plan_mode = 1;	//默认S型
 				m_ini_proc_chn->AddKeyValuePair(kname, string("1"), ns);
+
+#ifdef USES_WOOD_MACHINE
+				memset(kname, 0x00, sizeof(kname));
+				sprintf(kname, "flip_comp_value_%d", j+1);
+				m_p_chn_process_param[i].chn_param[j].flip_comp_value = 0;	//默认0
+				m_ini_proc_chn->AddKeyValuePair(kname, string("0"), ns);
+#endif
 			}
 
 		}
@@ -1428,7 +1447,7 @@ bool ParmManager::ReadAxisConfig(){
 			m_ini_axis->AddKeyValuePair(string("kaff"), string("0"), ns);
 			m_ini_axis->AddKeyValuePair(string("track_err_limit"), string("300"), ns);
 			m_ini_axis->AddKeyValuePair(string("location_err_limit"), string("100"), ns);
-			m_ini_axis->AddKeyValuePair(string("soft_limit_check"), string("1"), ns);
+//			m_ini_axis->AddKeyValuePair(string("soft_limit_check"), string("1"), ns);
 			m_ini_axis->AddKeyValuePair(string("motor_count_pr"), string("10000"), ns);
 			m_ini_axis->AddKeyValuePair(string("motor_max_rpm"), string("3000"), ns);
 
@@ -3790,7 +3809,12 @@ bool ParmManager::UpdateChnParam(uint8_t chn_index, uint32_t param_no, ParamValu
 		sprintf(kname, "chn_small_line_time");
 		m_ini_chn->SetIntValue(sname, kname, value.value_uint16);
 		break;
-
+#ifdef USES_WOOD_MACHINE
+	case 240:
+		sprintf(kname, "flip_comp_value");
+		m_ini_chn->SetIntValue(sname, kname, value.value_int32);
+		break;
+#endif
 	case 350:	//换刀方式
 		sprintf(kname, "change_tool_mode");
 		m_ini_chn->SetIntValue(sname, kname, value.value_uint8);
@@ -4321,7 +4345,12 @@ bool ParmManager::UpdateChnProcParam(uint8_t chn_index, uint8_t group_index, uin
 		sprintf(kname, "chn_small_line_time_%hhu", group_index);
 		m_ini_proc_chn->SetIntValue(sname, kname, value.value_uint16);
 		break;
-
+#ifdef USES_WOOD_MACHINE
+	case 240:  //挑角补偿值
+		sprintf(kname, "flip_comp_value_%hhu", group_index);
+		m_ini_proc_chn->SetIntValue(sname, kname, value.value_int32);
+		break;
+#endif
 	default:	//
 		g_ptr_trace->PrintLog(LOG_ALARM, "通道工艺相关参数更新，参数号非法：%d", param_no);
 		res = false;
@@ -4631,6 +4660,13 @@ void ParmManager::ActiveChnProcParam(uint8_t chn_index, uint32_t param_no, Param
 			this->m_p_chn_process_param[chn_index].chn_param[proc_index].chn_small_line_time = value.value_uint16;
 		}
 		break;
+#ifdef USES_WOOD_MACHINE
+	case 240:  //挑角补偿值
+		if(proc_index < kMaxProcParamCount){
+			this->m_p_chn_process_param[chn_index].chn_param[proc_index].flip_comp_value = value.value_int32;
+		}
+		break;
+#endif
 	default:	//
 		g_ptr_trace->PrintLog(LOG_ALARM, "通道参数激活，参数号非法：%d", param_no);
 		break;
@@ -5055,6 +5091,15 @@ void ParmManager::ActiveChnParam(uint8_t chn_index, uint32_t param_no, ParamValu
 			this->m_p_chn_process_param[chn_index].chn_param[proc_index].chn_small_line_time = value.value_uint16;
 		}
 		break;
+#ifdef USES_WOOD_MACHINE
+	case 240:  //挑角补偿值
+		this->m_sc_channel_config[chn_index].flip_comp_value = value.value_int32;
+		chn_engine->GetChnControl(chn_index)->SetMcFlipCompParam();
+		if(proc_index < kMaxProcParamCount){
+			this->m_p_chn_process_param[chn_index].chn_param[proc_index].flip_comp_value = value.value_int32;
+		}
+		break;
+#endif
 	case 350:	//换刀方式
 		this->m_sc_channel_config[chn_index].change_tool_mode = value.value_uint8;
 		break;
@@ -5730,6 +5775,13 @@ void ParmManager::ChangeChnProcParamIndex(uint8_t chn_index, uint8_t proc_index)
 	memset(kname, 0x00, sizeof(kname));
 	sprintf(kname, "chn_max_arc_acc");
 	m_ini_chn->SetDoubleValue(sname, kname, this->m_sc_channel_config[chn_index].chn_max_arc_acc);
+
+#ifdef USES_WOOD_MACHINE
+	//挑角补偿值
+	memset(kname, 0x00, sizeof(kname));
+	sprintf(kname, "flip_comp_value");
+	m_ini_chn->SetIntValue(sname, kname, this->m_sc_channel_config[chn_index].flip_comp_value);
+#endif
 
 	m_ini_chn->Save();
 

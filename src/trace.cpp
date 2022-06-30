@@ -312,7 +312,7 @@ void TraceInfo::ResetFileName(LogFileType type) {
 	char cur_path_name[kMaxPathLen] = { 0 };
 	const char *bak_files[] = {ALARM_BAK_FILE_NAME, LOG_BAK_FILE_NAME, TRACE_BAK_FILE_NAME};
 	const char *cur_files[] = {ALARM_FILE_NAME, LOG_FILE_NAME, TRACE_FILE_NAME};
-	const char *paths[] = {LOG_PATH, TRACE_PATH, ALARM_PATH};
+	const char *paths[] = {ALARM_PATH, LOG_PATH, TRACE_PATH};
 	int *fd = nullptr;
 
 	strcpy(bak_path_name, paths[type]);

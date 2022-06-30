@@ -831,8 +831,6 @@ bool Lexer::GetOneGCode(){
  * @return  true--³É¹¦  false--Ê§°Ü
  */
 bool Lexer::GetOneMacroCmd(){
-
-	//printf()
 	bool res = true;
 	LexerMacroCmd *macro_cmd = &(m_p_lexer_result->nc_code.macro_cmd);
 	MacroRec rec;

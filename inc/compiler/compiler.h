@@ -52,7 +52,6 @@ public://公共接口
 
 	bool SetCurGMode();   //重新初始化G模态
 
-
 	bool OpenFile(const char *file, bool sub_flag=false);		//打开待编译文件
 	bool OpenFileInScene(const char *file);   //在保存的场景中打开文件
 
@@ -74,8 +73,7 @@ public://公共接口
 	bool IsEndOfFile(){return m_b_eof;}    //是否到达文件尾
 	bool IsSubProgram(){return (bool)m_n_sub_program;}   	//是否在子程序中
 
-	void SetOutputMsgList(OutputMsgList *output_msg){m_tool_compensate.SetOutputMsgList(output_msg);}  //设置指令消息输出缓冲区指针
-
+	void SetOutputMsgList(OutputMsgList *output_msg){m_p_tool_compensate->SetOutputMsgList(output_msg);}  //设置指令消息输出缓冲区指针
 	uint16_t GetCurPlane(){return m_compiler_status.mode.gmode[2];}    //获取当前平面模式
 
 	void UnmapCurNcFile();	//关闭当前文件映射
@@ -91,7 +89,7 @@ public://公共接口
 
 	void SetSimulateMode(SimulateMode *mode){this->m_p_simulate_mode = mode;}   //设置仿真模式
 
-	int CallMarcoProgWithNoPara(int macro_index);    //无参数调用宏程序
+	int CallMarcoProgWithNoPara(int macro_index, bool flag = true);    //无参数调用宏程序
 
 #ifdef USES_WOOD_MACHINE
 	bool FindPreStartSpdCmd(uint64_t line_min , uint64_t line_max, SpindleStartOffset &spd_cmd);   //查找是否存在可预启动的主轴指令
@@ -208,7 +206,10 @@ private://私有成员
 	MCCommunication *m_p_mc_communication;   //MC通讯接口
 	ChannelControl *m_p_channel_control;	//所属的通道控制
 
-	ToolCompensate m_tool_compensate;  //刀补处理对象
+//	ToolCompensate m_tool_compensate;  //刀补处理对象
+	ToolCompensate *m_p_tool_compensate;  //刀补处理对象
+	ToolCompensate *m_p_tool_compensate_auto;  //刀补处理对象
+	ToolCompensate *m_p_tool_compensate_mda;  //刀补处理对象
 
 	char m_line_buf[kMaxLineSize];     //当前编译行缓冲
 

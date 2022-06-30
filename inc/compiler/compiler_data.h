@@ -45,7 +45,6 @@ extern const int kLoopParamToLocalVarIndex[];  //循环指令参数对应的局部变量索引,
 extern const int kLoopParamToGlobalVarIndex[]; //循环指令参数对应全局变量索引，顺序对应A/B/C/D/E...X/Y/Z，0表示非法
 
 
-
 //编译器线程状态
 enum CompilerState{
     IDLE = 0,   		//空闲
@@ -206,7 +205,6 @@ enum MacroCmd{
 	MACRO_CMD_IF_THEN,		//条件执行
 	MACRO_CMD_WHILE_DO,     //循环
 	MACRO_CMD_EXP,			//纯表达式行
-
 	MACRO_CMD_GUARD			//卫兵
 };
 
@@ -623,16 +621,28 @@ struct MacroVarValue{
 	double value;  //变量值
 	bool init;		//是否初始化，false--未初始化，即空值   true--已初始化，value值有效
 	MacroVarValue &operator=(const MacroVarValue &v);  //重写赋值运算符
+	MacroVarValue(){value = 0, init = false;}   //构造函数
 };
 
 
 //仿真数据,编译器返回
 struct CompilerSimData{
 	int type;   //指令类型， 00-G00目标位置 01--G01目标位置  02--G02目标位置   03--G03目标位置
+	int plane;            //当前平面    170--G17    180--G18    190--G19
 	double target[3];    //坐标数据，当数据类型为圆弧半径时，pos[0]用于存放半径
 	double center[3];    //圆心
 	double radius;       //半径, 0表示不动，>0表示劣弧，<0表示优弧
 };
 
+struct ToolRec
+{
+    int G41G42dir;  // 40  41  42
+//    int offset;  // 长度补偿值
+	int D;       // D编号
+	int H;       // H编号
+	double Radius;  //半径补偿值
+	int plane;  // 工作平面
+	double feed;    // 进给速度
+};
 
 #endif /* INC_COMPILER_COMPILER_DATA_H_ */

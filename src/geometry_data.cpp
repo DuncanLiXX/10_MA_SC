@@ -755,11 +755,7 @@ DPlane Point2Plane( const DPointChn& p, int plane){
 void Plane2Point( const DPlane& p, DPoint& ret, int plane){
 	switch( plane )
 	{
-	case PLANE_XY:
-		ret.x = p.x,
-		ret.y = p.y;
-		break;
-
+		
 	case PLANE_YZ:
 		ret.y = p.x,
 		ret.z = p.y;
@@ -768,6 +764,11 @@ void Plane2Point( const DPlane& p, DPoint& ret, int plane){
 	case PLANE_ZX:
 		ret.x = p.y,
 		ret.z = p.x;
+		break;
+		
+	default:
+		ret.x = p.x,
+		ret.y = p.y;
 		break;
 	}
 }

@@ -58,14 +58,15 @@
 
 #define USES_WOOD_MACHINE     //支持木工专机
 
-//#define USES_ADDITIONAL_PROGRAM     //支持前置、后置程序调用
+#define USES_ADDITIONAL_PROGRAM     //支持前置、后置程序调用
 
+#define USES_EMERGENCY_DEC_STOP   //支持急停减速停
 
 // #define USES_SIMULATION_TEST   //仿真测试，仿真数据保存为文件
 
 
 //版本信息
-#define ADX_SC_VERSION "P0.2.24" //SC模块软件版本号
+#define ADX_SC_VERSION "P0.3.01" //SC模块软件版本号
 
 //文件目录定义
 #define PATH_NC_FILE "/cnc/nc_files/"    //NC加工文件目录0
@@ -92,6 +93,8 @@
 #define PATH_CONFIG_PACK_TMP "/cnc/config/config_pack_tmp.cpu"   //参数打包文件临时存放路径
 #define PATH_PC_DATA_TMP "/cnc/config/pc_data_input_tmp.dat"    //螺补导入文件临时存放路径
 #define PATH_ESB_FILE "/cnc/svo_esb/"    //伺服描述文件存放路径
+#define PATH_UPDATE_DISK_CMD "/cnc/diskup/scripts/scup.sh" //一键升级SC脚本
+#define PATH_BACK_DISK_CMD "/cnc/disk/scripts/scback.sh" //一键备份SC脚本
 
 #define PATH_SIMULATE_DATA "/cnc/tmp/simulate_data.dat"   //仿真数据文件
 
@@ -216,6 +219,8 @@ const int kMCodeTimeout = 500000;    //M指令判断合法性的超时时间  单位：us
 
 //ESB文件发送给MI的数据字节数
 const int kEsbDataSize = 998;
+
+const int kGraphPosBufCount = 300;    //图形位置数据缓冲，用于仿真绘图的高频位置数据
 
 //轴名称允许字符
 const char strAxisNames[] = "XYZABCUVW";

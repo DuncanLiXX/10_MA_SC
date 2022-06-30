@@ -513,7 +513,9 @@ bool HMICommunication::SendCmd(HMICmdFrame &cmd){
 //			if(ListNode<HMICmdResendNode *>::new_count > 0)
 //				printf("HMICmdResendNode new count :%d\n", ListNode<HMICmdResendNode *>::new_count);
 		}
+		
 	}
+
 
 	return true;
 }
@@ -785,6 +787,8 @@ void HMICommunication::RecvHmiCmd(){
 			break;
 		}
 
+
+
 		if(data.cmd == CMD_HMI_HEART_BEAT){  //在此处处理心跳，保证优先处理，不会因为处理耗时命令而误发心跳丢失
 
 			if(g_sys_state.hmi_comm_ready){
@@ -820,7 +824,6 @@ void HMICommunication::RecvHmiCmd(){
 			break;
 		}
 	}
-
 }
 
 /**
@@ -830,6 +833,7 @@ void HMICommunication::RecvHmiCmd(){
 int HMICommunication::ProcessHmiCmd(){
 	int res = ERR_NONE;
 //	struct timespec time_out= {0, 10000000};   //信号等待超时时间
+
 
 	HMICmdRecvNode cmd_node;
 	HMICmdFrame &cmd = cmd_node.cmd;
@@ -936,6 +940,9 @@ int HMICommunication::ProcessHmiCmd(){
 			case CMD_HMI_ESB_OPERATE:            //HMI通知SC对指定ESB文件进行操作  0x2B
                 this->ProcessHmiOperateEsbCmd(cmd);
 				break;
+			case CMD_HMI_SYNC_TIME:               //HMI向SC查询当前系统时间  0x36
+				this->ProcessHmiSyncTimeCmd(cmd);
+				break;
 //			case CMD_HMI_GET_CHN_STATE: //HMI获取通道当前状态
 //				ProcessHmiGetChnStateCmd(cmd);
 //				break;
@@ -978,6 +985,9 @@ int HMICommunication::ProcessHmiCmd(){
 			case CMD_HMI_GET_PROC_GROUP:          //HMI向SC获取当前工艺参数组号  0x31
 			case CMD_HMI_SET_CUR_MACH_POS:        //HMI向SC重设指定轴的机械坐标  0x32
 			case CMD_HMI_CLEAR_MSG:               //HMI通知SC清除消息  0x33
+			case CMD_HMI_SYNC_AXIS_OPT:           //HMI通知HMI进行同步轴使能操作 0x34
+			case CMD_HMI_NOTIFY_GRAPH:            //HMI通知SC进入图形模式    0x35
+			case CMD_HMI_CHECK_SYNC_EN:           //HMI向SC查询同步轴状态 0x37
 #ifdef USES_GRIND_MACHINE
 			case CMD_SC_MECH_ARM_ERR:         //HMI响应机械手告警指令
 #endif
@@ -1088,6 +1098,7 @@ int HMICommunication::TransFile(){
 				if(m_soc_file_send < 0){//连接出错
 					//TODO 错误处理
 				//	printf("ERROR! Failed to accept file trans link!err=%d\n", errno);
+					this->m_b_trans_file = false;   //复位文件传输标志
 					g_ptr_trace->PrintLog(LOG_ALARM, "接受文件传输连接失败！errno = %d", errno);
 					CreateError(ERR_FILE_TRANS, ERROR_LEVEL, CLEAR_BY_CLEAR_BUTTON, errno);
 					continue;
@@ -1887,7 +1898,7 @@ void HMICommunication::ProcessHmiSendFileCmd(HMICmdFrame &cmd){
 			memcpy(&filesize, &cmd.data[cmd.data_len-8], 8);
 			printf("has file size : %llu\n", filesize);
 		}else{
-			printf("no file size\n");
+			printf("no file size: data_len=%d, filename=%d\n", cmd.data_len, strlen(m_str_file_name));
 		}
 	}
 	if(this->m_b_trans_file|| filesize > free){
@@ -1910,13 +1921,13 @@ void HMICommunication::ProcessHmiSendFileCmd(HMICmdFrame &cmd){
 //		m_file_type = (FileTransType)cmd.cmd_extension;
 		if(m_file_type == FILE_G_CODE){
 
-			printf("hmi send file: %s\n", m_str_file_name);
+			printf("hmi send nc file: %s\n", m_str_file_name);
 //			for(int i=0; i < cmd.data_len; i++)
 //				printf("[%d]= 0x%x ", i, cmd.data[i]);
 //			printf("\n");
 			this->m_p_channel_engine->RefreshFile(m_str_file_name);
 		}else{
-			printf("hmi send file: %s\n", m_str_file_name);
+			printf("hmi send file[type=%hu]: %s\n", cmd.cmd_extension, m_str_file_name);
 		}
 
 		memcpy(&cmd.data[cmd.data_len], &free, 8);
@@ -2331,6 +2342,12 @@ void HMICommunication::ProcessHmiFileOperateCmd(HMICmdRecvNode &cmd_node){
 void HMICommunication::ProcessHmiGetEsbInfoCmd(HMICmdFrame &cmd){
 	cmd.frame_number |= 0x8000;
 	int count = this->GetEsbFileCount(PATH_ESB_FILE);
+	if(count == 0){  //没有esb文件
+		//发送回复
+		this->SendCmd(cmd);
+
+		return;
+	}
 
 	DIR *dir = opendir(PATH_ESB_FILE);
 	if(dir == nullptr){
@@ -2433,6 +2450,32 @@ void HMICommunication::ProcessHmiOperateEsbCmd(HMICmdFrame &cmd){
 }
 
 /**
+ * @brief 处理HMI同步系统时间命令
+ * @param cmd : 命令数据
+ */
+void HMICommunication::ProcessHmiSyncTimeCmd(HMICmdFrame &cmd){
+	//获取当前时间
+	time_t timep;
+	struct tm *p;
+	time(&timep);
+	p = gmtime(&timep);
+	uint16_t year = p->tm_year;
+	cmd.data[0] = ((year>>8)&0xFF);
+	cmd.data[1] = (year&0xFF);
+	cmd.data[2] = p->tm_mon;
+	cmd.data[3] = p->tm_mday;
+	cmd.data[4] = p->tm_hour;
+	cmd.data[5] = p->tm_min;
+	cmd.data[6] = p->tm_sec;
+
+	//发送响应包
+	cmd.frame_number |= 0x8000;
+	cmd.data_len = 7;
+
+	this->SendCmd(cmd);
+}
+
+/**
  * @brief 处理HMI虚拟MOP按键命令
  * @param cmd : 命令数据
  */
@@ -2473,16 +2516,16 @@ void HMICommunication::ProcessHmiVirtualMOPCmd(HMICmdFrame &cmd){
 		m_p_channel_engine->Pause();
 		break;
 	case MOP_KEY_SINGLE_BLOCK:    //单段设置
-		m_p_channel_engine->SetFuncState(FS_SINGLE_LINE);
+		m_p_channel_engine->SetFuncState(CHANNEL_ENGINE_INDEX, FS_SINGLE_LINE);
 		break;
 	case MOP_KEY_JUMP:    //跳段设置
-		m_p_channel_engine->SetFuncState(FS_BLOCK_SKIP);
+		m_p_channel_engine->SetFuncState(CHANNEL_ENGINE_INDEX, FS_BLOCK_SKIP);
 		break;
 	case MOP_KEY_M01:    //选停设置
-		m_p_channel_engine->SetFuncState(FS_OPTIONAL_STOP);
+		m_p_channel_engine->SetFuncState(CHANNEL_ENGINE_INDEX, FS_OPTIONAL_STOP);
 		break;
 	case MOP_KEY_HW_TRACE:     //手轮跟踪设置
-		m_p_channel_engine->SetFuncState(FS_HANDWHEEL_CONTOUR);
+		m_p_channel_engine->SetFuncState(CHANNEL_ENGINE_INDEX, FS_HANDWHEEL_CONTOUR);
 		break;
 	case MOP_KEY_G00_RATIO:    //快速倍率
 		m_p_channel_engine->SetRapidRatio(cmd.data[0]);
@@ -3069,6 +3112,17 @@ int HMICommunication::SendFile(){
 		filename_size = strlen(this->m_str_file_name);
 		strcpy(filepath, PATH_ESB_FILE);
 		strcat(filepath, m_str_file_name);
+	}else if(file_type == FILE_BACK_DISK) { //一键备份
+		strcpy(filepath, "/cnc/back.zip");
+		char cmd_buf[100];
+		sprintf(cmd_buf, "chmod a+x %s", PATH_BACK_DISK_CMD);
+		system(cmd_buf);
+		int ret = system(PATH_BACK_DISK_CMD);
+		if (system(PATH_BACK_DISK_CMD) != 0) { //运行备份脚本
+			printf("error in SendFile fun, failed to run back cmd, return %d %d\n", ret & 0xFF, ret>>8);
+			res = ERR_FILE_TRANS;
+			goto END;
+		}
 	}
 //	else if(file_type == FILE_SYSTEM_CONFIG){
 //
@@ -4191,6 +4245,9 @@ bool HMICommunication::GetModuleUpdatePath(uint8_t module_type, char *file_path)
 		break;
 	case MODULE_UPDATE_MODBUS:
 		strcat(file_path, "module_modbus.elf");
+		break;
+	case MODULE_UPDATE_DISK:
+		strcat(file_path, "module_disk.zip");
 		break;
 	default:
 		g_ptr_trace->PrintTrace(TRACE_WARNING, HMI_COMMUNICATION, "不支持的模块类型[%hhu]", module_type);

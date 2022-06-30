@@ -19,7 +19,7 @@
 class ChannelEngine;
 class MICommunication;
 
-const int kMaxPmcAxisCtrlGroup = 4*kMaxChnCount;    //每个通道4组，总共16组
+const int kMaxPmcAxisCtrlGroup = (4*kMaxChnCount);    //每个通道4组，总共16组
 
 
 //PMC轴控制指令结构

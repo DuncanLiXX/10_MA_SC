@@ -146,6 +146,8 @@ struct SCChannelConfig{
 	int debug_param_3;             //调试参数3
 	int debug_param_4;             //调试参数4
 	int debug_param_5;             //调试参数5
+	
+	int flip_comp_value;           //挑角补偿    -10000~10000    单位：um
 #endif
 
 };
@@ -296,6 +298,8 @@ struct SCToolPotConfig{
 	uint8_t tool_pot_index[kMaxToolCount];			//刀套号
 	int tool_life_max[kMaxToolCount];								//刀具寿命，单位：min
 	int tool_life_cur[kMaxToolCount];								//已使用寿命，单位：min
+	int tool_threshold[kMaxToolCount];                             //刀具寿命预警阈值
+	uint8_t tool_life_type[kMaxToolCount];                          //刀具计寿类型，0--换刀次数，1--切削时间，2--切削距离
 };
 
 

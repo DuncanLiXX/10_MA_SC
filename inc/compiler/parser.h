@@ -109,7 +109,7 @@ private:
 
 	void ProcessLastBlockRec(RecordMsg *new_msg);   //找到分块结束移动指令，并设置分块结束标志
 
-	bool IsSysVar(int index);
+	bool IsSysVar(int index);    //是否系统变量
 
 	bool HasMacroProgCall();    //是否存在调用宏程序的指令
 

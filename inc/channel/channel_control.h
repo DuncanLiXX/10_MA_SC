@@ -24,6 +24,7 @@ class HMICommunication; //HMI通讯类
 class ParmManager;      //配置管理类
 class MICommunication;  //MI通讯类
 class MCCommunication;  //MC通讯类
+class MCArmCommunication;  //MC-ARM通讯类
 class PmcRegister;		//PMC寄存器类
 struct SCSystemConfig; //SC通道配置
 struct SCChannelConfig;  //SC通道配置
@@ -42,7 +43,9 @@ public:
 
 	bool Initialize(uint8_t chn_index, ChannelEngine *engine, HMICommunication *hmi_comm,
 			MICommunication *mi_comm, MCCommunication *mc_comm, ParmManager *parm, PmcRegister *reg);  //初始化函数
-
+	
+	void SetMcArmComm(MCArmCommunication *comm){this->m_p_mc_arm_comm = comm;}   //设置MC-ARM通讯接口
+	
 //	bool OpenFile(const char *file_name);   //打开待编译文件
 
 	ErrorType GetErrorCode(){return m_error_code;}   //返回当前错误码
@@ -123,6 +126,7 @@ public:
 	uint8_t GetManualStep(){return this->m_channel_status.manual_step;}       //返回当前手动步长
 
 	void SetMcAutoBufMax(uint16_t count){this->m_n_mc_auto_buf_max = count;}   //设置MC自动模式运动数据缓冲数量
+	uint16_t GetMcAutoBufMax(){return this->m_n_mc_auto_buf_max;}   //获取MC单通道自动数据缓冲数量
 
 	void ManualMove(int8_t dir);		//手动移动
 	void ManualMove2(uint8_t axis, int8_t dir, double vel, double inc_dis);  //手动移动，向dir方向移动dis距离
@@ -172,6 +176,7 @@ public:
 	void SetChnAxisSpeedParam(uint8_t chn_axis);		//设置指定轴的速度相关信息
 	void SetChnAxisAccParam(uint8_t chn_axis);			//设置指定轴加速度相关信息
 	void SetChnAxisSoftLimit(uint8_t chn_axis);   //设置指定轴的软限位开关
+	void CloseChnAxisSoftLimit(uint8_t chn_axis);  //强制关闭指定轴的软限位开关
 	void SetChnAxisSoftLimitValue(uint8_t chn_axis, uint8_t index);   //设置指定轴的软限位值
 	void SetChnAllAxisParam(void);
 	void SetChnAxisPosThreshold(uint8_t chn_axis);   //设置指定轴的位置指令
@@ -186,7 +191,12 @@ public:
 	void SetMcChnCornerStopParam();		//设置拐角准停参数
 
 #ifdef USES_WOOD_MACHINE
+	void SetMcFlipCompParam();     //设置MC的挑角补偿值
 	void SetMcDebugParam(uint16_t index);   //设置MC的调试参数
+
+#endif
+
+#ifdef USES_EMERGENCY_DEC_STOP
 	void DelayToServoOff();  //延迟下伺服
 #endif
 
@@ -303,7 +313,9 @@ public:
 	void DPoint2DPointChn(const DPoint &src, DPointChn &tar);  //将DPoint对象变换为DPointChn对象
 	void DPointChn2DPoint(const DPointChn &src, DPoint &tar);  //将DPointChn对象变换为DPoint对象
 
-	void PrintDebugInfo();		//输出调试数据
+	void PrintDebugInfo();		//输出DSP-MC调试数据
+
+	void PrintDebugInfo1();		//输出MI-MC调试数据
 
 	void ProcessHmiManualToolMeasureCmd(HMICmdFrame &cmd);   //处理手动对刀指令
 
@@ -316,6 +328,8 @@ public:
 	bool SetCurProcParamIndex(uint8_t index);  //设置当前工艺参数组号
 
 	void GetMdaFilePath(char *path);   //返回通道MDA文件名称
+	
+	void SetHmiGraphMode(bool flag){this->m_b_hmi_graph = flag;}   //设置HMI图形显示模式
 
 #ifdef USES_ADDITIONAL_PROGRAM
 	bool CallAdditionalProgram(AddProgType type);  //调用附加程序（前置/后置）
@@ -451,6 +465,11 @@ private:
 	bool IsMcModeCmd(int cmd);	//是否需要发送到MC的模态信息命令
 
 	void RefreshModeInfo(const McModeStatus &mode);   //更新当前通道模态数据
+	
+	void ReadGraphAxisPos();      //读取图形模式下的高频轴位置数据
+	void SendHmiGraphPosData();     //给HMI发送绘图位置数据
+
+	void SetMiSimMode(bool flag);   //设置MI仿真模式
 
 
 	void SetMcToolOffset(bool flag);      //设置MC的刀具偏置
@@ -545,7 +564,8 @@ private:
 
 	void SendMiTapAxisCmd(uint16_t spd, uint16_t zAxis);   //发送攻丝轴号给MI
 	void SendMiTapParamCmd();      //发送攻丝参数给MI
-	void SendMiTapRatioCmd(bool state, uint32_t ratio);   //发送攻丝比例及状态给MI
+	void SendMiTapRatioCmd(int32_t ratio);   //发送攻丝比例给MI
+	void SendMiTapStateCmd(bool state);   //发送攻丝状态给MI
 
 	void ProcessM29Reset();     //处理M29状态复位流程
 
@@ -569,6 +589,7 @@ private://私有成员变量
 	HMICommunication *m_p_hmi_comm;    //HMI通讯接口
 	MICommunication *m_p_mi_comm;		//MI通讯接口
 	MCCommunication *m_p_mc_comm;		//MC通讯接口
+	MCArmCommunication *m_p_mc_arm_comm;   //MC-ARM通讯接口
 	SCSystemConfig *m_p_general_config;   //系统配置
 	SCChannelConfig *m_p_channel_config;  //通道配置
 	SCAxisConfig *m_p_axis_config;        //轴配置
@@ -720,7 +741,8 @@ private://私有成员变量
     uint8_t m_n_restart_step;     //加工复位步骤
     uint64_t m_n_restart_line;    //加工复位目的行号
     ChnRestartMode m_mode_restart;    //加工复位中间模态
-
+	
+	bool m_b_mc_on_arm;    //本通道所属mc通道是否运行于ARM上
     bool m_b_delay_to_reset;   //延迟复位动作，等待减速停到位后，再执行复位动作
 
     DPointChn m_pos_simulate_cur_work;    //仿真模式下的当前工件坐标
@@ -729,6 +751,13 @@ private://私有成员变量
 	uint8_t m_n_G843_flag;  //  G843 flag;   0--非刚攻跟随状态         1--刚攻跟随状态
 	int32_t m_n_G843_ratio; // G843 ratio; 跟随刚性攻丝的比例值， 该值*10000倍，
 
+	bool m_b_hmi_graph;    //HMI是否处于图形模式，此模式需要发送实时高频位置数据
+	uint8_t m_n_xyz_axis_phy[3];    //XYZ轴对应的物理轴号，0开始
+	CoordAxisPos m_pos_graph_array[kGraphPosBufCount];   //缓冲图形模式位置数据
+	uint16_t m_n_graph_pos_write_idx;     //当前空闲的位置缓冲写入索引
+	uint16_t m_n_graph_pos_read_idx;      //当前位置数据读取索引
+	uint16_t m_n_graph_pos_count;   //当前位置缓冲数量
+	
 
 #ifdef USES_SPEED_TORQUE_CTRL
     uint8_t m_n_need_reset_axis_ctrlmode;				// 各轴复位计数值，当为0时，标识不需要复位，从某个数递减，减为0，标识复位成功
@@ -738,13 +767,15 @@ private://私有成员变量
 	//刀具寿命刷新延时标志
 	uint8_t m_n_ref_tool_life_delay;    //用于切换当前刀号时，延时刷新刀具寿命
 	bool m_b_save_tool_info;         //掉电时是否保存刀具信息
-
-	//延迟断伺服标志，等待减速停止后再断伺服，木工机速度太快不能直接断伺服
-	bool m_b_delay_servo_off;
-
+	
 	bool m_b_prestart_spd;    //主轴预启动执行标志    true--当前正在执行
 	int m_n_spd_prestart_step;   //当前主轴预启动执行步骤， 从0开始，结束后为0xFF
 	SpindleStartOffset m_spd_prestart_offset;   //当前所执行的主轴预启动数据
+#endif
+
+#ifdef USES_EMERGENCY_DEC_STOP
+	//延迟断伺服标志，等待减速停止后再断伺服，木工机速度太快不能直接断伺服
+	bool m_b_delay_servo_off;
 #endif
 
 

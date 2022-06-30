@@ -35,6 +35,7 @@ class ChannelControl;   //通道控制类
 class HMICommunication; //HMI通讯类
 class MICommunication;	//MI通讯类
 class MCCommunication;	//MC通讯类
+class MCArmCommunication;  //MC-ARM通讯类
 class ParmManager;      //配置管理类
 class PmcRegister;		//PMC寄存器类
 class ChannelModeGroup;   //通道方式组类
@@ -57,6 +58,8 @@ public:
 	void Initialize(HMICommunication *hmi_comm, MICommunication *mi_comm,
 			MCCommunication *mc_comm, ParmManager *parm);   //设置接口
 
+void SetMcArmComm(MCArmCommunication *comm){this->m_p_mc_arm_comm = comm;}   //设置MC-ARM通讯接口
+	bool IsMcArmChn(uint8_t chn){return this->m_mc_run_on_arm[chn];}   //是否通道MC运行于ARM上
 	void InitBdioDev();   //初始化SD-LINK从站设备配置
 
 #ifdef USES_PMC_2_0
@@ -79,7 +82,7 @@ public:
 	bool GetChnStatus(uint8_t chn_index, HmiChannelStatus &status);  //获取通道状态
 	uint8_t GetChnAxistoPhyAixs(uint8_t chn_index, uint8_t chn_axis);  //获取通道轴对应的物理轴号
 
-	uint16_t GetMcAutoBufMax(){return m_n_mc_auto_buf_max;}   //获取MC单通道自动数据缓冲数量
+//	uint16_t GetMcAutoBufMax(){return m_n_mc_auto_buf_max;}   //获取MC单通道自动数据缓冲数量
 
 
 	bool Start();   //启动程序，用于响应循环启动
@@ -90,7 +93,7 @@ public:
     void ServoOn();	//上伺服
     void ServoOff();	//下伺服
 
-#ifdef USES_WOOD_MACHINE
+#ifdef USES_EMERGENCY_DEC_STOP
     void DelayToServoOff(uint8_t chn_index);  //延迟下伺服
 
     void SetChnStoppedMask(uint8_t chn_index);   //设置通道停止到位标志
@@ -101,7 +104,7 @@ public:
 	void ShakeHandWithMc();    	//向MC模块发送握手命令
 	void ShakeHandWithMi();		//向MI模块发送握手命令
 
-	void SetFuncState(int state, uint8_t mode = 10);		//设置功能状态，例如：单段，选停等等
+	void SetFuncState(uint8_t chn, int state, uint8_t mode = 10);		//设置功能状态，例如：单段，选停等等
 	void SetAutoRatio(uint8_t ratio);    //设置自动倍率
 	void SetAutoRatio(uint8_t chn, uint8_t ratio);  //设置自动倍率
 	void SetManualRatio(uint8_t ratio);	//设置手动倍率
@@ -198,7 +201,7 @@ public:
 
 
     void SetMiWorkMode(uint8_t value);   //设置MI模块工作模式
-    void SetMiHandwheelTrace(bool flag);   //设置MI模块手轮跟踪模式
+    void SetMiHandwheelTrace(bool flag, uint8_t chn);   //设置MI模块手轮跟踪模式
     void SetMiCurChannel();   //设置MI当前通道号
 
     bool CheckAxisRefBaseSignal(uint8_t phy_axis, int8_t dir);   //检查轴原点粗基准信号
@@ -210,7 +213,8 @@ public:
     bool IsRefReturnning(uint8_t phy_axis);    //指定轴是否正在回零中
 
     void SetRetRefFlag(uint8_t phy_axis, bool flag);   //设置轴回参考点完成标志
-
+	void SetInRetRefFlag(uint8_t phy_axis, bool flag);  //设置轴回零中信号
+	
     void SendPmcAxisCmd(PmcCmdFrame &cmd);     //发送PMC轴运动指令
     uint8_t GetPmcAxis(uint8_t pmc_chn);        //获取指定PMC通道的PMC轴序号
     uint32_t GetPmcAxisRapidSpeed(uint8_t axis);   //获取pmc轴的设定定位速度
@@ -354,6 +358,11 @@ private:	//私有成员函数
 	void ProcessHmiGetCurProcIndex(HMICmdFrame &cmd);    //处理HMI获取工艺参数组号的命令
 
 	void ProcessHmiClearMsgCmd(HMICmdFrame &cmd);     //处理HMI清除消息命令
+	
+	void ProcessHmiEnableSyncAxisCmd(HMICmdFrame &cmd);   //处理HMI使能同步轴命令
+	void ProcessHmiCheckSyncCmd(HMICmdFrame &cmd);      //处理HMI查询同步轴使能命令
+
+	void ProcessHmiNotifyGraphCmd(HMICmdFrame &cmd);    //处理HMI通知图形模式命令
 
 	void SendHmiUpdateStatus(uint8_t total_step, uint8_t cur_step);  //给HMI发送升级状态
 
@@ -380,6 +389,7 @@ private:	//私有成员函数
     int UpdatePMC();				//升级PMC模块
     int UpdateSpartan();			//升级Spartan模块
     int UpdateModbus();            //升级Modbus模块
+	int UpdateDisk();			//一键升级
 
     void SendMcResetCmd();		//发送MC复位指令
     void ClearMcAlarm();			//发送MC清除告警指令
@@ -434,7 +444,8 @@ private:	//私有成员函数
 	void ProcessGetAxisZeroEncoderRsp(MiCmdFrame &cmd);    //处理MI返回的获取机械零点编码器值指令，回参考点时使用
 	void ProcessSkipCmdRsp(MiCmdFrame &cmd);    //处理MI返回的跳转命令响应
 	void ProcessRefreshAxisZeroEncoder(MiCmdFrame &cmd);   //处理MI刷新轴零点编码器值命令
-
+	void ProcessMiEnSyncAxisRsp(MiCmdFrame &cmd);      //处理MI使能同步轴指令的响应
+	
 	void ProcessSetAxisCurMachPosRsp(MiCmdFrame &cmd);   //处理MI对设置轴当前位置机械坐标命令的响应
 
 	void ProcessHmiGetPcDataCmd(HMICmdFrame &cmd);    //处理HMI获取螺补数据指令
@@ -450,6 +461,7 @@ private:  //私有成员变量
 	HMICommunication *m_p_hmi_comm;        //HMI通讯接口
 	MICommunication *m_p_mi_comm;		   //MI通讯接口
 	MCCommunication *m_p_mc_comm;		   //MC通讯接口
+	MCArmCommunication *m_p_mc_arm_comm;   //MC-ARM通讯接口
 	SCSystemConfig *m_p_general_config;    //系统配置
 	SCChannelConfig *m_p_channel_config;   //通道配置
 	SCAxisConfig *m_p_axis_config;			//物理轴配置
@@ -486,7 +498,7 @@ private:  //私有成员变量
 	uint8_t m_n_cur_channle_index;   //当前通道索引号
 	uint8_t m_n_cur_chn_group_index;   //当前方式组号
 
-	uint16_t m_n_mc_auto_buf_max;    //MC中单通道自动模式数据缓冲最大数量
+//	uint16_t m_n_mc_auto_buf_max;    //MC中单通道自动模式数据缓冲最大数量
 
 	double *m_df_phy_axis_pos_feedback;		//物理轴当前反馈机械坐标
 	double *m_df_phy_axis_pos_intp;        //物理轴当前插补机械坐标
@@ -533,6 +545,7 @@ private:  //私有成员变量
 	//同步轴变量
 	int64_t m_n_sync_axis_mask;   //同步轴mask
 	int64_t m_n_sync_over;			//同步轴同步完成标志
+	int64_t m_n_sync_axis_enable_mask;   //同步轴使能mask
 	bool m_b_send_sync_cmd;			//是否发送同步命令
 
 
@@ -558,8 +571,12 @@ private:  //私有成员变量
 	uint8_t m_n_cur_pmc_axis;       //当前PMC轴  0xFF表示当前没有选择PMC轴
 
 	uint16_t m_mask_import_param;    //导入参数标志
+	
+	bool m_mc_run_on_arm[kMaxChnCount];   //MC通道是否运行在ARM上            0 -- dsp    1--mi
+	bool m_mc_run_dsp_flag;    // 有通道的MC运行在DSP的标识   
+	bool m_mc_run_mi_flag;     // 有通道的MC运行在MI的标识  
 
-#ifdef USES_WOOD_MACHINE
+#ifdef USES_EMERGENCY_DEC_STOP
 	bool m_b_delay_servo_off;      //延迟断伺服标志，等待减速停止后再断伺服，木工机速度太快不能直接断伺服
 	uint8_t m_mask_delay_svo_off;   //待延迟下伺服的通道mask
 	uint8_t m_mask_delay_svo_off_over;   //已经停止到位的通道的mask

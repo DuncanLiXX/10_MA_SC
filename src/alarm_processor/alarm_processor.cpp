@@ -376,7 +376,7 @@ void AlarmProcessor::ProcessAlarm(ErrorInfo *err){
 		break;
 	case ERR_ENCODER:    //编码器错误
 	case ERR_SERVO:     //伺服告警
-#ifndef USES_WOOD_MACHINE
+#ifndef USES_EMERGENCY_DEC_STOP
 		this->m_p_chn_engine->ServoOff();
 #endif
 	case ERR_SOFT_LIMIT_NEG:     //负向软限位告警
@@ -392,7 +392,7 @@ void AlarmProcessor::ProcessAlarm(ErrorInfo *err){
 	case ERR_AXIS_CTRL_MODE_SWITCH:    //轴控制模式切换超时
 		this->m_p_chn_engine->Stop(err->channel_index, false);
 		break;
-#ifdef USES_WOOD_MACHINE
+#ifdef USES_EMERGENCY_DEC_STOP
 	case ERR_EMERGENCY:  //木工机急停时先减速停，再断伺服
 		printf("process emergency error!\n");
 		this->m_p_chn_engine->Stop(false);
@@ -417,7 +417,7 @@ void AlarmProcessor::ProcessAlarm(ErrorInfo *err){
 
 		}else if(err->error_code >=20480 && err->error_code < 20512){ //PMC的A地址严重错误信息 A60~A63
 			//通知MI下伺服
-#ifdef USES_WOOD_MACHINE
+#ifdef USES_EMERGENCY_DEC_STOP
 			this->m_p_chn_engine->Stop(false);  //急停处理
 			this->m_p_chn_engine->DelayToServoOff(CHANNEL_ENGINE_INDEX);
 #else

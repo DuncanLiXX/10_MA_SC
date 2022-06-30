@@ -68,6 +68,7 @@ using namespace std;
 class HMICommunication;
 class MICommunication;
 class MCCommunication;
+class MCArmCommunication;
 class ChannelEngine;
 class ParmManager;
 class TraceInfo;
@@ -83,6 +84,7 @@ extern int g_test;
 extern HMICommunication *g_ptr_hmi_comm;    //HMI通讯接口
 extern MICommunication *g_ptr_mi_comm; 		//MI通讯接口
 extern MCCommunication *g_ptr_mc_comm;		//MC通讯接口
+extern MCArmCommunication *g_ptr_mc_arm_comm;  //MC-ARM通讯接口
 extern ChannelEngine *g_ptr_chn_engine;    //通道引擎
 extern ParmManager *g_ptr_parm_manager;    //参数管理器
 extern TraceInfo *g_ptr_trace;             //日志调试接口

@@ -173,6 +173,7 @@ public:
 	ErrorType GetErrorCode(){return m_error_code;}	//返回最近的错误码
 
 	void ReadPhyAxisCurFedBckPos(double *pos_fb, double *pos_intp,double *speed,double *torque, uint8_t count);    //读取物理轴位置、速度、力矩
+	void ReadPhyAxisFbPos(double *pos_fb, uint8_t *phy_axis, uint8_t count); //读取指定物理轴的反馈位置
 #ifdef USES_SPEED_TORQUE_CTRL
 	void ReadPhyAxisCurFedBckSpeedTorque(double *speed, double *torque, uint8_t count);    //读取物理轴速度和力矩
 #endif

@@ -533,6 +533,34 @@ void MICommunication::ReadPhyAxisCurFedBckPos(double *pos_fb, double *pos_intp,d
 	WriteRegister32_M(SHARED_MEM_AXIS_READ_OVER, 1);  //置位读取完成标志
 }
 
+/**
+ * @brief 读取指定物理轴的反馈位置
+ * @param pos_fb[out] : 返回轴位置
+ * @param phy_axis[in] : 指定物理轴号，从0开始
+ * @param count[in] : 轴数量
+ */
+void MICommunication::ReadPhyAxisFbPos(double *pos_fb, uint8_t *phy_axis, uint8_t count){
+	if(pos_fb == nullptr || phy_axis == nullptr)
+		return;
+
+	//判断写完成标志
+	int32_t flag = 0;
+	ReadRegister32_M(SHARED_MEM_AXIS_WRITE_OVER, flag);
+	if(flag == 0){
+		return;   //MI未更新，直接返回
+	}
+
+	double df = 0;
+	int64_t pos_tmp;
+	for(uint8_t i = 0; i < count; i++){
+		pos_tmp = 0;
+		if(phy_axis[i] != 0xFF)
+			ReadRegister64_M(SHARED_MEM_AXIS_MAC_POS_FB(phy_axis[i]), pos_tmp);  //读反馈位置
+		df = pos_tmp;
+		pos_fb[i] = df/1e7;	//转换单位  0.1nm->mm
+	}
+}
+
 #ifdef USES_SPEED_TORQUE_CTRL
 /**
  * @brief 读取通道轴速度和力矩值

@@ -3058,6 +3058,8 @@ int ArcMsg::GetSimulateData(CompilerSimData &data){
 			this->m_flag_circle == 0)   //非整圆
 		data.radius = 0;
 
+	data.plane = this->m_gmode_2;  //当前平面
+	
 	return 0;
 }
 

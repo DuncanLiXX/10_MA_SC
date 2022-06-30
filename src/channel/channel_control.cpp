@@ -14,11 +14,13 @@
 #include "hmi_communication.h"
 #include "mi_communication.h"
 #include "mc_communication.h"
+#include "mc_communication_arm.h"								 
 #include "parm_manager.h"
 #include "channel_engine.h"
 #include "alarm_processor.h"
 
-int ctrlmode_switch_wait = 0;
+
+int ctrlmode_switch_wait = 0;   //用于轴模式切换等待延时
 
 /**
  * @brief 构造函数
@@ -69,6 +71,8 @@ ChannelControl::ChannelControl() {
 
 	m_b_pos_captured = false;
 
+	m_b_hmi_graph = false;     //默认非图形模式	
+	
 	memset(&m_channel_status, 0x00, sizeof(ChannelStatusCollect));
 //	memset(m_str_cur_nc_file, 0x00, kMaxPathLen);
 //
@@ -131,10 +135,13 @@ ChannelControl::ChannelControl() {
 #ifdef USES_WOOD_MACHINE
 	this->m_n_ref_tool_life_delay = 0;
 	m_b_save_tool_info = false;
-	this->m_b_delay_servo_off = false;
 
 	m_b_prestart_spd = false;
 	this->m_n_spd_prestart_step = 0;
+#endif
+
+#ifdef USES_EMERGENCY_DEC_STOP
+	this->m_b_delay_servo_off = false;
 #endif
 
 #ifdef USES_SIMULATION_TEST
@@ -314,10 +321,21 @@ bool ChannelControl::Initialize(uint8_t chn_index, ChannelEngine *engine, HMICom
 
 	m_b_need_change_to_pause = false;
 
+	this->m_b_mc_on_arm = this->m_p_channel_engine->IsMcArmChn(this->m_n_channel_index);
+		
 	m_scene_auto.need_reload_flag = false;
 	m_scene_auto.machining_state = MS_READY;   //初始化为默认为就绪
 
 	this->InitialChannelStatus();
+
+	//初始化XYZ轴对应的物理轴
+	 m_n_xyz_axis_phy[0] = this->GetPhyAxisFromName(AXIS_NAME_X);
+	 m_n_xyz_axis_phy[1] = this->GetPhyAxisFromName(AXIS_NAME_Y);
+	 m_n_xyz_axis_phy[2] = this->GetPhyAxisFromName(AXIS_NAME_Z);
+
+	 m_n_graph_pos_count = 0;
+	 m_n_graph_pos_write_idx = 0;
+	 m_n_graph_pos_read_idx = 0;								
 
 
 	//创建自动模式输出指令消息列表
@@ -590,19 +608,19 @@ void ChannelControl::Reset(){
 
 	if(this->m_n_G843_flag){  //取消刚攻跟随状态
 		this->SendMcRigidTapFlag(false);
-		this->SendMiTapRatioCmd(false, 0);
-		m_n_G843_flag = false;
+		this->SendMiTapStateCmd(false);
+		m_n_G843_flag = 0;
 	}
 	if(this->m_n_M29_flag){  //主轴恢复速度控制
 		this->ProcessM29Reset();
 	}
 
 #ifdef USES_WOOD_MACHINE
-	this->m_b_delay_servo_off = false;
+//	this->m_b_delay_servo_off = false;
 
 	m_b_prestart_spd = false;
 	m_n_spd_prestart_step = 0;
-	printf("spindle prestart over####reset\n");
+//	printf("spindle prestart over####reset\n");
 #endif
 
 #ifdef USES_WUXI_BLOOD_CHECK
@@ -689,7 +707,9 @@ void ChannelControl::Reset(){
 			this->SetMcToolOffset(true);
 	}
 
-
+	m_simulate_mode = SIM_NONE;    //默认在非仿真模式
+	this->SetMiSimMode(false);  //复位MI仿真状态
+		
 	//复位通道状态为READY
 	uint8_t state = MS_READY;   //告警状态
 
@@ -898,7 +918,32 @@ bool ChannelControl::SetSimulateMode(const SimulateMode mode){
 
 	m_simulate_mode = mode;
 
+	if(mode == SIMULATE_MACHINING){//加工仿真，需要通知MI切换至仿真状态
+		this->SetMiSimMode(true);
+	}else{
+		this->SetMiSimMode(false);
+	}
+	
 	return true;
+}
+
+/**
+ * @brief 设置MI仿真模式
+ * @param flag : true--进入仿真   false--退出仿真
+ */
+void ChannelControl::SetMiSimMode(bool flag){
+	MiCmdFrame cmd;
+	memset(&cmd, 0x00, sizeof(cmd));
+	cmd.data.cmd = CMD_MI_SET_WORK_MODE;
+
+	cmd.data.data[0] = this->m_channel_status.chn_work_mode;
+	cmd.data.data[1] = flag?0x10:0x00;
+
+
+	cmd.data.axis_index = NO_AXIS;
+	cmd.data.reserved = m_n_channel_index;  //通道号，从0开始
+
+	this->m_p_mi_comm->WriteCmd(cmd);
 }
 
 /**
@@ -1085,7 +1130,6 @@ bool ChannelControl::GetSysVarValue(const int index, double&value){
 		value = this->m_channel_status.cur_tool;
 	}else if(index == 4321){   //当前预选刀号
 		value = this->m_channel_status.preselect_tool_no;
-//		printf("@@@@@@@@$$$$$$$$$Get #4321 = %hhu\n", m_channel_status.preselect_tool_no);
 	}else if(index >= 5001 && index < 5001+kMaxAxisChn){   //当前目标位置， 工件坐标系
 		value = this->m_channel_rt_status.tar_pos_work.m_df_point[index-5001];
 	}else if(index >= 5021 && index < 5021+kMaxAxisChn){  //当前机械坐标
@@ -1504,7 +1548,7 @@ void ChannelControl::ResetMode(){
  * @brief 开始G代码运行
  */
 void ChannelControl::StartRunGCode(){
-	printf("enter ChannelControl::StartRunGCode(), m_n_run_thread_state = %d, chn_work_mode = %hhu, machine_mode = %hhu, mc_mode=%hu\n", m_n_run_thread_state,
+	g_ptr_trace->PrintTrace(TRACE_INFO, CHANNEL_CONTROL_SC,"@#@#Enter ChannelControl::StartRunGCode(), m_n_run_thread_state = %d, chn_work_mode = %hhu, machine_mode = %hhu, mc_mode=%hu\n", m_n_run_thread_state,
 			m_channel_status.chn_work_mode, m_channel_status.machining_state, m_channel_mc_status.cur_mode);
 
 	if(m_channel_status.chn_work_mode != AUTO_MODE &&
@@ -1552,7 +1596,7 @@ void ChannelControl::StartRunGCode(){
 
 	//当前正处于停止或暂停过程中，则返回
 	if(m_channel_status.machining_state == MS_PAUSING || m_channel_status.machining_state == MS_STOPPING){
-		printf("machine state is %hhu, return\n", m_channel_status.machining_state);
+		g_ptr_trace->PrintTrace(TRACE_WARNING, CHANNEL_CONTROL_SC, "machine state is %hhu, return\n", m_channel_status.machining_state);
 		return;
 	}
 
@@ -1591,7 +1635,12 @@ void ChannelControl::StartRunGCode(){
 	if(this->m_channel_status.chn_work_mode == AUTO_MODE){
 		if(this->m_channel_status.machining_state == MS_READY){  //就绪状态则直接启动编译
 			this->SendWorkModeToMc(MC_MODE_AUTO);
-
+			
+			//初始化仿真绘图位置数据缓冲相关变量
+			 m_n_graph_pos_count = 0;
+			 m_n_graph_pos_write_idx = 0;
+			 m_n_graph_pos_read_idx = 0;
+			 
 			//激活参数
 			g_ptr_parm_manager->ActiveNewStartParam();
 
@@ -1617,19 +1666,31 @@ void ChannelControl::StartRunGCode(){
 					g_ptr_trace->PrintLog(LOG_ALARM, "打开仿真数据临时文件失败！");
 					return;//文件打开失败
 				}
-#endif
-				 //写入当前位置
+#endif	
 				SimulateData data;
-				data.type = ORIGIN_POINT;
-				data.pos[0] = this->GetAxisCurMachPos(this->GetChnAxisFromName(AXIS_NAME_X));
-				data.pos[1] = this->GetAxisCurMachPos(this->GetChnAxisFromName(AXIS_NAME_Y));
-				data.pos[2] = this->GetAxisCurMachPos(this->GetChnAxisFromName(AXIS_NAME_Z));
-
 				MonitorDataType type = MDT_CHN_SIM_GRAPH;  //数据类型
 				if(this->m_simulate_mode == SIM_TOOLPATH)
 					type = MDT_CHN_SIM_TOOL_PATH;
 				else if(this->m_simulate_mode == SIM_MACHINING)
 					type = MDT_CHN_SIM_MACH;
+				//写入仿真范围
+				data.type = ZONE_LIMIT_MIN;   //首先写入负向限制
+				data.pos[0] = this->m_p_axis_config[GetPhyAxisFromName(AXIS_NAME_X)].soft_limit_min_1;
+				data.pos[1] = this->m_p_axis_config[GetPhyAxisFromName(AXIS_NAME_Y)].soft_limit_min_1;
+				data.pos[2] = this->m_p_axis_config[GetPhyAxisFromName(AXIS_NAME_Z)].soft_limit_min_1;
+				this->SendSimulateDataToHmi(type, data);   //发送负向限制
+
+				data.type = ZONE_LIMIT_MAX;   //再写入正向限制
+				data.pos[0] = this->m_p_axis_config[GetPhyAxisFromName(AXIS_NAME_X)].soft_limit_max_1;
+				data.pos[1] = this->m_p_axis_config[GetPhyAxisFromName(AXIS_NAME_Y)].soft_limit_max_1;
+				data.pos[2] = this->m_p_axis_config[GetPhyAxisFromName(AXIS_NAME_Z)].soft_limit_max_1;
+				this->SendSimulateDataToHmi(type, data);   //发送正向限制
+
+				 //写入当前位置
+				data.type = ORIGIN_POINT;
+				data.pos[0] = this->GetAxisCurMachPos(this->GetChnAxisFromName(AXIS_NAME_X));
+				data.pos[1] = this->GetAxisCurMachPos(this->GetChnAxisFromName(AXIS_NAME_Y));
+				data.pos[2] = this->GetAxisCurMachPos(this->GetChnAxisFromName(AXIS_NAME_Z));
 				this->SendSimulateDataToHmi(type, data);   //发送初始位置
 			}
 #ifdef USES_ADDITIONAL_PROGRAM
@@ -1653,7 +1714,8 @@ void ChannelControl::StartRunGCode(){
 			if(this->m_scene_auto.need_reload_flag){
 	#endif
 				if(StartBreakpointContinue()){
-					printf("start break point continue thread\n");
+					g_ptr_trace->PrintTrace(TRACE_INFO, CHANNEL_CONTROL_SC, "start break point continue thread\n");
+					gettimeofday(&m_time_start_maching, nullptr);  //初始化启动时间													   
 					goto END;
 				}
 	#ifndef USES_ADDITIONAL_PROGRAM
@@ -1955,7 +2017,10 @@ void ChannelControl::StopRunGCode(bool reset){
  */
 void ChannelControl::PauseMc(){
 	//更新当前MC的运行模式
-	this->m_p_mc_comm->ReadWorkMode(m_n_channel_index, m_channel_mc_status.cur_mode);
+	if(!this->m_b_mc_on_arm)
+		this->m_p_mc_comm->ReadWorkMode(m_n_channel_index, m_channel_mc_status.cur_mode);
+	else
+		this->m_p_mc_arm_comm->ReadWorkMode(m_n_channel_index, m_channel_mc_status.cur_mode);
 
 //	printf("pausemc, mc_mode = %hu\n", m_channel_mc_status.cur_mode);
 	if(m_channel_mc_status.cur_mode == MC_MODE_MANUAL ){//停止所有轴
@@ -1983,8 +2048,12 @@ void ChannelControl::SendMcG31Stop(){
 	else
 		cmd.data.data[0] = 2;  //非自动模式
 
-	m_p_mc_comm->WriteCmd(cmd);
+	if(!this->m_b_mc_on_arm)
+		m_p_mc_comm->WriteCmd(cmd);
+	else
+		m_p_mc_arm_comm->WriteCmd(cmd);
 }
+
 
 /**
  * @brief 向MC发送刚性攻丝状态命令，MC会切换到刚性攻丝的速度规划参数
@@ -1998,8 +2067,10 @@ void ChannelControl::SendMcRigidTapFlag(bool tap_flag){
 	cmd.data.cmd = CMD_MC_SET_G84_INTP_MODE;
 	cmd.data.data[0] = tap_flag?1:0;
 
-
-	m_p_mc_comm->WriteCmd(cmd);
+	if(!this->m_b_mc_on_arm)
+		m_p_mc_comm->WriteCmd(cmd);
+	else
+		m_p_mc_arm_comm->WriteCmd(cmd);
 }
 
 
@@ -2014,7 +2085,10 @@ void ChannelControl::SendMcResetCmd(){
 
 	cmd.data.cmd = CMD_MC_SYS_RESET;
 
-	m_p_mc_comm->WriteCmd(cmd);
+	if(!this->m_b_mc_on_arm)
+		m_p_mc_comm->WriteCmd(cmd);
+	else
+		m_p_mc_arm_comm->WriteCmd(cmd);
 }
 
 /**
@@ -2028,9 +2102,10 @@ void ChannelControl::InitMcIntpMdaBuf(){
 	cmd.data.axis_index = NO_AXIS;
 	cmd.data.cmd = CMD_MC_INIT_CHN_MDA_BUF;
 
-	m_p_mc_comm->WriteCmd(cmd);
-
-	printf("##############InitMcIntpMdaBuf\n");
+	if(!this->m_b_mc_on_arm)
+		m_p_mc_comm->WriteCmd(cmd);
+	else
+		m_p_mc_arm_comm->WriteCmd(cmd);
 }
 
 /**
@@ -2044,8 +2119,10 @@ void ChannelControl::InitMcIntpAutoBuf(){
 	cmd.data.axis_index = NO_AXIS;
 	cmd.data.cmd = CMD_MC_INIT_CHN_AUTO_BUF;
 
-	m_p_mc_comm->WriteCmd(cmd);
-	printf("$$$$$$$$$$$InitMcIntpAutoBuf\n");
+	if(!this->m_b_mc_on_arm)
+		m_p_mc_comm->WriteCmd(cmd);
+	else
+		m_p_mc_arm_comm->WriteCmd(cmd);
 }
 
 /**
@@ -2229,6 +2306,10 @@ void ChannelControl::SendMonitorData(bool bAxis, bool btime){
 
 
 	this->m_p_hmi_comm->SendMonitorData(buffer, buf_len);//send(socket, buffer, buf_len, MSG_NOSIGNAL);
+
+	if(bAxis && this->m_channel_status.chn_work_mode == AUTO_MODE && this->m_b_hmi_graph){
+		this->SendHmiGraphPosData();  //发送绘图位置数据
+	}
 
 //	double inc_d = 0.001;
 //	m_channel_rt_status.cur_pos += DPoint(inc_d, inc_d, inc_d,inc_d,inc_d, inc_d,inc_d, inc_d);
@@ -2454,6 +2535,9 @@ void ChannelControl::ProcessHmiClearWorkPieceCmd(HMICmdFrame &cmd){
 	cmd.cmd_extension = SUCCEED;
 
 	this->m_p_hmi_comm->SendCmd(cmd);
+	
+	g_ptr_parm_manager->SetCurWorkPiece(m_n_channel_index, m_channel_status.workpiece_count);
+	this->SendWorkCountToHmi(m_channel_status.workpiece_count);   //通知HMI加工计数变更
 }
 
 /**
@@ -2549,7 +2633,11 @@ void ChannelControl::ProcessHmiManualToolMeasureCmd(HMICmdFrame &cmd){
 void ChannelControl::ProcessHmiSetCurMachPosCmd(HMICmdFrame &cmd){
 	cmd.frame_number |= 0x8000;   //设置回复标志
 
-	if(cmd.data_len != 9 || this->m_channel_status.chn_work_mode != REF_MODE){  //重设机械零点只能在原点模式下进行
+#ifdef USES_WOOD_MACHINE
+    if(cmd.data_len != 9 || this->m_channel_status.chn_work_mode != REF_MODE){  //重设机械零点只能在原点模式下进行
+#else
+	if(cmd.data_len != 9){
+#endif	
 		cmd.data[9] = FAILED;
 		cmd.data_len = 10;
 	}else{
@@ -2695,12 +2783,19 @@ bool ChannelControl::SetCurProcParamIndex(uint8_t index){
 		this->m_p_channel_config->chn_max_dec = this->m_p_chn_proc_param->chn_param[index].chn_max_dec;
 		this->m_p_channel_config->chn_max_corner_acc = this->m_p_chn_proc_param->chn_param[index].chn_max_corner_acc;
 		this->m_p_channel_config->chn_max_arc_acc = this->m_p_chn_proc_param->chn_param[index].chn_max_arc_acc;
+#ifdef USES_WOOD_MACHINE
+		this->m_p_channel_config->flip_comp_value = this->m_p_chn_proc_param->chn_param[index].flip_comp_value;
+#endif
+
 
 		//将新参数更新到MC
 		this->SetMcChnPlanMode();
 		this->SetMcChnPlanParam();
 		this->SetMcChnCornerStopParam();
 		this->SetMcChnPlanFun();
+#ifdef USES_WOOD_MACHINE
+		this->SetMcFlipCompParam();
+#endif
 
 		//切换轴参数
 		uint8_t phy_axis = 0;
@@ -3056,34 +3151,50 @@ void ChannelControl::SendMiTapParamCmd(){
 	cmd.data.axis_index = 0xFF;
 	cmd.data.reserved = this->m_n_channel_index;
 
-	uint32_t param = this->m_p_axis_config[this->m_spd_axis_phy[0]-1].axis_home_pos[6]*10000;
+	uint32_t param = this->m_p_axis_config[this->m_spd_axis_phy[0]-1].axis_home_pos[6]*1000;
 	memcpy(&cmd.data.data[0], &param, sizeof(uint32_t));
 
-	param = this->m_p_axis_config[this->m_spd_axis_phy[0]-1].axis_home_pos[7]*10000;
+	param = this->m_p_axis_config[this->m_spd_axis_phy[0]-1].axis_home_pos[7]*1000;
 	memcpy(&cmd.data.data[2], &param, sizeof(uint32_t));
 
-	param = this->m_p_axis_config[this->m_spd_axis_phy[0]-1].axis_home_pos[8]*10000;
+	param = this->m_p_axis_config[this->m_spd_axis_phy[0]-1].axis_home_pos[8]*1000;
 	memcpy(&cmd.data.data[4], &param, sizeof(uint32_t));
 
 	this->m_p_mi_comm->WriteCmd(cmd);
 }
 
 /**
- * @brief 发送攻丝比例及状态给MI
- * @param state : 攻丝状态，true表示开，false表示关
- * @param ratio ：攻丝比例，10000*S/F，S单位为rpm，F单位为mm/min
+ * @brief 发送攻丝比例给MI
+ * @param state : 
+ * @param ratio ： 攻丝比例，10000*S/F，S单位为rpm，F单位为mm/min
  */
-void ChannelControl::SendMiTapRatioCmd(bool state, uint32_t ratio){
+void ChannelControl::SendMiTapRatioCmd(int32_t ratio){
 	MiCmdFrame cmd;
 	memset(&cmd, 0x00, sizeof(cmd));
 	cmd.data.cmd = CMD_MI_SET_TAP_RATIO;
 	cmd.data.axis_index = 0xFF;
 	cmd.data.reserved = this->m_n_channel_index;
-	cmd.data.data[0] = state?1:0;
-	memcpy(&cmd.data.data[1], &ratio, sizeof(uint32_t));
+	memcpy(&cmd.data.data[0], &ratio, sizeof(int32_t));
 
 	this->m_p_mi_comm->WriteCmd(cmd);
 }
+
+/**
+ * @brief 发送攻丝状态给MI
+ * @param state : 攻丝状态，true表示开，false表示关
+ *  
+ */
+void ChannelControl::SendMiTapStateCmd(bool state){
+	MiCmdFrame cmd;
+	memset(&cmd, 0x00, sizeof(cmd));
+	cmd.data.cmd = CMD_MI_SET_TAP_STATE;
+	cmd.data.axis_index = 0xFF;
+	cmd.data.reserved = this->m_n_channel_index;
+	cmd.data.data[0] = state?1:0;;
+
+	this->m_p_mi_comm->WriteCmd(cmd);
+}
+
 
 /**
  * @brief 发送通道轴-物理轴映射给MI，发送所有轴
@@ -3166,7 +3277,8 @@ void ChannelControl::ProcessHmiSimulateCmd(HMICmdFrame &cmd){
 	}
 
 	if(m_channel_status.machining_state == MS_READY){
-		m_simulate_mode = (SimulateMode)cmd.cmd_extension;
+		
+		this->SetSimulateMode((SimulateMode)cmd.cmd_extension);
 		//启动编译器
 		this->StartRunGCode();
 		cmd.data[0] = SUCCEED;
@@ -3191,6 +3303,7 @@ void ChannelControl::ProcessHmiSimulateCmd(HMICmdFrame &cmd){
  * @param cmd
  */
 void ChannelControl::ProcessHmiSetNcFileCmd(HMICmdFrame &cmd){
+
 	cmd.frame_number |= 0x8000;   //设置回复标志
 	if(this->m_channel_status.chn_work_mode != AUTO_MODE){   //非自动模式
 		strcpy(m_channel_status.cur_nc_file_name, cmd.data);
@@ -3292,6 +3405,8 @@ void ChannelControl::ProcessMdaData(HMICmdFrame &cmd){
 		pthread_mutex_unlock(&m_mutex_change_state);
 	}
 
+	this->m_p_f_reg->OP = 1;   //自动运行状态
+	
 }
 
 /**
@@ -3402,7 +3517,7 @@ bool ChannelControl::SendModeChangToHmi(uint16_t mode_type){
 	case T_MODE:		//T
 		cmd.data_len = 0x01;
 		cmd.data[0] = m_channel_status.cur_tool;
-		printf("SendModeChangToHmi, T = %hhu\n", m_channel_status.cur_tool);
+//		printf("SendModeChangToHmi, T = %hhu\n", m_channel_status.cur_tool);
 		break;
 	case D_MODE:		//D
 		cmd.data_len = 0x01;
@@ -3553,7 +3668,7 @@ bool ChannelControl::SendOpenFileCmdToHmi(char *filename){
  */
 void ChannelControl::SetMachineState(uint8_t mach_state){
 
-	printf("enter SetMachineState, old = %d, new = %d\n", m_channel_status.machining_state, mach_state);
+	g_ptr_trace->PrintTrace(TRACE_INFO, CHANNEL_CONTROL_SC, "Enter SetMachineState, old = %d, new = %d, m_n_run_thread_state = %d\n", m_channel_status.machining_state, mach_state, m_n_run_thread_state);
 	if(m_channel_status.machining_state == mach_state)
 		return;
 
@@ -3586,7 +3701,7 @@ void ChannelControl::SetMachineState(uint8_t mach_state){
 		this->m_p_f_reg->SPL = 0;
 	}
 
-	printf("exit SetMachineState, old = %d, new = %d\n", m_channel_status.machining_state, mach_state);
+	g_ptr_trace->PrintTrace(TRACE_INFO, CHANNEL_CONTROL_SC, "exit SetMachineState, old = %d, new = %d\n", m_channel_status.machining_state, mach_state);
 }
 
 /**
@@ -3680,7 +3795,6 @@ void ChannelControl::SetWorkMode(uint8_t work_mode){
 	this->m_p_f_reg->MJ = 0;
 	this->m_p_f_reg->MH = 0;
 	//切换模式
-	printf("-----------------> channel control set work mode: %d\n", work_mode);
 	switch(work_mode){
 	case AUTO_MODE:
 	case MDA_MODE:
@@ -3794,7 +3908,11 @@ void ChannelControl::SendIntpModeCmdToMc(uint16_t intp_mode){
 
 	cmd.data.data[0] = intp_mode;
 
-	m_p_mc_comm->WriteCmd(cmd);
+	if(!this->m_b_mc_on_arm)
+		m_p_mc_comm->WriteCmd(cmd);
+	else
+		m_p_mc_arm_comm->WriteCmd(cmd);
+	
 }
 
 /**
@@ -3811,7 +3929,10 @@ void ChannelControl::SendWorkModeToMc(uint16_t work_mode){
 
 	cmd.data.data[0] = work_mode;
 
-	m_p_mc_comm->WriteCmd(cmd);
+	if(!this->m_b_mc_on_arm)
+		m_p_mc_comm->WriteCmd(cmd);
+	else
+		m_p_mc_arm_comm->WriteCmd(cmd);
 }
 
 /**
@@ -3820,8 +3941,10 @@ void ChannelControl::SendWorkModeToMc(uint16_t work_mode){
 void ChannelControl::CompileOver(){
 	if(this->m_n_G843_flag){  //取消刚攻跟随状态
 		this->SendMcRigidTapFlag(false);
-		this->SendMiTapRatioCmd(false, 0);
-		m_n_G843_flag = false;
+		this->SendMiTapStateCmd(false);
+		this->SendMiTapRatioCmd(0);
+		m_n_G843_flag = 0;
+		m_n_G843_ratio = 0;
 	}
 	if(this->m_n_M29_flag){  //主轴恢复速度控制
 		this->ProcessM29Reset();
@@ -3887,7 +4010,10 @@ void ChannelControl::ResetMcLineNo(){
 	cmd.data.channel_index = m_n_channel_index;
 	cmd.data.axis_index = NO_AXIS;
 
-	m_p_mc_comm->WriteCmd(cmd);
+	if(!this->m_b_mc_on_arm)
+		m_p_mc_comm->WriteCmd(cmd);
+	else
+		m_p_mc_arm_comm->WriteCmd(cmd);
 }
 
 /**
@@ -3924,10 +4050,8 @@ void *ChannelControl::CompileThread(void *args){
  * @brief G代码运行行函数
  * @return 执行结果
  */
-//static bool get_line_flag;
 int ChannelControl::Run(){
 	int res = ERR_NONE;
-
 	//初始化
 	printf("chn[%hhu] start compiler run, thread id = %ld\n",m_n_channel_index, syscall(SYS_gettid));
 
@@ -3937,19 +4061,12 @@ int ChannelControl::Run(){
 
 	bool bf = true;
 	int compile_count = 0;  //连续编译代码行计数
-	//get_line_flag = true;
 
 	//执行循环
 	while(!g_sys_state.system_quit)
 	{
-
 		if(m_n_run_thread_state == RUN)
 		{
-			/*if(!get_line_flag){
-				m_n_run_thread_state = WAIT_RUN;
-				continue;
-			}*/
-
 			pthread_mutex_lock(&m_mutex_change_state);
 //			if(this->m_ln_cur_line_no%10000 == 1)
 //				gettimeofday(&tvStart, NULL);
@@ -3965,7 +4082,7 @@ int ChannelControl::Run(){
 
 				if(!bf){
 					if(m_error_code != ERR_NONE){
-						printf("execute message error3, %d\n", m_error_code);
+						g_ptr_trace->PrintTrace(TRACE_WARNING, CHANNEL_CONTROL_SC, "execute message error3, %d\n", m_error_code);
 						m_n_run_thread_state = ERROR; //编译出错
 					}
 					else
@@ -3975,7 +4092,7 @@ int ChannelControl::Run(){
 				if(m_p_compiler->RunMessage()){
 					if(!ExecuteMessage()){
 						if(m_error_code != ERR_NONE){
-							printf("execute message error1, %d\n", m_error_code);
+							g_ptr_trace->PrintTrace(TRACE_WARNING, CHANNEL_CONTROL_SC, "execute message error1, %d\n", m_error_code);
 							m_n_run_thread_state = ERROR; //编译出错
 						}
 					}
@@ -3989,13 +4106,13 @@ int ChannelControl::Run(){
 				if(!m_p_compiler->CompileLine())  //编译一行代码
 				{
 					m_n_run_thread_state = ERROR; //编译出错
-					printf("compile error\n");
+					g_ptr_trace->PrintTrace(TRACE_WARNING, CHANNEL_CONTROL_SC, "#####Compile Error#####\n");
 				}
 				else{
 					if(m_p_compiler->RunMessage()){
 						if(!ExecuteMessage()){
 							if(m_error_code != ERR_NONE){
-								printf("execute message error2, %d\n", m_error_code);
+								g_ptr_trace->PrintTrace(TRACE_WARNING, CHANNEL_CONTROL_SC, "execute message error2, %d\n", m_error_code);
 								m_n_run_thread_state = ERROR; //编译出错
 							}else{  //执行未成功，转换为WAIT_EXECUTE状态
 								usleep(10000);   //休眠10ms
@@ -4005,7 +4122,6 @@ int ChannelControl::Run(){
 					}
 					else{
 						m_n_run_thread_state = WAIT_RUN;//执行失败，状态切换到WAIT_RUN
-						//get_line_flag = false;
 					}
 				}
 
@@ -4021,7 +4137,7 @@ int ChannelControl::Run(){
 			else
 			{//出错
 				if(m_p_compiler->GetErrorCode() != ERR_NONE){
-					printf("get line data error!\n");
+					g_ptr_trace->PrintTrace(TRACE_WARNING, CHANNEL_CONTROL_SC, "Get line data error!\n");
 					m_n_run_thread_state = ERROR;
 				}
 			}
@@ -4052,7 +4168,7 @@ int ChannelControl::Run(){
 		}
 		else if(m_n_run_thread_state == ERROR)
 		{//TODO 处理错误
-			printf("Compile Error:%d, %d\n", m_error_code, m_p_compiler->GetErrorCode());
+			g_ptr_trace->PrintTrace(TRACE_WARNING, CHANNEL_CONTROL_SC, "Compile Error:%d, %d\n", m_error_code, m_p_compiler->GetErrorCode());
 	//		CreateError(m_error_code, ERROR_LEVEL, CLEAR_BY_MCP_RESET, 0, m_n_channel_index);
 			m_n_run_thread_state = STOP;
 		}
@@ -4061,7 +4177,7 @@ int ChannelControl::Run(){
 			//TODO 编译结束，复位编译器状态及变量
 			m_n_run_thread_state = IDLE;
 
-			printf("Compiler run STOP!!!!!\n");
+			g_ptr_trace->PrintTrace(TRACE_INFO, CHANNEL_CONTROL_SC, "Compiler run STOP!!!!!\n");
 		}
 		else if(m_n_run_thread_state == PAUSE){
 			usleep(2000);
@@ -4072,7 +4188,7 @@ int ChannelControl::Run(){
 			pthread_mutex_unlock(&m_mutex_change_state);
 			if(!bf){
 				if(m_error_code != ERR_NONE){
-					printf("execute message error3, %d\n", m_error_code);
+					g_ptr_trace->PrintTrace(TRACE_WARNING, CHANNEL_CONTROL_SC, "execute message error4, %d\n", m_error_code);
 					m_n_run_thread_state = ERROR; //编译出错
 				}
 				else
@@ -4085,18 +4201,16 @@ int ChannelControl::Run(){
 			bf = m_p_compiler->RunMessage();
 			if(!ExecuteMessage()){
 				if(m_error_code != ERR_NONE){
-					printf("execute message error3, %d\n", m_error_code);
+					g_ptr_trace->PrintTrace(TRACE_WARNING, CHANNEL_CONTROL_SC, "execute message error5, %d\n", m_error_code);
 					m_n_run_thread_state = ERROR; //编译出错
 				}
 			}
 			pthread_mutex_unlock(&m_mutex_change_state);
 			if(!bf){
 				usleep(10000);
-				m_n_run_thread_state = WAIT_RUN;
+				m_n_run_thread_state = WAIT_RUN;    //防止在ExecuteMessage（）函数中修改m_n_run_thread_state
 			}
 			else if(m_n_run_thread_state != ERROR){
-				//printf("m_n_run_thread_state = RUN\n");
-				//get_line_flag = true;
 				m_n_run_thread_state = RUN; //等待执行完成， 状态切回RUN
 			}
 
@@ -4149,61 +4263,110 @@ bool ChannelControl::RefreshStatusFun(){
 	uint64_t count = 0;           //循环计数
 	while(!g_sys_state.system_quit){
 
-		//更新当前MC的运行模式
-		this->m_p_mc_comm->ReadWorkMode(m_n_channel_index, m_channel_mc_status.cur_mode);
+		if(!this->m_b_mc_on_arm){
+			//更新当前MC的运行模式
+			this->m_p_mc_comm->ReadWorkMode(m_n_channel_index, m_channel_mc_status.cur_mode);
 
-		//更新当前行号
-		this->m_p_mc_comm->ReadCurLineNo(m_n_channel_index, m_channel_mc_status.cur_line_no);
+			//更新当前行号
+			this->m_p_mc_comm->ReadCurLineNo(m_n_channel_index, m_channel_mc_status.cur_line_no);
 
-		//更新当前进给速度
-		this->m_p_mc_comm->ReadCurFeed(m_n_channel_index, m_channel_mc_status.cur_feed);
+			//更新当前进给速度
+			this->m_p_mc_comm->ReadCurFeed(m_n_channel_index, m_channel_mc_status.cur_feed);
 
-		//更新当前给定进给速度
-		this->m_p_mc_comm->ReadRatedFeed(m_n_channel_index, m_channel_mc_status.rated_feed);
+			//更新当前给定进给速度
+			this->m_p_mc_comm->ReadRatedFeed(m_n_channel_index, m_channel_mc_status.rated_feed);
 
-		//更新当前运行指令`
-		this->m_p_mc_comm->ReadCurCmd(m_n_channel_index, m_channel_mc_status.cur_cmd);
+			//更新当前运行指令`
+			this->m_p_mc_comm->ReadCurCmd(m_n_channel_index, m_channel_mc_status.cur_cmd);
 
-		//更新MC当前缓冲数据量
-		this->m_p_mc_comm->ReadAutoBufDataCount(m_n_channel_index, m_channel_mc_status.buf_data_count);
+			//更新MC当前缓冲数据量
+			this->m_p_mc_comm->ReadAutoBufDataCount(m_n_channel_index, m_channel_mc_status.buf_data_count);
 
-		//更新MDA缓冲数据量
-		this->m_p_mc_comm->ReadMdaBufDataCount(m_n_channel_index, m_channel_mc_status.mda_data_count);
+			//更新MDA缓冲数据量
+			this->m_p_mc_comm->ReadMdaBufDataCount(m_n_channel_index, m_channel_mc_status.mda_data_count);
 
-		//更新当前轴插补位置
-		this->m_p_mc_comm->ReadAxisIntpPos(m_n_channel_index, m_channel_mc_status.intp_pos, m_channel_mc_status.intp_tar_pos);
+			//更新当前轴插补位置
+			this->m_p_mc_comm->ReadAxisIntpPos(m_n_channel_index, m_channel_mc_status.intp_pos, m_channel_mc_status.intp_tar_pos);
 
-		//更新AUTO分块到位标志
-		m_channel_mc_status.auto_block_over = m_p_mc_comm->ReadAutoBlockRunOverFlag(m_n_channel_index);
+			//更新AUTO分块到位标志
+			m_channel_mc_status.auto_block_over = m_p_mc_comm->ReadAutoBlockRunOverFlag(m_n_channel_index);
 
-		//更新MDA分块到位标志
-		m_channel_mc_status.mda_block_over = m_p_mc_comm->ReadMdaBlockRunOverFlag(m_n_channel_index);
+			//更新MDA分块到位标志
+			m_channel_mc_status.mda_block_over = m_p_mc_comm->ReadMdaBlockRunOverFlag(m_n_channel_index);
 
-		//更新单段到位标志
-		m_channel_mc_status.step_over = m_p_mc_comm->ReadStepRunOverFlag(m_n_channel_index);
+			//更新单段到位标志
+			m_channel_mc_status.step_over = m_p_mc_comm->ReadStepRunOverFlag(m_n_channel_index);
 
-		//更新当前轴到位标志
-		this->m_p_mc_comm->ReadChnAxisRunoverMask(m_n_channel_index, m_channel_mc_status.axis_over_mask);
+			//更新当前轴到位标志
+			this->m_p_mc_comm->ReadChnAxisRunoverMask(m_n_channel_index, m_channel_mc_status.axis_over_mask);
 
-		//更新当前MC告警标志
-		this->m_p_mc_comm->ReadMcErrFlag(m_n_channel_index, m_channel_mc_status.mc_error.all);
-
-
-		if(m_channel_mc_status.cur_mode == MC_MODE_AUTO &&
+			//更新当前MC告警标志
+			this->m_p_mc_comm->ReadMcErrFlag(m_n_channel_index, m_channel_mc_status.mc_error.all);
+			
+			if(m_channel_mc_status.cur_mode == MC_MODE_AUTO &&
 #ifdef USES_ADDITIONAL_PROGRAM
 				m_n_add_prog_type == NONE_ADD &&
 #endif
 				m_b_lineno_from_mc && m_channel_mc_status.cur_line_no > 0){  //即刻更新实时状态行号
 			m_channel_rt_status.line_no = m_channel_mc_status.cur_line_no;
+		    }
+			
+		}else{
+			//更新当前MC的运行模式
+			this->m_p_mc_arm_comm->ReadWorkMode(m_n_channel_index, m_channel_mc_status.cur_mode);
+
+			//更新当前行号
+			this->m_p_mc_arm_comm->ReadCurLineNo(m_n_channel_index, m_channel_mc_status.cur_line_no);
+
+			//更新当前进给速度
+			this->m_p_mc_arm_comm->ReadCurFeed(m_n_channel_index, m_channel_mc_status.cur_feed);
+
+			//更新当前给定进给速度
+			this->m_p_mc_arm_comm->ReadRatedFeed(m_n_channel_index, m_channel_mc_status.rated_feed);
+
+			//更新当前运行指令`
+			this->m_p_mc_arm_comm->ReadCurCmd(m_n_channel_index, m_channel_mc_status.cur_cmd);
+
+			//更新MC当前缓冲数据量
+			this->m_p_mc_arm_comm->ReadAutoBufDataCount(m_n_channel_index, m_channel_mc_status.buf_data_count);
+
+			//更新MDA缓冲数据量
+			this->m_p_mc_arm_comm->ReadMdaBufDataCount(m_n_channel_index, m_channel_mc_status.mda_data_count);
+
+			//更新当前轴插补位置
+			this->m_p_mc_arm_comm->ReadAxisIntpPos(m_n_channel_index, m_channel_mc_status.intp_pos, m_channel_mc_status.intp_tar_pos);
+
+			//更新AUTO分块到位标志
+			m_channel_mc_status.auto_block_over = m_p_mc_arm_comm->ReadAutoBlockRunOverFlag(m_n_channel_index);
+
+			//更新MDA分块到位标志
+			m_channel_mc_status.mda_block_over = m_p_mc_arm_comm->ReadMdaBlockRunOverFlag(m_n_channel_index);
+
+			//更新单段到位标志
+			m_channel_mc_status.step_over = m_p_mc_arm_comm->ReadStepRunOverFlag(m_n_channel_index);
+
+			//更新当前轴到位标志
+			this->m_p_mc_arm_comm->ReadChnAxisRunoverMask(m_n_channel_index, m_channel_mc_status.axis_over_mask);
+
+			//更新当前MC告警标志
+			this->m_p_mc_arm_comm->ReadMcErrFlag(m_n_channel_index, m_channel_mc_status.mc_error.all);			
+			
+			if(m_channel_mc_status.cur_mode == MC_MODE_AUTO &&
+#ifdef USES_ADDITIONAL_PROGRAM
+				m_n_add_prog_type == NONE_ADD &&
+#endif
+				m_b_lineno_from_mc && m_channel_mc_status.cur_line_no > 0){  //即刻更新实时状态行号
+			m_channel_rt_status.line_no = m_channel_mc_status.cur_line_no;
+		    }
 		}
 
 		//更新系统状态
 		step_mode_flag = IsStepMode();
 		if(step_mode_flag){
-			check_count = 50;    //2;
+			check_count = 10;    //2;
 		}
 		else{
-			check_count = 50;    //1;   //增加延时，等待轴运行到位
+			check_count = 10;    //1;   //增加延时，等待轴运行到位
 		}
 		if(m_channel_mc_status.cur_mode ==MC_MODE_MANUAL){
 			if(m_channel_status.machining_state == MS_PAUSING ||		//暂停中并且MC已切换至手动模式
@@ -4213,7 +4376,7 @@ bool ChannelControl::RefreshStatusFun(){
 
 				if(++m_n_step_change_mode_count > check_count){
 					if(m_channel_status.machining_state == MS_STOPPING){
-#ifdef USES_WOOD_MACHINE
+#ifdef USES_EMERGENCY_DEC_STOP
 						if(this->m_b_delay_servo_off){
 							this->m_p_channel_engine->SetChnStoppedMask(this->m_n_channel_index);
 							this->m_b_delay_servo_off = false;
@@ -4259,7 +4422,7 @@ bool ChannelControl::RefreshStatusFun(){
 				this->m_b_delay_to_reset = false;
 				this->Reset();
 			}
-#ifdef USES_WOOD_MACHINE
+#ifdef USES_EMERGENCY_DEC_STOP
 			else if(m_b_delay_servo_off && (m_channel_status.machining_state == MS_READY || m_channel_status.machining_state == MS_WARNING)){
 				this->m_p_channel_engine->SetChnStoppedMask(this->m_n_channel_index);
 				this->m_b_delay_servo_off = false;
@@ -4271,16 +4434,18 @@ bool ChannelControl::RefreshStatusFun(){
 
 			//更新模态, 只有MC处于AUTO模式时才从MC中读取模态
 			//更新MC模态信息
-			this->m_p_mc_comm->ReadMcModeInfo(m_n_channel_index, m_channel_mc_status.mc_mode.all);
+			if(!this->m_b_mc_on_arm)
+				this->m_p_mc_comm->ReadMcModeInfo(m_n_channel_index, m_channel_mc_status.mc_mode.all);
+			else
+				this->m_p_mc_arm_comm->ReadMcModeInfo(m_n_channel_index, m_channel_mc_status.mc_mode.all);
 
 			this->RefreshModeInfo(m_channel_mc_status.mc_mode);
-
 		}
 
 		if(this->m_b_change_hw_trace_state){//切换手轮跟踪模式
 			if(m_channel_mc_status.cur_mode ==MC_MODE_MANUAL && m_channel_mc_status.cur_feed < 3){
 				bool res = this->ChangeHwTraceState(this->m_n_hw_trace_state_change_to);
-				printf("change to mpg trace mode:%hhu\n", m_n_hw_trace_state_change_to);
+//				printf("change to mpg trace mode:%hhu\n", m_n_hw_trace_state_change_to);
 
 				//发送MI手轮状态切换响应命令
 				MiCmdFrame cmd;
@@ -4315,9 +4480,16 @@ bool ChannelControl::RefreshStatusFun(){
 //		}
 
 		if(m_channel_mc_status.mc_error.bits.err_soft_limit_neg || m_channel_mc_status.mc_error.bits.err_soft_limit_pos){//软限位告警
-			this->m_p_mc_comm->ReadChnSoftLimtMask(m_n_channel_index, data);
-			this->m_channel_mc_status.axis_soft_negative_limit = data&0xFFFF;
-			this->m_channel_mc_status.axis_soft_postive_limit = (data>>16)&0xFFFF;
+			if(!this->m_b_mc_on_arm){
+				this->m_p_mc_comm->ReadChnSoftLimtMask(m_n_channel_index, data);
+				this->m_channel_mc_status.axis_soft_negative_limit = data&0xFFFF;
+				this->m_channel_mc_status.axis_soft_postive_limit = (data>>16)&0xFFFF;
+			}else{
+				this->m_p_mc_arm_comm->ReadChnPosSoftLimtMask(m_n_channel_index, data);
+				this->m_channel_mc_status.axis_soft_postive_limit = data;
+				this->m_p_mc_arm_comm->ReadChnNegSoftLimtMask(m_n_channel_index, data);
+				this->m_channel_mc_status.axis_soft_negative_limit = data;
+			}
 			if(m_channel_mc_status.mc_error.bits.err_soft_limit_neg){
 				CreateError(ERR_SOFT_LIMIT_NEG, ERROR_LEVEL, CLEAR_BY_MCP_RESET, data, m_n_channel_index);
 			}
@@ -4327,7 +4499,10 @@ bool ChannelControl::RefreshStatusFun(){
 		}
 
 		if(m_channel_mc_status.mc_error.bits.err_pos_over){//位置指令过大
-			this->m_p_mc_comm->ReadChnPosErrMask(m_n_channel_index, m_channel_mc_status.pos_error_mask);
+			if(!this->m_b_mc_on_arm)
+				this->m_p_mc_comm->ReadChnPosErrMask(m_n_channel_index, m_channel_mc_status.pos_error_mask);
+			else
+				this->m_p_mc_arm_comm->ReadChnPosErrMask(m_n_channel_index, m_channel_mc_status.pos_error_mask);
 			CreateError(ERR_POS_ERR, ERROR_LEVEL, CLEAR_BY_MCP_RESET, m_channel_mc_status.pos_error_mask, m_n_channel_index);
 		}
 
@@ -4360,6 +4535,11 @@ bool ChannelControl::RefreshStatusFun(){
 
 				this->m_b_cancel_manual_call_macro = false;
 			}
+		}
+
+		if(this->m_channel_status.chn_work_mode == AUTO_MODE && this->m_b_hmi_graph &&
+				(this->m_channel_status.machining_state == MS_RUNNING || this->m_channel_status.machining_state == MS_MACHIN_SIMULATING)){
+			this->ReadGraphAxisPos();
 		}
 
 
@@ -4423,13 +4603,9 @@ bool ChannelControl::RefreshStatusFun(){
 					}
 				}
 			}
-
 		}
 #endif
 
-		if(count%1000 == 0 && this->m_channel_mc_status.buf_data_count > 0){
-			printf("MC auto buffer count : %hu\n", m_channel_mc_status.buf_data_count);
-		}
 		count++;   //计数加一
 		usleep(4000);
 	}
@@ -4449,11 +4625,17 @@ bool ChannelControl::IsBlockRunOver(){
 		return false;
 
 	if(this->m_channel_status.chn_work_mode == AUTO_MODE){
-		m_channel_mc_status.auto_block_over = m_p_mc_comm->ReadAutoBlockRunOverFlag(m_n_channel_index);
+		if(!this->m_b_mc_on_arm)
+			m_channel_mc_status.auto_block_over = m_p_mc_comm->ReadAutoBlockRunOverFlag(m_n_channel_index);
+		else
+			m_channel_mc_status.auto_block_over = m_p_mc_arm_comm->ReadAutoBlockRunOverFlag(m_n_channel_index);
 		return m_channel_mc_status.auto_block_over;
 	}
 	else{
-		m_channel_mc_status.mda_block_over = m_p_mc_comm->ReadMdaBlockRunOverFlag(m_n_channel_index);
+		if(!this->m_b_mc_on_arm)
+			m_channel_mc_status.mda_block_over = m_p_mc_comm->ReadMdaBlockRunOverFlag(m_n_channel_index);
+		else
+			m_channel_mc_status.mda_block_over = m_p_mc_arm_comm->ReadMdaBlockRunOverFlag(m_n_channel_index);
 		return m_channel_mc_status.mda_block_over;
 	}
 }
@@ -4547,7 +4729,7 @@ bool ChannelControl::OutputSimulateData(RecordMsg *msg){
 			//半径
 			data.type = ARC_RADIUS;
 			data.pos[0] = comp_data.radius;
-			data.pos[1] = 0;
+			data.pos[1] = comp_data.plane;
 			data.pos[2] = 0;
 			this->SendSimulateDataToHmi(type, data);  //发送圆半径，包含优劣弧及点信息
 		}
@@ -4575,7 +4757,12 @@ bool ChannelControl::OutputData(RecordMsg *msg, bool flag_block){
 
 	//MC缓冲的运动数据+PL中缓冲的数据不能大于MC的运动数据缓冲容量，防止MDA数据被阻塞
 	if(this->m_channel_status.chn_work_mode == AUTO_MODE){
-		if((m_channel_mc_status.buf_data_count + m_p_mc_comm->ReadGCodeFifoCount(m_n_channel_index)) >= m_n_mc_auto_buf_max){
+        
+	    uint32_t gcode_fifo_count = 30;
+		if(!this->m_b_mc_on_arm)
+			 gcode_fifo_count = m_p_mc_comm->ReadGCodeFifoCount(m_n_channel_index);
+
+		if((m_channel_mc_status.buf_data_count + gcode_fifo_count) >= m_n_mc_auto_buf_max){
 			m_n_send_mc_data_err++;
 //			printf("ChannelControl::OutputData, return false, buf_count=%hu, fifo=%u, max=%hu\n", m_channel_mc_status.buf_data_count,
 //					m_p_mc_comm->ReadGCodeFifoCount(m_n_channel_index), m_n_mc_auto_buf_max);
@@ -4589,13 +4776,17 @@ bool ChannelControl::OutputData(RecordMsg *msg, bool flag_block){
 	GCodeFrame data_frame;   	//G代码数据帧
 //	bool is_last = false;
 
-	msg->SetFrameIndex(m_n_frame_index);
-	data_frame.data.frame_index = this->m_n_frame_index++;
-	if(m_n_frame_index == 0)
-		m_n_frame_index = 1;
-
-
-
+	if(msg->GetFrameIndex() == 0){
+		msg->SetFrameIndex(m_n_frame_index);
+		data_frame.data.frame_index = this->m_n_frame_index++;
+		if(m_n_frame_index == 0)
+			m_n_frame_index = 1;
+	}else{
+		data_frame.data.frame_index = msg->GetFrameIndex();
+	}
+	
+	
+	
     //处理插补轴的运动指令
 	bool flag = this->m_n_hw_trace_state==REVERSE_TRACE?true:false;    //是否反向引导
 	if(msg->GetOutputData(&data_frame, m_mask_intp_axis, flag) == 1)  //无要发送的运动数据
@@ -4699,7 +4890,13 @@ bool ChannelControl::OutputData(RecordMsg *msg, bool flag_block){
 
 
 	//发送数据至MC
-	if(!m_p_mc_comm->WriteGCodeData(m_n_channel_index, data_frame)){
+	bool res = false;
+	if(!this->m_b_mc_on_arm){
+		res = m_p_mc_comm->WriteGCodeData(m_n_channel_index, data_frame);
+	}else{
+		res = this->m_p_mc_arm_comm->WriteGCodeData(m_n_channel_index, data_frame);
+	}
+	if(!res){
 		//发送失败
 		m_n_send_mc_data_err++;
 //		printf("failed to send out data frame: cmd = %d, line = %d\n", data_frame.data.cmd, data_frame.data.line_no);
@@ -5025,11 +5222,42 @@ bool ChannelControl::ExecuteMessage(){
 
 			//如果手轮反向跟踪到头，则给出提示
 			if(this->m_n_hw_trace_state == REVERSE_TRACE && node == nullptr){
-				//更新当前MC的运行模式
-				this->m_p_mc_comm->ReadWorkMode(m_n_channel_index, m_channel_mc_status.cur_mode);
-				//更新MC当前缓冲数据量
-				this->m_p_mc_comm->ReadAutoBufDataCount(m_n_channel_index, m_channel_mc_status.buf_data_count);
-				if(m_channel_mc_status.cur_mode == MC_MODE_MANUAL && this->m_channel_mc_status.buf_data_count == 0){
+				int count = 0;
+				if(!this->m_b_mc_on_arm){
+					//更新当前MC的运行模式
+					this->m_p_mc_comm->ReadWorkMode(m_n_channel_index, m_channel_mc_status.cur_mode);
+					//更新MC当前缓冲数据量
+					this->m_p_mc_comm->ReadAutoBufDataCount(m_n_channel_index, m_channel_mc_status.buf_data_count);
+					while(m_channel_mc_status.cur_mode == MC_MODE_MANUAL && this->m_channel_mc_status.buf_data_count == 0 && count < 3){
+
+						usleep(2000);  //休眠2ms
+
+						//更新当前MC的运行模式
+						this->m_p_mc_comm->ReadWorkMode(m_n_channel_index, m_channel_mc_status.cur_mode);
+						//更新MC当前缓冲数据量
+						this->m_p_mc_comm->ReadAutoBufDataCount(m_n_channel_index, m_channel_mc_status.buf_data_count);
+
+						count++;
+					}
+            	}else{
+					//更新当前MC的运行模式
+					this->m_p_mc_arm_comm->ReadWorkMode(m_n_channel_index, m_channel_mc_status.cur_mode);
+					//更新MC当前缓冲数据量
+					this->m_p_mc_arm_comm->ReadAutoBufDataCount(m_n_channel_index, m_channel_mc_status.buf_data_count);
+					while(m_channel_mc_status.cur_mode == MC_MODE_MANUAL && this->m_channel_mc_status.buf_data_count == 0 && count < 3){
+
+						usleep(2000);  //休眠2ms
+
+						//更新当前MC的运行模式
+						this->m_p_mc_arm_comm->ReadWorkMode(m_n_channel_index, m_channel_mc_status.cur_mode);
+						//更新MC当前缓冲数据量
+						this->m_p_mc_arm_comm->ReadAutoBufDataCount(m_n_channel_index, m_channel_mc_status.buf_data_count);
+
+						count++;
+					}
+              	}
+				
+				if(m_channel_mc_status.cur_mode == MC_MODE_MANUAL && this->m_channel_mc_status.buf_data_count == 0 && count >= 3){
 					CreateError(ERR_HW_REV_OVER, WARNING_LEVEL, CLEAR_BY_CLEAR_BUTTON, 0, m_n_channel_index);
 					return res;
 				}
@@ -5202,14 +5430,15 @@ bool ChannelControl::ExecuteMessage(){
 				&& this->m_n_add_prog_type == NONE_ADD      //非附加程序运行状态
 #endif
 			){
-				if(this->m_n_restart_step == 2){//FOR TEST
-					printf("Restart to exec msg %d, line = %llu,  res = %d\n", msg->GetMsgType(), msg->GetLineNo(), res);
-				}
-				else if(this->m_n_restart_step == 1){  //扫描阶段的数据执行完后直接删除
+				
+				if(this->m_n_restart_step == 1){  //扫描阶段的数据执行完后直接删除
 					this->m_p_output_msg_list->Delete(node);   //删除此节点命令
 					node = m_p_output_msg_list->HeadNode();  //取下一个消息
 					return res;
 				}
+//				else if(this->m_n_restart_step == 2){//FOR TEST
+//					g_ptr_trace->PrintTrace(TRACE_INFO, CHANNEL_CONTROL_SC, "Restart to exec msg %d, line = %llu,  res = %d\n", msg->GetMsgType(), msg->GetLineNo(), res);
+//				}
 			}
 
 			if(msg->IsNeedWaitMsg() && (this->m_simulate_mode == SIM_NONE || this->m_simulate_mode == SIM_MACHINING)){  //非仿真、加工仿真才需要给MC发送启动指令
@@ -5225,7 +5454,7 @@ bool ChannelControl::ExecuteMessage(){
 #endif
 					) &&    //运行状态或者手动对刀状态
 					msg->IsMoveMsg() && this->m_b_mc_need_start){
-				printf("move data send start, msg type = %d\n", msg->GetMsgType());
+//				printf("move data send start, msg type = %d\n", msg->GetMsgType());
 				this->StartMcIntepolate();
 			}
 //			else {
@@ -5250,7 +5479,7 @@ bool ChannelControl::ExecuteMessage(){
 
 			if(msg->IsEndMsg()){	//处理M02/M30消息
 				this->m_n_run_thread_state = STOP;
-			}else if(this->m_error_code == ERR_NONE && this->IsMachinRunning() && !pause_flag){
+			}else if(m_n_run_thread_state != WAIT_RUN && this->m_error_code == ERR_NONE && this->IsMachinRunning() && !pause_flag){
 				this->m_n_run_thread_state = RUN;
 			//	printf("execute message change state to RUN!!!!!\n");
 			}else if(m_n_run_thread_state == WAIT_EXECUTE &&
@@ -5293,7 +5522,7 @@ bool ChannelControl::ExecuteMessage(){
 //				}else{
 					//根据msg类型判断是否需要清空之前的缓冲
 					if(this->IsBufClearMsg(msg)){
-					//	printf("@@@@@@@@#####clear buf message,line = %llu\n", msg->GetLineNo());
+					//	g_ptr_trace->PrintTrace(TRACE_INFO, CHANNEL_CONTROL_SC, "@@@@@@@@#####clear buf message,line = %llu\n", msg->GetLineNo());
 						this->m_p_output_msg_list->ClearBefore(node);
 						this->m_p_last_output_msg = nullptr;
 						node = this->m_p_output_msg_list->HeadNode();
@@ -5365,8 +5594,21 @@ bool ChannelControl::ExecuteAuxMsg(RecordMsg *msg){
 			}else if(mcode == 5){
 				this->m_mode_restart.rated_spindle_speed = 0;
 				this->m_mode_restart.spindle_dir = SPD_DIR_STOP;
-			}else if(mcode == 99){
-				this->m_mode_restart.sub_prog_call--;
+			}else if(mcode == 2 || mcode == 30 || mcode == 99){  //直接结束，切换到READY状态
+				if(mcode == 99 && m_mode_restart.sub_prog_call > 0)
+					this->m_mode_restart.sub_prog_call--;
+				else{
+					ResetMcLineNo();//复位MC模块当前行号
+					this->SetCurLineNo(1);
+
+					CompileOver();
+					this->m_n_restart_mode = NOT_RESTART;
+					this->m_n_restart_line = 0;
+					this->m_n_restart_step = 0;
+					this->m_p_compiler->SetRestartPara(0, m_n_restart_mode);   //复位编译器的加工复位标志
+
+					this->ClearHmiInfoMsg();   //清除HMI的提示信息
+				}
 			}
 		}
 
@@ -5429,9 +5671,9 @@ bool ChannelControl::ExecuteAuxMsg(RecordMsg *msg){
 //		}
 
 
-		int limit = 2;
+		int limit = 3;
 		if(this->IsStepMode())
-			limit = 4;	//单步模式需要多次验证，因为状态切换有延时
+			limit = 5;	//单步模式需要多次验证，因为状态切换有延时
 
 		//等待MC分块的插补到位信号，以及MI的运行到位信号
 		int count = 0;
@@ -5534,8 +5776,6 @@ bool ChannelControl::ExecuteAuxMsg(RecordMsg *msg){
 					}else
 						break;
 				}
-
-
 				tmp->IncreaseExecStep(m_index);
 			}else if(tmp->GetExecStep(m_index) == 3){
 				if(this->m_p_g_reg->FIN == 0 && !this->GetMFINSig(m_index)){
@@ -5613,6 +5853,7 @@ bool ChannelControl::ExecuteAuxMsg(RecordMsg *msg){
 #endif
 
 				CompileOver();
+				this->SetMiSimMode(false);  //复位MI仿真状态									  
 
 	//#ifdef USES_FIVE_AXIS_FUNC
 	//
@@ -5793,7 +6034,6 @@ bool ChannelControl::ExecuteAuxMsg(RecordMsg *msg){
 			break;
 		case 3:		//M03主轴正转
 			if(tmp->GetExecStep(m_index) == 0){
-				printf("execute M03, step = 0\n");
 				//TODO 将代码发送给PMC
 				this->SendMCodeToPmc(mcode, m_index);
 
@@ -5804,7 +6044,6 @@ bool ChannelControl::ExecuteAuxMsg(RecordMsg *msg){
 				tmp->IncreaseExecStep(m_index);
 			}else if(tmp->GetExecStep(m_index) == 1){
 				//等待TMF延时，置位MF选通信号
-				printf("execute M03, step = 1\n");
 				gettimeofday(&time_now, NULL);
 				time_elpase = (time_now.tv_sec-m_time_m_start[m_index].tv_sec)*1000000+time_now.tv_usec-m_time_m_start[m_index].tv_usec;
 				if(time_elpase < 16000)
@@ -5828,7 +6067,6 @@ bool ChannelControl::ExecuteAuxMsg(RecordMsg *msg){
 						break;
 				}
 
-				printf("execute M03, step = 2\n");
 				tmp->IncreaseExecStep(m_index);
 			}else if(tmp->GetExecStep(m_index) == 3){
 				if(this->m_p_g_reg->FIN == 0 && !this->GetMFINSig(m_index)){
@@ -5842,7 +6080,6 @@ bool ChannelControl::ExecuteAuxMsg(RecordMsg *msg){
 				if(time_elpase < 16000)
 					break;		//未到延时时间
 
-				printf("execute M03, step = 3\n");
 				this->SetMFSig(m_index, false);    //复位选通信号
 				tmp->IncreaseExecStep(m_index);
 			}else if(tmp->GetExecStep(m_index) == 4){
@@ -5850,7 +6087,6 @@ bool ChannelControl::ExecuteAuxMsg(RecordMsg *msg){
 				if(this->m_p_g_reg->FIN == 1 || this->GetMFINSig(m_index))
 					break;
 
-				printf("execute M03, step = 4\n");
 				//复位辅助指令信号和DEN信号
 				this->SendMCodeToPmc(0, m_index);
 
@@ -6257,7 +6493,10 @@ bool ChannelControl::ExecuteAuxMsg(RecordMsg *msg){
 		case 999:  //M999 暂停编译，并且同步位置
 			printf("execute M999\n");
 			//同步位置
+		if(!this->m_b_mc_on_arm)
 			this->m_p_mc_comm->ReadAxisIntpPos(m_n_channel_index, m_channel_mc_status.intp_pos, m_channel_mc_status.intp_tar_pos);
+		else
+			this->m_p_mc_arm_comm->ReadAxisIntpPos(m_n_channel_index, m_channel_mc_status.intp_pos, m_channel_mc_status.intp_tar_pos);
 
 	//			m_channel_rt_status.cur_pos_work = m_channel_mc_status.intp_pos;
 	//			m_channel_rt_status.tar_pos_work = m_channel_mc_status.intp_tar_pos;
@@ -6297,28 +6536,20 @@ bool ChannelControl::ExecuteAuxMsg(RecordMsg *msg){
 			tmp->SetExecStep(m_index, 0xFF);    //置位结束状态
 			break;
 	#endif
-		case 4000:
-		case 4001:
-		case 4002:
-		case 4003:
-		case 4004:
-		case 4005:
-		case 4006:
-		case 4007:
-		case 4008:
-		case 4009:
-			this->MiDebugFunc(mcode);
-			tmp->SetExecStep(m_index, 0xFF);    //置位结束状态
-			break;
-
+		
 		default:   //其它M代码
-			if(mcode >= 40010 && mcode <= 40083){
+		    if(mcode >= 4000 && mcode <= 4099){   // MI临时调试  M代码
+				this->MiDebugFunc(mcode);
+				tmp->SetExecStep(m_index, 0xFF);    //置位结束状态
+				break;
+		    }    						
+			else if(mcode >= 40010 && mcode <= 40083){  // 轴速度控制  力矩控制  M代码
 	#ifdef USES_SPEED_TORQUE_CTRL
 				ProcessCtrlModeSwitch(tmp, m_index);
 				break;
 	#endif
 			}
-			else if(mcode >= 41011 && mcode <= 41648){
+			else if(mcode >= 41011 && mcode <= 41648){  // 轴重新映射  M代码
 				ProcessAxisMapSwitch(tmp, m_index);
 				break;
 			}
@@ -6379,7 +6610,6 @@ bool ChannelControl::ExecuteAuxMsg(RecordMsg *msg){
 				//复位辅助指令信号和DEN信号
 				this->SendMCodeToPmc(0, m_index);
 
-
 				tmp->IncreaseExecStep(m_index);
 			}else{
 				this->ExecMCode(tmp, m_index);  //执行某些M代码需要系统执行的动作
@@ -6391,6 +6621,9 @@ bool ChannelControl::ExecuteAuxMsg(RecordMsg *msg){
 		}
 		if(tmp->GetExecStep(m_index) != 0xFF)//还未执行结束，返回false
 			bRet = false;
+		else{
+			g_ptr_trace->PrintLog(LOG_ALARM, "执行的M代码结束：M%02d", mcode);
+		}
 	}
 
 	if(bRet){
@@ -6789,14 +7022,20 @@ bool ChannelControl::ExecuteCoordMsg(RecordMsg *msg){
 			return false;
 		case 1:
 			//第二步：等待MC设置新工件坐标系完成
-			this->m_p_mc_comm->ReadChnCurCoord(m_n_channel_index, coord_mc);  //读取MC当前工件坐标系
+			if(!this->m_b_mc_on_arm)
+				this->m_p_mc_comm->ReadChnCurCoord(m_n_channel_index, coord_mc);  //读取MC当前工件坐标系
+			else
+				this->m_p_mc_arm_comm->ReadChnCurCoord(m_n_channel_index, coord_mc);
 			if(coord_mc*10 == gcode){
 				coordmsg->SetExecStep(2);  //跳转下一步
 			}
 			return false;
 		case 2:
 			//第三步：同步位置
-			this->m_p_mc_comm->ReadAxisIntpPos(m_n_channel_index, m_channel_mc_status.intp_pos, m_channel_mc_status.intp_tar_pos);
+			if(!this->m_b_mc_on_arm)
+				this->m_p_mc_comm->ReadAxisIntpPos(m_n_channel_index, m_channel_mc_status.intp_pos, m_channel_mc_status.intp_tar_pos);
+			else
+				this->m_p_mc_arm_comm->ReadAxisIntpPos(m_n_channel_index, m_channel_mc_status.intp_pos, m_channel_mc_status.intp_tar_pos);
 
 //			m_channel_rt_status.cur_pos_work = m_channel_mc_status.intp_pos;
 //			m_channel_rt_status.tar_pos_work = m_channel_mc_status.intp_tar_pos;
@@ -7132,24 +7371,23 @@ bool ChannelControl::ExecuteModeMsg(RecordMsg *msg){
 		return true;
 	}
 
-	//单段模式下，等待MC运行完所有数据
-	if(this->IsStepMode()){
-		int count = 0;
-		while(count < 4 ){
-			if(this->ReadMcMoveDataCount() > 0 ||
-					(!this->CheckStepOverFlag() && !this->CheckBlockOverFlag()) ||
-					m_channel_status.machining_state == MS_PAUSED ||
-					m_channel_status.machining_state == MS_WARNING){
-	//			printf("ExecuteModeMsg: step=%d, %d, c = %d\n", m_channel_mc_status.step_over,m_channel_mc_status.auto_block_over, count);
-				return false;    //还未运行到位
-			}
-			else{
-				count++;
-	//			printf("ExecuteModeMsg: step=%d, %d, c = %d\n", m_channel_mc_status.step_over,m_channel_mc_status.auto_block_over, count);
-				usleep(5000);   //等待5ms，因为MC状态更新周期为5ms，需要等待状态确认
-			}
+	int count = 0;
+	while(count < 4 ){
+		if(this->ReadMcMoveDataCount() > 0 || !this->CheckBlockOverFlag() ||														   
+				m_channel_status.machining_state == MS_PAUSED ||
+				m_channel_status.machining_state == MS_WARNING){
+//			printf("ExecuteModeMsg: step=%d, %d, c = %d\n", m_channel_mc_status.step_over,m_channel_mc_status.auto_block_over, count);
+			return false;    //还未运行到位
 		}
+		else{
+			count++;
+//			printf("ExecuteModeMsg: step=%d, %d, c = %d\n", m_channel_mc_status.step_over,m_channel_mc_status.auto_block_over, count);
+			usleep(5000);   //等待5ms，因为MC状态更新周期为5ms，需要等待状态确认
+		}
+	}
 
+	//单段模式
+	if(this->IsStepMode()){		
 		if(this->m_b_need_change_to_pause){//单段，切换暂停状态
 			this->m_b_need_change_to_pause = false;
 			m_n_run_thread_state = PAUSE;
@@ -7175,10 +7413,11 @@ bool ChannelControl::ExecuteModeMsg(RecordMsg *msg){
 
 
 	if(cmd == G84_3_CMD){
-		if(this->m_n_M29_flag == 1){
+		if(this->m_n_M29_flag == 1 && this->m_n_G843_flag == 0){
 			this->SendMcRigidTapFlag(true);
-			this->SendMiTapRatioCmd(true, this->m_n_G843_ratio);
+			this->SendMiTapStateCmd(true);
 			this->m_n_G843_flag = 1;
+//			printf("send G843 message : %d\n", cmd);
 		}
 	}
 
@@ -7211,6 +7450,8 @@ bool ChannelControl::ExecuteModeMsg(RecordMsg *msg){
 		case 16:
 			this->m_mc_mode_exec.bits.mode_g68 = cmd/10 - 68;
 			break;
+		default:
+			break;
 		}
 	}
 
@@ -7219,7 +7460,7 @@ bool ChannelControl::ExecuteModeMsg(RecordMsg *msg){
 	}
 
 
-//	this->m_channel_status.gmode[GCode2Mode[cmd/10]] = cmd;
+	this->m_channel_status.gmode[GCode2Mode[cmd/10]] = cmd;
 
 
 	//TODO 执行各模态指令
@@ -7228,7 +7469,7 @@ bool ChannelControl::ExecuteModeMsg(RecordMsg *msg){
 
 
 	//通知HMI
-//	this->SendChnStatusChangeCmdToHmi(G_MODE);
+	this->SendChnStatusChangeCmdToHmi(G_MODE);
 
 	return true;
 }
@@ -7301,6 +7542,10 @@ bool ChannelControl::ExecuteSpeedMsg(RecordMsg *msg){
 				m_mode_restart.cur_scode = spd_config->spd_max_speed;
 			if(m_mode_restart.cur_scode < (int)spd_config->spd_min_speed)
 				m_mode_restart.cur_scode = spd_config->spd_min_speed;
+		}
+		
+		if(m_mode_restart.spindle_dir != SPD_DIR_STOP){  //当前主轴已经处于旋转状态
+			m_mode_restart.rated_spindle_speed = m_mode_restart.cur_scode;
 		}
 
 		return true;
@@ -7500,7 +7745,7 @@ bool ChannelControl::ExecuteLoopMsg(RecordMsg *msg){
 
 	//更新模态
 	if(cmd == G89_CMD)
-		m_mc_mode_exec.bits.mode_g73 = 15;
+		m_mc_mode_exec.bits.mode_g73 = 15;    //mode_g74只有4bit，值范围0~15，因此G89需要特殊处理
 	else
 		m_mc_mode_exec.bits.mode_g73 = cmd/10 - 73;
 
@@ -7527,6 +7772,7 @@ bool ChannelControl::ExecuteLoopMsg(RecordMsg *msg){
 		double feed = 0;
 		int i  = 0;
 		double *pp = loopmsg->GetParameter(pm, pc);
+		
 		while(pm != 0){  //获取F参数
 			if(pm & mask){
 				if(i == F_DATA){
@@ -7538,14 +7784,29 @@ bool ChannelControl::ExecuteLoopMsg(RecordMsg *msg){
 			pm = pm>>1;
 			i++;
 		}
+		
+		
+//		printf("********************feed = %lf\n", feed);
 		if(feed > 0){
-			uint32_t ratio = 10000*this->m_n_cur_scode*this->m_p_axis_config[this->m_spd_axis_phy[0]-1].move_pr/feed;
-			this->SendMiTapRatioCmd(true, ratio);
+//			printf("scode %d move_pr %f feed %f\n",this->m_n_cur_scode,this->m_p_axis_config[this->m_spd_axis_phy[0]-1].move_pr,feed);
+			int32_t ratio = -10000*this->m_n_cur_scode*this->m_p_axis_config[this->m_spd_axis_phy[0]-1].move_pr/feed;
+//			printf("ratio %h\n",ratio);
+			this->m_n_G843_ratio = ratio;
+		    this->SendMcRigidTapFlag(false);
+		    this->SendMiTapStateCmd(false);
+			this->m_n_G843_flag = 0;
+			this->SendMiTapRatioCmd(ratio);
 		}
 	}else if(m_channel_status.gmode[9] == G84_CMD && loopmsg->GetGCode() == G80_CMD){  //关闭刚攻状态
-		this->SendMiTapRatioCmd(false, 0);
+//	    printf("close G84\n");
+		this->m_n_G843_ratio = 0;
+		this->SendMcRigidTapFlag(false);
+		this->SendMiTapStateCmd(false);
+		this->SendMiTapRatioCmd(0);
+		this->m_n_G843_ratio = 0;
+		this->m_n_G843_flag = 0;
 	}
-
+	
 	this->m_channel_status.gmode[9] = loopmsg->GetGCode();
 
 //	printf("execute loop message : %d\n", m_channel_status.gmode[9]);
@@ -7716,7 +7977,10 @@ bool ChannelControl::ExecuteCompensateMsg(RecordMsg *msg){
 		case 1:
 			//第二步：等待MC执行新刀偏完成
 			if(type == G49_CMD && this->m_channel_status.gmode[8] == G43_4_CMD){//取消RTCP
-				this->m_p_mc_comm->ReadChnCurIntpMode(this->m_n_channel_index, intp_mode);  //读取MC当前特殊插补模式
+				if(!this->m_b_mc_on_arm)
+					this->m_p_mc_comm->ReadChnCurIntpMode(this->m_n_channel_index, intp_mode);  //读取MC当前特殊插补模式
+				else
+					this->m_p_mc_arm_comm->ReadChnCurIntpMode(this->m_n_channel_index, intp_mode);
 				if(intp_mode == CANCEL_MODE){
 					this->m_channel_status.gmode[8] = type;
 					this->m_channel_status.cur_h_code = value;
@@ -7725,7 +7989,10 @@ bool ChannelControl::ExecuteCompensateMsg(RecordMsg *msg){
 				else
 					printf("G49, intp_mode = %hu\n", intp_mode);
 			}else{
-				this->m_p_mc_comm->ReadChnCurToolOffset(this->m_n_channel_index, offset_mc);  //读取MC当前刀偏
+				if(!this->m_b_mc_on_arm)
+					this->m_p_mc_comm->ReadChnCurToolOffset(this->m_n_channel_index, offset_mc);  //读取MC当前刀偏
+				else
+					this->m_p_mc_arm_comm->ReadChnCurToolOffset(m_n_channel_index, offset_mc);
 				if(offset_mc == value){
 					compmsg->SetExecStep(2);  //跳转下一步
 				}
@@ -7735,14 +8002,17 @@ bool ChannelControl::ExecuteCompensateMsg(RecordMsg *msg){
 			return false;
 		case 2:
 			//第三步：同步位置
-			this->m_p_mc_comm->ReadAxisIntpPos(m_n_channel_index, m_channel_mc_status.intp_pos, m_channel_mc_status.intp_tar_pos);
+			if(!this->m_b_mc_on_arm)
+				this->m_p_mc_comm->ReadAxisIntpPos(m_n_channel_index, m_channel_mc_status.intp_pos, m_channel_mc_status.intp_tar_pos);
+			else
+				this->m_p_mc_arm_comm->ReadAxisIntpPos(m_n_channel_index, m_channel_mc_status.intp_pos, m_channel_mc_status.intp_tar_pos);
 
 //			m_channel_rt_status.cur_pos_work = m_channel_mc_status.intp_pos;
 //			m_channel_rt_status.tar_pos_work = m_channel_mc_status.intp_tar_pos;
 			RefreshAxisIntpPos();
 
-			printf("compensate: refreshpos[%lf, %lf, %lf]\n", m_channel_rt_status.cur_pos_work.m_df_point[0], m_channel_rt_status.cur_pos_work.m_df_point[1],
-								m_channel_rt_status.cur_pos_work.m_df_point[2]);
+//			printf("compensate: refreshpos[%lf, %lf, %lf]\n", m_channel_rt_status.cur_pos_work.m_df_point[0], m_channel_rt_status.cur_pos_work.m_df_point[1],
+//								m_channel_rt_status.cur_pos_work.m_df_point[2]);
 
 
 			//刷新运动指令目标位置
@@ -7794,7 +8064,10 @@ bool ChannelControl::ExecuteCompensateMsg(RecordMsg *msg){
 			//第六步：同步位置
 
 			//从MC同步工件坐标
-			this->m_p_mc_comm->ReadAxisIntpPos(m_n_channel_index, m_channel_mc_status.intp_pos, m_channel_mc_status.intp_tar_pos);
+			if(!this->m_b_mc_on_arm)
+				this->m_p_mc_comm->ReadAxisIntpPos(m_n_channel_index, m_channel_mc_status.intp_pos, m_channel_mc_status.intp_tar_pos);
+			else
+				this->m_p_mc_arm_comm->ReadAxisIntpPos(m_n_channel_index, m_channel_mc_status.intp_pos, m_channel_mc_status.intp_tar_pos);
 
 //			m_channel_rt_status.cur_pos_work = m_channel_mc_status.intp_pos;
 //			m_channel_rt_status.tar_pos_work = m_channel_mc_status.intp_tar_pos;
@@ -7857,14 +8130,20 @@ bool ChannelControl::ExecuteCompensateMsg(RecordMsg *msg){
 			return false;
 		case 1:
 			//第二步：等待MC执行新刀偏完成
-			this->m_p_mc_comm->ReadChnCurIntpMode(this->m_n_channel_index, intp_mode);  //读取MC当前特殊插补模式
+			if(!this->m_b_mc_on_arm)
+				this->m_p_mc_comm->ReadChnCurIntpMode(this->m_n_channel_index, intp_mode);  //读取MC当前特殊插补模式
+			else
+				this->m_p_mc_arm_comm->ReadChnCurIntpMode(m_n_channel_index, intp_mode);
 			if(intp_mode == G43_4_MODE){
 				compmsg->SetExecStep(2);  //跳转下一步
 			}
 			return false;
 		case 2:
 			//第三步：同步位置
-			this->m_p_mc_comm->ReadAxisIntpPos(m_n_channel_index, m_channel_mc_status.intp_pos, m_channel_mc_status.intp_tar_pos);
+			if(!this->m_b_mc_on_arm)
+				this->m_p_mc_comm->ReadAxisIntpPos(m_n_channel_index, m_channel_mc_status.intp_pos, m_channel_mc_status.intp_tar_pos);
+			else
+				this->m_p_mc_arm_comm->ReadAxisIntpPos(m_n_channel_index, m_channel_mc_status.intp_pos, m_channel_mc_status.intp_tar_pos);
 
 //			m_channel_rt_status.cur_pos_work = m_channel_mc_status.intp_pos;
 //			m_channel_rt_status.tar_pos_work = m_channel_mc_status.intp_tar_pos;
@@ -8281,6 +8560,7 @@ bool ChannelControl::ExecuteMacroProgCallMsg(RecordMsg *msg){
 bool ChannelControl::ExecuteAutoToolMeasureMsg(RecordMsg *msg){
 	AutoToolMeasureMsg *macro_msg = (AutoToolMeasureMsg *)msg;
 	int limit = 1;
+	bool block_over = false;
 	if(this->IsStepMode())
 		limit = 4;	//单步模式需要多次验证，因为状态切换有延时
 
@@ -8304,7 +8584,7 @@ bool ChannelControl::ExecuteAutoToolMeasureMsg(RecordMsg *msg){
 	//等待MC分块的插补到位信号，以及MI的运行到位信号
 	int count = 0;
 	while(1){
-		bool block_over = CheckBlockOverFlag();
+		block_over = CheckBlockOverFlag();
 		if(this->ReadMcMoveDataCount() > 0 || !block_over ||
 				m_channel_status.machining_state == MS_PAUSED ||
 				m_channel_status.machining_state == MS_WARNING){ //未达到执行条件
@@ -8493,8 +8773,13 @@ bool ChannelControl::ExecuteSubProgReturnMsg(RecordMsg *msg){
 
 
 	//TODO 向HMI发送命令打开上级文件文件
+#ifdef USES_ADDITIONAL_PROGRAM
+	if(this->m_channel_status.chn_work_mode == AUTO_MODE && m_n_add_prog_type == NONE_ADD &&
+			(!ret_msg->IsRetFromMacroProg() || this->m_p_general_config->debug_mode > 0)){    //自动模式，并且是子程序返回或者调试模式打开
+#else
 	if(this->m_channel_status.chn_work_mode == AUTO_MODE &&
 			(!ret_msg->IsRetFromMacroProg() || this->m_p_general_config->debug_mode > 0)){    //自动模式，并且是子程序返回或者调试模式打开
+#endif
 		char file[kMaxFileNameLen];
 		memset(file, 0x00, kMaxFileNameLen);
 		ret_msg->GetReturnFileName(file);
@@ -8511,8 +8796,10 @@ bool ChannelControl::ExecuteSubProgReturnMsg(RecordMsg *msg){
 		if(this->IsStepMode()){
 			this->SetMcStepMode(true);
 		}
-	}else
+	}else{
 		SetCurLineNo(msg->GetLineNo());
+		printf("sub prog return line : %lld\n", msg->GetLineNo());
+	}
 
 	return true;
 }
@@ -8628,7 +8915,10 @@ bool ChannelControl::ExecutePolarIntpMsg(RecordMsg *msg){
 			return false;
 		case 1://第二步
 			//第二步：等待MC执行磨削设置完成
-			this->m_p_mc_comm->ReadChnCurIntpMode(this->m_n_channel_index, intp_type);  //读取MC当前特殊插补模式
+			if(!this->m_b_mc_on_arm)
+				this->m_p_mc_comm->ReadChnCurIntpMode(this->m_n_channel_index, intp_type);  //读取MC当前特殊插补模式
+			else
+				this->m_p_mc_arm_comm->ReadChnCurIntpMode(m_n_channel_index, intp_type);
 			if(type == G13_1_CMD){
 				if(intp_type == CANCEL_MODE)   //取消特殊插补模式
 					polarmsg->SetExecStep(2);  //跳转下一步
@@ -8643,7 +8933,10 @@ bool ChannelControl::ExecutePolarIntpMsg(RecordMsg *msg){
 			return false;
 		case 2:
 			//第三步：同步位置
-			this->m_p_mc_comm->ReadAxisIntpPos(m_n_channel_index, m_channel_mc_status.intp_pos, m_channel_mc_status.intp_tar_pos);
+			if(!this->m_b_mc_on_arm)
+				this->m_p_mc_comm->ReadAxisIntpPos(m_n_channel_index, m_channel_mc_status.intp_pos, m_channel_mc_status.intp_tar_pos);
+			else
+				this->m_p_mc_arm_comm->ReadAxisIntpPos(m_n_channel_index, m_channel_mc_status.intp_pos, m_channel_mc_status.intp_tar_pos);
 
 //			m_channel_rt_status.cur_pos_work = m_channel_mc_status.intp_pos;
 //			m_channel_rt_status.tar_pos_work = m_channel_mc_status.intp_tar_pos;
@@ -8820,7 +9113,7 @@ bool ChannelControl::ExecuteRefReturnMsg(RecordMsg *msg){
 			for(i = 0; i < m_p_channel_config->chn_axis_count; i++){
 				if(axis_mask & (0x01<<i)){
 					if(fabs(this->m_channel_rt_status.cur_pos_work.GetAxisValue(i) - pos[i]) > 1e-3){ //未到位
-						printf("step 1: axis %hhu cur pos = %lf, target=%lf\n", i, m_channel_rt_status.cur_pos_work.GetAxisValue(i), pos[i]);
+//						printf("step 1: axis %hhu cur pos = %lf, target=%lf\n", i, m_channel_rt_status.cur_pos_work.GetAxisValue(i), pos[i]);
 						flag = false;
 						phy_axis = this->GetPhyAxis(i);
 						if(phy_axis != 0xff){
@@ -8855,7 +9148,7 @@ bool ChannelControl::ExecuteRefReturnMsg(RecordMsg *msg){
 			}
 
 			refmsg->SetExecStep(3);  //跳转下一步
-			printf("ret ref, jump to step 3\n");
+//			printf("ret ref, jump to step 3\n");
 			return false;
 		case 3:{
 			//第四步：等待对应的轴到位
@@ -8867,7 +9160,7 @@ bool ChannelControl::ExecuteRefReturnMsg(RecordMsg *msg){
 			for(i = 0; i < m_p_channel_config->chn_axis_count; i++){
 				if(axis_mask & (0x01<<i)){
 					if(fabs(this->m_channel_rt_status.cur_pos_machine.GetAxisValue(i) - target_pos) > 5e-3){ //未到位
-						printf("step 3: axis %hhu cur pos = %lf, target=%lf\n", i, m_channel_rt_status.cur_pos_machine.GetAxisValue(i), target_pos);
+//						printf("step 3: axis %hhu cur pos = %lf, target=%lf\n", i, m_channel_rt_status.cur_pos_machine.GetAxisValue(i), target_pos);
 						flag = false;
 						phy_axis = this->GetPhyAxis(i);
 						if(phy_axis != 0xff){
@@ -8875,19 +9168,21 @@ bool ChannelControl::ExecuteRefReturnMsg(RecordMsg *msg){
 						}
 					}
 
-
 				}
 			}
 
 			if(flag){
 				refmsg->SetExecStep(4);  //跳转下一步
-				printf("ret ref, jump to step 4\n");
+//				printf("ret ref, jump to step 4\n");
 			}
 			return false;
 		}
 		case 4:
 			//第五步：同步位置
-			this->m_p_mc_comm->ReadAxisIntpPos(m_n_channel_index, m_channel_mc_status.intp_pos, m_channel_mc_status.intp_tar_pos);
+			if(!this->m_b_mc_on_arm)
+				this->m_p_mc_comm->ReadAxisIntpPos(m_n_channel_index, m_channel_mc_status.intp_pos, m_channel_mc_status.intp_tar_pos);
+			else
+				this->m_p_mc_arm_comm->ReadAxisIntpPos(m_n_channel_index, m_channel_mc_status.intp_pos, m_channel_mc_status.intp_tar_pos);
 
 //			m_channel_rt_status.cur_pos_work = m_channel_mc_status.intp_pos;
 //			m_channel_rt_status.tar_pos_work = m_channel_mc_status.intp_tar_pos;
@@ -9061,7 +9356,10 @@ bool ChannelControl::ExecuteSkipMsg(RecordMsg *msg){
 			//第四步：等待对应的轴到位,同步位置
 			if(CheckBlockOverFlag() && ReadMcMoveDataCount() == 0){//MC块到位并且缓冲无数据
 				//从MC同步工件坐标
-				this->m_p_mc_comm->ReadAxisIntpPos(m_n_channel_index, m_channel_mc_status.intp_pos, m_channel_mc_status.intp_tar_pos);
+				if(!this->m_b_mc_on_arm)
+					this->m_p_mc_comm->ReadAxisIntpPos(m_n_channel_index, m_channel_mc_status.intp_pos, m_channel_mc_status.intp_tar_pos);
+				else
+					this->m_p_mc_arm_comm->ReadAxisIntpPos(m_n_channel_index, m_channel_mc_status.intp_pos, m_channel_mc_status.intp_tar_pos);
 
 //				m_channel_rt_status.cur_pos_work = m_channel_mc_status.intp_pos;
 //				m_channel_rt_status.tar_pos_work = m_channel_mc_status.intp_tar_pos;
@@ -9174,7 +9472,7 @@ bool ChannelControl::ExecuteSpeedCtrlMsg(RecordMsg *msg){
     uint8_t check_flag = 0;  //
     if(gcode == G1002_CMD|| gcode == G1003_CMD)
     {
-       check_flag = 1;  //  rpm--> mm/min
+       check_flag = 1;  //  rpm--> mm/min  检查标志
 	}
 
 	uint8_t phy_axis = 0;
@@ -9232,7 +9530,10 @@ bool ChannelControl::ExecuteSpeedCtrlMsg(RecordMsg *msg){
 			return false;
 		case 2:
 			//第三步：同步位置
-			this->m_p_mc_comm->ReadAxisIntpPos(m_n_channel_index, m_channel_mc_status.intp_pos, m_channel_mc_status.intp_tar_pos);
+			if(!this->m_b_mc_on_arm)
+				this->m_p_mc_comm->ReadAxisIntpPos(m_n_channel_index, m_channel_mc_status.intp_pos, m_channel_mc_status.intp_tar_pos);
+			else
+				this->m_p_mc_arm_comm->ReadAxisIntpPos(m_n_channel_index, m_channel_mc_status.intp_pos, m_channel_mc_status.intp_tar_pos);
 
 //			m_channel_rt_status.cur_pos_work = m_channel_mc_status.intp_pos;
 //			m_channel_rt_status.tar_pos_work = m_channel_mc_status.intp_tar_pos;
@@ -9373,12 +9674,15 @@ bool ChannelControl::ExecuteTorqueCtrlMsg(RecordMsg *msg){
 					if(axis_mask & (0x01<<i)){
 
 						int16_t tor = torque[i];
+						int16_t err = abs(tor)/10;
+						if(err < 10)
+							err = 10;
 						if(gcode == G2002_CMD || gcode == G2003_CMD){  //以力矩到达为结束条件
 							int16_t cur_tor = this->m_channel_rt_status.cur_feedbck_torque.GetAxisValue(i);
-							if(fabs(cur_tor - tor) > 10){ //未到指定力矩值
+							if(abs(cur_tor) < (abs(tor)-err)){ //未到指定力矩值
 							   flag = false;
 							}
-							printf("axis: %hhu cur curTor = %hu, torque = %hu\n", i, cur_tor, tor);
+							printf("axis: %hhu cur curTor = %hd, torque = %hd\n", i, cur_tor, tor);
 						}else if(gcode == G2001_CMD){ //以转速到0为结束条件
 						   double curfeed = this->m_channel_rt_status.cur_feedbck_velocity.GetAxisValue(i);
 						   if(fabs(curfeed) > 2) { //未到位
@@ -9430,7 +9734,10 @@ bool ChannelControl::ExecuteTorqueCtrlMsg(RecordMsg *msg){
 			return false;
 		case 2:
 			//第三步：同步位置
-			this->m_p_mc_comm->ReadAxisIntpPos(m_n_channel_index, m_channel_mc_status.intp_pos, m_channel_mc_status.intp_tar_pos);
+			if(!this->m_b_mc_on_arm)
+				this->m_p_mc_comm->ReadAxisIntpPos(m_n_channel_index, m_channel_mc_status.intp_pos, m_channel_mc_status.intp_tar_pos);
+			else
+				this->m_p_mc_arm_comm->ReadAxisIntpPos(m_n_channel_index, m_channel_mc_status.intp_pos, m_channel_mc_status.intp_tar_pos);
 
 //			m_channel_rt_status.cur_pos_work = m_channel_mc_status.intp_pos;
 //			m_channel_rt_status.tar_pos_work = m_channel_mc_status.intp_tar_pos;
@@ -9667,7 +9974,10 @@ bool ChannelControl::ExecuteClearCirclePosMsg(RecordMsg *msg){
 		//第三步：同步位置
 
 		//从MC同步工件坐标
-		this->m_p_mc_comm->ReadAxisIntpPos(m_n_channel_index, m_channel_mc_status.intp_pos, m_channel_mc_status.intp_tar_pos);
+		if(!this->m_b_mc_on_arm)
+			this->m_p_mc_comm->ReadAxisIntpPos(m_n_channel_index, m_channel_mc_status.intp_pos, m_channel_mc_status.intp_tar_pos);
+		else
+			this->m_p_mc_arm_comm->ReadAxisIntpPos(m_n_channel_index, m_channel_mc_status.intp_pos, m_channel_mc_status.intp_tar_pos);
 
 //		m_channel_rt_status.cur_pos_work = m_channel_mc_status.intp_pos;
 //		m_channel_rt_status.tar_pos_work = m_channel_mc_status.intp_tar_pos;
@@ -10104,7 +10414,10 @@ void ChannelControl::ManualMove2(uint8_t axis, int8_t dir, double vel, double in
 
 	cmd.data.data[6] = 0x02;   //增量目标位置
 
-	m_p_mc_comm->WriteCmd(cmd);
+	if(!this->m_b_mc_on_arm)
+		m_p_mc_comm->WriteCmd(cmd);
+	else
+		m_p_mc_arm_comm->WriteCmd(cmd);
 
 	printf("manual move2: axis = %d, tar_pos = %lld, type = 0x%x\n", axis, tar_pos, cmd.data.data[6]);
 }
@@ -10218,7 +10531,10 @@ void ChannelControl::ManualMove(int8_t dir){
 
 	cmd.data.data[6] = 0x02;   //增量目标位置
 
-	m_p_mc_comm->WriteCmd(cmd);
+	if(!this->m_b_mc_on_arm)
+		m_p_mc_comm->WriteCmd(cmd);
+	else
+		m_p_mc_arm_comm->WriteCmd(cmd);
 
 	printf("manual move: axis = %d, tar_pos = %lld, type = 0x%x, ratio = %hhu\n", m_channel_status.cur_axis, tar_pos, cmd.data.data[6],
 			this->m_channel_status.manual_ratio);
@@ -10422,7 +10738,10 @@ void ChannelControl::ManualMove(uint8_t axis, double pos, double vel, bool workc
 //	if(workcoord_flag)
 //		cmd.data.data[6] = 1;   //绝对位置，工件坐标系
 
-	m_p_mc_comm->WriteCmd(cmd);
+	if(!this->m_b_mc_on_arm)
+		m_p_mc_comm->WriteCmd(cmd);
+	else
+		m_p_mc_arm_comm->WriteCmd(cmd);
 // 	printf("send manual move cmd: axis=%d, pos = %lf, vel = %lf\n", axis, pos, vel);
 }
 
@@ -10451,7 +10770,10 @@ void ChannelControl::ManualMoveStop(){
 	cmd.data.cmd = CMD_MC_MULTI_AXIS_STOP;
 	cmd.data.data[0] = (0x01<<m_channel_status.cur_axis);
 
-	m_p_mc_comm->WriteCmd(cmd);
+	if(!this->m_b_mc_on_arm)
+		m_p_mc_comm->WriteCmd(cmd);
+	else
+		m_p_mc_arm_comm->WriteCmd(cmd);
 }
 
 /**
@@ -10467,7 +10789,10 @@ void ChannelControl::ManualMoveStop(uint16_t axis_mask){
 	cmd.data.cmd = CMD_MC_MULTI_AXIS_STOP;
 	cmd.data.data[0] = axis_mask;
 
-	m_p_mc_comm->WriteCmd(cmd);
+	if(!this->m_b_mc_on_arm)
+		m_p_mc_comm->WriteCmd(cmd);
+	else
+		m_p_mc_arm_comm->WriteCmd(cmd);
 }
 
 /**
@@ -10661,7 +10986,10 @@ void ChannelControl::SetMcStepMode(bool flag){
 	cmd.data.cmd = CMD_MC_SET_STEP_MODE;
 	cmd.data.data[0] = flag?1:0;
 
-	m_p_mc_comm->WriteCmd(cmd);
+	if(!this->m_b_mc_on_arm)
+		m_p_mc_comm->WriteCmd(cmd);
+	else
+		m_p_mc_arm_comm->WriteCmd(cmd);
 }
 
 /**
@@ -10690,7 +11018,10 @@ void ChannelControl::SetMcAxisOrigin(uint8_t axis_index){
 	cmd.data.data[2] = (origin_pos>>32)&0xFFFF;
 	cmd.data.data[3] = (origin_pos>>48)&0xFFFF;
 
-	m_p_mc_comm->WriteCmd(cmd);
+	if(!this->m_b_mc_on_arm)
+		m_p_mc_comm->WriteCmd(cmd);
+	else
+		m_p_mc_arm_comm->WriteCmd(cmd);
 }
 
 /**
@@ -10708,7 +11039,10 @@ void ChannelControl::ActiveMcOrigin(bool active_flag){
 	cmd.data.cmd = CMD_MC_ACTIVE_CHN_ORIGIN;
 	cmd.data.data[0] = active_flag?coord_index:0;
 
-	m_p_mc_comm->WriteCmd(cmd);
+	if(!this->m_b_mc_on_arm)
+		m_p_mc_comm->WriteCmd(cmd);
+	else
+		m_p_mc_arm_comm->WriteCmd(cmd);
 }
 
 /**
@@ -10749,7 +11083,10 @@ void ChannelControl::SetMcAxisToolOffset(uint8_t axis_index){
 	cmd.data.data[2] = (offset>>32)&0xFFFF;
 	cmd.data.data[3] = (offset>>48)&0xFFFF;
 
-	m_p_mc_comm->WriteCmd(cmd);
+	if(!this->m_b_mc_on_arm)
+		m_p_mc_comm->WriteCmd(cmd);
+	else
+		m_p_mc_arm_comm->WriteCmd(cmd);
 	printf("SetMcAxisToolOffset, axis = %hhu, offset = %lld\n", axis_index, offset);
 
 }
@@ -10767,7 +11104,10 @@ void ChannelControl::ActiveMcToolOffset(bool active_flag){
 	cmd.data.cmd = CMD_MC_ACTIVE_CHN_TOOL_OFFSET;
 	cmd.data.data[0] = active_flag?m_channel_status.cur_h_code:0;
 
-	m_p_mc_comm->WriteCmd(cmd);
+	if(!this->m_b_mc_on_arm)
+		m_p_mc_comm->WriteCmd(cmd);
+	else
+		m_p_mc_arm_comm->WriteCmd(cmd);
 }
 
 /**
@@ -10795,10 +11135,16 @@ uint16_t ChannelControl::ReadMcMoveDataCount(){
 			|| this->m_n_add_prog_type == CONTINUE_START_ADD
 #endif
 			){
-		this->m_p_mc_comm->ReadMdaBufDataCount(m_n_channel_index, m_channel_mc_status.mda_data_count);
+		if(!this->m_b_mc_on_arm)
+			this->m_p_mc_comm->ReadMdaBufDataCount(m_n_channel_index, m_channel_mc_status.mda_data_count);
+		else
+			this->m_p_mc_arm_comm->ReadMdaBufDataCount(m_n_channel_index, m_channel_mc_status.mda_data_count);
 		return m_channel_mc_status.mda_data_count;
 	}
-	m_p_mc_comm->ReadAutoBufDataCount(m_n_channel_index, m_channel_mc_status.buf_data_count);
+	if(!this->m_b_mc_on_arm)
+		m_p_mc_comm->ReadAutoBufDataCount(m_n_channel_index, m_channel_mc_status.buf_data_count);
+	else
+		m_p_mc_arm_comm->ReadAutoBufDataCount(m_n_channel_index, m_channel_mc_status.buf_data_count);
 	return m_channel_mc_status.buf_data_count;
 }
 
@@ -10819,13 +11165,17 @@ bool ChannelControl::CheckBlockOverFlag(){
 			&& this->m_n_add_prog_type != CONTINUE_START_ADD
 #endif
 			){
-		m_channel_mc_status.auto_block_over = m_p_mc_comm->ReadAutoBlockRunOverFlag(m_n_channel_index);
-//		printf("CheckBlockOverFlag auto return %hhu\n", m_channel_mc_status.auto_block_over);
+		if(!this->m_b_mc_on_arm)
+			m_channel_mc_status.auto_block_over = m_p_mc_comm->ReadAutoBlockRunOverFlag(m_n_channel_index);
+		else
+			m_channel_mc_status.auto_block_over = m_p_mc_arm_comm->ReadAutoBlockRunOverFlag(m_n_channel_index);
 		return m_channel_mc_status.auto_block_over;
 	}
 
-	m_channel_mc_status.mda_block_over = m_p_mc_comm->ReadMdaBlockRunOverFlag(m_n_channel_index);
-//	printf("CheckBlockOverFlag mda return %hhu\n", m_channel_mc_status.mda_block_over);
+	if(!this->m_b_mc_on_arm)
+		m_channel_mc_status.mda_block_over = m_p_mc_comm->ReadMdaBlockRunOverFlag(m_n_channel_index);
+	else
+		m_channel_mc_status.mda_block_over = m_p_mc_arm_comm->ReadMdaBlockRunOverFlag(m_n_channel_index);
 	return m_channel_mc_status.mda_block_over;
 }
 
@@ -10840,7 +11190,10 @@ bool ChannelControl::CheckStepOverFlag(){
 	if(delay < MC_STATE_REFRESH_CYCLE) //发送MC启动命令5ms后才能确认到位标志
 		return false;
 
-	this->m_channel_mc_status.step_over = this->m_p_mc_comm->ReadStepRunOverFlag(m_n_channel_index);
+	if(!this->m_b_mc_on_arm)
+		this->m_channel_mc_status.step_over = this->m_p_mc_comm->ReadStepRunOverFlag(m_n_channel_index);
+	else
+		this->m_channel_mc_status.step_over = this->m_p_mc_arm_comm->ReadStepRunOverFlag(m_n_channel_index);
 	return m_channel_mc_status.step_over;
 }
 
@@ -10936,7 +11289,10 @@ void ChannelControl::SetChnAxisName(){
 			cmd.data.data[1] = this->m_p_channel_config->chn_axis_name_ex[i];
 		}
 
-		m_p_mc_comm->WriteCmd(cmd);
+		if(!this->m_b_mc_on_arm)
+			m_p_mc_comm->WriteCmd(cmd);
+		else
+			m_p_mc_arm_comm->WriteCmd(cmd);
 	//	printf("set chn[%hhu] axis[%hhu] name[%hhu] \n", m_n_channel_index, i+1, m_p_channel_config->chn_axis_name[i]);
 	}
 }
@@ -10967,7 +11323,10 @@ void ChannelControl::SetChnAxisOn(uint8_t chn_axis){
 	//轴插补类型   1--NC轴插补（自动、手动、MDI）  2--PMC轴插补   其它值无效  （注意10MC的DSP暂不支持 纯粹PMC轴）
 	cmd.data.data[1] = 1;
 
-	m_p_mc_comm->WriteCmd(cmd);
+	if(!this->m_b_mc_on_arm)
+		m_p_mc_comm->WriteCmd(cmd);
+	else
+		m_p_mc_arm_comm->WriteCmd(cmd);
 }
 
 /**
@@ -10999,7 +11358,10 @@ void ChannelControl::SetChnAxisBaseParam(uint8_t chn_axis){
 	cmd.data.data[3] = (data&0xFFFF);
 	cmd.data.data[4] = ((data>>16)&0xFFFF);
 
-	m_p_mc_comm->WriteCmd(cmd);
+	if(!this->m_b_mc_on_arm)
+		m_p_mc_comm->WriteCmd(cmd);
+	else
+		m_p_mc_arm_comm->WriteCmd(cmd);
 
 }
 
@@ -11036,7 +11398,10 @@ void ChannelControl::SetChnAxisSpeedParam(uint8_t chn_axis){
 	cmd.data.data[4] = (data&0xFFFF);
 	cmd.data.data[5] = ((data>>16)&0xFFFF);
 
-	m_p_mc_comm->WriteCmd(cmd);
+	if(!this->m_b_mc_on_arm)
+		m_p_mc_comm->WriteCmd(cmd);
+	else
+		m_p_mc_arm_comm->WriteCmd(cmd);
 }
 
 /**
@@ -11071,7 +11436,10 @@ void ChannelControl::SetChnAxisAccParam(uint8_t chn_axis){
 	//G00 S型时间常数
 	cmd.data.data[3] = m_p_axis_config[phy_axis].rapid_s_plan_filter_time;
 
-	m_p_mc_comm->WriteCmd(cmd);
+	if(!this->m_b_mc_on_arm)
+		m_p_mc_comm->WriteCmd(cmd);
+	else
+		m_p_mc_arm_comm->WriteCmd(cmd);
 }
 
 /**
@@ -11102,9 +11470,31 @@ void ChannelControl::SetChnAxisSoftLimit(uint8_t chn_axis){
 
 
 	cmd.data.data[0] = tmp;
+	
+	if(!this->m_b_mc_on_arm)
+		m_p_mc_comm->WriteCmd(cmd);
+	else
+		m_p_mc_arm_comm->WriteCmd(cmd);
+}
+/**
+ * @brief 强制关闭指定轴的软限位开关
+ * @param chn_axis : 指定轴号，从0开始
+ */
+void ChannelControl::CloseChnAxisSoftLimit(uint8_t chn_axis){
+	//发送MC轴软限位数据
+	McCmdFrame cmd;
+	memset(&cmd, 0x00, sizeof(McCmdFrame));
+
+	cmd.data.channel_index = m_n_channel_index;
+	cmd.data.axis_index = chn_axis+1;
+	cmd.data.cmd = CMD_MC_AXIS_ENABLE_SOFT_LIMIT;
+
+
+	cmd.data.data[0] = 0;
 
 	m_p_mc_comm->WriteCmd(cmd);
 }
+
 
 /**
  * @brief 设置指定轴的位置指令门限值
@@ -11127,10 +11517,13 @@ void ChannelControl::SetChnAxisPosThreshold(uint8_t chn_axis){
 	cmd.data.axis_index = chn_axis+1;
 	cmd.data.cmd = CMD_MC_AXIS_POS_THRESHOLD;
 
-
 	cmd.data.data[0] = tmp;
 
-	m_p_mc_comm->WriteCmd(cmd);
+	if(!this->m_b_mc_on_arm)
+		m_p_mc_comm->WriteCmd(cmd);
+	else
+		m_p_mc_arm_comm->WriteCmd(cmd);
+	
 }
 
 /**
@@ -11175,7 +11568,10 @@ void ChannelControl::SetChnAxisSoftLimitValue(uint8_t chn_axis, uint8_t index){
 	cmd.data.data[3] = (softlimit & 0xFFFF);
 	cmd.data.data[4] = ((softlimit>>16) & 0xFFFF);
 
-	m_p_mc_comm->WriteCmd(cmd);
+	if(!this->m_b_mc_on_arm)
+		m_p_mc_comm->WriteCmd(cmd);
+	else
+		m_p_mc_arm_comm->WriteCmd(cmd);
 }
 
 /**
@@ -11214,7 +11610,10 @@ void ChannelControl::SetMcChnPlanMode(){
 	cmd.data.data[0] = this->m_p_channel_config->rapid_plan_mode;
 	cmd.data.data[1] = this->m_p_channel_config->cut_plan_mode;
 
-	m_p_mc_comm->WriteCmd(cmd);
+	if(!this->m_b_mc_on_arm)
+		m_p_mc_comm->WriteCmd(cmd);
+	else
+		m_p_mc_arm_comm->WriteCmd(cmd);
 
 }
 
@@ -11247,7 +11646,10 @@ void ChannelControl::SetMcChnPlanParam(){
 	cmd.data.data[6] = tmp;
 
 
-	m_p_mc_comm->WriteCmd(cmd);
+	if(!this->m_b_mc_on_arm)
+		m_p_mc_comm->WriteCmd(cmd);
+	else
+		m_p_mc_arm_comm->WriteCmd(cmd);
 }
 
 /**
@@ -11268,7 +11670,10 @@ void ChannelControl::SetMcChnPlanFun(){
 	cmd.data.data[5] = this->m_p_channel_config->chn_small_line_time;
  	cmd.data.data[6] = this->m_p_channel_config->chn_look_ahead;
 
-	m_p_mc_comm->WriteCmd(cmd);
+	if(!this->m_b_mc_on_arm)
+		m_p_mc_comm->WriteCmd(cmd);
+	else
+		m_p_mc_arm_comm->WriteCmd(cmd);
 }
 
 /**
@@ -11291,7 +11696,10 @@ void ChannelControl::SetMcChnCornerStopParam(){
 	cmd.data.data[3] = data&0xFFFF;
 	cmd.data.data[4] = (data>>16)&0xFFFF;
 
-	m_p_mc_comm->WriteCmd(cmd);
+	if(!this->m_b_mc_on_arm)
+		m_p_mc_comm->WriteCmd(cmd);
+	else
+		m_p_mc_arm_comm->WriteCmd(cmd);
 }
 
 
@@ -11300,6 +11708,25 @@ void ChannelControl::SetMcChnCornerStopParam(){
  * @param index : 调试参数号
  */
 #ifdef USES_WOOD_MACHINE
+//设置MC的挑角补偿值
+void ChannelControl::SetMcFlipCompParam(){
+	McCmdFrame cmd;
+	memset(&cmd, 0x00, sizeof(McCmdFrame));
+
+	cmd.data.channel_index = m_n_channel_index;
+
+	cmd.data.cmd = CMD_MC_SET_FLIP_COMP_PARAM;
+
+	int value = this->m_p_channel_config->flip_comp_value;
+	cmd.data.data[0] = value&0xFFFF;
+	cmd.data.data[1] = (value>>16)&0xFFFF;	
+
+	if(!this->m_b_mc_on_arm)
+		m_p_mc_comm->WriteCmd(cmd);
+	else
+		m_p_mc_arm_comm->WriteCmd(cmd);
+}
+
 void ChannelControl::SetMcDebugParam(uint16_t index){
 	McCmdFrame cmd;
 	memset(&cmd, 0x00, sizeof(McCmdFrame));
@@ -11309,7 +11736,7 @@ void ChannelControl::SetMcDebugParam(uint16_t index){
 	cmd.data.cmd = CMD_MC_SET_CHN_DEBUG_PARAM;
 	cmd.data.data[0] = index;
 
-	uint32_t data = 0;
+	int data = 0;
 	switch(index){
 	case 0:
 		data = m_p_channel_config->debug_param_1;
@@ -11333,7 +11760,10 @@ void ChannelControl::SetMcDebugParam(uint16_t index){
 	cmd.data.data[1] = data&0xFFFF;
 	cmd.data.data[2] = (data>>16)&0xFFFF;
 
-	m_p_mc_comm->WriteCmd(cmd);
+	if(!this->m_b_mc_on_arm)
+		m_p_mc_comm->WriteCmd(cmd);
+	else
+		m_p_mc_arm_comm->WriteCmd(cmd);
 
 //	printf("ChannelControl::SetMcDebugParam, chn_idx=%hhu, index=%hu, data=%d\n", m_n_channel_index, index, data);
 }
@@ -11351,7 +11781,10 @@ void ChannelControl::SendMcSysResetCmd(){
 	cmd.data.axis_index = 0xFF;
 	cmd.data.cmd = CMD_MC_SYS_RESET;
 
-	m_p_mc_comm->WriteCmd(cmd);
+	if(!this->m_b_mc_on_arm)
+		m_p_mc_comm->WriteCmd(cmd);
+	else
+		m_p_mc_arm_comm->WriteCmd(cmd);
 }
 
 /**
@@ -11390,6 +11823,15 @@ double ChannelControl::GetAxisCurMachPos(uint8_t axis_index){
 	pos = pp[axis_index];
 	return pos;
 }
+
+#ifdef USES_EMERGENCY_DEC_STOP
+/**
+ * @brief 延迟下伺服
+ */
+void ChannelControl::DelayToServoOff(){
+	this->m_b_delay_servo_off = true;
+}
+#endif
 
 #ifdef USES_SPEED_TORQUE_CTRL
 /**
@@ -11452,7 +11894,10 @@ void ChannelControl::SetMcRatio(){
 	cmd.data.data[1] = this->m_channel_status.auto_ratio;
 	cmd.data.data[2] = this->m_channel_status.manual_ratio;
 
-	m_p_mc_comm->WriteCmd(cmd);
+	if(!this->m_b_mc_on_arm)
+		m_p_mc_comm->WriteCmd(cmd);
+	else
+		m_p_mc_arm_comm->WriteCmd(cmd);
 }
 
 #ifdef USES_WOOD_MACHINE
@@ -11470,7 +11915,11 @@ void ChannelControl::SetMcToolLife(){
 	cmd.data.data[0] = life&0xFFFF;
 	cmd.data.data[1] = ((life>>16)&0xFFFF);
 
-	m_p_mc_comm->WriteCmd(cmd);
+	if(!this->m_b_mc_on_arm)
+		m_p_mc_comm->WriteCmd(cmd);
+	else
+		m_p_mc_arm_comm->WriteCmd(cmd);
+	
 }
 
 /**
@@ -11503,8 +11952,8 @@ void ChannelControl::PreExecSpindleCmd(uint64_t line){
 	}
 
 	if(!this->m_b_prestart_spd){//查找是否有预启动指令
-		if(this->m_n_hw_trace_state != NONE_TRACE || this->IsStepMode())
-			return;   //手轮跟踪或者单步模式下不进行主轴预启动
+		if(this->m_n_hw_trace_state != NONE_TRACE || this->IsStepMode() || this->m_channel_status.chn_work_mode == MDA_MODE)
+			return;   //MDA模式，手轮跟踪或者单步模式下不进行主轴预启动
 
 		double td = 0;
 		int forward_line = 0;    //主轴预启动提前行数
@@ -11597,14 +12046,7 @@ void ChannelControl::PreExecSpindleCmd(uint64_t line){
 
 		m_n_spd_prestart_step = 0xFF;    //置位结束状态
 	}
-
-}
-
-/**
- * @brief 延迟下伺服
- */
-void ChannelControl::DelayToServoOff(){
-	this->m_b_delay_servo_off = true;
+	
 }
 
 
@@ -11642,8 +12084,33 @@ bool ChannelControl::ExecuteAuxMsg_wood(RecordMsg *msg){
 			}else if(mcode == 5){
 				this->m_mode_restart.rated_spindle_speed = 0;
 				this->m_mode_restart.spindle_dir = SPD_DIR_STOP;
-			}else if(mcode == 99){
-				this->m_mode_restart.sub_prog_call--;
+			}else if(mcode == 2 || mcode == 30 || mcode == 99){  //直接结束，切换到READY状态
+				if(mcode == 99 && m_mode_restart.sub_prog_call > 0){
+					this->m_mode_restart.sub_prog_call--;
+					printf("reset M30, sub_call = %hhu\n", m_mode_restart.sub_prog_call);
+				}
+				else{
+					this->SetCurLineNo(1);
+					this->m_n_run_thread_state = STOP;
+					CompileOver();
+
+					m_b_ret_from_macroprog = false;
+					m_b_init_compiler_pos = false;  //编译器初始位置需要重新初始化
+					this->m_p_compiler->Reset();
+
+					m_p_output_msg_list->Clear();
+
+					this->m_n_restart_mode = NOT_RESTART;
+					this->m_n_restart_line = 0;
+					this->m_n_restart_step = 0;
+					this->m_p_compiler->SetRestartPara(0, m_n_restart_mode);   //复位编译器的加工复位标志
+
+					this->ClearHmiInfoMsg();   //清除HMI的提示信息
+
+					this->m_p_f_reg->SPL = 0;
+					this->m_p_f_reg->STL = 0;
+				}
+
 			}
 		}
 
@@ -11701,9 +12168,9 @@ bool ChannelControl::ExecuteAuxMsg_wood(RecordMsg *msg){
 	}
 
 	if(tmp->IsFirstExec()){
-		int limit = 2;
+		int limit = 3;
 		if(this->IsStepMode())
-			limit = 4;	//单步模式需要多次验证，因为状态切换有延时
+			limit = 5;	//单步模式需要多次验证，因为状态切换有延时
 
 		//等待MC分块的插补到位信号，以及MI的运行到位信号
 		int count = 0;
@@ -11724,7 +12191,7 @@ bool ChannelControl::ExecuteAuxMsg_wood(RecordMsg *msg){
 				break;
 		}
 
-		printf("isstepmode = %hhu, change_to_pause_flag = %hhu\n", this->IsStepMode(), this->m_b_need_change_to_pause);
+//		printf("isstepmode = %hhu, change_to_pause_flag = %hhu\n", this->IsStepMode(), this->m_b_need_change_to_pause);
 		if(this->IsStepMode() && this->m_b_need_change_to_pause){//单段，切换暂停状态
 			this->m_b_need_change_to_pause = false;
 			m_n_run_thread_state = PAUSE;
@@ -11887,6 +12354,7 @@ bool ChannelControl::ExecuteAuxMsg_wood(RecordMsg *msg){
 						g_ptr_parm_manager->SetCurWorkPiece(m_n_channel_index, m_channel_status.workpiece_count);
 						this->SendWorkCountToHmi(m_channel_status.workpiece_count);  //通知HMI更新加工计数
 
+						g_ptr_trace->PrintTrace(TRACE_INFO, CHANNEL_CONTROL_SC,"@#@#加工计数加一：%d", m_channel_status.workpiece_count);																									  
 						this->ResetMode();   //模态恢复默认值
 
 						//激活工件坐标系参数
@@ -12643,7 +13111,10 @@ void ChannelControl::SetMcGrindParamDynamic(uint16_t intp_type, uint16_t data_id
 	cmd.data.data[4] = data2&0xFFFF;
 	cmd.data.data[5] = ((data2>>16)&0xFFFF);
 
-	m_p_mc_comm->WriteCmd(cmd);
+	if(!this->m_b_mc_on_arm)
+		m_p_mc_comm->WriteCmd(cmd);
+	else
+		m_p_mc_arm_comm->WriteCmd(cmd);
 }
 
 /**
@@ -12660,7 +13131,10 @@ void ChannelControl::EnableGrindShock(bool enable){
 	cmd.data.data[0] = enable?1:0;
 
 
-	m_p_mc_comm->WriteCmd(cmd);
+	if(!this->m_b_mc_on_arm)
+		m_p_mc_comm->WriteCmd(cmd);
+	else
+		m_p_mc_arm_comm->WriteCmd(cmd);
 }
 
 /**
@@ -12775,7 +13249,10 @@ void ChannelControl::ReturnSafeState(){
 		//同步位置
 
 		//从MC同步工件坐标
-		this->m_p_mc_comm->ReadAxisIntpPos(m_n_channel_index, m_channel_mc_status.intp_pos, m_channel_mc_status.intp_tar_pos);
+		if(!this->m_b_mc_on_arm)
+			this->m_p_mc_comm->ReadAxisIntpPos(m_n_channel_index, m_channel_mc_status.intp_pos, m_channel_mc_status.intp_tar_pos);
+		else
+			this->m_p_mc_arm_comm->ReadAxisIntpPos(m_n_channel_index, m_channel_mc_status.intp_pos, m_channel_mc_status.intp_tar_pos);
 
 		m_channel_rt_status.cur_pos_work = m_channel_mc_status.intp_pos;
 		m_channel_rt_status.tar_pos_work = m_channel_mc_status.intp_tar_pos;
@@ -14781,7 +15258,10 @@ void ChannelControl::SetMcSpecialIntpMode(uint16_t intp_type){
 	cmd.data.cmd = CMD_MC_SET_SPECIAL_INTP_MODE;
 	cmd.data.data[0] = intp_type;
 
-	m_p_mc_comm->WriteCmd(cmd);
+	if(!this->m_b_mc_on_arm)
+		m_p_mc_comm->WriteCmd(cmd);
+	else
+		m_p_mc_arm_comm->WriteCmd(cmd);
 }
 
 /**
@@ -14802,7 +15282,10 @@ void ChannelControl::SetMcRtcpMode(uint16_t cmd_type, uint16_t switch_type, int3
 	cmd.data.data[2] = h_val & 0xFFFF;
 	cmd.data.data[3] = ((h_val >> 16) & 0xFFFF);
 
-	m_p_mc_comm->WriteCmd(cmd);
+	if(!this->m_b_mc_on_arm)
+		m_p_mc_comm->WriteCmd(cmd);
+	else
+		m_p_mc_arm_comm->WriteCmd(cmd);
 }
 
 /**
@@ -14851,7 +15334,9 @@ void ChannelControl::Pause(){
 		}
 
 		pthread_mutex_lock(&m_mutex_change_state);  //等待编译运行线程停止
+		
 		this->PauseRunGCode();
+		
 		pthread_mutex_unlock(&m_mutex_change_state);  //等待编译运行线程停止
 	}
 	else{
@@ -15040,6 +15525,8 @@ int ChannelControl::BreakContinueProcess(){
 			if(this->m_n_add_prog_type == NONE_ADD){
 				g_ptr_trace->PrintTrace(TRACE_INFO, CHANNEL_CONTROL_SC, "execute step 2, %d\n", m_scene_auto.p_last_output_msg);
 
+				pthread_mutex_lock(&m_mutex_change_state);  //等待编译运行线程停止
+				
 				m_channel_status.rated_feed = m_scene_auto.rated_feed;
 			//	m_channel_status.rated_spindle_speed = m_scene_auto.rated_spindle_speed;
 				m_mc_mode_exec = m_scene_auto.mc_mode_exec;
@@ -15051,9 +15538,8 @@ int ChannelControl::BreakContinueProcess(){
 				memcpy(m_channel_status.gmode, m_scene_auto.gmode, kMaxGModeCount*sizeof(uint16_t));   //恢复模态
 
 				//恢复自动模式
-				pthread_mutex_lock(&m_mutex_change_state);  //等待编译运行线程停止
 				m_p_output_msg_list = m_p_output_msg_list_auto;
-				m_n_run_thread_state = PAUSE;
+				m_n_run_thread_state = (CompilerState)m_scene_auto.run_thread_state;
 				this->m_p_compiler->SetMode(AUTO_COMPILER);	//编译器切换模式
 				this->m_p_compiler->SetOutputMsgList(m_p_output_msg_list);  //切换输出队列
 				pthread_mutex_unlock(&m_mutex_change_state);
@@ -15506,13 +15992,12 @@ bool ChannelControl::EmergencyStop(){
 
 	if(this->m_n_G843_flag){  //取消刚攻跟随状态
 		this->SendMcRigidTapFlag(false);
-		this->SendMiTapRatioCmd(false, 0);
-		m_n_G843_flag = false;
+		this->SendMiTapStateCmd(false);
+		m_n_G843_flag = 0;
 	}
 	if(this->m_n_M29_flag){  //主轴恢复速度控制
 		this->ProcessM29Reset();
 	}
-
 
 	//更新状态
 	uint8_t state = MS_WARNING;   //告警状态
@@ -15583,6 +16068,13 @@ void ChannelControl::SetRefPointFlag(uint8_t chn_axis, bool flag){
 		this->m_channel_status.returned_to_ref_point &= ~(0x01<<chn_axis);
 
 	this->SendChnStatusChangeCmdToHmi(REF_POINT_FLAG);
+	
+	//设置通道轴的软限位检查标志
+	if(flag){
+		this->SetChnAxisSoftLimit(chn_axis);
+	}else{
+		this->CloseChnAxisSoftLimit(chn_axis);   //未回参考点状态，则强制关闭软限位
+	}
 }
 
 /**
@@ -16006,7 +16498,7 @@ bool ChannelControl::GetTFINSig(uint8_t index){
  */
 void ChannelControl::SpindleSpeedDaOut(int32_t speed){
 	if(this->m_n_spindle_count == 0){
-		printf("通道[%hhu]没有配置主轴\n", m_n_channel_index);
+		g_ptr_trace->PrintTrace(TRACE_WARNING, CHANNEL_CONTROL_SC, "通道[%hhu]没有配置主轴\n", m_n_channel_index);
 		return;//没有主轴
 	}
 	//TODO 当前先用第一个主轴来判断
@@ -16014,11 +16506,11 @@ void ChannelControl::SpindleSpeedDaOut(int32_t speed){
 	SCAxisConfig &spd_config = m_p_axis_config[phy_spd-1];
 
 	if(spd_config.spd_vctrl_mode == 0){//控制模式为禁止
-		printf("主轴[%hhu]电压控制模式为禁止\n", phy_spd);
+		g_ptr_trace->PrintTrace(TRACE_WARNING, CHANNEL_CONTROL_SC, "主轴[%hhu]电压控制模式为禁止\n", phy_spd);
 		return;
 	}
 
-	printf("speed = %drpm, spd_dir = %hhd, motor_dir = %hhd\n", speed, m_channel_status.spindle_dir, spd_config.motor_dir);
+	g_ptr_trace->PrintTrace(TRACE_INFO, CHANNEL_CONTROL_SC,"speed = %drpm, spd_dir = %hhd, motor_dir = %hhd\n", speed, m_channel_status.spindle_dir, spd_config.motor_dir);
 
 	int s = labs(speed);
 	s = s * this->m_channel_status.spindle_ratio / 100;    //转速乘以主轴倍率
@@ -16055,7 +16547,8 @@ void ChannelControl::SpindleSpeedDaOut(int32_t speed){
 
 
 
-	printf("output spd speed da value: %lld\n", tt);
+	g_ptr_trace->PrintTrace(TRACE_WARNING, CHANNEL_CONTROL_SC,"Output spd speed da value: %lld, spd_axis=%hhu, max_speed=%u, da_prec=%u\n",
+			tt, phy_spd, spd_config.spd_max_speed, da_prec);
 
 
 	this->SendSpdSpeedToMi(phy_spd, (int16_t)tt);
@@ -16068,7 +16561,7 @@ void ChannelControl::SpindleSpeedDaOut(int32_t speed){
  * @param speed : 主轴指定转速
  */
 void ChannelControl::SpindleOut(int dir, int speed){
-
+	g_ptr_trace->PrintTrace(TRACE_INFO, CHANNEL_CONTROL_SC, "ChannelControl::spindleout : %d, speed=%d, chn=%hhu\n", dir, speed, this->m_n_channel_index);
 	if(dir == SPD_DIR_STOP)
 		this->m_p_f_reg->SPS = 0;    //标志主轴停转
 	else if(dir == SPD_DIR_POSITIVE)
@@ -17056,7 +17549,10 @@ void ChannelControl::UpdateFiveAxisParam(FiveAxisParamType type){
 
 	memcpy(&cmd.data.data[1], &data, sizeof(data));
 
-	m_p_mc_comm->WriteCmd(cmd);
+	if(!this->m_b_mc_on_arm)
+		m_p_mc_comm->WriteCmd(cmd);
+	else
+		m_p_mc_arm_comm->WriteCmd(cmd);
 }
 #endif
 
@@ -17120,8 +17616,9 @@ void ChannelControl::MiDebugFunc(int mcode){
 	MiCmdFrame cmd;
 	memset(&cmd, 0x00, sizeof(cmd));
 	cmd.data.cmd = CMD_MI_DEBUG_M_FUN;
+	
 	cmd.data.axis_index = NO_AXIS;
-
+	cmd.data.reserved  = m_n_channel_index+1;
 	cmd.data.data[0] = mcode;
 
 	this->m_p_mi_comm->WriteCmd(cmd);
@@ -17233,8 +17730,10 @@ void ChannelControl::ProcessSpdModeSwitch(AuxMsg *msg, uint8_t index){
 
 	}else if(msg->GetExecStep(index) == 9){
 		//同步位置
-		this->m_p_mc_comm->ReadAxisIntpPos(m_n_channel_index, m_channel_mc_status.intp_pos, m_channel_mc_status.intp_tar_pos);
-
+		if(!this->m_b_mc_on_arm)
+			this->m_p_mc_comm->ReadAxisIntpPos(m_n_channel_index, m_channel_mc_status.intp_pos, m_channel_mc_status.intp_tar_pos);
+		else
+			this->m_p_mc_arm_comm->ReadAxisIntpPos(m_n_channel_index, m_channel_mc_status.intp_pos, m_channel_mc_status.intp_tar_pos);
 
 //		m_channel_rt_status.cur_pos_work = m_channel_mc_status.intp_pos;
 //		m_channel_rt_status.tar_pos_work = m_channel_mc_status.intp_tar_pos;
@@ -17390,7 +17889,10 @@ void ChannelControl::ProcessCtrlModeSwitch(AuxMsg *msg, uint8_t index){
 //									time_now.tv_usec-ctrlmode_switch_start.tv_usec;
 
 		//同步位置
-		this->m_p_mc_comm->ReadAxisIntpPos(m_n_channel_index, m_channel_mc_status.intp_pos, m_channel_mc_status.intp_tar_pos);
+		if(!this->m_b_mc_on_arm)
+			this->m_p_mc_comm->ReadAxisIntpPos(m_n_channel_index, m_channel_mc_status.intp_pos, m_channel_mc_status.intp_tar_pos);
+		else
+			this->m_p_mc_arm_comm->ReadAxisIntpPos(m_n_channel_index, m_channel_mc_status.intp_pos, m_channel_mc_status.intp_tar_pos);
 
 //		m_channel_rt_status.cur_pos_work = m_channel_mc_status.intp_pos;
 //		m_channel_rt_status.tar_pos_work = m_channel_mc_status.intp_tar_pos;
@@ -17718,6 +18220,7 @@ bool ChannelControl::IsBufClearMsg(RecordMsg *msg){
 
 	}else if(type == MODE_MSG){   //TODO 支持其它模态消息
 //		int gcode = ((ModeMsg *)msg)->GetGCode();
+		res = false;
 	}
 
 
@@ -17743,20 +18246,26 @@ bool ChannelControl::IsRunmoveMsg(RecordMsg *msg){
  * @return 找到的msg指针
  */
 ListNode<RecordMsg *> *ChannelControl::FindMsgNode(uint16_t index){
+	g_ptr_trace->PrintTrace(TRACE_INFO, CHANNEL_CONTROL_SC, "ChannelControl::FindMsgNode, find=%hu, count=%d\n",
+				index, this->m_p_output_msg_list_auto->GetLength());
+				
 	ListNode<RecordMsg *> *node = this->m_p_output_msg_list_auto->HeadNode();
 
-	printf("ChannelControl::FindMsgNode, count=%d\n", this->m_p_output_msg_list_auto->GetLength());
 	if(node != nullptr)
 		printf("head node : framidx=%hu, line=%llu\n", node->data->GetFrameIndex(), node->data->GetLineNo());
 
+	int count = 0;
 	while(node != nullptr){
 		if(node->data->GetFrameIndex() == index){
-			printf("ChannelControl::FindMsgNode, frame=%hu, line=%llu\n", index, node->data->GetLineNo());
+			g_ptr_trace->PrintTrace(TRACE_INFO, CHANNEL_CONTROL_SC, "ChannelControl::FindMsgNode, frame=%hu, line=%llu, count = %d\n",
+					index, node->data->GetLineNo(), count);
 			break;
 		}
 		node = node->next;
+		count ++;
 	}
-
+	
+	printf("find msg frame index count = %d\n", count);
 	return node;
 }
 
@@ -17827,20 +18336,26 @@ void ChannelControl::ProcessMiHWTraceStateChanged(MiCmdFrame &cmd){
  * @return true--成功   false--失败
  */
 bool ChannelControl::ChangeHwTraceState(HWTraceState state){
-	printf("ChangeHwTraceState: newstate = %d\n", (int)state);
+	g_ptr_trace->PrintTrace(TRACE_INFO, CHANNEL_CONTROL_SC, "ChangeHwTraceState: newstate = %d\n", (int)state);
 	//同步当前位置
-	this->m_p_mc_comm->ReadAxisIntpPos(m_n_channel_index, m_channel_mc_status.intp_pos, m_channel_mc_status.intp_tar_pos);
+	if(!this->m_b_mc_on_arm)
+		this->m_p_mc_comm->ReadAxisIntpPos(m_n_channel_index, m_channel_mc_status.intp_pos, m_channel_mc_status.intp_tar_pos);
+	else
+		this->m_p_mc_arm_comm->ReadAxisIntpPos(m_n_channel_index, m_channel_mc_status.intp_pos, m_channel_mc_status.intp_tar_pos);
 	this->RefreshAxisIntpPos();
 
 	//读取当前帧号
 	uint16_t cur_frame_idx = 0;
-	this->m_p_mc_comm->ReadChnCurFrameIndex(m_n_channel_index, cur_frame_idx);
+	if(!this->m_b_mc_on_arm)
+		this->m_p_mc_comm->ReadChnCurFrameIndex(m_n_channel_index, cur_frame_idx);
+	else
+		this->m_p_mc_arm_comm->ReadChnCurFrameIndex(m_n_channel_index, cur_frame_idx);
 
 
 	//找到当前数据帧
 	ListNode<RecordMsg *> *node = this->FindMsgNode(cur_frame_idx);
 	if(m_channel_status.machining_state == MS_RUNNING && node == nullptr && this->m_p_output_msg_list_auto->GetLength() > 0){  //运行中
-		printf("cmd frame index = %hu\n", cur_frame_idx);
+		printf("Failed to find cmd frame index = %hu\n", cur_frame_idx);
 		this->m_error_code = ERR_NO_CUR_RUN_DATA;
 		CreateError(ERR_NO_CUR_RUN_DATA, ERROR_LEVEL, CLEAR_BY_MCP_RESET, 0, m_n_channel_index);
 		return false;
@@ -17870,6 +18385,65 @@ bool ChannelControl::ChangeHwTraceState(HWTraceState state){
 	m_b_mc_need_start = true;
 
 	return true;
+}
+
+/**
+ * @brief 读取图形模式下的高频轴位置数据, 读取XYZ三个轴的反馈位置
+ */
+void ChannelControl::ReadGraphAxisPos(){
+	if(this->m_n_graph_pos_count == kGraphPosBufCount-1){
+		//缓冲已满，先发送
+		this->SendHmiGraphPosData();
+	}
+
+	this->m_p_mi_comm->ReadPhyAxisFbPos(&m_pos_graph_array[m_n_graph_pos_write_idx].x, this->m_n_xyz_axis_phy, 3);
+
+	if(++m_n_graph_pos_write_idx >= kGraphPosBufCount)
+		m_n_graph_pos_write_idx = 0;
+
+	this->m_n_graph_pos_count++;
+}
+
+/**
+ * @brief 给HMI发送绘图位置数据
+ */
+void ChannelControl::SendHmiGraphPosData(){
+	if(this->m_n_graph_pos_count == 0)
+		return;   //无数据
+
+	uint8_t data_type = MDT_CHN_AXIS_POS;
+	uint8_t chn_index = this->m_n_channel_index;
+	uint16_t count = this->m_n_graph_pos_count;
+	uint16_t data_len = sizeof(CoordAxisPos)*count;
+
+
+	int buf_len = 4+data_len;
+	char buffer[buf_len];
+	memset(buffer, 0x00, 64);
+	memcpy(buffer, &data_type, 1);
+	memcpy(buffer+1, &chn_index, 1);
+	memcpy(buffer+2, &data_len, 2);
+
+	//拷贝数据
+	int cc = kGraphPosBufCount-m_n_graph_pos_read_idx;
+	if(cc >= count){
+		memcpy(buffer+4, &m_pos_graph_array[m_n_graph_pos_read_idx], data_len);
+		m_n_graph_pos_read_idx += count;
+		if(m_n_graph_pos_read_idx >=  kGraphPosBufCount)
+			m_n_graph_pos_read_idx = 0;
+
+	}else{
+		memcpy(buffer+4, &m_pos_graph_array[m_n_graph_pos_read_idx], cc*sizeof(CoordAxisPos));
+
+		int c2 = count -cc;
+		memcpy(buffer+4+cc*sizeof(CoordAxisPos), &m_pos_graph_array[0], c2*sizeof(CoordAxisPos));
+		m_n_graph_pos_read_idx += count;
+		if(m_n_graph_pos_read_idx >=  kGraphPosBufCount)
+			m_n_graph_pos_read_idx -= kGraphPosBufCount;
+	}
+	m_n_graph_pos_count -= count;
+
+	this->m_p_hmi_comm->SendMonitorData(buffer, buf_len);
 }
 
 /**
@@ -17980,9 +18554,9 @@ bool ChannelControl::CallAdditionalProgram(AddProgType type){
 		this->m_n_sub_count_bak = m_n_subprog_count;   //记录子程序嵌套层数
 
 		if(type == NORMAL_START_ADD)
-			this->m_p_compiler->CallMarcoProgWithNoPara(9701);
+			this->m_p_compiler->CallMarcoProgWithNoPara(9701, false);
 		else if(type == RESET_START_ADD)
-			this->m_p_compiler->CallMarcoProgWithNoPara(9703);
+			this->m_p_compiler->CallMarcoProgWithNoPara(9703, false);
 		m_n_subprog_count++;
 		m_n_macroprog_count++;
 
@@ -18097,8 +18671,8 @@ void ChannelControl::PrintDebugInfo(){
 	uint32_t fifo_count = this->m_p_mc_comm->ReadGCodeFifoCount(m_n_channel_index);
 	uint16_t mc_buf_count = 0;
 	this->m_p_mc_comm->ReadAutoBufDataCount(m_n_channel_index, mc_buf_count);
-	printf("outputbuf = %d, fifo_count = %u, buf_count = %hu, compiler_run_state = %hhu, mach_state = %hhu, err = %d\n", this->m_p_output_msg_list_auto->GetLength(), fifo_count, mc_buf_count, m_n_run_thread_state,
-			m_channel_status.machining_state, m_error_code);
+	printf("outputbuf = %d, fifo_count = %u, buf_count = %hu, compiler_run_state = %hhu, mach_state = %hhu, hw_trace=%hhu, err = %d\n", this->m_p_output_msg_list_auto->GetLength(), fifo_count, mc_buf_count, m_n_run_thread_state,
+			m_channel_status.machining_state, m_channel_status.func_state_flags.CheckMask(FS_HANDWHEEL_CONTOUR), m_error_code);
 
 	printf("mc status: cur_cmd = %hu, cur_mode=%hu, cur_feed = %u, rated_feed = %u, axis_over_mask = 0x%x\n", m_channel_mc_status.cur_cmd,
 			m_channel_mc_status.cur_mode, m_channel_mc_status.cur_feed, m_channel_mc_status.rated_feed, m_channel_mc_status.axis_over_mask);
@@ -18113,3 +18687,20 @@ void ChannelControl::PrintDebugInfo(){
 			debug[9], debug[10], debug[11], debug[12], debug[13], debug[14], debug[15]);
 
 }
+
+
+/**
+ * @brief 输出调试数据
+ */
+void ChannelControl::PrintDebugInfo1(){
+	printf("CHN [%hhu] DEBUG INFO\n", m_n_channel_index);
+	uint16_t mc_buf_max_count = this->GetMcAutoBufMax();	
+	uint16_t mc_buf_count = 0;
+	this->m_p_mc_arm_comm->ReadAutoBufDataCount(m_n_channel_index, mc_buf_count);		;
+	printf("outputbuf = %d, mc_buf_max_count = %u, buf_count = %hu, compiler_run_state = %hhu, mach_state = %hhu, err = %d\n", this->m_p_output_msg_list_auto->GetLength(), mc_buf_max_count, mc_buf_count, m_n_run_thread_state,
+			m_channel_status.machining_state, m_error_code);
+	printf("mc status: cur_cmd = %hu, cur_mode=%hu, cur_feed = %u, rated_feed = %u, axis_over_mask = 0x%x\n", m_channel_mc_status.cur_cmd,
+			m_channel_mc_status.cur_mode, m_channel_mc_status.cur_feed, m_channel_mc_status.rated_feed, m_channel_mc_status.axis_over_mask);
+
+}
+

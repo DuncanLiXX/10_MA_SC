@@ -325,9 +325,8 @@ struct FRegBits{
 	//F117
 	uint8_t :8;
 	//F118
-	uint8_t :8;
 	//F119
-	uint8_t :8;
+	uint16_t IRF:16;   //回零过程中信号   bit0~bit16:  轴1~轴16
 	//F120
 	uint8_t ZRF1:8;    //参考点建立信号   bit0-bit7：  轴1-轴8
 	//F121
@@ -596,7 +595,7 @@ struct FRegBits{
 	//F218
 	uint8_t :8;
 	//F219
-	uint8_t CHNC:4;
+	uint8_t CHNC:4;           //当前通道号
 	uint8_t : 4;
 	//F220
 	uint8_t TF2:1;           //刀具功能选通信号2 F220.0

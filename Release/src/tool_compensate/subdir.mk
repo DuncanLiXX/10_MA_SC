@@ -5,15 +5,21 @@
 # Add inputs and outputs from these tool invocations to the build variables 
 CPP_SRCS += \
 ../src/tool_compensate/tool_comp_data.cpp \
-../src/tool_compensate/tool_compensate.cpp 
+../src/tool_compensate/tool_compensate.cpp \
+../src/tool_compensate/tool_math.cpp \
+../src/tool_compensate/tools_comp.cpp 
 
 OBJS += \
 ./src/tool_compensate/tool_comp_data.o \
-./src/tool_compensate/tool_compensate.o 
+./src/tool_compensate/tool_compensate.o \
+./src/tool_compensate/tool_math.o \
+./src/tool_compensate/tools_comp.o 
 
 CPP_DEPS += \
 ./src/tool_compensate/tool_comp_data.d \
-./src/tool_compensate/tool_compensate.d 
+./src/tool_compensate/tool_compensate.d \
+./src/tool_compensate/tool_math.d \
+./src/tool_compensate/tools_comp.d 
 
 
 # Each subdirectory must supply rules for building sources it contributes

@@ -75,6 +75,8 @@ public:
 
 	ListNode<T> *HeadNode() const {return m_ptr_head;}    //获取头指针节点
 	ListNode<T> *TailNode() const {return m_ptr_tail;}    //获取尾指针节点
+	ListNode<T> *at(uint32_t aIndex);                               // 获取从头往尾第index个节点
+	bool InsertAt(uint32_t aIndex,const T &data);       // 插入从头往尾第index个节点
 
 	ListBuffer<T> &operator=(const ListBuffer<T> &list);   //重载赋值运算符
 
@@ -551,5 +553,41 @@ bool ListBuffer<T>::HasData(const T &data){
 	return true;
 }
 
+
+/**
+ * @brief 获取队列中第index个节点, 非移除，非删除，非插入
+ * @param data
+ * @return nullptr--无该节点  nod--该节点指针
+ */
+template<typename T>
+ListNode<T>* ListBuffer<T>::at(uint32_t aIndex){
+	if(m_n_count == 0)
+		return nullptr;
+
+	pthread_mutex_lock(&m_mutex);
+
+	ListNode<T> *node = m_ptr_head;
+	if(aIndex>0)
+	{
+		while( aIndex-- )
+		{
+			node = node->next;
+		}	
+	}
+	pthread_mutex_unlock(&m_mutex);
+	return node;
+}
+
+
+template<typename T>
+bool ListBuffer<T>::InsertAt(uint32_t indx,const T &data){
+
+    if(indx<1){
+	     return InsertBefore(data,m_ptr_head);
+    }
+	else{
+	     return  InsertAfter(data,at(indx-1));
+	}
+}
 
 #endif /* LISTBUFFER_H_ */

@@ -34,6 +34,7 @@ Variable::Variable() {
 	m_fp_keep_var = nullptr;
 	m_fp_macro_var = nullptr;
     this->m_b_save_keep = false;  //默认无更改
+
 }
 
 /**
@@ -224,7 +225,11 @@ bool Variable::GetVarValue(int index, double &value, bool &init){
 	}else if(index >= 500 && index <1000){	//保持型公共变量
 		init = this->m_b_init_common_keep[index-500];
 		value = this->m_df_common_keep[index-500];
-	}else if(index >= 1000 && index < 50000){	//系统变量
+	}else if(index >=50000 && index < 55000){    //扩展保持型公共变量
+		init = this->m_b_init_user_macro[index-50000];
+		value = this->m_df_user_macro[index-50000];
+
+	}else if(index >= 1000){	//系统变量
 
 		if((index >= 5061 && index <= 5080) ||
 				(index >= 5421 && index <= 5440)){
@@ -239,11 +244,7 @@ bool Variable::GetVarValue(int index, double &value, bool &init){
 			init = false;
 			return false;
 		}
-	}else if(index >=50000 && index < 55000){
-		init = this->m_b_init_user_macro[index-50000];
-		value = this->m_df_user_macro[index-50000];
-	}
-	else{
+	}else{
 		g_ptr_trace->PrintLog(LOG_ALARM, "变量索引号[%d]非法，获取变量值失败！", index);
 		return false;
 	}
@@ -291,14 +292,13 @@ bool Variable::SetVarValue(int index, double value){
 		this->m_b_init_common_keep[index-500] = true;
 		this->m_df_common_keep[index-500] = value;
 		this->SaveKeepComm(index);   //保存到文件
-	}else if(index >= 1000 && index < 50000){	//系统变量
-		return this->SetSysVar(index, value);
-	}else if(index >= 50000 && index < 55000){
+	}else if(index >= 50000 && index < 55000){    //扩展保持型公共变量
 		this->m_b_init_user_macro[index-50000] = true;
 		this->m_df_user_macro[index-50000] = value;
 		this->SaveMacroComm(index);   //保存到文件
-	}
-	else{
+	}else if(index >= 1000){	//系统变量
+		return this->SetSysVar(index, value);
+	}else{
 		g_ptr_trace->PrintLog(LOG_ALARM, "变量索引号[%d]非法，设置变量值失败！", index);
 		return false;
 	}
@@ -313,7 +313,6 @@ bool Variable::SetVarValue(int index, double value){
  * @return true--成功   false--失败
  */
 bool Variable::SetVarValue(int index, int value){
-	//
 	return this->SetVarValue(index, static_cast<double>(value));
 }
 
@@ -417,10 +416,7 @@ int Variable::CopyVar(char *buf, uint32_t max_size, uint32_t start_index, uint8_
 		//拷贝初始化标志
 		memcpy(buf, &m_b_init_common_keep[start_index-500], count);
 		//拷贝变量值
-		memcpy(buf+count, &m_df_common_keep[start_index-500], count*sizeof(double));
-
-	}else if(start_index >=1000 && start_index < 50000){//系统变量
-		return res;
+		memcpy(buf+count, &m_df_common_keep[start_index-500], count*sizeof(double));														   
 	}else if(start_index >= 50000 && start_index < 55000){
 		if(start_index+count > 55000)
 			count = 55000-start_index;
@@ -432,8 +428,9 @@ int Variable::CopyVar(char *buf, uint32_t max_size, uint32_t start_index, uint8_
 		memcpy(buf, &m_b_init_user_macro[start_index-50000], count);
 		//拷贝变量值
 		memcpy(buf+count, &m_df_user_macro[start_index-50000], count*sizeof(double));
-	}
-	else{//非法地址
+	}else if(start_index >=1000){//系统变量
+		return res;
+	}else{//非法地址
 		g_ptr_trace->PrintLog(LOG_ALARM, "Variable::CopyVar()非法地址！起始地址[%u]", start_index);
 		return res;
 	}

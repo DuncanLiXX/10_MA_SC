@@ -41,7 +41,7 @@ Compiler::Compiler(ChannelControl *chn_ctrl) {
 
 	m_p_simulate_mode = chn_ctrl->GetSimulateModePtr();
 
-	m_tool_compensate.SetChannelIndex(m_n_channel_index);
+	//m_tool_compensate.SetChannelIndex(m_n_channel_index);
 
 	m_thread_prescan = 0;
 
@@ -57,6 +57,17 @@ Compiler::Compiler(ChannelControl *chn_ctrl) {
 	if (m_error_code != ERR_NONE) {
 		printf("Failed to init compiler!\n");
 	}
+	
+	if(this->m_p_tool_compensate_auto != nullptr)
+	{
+	   this->m_p_tool_compensate_auto->SetChannelIndex(m_n_channel_index);
+	}
+	if(this->m_p_tool_compensate_mda != nullptr)
+	{
+	   this->m_p_tool_compensate_mda->SetChannelIndex(m_n_channel_index);
+	}
+	
+	
 }
 
 /**
@@ -81,6 +92,7 @@ Compiler::~Compiler() {
 		delete m_p_parser_res_mda;
 		m_p_parser_res_mda = nullptr;
 	}
+	
 	if (m_p_block_msg_list_auto != nullptr) {
 		delete m_p_block_msg_list_auto;
 		m_p_block_msg_list_auto = nullptr;
@@ -89,7 +101,16 @@ Compiler::~Compiler() {
 		delete m_p_block_msg_list_mda;
 		m_p_block_msg_list_mda = nullptr;
 	}
-
+	
+	if (m_p_tool_compensate_auto != nullptr) {
+		delete m_p_tool_compensate_auto;
+		m_p_tool_compensate_auto = nullptr;
+	}
+	if (m_p_tool_compensate_mda != nullptr) {
+		delete m_p_tool_compensate_mda;
+		m_p_tool_compensate_mda = nullptr;
+	}
+	
 	if (m_p_file_map_info != nullptr) {
 		delete m_p_file_map_info;
 		m_p_file_map_info = nullptr;
@@ -178,7 +199,7 @@ void Compiler::InitCompiler() {
 		return;
 	}
 
-	//初始化标签队列
+	//初始化子程序队列
 	this->m_p_list_subprog = new SubProgOffsetList();
 	if (m_p_list_subprog == nullptr) {
 		g_ptr_trace->PrintLog(LOG_ALARM, "CHN[%d]编译器创建标签队列失败!",
@@ -273,6 +294,25 @@ void Compiler::InitCompiler() {
 
 	this->m_p_block_msg_list = this->m_p_block_msg_list_auto;
 
+
+	//创建AUTO模式刀补处理缓冲
+	this->m_p_tool_compensate_auto = new ToolCompensate();
+	if (this->m_p_tool_compensate_auto == nullptr) {
+		g_ptr_trace->PrintLog(LOG_ALARM, "CHN[%d]编译器创建自动模式刀补指令消息队列失败!",
+				m_n_channel_index);
+		m_error_code = ERR_SC_INIT;  //初始化失败
+		return;
+	}
+	//创建MDA模式刀补处理缓冲
+	this->m_p_tool_compensate_mda = new ToolCompensate();
+	if (this->m_p_tool_compensate_mda == nullptr) {
+		g_ptr_trace->PrintLog(LOG_ALARM, "CHN[%d]编译器创建MDA模式刀补指令消息队列失败!",
+				m_n_channel_index);
+		m_error_code = ERR_SC_INIT;  //初始化失败
+		return;
+	}
+	this->m_p_tool_compensate = this->m_p_tool_compensate_auto;
+	
 	//状态初始化
 	m_b_eof = false;
 	m_b_comment = false;
@@ -840,7 +880,6 @@ void Compiler::PreScan() {
  * @param line_no : 行号
  * @param flag : 跨行注释状态
  */
-
 void Compiler::PreScanLine1(char *buf, uint64_t offset, uint64_t line_no,
 		bool &flag, LoopOffsetStack &loop_stack, CompilerScene *scene) {
 
@@ -979,6 +1018,7 @@ void Compiler::PreScanLine1(char *buf, uint64_t offset, uint64_t line_no,
 				pc += 3;
 				continue;
 			}
+			
 		}
 #ifdef USES_WOOD_MACHINE
 		else if(*pc == 'M' && !isalpha(*(pc+1))){  //M03/M04指令
@@ -1114,7 +1154,7 @@ void Compiler::PreScanLine1(char *buf, uint64_t offset, uint64_t line_no,
 
 		if(this->m_b_prescan_in_stack){   //堆栈文件预扫描
 			if (!scene->list_label.HasData(label_offset)){
-				//按升序排列 (从头到尾 从小到大?)
+				//按升序排列
 				node = scene->list_label.HeadNode();
 				while (node != nullptr) {
 					if (node->data.label > label_offset.label) {
@@ -1148,12 +1188,12 @@ void Compiler::PreScanLine1(char *buf, uint64_t offset, uint64_t line_no,
 		LoopOffset loop_offset;
 		loop_offset.line_no = line_no;
 		loop_offset.offset = offset;
-
+		
 		if(digit_count > 0)
 			loop_offset.loop_index = atoi(digit_buf);
 		else
 			loop_offset.loop_index = 0;
-
+		
 		loop_stack.push(loop_offset);
 	//	printf("push do cmd: %lld\n", line_no);
 	}else if(loop_end){		//找到END指令
@@ -1175,6 +1215,51 @@ void Compiler::PreScanLine1(char *buf, uint64_t offset, uint64_t line_no,
 	//		printf("find loop rec: s[%lld, %lld] e[%lld, %lld]\n", loop_rec.start_line_no, loop_rec.start_offset, line_no, offset);
 		}
 	}
+#ifdef USES_WOOD_MACHINE
+	else if(m_code && digit_count > 0){
+		m_digit = atoi(digit_buf);
+		if(m_digit == 3 || m_digit == 4){  //只处理M04和M03
+			m_msg = true;
+		}
+		m_code = false;
+		digit_count = 0;
+		memset(digit_buf, 0, 10);
+	}else if(s_code && digit_count > 0){
+		s_digit = atoi(digit_buf);
+		s_msg = true;
+		s_code = false;
+		digit_count = 0;
+		memset(digit_buf, 0, 10);
+	}
+	//处理转速指令
+	if(s_msg){
+		this->m_n_s_code_in_prescan = s_digit;
+	}
+
+	//处理主轴指令
+	if(m_msg){
+		if(m_digit == 5)   //主轴停
+			this->m_n_s_code_in_prescan = 0;
+		else if(m_digit == 3 || m_digit ==4){
+			SpindleStartOffset spd_cmd;
+			spd_cmd.line_no = line_no;
+			spd_cmd.m_code = m_digit;
+			spd_cmd.s_code = m_n_s_code_in_prescan;
+			spd_cmd.jump_line = jump_flag;
+		//	spd_cmd.exec_step = 0;
+			printf("find spindle cmd:%d, spd:%d, line:%llu, jump=%hhu\n", m_digit, m_n_s_code_in_prescan, line_no, spd_cmd.jump_line);
+
+			if(this->m_b_prescan_in_stack){   //堆栈文件预扫描
+				scene->list_spd_start.Append(spd_cmd);
+				printf("append in scene\n");
+			}else{
+				this->m_p_list_spd_start->Append(spd_cmd);
+				printf("append in body\n");
+			}
+		}
+	}
+#endif
+
 	// 找到 if 指令
 	if(this->m_b_prescan_in_stack){
 		if(if_cmd){
@@ -1302,52 +1387,7 @@ void Compiler::PreScanLine1(char *buf, uint64_t offset, uint64_t line_no,
 			elseif_cmd = false;
 		}
 	}
-
-
-#ifdef USES_WOOD_MACHINE
-	if(m_code && digit_count > 0){
-		m_digit = atoi(digit_buf);
-		if(m_digit == 3 || m_digit == 4){  //只处理M04和M03
-			m_msg = true;
-		}
-		m_code = false;
-		digit_count = 0;
-		memset(digit_buf, 0, 10);
-	}else if(s_code && digit_count > 0){
-		s_digit = atoi(digit_buf);
-		s_msg = true;
-		s_code = false;
-		digit_count = 0;
-		memset(digit_buf, 0, 10);
-	}
-	//处理转速指令
-	if(s_msg){
-		this->m_n_s_code_in_prescan = s_digit;
-	}
-
-	//处理主轴指令
-	if(m_msg){
-		if(m_digit == 5)   //主轴停
-			this->m_n_s_code_in_prescan = 0;
-		else if(m_digit == 3 || m_digit ==4){
-			SpindleStartOffset spd_cmd;
-			spd_cmd.line_no = line_no;
-			spd_cmd.m_code = m_digit;
-			spd_cmd.s_code = m_n_s_code_in_prescan;
-			spd_cmd.jump_line = jump_flag;
-		//	spd_cmd.exec_step = 0;
-			printf("find spindle cmd:%d, spd:%d, line:%llu, jump=%hhu\n", m_digit, m_n_s_code_in_prescan, line_no, spd_cmd.jump_line);
-
-			if(this->m_b_prescan_in_stack){   //堆栈文件预扫描
-				scene->list_spd_start.Append(spd_cmd);
-				printf("append in scene\n");
-			}else{
-				this->m_p_list_spd_start->Append(spd_cmd);
-				printf("append in body\n");
-			}
-		}
-	}
-#endif
+	
 }
 
 /**
@@ -1819,6 +1859,7 @@ void Compiler::SetMode(CompilerWorkMode mode) {
 		this->m_n_compile_state = FILE_MAIN;
 
 		this->m_p_block_msg_list = this->m_p_block_msg_list_mda;
+		this->m_p_tool_compensate = this->m_p_tool_compensate_mda;
 		this->m_p_parser_result = this->m_p_parser_res_mda;
 
 		//	pthread_mutex_unlock(&m_mutex_change_state);
@@ -1835,6 +1876,7 @@ void Compiler::SetMode(CompilerWorkMode mode) {
 		this->ReloadScene();  //恢复现场
 
 		this->m_p_block_msg_list = this->m_p_block_msg_list_auto;
+		this->m_p_tool_compensate = this->m_p_tool_compensate_auto;
 		this->m_p_parser_result = this->m_p_parser_res_auto;
 
 	}
@@ -1943,6 +1985,8 @@ void Compiler::Reset() {
 	this->m_lexer_result.Reset();
 	m_p_block_msg_list_auto->Clear();
 	m_p_block_msg_list_mda->Clear();
+	this->m_p_tool_compensate_auto->ResetAllDatas();
+	this->m_p_tool_compensate_mda->ResetAllDatas();
 
 	m_stack_loop.empty();  //清空循环位置数据
 
@@ -2054,16 +2098,19 @@ bool Compiler::GetLineData() {
 		m_b_eof = true;
 		if(this->m_work_mode == MDA_COMPILER){  //MDA模式下，到文件尾结束编译
 			strcpy(m_line_buf, "M30");
-			printf("MDA insert M30-2\n");
+			this->m_lexer_result.line_no = this->m_ln_cur_line_no;   //更新行号
+			g_ptr_trace->PrintTrace(TRACE_DETAIL, COMPILER_CHN, "MDA insert M30-2\n");
 			return true;
 		}
 #ifdef USES_WOOD_MACHINE
 		if(m_n_sub_program == MAIN_PROG){//主程序
 			strcpy(m_line_buf, "M30");   //木工专机可以没有M30指令，系统自动添加
-			printf("Insert M30-2\n");
+			this->m_lexer_result.line_no = this->m_ln_cur_line_no;   //更新行号
+			g_ptr_trace->PrintTrace(TRACE_DETAIL, COMPILER_CHN, "Insert M30-2\n");
 		}else{//子程序/宏程序
 			strcpy(m_line_buf, "M99");   //木工专机可以没有M99指令，系统自动添加
-			printf("Insert M99-2\n");
+			this->m_lexer_result.line_no = this->m_ln_cur_line_no;   //更新行号
+			g_ptr_trace->PrintTrace(TRACE_DETAIL, COMPILER_CHN, "Insert M99-2\n");
 		}
 		return true;
 #else
@@ -2231,7 +2278,7 @@ bool Compiler::GetLineData() {
 
 	} else {
 //		this->StopCompile();
-		printf("end of the file\n");
+		g_ptr_trace->PrintTrace(TRACE_DETAIL, COMPILER_CHN, "end of the file\n");
 	}
 
 	if (index == 0) {  //如果空白行且文件未结束，则继续读取下一行
@@ -2246,15 +2293,18 @@ bool Compiler::GetLineData() {
 		} else if (this->m_work_mode == MDA_COMPILER) {
 			//MDA模式，插入一个M30结束命令
 			strcpy(m_line_buf, "M30");
-			printf("MDA insert M30-1\n");
+			this->m_lexer_result.line_no = this->m_ln_cur_line_no;   //更新行号
+			g_ptr_trace->PrintTrace(TRACE_DETAIL, COMPILER_CHN, "MDA insert M30-1\n");
 		} else {
 #ifdef USES_WOOD_MACHINE
 		if(m_n_sub_program == MAIN_PROG){//主程序
 			strcpy(m_line_buf, "M30");   //木工专机可以没有M30指令，系统自动添加
-			printf("Insert M30-1\n");
+			this->m_lexer_result.line_no = this->m_ln_cur_line_no;   //更新行号
+			g_ptr_trace->PrintTrace(TRACE_DETAIL, COMPILER_CHN, "Insert M30-1\n");
 		}else{//子程序/宏程序
 			strcpy(m_line_buf, "M99");   //木工专机可以没有M99指令，系统自动添加
-			printf("Insert M99-1\n");
+			this->m_lexer_result.line_no = this->m_ln_cur_line_no;   //更新行号
+			g_ptr_trace->PrintTrace(TRACE_DETAIL, COMPILER_CHN, "Insert M99-1\n");
 		}
 		return true;
 #else
@@ -2323,6 +2373,7 @@ bool Compiler::CompileLine() {
 	return res;
 }
 
+
 /**
  * @brief 执行编译产生的Msg,修改编译器状态
  * @return true--成功   false--失败
@@ -2330,8 +2381,6 @@ bool Compiler::CompileLine() {
 bool Compiler::RunMessage() {
 	bool res = true;
 	RecordMsg *msg = nullptr;
-
-	//uint64_t lineNo = 0;
 
 //	int count = m_p_parser_result->GetLength();
 
@@ -2341,22 +2390,13 @@ bool Compiler::RunMessage() {
 		msg = static_cast<RecordMsg *>(node->data);
 		if (msg != nullptr) {
 			if(msg->CheckFlag(FLAG_JUMP) && this->m_p_channel_control->CheckFuncState(FS_BLOCK_SKIP)){  //跳段激活,则当前指令取消
-
 				this->m_p_parser_result->RemoveHead();
 				delete node;
 				node = this->m_p_parser_result->HeadNode();  //取下一个消息
 				continue;
 			}
 			msg_type = msg->GetMsgType();
-
-			/***************************
-			static uint64_t lino = 0;
-			if(lino != msg->GetLineNo()){
-				printf("-------------- RUN MSG: %d --> %llu\n ", msg->GetMsgType(), msg->GetLineNo());
-				lino = msg->GetLineNo();
-			}
-			****************************/
-
+			
 			switch (msg_type) {
 			case AUX_MSG:
 				res = RunAuxMsg(msg);
@@ -2465,7 +2505,6 @@ bool Compiler::RunMessage() {
 	node = this->m_p_block_msg_list->HeadNode();
 	while (node != nullptr) {
 		msg = static_cast<RecordMsg *>(node->data);
-
 		if (msg != nullptr) { //出错情况下，全部输出
 			if (msg == this->m_p_last_move_msg
 					&& this->m_error_code == ERR_NONE &&
@@ -2475,8 +2514,7 @@ bool Compiler::RunMessage() {
 
 			this->m_p_block_msg_list->RemoveHead();
 //			this->m_p_output_msg_list->Append(node);   //压入待发送队列
-			this->m_tool_compensate.ProcessData(node);  //压入刀补数据缓冲
-//			printf("run message ,push to tool comp list, type = %hhu, line=%llu\n", msg->GetMsgType(), msg->GetLineNo());
+			this->m_p_tool_compensate->ProcessData(node);  //压入刀补数据缓冲
 
 		}
 
@@ -2869,7 +2907,7 @@ bool Compiler::RunModeMsg(RecordMsg *msg) {
 	case G18_CMD:
 	case G19_CMD:
 		tmp->SetLastGCode(m_compiler_status.mode.gmode[GetModeGroup(gcode)]);   //设置历史数据，用于手轮反向引导
-		this->m_tool_compensate.SetCurPlane(gcode);   //设置刀补模块当前平面
+//		this->m_tool_compensate.SetCurPlane(gcode);   //设置刀补模块当前平面
 		break;
 	case G84_3_CMD:
 		tmp->SetLastGCode(m_compiler_status.mode.gmode[39]);   //设置历史数据，用于手轮反向引导
@@ -4256,9 +4294,10 @@ bool Compiler::DoParser() {
 /**
  * @brief 无参数调用宏程序
  * @param macro_index : 宏程序编号
+ * @param flag : 通知HMI文件变更， true--通知   false--不通知
  * @return 0--调用失败   其它--调用成功
  */
-int Compiler::CallMarcoProgWithNoPara(int macro_index){
+int Compiler::CallMarcoProgWithNoPara(int macro_index, bool flag){
 	//查找子程序
 	int macro_loc = this->FindSubProgram(macro_index);
 
@@ -4294,7 +4333,7 @@ int Compiler::CallMarcoProgWithNoPara(int macro_index){
 	this->m_n_head_state = HEAD_INFO;
 
 	//TODO 向HMI发送命令打开子文件
-	if(g_ptr_parm_manager->GetSystemConfig()->debug_mode > 0){  //调式模式下，打开宏程序文件
+	if(flag && g_ptr_parm_manager->GetSystemConfig()->debug_mode > 0){ //调式模式下，打开宏程序文件
 
 		this->m_p_channel_control->SendOpenFileCmdToHmi(filepath);
 
@@ -4440,9 +4479,9 @@ bool Compiler::ReturnFromSubProg() {
 			strcpy(file, p+1);
 		}
 		SubProgReturnMsg *msg = new SubProgReturnMsg(file, ret_macro_prog);
-		msg->SetLineNo(this->m_ln_cur_line_no+1);
+		msg->SetLineNo(this->m_ln_cur_line_no-1);
 		m_p_block_msg_list->Append(msg);
-		printf("insert block subprogret msg : %s\n", file);
+		printf("@@@@@@insert block subprogret msg : %s, line=%lld\n", file, msg->GetLineNo());
 	}
 
 	return true;
@@ -4816,7 +4855,7 @@ bool Compiler::RefreshBlockMovePos(DPointChn &pos){
 	}
 
 	this->SetCurPos(pp);   //更新编译器起点坐标
-	printf("refresh block pos:%lf, %lf, %lf\n", pp.m_df_point[0], pp.m_df_point[1], pp.m_df_point[2]);
+//	printf("refresh block pos:%lf, %lf, %lf\n", pp.m_df_point[0], pp.m_df_point[1], pp.m_df_point[2]);
 	return res;
 }
 

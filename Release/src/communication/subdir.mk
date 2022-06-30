@@ -7,18 +7,21 @@ CPP_SRCS += \
 ../src/communication/ad_communication.cpp \
 ../src/communication/hmi_communication.cpp \
 ../src/communication/mc_communication.cpp \
+../src/communication/mc_communication_arm.cpp \
 ../src/communication/mi_communication.cpp 
 
 OBJS += \
 ./src/communication/ad_communication.o \
 ./src/communication/hmi_communication.o \
 ./src/communication/mc_communication.o \
+./src/communication/mc_communication_arm.o \
 ./src/communication/mi_communication.o 
 
 CPP_DEPS += \
 ./src/communication/ad_communication.d \
 ./src/communication/hmi_communication.d \
 ./src/communication/mc_communication.d \
+./src/communication/mc_communication_arm.d \
 ./src/communication/mi_communication.d 
 
 

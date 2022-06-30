@@ -15,6 +15,7 @@
 #include "hmi_communication.h"
 #include "mi_communication.h"
 #include "mc_communication.h"
+#include "mc_communication_arm.h"								 
 #include "ad_communication.h"
 #include "trace.h"
 #include "alarm_processor.h"
@@ -556,6 +557,35 @@ int LoadMiData(){
 	return res;
 }
 
+/**
+ * @brief 获取软件统一版本号
+ */
+int GetDiskVersion(char* buf, int len)
+{
+	FILE* fp = fopen("/cnc/disk/version.txt", "rb");
+	if (!fp) {
+		strcpy(buf, "V1.0.0");
+		return -1;
+	}
+	int readlen = fread(buf, 1, len, fp);
+	if (readlen > 0)
+		buf[readlen-1] = 0;
+	else {
+		strcpy(buf, "V1.0.0");
+		fclose(fp);
+		return -2;
+	}
+
+	for (int i=0; i<readlen; i++) {
+		if (buf[i]==10 || buf[i]==13) {
+			buf[i] = 0;
+			break;
+		}
+	}
+	fclose(fp);
+	printf("Disk Version %s\n", buf);
+	return 0;
+}
 
 /**
  * @brief 系统初始化函数
@@ -569,6 +599,7 @@ int Initialize(){
 	strcpy(g_sys_info.sw_version_info.mc, "P0.0.0");
 	strcpy(g_sys_info.sw_version_info.mi, "P0.0.0");
 
+	GetDiskVersion(g_sys_info.sw_version_info.platform, kMaxVersionLen); //获取统一版本号																						 
 	g_sys_state.system_boot_stage = STEP_INIT_TRACE;
 
 
@@ -648,6 +679,15 @@ int Initialize(){
 	else
 		printf("succeed to create MCCommunication object!\n");
 
+	//创建MC-ARM通讯对象
+	g_ptr_mc_arm_comm = MCArmCommunication::GetInstance();
+	if(g_ptr_mc_arm_comm == nullptr){
+		res = ERR_SC_INIT;
+		printf("Failed to create MCArmCommunication object!\n");
+		return res;
+	}
+	else
+		printf("succeed to create MCArmCommunication object!\n");					   									  
 
 	g_sys_state.system_boot_stage = STEP_INIT_ALARM_PROC;
 	//创建告警处理器模块
@@ -676,8 +716,10 @@ int Initialize(){
 	g_ptr_hmi_comm->SetInterface();  //
 	g_ptr_mi_comm->SetInterface();
 	g_ptr_mc_comm->SetInterface();
+	g_ptr_mc_arm_comm->SetInterface();							   
 	g_ptr_alarm_processor->SetInterfaces();  //设置告警处理模块的接口
 
+	g_ptr_chn_engine->SetMcArmComm(g_ptr_mc_arm_comm);											   
 	g_ptr_chn_engine->Initialize(g_ptr_hmi_comm, g_ptr_mi_comm, g_ptr_mc_comm, g_ptr_parm_manager);
 
 	//与MC进行握手
@@ -742,6 +784,13 @@ void Clean(){
 	}
 	printf("succeed to delete mc communication\n");
 
+	//释放MC-ARM通讯接口对象
+	if(g_ptr_mc_arm_comm != nullptr){
+		delete g_ptr_mc_arm_comm;
+		g_ptr_mc_arm_comm = nullptr;
+	}
+//	printf("succeed to delete mc-arm communication\n");
+						
 	//释放MI通讯接口对象
 	if(g_ptr_mi_comm != nullptr){
 		delete g_ptr_mi_comm;
@@ -810,9 +859,9 @@ int main()
 	if((g_sys_state.module_ready_mask & NC_READY) == NC_READY)
 		g_sys_state.system_ready = true;
 
-	printf("sys = %d, chn = %d, axis = %d, errorinfo = %d\n", sizeof(SCSystemConfig), sizeof(SCChannelConfig), sizeof(SCAxisConfig), sizeof(ErrorInfo));
-
-
+	printf("sys = %d, chn = %d, axis = %d, errorinfo = %d, toolPotconfig=%d\n", sizeof(SCSystemConfig), sizeof(SCChannelConfig), sizeof(SCAxisConfig),
+			sizeof(ErrorInfo), sizeof(HmiToolPotConfig));
+	g_ptr_trace->PrintTrace(TRACE_INFO, MAIN_ENTRANCE_SC, "@#@#@Start SC Module!");																	
 
 	//测试延时函数
 //	struct timeval tvStart;
@@ -833,7 +882,7 @@ int main()
 //	memset(&min_err[0][0], 10000, sizeof(int)*10*3);
 	while (1) {
 		if (g_sys_state.system_quit) {
-		    printf("Break from the main dead loop!\n");
+		    g_ptr_trace->PrintTrace(TRACE_INFO, MAIN_ENTRANCE_SC, "Break from the main dead loop!\n");
 			break;//退出主线程
 		}
 //		for(int i = 0; i < 10; i++){
@@ -920,7 +969,7 @@ int main()
 
 	usleep(500000);    //等待
 
-	printf("Quit the SC Module!\n");
+	g_ptr_trace->PrintTrace(TRACE_INFO, MAIN_ENTRANCE_SC, "Quit the SC Module!\n");
 	return res;
 }
 

@@ -105,7 +105,7 @@ private:
 	void ProcessHmiFileOperateCmd(HMICmdRecvNode &cmd_node);      //处理HMI发来的文件操作命令
 	void ProcessHmiFileSignatureCmd(HMICmdRecvNode &cmd_node);		//处理HMI获取NC文件签名的命令
 	void ProcessHmiVirtualMOPCmd(HMICmdFrame &cmd);			//处理HMI虚拟MOP按键命令
-
+	void ProcessHmiSyncTimeCmd(HMICmdFrame &cmd);          //处理HMI同步系统时间命令
 
 	uint16_t GetFrameNumber(){return  (++m_n_frame_number&0x8000) ? (m_n_frame_number=0) : m_n_frame_number;}   //获取最新帧号
 

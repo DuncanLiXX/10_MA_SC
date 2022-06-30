@@ -19,6 +19,7 @@
 #include "mi_communication.h"
 #include "mc_communication.h"
 #include "ad_communication.h"
+#include "mc_communication_arm.h"								 
 #include <linux/if.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
@@ -31,6 +32,7 @@ SystemInfo g_sys_info;      //系统信息，包括版本和CPU占用率等
 HMICommunication *g_ptr_hmi_comm = nullptr;   //HMI通讯接口
 MICommunication *g_ptr_mi_comm = nullptr; 		//MI通讯接口
 MCCommunication *g_ptr_mc_comm = nullptr;		//MC通讯接口
+MCArmCommunication *g_ptr_mc_arm_comm = nullptr;   //MC-ARM通讯接口																	   
 ChannelEngine *g_ptr_chn_engine = nullptr;    //通道引擎
 ParmManager *g_ptr_parm_manager = nullptr;    //参数管理器
 TraceInfo *g_ptr_trace = nullptr;             //日志调试接口

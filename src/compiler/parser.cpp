@@ -247,7 +247,7 @@ bool Parser::CheckGCode(LexerGCode *gcode){
 
 	if(gcode->tcode_count > kMaxTCodeInLine){
 		m_error_code = ERR_TOO_MANY_T_CODE;   //T指令过多
-		printf("Parser::CheckGCode, too many t code! tcode_count = %hhu\n", gcode->tcode_count);
+		g_ptr_trace->PrintTrace(TRACE_ERROR, COMPILER_PARSER, "Parser::CheckGCode, too many t code! tcode_count = %hhu\n", gcode->tcode_count);
 		return false;
 	}
 /*int exp_index = static_cast<int>(g_code->value[addr]);
@@ -490,6 +490,9 @@ bool Parser::AnalyzeGCode(LexerGCode *gcode){
 			if(!CreateInfoMsg()){
 				return false;
 			}
+		}else if(m_mode_code[kMaxGModeCount-1] == G84_3_CMD){
+			if(!CreateModeMsg(m_mode_code[kMaxGModeCount-1]))
+				return false;
 		}
 #ifdef USES_SPEED_TORQUE_CTRL
 		else if(m_mode_code[kMaxGModeCount-1] == G1000_CMD || 
@@ -793,6 +796,7 @@ bool Parser::ProcessMCode(LexerGCode *gcode){
 bool Parser::GetExpressionResult(MacroExpression &express, MacroVarValue &res){
 	stack<MacroVarValue> stack_value;  //中间值栈
 	MacroExpression macro_bak;   //备份
+	res.init = false;
 
 	if(express.empty()){//表达式为空，错误的宏指令格式，告警
 		m_error_code = ERR_INVALID_MACRO_EXP;
@@ -2077,9 +2081,9 @@ bool Parser::CreateCompensateMsg(int gcode){
 
 	if(gcode == G41_CMD || gcode == G42_CMD || gcode == G40_CMD){  //建立刀具半径补偿需要轴移动
 
-		if(!GetTargetPos(target, mask)){
-			return false;
-		}
+//		if(!GetTargetPos(target, mask)){
+//			return false;
+//		}
 
 		if(!GetCodeData(D_DATA, df_data))
 		{
@@ -2092,8 +2096,8 @@ bool Parser::CreateCompensateMsg(int gcode){
 		}
 		data = static_cast<uint16_t>(df_data);
 
-		if(m_p_compiler_status->mode.gmode[1] == G01_CMD)
-			move_type = MOVE_G01;
+//		if(m_p_compiler_status->mode.gmode[1] == G01_CMD)
+//			move_type = MOVE_G01;
 
 	}else if(gcode == G43_CMD || gcode == G44_CMD || gcode == G49_CMD){  //刀具长度补偿
 		if(!GetTargetPos(target, mask))
@@ -3033,7 +3037,7 @@ bool Parser::GetCodeData(DataAddr addr, double &data){
 			while(!this->GetExpressionResult(g_code->macro_expression[exp_index], res)){
 				if(this->m_error_code != ERR_NONE)
 					return false;
-				usleep(1000);  //休眠1ms，等待MC运行到位
+				usleep(10000);  //休眠10ms，等待MC运行到位
 			}
 
 			if(!res.init){ //空值，则忽略此地址字
@@ -3123,7 +3127,7 @@ bool Parser::GetAxisExData(uint8_t name, uint8_t name_ex, double &data){
 			while(!this->GetExpressionResult(g_code->macro_expression[exp_index], res)){
 				if(this->m_error_code != ERR_NONE)
 					return false;
-				usleep(1000);  //休眠1ms，等待MC运行到位
+				usleep(10000);  //休眠10ms，等待MC运行到位
 			}
 
 			if(!res.init){ //空值，则忽略此地址字

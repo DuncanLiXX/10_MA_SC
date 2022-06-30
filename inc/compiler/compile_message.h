@@ -169,7 +169,17 @@ public:
 	int GetGCode(){return m_n_g_code;}   //返回G指令代码
 	void SetLastGCode(int gcode_last){this->m_n_last_g_code = gcode_last;}   //设置历史模态值
 	int GetLastGCode(){return this->m_n_last_g_code;}    //获取历史模态值
-
+	
+//	void SetToolCompIndex(int16_t toolcomp_index){this->m_b_toolcomp_index = toolcomp_index;}
+//	int16_t GetToolCompIndex(){return this->m_b_toolcomp_index;}
+//	void SetToolCompRadius(double fradius){this->m_b_toolcomp_radius = fradius;}
+//	double GetToolCompRadius(){return this->m_b_toolcomp_radius;}
+//	void SetToolCompDir(int8_t toolcomp_dir){this->m_b_toolcomp_dir = toolcomp_dir;}
+//	int8_t GetToolCompDir(){return this->m_b_toolcomp_dir;}
+//	void SetToolPlane(int8_t work_plane){this->m_b_work_plane = work_plane;}
+//	int8_t GetToolPlane(){return this->m_b_work_plane;}
+	ToolRec GetAToolRec(){return this->m_tool_info;}
+	void SetAToolRec(ToolRec tool){this->m_tool_info = tool;}
 
 
 	ModeMsg& operator=( const ModeMsg& msg);  //赋值运算符
@@ -178,6 +188,13 @@ protected:
 	int m_n_g_code;   //G指令代码，放大十倍存储，例如G43.4存储值为434
 	int m_n_last_g_code;    //前一个模态，为了支持手轮反向引导功能
 //	bool m_b_mach_coord;    //当前是否机械坐标系
+
+//	int16_t m_b_toolcomp_index;    // 刀补号    D
+//	int8_t m_b_toolcomp_dir;    // 刀补方向     G40 G41 G42
+//	double m_b_toolcomp_radius;  // 刀补半径值
+//	int8_t m_b_work_plane;      // 工作平面 G17 G18 G19
+
+	ToolRec m_tool_info;
 };
 
 /**
@@ -400,7 +417,7 @@ public:
 
 	virtual void PrintString();   //用于程序调试
 
-	int GetMCode(uint8_t index){return index<m_n_m_count?m_n_m_code[index]:-1;}   //返回M代码值,失败返回-1
+	int GetMCode(uint8_t index=0){return index<m_n_m_count?m_n_m_code[index]:-1;}   //返回M代码值,失败返回-1
 	uint8_t GetMCount(){return m_n_m_count;}   //返回M代码个数
 
 	uint8_t GetExecStep(uint8_t index){return index<m_n_m_count?m_n_aux_exec_segment[index]:-1;}		//获取当前步骤，失败返回-1
@@ -576,6 +593,9 @@ public:
 
 	DPointChn &GetTargetPos(){return m_point_target;}  //返回终点坐标
 	DPointChn &GetSourcePos(){return m_point_source;}  //返回起点坐标
+	void SetTargetPos(DPointChn pos){ m_point_target = pos;}  // 
+	void SetSourcePos(DPointChn pos){ m_point_source = pos;}  //
+	
 	uint32_t GetAxisMoveMask(){return m_axis_move_mask;}   //返回移动轴mask
 
 	void RefreshTargetPos(DPointChn &pos);	//同步目标位置
@@ -624,6 +644,9 @@ public:
 
 	DPointChn &GetTargetPos(){return m_point_target;}  //返回终点坐标
 	DPointChn &GetSourcePos(){return m_point_source;}  //返回起点坐标
+	void SetTargetPos(DPointChn pos){ m_point_target = pos;}
+	void SetSourcePos(DPointChn pos){m_point_source = pos;}  
+	
 	uint32_t GetAxisMoveMask(){return m_axis_move_mask;}   //返回移动轴mask
 
 	void RefreshTargetPos(DPointChn &pos);	//同步目标位置
@@ -775,10 +798,19 @@ public:
 	virtual void PrintString();   //用于程序调试
 
 	void SetFeed(const double feed){m_df_feed = feed;}  //设置进给速度
+	double GetFeed(){return m_df_feed;};    //获取进给速度
 	void SetPlaneMode(const uint16_t gmode2){m_gmode_2 = gmode2;}    //设置加工平面模态
 
 	DPointChn &GetTargetPos(){return m_point_target;}  //返回终点坐标
 	DPointChn &GetSourcePos(){return m_point_source;}  //返回起点坐标
+	DPointChn &GetCenterPos(){return m_point_center;}  //返回起点坐标
+	
+	void SetTargetPos(DPointChn pos){ m_point_target = pos;}
+	void SetSourcePos(DPointChn pos){m_point_source = pos;}  
+	void SetCenterPos(DPointChn pos){m_point_center = pos;}  
+	
+	void getArcFlags(int8_t &dir, int8_t &major, int8_t &circle){dir=m_flag_direct,major=m_flag_major,circle=m_flag_circle;}    // 返回圆心角 
+//	double getAngle(void);    // 返回圆心角 
 	uint32_t GetAxisMoveMask(){return m_axis_move_mask;}   //返回移动轴mask
 
 	void RefreshTargetPos(DPointChn &pos);	//同步目标位置
@@ -791,7 +823,7 @@ public:
 	friend bool operator ==( const ArcMsg &one, ArcMsg &two);  //判断运算符
 
 private:
-	int8_t m_flag_direct;  	//轨迹方向标志，-1:clockwise,1:anticlockwise
+	int8_t m_flag_direct;  	//轨迹方向标志，-1:clockwise,1:anticlockwise  //顺时针(-1)，逆时针(1)
 	int8_t m_flag_major;   	//优弧标志， 1:劣弧   -1:优弧
 	int8_t m_flag_circle;	//整圆标志， 0：圆弧	1：整圆
 	DPointChn  m_point_source; //起点坐标
@@ -1046,6 +1078,7 @@ protected:
 
 typedef ListBuffer<RecordMsg *> CompileRecList;  //语法分析结果队列类型
 typedef ListBuffer<RecordMsg *> OutputMsgList;   //待输出的指令消息队列
+typedef ListBuffer<RecordMsg *> ToolCompMsgList;   //刀补的指令消息队列
 
 
 

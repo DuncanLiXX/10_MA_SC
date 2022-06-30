@@ -182,6 +182,10 @@ enum HMICmdCode {
 	CMD_HMI_GET_PROC_GROUP,          //HMI向SC获取当前工艺参数组号  0x31
 	CMD_HMI_SET_CUR_MACH_POS,        //HMI向SC重设指定轴的机械坐标   0x32
 	CMD_HMI_CLEAR_MSG,               //HMI通知SC清除消息（包括错误、警告和提示)0x33
+	CMD_HMI_SYNC_AXIS_OPT,           //HMI通知HMI进行同步轴使能操作 0x34
+	CMD_HMI_NOTIFY_GRAPH,            //HMI通知SC进入图形模式    0x35
+	CMD_HMI_SYNC_TIME,               //HMI向SC查询当前系统时间  0x36
+	CMD_HMI_CHECK_SYNC_EN,           //HMI向SC查询同步轴状态 0x37
 
 
 	//SC-->HMI
@@ -379,6 +383,11 @@ enum ErrorType {
 	ERR_UPDATE_SCMODBUS,        //SCModbus模块升级失败
 
 	ERR_IMPORT_PC_DATA,         //螺补数据导入失败
+	ERR_UPDATE_DISK,			//一键升级失败
+
+	ERR_EN_SYNC_AXIS = 150,           //同步轴建立同步失败
+	ERR_DIS_SYNC_AXIS,                //同步轴解除同步失败
+	ERR_INIT_SYNC_AXIS,               //同步轴初始化同步失败
 
 
 	ERR_VOLTAGE_OVER = 500,		//过压告警
@@ -393,6 +402,7 @@ enum ErrorType {
 	ERR_AXIS_REF_NONE,          //轴未回参考点
 	ERR_RET_REF_NOT_RUN,        //系统处于错误状态，禁止回零
 	ERR_NC_FILE_NOT_EXIST,      //文件不存在
+	ERR_SWITCH_MODE_IN_RET_REF, //回零中禁止切换工作模式
 
 
 	//加工告警	1000~1999
@@ -626,10 +636,10 @@ enum GCode{
 	G120_CMD = 1200,     //G120  告警、提示信息命令
 	G200_CMD = 2000,     //G200清整数圈命令
 
-	G1000_CMD = 10000,   //速度指令
-	G1001_CMD = 10010,
-	G1002_CMD = 10020,
-	G1003_CMD = 10030,
+	G1000_CMD = 10000,   //速度控制指令，不等待速度到达，速度单位：mm/min
+	G1001_CMD = 10010,   //速度控制指令，不等待速度到达，速度单位：rpm
+	G1002_CMD = 10020,   //速度控制指令，等待速度到达，速度单位：mm/min
+	G1003_CMD = 10030,   //速度控制指令，等待速度到达，速度单位：rpm
 
 	G2000_CMD = 20000,    // 力矩指令，不用等待结束条件
 	G2001_CMD = 20010,    // 力矩指令，结束条件为转速到达0
@@ -752,7 +762,8 @@ enum FileTransType{
 	FILE_PMC_LADDER,			//PMC梯形图文件
 	FILE_WARN_HISTORY,          //告警历史文件
 	FILE_ESB_DEV = 0x10,         //ESB设备描述文件
-	FILE_PC_DATA                //螺补数据文件
+	FILE_PC_DATA,                //螺补数据文件
+	FILE_BACK_DISK,				//一键备份文件
 };
 
 /**
@@ -766,7 +777,8 @@ enum ModuleUpdateType{
 	MODULE_UPDATE_MI,				//MI模块升级
 	MODULE_UPDATE_PL,				//PL模块升级
 	MODULE_UPDATE_FPGA,				//FPGA模块升级
-	MODULE_UPDATE_MODBUS            //SCModbus模块升级
+	MODULE_UPDATE_MODBUS,            //SCModbus模块升级
+	MODULE_UPDATE_DISK,             //一键升级
 };
 
 /**
@@ -1122,6 +1134,8 @@ struct HmiChnConfig{
 	int debug_param_3;             //调试参数3
 	int debug_param_4;             //调试参数4
 	int debug_param_5;             //调试参数5
+	
+	int flip_comp_value;           //挑角补偿    -10000~10000    单位：um
 #endif
 };
 
@@ -1270,6 +1284,8 @@ struct HmiToolPotConfig{
 	uint8_t tool_pot_index[kMaxToolCount];			//刀套号
 	int tool_life_max[kMaxToolCount];								//刀具寿命，单位：min
 	int tool_life_cur[kMaxToolCount];								//已使用寿命，单位：min
+	int tool_threshold[kMaxToolCount];                             //刀具寿命预警阈值
+	uint8_t tool_life_type[kMaxToolCount];                          //刀具计寿类型，0--换刀次数，1--切削时间，2--切削距离
 };
 
 /**
@@ -1343,6 +1359,9 @@ struct ProcessParamChn{
 	double chn_max_dec;					//通道最大减速度	//单位：mm/s^2
 	double chn_max_corner_acc;          //最大拐角加速度		//单位：mm/s^2
 	double chn_max_arc_acc;				//最大向心加速度	//单位：mm/s^2
+#ifdef USES_WOOD_MACHINE
+	int flip_comp_value;            //挑角补偿    -10000~10000    单位：um
+#endif
 };
 
 /**
@@ -1379,12 +1398,15 @@ struct HmiCoordConfig{
 
 //仿真数据
 struct SimulateData{
-	int type;   //指令类型，-3-仿真范围下限   -2-仿真范围上限    -1--初始位置   00-G00目标位置 01--G01目标位置  02--G02目标位置   03--G03目标位置   05--圆弧中心位置   06--圆弧半径
-	double pos[3];    //坐标数据，当数据类型为圆弧半径时，pos[0]用于存放半径
+	int type;   //指令类型: -3-仿真范围下限   -2-仿真范围上限    -1--初始位置   00-G00目标位置    01--G01目标位置  02--G02目标位置
+	                       //03--G03目标位置   05--圆弧中心位置   06--圆弧半径   10--结束指令
+	double pos[3];    //坐标数据，当数据类型为圆弧半径时，pos[0]用于存放半径，pos[1]用于存放当前平面（170--G17  180--G18   190--G19）
 };
 
 //仿真数据类型
 enum SimDataType{
+	ZONE_LIMIT_MIN = -3,   //仿真范围负向限制
+	ZONE_LIMIT_MAX = -2,   //仿真范围正向限制
 	ORIGIN_POINT = -1,     //初始位置
 	RAPID_TARGET = 0,      //G00目标位置
 	LINE_TARGET = 1,       //G01目标位置
@@ -1545,8 +1567,6 @@ enum HmiMsgId{
 	MSG_ID_GUARD
 
 };
-
-
 
 #endif /* INC_HMI_SHARED_DATA_H_ */
 

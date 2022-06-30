@@ -757,6 +757,7 @@ bool MCCommunication::WriteCmd(McCmdFrame &data, bool resend){
 		}
 
 		if(this->m_list_cmd->Append(data)){
+			g_ptr_trace->PrintTrace(TRACE_WARNING, MC_COMMUNICATION_SC, "向MC发送命令[%hu]，进入重发队列！", data.data.cmd);																													
 			goto END; //放入缓冲命令队列
 		}
 		else{

@@ -116,6 +116,7 @@ enum McCmdCode{
 	CMD_MC_ACTIVE_CHN_TOOL_OFFSET = 0x0028,	//更新通道所有轴的刀具偏置
 	CMD_MC_SET_CHN_TOOL_LIFE = 0x0029,      //设置通道当前刀具寿命
 	CMD_MC_SET_G84_PARAM = 0x002A,			//设置刚攻参数
+	CMD_MC_SET_FLIP_COMP_PARAM = 0x002B,    //设置木工挑角补偿参数   木工机专用
 
 
 	CMD_MC_SET_MULTI_AXIS_MODE = 0x0030,	//设置多轴联动模式
@@ -239,7 +240,7 @@ enum MiCmdCode{
 	CMD_MI_GET_CUR_ENCODER = 0x0119,		//获取当前编码器反馈单圈绝对值
 	CMD_MI_SET_REF_POINT = 0x011A,			//设置指定轴的参考点，用于有反馈的轴有基准回零设置零点
 	CMD_MI_SET_HANDWHEEL_TRACE = 0x011B,    //设置手轮跟踪状态
-	CMD_MI_SET_RET_REF_FLAG = 0x011C,       //设置轴回参考点标志
+	CMD_MI_SET_RET_REF_FLAG = 0x011C,       //设置轴回参考点结束标志
 	CMD_MI_GET_ZERO_ENCODER = 0x011D,       //SC获取指定轴的机械零点对应的编码器值
 	CMD_MI_ACTIVE_SKIP = 0x011E,			//SC激活MI的跳转功能，发送跳转信号及轴mask
 	
@@ -248,10 +249,13 @@ enum MiCmdCode{
     CMD_MI_SET_AXIS_CTRL_MODE = 0x0122,       //设置轴运行控制模式
 	CMD_MI_SET_AXIS_REF_MACH_POS = 0x123,     //设置轴参考点对应的机械坐标
 
-	CMD_MI_SET_CUR_CHN = 0x124,				//设置当前通道号
-	CMD_MI_SET_TAP_AXIS = 0x125,            //设置攻丝轴号
-	CMD_MI_SET_TAP_PARAM = 0x126,           //设置攻丝参数
-	CMD_MI_SET_TAP_RATIO = 0x127,           //设置攻丝比例
+	CMD_MI_SET_CUR_CHN = 0x0124,			//设置当前通道号
+	CMD_MI_SET_TAP_AXIS = 0x0125,            //设置攻丝轴号
+	CMD_MI_SET_TAP_PARAM = 0x0126,           //设置攻丝参数
+	CMD_MI_SET_TAP_RATIO = 0x0127,           //设置攻丝比例
+	CMD_MI_SET_TAP_STATE = 0x0128,           //设置攻丝状态开关
+
+	CMD_MI_EN_SYNC_AXIS = 0x129,            //同步轴使能
 
 	CMD_MI_SET_AXIS_PC_DATA = 0x130,      //设置轴螺补数据表
 	CMD_MI_SET_AXIS_PC_PARAM = 0x131,     //设置轴螺补参数
@@ -273,7 +277,7 @@ enum MiCmdCode{
 /*#####################################################################SC<-->HMI############################################################################*/
 const int kCmdRecvBufLen = 100;  //udp命令接受缓冲区大小，环形缓冲
 const int kTcpBufferSize = 1024*8;  //tcp传输缓冲区大小,8K
-const unsigned int kHeartbeatTimeout = 30;  //30个监控周期，30*50ms
+const unsigned int kHeartbeatTimeout = 100; //30;  //30个监控周期，30*50ms
 const int kTcpSockTimeout = 3;		//TCP连接接收数据（包括recv和accept）超时时间：3秒
 
 //收到的HMI指令节点

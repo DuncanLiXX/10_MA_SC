@@ -434,7 +434,6 @@ private:
 	bool ClearHmiInfoMsg();    //清空当前提示信息
 
 
-
 	//设置MC状态接口
 	void SendIntpModeCmdToMc(uint16_t intp_mode);      //向MC模块发送插补工作模式命令
 	void SendWorkModeToMc(uint16_t work_mode);    //向MC模块发送加工模式命令，主要用于区分插补目标位置，方便计算不同模式的余移动量
@@ -556,6 +555,7 @@ private:
 	void GetHmiToolOffset(const uint8_t idx, HmiToolOffsetConfig &cfg);     //获取指定刀偏的数据
 	bool NotifyHmiToolOffsetChanged(uint8_t h_idx);     //通知HMI刀具偏置参数值发生变更
 	bool NotifyHmiWorkcoordChanged(uint8_t coord_idx);   //通知HMI工件坐标系设置发生变更
+	bool NotifyHmiWorkcoordExChanged(uint8_t coor_idx);  //通知HMI 扩展坐标系设置发生变更
 
 	void DoRestart(uint64_t line_no);     //加工复位执行函数
 	void InitRestartMode();         //初始化加工复位中间模态

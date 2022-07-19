@@ -385,7 +385,7 @@ bool ParmManager::ReadSysConfig(){
 		m_sc_system_config->axis_name_ex = m_ini_system->GetIntValueOrDefault("system", "axis_name_ex", 0);
 		m_sc_system_config->bus_cycle = m_ini_system->GetIntValueOrDefault("system", "bus_cycle", 3);
 		m_sc_system_config->fix_ratio_find_ref = m_ini_system->GetIntValueOrDefault("system", "fix_ratio_find_ref", 1);
-		m_sc_system_config->pc_type = m_ini_system->GetIntValueOrDefault("system", "pc_type", 1);
+//		m_sc_system_config->pc_type = m_ini_system->GetIntValueOrDefault("system", "pc_type", 1);
 		
 		m_sc_system_config->hw_code_type = m_ini_system->GetIntValueOrDefault("system", "hw_code_type", 0);    //手轮编码方式     0--二进制编码    1--格雷码
 
@@ -427,7 +427,7 @@ bool ParmManager::ReadSysConfig(){
 		m_sc_system_config->axis_name_ex = 0;
 		m_sc_system_config->bus_cycle = 3;
 		m_sc_system_config->fix_ratio_find_ref = 1;
-		m_sc_system_config->pc_type = 1;
+//		m_sc_system_config->pc_type = 1;
 
 		m_sc_system_config->hw_code_type = 0;    //手轮编码方式     0--二进制编码    1--格雷码
 
@@ -1254,8 +1254,11 @@ bool ParmManager::ReadAxisConfig(){
 
 			m_sc_axis_config[i].backlash_forward = m_ini_axis->GetIntValueOrDefault(sname, "backlash_forward", 0);
 			m_sc_axis_config[i].backlash_negative = m_ini_axis->GetIntValueOrDefault(sname, "backlash_negative", 0);
+			m_sc_axis_config[i].backlash_enable = m_ini_axis->GetIntValueOrDefault(sname, "backlash_enable", 1);
 			m_sc_axis_config[i].pc_offset = m_ini_axis->GetIntValueOrDefault(sname, "pc_offset", 1+400*i);
 //			printf("init axis %hhu pc_offset = %hu\n", i, m_sc_axis_config[i].pc_offset);
+			m_sc_axis_config[i].pc_type = m_ini_axis->GetIntValueOrDefault(sname, "pc_type", 0);
+			m_sc_axis_config[i].pc_enable = m_ini_axis->GetIntValueOrDefault(sname, "pc_enable", 1);
 			m_sc_axis_config[i].pc_count = m_ini_axis->GetIntValueOrDefault(sname, "pc_count", 0);
 			m_sc_axis_config[i].pc_ref_index = m_ini_axis->GetIntValueOrDefault(sname, "pc_ref_index", 1);
 			m_sc_axis_config[i].pc_inter_dist = m_ini_axis->GetDoubleValueOrDefault(sname, "pc_inter_dist", 1.0);
@@ -2068,29 +2071,37 @@ bool ParmManager::ReadPcData(){
 	}
 
 	if(m_ini_pc_table->Load(PITCH_COMP_FILE) == 0){//读取配置成功
+
 		for(i = 0; i < m_sc_system_config->axis_count; i++){
 			memset(sname, 0x00, sizeof(sname));
 			sprintf(sname, "axis_%d", i+1);   //从1开始
+
 			if(m_sc_pc_table->pc_table[i] == nullptr){
-				if(m_sc_system_config->pc_type == 0)
+
+				if(m_sc_axis_config[i].pc_type == 0){
+
 					m_sc_pc_table->pc_table[i] = new double[m_sc_axis_config[i].pc_count];      //单向螺补
-				else
+				}else if(m_sc_axis_config[i].pc_type == 1){
 					m_sc_pc_table->pc_table[i] = new double[m_sc_axis_config[i].pc_count*2];    //双向螺补
+				}
 
 				if(m_sc_pc_table->pc_table[i] == nullptr){
+
 					err_code = ERR_SC_INIT;
 
 					goto END;
 				}
 			}
 
-			if(m_sc_system_config->pc_type == 0){
+
+
+			if(m_sc_axis_config[i].pc_type == 0){
 				for(j = 0; j < this->m_sc_axis_config[i].pc_count; j++){
 					memset(kname, 0x00, sizeof(kname));
 					sprintf(kname, "pc_pos_%d", j+1);    //正向螺补
 					m_sc_pc_table->pc_table[i][j] = m_ini_pc_table->GetDoubleValueOrDefault(sname, kname, 0.0);
 				}
-			}else{
+			}else if(m_sc_axis_config[i].pc_type == 1){
 				for(j = 0; j < this->m_sc_axis_config[i].pc_count; j++){
 					memset(kname, 0x00, sizeof(kname));
 					sprintf(kname, "pc_pos_%d", j+1);    //正向螺补
@@ -2116,7 +2127,7 @@ bool ParmManager::ReadPcData(){
 		for(i = 0; i < m_sc_system_config->axis_count; i++){
 
 			if(m_sc_pc_table->pc_table[i] == nullptr){
-				if(m_sc_system_config->pc_type == 0)
+				if(m_sc_axis_config[i].pc_type == 0)
 					m_sc_pc_table->pc_table[i] = new double[m_sc_axis_config[i].pc_count];      //单向螺补
 				else
 					m_sc_pc_table->pc_table[i] = new double[m_sc_axis_config[i].pc_count*2];    //双向螺补
@@ -2129,7 +2140,7 @@ bool ParmManager::ReadPcData(){
 			}
 
 			//加载默认值，均为0
-			if(m_sc_system_config->pc_type == 0){//单向螺补
+			if(m_sc_axis_config[i].pc_type == 0){//单向螺补
 				memset(m_sc_pc_table->pc_table[i], 0x00, sizeof(double)*m_sc_axis_config[i].pc_count);
 			}else{//双向螺补
 				memset(m_sc_pc_table->pc_table[i], 0x00, sizeof(double)*m_sc_axis_config[i].pc_count*2);
@@ -2145,7 +2156,7 @@ bool ParmManager::ReadPcData(){
 				goto END;
 			}
 
-			if(m_sc_system_config->pc_type == 0){//单向螺补
+			if(m_sc_axis_config[i].pc_type == 0){//单向螺补
 				for(j = 0; j < this->m_sc_axis_config[i].pc_count; j++){
 					memset(kname, 0x00, sizeof(kname));
 					sprintf(kname, "pc_pos_%d", j+1);
@@ -3178,7 +3189,7 @@ bool ParmManager::UpdatePcData(uint8_t axis_index, bool dir_flag, uint16_t offse
 	}
 
 	uint16_t total_count = m_sc_axis_config[axis_index].pc_count;
-	if(this->m_sc_system_config->pc_type == 1){//双向螺补
+	if(m_sc_axis_config[axis_index].pc_type == 1){//双向螺补
 		total_count *= 2;    //总计点数*2
 	}
 
@@ -3195,17 +3206,23 @@ bool ParmManager::UpdatePcData(uint8_t axis_index, bool dir_flag, uint16_t offse
 	memset(sname, 0x00, 32);
 	sprintf(sname, "axis_%d", axis_index+1);    //从1开始
 	memset(dir_str, 0x00, 20);
-	if(dir_flag)
-		sprintf(dir_str, "pc_pos_");//正向螺补
-	else{
-		sprintf(dir_str, "pc_neg_");//负向螺补
-		offset_index += total_count;
-	}
+
+	int pc_count = m_sc_axis_config[axis_index].pc_count;
 
 	for(int i = 0; i < count; i++ ){
+
 		m_sc_pc_table->pc_table[axis_index][offset_index+i-1] = data[i];
 		memset(kname, 0x00, sizeof(kname));
-		sprintf(kname, "%s%d", dir_str, offset+i);
+
+		if((offset_index+i-1) < pc_count){
+			sprintf(dir_str, "pc_pos_");//正向螺补
+			sprintf(kname, "%s%d", dir_str, offset+i);
+
+		}else{
+			sprintf(dir_str, "pc_neg_");//负向螺补
+			sprintf(kname, "%s%d", dir_str, offset+i-pc_count);
+		}
+
 		m_ini_pc_table->SetDoubleValue(sname, kname, data[i]);
 	}
 
@@ -3452,9 +3469,9 @@ bool ParmManager::UpdateSystemParam(uint32_t param_no, ParamValue &value){
 		m_ini_system->SetIntValue(sname, kname, value.value_uint8);
 		break;
 	case 32:	//螺距补偿方式
-		sprintf(kname, "pc_type");
-		m_ini_system->SetIntValue(sname, kname, value.value_uint8);
-		this->m_sc_system_config->pc_type = value.value_uint8;
+		//sprintf(kname, "pc_type");
+		//m_ini_system->SetIntValue(sname, kname, value.value_uint8);
+		//this->m_sc_system_config->pc_type = value.value_uint8;
 		break;
 	case 33:	//DA过流保护
 		sprintf(kname, "da_ocp");
@@ -4093,12 +4110,19 @@ bool ParmManager::UpdateAxisParam(uint8_t axis_index, uint32_t param_no, ParamVa
 		m_ini_axis->SetDoubleValue(sname, kname, value.value_double);
 		break;
 	case 1400:  //正向反向间隙
+		printf("update axis 1400 \n");
 		sprintf(kname, "backlash_forward");
 		m_ini_axis->SetIntValue(sname, kname, value.value_int16);
 		break;
 	case 1401:  //负向反向间隙
 		sprintf(kname, "backlash_negative");
 		m_ini_axis->SetIntValue(sname, kname, value.value_int16);
+		break;
+	case 1402:   //反向间隙是否生效  **************************
+		printf("update axis 1402 \n");
+		sprintf(kname, "backlash_enable");
+		m_ini_axis->SetIntValue(sname, kname, value.value_uint8);
+		this->m_sc_axis_config[axis_index].backlash_enable = value.value_uint8;
 		break;
 	case 1403: //螺距补偿点数
 		sprintf(kname, "pc_count");
@@ -4119,6 +4143,18 @@ bool ParmManager::UpdateAxisParam(uint8_t axis_index, uint32_t param_no, ParamVa
 		sprintf(kname, "pc_offset");
 		m_ini_axis->SetIntValue(sname, kname, value.value_uint16);
 		this->m_sc_axis_config[axis_index].pc_offset = value.value_uint16;
+		break;
+	case 1407:	//螺距补偿类型  ****************************
+		printf("update axis 1407 \n");
+		sprintf(kname, "pc_type");
+		m_ini_axis->SetIntValue(sname, kname, value.value_uint8);
+		this->m_sc_axis_config[axis_index].pc_type = value.value_uint8;
+		break;
+	case 1408:  // 螺距补偿是否生效
+		printf("update axis 1408 \n");
+		sprintf(kname, "pc_enable");
+		m_ini_axis->SetIntValue(sname, kname, value.value_uint8);
+		this->m_sc_axis_config[axis_index].pc_enable = value.value_uint8;
 		break;
 	case 1500: 	//软限位1
 		sprintf(kname, "soft_limit_max_1");
@@ -4738,7 +4774,9 @@ void ParmManager::ActiveResetParam(){
 	printf("active reset param: %d\n", this->m_list_reset->GetLength());
 	ParamUpdate *para = nullptr;
 	ListNode<ParamUpdate> *node = nullptr;
+
 	while(!this->m_list_reset->IsEmpty()){
+
 		node = this->m_list_reset->RemoveHead();
 		if(node == nullptr)
 			continue;
@@ -4845,7 +4883,7 @@ void ParmManager::ActiveSystemParam(uint32_t param_no, ParamValue &value){
 		this->m_sc_system_config->fix_ratio_find_ref = value.value_uint8;
 		break;
 	case 32:	//螺距补偿方式
-		this->m_sc_system_config->pc_type = value.value_uint8;
+		//this->m_sc_system_config->pc_type = value.value_uint8;
 		break;
 	case 33:	//DA过流保护
 		this->m_sc_system_config->da_ocp = value.value_uint8;
@@ -5400,6 +5438,10 @@ void ParmManager::ActiveAxisParam(uint8_t axis_index, uint32_t param_no, ParamVa
 		break;
 	case 1401:  //负向反向间隙
 		this->m_sc_axis_config[axis_index].backlash_negative = value.value_int16;
+		chn_engine->SendMiBacklash(axis_index);
+		break;
+	case 1402:  //反向间隙补偿生效
+		this->m_sc_axis_config[axis_index].backlash_enable = value.value_uint8;
 		chn_engine->SendMiBacklash(axis_index);
 		break;
 	case 1405:  //参考点补偿位置

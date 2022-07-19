@@ -3193,7 +3193,7 @@ TRAN:
 			goto END;
 		}
 
-
+		//printf("---------------> send_total %llu\n", send_total);
 		send_total += send_size;
 
 //		printf("send file: total = %lld, send= %lld\n", file_size, send_total);
@@ -4083,6 +4083,7 @@ int HMICommunication::RecvFile(){
 
 		//	fwrite(buffer, read_size, 1, file_bak);
 
+			//printf("---------------------> recv total: %llu\n", read_total);
 			read_total += read_size;
 			error_count = 0;
 		//	printf("read size :%lld\n", read_total);

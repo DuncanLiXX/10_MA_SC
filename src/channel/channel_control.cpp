@@ -544,6 +544,7 @@ void ChannelControl::InitialChannelStatus(){
  */
 void ChannelControl::Reset(){
 
+	printf("control reset aaa\n");
 	this->m_error_code = ERR_NONE;
 
 	if(this->m_thread_breakcontinue > 0){//处于断点继续线程执行过程中，则退出断点继续线程
@@ -656,7 +657,6 @@ void ChannelControl::Reset(){
 	m_b_init_compiler_pos = false;  //编译器初始位置需要重新初始化
 	m_b_need_change_to_pause = false;
 	this->m_p_compiler->Reset();
-
 	this->m_macro_variable.Reset();   //宏变量复位
 	this->m_scene_auto.need_reload_flag = false;   //取消断点继续标志
 
@@ -741,8 +741,7 @@ void ChannelControl::Reset(){
 		this->SpindleOut(SPD_DIR_STOP);
 	}
 #endif
-
-//	printf("channelcontrol[%hhu] send reset cmd!\n", this->m_n_channel_index);
+	printf("channelcontrol[%hhu] send reset cmd!\n", this->m_n_channel_index);
 }
 
 /**
@@ -1385,7 +1384,8 @@ bool ChannelControl::SetSysVarValue(const int index, const double &value){
 				HmiCoordConfig cfg;
 				memcpy(&cfg, &this->m_p_chn_ex_coord_config[coord], sizeof(HmiCoordConfig));
 				g_ptr_parm_manager->UpdateExCoordConfig(m_n_channel_index, coord, cfg, true);
-				this->NotifyHmiWorkcoordChanged(coord);
+				printf("-----------------------> NotifyHmiWorkcoordExChanged\n");
+				this->NotifyHmiWorkcoordExChanged(coord);
 				if(this->m_channel_status.gmode[14] == (G5401_CMD+10*coord))
 					this->SetMcCoord(true);
 			}else{
@@ -1516,6 +1516,7 @@ void ChannelControl::GetMdaFilePath(char *path){
  * @brief 复位通道模态为默认值
  */
 void ChannelControl::ResetMode(){
+	printf("reset mode start!!!\n");
 	m_channel_status.gmode[1] = G00_CMD;   //01组默认G00
 	m_channel_status.gmode[2] = G17_CMD;   //02组默认G17
 	m_channel_status.gmode[3] = G90_CMD;   //03组默认G90
@@ -1542,6 +1543,7 @@ void ChannelControl::ResetMode(){
 	this->SendChnStatusChangeCmdToHmi(G_MODE);
 	this->SendModeChangToHmi(H_MODE);
 	this->SendModeChangToHmi(D_MODE);
+	printf("reset mode finished!!!\n");
 }
 
 /**
@@ -1614,6 +1616,7 @@ void ChannelControl::StartRunGCode(){
 		state = MS_MACHIN_SIMULATING;
 
 	if(this->m_n_restart_mode != NOT_RESTART){  //加工复位
+		printf("----------------------------------------- reset!!!\n\n");
 		this->m_p_compiler->SetRestartPara(m_n_restart_line, m_n_restart_mode);  //设置编译器加工复位参数
 		this->InitRestartMode();
 		this->SendMessageToHmi(MSG_TIPS, MSG_ID_RESTARTING);   //发送HMI的提示信息
@@ -1928,6 +1931,8 @@ void ChannelControl::PauseRunGCode(){
  * @brief 停止编译,将编译线程置为IDLE状态
  */
 void ChannelControl::StopCompilerRun(){
+	printf("stop compiler run\n");
+
 	pthread_mutex_lock(&m_mutex_change_state);  //等待编译运行线程停止
 
 	m_n_run_thread_state = STOP;
@@ -2447,6 +2452,8 @@ void ChannelControl::ProcessHmiGetMacroVarCmd(HMICmdFrame &cmd){
 		g_ptr_trace->PrintLog(LOG_ALARM, "ChannelControl::ProcessHmiSetMacroVarCmd()数据长度不合法，data_len = %hu！", cmd.data_len);
 		return;
 	}
+
+
 	memcpy(&start_index, &cmd.data[0], 4);
 	memcpy(&count, &cmd.data[4], 1);
 
@@ -2457,13 +2464,9 @@ void ChannelControl::ProcessHmiGetMacroVarCmd(HMICmdFrame &cmd){
 		this->m_p_hmi_comm->SendCmd(cmd);
 		return;
 	}
-
 	cmd.data_len += len;
-
 	cmd.cmd_extension = SUCCEED;
-
 	this->m_p_hmi_comm->SendCmd(cmd);
-
 }
 
 
@@ -3424,6 +3427,7 @@ bool ChannelControl::SendMachineStateCmdToHmi(uint8_t mach_state){
 
 	printf("send machine state[%hhu] to HMI\n", mach_state);
 
+
 	return this->m_p_hmi_comm->SendCmd(cmd);
 }
 
@@ -3656,7 +3660,7 @@ bool ChannelControl::SendOpenFileCmdToHmi(char *filename){
 	strcpy(cmd.data, filename);
 	cmd.data_len = strlen(cmd.data);
 
-	printf("hmi open file cmd : %s\n", filename);
+	//printf("------------------------ hmi open file cmd : %s\n", filename);
 
 	return this->m_p_hmi_comm->SendCmd(cmd);
 }
@@ -4065,6 +4069,7 @@ int ChannelControl::Run(){
 	//执行循环
 	while(!g_sys_state.system_quit)
 	{
+
 		if(m_n_run_thread_state == RUN)
 		{
 			pthread_mutex_lock(&m_mutex_change_state);
@@ -4118,7 +4123,6 @@ int ChannelControl::Run(){
 								usleep(10000);   //休眠10ms
 							}
 						}
-
 					}
 					else{
 						m_n_run_thread_state = WAIT_RUN;//执行失败，状态切换到WAIT_RUN
@@ -4167,7 +4171,8 @@ int ChannelControl::Run(){
 
 		}
 		else if(m_n_run_thread_state == ERROR)
-		{//TODO 处理错误
+		{
+			//TODO 处理错误
 			g_ptr_trace->PrintTrace(TRACE_WARNING, CHANNEL_CONTROL_SC, "Compile Error:%d, %d\n", m_error_code, m_p_compiler->GetErrorCode());
 	//		CreateError(m_error_code, ERROR_LEVEL, CLEAR_BY_MCP_RESET, 0, m_n_channel_index);
 			m_n_run_thread_state = STOP;
@@ -4217,7 +4222,7 @@ int ChannelControl::Run(){
 		}
 		else
 		{
-			usleep(10000);   //非运行状态，线程挂起10ms
+			usleep(100);   //非运行状态，线程挂起10ms
 		}
 	}
 
@@ -5293,14 +5298,12 @@ bool ChannelControl::ExecuteMessage(){
 		flag = false;
 		msg_type = msg->GetMsgType();
 
-		/**********************test**********************/
-		static uint64_t lino = 0;
-		if(lino != msg->GetLineNo()){
-			printf("----channel control excute message line no: %llu\n", msg->GetLineNo());
-			lino = msg->GetLineNo();
-		}
-		/*********************************************/
 
+		static uint64_t line_no = 0;
+		if(line_no != msg->GetLineNo()){
+			line_no = msg->GetLineNo();
+			printf("excute message line no -------> %llu\n", line_no);
+		}
 
 		switch(msg_type){
 		case AUX_MSG:
@@ -8383,6 +8386,7 @@ bool ChannelControl::ExecuteSubProgCallMsg(RecordMsg *msg){
 	int mcode = sub_msg->GetMCode(0);
 
 	if(mcode == 98){
+
 		if(flag){//反向引导
 			m_n_subprog_count -= 1;
 
@@ -8409,8 +8413,11 @@ bool ChannelControl::ExecuteSubProgCallMsg(RecordMsg *msg){
 
 				//TODO 向HMI发送命令打开子文件
 				if(this->m_channel_status.chn_work_mode == AUTO_MODE){
+
 					if(sub_msg->GetSubProgType() == 2 ||
-							sub_msg->GetSubProgType() == 4){
+							sub_msg->GetSubProgType() == 4 ||
+							sub_msg->GetSubProgType() == 6){
+
 						char file[kMaxFileNameLen];
 						memset(file, 0x00, kMaxFileNameLen);
 						sub_msg->GetSubProgName(file, false);
@@ -18201,6 +18208,24 @@ bool ChannelControl::NotifyHmiWorkcoordChanged(uint8_t coord_idx){
 	return this->m_p_hmi_comm->SendCmd(cmd);
 }
 
+/**
+ * @brief 通知HMI扩展坐标系设置发生变更
+ * @param coord_idx : 工件坐标系索引，0--基本偏移   1~99--G5401~G5499
+ * @return true--成功  false--失败
+ */
+bool ChannelControl::NotifyHmiWorkcoordExChanged(uint8_t coord_idx){
+	HMICmdFrame cmd;
+	memset((void *)&cmd, 0x00, sizeof(HMICmdFrame));
+	cmd.channel_index = m_n_channel_index;
+	cmd.cmd = CMD_SC_PARAM_CHANGED;
+	cmd.cmd_extension = EX_COORD_CONFIG;
+	cmd.data_len = 1+sizeof(HmiCoordConfig);
+	cmd.data[0] = coord_idx;
+	memcpy(&cmd.data[1], &this->m_p_chn_ex_coord_config[coord_idx], sizeof(HmiCoordConfig));
+
+	return this->m_p_hmi_comm->SendCmd(cmd);
+}
+
 
 
 /**
@@ -18467,7 +18492,8 @@ void ChannelControl::CallMacroProgram(uint16_t macro_index){
 
 	}else if(this->m_channel_status.chn_work_mode == MANUAL_STEP_MODE ||
 			this->m_channel_status.chn_work_mode == MANUAL_MODE ||
-			this->m_channel_status.chn_work_mode == MPG_MODE){  //手动、手轮模式
+			this->m_channel_status.chn_work_mode == MPG_MODE ||
+			this->m_channel_status.chn_work_mode == REF_MODE){  //手动、手轮模式
 
 		if(this->m_b_manual_call_macro){  //已经处于手动宏程序调用中
 			g_ptr_trace->PrintTrace(TRACE_WARNING, CHANNEL_CONTROL_SC, "已处于手动宏程序调用中执行过程！[%hu]", macro_index);

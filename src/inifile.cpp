@@ -614,7 +614,6 @@ int IniFile::setValue(const string &section, const string &key, const string &va
     item.comment = comt;
 
     sect->items.push_back(item);
-
     return RET_OK;
 }
 

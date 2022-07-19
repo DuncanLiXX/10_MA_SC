@@ -50,7 +50,11 @@ private://私有接口函数
 //	virtual void freeItem( T *data );   //释放数据元内存空间
 
 	//区分指针和对象两种处理
-	void DeleteData(std::true_type, T data){delete data;}
+	void DeleteData(std::true_type, T data){
+		printf("delete data1\n");
+		delete data;
+		printf("delete data2\n");
+	}
 	void DeleteData(std::false_type, T data){}
 private://私有成员变量
 	StackRec<T> *m_p_top;     //栈顶指针
@@ -124,7 +128,9 @@ bool DataStack<T>::push(T &data)
 template<class T>
 bool DataStack<T>::pop(T &data)
 {
-    if( m_n_count <= 0 ) return false;
+	if( m_n_count <= 0 ) return false;
+
+	printf("data stack pop&data 1\n");
 
     data = m_p_top->rec;
     StackRec<T> *p = m_p_top->down;
@@ -135,6 +141,8 @@ bool DataStack<T>::pop(T &data)
     m_n_count--;
 
     if( m_n_count == 0 ) m_p_bottom = nullptr;
+
+    printf("data stack pop&data 2\n");
 
     return true;
 }
@@ -148,16 +156,23 @@ void DataStack<T>::pop()
 {
     if( m_n_count <= 0 ) return;
 
+    printf("data stack pop 1\n");
+
     T data = m_p_top->rec;
     StackRec<T> *p = m_p_top->down;
     if(p != nullptr)
     	p->up = nullptr;
+    printf("data stack pop a\n");
     DeleteData(std::is_pointer<T>(), data);
+    printf("data stack pop b\n");
     delete m_p_top;
+    printf("data stack pop c\n");
     m_p_top = p;
     m_n_count--;
 
     if( m_n_count == 0 ) m_p_bottom = nullptr;
+
+    printf("data stack pop 2\n");
 }
 
 /**
@@ -187,8 +202,10 @@ void DataStack<T>::pop2()
 template<class T>
 bool DataStack<T>::cur(T &data)
 {
+	printf("data stack cur1 \n");
 	if(m_n_count <= 0) return false;
 	data = m_p_top->rec;
+	printf("data stack cur2 \n");
     return true;
 }
 

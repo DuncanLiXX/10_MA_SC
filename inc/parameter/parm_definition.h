@@ -49,7 +49,7 @@ struct SCSystemConfig{
 	uint8_t axis_count;			     	//系统物理轴数量
 	uint8_t axis_name_ex;				//轴名称扩展下标    0--关闭		1--打开
 	uint8_t fix_ratio_find_ref;			//回参考点时倍率固定	0--关闭		1--打开
-	uint8_t pc_type;					//螺距补偿方式		0--单向螺补  1--双向螺补
+	//uint8_t pc_type;					//螺距补偿方式		0--单向螺补  1--双向螺补
 //	uint8_t mcp_count;                  //MCP数量
 
 	uint8_t hw_code_type;               //手轮编码方式     0--二进制编码    1--格雷码
@@ -213,9 +213,12 @@ struct SCAxisConfig{
 	uint16_t post_filter_time_1;		//插补后滤波器一级时间常数  单位：ms
 	uint16_t post_filter_time_2;        //插补后滤波器二级时间常数  单位：ms
 
+	uint8_t backlash_enable;					//反向间隙是否生效
 	int16_t backlash_forward;					//正向反向间隙，单位：um(deg)
 	int16_t backlash_negative;					//负向反向间隙，单位：um(deg)
 
+	uint8_t  pc_type;							//螺补类型  0 单向螺补  1 双向螺补
+	uint8_t  pc_enable;							//螺补是否生效
 	uint16_t pc_offset;                         //螺补起始点   1-10000
 	uint16_t pc_count;							//螺距误差补偿点数  0-10000
 	uint16_t pc_ref_index;						//参考点补偿位置 1-10000

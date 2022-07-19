@@ -298,7 +298,6 @@ void TraceInfo::PrintAlarm(const ErrorInfo* error_info) {
 }
 
 
-
 //获取当前时间
 char* TraceInfo::GetCurrentTime(void) {
 	time_t timeval;

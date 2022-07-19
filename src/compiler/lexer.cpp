@@ -369,7 +369,6 @@ void Lexer::Reset(){
 	m_macro_count = 0;
 	m_n_axis_name_ex = 0;
 
-
 	m_p_lexer_result->Reset();//复位词法分析结果
 
 }

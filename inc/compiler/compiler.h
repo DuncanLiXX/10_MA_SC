@@ -274,9 +274,9 @@ private://私有成员
 	LoopOffsetStack m_stack_loop;        //循环位置存储栈，运行时使用
 
 	/************预扫描 if else  **********************/
-	IfElseOffsetList *m_p_list_ifelse;   //单个 if else 偏移记录链表
-	vector<IfElseOffsetList> m_ifelse_vector;
+	IfElseOffsetList *m_p_list_ifelse = nullptr;   //单个 if else 偏移记录链表
 	int if_index_cur=-1, if_index_len=0;
+	vector<IfElseOffsetList> m_ifelse_vector;
 	DataStack<int> m_stack_if_record;    //处理 if endif配对 元素为此条链表在数组中的索引
 	int m_else_count = 0;           	// 一个 if 不能出现两个 else
 	DataStack<int> m_stack_else_count;  // 存在嵌套 if 时处理 暂存else记数

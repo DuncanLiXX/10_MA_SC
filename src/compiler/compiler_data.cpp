@@ -312,7 +312,7 @@ bool AsFileMapInfo::ResetFile(){
 	}
 
 //	DropCaches(1);
-
+	printf("AsFileMapInfo::ResetFile finished!!!\n");
 	return true;
 }
 
@@ -588,13 +588,12 @@ CompilerScene& CompilerScene::operator=( const CompilerScene& c){
 	this->stack_loop = c.stack_loop;
 
 	/***********if else 处理***************/
-	this->ifelse_vector.clear();
+	//this->ifelse_vector.clear();
 	ifelse_vector = c.ifelse_vector;
 	meet_else_jump = c.meet_else_jump;
 	stack_else_jump_record = c.stack_else_jump_record;
 	stack_ifelse_node = c.stack_ifelse_node;
 	/***********if else 处理***************/
-
 
 #ifdef USES_WOOD_MACHINE
 	this->list_spd_start = c.list_spd_start;

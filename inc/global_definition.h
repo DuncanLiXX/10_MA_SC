@@ -56,9 +56,9 @@
 
 #define USES_MC_B_BOARD       //支持MC-B主板
 
-#define USES_WOOD_MACHINE     //支持木工专机
+//#define USES_WOOD_MACHINE     //支持木工专机
 
-#define USES_ADDITIONAL_PROGRAM     //支持前置、后置程序调用
+//#define USES_ADDITIONAL_PROGRAM     //支持前置、后置程序调用
 
 #define USES_EMERGENCY_DEC_STOP   //支持急停减速停
 

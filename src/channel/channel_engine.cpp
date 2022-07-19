@@ -768,15 +768,23 @@ void ChannelEngine::InitPcAllocList(){
 	this->m_list_pc_alloc.Clear();
 
 	AxisPcDataAlloc pc_alloc;
-	uint16_t flag = this->m_p_general_config->pc_type == 1?2:1;
 	for(int i = 0; i < m_p_general_config->axis_count; i++){
+		uint16_t flag = this->m_p_axis_config[i].pc_type; // 0 单向螺补  1 双向螺补
 		if(this->m_p_axis_config[i].pc_count == 0)
 			continue;
 		pc_alloc.axis_index = i;
-		pc_alloc.pc_count = m_p_axis_config[i].pc_count*flag;
+
+		if(flag == 1){
+			pc_alloc.pc_count = m_p_axis_config[i].pc_count*2;  // 双向螺补
+		}else{
+			pc_alloc.pc_count = m_p_axis_config[i].pc_count;  // 单向螺补
+		}
+
 		pc_alloc.start_index = m_p_axis_config[i].pc_offset>0?m_p_axis_config[i].pc_offset-1:0;
 		pc_alloc.end_index = pc_alloc.start_index+pc_alloc.pc_count-1;
 
+
+		printf("axis %d -- start_index %d  -- end_index %d\n", i, pc_alloc.start_index, pc_alloc.end_index);
 
 		//按起始偏移从小到大的顺序插入list
 		ListNode<AxisPcDataAlloc> *node = this->m_list_pc_alloc.HeadNode();
@@ -3257,7 +3265,7 @@ void ChannelEngine::ProcessHmiGetPcDataCmd(HMICmdFrame &cmd){
 		double *pp = m_p_pc_table->pc_table[axis_index];
 		if(dir)  //正向螺补
 			memcpy(&cmd.data[6], &pp[offset-1], sizeof(double)*count);
-		else if(this->m_p_general_config->pc_type == 1)  //负向螺补
+		else if(this->m_p_axis_config[axis_index].pc_type == 1)  //负向螺补
 			memcpy(&cmd.data[6], &pp[m_p_axis_config[axis_index].pc_count+offset-1], sizeof(double)*count);
 		else{ //单向螺补模式，获取负向螺补失败
 			cmd.data_len = 0;
@@ -3267,12 +3275,10 @@ void ChannelEngine::ProcessHmiGetPcDataCmd(HMICmdFrame &cmd){
 
 	//	printf("read axis %hhu pc data, pos = %lf, neg=%lf\n", axis_index, pp[199], pp[399]);
 
-
 	}
 
 	cmd.data_len += sizeof(double)*count;
 	return;
-
 }
 
 /**
@@ -3291,7 +3297,6 @@ bool ChannelEngine::ProcessPcDataImport(){
 	uint16_t point_count = 0;  //螺补点数
 	double inter_dis = 0;   //螺补间隔  单位：mm
 	double *data = nullptr;
-
 
 	if(stat(PATH_PC_DATA_TMP, &statbuf) == 0)
 		file_size = statbuf.st_size;  //获取文件总大小
@@ -3318,12 +3323,12 @@ bool ChannelEngine::ProcessPcDataImport(){
 
 
 	read(fd, &phy_axis, 1);   //读取物理轴编号
-	read(fd, &pc_type, 1);    //读取螺补类型，0--单向螺补   1--双向螺补
+	read(fd, &pc_type, 1);    //读取螺补类型，0--单向  1--双向  螺补文件读出
 	read(fd, &point_count, 2);  //读取螺补点数
 	read(fd, &inter_dis, 8);    //读取补偿间隔
-
-	if(this->m_p_general_config->pc_type != pc_type){
-		g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "螺补类型与设置不符[%hhu : %hhu]！", m_p_general_config->pc_type, pc_type);
+/***********************************************************************/
+	if(this->m_p_axis_config[phy_axis].pc_type != pc_type){
+		g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "螺补类型与设置不符[%hhu : %hhu]！", m_p_axis_config[phy_axis].pc_type, pc_type);
 		CreateError(ERR_IMPORT_PC_DATA, ERROR_LEVEL, CLEAR_BY_MCP_RESET, 4);   //螺补类型不匹配
 		close(fd);
 		return false;
@@ -3335,7 +3340,6 @@ bool ChannelEngine::ProcessPcDataImport(){
 		close(fd);
 		return false;
 	}
-
 
 	if(this->m_p_axis_config[phy_axis].pc_count != point_count){
 		g_ptr_trace->PrintTrace(TRACE_WARNING, CHANNEL_ENGINE_SC, "螺补点数与设置不符[%hu : %hu]！", m_p_axis_config[phy_axis].pc_count, point_count);
@@ -3376,7 +3380,7 @@ bool ChannelEngine::ProcessPcDataImport(){
 	//写入数据
 	if(pc_type == 0){  //单向螺补
 		res = g_ptr_parm_manager->UpdatePcData(phy_axis, dir_pos, 1, point_count, data);
-	}else{  //双向螺补
+	}else if(pc_type == 1){  //双向螺补
 		int pcs = point_count/2;
 	    res = g_ptr_parm_manager->UpdatePcData(phy_axis, dir_pos, 1, pcs, data);
 	    if(res){
@@ -3399,7 +3403,6 @@ bool ChannelEngine::ProcessPcDataImport(){
 		close(fd);
 		return false;
 	}
-
 
 //	if(res == -1 || res != read_size){  //read失败
 //		printf("read pmc file failed, errno = %d, block = %d\n", errno, block_total);
@@ -3446,7 +3449,7 @@ void ChannelEngine::SaveToolInfo(){
  */
 bool ChannelEngine::UpdateHmiPitchCompData(HMICmdFrame &cmd){
 
-	printf("----------------- %d\n", cmd.data_len);
+
 	uint8_t axis_index = cmd.data[0];
 	bool dir = (cmd.data[1]==0)?true:false;   //正向螺补标志
 	uint16_t offset, count;
@@ -3467,6 +3470,10 @@ bool ChannelEngine::UpdateHmiPitchCompData(HMICmdFrame &cmd){
 
 		ListNode<AxisPcDataAlloc> *node = this->m_list_pc_alloc.HeadNode();
 		while(node != nullptr){
+
+			//printf("node->data.start_index : %d node->data.end_index: %d tmp_start: %d\n",
+			//	node->data.start_index, node->data.end_index, tmp_start);
+
 			if(node->data.start_index <= tmp_start && node->data.end_index >= tmp_start){
 				if((tmp_start - node->data.start_index) < this->m_p_axis_config[node->data.axis_index].pc_count)
 					dir = true;
@@ -3483,21 +3490,18 @@ bool ChannelEngine::UpdateHmiPitchCompData(HMICmdFrame &cmd){
 		}
 
 		uint16_t offset_tmp = tmp_start - node->data.start_index+1;
-		if(this->m_p_general_config->pc_type == 1){  //双向螺补
-			if(offset_tmp > this->m_p_axis_config[node->data.axis_index].pc_count){
-				offset_tmp -= this->m_p_axis_config[node->data.axis_index].pc_count;
-			}
-		}
+
+		printf("tmp start %d,   node_start_index %d offset_tmp %d\n", tmp_start, node->data.start_index, offset_tmp);
 
 		if(!g_ptr_parm_manager->UpdatePcData(node->data.axis_index, dir, offset_tmp, count, data)){
-			printf("UpdateHmiPitchCompData: failed to update pc data\n");
+			printf("UpdateHmiPitchCompData: failed to update pc data1\n");
 			return false;
 		}
 		axis_index = node->data.axis_index;
 
 	}else{//轴顺序设置
 		if(!g_ptr_parm_manager->UpdatePcData(axis_index, dir, offset, count, data)){
-			printf("UpdateHmiPitchCompData: failed to update pc data\n");
+			printf("UpdateHmiPitchCompData: failed to update pc data2\n");
 			return false;
 		}
 	}
@@ -6846,7 +6850,7 @@ void ChannelEngine::SendMiPcData(uint8_t axis){
 	//放置数据
 	uint16_t count = m_p_axis_config[axis].pc_count;
 	uint16_t offset = m_p_axis_config[axis].pc_offset-1;  //起始编号，0开始
-	if(this->m_p_general_config->pc_type == 1){//双向螺补
+	if(this->m_p_axis_config[axis].pc_type == 1){//双向螺补
 		count *= 2;   //数据量翻倍
 	}
 
@@ -6899,12 +6903,15 @@ void ChannelEngine::SendMiPcParam(uint8_t axis){
 	uint16_t offset = m_p_axis_config[axis].pc_offset-1;  //起始编号，0开始
 	uint32_t inter = m_p_axis_config[axis].pc_inter_dist*1000;   //转换为微米单位
 	uint16_t ref_index = m_p_axis_config[axis].pc_ref_index-1;   //参考点对应位置，0开始
- 	memcpy(cmd.data.data, &count, 2);  //补偿数据个数
+ 	uint16_t pc_type = this->m_p_axis_config[axis].pc_type;
+ 	uint16_t pc_enable = m_p_axis_config[axis].pc_enable;
+
+	memcpy(cmd.data.data, &count, 2);  //补偿数据个数
 	memcpy(&cmd.data.data[1], &offset, 2);   //起始编号
 	memcpy(&cmd.data.data[2], &inter, 4); 	 //补偿间隔 ， um单位，32位整型
 	memcpy(&cmd.data.data[4], &ref_index, 2);     //参考点对应位置
-	memcpy(&cmd.data.data[5], &this->m_p_general_config->pc_type, 1);     //补偿类型  0--单向    1--双向
-
+	memcpy(&cmd.data.data[5], &pc_type, 1);     //补偿类型  0--单向螺补   1--双向螺补
+	memcpy(&cmd.data.data[6], &pc_enable, 1);
 	this->m_p_mi_comm->WriteCmd(cmd);
 }
 
@@ -6995,10 +7002,17 @@ void ChannelEngine::SendMiBacklash(uint8_t axis){
 	cmd.data.axis_index = axis+1;
 
 	//放置数据
-	uint32_t data = m_p_axis_config[axis].backlash_forward;
- 	memcpy(cmd.data.data, &data, 4);  //
- 	data = m_p_axis_config[axis].backlash_negative;
- 	memcpy(&cmd.data.data[2], &data, 4);
+	if(m_p_axis_config[axis].backlash_enable){
+		uint32_t data = m_p_axis_config[axis].backlash_forward;
+		memcpy(cmd.data.data, &data, 4);  //
+		data = m_p_axis_config[axis].backlash_negative;
+		memcpy(&cmd.data.data[2], &data, 4);
+	}else{
+		uint32_t data = 0.0;
+		memcpy(cmd.data.data, &data, 4);  //
+		data = 0.0;
+		memcpy(&cmd.data.data[2], &data, 4);
+	}
 
 	this->m_p_mi_comm->WriteCmd(cmd);
 }
@@ -7207,6 +7221,7 @@ void ChannelEngine::ClearPmcAxisMoveData(){
  */
 void ChannelEngine::SystemReset(){
 
+	printf("system reset aaa\n");
 	//各通道复位复位
 	for(int i = 0; i < this->m_p_general_config->chn_count; i++){
 	//	printf("@@@@@@@@@RST=====1\n");
@@ -7214,6 +7229,7 @@ void ChannelEngine::SystemReset(){
 		this->m_p_channel_control[i].Reset();
 	}
 
+	printf("system reset bbb\n");
 
 	//通知MC模块复位
 //	SendMcResetCmd();    //修改为按通道复位
@@ -7242,7 +7258,6 @@ void ChannelEngine::SystemReset(){
 	printf("reset update param \n");
 	g_ptr_parm_manager->ActiveResetParam();
 	g_ptr_parm_manager->ActiveNewStartParam();
-
 
 //	for(int i = 0; i < this->m_p_general_config->chn_count; i++){
 //		this->m_p_channel_control[i].SetMcChnPlanMode();
@@ -7291,6 +7306,8 @@ void ChannelEngine::SystemReset(){
 	//记录复位操作结束时间，供RST信号延时后复位
 	gettimeofday(&this->m_time_rst_over, NULL);
 	m_b_reset_rst_signal = true;
+
+	printf("channel engine reset finished !!!\n");
 }
 
 /**

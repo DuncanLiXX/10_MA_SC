@@ -616,15 +616,11 @@ int Initialize(){
 
 	//加载spartan6代码
 	g_sys_state.system_boot_stage = STEP_LOAD_SP6_DATA;
-//	LoadSp6Data_2();
-
-
+	//LoadSp6Data_2();
 
 	//加载MI代码
 	g_sys_state.system_boot_stage = STEP_LOAD_MI;
 	LoadMiData();
-
-
 
 	g_sys_state.system_boot_stage = STEP_INIT_PARM_MANAGER;
 	//创建参数管理器，读取参数配置
@@ -636,10 +632,10 @@ int Initialize(){
 	}
 	else
 		printf("Succeed to create ParmManager object!\n");
+
 	g_ptr_parm_manager->InitParm();
 
 	g_ptr_trace->set_trace_level(g_ptr_parm_manager->GetSystemConfig()->trace_level);  //设置TRACE级别
-
 
 	g_sys_state.system_boot_stage = STEP_INIT_HMI_COMM;
 	//创建HMI通讯对象
@@ -959,7 +955,6 @@ int main()
 //		CheckNetState("eth0");  //检测网络状态
 
 		g_ptr_chn_engine->DoIdle();
-
 
 		usleep(100000);
 	//	printf("main wait~~~~\n");

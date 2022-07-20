@@ -490,8 +490,8 @@ typedef ListBuffer<SubProgOffset> SubProgOffsetList;     //子程序位置队列
  * @brief IF ELSE OFFSET
  */
 struct IfElseOffset{
-	uint64_t offset;     //文件指针偏移
-	uint64_t line_no;	 //行号
+	uint64_t offset = 0;     //文件指针偏移
+	uint64_t line_no = 0;	 //行号
 	uint16_t vec_index;  // 此节点链表在 vector中的索引
 	uint16_t node_index; //此节点在 ifelse 链表中的位置
 
@@ -597,11 +597,16 @@ struct CompilerScene{
 	LoopRecList list_loop;		//循环体队列,记录本文件内的所有循环体起始位置
 	LoopOffsetStack stack_loop;     //循环位置数据
 
+	/************************************************/
+	// 主容器 每个vector<IfElseOffset> 都是一个IF.......ENDIF记录
+	vector<vector<IfElseOffset>> node_vectors_vector;
 	/*****if else 处理 ******/
-	vector<IfElseOffsetList> ifelse_vector;  // 链表容器
-	DataStack<ListNode<IfElseOffset>> stack_ifelse_node;  //运行ifelse时节点存放栈
-	bool meet_else_jump;         // 若if 条件为真  则遇到else elseif 后要直接跳转到 endif行。
-	DataStack<bool> stack_else_jump_record;
+	// 运行时 记录当前处理的节点栈
+	vector<IfElseOffset> node_stack_run;
+	// 运行时 记录是否遇到else跳转栈
+	vector<int> else_jump_stack_run;
+	// 遇 else 跳转标志位
+	bool else_jump = false;
 	/*****if else 处理 ******/
 
 #ifdef USES_WOOD_MACHINE

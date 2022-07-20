@@ -1191,6 +1191,7 @@ bool ChannelControl::GetSysVarValue(const int index, double&value){
 		if(index - 5421 < kMaxAxisChn)
 			value = m_point_capture.m_df_point[index-5421];
 	}else if(index >= 7001 && index <= 8980){
+		printf("alarm index: %d\n", index);
 		int coord = (index - 7001)/20;  //  G540X  求X值
 
 		if(coord < this->m_p_channel_config->ex_coord_count){
@@ -4069,7 +4070,6 @@ int ChannelControl::Run(){
 	//执行循环
 	while(!g_sys_state.system_quit)
 	{
-
 		if(m_n_run_thread_state == RUN)
 		{
 			pthread_mutex_lock(&m_mutex_change_state);
@@ -4222,7 +4222,7 @@ int ChannelControl::Run(){
 		}
 		else
 		{
-			usleep(100);   //非运行状态，线程挂起10ms
+			usleep(10000);   //非运行状态，线程挂起10ms
 		}
 	}
 
@@ -4269,6 +4269,7 @@ bool ChannelControl::RefreshStatusFun(){
 	while(!g_sys_state.system_quit){
 
 		if(!this->m_b_mc_on_arm){
+
 			//更新当前MC的运行模式
 			this->m_p_mc_comm->ReadWorkMode(m_n_channel_index, m_channel_mc_status.cur_mode);
 
@@ -4363,8 +4364,8 @@ bool ChannelControl::RefreshStatusFun(){
 				m_b_lineno_from_mc && m_channel_mc_status.cur_line_no > 0){  //即刻更新实时状态行号
 			m_channel_rt_status.line_no = m_channel_mc_status.cur_line_no;
 		    }
-		}
 
+		}
 		//更新系统状态
 		step_mode_flag = IsStepMode();
 		if(step_mode_flag){
@@ -4546,7 +4547,6 @@ bool ChannelControl::RefreshStatusFun(){
 				(this->m_channel_status.machining_state == MS_RUNNING || this->m_channel_status.machining_state == MS_MACHIN_SIMULATING)){
 			this->ReadGraphAxisPos();
 		}
-
 
 #ifdef USES_WUXI_BLOOD_CHECK
 		if(this->m_b_returnning_home){  //回零处理

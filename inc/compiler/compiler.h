@@ -273,17 +273,26 @@ private://私有成员
 	LoopRecList *m_p_list_loop;			//循环体起末点位置记录队列，预扫描时生成
 	LoopOffsetStack m_stack_loop;        //循环位置存储栈，运行时使用
 
-	/************预扫描 if else  **********************/
-	IfElseOffsetList *m_p_list_ifelse = nullptr;   //单个 if else 偏移记录链表
-	int if_index_cur=-1, if_index_len=0;
-	vector<IfElseOffsetList> m_ifelse_vector;
-	DataStack<int> m_stack_if_record;    //处理 if endif配对 元素为此条链表在数组中的索引
-	int m_else_count = 0;           	// 一个 if 不能出现两个 else
-	DataStack<int> m_stack_else_count;  // 存在嵌套 if 时处理 暂存else记数
-	/*** 执行 if else *****************/
-	DataStack<ListNode<IfElseOffset> *> m_stack_ifelse_node;  //运行(if elseif else endif)消息时 记录偏移信息节点栈
-	bool m_b_else_jump = false;         // 若if 条件为真  则遇到else elseif 后要直接跳转到 endif行。
-	DataStack<bool> m_stack_else_jump_record;
+	/************预扫描**********************/
+	// 记录当前处理的IF在主容器中的索引
+	int m_node_vector_index = 0;
+	// 记录 vector<IfElseOffset> 总数
+	int m_node_vector_len = 0;
+	// 记录ELSE出现次数
+	int m_else_count_prescan = 0;
+	// 主容器 每个vector<IfElseOffset> 都是一个IF.......ENDIF记录
+	vector<vector<IfElseOffset>> m_node_vectors_vector;
+	// 存在嵌套关系时 记录外层vector<IfElseOffset>在主容器中索引的栈
+	vector<int> m_stack_vector_index_prescan;
+	// 记录每个IF中 ELSE 个数的栈
+	vector<int> m_stack_else_count_prescan;
+	/***************运行时********************************************/
+	// 运行时 记录当前处理的节点栈
+	vector<IfElseOffset> m_node_stack_run;
+	// 运行时 记录是否遇到else跳转栈
+	vector<int> m_else_jump_stack_run;
+	// 遇 else 跳转标志位
+	bool m_b_else_jump = false;
 
 #ifdef USES_WOOD_MACHINE
 	SpindleStartList *m_p_list_spd_start;         //主轴启动命令队列

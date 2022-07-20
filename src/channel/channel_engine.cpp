@@ -2234,6 +2234,7 @@ void ChannelEngine::ProcessHmiIOCmd(HMICmdFrame &cmd){
  * @param cmd ：待处理的HMI命令包
  */
 void ChannelEngine::ProcessHmiCmd(HMICmdFrame &cmd){
+
 	int i = 0;
 	switch(cmd.cmd){
 	case CMD_HMI_GET_CHN_STATE:   //HMI获取通道当前状态
@@ -3058,6 +3059,7 @@ void ChannelEngine::ProcessHmiSetParam(HMICmdFrame &cmd){
  */
 void ChannelEngine::ProcessHmiGetParam(HMICmdFrame &cmd){
 	uint8_t index = 0;
+
 	switch(cmd.cmd_extension){
 	case SYS_CONFIG:
 		cmd.data_len = sizeof(HmiSystemConfig);

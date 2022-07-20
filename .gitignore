@@ -21,3 +21,7 @@
 *.out
 *.app
 *.elf
+
+# build files
+Debug/
+Release/

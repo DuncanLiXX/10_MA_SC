@@ -518,6 +518,7 @@ enum ErrorType {
 	ERR_R_COMP_NOT_SUPPORTED_FOR_CURVE_TYPE,	//不支持指定曲线类型的刀具半径补偿
 	ERR_R_COMP_CHANGE_AFTER_ESTABLISH,			//刀具半径补偿不能在建立后立即改变
 	ERR_R_COMP_UNDER_FIXED_CYCLE,				//固定循环中不能使用刀具半径补偿
+	ERR_R_COMP_GENERATE_FAIL,					//刀补轨迹生成失败
 
 
 

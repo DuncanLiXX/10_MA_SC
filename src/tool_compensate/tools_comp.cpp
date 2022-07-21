@@ -133,8 +133,7 @@ DataCircle& DataCircle::offset(const ToolOffset& offset , void *troop, bool *bEr
 			((DataTroop *)troop)->atInsert(0, err);  */
 			
             ((CompensateTroop *)troop)->g_compensateError = 1;
-			if(0==((CompensateTroop *)troop)->InsertErrorData(ERR_TOOLRADIUS))
-			    return *this;
+            CreateError(ERR_TOOL_RADIUS_EXCEED, FATAL_LEVEL, CLEAR_BY_MCP_RESET);
 
 			if(bErrFlag != nullptr)
 				*bErrFlag = true;
@@ -178,8 +177,7 @@ DataArc& DataArc::offset(const ToolOffset& offset, void *troop, bool *bErrFlag)
 						return *this;
 					((CompensateTroop *)troop)->atInsert(0, err);*/
                     ((CompensateTroop *)troop)->g_compensateError = 1;
-					if(0==((CompensateTroop *)troop)->InsertErrorData(ERR_TOOLRADIUS))
-						return *this;
+                    CreateError(ERR_TOOL_RADIUS_EXCEED, FATAL_LEVEL, CLEAR_BY_MCP_RESET);
 
 					if(bErrFlag != nullptr)
 						*bErrFlag = true;
@@ -207,8 +205,7 @@ DataArc& DataArc::offset(const ToolOffset& offset, void *troop, bool *bErrFlag)
 			((CompensateTroop *)troop)->atInsert(0, err); */
 			
             ((CompensateTroop *)troop)->g_compensateError = 1;
-			if(0==((CompensateTroop *)troop)->InsertErrorData(ERR_TOOLRADIUS))
-				return *this;
+            CreateError(ERR_TOOL_RADIUS_EXCEED, FATAL_LEVEL, CLEAR_BY_MCP_RESET);
 
 			if(bErrFlag != nullptr)
 				*bErrFlag = true;
@@ -1060,8 +1057,7 @@ int CompensateTroop::latheCompensate()
 			atInsert(0, err);
 */
             g_compensateError = 1;
-            if(0==InsertErrorData(ERR_CREATETOOL))
-				return 0;
+            CreateError(ERR_CHANGE_R_COMP_STAT_CMD, FATAL_LEVEL, CLEAR_BY_MCP_RESET);
 			return 2;
 		}
 
@@ -1113,8 +1109,7 @@ int CompensateTroop::latheCompensate()
 */
                
                 g_compensateError = 1; 
-                if(0==InsertErrorData(ERR_CANCELTOOL))
-				    return 0;
+                CreateError(ERR_CHANGE_R_COMP_STAT_CMD, FATAL_LEVEL, CLEAR_BY_MCP_RESET);
 				return 2;
 			}
 			
@@ -1191,7 +1186,7 @@ int CompensateTroop::Compensate()
 
 	*/	
 
-//    printf(">>>>>>>>>>>>>>>>>>>>>>>>>++++ in compensate()  tool_compensate_state=%d\n",tool_compensate_state);
+    printf(">>>>>>>>>>>>>>>>>>>>>>>>>++++ in compensate()  tool_compensate_state=%d\n",tool_compensate_state);
 //    printf("++++ num=%d \n",num);
 	
 
@@ -1204,7 +1199,7 @@ int CompensateTroop::Compensate()
 	for(ii=0; ii<num; ii++)
 	{
       data[1] = GetADataAt(ii);
-//	  printf("  data[%d].what = %d \n",ii,data[1].what);
+	  printf("  data[%d].what = %d \n",ii,data[1].what);
 	}
 //	printf("\n");    
 
@@ -1389,8 +1384,9 @@ int CompensateTroop::Compensate()
 		atInsert(0, err); */		
 		
         g_compensateError = 1;
-        if(0==InsertErrorData(ERR_CREATETOOL))
-			 return 0;
+
+        //20220720 lidianqiang: 原来是下面的两行，由于没有正常告警，改成了这行
+        CreateError(ERR_CHANGE_R_COMP_STAT_CMD, FATAL_LEVEL, CLEAR_BY_MCP_RESET);
 		return 2;
 	}
 
@@ -1402,8 +1398,7 @@ int CompensateTroop::Compensate()
 		atInsert(0, err);  */
 		
         g_compensateError = 1;
-		if(0==InsertErrorData(ERR_CANCELTOOL))
-			 return 0;
+        CreateError(ERR_TOOL_RADIUS_EXCEED, FATAL_LEVEL, CLEAR_BY_MCP_RESET);
 		return 2;
 	}
 
@@ -1558,8 +1553,8 @@ int CompensateTroop::Compensate()
 						atInsert(0, err); */
 						
 						g_compensateError = 1;
-						if(0==InsertErrorData(ERR_TOOLRADIUS))
-			                return ret;
+					    CreateError(ERR_TOOL_RADIUS_EXCEED, FATAL_LEVEL, CLEAR_BY_MCP_RESET);
+
 						return (ret + 1);
 					}
 				}
@@ -1577,8 +1572,7 @@ int CompensateTroop::Compensate()
 					atInsert(0, err); */
 					
 					g_compensateError = 1;
-				    if(0==InsertErrorData(ERR_TOOLRADIUS))
-			            return ret;
+				    CreateError(ERR_TOOL_RADIUS_EXCEED, FATAL_LEVEL, CLEAR_BY_MCP_RESET);
 					return (ret + 1);
 				}
 				AfterAngle=data[0].arc.GetData().getAngle();
@@ -1591,8 +1585,8 @@ int CompensateTroop::Compensate()
 					atInsert(0, err);  */
 					
                     g_compensateError = 1;
-				    if(0==InsertErrorData(ERR_TOOLRADIUS))
-			             return 1;
+				    CreateError(ERR_TOOL_RADIUS_EXCEED, FATAL_LEVEL, CLEAR_BY_MCP_RESET);
+
 					return (ret + 1);
 				}
 			}
@@ -2497,8 +2491,7 @@ int CompensateTroop::line_line(LineRec& data1, LineRec& data2)
 				atInsert(0, err);*/
 				
                 g_compensateError = 1;
-				if(0==InsertErrorData(ERR_TOOLRADIUS))
-			         return 0;
+                CreateError(ERR_TOOL_RADIUS_EXCEED, FATAL_LEVEL, CLEAR_BY_MCP_RESET);
 //	printf("NHLDJFNHLDJFNHLDJFNHLDJFNHLDJF%^&$#@33333 \n");  
 				return 2;
 			}
@@ -2567,8 +2560,8 @@ int CompensateTroop::line_line(LineRec& data1, LineRec& data2)
 			atInsert(0, err);  */
 			
             g_compensateError = 1;
-			if(0==InsertErrorData(ERR_CREATETOOL))
-			    return 0;
+		    CreateError(ERR_CHANGE_R_COMP_STAT_CMD, FATAL_LEVEL, CLEAR_BY_MCP_RESET);
+
 //	printf("NHLDJFNHLDJFNHLDJFNHLDJFNHLDJF%^&$#@44444 \n");  
 			return 2;
 		}
@@ -2625,8 +2618,7 @@ int CompensateTroop::line_line(LineRec& data1, LineRec& data2)
 				atInsert(0, err); */
 				
                 g_compensateError = 1;
-			    if(0==InsertErrorData(ERR_COMPENSATE))
-			         return 0;
+                CreateError(ERR_R_COMP_GENERATE_FAIL, FATAL_LEVEL, CLEAR_BY_MCP_RESET);
 				return 2;
 			}
 		}
@@ -2692,8 +2684,8 @@ int CompensateTroop::line_line(LineRec& data1, LineRec& data2)
 				atInsert(0, err); */
 				
                 g_compensateError = 1;
-			    if(0==InsertErrorData(ERR_COMPENSATE))
-			         return 0;
+                CreateError(ERR_R_COMP_GENERATE_FAIL, FATAL_LEVEL, CLEAR_BY_MCP_RESET);
+
 				return 2;
 			}
 		}
@@ -2727,8 +2719,7 @@ int CompensateTroop::line_line(LineRec& data1, LineRec& data2)
 			atInsert(0, err); */ 
 			
             g_compensateError = 1;
-			if(0==InsertErrorData(ERR_CANCELTOOL))
-			     return 0;
+            CreateError(ERR_CHANGE_R_COMP_STAT_CMD, FATAL_LEVEL, CLEAR_BY_MCP_RESET);
 			return 2;
 		}
 
@@ -2886,8 +2877,7 @@ int CompensateTroop::line_arc(LineRec& data1, ArcRec& data2)
 				atInsert(0, err);  */
 				
 				g_compensateError = 1;
-			    if(0==InsertErrorData(ERR_COMPENSATE))
-					return 0;
+				CreateError(ERR_R_COMP_GENERATE_FAIL, FATAL_LEVEL, CLEAR_BY_MCP_RESET);
 				return 2;
 			}
 		}
@@ -3038,8 +3028,7 @@ int CompensateTroop::line_arc(LineRec& data1, ArcRec& data2)
 				atInsert(0, err);  */
 				
                 g_compensateError = 1;
-			    if(0==InsertErrorData(ERR_COMPENSATE))
-					return 0;
+                CreateError(ERR_R_COMP_GENERATE_FAIL, FATAL_LEVEL, CLEAR_BY_MCP_RESET);
 				return 2;
 			}
 		}
@@ -3090,8 +3079,8 @@ int CompensateTroop::line_arc(LineRec& data1, ArcRec& data2)
 				atInsert(0, err); */
 				
                 g_compensateError = 1;
-			    if(0==InsertErrorData(ERR_TOOLRADIUS))
-					return 0;
+    			CreateError(ERR_TOOL_RADIUS_EXCEED, FATAL_LEVEL, CLEAR_BY_MCP_RESET);
+
 				return 2;
 			}
 		}
@@ -3117,8 +3106,8 @@ int CompensateTroop::line_arc(LineRec& data1, ArcRec& data2)
 			atInsert(0, err); */
 
             g_compensateError = 1;
-			if(0==InsertErrorData(ERR_CREATETOOL))
-					return 0;
+			CreateError(ERR_CHANGE_R_COMP_STAT_CMD, FATAL_LEVEL, CLEAR_BY_MCP_RESET);
+
 			return 2;
 		}
 
@@ -3418,8 +3407,7 @@ int CompensateTroop::line_arc(ArcRec& data1,LineRec& data2)
 				atInsert(0, err);  */
 				
 				g_compensateError = 1;
-			    if(0==InsertErrorData(ERR_COMPENSATE))
-					return 0;
+	            CreateError(ERR_R_COMP_GENERATE_FAIL, FATAL_LEVEL, CLEAR_BY_MCP_RESET);
 				return 2;
 			}
 		}
@@ -3502,8 +3490,7 @@ int CompensateTroop::line_arc(ArcRec& data1,LineRec& data2)
 				atInsert(0, err); */				
 				
 				g_compensateError = 1;
-			    if(0==InsertErrorData(ERR_COMPENSATE))
-					return 0;
+				CreateError(ERR_R_COMP_GENERATE_FAIL, FATAL_LEVEL, CLEAR_BY_MCP_RESET);
 				return 2;
 			}
 		}
@@ -3610,8 +3597,8 @@ int CompensateTroop::line_arc(ArcRec& data1,LineRec& data2)
 				atInsert(0, err); */					
 				
 				g_compensateError = 1;
-			    if(0==InsertErrorData(ERR_COMPENSATE))
-					return 0;
+    			CreateError(ERR_R_COMP_GENERATE_FAIL, FATAL_LEVEL, CLEAR_BY_MCP_RESET);
+
 				return 2;
 			}
 		}
@@ -3677,8 +3664,7 @@ int CompensateTroop::line_arc(ArcRec& data1,LineRec& data2)
 					atInsert(0, err);  */					
 					
 					g_compensateError = 1;
-			        if(0==InsertErrorData(ERR_COMPENSATE))
-					     return 0;
+					CreateError(ERR_R_COMP_GENERATE_FAIL, FATAL_LEVEL, CLEAR_BY_MCP_RESET);
 					return 2;
 				}
 		}
@@ -4362,8 +4348,7 @@ int CompensateTroop::arc_arc( ArcRec& data1, ArcRec& data2 )
 					atInsert(0, err); */
 					
             	g_compensateError = 1;
-			    if(0==InsertErrorData(ERR_TOOLRADIUS))
-					 return 0;
+            	CreateError(ERR_TOOL_RADIUS_EXCEED, FATAL_LEVEL, CLEAR_BY_MCP_RESET);
 				return 2;
 			}
 		}

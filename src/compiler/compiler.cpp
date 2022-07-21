@@ -215,8 +215,6 @@ void Compiler::InitCompiler() {
 		return;
 	}
 
-	this->m_p_list_ifelse = nullptr;   // 在preScan时 碰到if再new碰到endif存入到数组中
-
 #ifdef USES_WOOD_MACHINE
 	//初始化主轴启动指令记录队列
 	this->m_p_list_spd_start = new SpindleStartList();
@@ -422,26 +420,10 @@ bool Compiler::SaveScene() {
 	scene.stack_loop = m_stack_loop;
 
 	/***************************************/
-	scene.ifelse_vector.clear();
-	scene.ifelse_vector  = m_ifelse_vector;
-
-	scene.stack_else_jump_record.empty();
-	scene.stack_else_jump_record = m_stack_else_jump_record;
-
-	scene.meet_else_jump = m_b_else_jump;
-
-	scene.stack_ifelse_node.empty();
-	while(m_stack_ifelse_node.size() > 0){
-
-		ListNode<IfElseOffset> *node = nullptr;
-		m_stack_ifelse_node.cur(node);
-		if(node != nullptr)
-			scene.stack_ifelse_node.push(*node);
-		m_stack_ifelse_node.pop2();
-	}
-
-	printf("scene.stack_ifelse_node size: %d\n", scene.stack_ifelse_node.size());
-
+	scene.node_vectors_vector = m_node_vectors_vector;
+	scene.node_stack_run = m_node_stack_run;
+	scene.else_jump_stack_run = m_else_jump_stack_run;
+	scene.else_jump = m_b_else_jump;
 	/***************************************/
 
 #ifdef USES_WOOD_MACHINE
@@ -477,17 +459,6 @@ bool Compiler::ReloadScene(bool bRecPos) {
 		return false;
 
 	m_stack_scene.pop(scene);
-
-	for(IfElseOffsetList list: scene.ifelse_vector){
-		printf("if else offset vector: %llu\n", list.HeadNode()->data.line_no);
-	}
-
-	ListNode<IfElseOffset> node;
-	node.data.vec_index = -1;
-	scene.stack_ifelse_node.cur(node);
-
-	printf("stack node ifelse top: %d  size: %d\n",
-			node.data.vec_index,scene.stack_ifelse_node.size());
 
 
 	bool same_file = false;  //是否相同文件
@@ -536,31 +507,10 @@ bool Compiler::ReloadScene(bool bRecPos) {
 	m_stack_loop = scene.stack_loop;
 
 	/***********************************/
-	m_ifelse_vector.clear();
-	m_ifelse_vector = scene.ifelse_vector;
-
-	m_stack_else_jump_record.empty();
-	m_stack_else_jump_record = scene.stack_else_jump_record;
-
-	m_b_else_jump = scene.meet_else_jump;
-
-	// @Todo  为什么会有 scene.ifelse_vector.size() = 0,
-	// scene.stack_ifelse_node.size() > 0 的情况
-	if(m_ifelse_vector.size() > 0){
-		while(scene.stack_ifelse_node.size() > 0){
-			ListNode<IfElseOffset> node;
-			scene.stack_ifelse_node.pop(node);
-
-			ListNode<IfElseOffset> *node2 = nullptr;
-			node2 = m_ifelse_vector.at(node.data.vec_index).HeadNode();
-
-			for(int i=0; i<node.data.node_index; i++)
-				node2 = node2->next;
-			m_stack_ifelse_node.push(node2);
-		}
-	}else{
-		printf("scene.ifelse_vector.size() = %d\n", scene.ifelse_vector.size());
-	}
+	m_node_vectors_vector = scene.node_vectors_vector;
+	m_node_stack_run = scene.node_stack_run;
+	m_else_jump_stack_run = scene.else_jump_stack_run;
+	m_b_else_jump = scene.else_jump;
 	/***********************************/
 
 
@@ -814,27 +764,16 @@ void Compiler::PreScan() {
 
 
 	/*** test if else */
-	m_p_list_ifelse = nullptr;
-	if(m_stack_if_record.size() != 0){
-		printf("endif less than if error!!!\n");
-	}
 
-
-	printf("----------------------------------------------\n");
-
-	for(unsigned int i=0; i<m_ifelse_vector.size(); i++){
-		IfElseOffsetList data = m_ifelse_vector.at(i);
-		ListNode<IfElseOffset> *node = data.HeadNode();
-
+	printf("************************************************\n");
+	for(unsigned int i=0; i<m_node_vectors_vector.size(); i++){
+		vector<IfElseOffset> node_vector = m_node_vectors_vector.at(i);
 		printf("node number: %d\n", i+1);
 
-		while(node->next != nullptr){
-			IfElseOffset offset = node->data;
-			printf("lino: %lld --", offset.line_no);
-			node = node->next;
+		for(unsigned int j=0; j<node_vector.size(); j++){
+			printf("lino: %lld --", node_vector.at(j).line_no);
 		}
-		IfElseOffset offset = node->data;
-		printf("line no: %lld --\n", offset.line_no);
+		printf("\n");
 	}
 
 	/*** test if else */
@@ -1293,163 +1232,109 @@ void Compiler::PreScanLine1(char *buf, uint64_t offset, uint64_t line_no,
 #endif
 
 	// 找到 if 指令
+	if(if_cmd){
 
-	if(this->m_b_prescan_in_stack){
-		if(if_cmd){
-			if_index_cur = if_index_len;
-			m_stack_if_record.push(if_index_len);
-			++ if_index_len;  // if 链表数组 链表个数
-			IfElseOffsetList ifelse_list;
-			IfElseOffset ifnode;
-			ifnode.offset = offset;
-			ifnode.line_no = line_no;
-			ifnode.vec_index = if_index_cur;
-			ifnode.node_index = ifelse_list.GetLength();
-			ifelse_list.Append(ifnode);
-			scene->ifelse_vector.push_back(ifelse_list);
-			m_p_list_ifelse = &scene->ifelse_vector.back();
-			//scene->ifelse_record[scene->if_index_cur] = scene->list_ifelse;
-			if_cmd = false;
-			// 第一个 栈底记数永远为0  没用
-			m_stack_else_count.push(m_else_count);
-			m_else_count = 0;
-		}else if(endif_cmd){
-			if(m_p_list_ifelse == nullptr){
-				g_ptr_trace->PrintLog(LOG_ALARM, "CHN[%d]预扫描语法错误  请检查 IF ELSEIF ELSE ENDIF 语法配对！！！\n",
-						m_n_channel_index);
-				CreateError(IF_ELSE_MATCH_FAILED, ERROR_LEVEL, CLEAR_BY_MCP_RESET,
-						line_no, m_n_channel_index);
-				return;
-			}
+		// 初始化基础变量
+		m_else_count_prescan = 0;
+		m_node_vector_index = m_node_vector_len;
+		m_node_vector_len ++;
+		m_stack_vector_index_prescan.push_back(m_node_vector_index);
+		m_stack_else_count_prescan.push_back(m_else_count_prescan);
 
-			IfElseOffset ifnode;
-			ifnode.offset = offset;
-			ifnode.line_no = line_no;
-			ifnode.vec_index = if_index_cur;
-			ifnode.node_index = m_p_list_ifelse->GetLength();
-			m_p_list_ifelse->Append(ifnode);
-			m_stack_if_record.pop();
+		// 新建节点
+		IfElseOffset node;
+		node.offset = offset;
+		node.line_no = line_no;
+		node.vec_index = m_node_vector_index;
+		node.node_index = 0;
+		// 新建节点容器
+		vector<IfElseOffset> node_vector;
+		node_vector.push_back(node);
+		//节点容器装入主容器
+		if(this->m_b_prescan_in_stack)
+			scene->node_vectors_vector.push_back(node_vector);
+		else
+			m_node_vectors_vector.push_back(node_vector);
 
-			if(m_stack_if_record.size() != 0){
-				m_stack_if_record.cur(if_index_cur);
-				//scene->list_ifelse = scene->ifelse_record[scene->if_index_cur];
-				m_p_list_ifelse = &scene->ifelse_vector.at(if_index_cur);
-			}
-			endif_cmd = false;
+		if_cmd = false;
 
-			m_stack_else_count.pop(m_else_count);
+	}else if(endif_cmd){
 
-		}else if(else_cmd or elseif_cmd){
-			if(m_p_list_ifelse == nullptr){
-				g_ptr_trace->PrintLog(LOG_ALARM, "CHN[%d]预扫描语法错误  请检查 IF ELSEIF ELSE ENDIF 语法配对！！！\n",
-						m_n_channel_index);
-				CreateError(IF_ELSE_MATCH_FAILED, ERROR_LEVEL, CLEAR_BY_MCP_RESET,
-						line_no, m_n_channel_index);
-				return;
-			}
+		if(m_stack_vector_index_prescan.size() == 0){
+			g_ptr_trace->PrintLog(LOG_ALARM, "CHN[%d]预扫描语法错误  请检查 IF ELSEIF ELSE ENDIF 语法配对！！！\n",
+					m_n_channel_index);
 
-			if(else_cmd){
-				++ m_else_count;
-				if(m_else_count > 1){
-					// @Todo 一个 if 有两个 else 语法错误
-					printf("prescan1 error: one if but two else ...\n");
-					return;
-				}
-			}
-
-			IfElseOffset ifnode;
-			ifnode.offset = offset;
-			ifnode.line_no = line_no;
-			ifnode.vec_index = if_index_cur;
-			ifnode.node_index = m_p_list_ifelse->GetLength();
-			m_p_list_ifelse->Append(ifnode);
-
-			else_cmd = false;
-			elseif_cmd = false;
+			CreateError(IF_ELSE_MATCH_FAILED, ERROR_LEVEL, CLEAR_BY_MCP_RESET,
+					line_no, m_n_channel_index);
+			return;
 		}
-	}else{
-		if(if_cmd){
-			m_else_count = 0;
-			if_index_cur = if_index_len;
-			m_stack_if_record.push(if_index_len);  // 存储if链表头在vector中的索引
-			++if_index_len;  // if 链表数组 链表个数
-			IfElseOffsetList ifelse_list; // 新建链表
-			IfElseOffset ifnode;  // 建立节点
-			ifnode.offset = offset;
-			ifnode.line_no = line_no;
-			ifnode.vec_index = if_index_cur;
-			ifnode.node_index = ifelse_list.GetLength();
 
-			ifelse_list.Append(ifnode);
+		// 新建节点
+		IfElseOffset node;
+		node.offset = offset;
+		node.line_no = line_no;
+		node.vec_index = m_node_vector_index;
 
-			m_ifelse_vector.push_back(ifelse_list);  //  vector中存入链表对象
-			m_p_list_ifelse = &m_ifelse_vector.back();
-
-			if_cmd = false;
-
-			m_stack_else_count.push(m_else_count);
-		}else if(endif_cmd){
-			if(m_p_list_ifelse == nullptr){
-				g_ptr_trace->PrintLog(LOG_ALARM, "CHN[%d]预扫描语法错误  请检查 IF ELSEIF ELSE ENDIF 语法配对！！！\n",
-						m_n_channel_index);
-
-				CreateError(IF_ELSE_MATCH_FAILED, ERROR_LEVEL, CLEAR_BY_MCP_RESET,
-						line_no, m_n_channel_index);
-				return;
-			}
-
-			IfElseOffset ifnode;
-			ifnode.offset = offset;
-			ifnode.line_no = line_no;
-			ifnode.vec_index = if_index_cur;
-			ifnode.node_index = m_p_list_ifelse->GetLength();
-			m_p_list_ifelse->Append(ifnode);
-			// 这条if链表记录结束 弹栈
-			if(m_stack_if_record.size() > 0)
-				m_stack_if_record.pop();
-			else
-				printf("编译错误！！！ IF ENDIF不匹配  -- %llu\n", line_no);
-
-			if(m_stack_if_record.size() != 0){
-				// 存在嵌套关系 指针指向外层 if链表
-				m_stack_if_record.cur(if_index_cur);
-				m_p_list_ifelse = &m_ifelse_vector.at(if_index_cur);
-			}
-			endif_cmd = false;
-			// else记数 弹栈  栈顶为外层 if中 else出现次数
-			m_stack_else_count.pop(m_else_count);
-
-		}else if(else_cmd or elseif_cmd){
-			if(m_p_list_ifelse == nullptr){
-				g_ptr_trace->PrintLog(LOG_ALARM, "CHN[%d]预扫描语法错误  请检查 IF ELSEIF ELSE ENDIF 语法配对！！！\n",
-						m_n_channel_index);
-				CreateError(IF_ELSE_MATCH_FAILED, ERROR_LEVEL, CLEAR_BY_MCP_RESET,
-						line_no, m_n_channel_index);
-				return;
-			}
-
-
-			IfElseOffset ifnode;
-			ifnode.offset = offset;
-			ifnode.line_no = line_no;
-			ifnode.vec_index = if_index_cur;
-			ifnode.node_index = m_p_list_ifelse->GetLength();
-			m_p_list_ifelse->Append(ifnode);
-
-			if(else_cmd){
-				++ m_else_count;
-				if(m_else_count > 1){
-					printf("prescan1 error: one if but two else ...%llu\n", line_no);
-					g_ptr_trace->PrintLog(LOG_ALARM, "一个 if 遇到两个 else ！！！\n");
-					return;
-				}
-			}
-
-			else_cmd = false;
-			elseif_cmd = false;
+		//节点装入容器
+		if(this->m_b_prescan_in_stack){
+			node.node_index = scene->node_vectors_vector.at(m_node_vector_index).size();
+			scene->node_vectors_vector.at(m_node_vector_index).push_back(node);
 		}
+		else{
+			node.node_index = m_node_vectors_vector.at(m_node_vector_index).size();
+			m_node_vectors_vector.at(m_node_vector_index).push_back(node);
+		}
+
+		// 这条IF 处理结束  弹栈
+		m_stack_vector_index_prescan.pop_back();
+		m_stack_else_count_prescan.pop_back();
+		// 存在 IF 嵌套
+		if(m_stack_vector_index_prescan.size() != 0){
+			m_node_vector_index = m_stack_vector_index_prescan.back();
+			m_else_count_prescan = m_stack_else_count_prescan.back();
+		}
+
+		endif_cmd = false;
+
+	}else if(else_cmd or elseif_cmd){
+
+		if(m_stack_vector_index_prescan.size() == 0){
+			g_ptr_trace->PrintLog(LOG_ALARM, "CHN[%d]预扫描语法错误  请检查 IF ELSEIF ELSE ENDIF 语法配对！！！\n",
+					m_n_channel_index);
+
+			CreateError(IF_ELSE_MATCH_FAILED, ERROR_LEVEL, CLEAR_BY_MCP_RESET,
+					line_no, m_n_channel_index);
+			return;
+		}
+
+		if(else_cmd){
+			++ m_else_count_prescan;
+			if(m_else_count_prescan > 1){
+				g_ptr_trace->PrintLog(LOG_ALARM, "CHN[%d]预扫描语法错误  请检查 IF ELSEIF ELSE ENDIF 语法配对！！！\n",
+										m_n_channel_index);
+				CreateError(IF_ELSE_MATCH_FAILED, ERROR_LEVEL, CLEAR_BY_MCP_RESET,
+										line_no, m_n_channel_index);
+			}
+		}
+
+		IfElseOffset node;
+		node.offset = offset;
+		node.line_no = line_no;
+		node.vec_index = m_node_vector_index;
+
+		if(this->m_b_prescan_in_stack){
+			node.node_index = scene->node_vectors_vector.at(m_node_vector_index).size();
+			scene->node_vectors_vector.at(m_node_vector_index).push_back(node);
+		}else{
+			node.node_index = m_node_vectors_vector.at(m_node_vector_index).size();
+			m_node_vectors_vector.at(m_node_vector_index).push_back(node);
+		}
+
+		else_cmd = false;
+		elseif_cmd = false;
 	}
 	
+
 }
 
 /**
@@ -1640,14 +1525,13 @@ bool Compiler::OpenFile(const char *file, bool sub_flag) {
 	this->m_p_list_loop->Clear();
 	m_stack_loop.empty();  //清空循环位置数据
 
+	m_node_vector_index = 0;
+	m_node_vector_len = 0;
+	m_else_count_prescan = 0;
+	m_node_vectors_vector.clear();
+	m_stack_vector_index_prescan.clear();
+	m_stack_else_count_prescan.clear();
 
-	printf("aaaaaaaa\n");
-	m_ifelse_vector.clear();
-	printf("ccccccc\n");
-
-	if_index_cur=-1;
-	if_index_len=0;
-	m_stack_if_record.empty();
 
 #ifdef USES_WOOD_MACHINE
 	m_p_list_spd_start->Clear();
@@ -1854,10 +1738,8 @@ bool Compiler::CompileOver() {
 	m_b_compile_over = false;
 
 	m_b_else_jump = false;
-
-	while(m_stack_ifelse_node.size() > 0){
-		m_stack_ifelse_node.pop2();
-	}
+	m_node_stack_run.clear();
+	m_else_jump_stack_run.clear();
 
 	printf("exit compiler::compileover\n");
 	return true;
@@ -2022,6 +1904,8 @@ void Compiler::Reset() {
 			}
 		}
 
+		printf("scene reset finished!!!\n");
+
 		this->m_n_compile_state = FILE_HEAD;
 	}
 
@@ -2060,7 +1944,7 @@ void Compiler::Reset() {
 	/********************************/
 
 	//编译过程中记录
-	m_p_list_ifelse = nullptr;
+	//m_p_list_ifelse = nullptr;
 	//m_ifelse_vector.clear();
 	//if_index_cur=-1, if_index_len=0;
 	//m_else_count = 0;
@@ -2068,13 +1952,9 @@ void Compiler::Reset() {
 	//m_stack_else_count.empty();
 
 	// 复位运行时记录
-	printf("11111\n");
-	while(m_stack_ifelse_node.size() > 0){
-		m_stack_ifelse_node.pop2();
-	}
+	m_node_stack_run.clear();
+	m_else_jump_stack_run.clear();
 	m_b_else_jump = false;
-	m_stack_else_jump_record.empty();
-	printf("22222\n");
 	/********************************/
 
 	printf("Compiler::Reset 4\n");
@@ -3726,74 +3606,63 @@ bool Compiler::RunMacroMsg(RecordMsg *msg) {
 
 			tmp->SetMacroExpCalFlag(0, true);
 
-			// 找出 if 偏移信息链表
-			ListNode<IfElseOffset> *node = nullptr;
 
-			for(unsigned int i=0; i<m_ifelse_vector.size(); i++){
-				if(tmp->GetLineNo() == m_ifelse_vector.at(i).HeadNode()->data.line_no){
-					node = m_ifelse_vector.at(i).HeadNode();
+			IfElseOffset node;
+			for(vector<IfElseOffset> node_vector : m_node_vectors_vector){
+				if(node_vector.at(0).line_no == tmp->GetLineNo()){
+					node = node_vector.at(0);
 				}
 			}
+
 			/*************************************************/
-			if(node == nullptr){
+			if(node.line_no == 0){
 				/*** test if else */
 				printf("-------------------------------------\n");
 
-				for(unsigned int i=0; i<m_ifelse_vector.size(); i++){
-					IfElseOffsetList data = m_ifelse_vector.at(i);
-					ListNode<IfElseOffset> *node = data.HeadNode();
-
-					printf("node number: %d\n", i+1);
-
-					while(node->next != nullptr){
-						IfElseOffset offset = node->data;
-						printf("lino: %lld --", offset.line_no);
-						node = node->next;
+				int count = 1;
+				for(vector<IfElseOffset> node_vector : m_node_vectors_vector){
+					printf("node num: %d\n", count);
+					for(IfElseOffset node : node_vector){
+						printf("lino: %lld --", node.line_no);
 					}
-					IfElseOffset offset = node->data;
-					printf("line no: %lld --\n", offset.line_no);
+					printf("\n");
+					count ++;
 				}
-
-					/*** test if else */
 				return false;
 			}
 			/****************************************************/
 
-			// 条件成立
 			if(static_cast<int>(tmp->GetMacroExpResult(0).value) == 1){
-
-				while(node->next != nullptr){
-					node = node->next;
-				}
-				// if 之后碰到 else elseif 直接跳到 endif 行
+				// 条件成立 跳转到 node vector 的 back（endif节点）
+				node = m_node_vectors_vector.at(node.vec_index).back();
 				m_b_else_jump = true;                     // 遇到 else elseif 跳转到对应的endif上
 
 			}else{
 				//条件不成立     往下一个节点跳转
-				if(node->next != nullptr) node = node->next;
+				node = m_node_vectors_vector.at(node.vec_index).at(node.node_index + 1);
 				m_b_else_jump = false;
 
-				if(!JumpLine(node->data.line_no, node->data.offset, tmp))
+				if(!JumpLine(node.line_no, node.offset, tmp))
 					printf("------ jump line failed!!!\n");
 			}
-			m_stack_ifelse_node.push(node);
-			m_stack_else_jump_record.push(m_b_else_jump);
+			m_node_stack_run.push_back(node);
+			m_else_jump_stack_run.push_back(m_b_else_jump);
 
-			//finished = true;
 		}
 		break;
 	}
 	case MACRO_CMD_ELSEIF:{
 
-		if(m_stack_ifelse_node.size() == 0){
+		if(m_node_stack_run.size() == 0){
 			printf("IF ELSE 不匹配, 没有if入栈但遇到  else/ elseif\n");
 			CreateErrorMsg(IF_ELSE_MATCH_FAILED, tmp->GetLineNo());
 			return false;
 		}
 
-		ListNode<IfElseOffset> *node = nullptr;
-		m_stack_ifelse_node.cur(node);
-		if(node == nullptr){
+		IfElseOffset node;
+		node = m_node_stack_run.back();
+
+		if(node.line_no == 0){
 			printf("m_stack_ifelse_node 栈出错！！！\n");
 			break;
 		}
@@ -3801,7 +3670,7 @@ bool Compiler::RunMacroMsg(RecordMsg *msg) {
 		// 之前的 if 已经满足条件  直接跳转到 endif
 		if(m_b_else_jump){
 
-			if(!JumpLine(node->data.line_no, node->data.offset, tmp))
+			if(!JumpLine(node.line_no, node.offset, tmp))
 				printf("------ jump line failed!!!\n");
 
 			break;
@@ -3824,25 +3693,21 @@ bool Compiler::RunMacroMsg(RecordMsg *msg) {
 			if(static_cast<int>(tmp->GetMacroExpResult(0).value) == 1){
 				//printf("cmd  elseif: 1111\n");
 				m_b_else_jump = true;
-				m_stack_else_jump_record.pop();
-				m_stack_else_jump_record.push(m_b_else_jump);
-
-				while(node->next != nullptr){
-					node = node->next;
-				}
-				m_stack_ifelse_node.pop2();
-				m_stack_ifelse_node.push(node);
+				m_else_jump_stack_run.pop_back();
+				m_else_jump_stack_run.push_back(m_b_else_jump);
+				// 找到 node_vector endif 节点
+				node = m_node_vectors_vector.at(node.vec_index).back();
+				m_node_stack_run.pop_back();
+				m_node_stack_run.push_back(node);
 
 			// 条件不成立
 			}else{
-				//printf("cmd  elseif: 0000\n");
-				if(node->next != nullptr){
-					node = node->next;
-					m_stack_ifelse_node.pop2();
-					m_stack_ifelse_node.push(node);
-					if(!JumpLine(node->data.line_no, node->data.offset, tmp))
-						printf("------ jump line failed!!!\n");
-				}
+				node = m_node_vectors_vector.at(node.vec_index).at(node.node_index + 1);
+				m_node_stack_run.pop_back();
+				m_node_stack_run.push_back(node);
+
+				if(!JumpLine(node.line_no, node.offset, tmp))
+					printf("------ jump line failed!!!\n");
 			}
 		}
 
@@ -3850,21 +3715,21 @@ bool Compiler::RunMacroMsg(RecordMsg *msg) {
 	}
 	case MACRO_CMD_ELSE:{
 
-		if(m_stack_ifelse_node.size() == 0){
+		if(m_node_stack_run.size() == 0){
 			printf("IF ELSE 不匹配, 没有if入栈但遇到  else/ elseif 222\n");
 			CreateErrorMsg(IF_ELSE_MATCH_FAILED, tmp->GetLineNo());
 			return false;
 		}
 
 		if(m_b_else_jump){
-			ListNode<IfElseOffset> *node = nullptr;
-			m_stack_ifelse_node.cur(node);
-			if(node == nullptr){
+			IfElseOffset node;
+			node = m_node_stack_run.back();
+			if(node.line_no == 0){
 				printf("m_stack_ifelse_node 栈出错！！！\n");
 				break;
 			}
 
-			if(!JumpLine(node->data.line_no, node->data.offset, tmp))
+			if(!JumpLine(node.line_no, node.offset, tmp))
 				printf("------ jump line failed!!!\n");
 
 			break;
@@ -3873,18 +3738,15 @@ bool Compiler::RunMacroMsg(RecordMsg *msg) {
 	}
 	case MACRO_CMD_ENDIF:{
 
-		if(m_stack_ifelse_node.size() == 0){
+		if(m_node_stack_run.size() == 0){
 			printf("IF ELSE 不匹配, 没有if入栈但遇到  endif \n");
 			CreateErrorMsg(IF_ELSE_MATCH_FAILED, tmp->GetLineNo());
 			return false;
 		}
 
-		m_stack_ifelse_node.pop2();
-		m_stack_else_jump_record.pop();
-		m_stack_else_jump_record.cur(m_b_else_jump);
-
-		//printf("cmd endif pop m_b_else_jump: %d\n", m_b_else_jump);
-
+		m_node_stack_run.pop_back();
+		m_else_jump_stack_run.pop_back();
+		m_b_else_jump = m_else_jump_stack_run.back();
 		break;
 	}
 	default:
@@ -4825,29 +4687,22 @@ bool Compiler::CheckJumpGoto(uint64_t line_src, uint64_t line_des){
 	}
 
 	//  处理 if 中 goto
-	for(int i=0; i<m_ifelse_vector.size(); i++){
+	for(vector<IfElseOffset> node_vector: m_node_vectors_vector){
 		// 跳转终点在 一组 if (elseif\else\endif) 之间
-		if(line_des > m_ifelse_vector.at(i).HeadNode()->data.line_no and
-				line_des < m_ifelse_vector.at(i).HeadNode()->next->data.line_no)
-		{
+		if(line_des > node_vector.at(0).line_no and line_des < node_vector.at(1).line_no){
 			// 跳转起点不在 这组 if (elseif\else\endif) 之间
-			if(line_src < m_ifelse_vector.at(i).HeadNode()->data.line_no or
-					line_src > m_ifelse_vector.at(i).HeadNode()->next->data.line_no){
+			if(line_src < node_vector.at(0).line_no or line_src > node_vector.at(1).line_no){
 				res = false;
 				break;
 			}
 		}
 	}
-	//m_stack_ifelse_node.push(node);
-	//m_stack_else_jump_record.push(m_b_else_jump);
-	ListNode<IfElseOffset> *ifelse_node = nullptr;
 
-	while(m_stack_ifelse_node.size() != 0){
-		m_stack_ifelse_node.cur(ifelse_node);
+	while(m_node_stack_run.size() != 0){
 		// 目标行号 大于 栈顶节点记录行号  弹出
-		if(ifelse_node != nullptr and line_des > ifelse_node->data.line_no){
-			m_stack_ifelse_node.pop2();
-			m_stack_else_jump_record.pop();
+		if(line_des > m_node_stack_run.back().line_no){
+			m_node_stack_run.pop_back();
+			m_else_jump_stack_run.pop_back();
 		}else{
 			break;
 		}

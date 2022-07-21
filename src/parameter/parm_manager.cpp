@@ -1845,7 +1845,7 @@ bool ParmManager::ReadExCoordConfig(){
 			for(j = 0; j < m_sc_channel_config[i].ex_coord_count; j++){
 				for(k = 0; k < kMaxAxisChn; k++){
 					memset(kname, 0x00, sizeof(kname));
-					sprintf(kname, "ex_offset_%d_%d", j, k);
+					sprintf(kname, "offset_%d_%d", j, k);
 					m_sc_ex_coord_config[i][j].offset[k] = m_ini_ex_coord->GetDoubleValueOrDefault(sname, kname, 0.0);
 				}
 			}

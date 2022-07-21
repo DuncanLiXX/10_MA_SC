@@ -588,11 +588,10 @@ CompilerScene& CompilerScene::operator=( const CompilerScene& c){
 	this->stack_loop = c.stack_loop;
 
 	/***********if else 处理***************/
-	//this->ifelse_vector.clear();
-	ifelse_vector = c.ifelse_vector;
-	meet_else_jump = c.meet_else_jump;
-	stack_else_jump_record = c.stack_else_jump_record;
-	stack_ifelse_node = c.stack_ifelse_node;
+	node_vectors_vector = c.node_vectors_vector;
+	node_stack_run = c.node_stack_run;
+	else_jump_stack_run = c.else_jump_stack_run;
+	else_jump = c.else_jump;
 	/***********if else 处理***************/
 
 #ifdef USES_WOOD_MACHINE

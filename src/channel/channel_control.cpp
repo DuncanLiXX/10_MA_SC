@@ -6722,6 +6722,11 @@ bool ChannelControl::ExecuteLineMsg(RecordMsg *msg, bool flag_block){
 		uint32_t mask = linemsg->GetAxisMoveMask();
 		uint8_t count = linemsg->GetPmcAxisCount(), rc = 0, phy_axis = 0;
 
+		for(int i=0; i<8; i++){
+			printf("%lf--", target.m_df_point[i]);
+		}
+		printf("\n");
+
 
 //		printf("execute line msg: count=%hhu, mask=0x%x, inc=%hhu\n", count, mask, inc);
 		if(count > 0){
@@ -6830,7 +6835,6 @@ bool ChannelControl::ExecuteRapidMsg(RecordMsg *msg, bool flag_block){
 				return false;
 			}
 		}
-
 
 		//处理PMC轴的运动指令，发送至MI
 		DPointChn &target = rapidmsg->GetTargetPos();

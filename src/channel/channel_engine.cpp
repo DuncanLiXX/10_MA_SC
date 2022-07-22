@@ -181,7 +181,6 @@ ChannelEngine::~ChannelEngine() {
 		delete m_p_pmc_reg;
 		m_p_pmc_reg = nullptr;
 	}
-
 }
 
 /**

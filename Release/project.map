@@ -2938,7 +2938,7 @@ LOAD c:/ide/xilinx/sdk/2019.1/gnu/aarch32/nt/gcc-arm-linux-gnueabi/bin/../arm-li
  .text._ZNSt6vectorIN7inifile7IniItemESaIS1_EE17_M_realloc_insertIJRKS1_EEEvN9__gnu_cxx17__normal_iteratorIPS1_S3_EEDpOT_
                 0x00000000000a1fcc      0x5f0 ./src/inifile.o
                 0x00000000000a1fcc                void std::vector<inifile::IniItem, std::allocator<inifile::IniItem> >::_M_realloc_insert<inifile::IniItem const&>(__gnu_cxx::__normal_iterator<inifile::IniItem*, std::vector<inifile::IniItem, std::allocator<inifile::IniItem> > >, inifile::IniItem const&)
- .text          0x00000000000a25bc     0x188c ./src/main.o
+ .text          0x00000000000a25bc     0x1888 ./src/main.o
                 0x00000000000a25bc                ProgramQuit(int)
                 0x00000000000a25d0                InitSysState()
                 0x00000000000a2630                LoadSp6Data()
@@ -2946,22 +2946,23 @@ LOAD c:/ide/xilinx/sdk/2019.1/gnu/aarch32/nt/gcc-arm-linux-gnueabi/bin/../arm-li
                 0x00000000000a3538                LoadMiData()
                 0x00000000000a381c                GetDiskVersion(char*, int)
                 0x00000000000a3914                Initialize()
-                0x00000000000a3c88                Clean()
- .text          0x00000000000a3e48      0xc60 ./src/trace.o
-                0x00000000000a3e48                TraceInfo::TraceInfo()
-                0x00000000000a3e48                TraceInfo::TraceInfo()
-                0x00000000000a4104                TraceInfo::~TraceInfo()
-                0x00000000000a4104                TraceInfo::~TraceInfo()
-                0x00000000000a416c                TraceInfo::GetInstance()
-                0x00000000000a41b8                TraceInfo::GetCurrentTime()
-                0x00000000000a41d8                TraceInfo::ResetFileName(LogFileType)
-                0x00000000000a4394                TraceInfo::PrintLog(LogType, char const*, ...)
-                0x00000000000a4528                TraceInfo::TraceOutput(char const*)
-                0x00000000000a4680                TraceInfo::PrintTrace(TraceLevel, TraceModule, char const*, ...)
-                0x00000000000a4728                TraceInfo::PrintAlarm(ErrorInfo const*)
-                0x00000000000a47fc                TraceInfo::IsAlarmFileExist(unsigned char)
-                0x00000000000a48b4                TraceInfo::GetAlarmFilePath(unsigned char, char*)
-                0x00000000000a496c                TraceInfo::GetAlarmTotalSize()
+                0x00000000000a3c84                Clean()
+ .text          0x00000000000a3e44      0xc60 ./src/trace.o
+                0x00000000000a3e44                TraceInfo::TraceInfo()
+                0x00000000000a3e44                TraceInfo::TraceInfo()
+                0x00000000000a4100                TraceInfo::~TraceInfo()
+                0x00000000000a4100                TraceInfo::~TraceInfo()
+                0x00000000000a4168                TraceInfo::GetInstance()
+                0x00000000000a41b4                TraceInfo::GetCurrentTime()
+                0x00000000000a41d4                TraceInfo::ResetFileName(LogFileType)
+                0x00000000000a4390                TraceInfo::PrintLog(LogType, char const*, ...)
+                0x00000000000a4524                TraceInfo::TraceOutput(char const*)
+                0x00000000000a467c                TraceInfo::PrintTrace(TraceLevel, TraceModule, char const*, ...)
+                0x00000000000a4724                TraceInfo::PrintAlarm(ErrorInfo const*)
+                0x00000000000a47f8                TraceInfo::IsAlarmFileExist(unsigned char)
+                0x00000000000a48b0                TraceInfo::GetAlarmFilePath(unsigned char, char*)
+                0x00000000000a4968                TraceInfo::GetAlarmTotalSize()
+ *fill*         0x00000000000a4aa4        0x4 
  .text          0x00000000000a4aa8     0x15f8 ./src/variable.o
                 0x00000000000a4b84                Variable::~Variable()
                 0x00000000000a4b84                Variable::~Variable()

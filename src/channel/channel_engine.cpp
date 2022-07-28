@@ -4205,12 +4205,12 @@ bool ChannelEngine::SetCurWorkChanl(uint8_t work_chan){
 bool ChannelEngine::SetWorkMode(uint8_t work_mode){
 
 //	int chn_count = this->m_p_general_config->chn_count;
-	
+
 /*	
 	for(int i = 0; i < chn_count; i++){
 		this->m_p_channel_control[i].SetWorkMode(work_mode);
 	}
-*/	
+*/
 
 	if(work_mode != REF_MODE && this->m_b_ret_ref){
 		CreateError(ERR_SWITCH_MODE_IN_RET_REF, WARNING_LEVEL, CLEAR_BY_CLEAR_BUTTON);

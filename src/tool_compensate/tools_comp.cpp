@@ -1186,7 +1186,6 @@ int CompensateTroop::Compensate()
 
 	*/	
 
-    printf(">>>>>>>>>>>>>>>>>>>>>>>>>++++ in compensate()  tool_compensate_state=%d\n",tool_compensate_state);
 //    printf("++++ num=%d \n",num);
 	
 

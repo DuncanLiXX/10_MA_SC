@@ -408,8 +408,10 @@ void AlarmProcessor::ProcessAlarm(ErrorInfo *err){
 		break;
 #endif
 	default:
-		if(err->error_code >=20000 && err->error_code < 20240){ //PMC的A地址提示信息 A0~A29
+		if(err->error_code >=20000 && err->error_code < 20143){ //PMC的A地址提示信息 A0~A29
 
+		}else if(err->error_code >= 20143 && err->error_code < 20400){
+			this->m_p_chn_engine->Stop(false);   //终止加工
 		}else if(err->error_code >=20240 && err->error_code < 20400){ //PMC的A地址告警信息 A30~A49
 
 		}else if(err->error_code >=20400 && err->error_code < 20480){ //PMC的A地址错误信息 A50~A59
@@ -431,6 +433,4 @@ void AlarmProcessor::ProcessAlarm(ErrorInfo *err){
 		break;
 	}
 }
-
-
 

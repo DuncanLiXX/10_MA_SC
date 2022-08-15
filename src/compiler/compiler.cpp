@@ -439,7 +439,9 @@ bool Compiler::SaveScene() {
 
 	printf("save scene2, m_work_mode:%d, scene.work_mode = %d, scene.cur_file_pos=%u\n",
 			m_work_mode, scene.work_mode, (uint32_t)scene.ptr_cur_file_pos);
-
+	for(IfElseOffset node: scene.node_stack_run){
+		printf("node line no: %llu\n", node.line_no);
+	}
 	return true;
 }
 
@@ -536,6 +538,10 @@ bool Compiler::ReloadScene(bool bRecPos) {
 
 	printf("reload scene, m_work_mode:%d, scene.m_work_mode = %d£¬ cur_line = %llu, m_p_cur_file_pos=%u, file=%s\n",
 			m_work_mode, scene.work_mode, this->m_ln_cur_line_no, (uint32_t)this->m_p_cur_file_pos, m_p_file_map_info->str_file_name);
+
+	for(IfElseOffset node: m_node_stack_run){
+		printf("---------------------------------->node line no: %llu\n", node.line_no);
+	}
 
 	return true;
 }

@@ -2342,8 +2342,11 @@ void HMICommunication::ProcessHmiFileOperateCmd(HMICmdRecvNode &cmd_node){
 void HMICommunication::ProcessHmiGetEsbInfoCmd(HMICmdFrame &cmd){
 	cmd.frame_number |= 0x8000;
 	int count = this->GetEsbFileCount(PATH_ESB_FILE);
+
 	if(count == 0){  //没有esb文件
 		//发送回复
+		cmd.data_len = 9;
+		cmd.cmd_extension = 0;
 		this->SendCmd(cmd);
 
 		return;
@@ -2352,6 +2355,8 @@ void HMICommunication::ProcessHmiGetEsbInfoCmd(HMICmdFrame &cmd){
 	DIR *dir = opendir(PATH_ESB_FILE);
 	if(dir == nullptr){
 		//发送回复
+		cmd.data_len = 9;
+		cmd.cmd_extension = 0;
 		this->SendCmd(cmd);
 
 		return;
@@ -4307,7 +4312,6 @@ int HMICommunication::GetNcFileCount(const char *path){
  */
 int HMICommunication::GetEsbFileCount(const char *path){
 	int count = 0;
-
 	DIR *dir = opendir(path);
 	if(dir == nullptr){
 		//创建目录
@@ -4346,7 +4350,6 @@ int HMICommunication::GetEsbFileCount(const char *path){
 	}
 
 	closedir(dir);
-
 	return count;
 }
 

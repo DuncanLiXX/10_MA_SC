@@ -1018,6 +1018,8 @@ int HMICommunication::ProcessHmiCmd(){
 			case CMD_HMI_GET_SYS_INFO:
 				m_p_channel_engine->ProcessHmiCmd(cmd);
 				break;
+			case CMD_SC_NOTIFY_MCODE:
+				break;
 			default:
 				g_ptr_trace->PrintLog(LOG_ALARM, "收到不支持的HMI指令cmd=%d", cmd.cmd);
 				break;

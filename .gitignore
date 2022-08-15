@@ -27,4 +27,4 @@ Debug/
 Release/
 
 #
-.user
+*.user

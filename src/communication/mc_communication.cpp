@@ -324,11 +324,9 @@ void MCCommunication::ReadAxisIntpPos(const uint8_t chn_index, DPoint &cur_pos, 
 
 //	printf("read pos ; %lf, %lf, %lf\n", cur_pos.x, cur_pos.y, cur_pos.z);
 
-
 	if(--m_n_read_status_sem == 0)
 		WriteRegister(MC_STATUS_READ_REQ, 0);  //读取后置0
 }
-
 
 /**
  * @brief 读取通道当前自动数据缓冲数量

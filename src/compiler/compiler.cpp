@@ -1900,13 +1900,11 @@ void Compiler::Reset() {
 		while (m_stack_scene.size() > 0) {
 			this->m_stack_scene.cur(scene);
 			if (scene.n_sub_program != MAIN_PROG) { //子程序场景直接删除
-				printf("m stack scene pop 1\n");
 				m_stack_scene.pop();
-				printf("m stack scene pop 2\n");
+
 			} else {
-				printf("reload scene 1\n");
+
 				this->ReloadScene();   //恢复到主程序现场
-				printf("reload scene 2\n");
 			}
 		}
 
@@ -1962,15 +1960,12 @@ void Compiler::Reset() {
 	m_else_jump_stack_run.clear();
 	m_b_else_jump = false;
 	/********************************/
-
-	printf("Compiler::Reset 4\n");
 }
 
 /**
  * @brief 编译器状态复位
  */
 void Compiler::ResetState() {
-	printf("Compiler::ResetState()\n");
 
 	//m_p_file_map_info->Clear();
 	m_p_file_map_info->ResetFile();

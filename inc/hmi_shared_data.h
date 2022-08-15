@@ -186,6 +186,7 @@ enum HMICmdCode {
 	CMD_HMI_NOTIFY_GRAPH,            //HMI通知SC进入图形模式    0x35
 	CMD_HMI_SYNC_TIME,               //HMI向SC查询当前系统时间  0x36
 	CMD_HMI_CHECK_SYNC_EN,           //HMI向SC查询同步轴状态 0x37
+	CMD_HMI_GET_SYS_INFO,
 
 
 	//SC-->HMI
@@ -213,6 +214,7 @@ enum HMICmdCode {
 	CMD_SC_TOOL_MEASURE_OVER,       //SC通知HMI手动对刀结果  0x79
 	CMD_SC_PARAM_CHANGED,           //SC通知HMI参数发生更改   0x7A
 	CMD_SC_NOTIFY_MACH_OVER,        //SC通知HMI加工完成       0x7B
+	CMD_SC_NOTIFY_MCODE,				//SC通知HMI M代码执行
 
 
 	CMD_HMI_GUARD = 255       //HMI命令字卫兵 0xFF

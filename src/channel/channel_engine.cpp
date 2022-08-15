@@ -2394,6 +2394,24 @@ void ChannelEngine::ProcessHmiCmd(HMICmdFrame &cmd){
 	case CMD_HMI_CHECK_SYNC_EN:           //HMI向SC查询同步轴状态 0x37
 		this->ProcessHmiCheckSyncCmd(cmd);
 		break;
+	case CMD_HMI_GET_SYS_INFO:
+		{FILE *stream;
+		float val;
+		float temp_value;
+		char buf[20] = "";
+		 if ((stream = fopen("/sys/bus/iio/devices/iio:device0/in_temp0_raw", "w+"))== NULL)
+		 {
+			  fprintf(stderr,"Cannot open output file.\n");
+
+		 }
+
+		 fseek(stream, SEEK_SET, 0);
+		 fread(buf, sizeof(char), sizeof(buf), stream);
+		 val=atof(buf);
+		 temp_value=((val * 503.975)/(1<<12) )-273.15;
+		 printf("The cpu temp is %.2f\r\n",temp_value);
+		 fclose(stream);
+		break;}
 	default:
 		g_ptr_trace->PrintTrace(TRACE_WARNING, CHANNEL_ENGINE_SC, "不支持的HMI指令[%d]", cmd.cmd);
 		break;

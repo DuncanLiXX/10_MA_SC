@@ -156,23 +156,16 @@ void DataStack<T>::pop()
 {
     if( m_n_count <= 0 ) return;
 
-    printf("data stack pop 1\n");
-
     T data = m_p_top->rec;
     StackRec<T> *p = m_p_top->down;
     if(p != nullptr)
     	p->up = nullptr;
-    printf("data stack pop a\n");
     DeleteData(std::is_pointer<T>(), data);
-    printf("data stack pop b\n");
     delete m_p_top;
-    printf("data stack pop c\n");
     m_p_top = p;
     m_n_count--;
 
     if( m_n_count == 0 ) m_p_bottom = nullptr;
-
-    printf("data stack pop 2\n");
 }
 
 /**
@@ -202,10 +195,8 @@ void DataStack<T>::pop2()
 template<class T>
 bool DataStack<T>::cur(T &data)
 {
-	printf("data stack cur1 \n");
 	if(m_n_count <= 0) return false;
 	data = m_p_top->rec;
-	printf("data stack cur2 \n");
     return true;
 }
 

@@ -556,6 +556,7 @@ private:
 	bool NotifyHmiToolOffsetChanged(uint8_t h_idx);     //通知HMI刀具偏置参数值发生变更
 	bool NotifyHmiWorkcoordChanged(uint8_t coord_idx);   //通知HMI工件坐标系设置发生变更
 	bool NotifyHmiWorkcoordExChanged(uint8_t coor_idx);  //通知HMI 扩展坐标系设置发生变更
+	bool NotifyHmiMCode(int mcode);
 
 	void DoRestart(uint64_t line_no);     //加工复位执行函数
 	void InitRestartMode();         //初始化加工复位中间模态
@@ -570,6 +571,8 @@ private:
 	void ProcessM29Reset();     //处理M29状态复位流程
 
 	void MiDebugFunc(int mcode);      //发送MI调试指令
+
+
 
 #ifdef USES_TWINING_FUNC
 	void ActiveTwiningFunc(int active);   //开关缠绕功能

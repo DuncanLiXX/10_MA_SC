@@ -544,7 +544,6 @@ void ChannelControl::InitialChannelStatus(){
  */
 void ChannelControl::Reset(){
 
-	printf("control reset aaa\n");
 	this->m_error_code = ERR_NONE;
 
 	if(this->m_thread_breakcontinue > 0){//处于断点继续线程执行过程中，则退出断点继续线程
@@ -5721,6 +5720,8 @@ bool ChannelControl::ExecuteAuxMsg(RecordMsg *msg){
 			continue;       //已执行完成则直接跳过
 
 		mcode = tmp->GetMCode(m_index);
+		NotifyHmiMCode(mcode);
+		printf("mcode ---> %d\n", mcode);
 
 		switch(mcode){
 		case 30:  	//M30
@@ -18229,6 +18230,17 @@ bool ChannelControl::NotifyHmiWorkcoordExChanged(uint8_t coord_idx){
 
 	return this->m_p_hmi_comm->SendCmd(cmd);
 }
+
+bool ChannelControl::NotifyHmiMCode(int mcode){
+	HMICmdFrame cmd;
+	memset((void *)&cmd, 0x00, sizeof(HMICmdFrame));
+	cmd.channel_index = m_n_channel_index;
+	cmd.cmd = CMD_SC_NOTIFY_MCODE;
+	cmd.data_len = sizeof(int);
+	memcpy(&cmd.data, &mcode, sizeof(int));
+
+	return this->m_p_hmi_comm->SendCmd(cmd);
+};
 
 
 

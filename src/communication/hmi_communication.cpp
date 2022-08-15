@@ -450,8 +450,6 @@ int HMICommunication::Clean(){
 	close(m_soc_udp_recv);
 	close(m_soc_udp_send);
 
-
-
 	if(m_list_recv){
 		delete m_list_recv;
 		m_list_recv = nullptr;
@@ -461,14 +459,9 @@ int HMICommunication::Clean(){
 		m_list_send = nullptr;
 	}
 
-
-
-
 	pthread_mutex_destroy(&m_mutex_udp_recv);
 	pthread_mutex_destroy(&m_mutex_udp_send);
 	pthread_mutex_destroy(&m_mutex_tcp_monitor);
-
-
 
 	printf("exit HMICommunication::Clean()!\n");
 
@@ -1021,6 +1014,9 @@ int HMICommunication::ProcessHmiCmd(){
 			case CMD_SC_TOOL_MEASURE_OVER:    //手动对刀结束命令的响应
 			case CMD_SC_PARAM_CHANGED:
 			case CMD_SC_NOTIFY_MACH_OVER:     //加工结束通知消息的响应
+				break;
+			case CMD_HMI_GET_SYS_INFO:
+				m_p_channel_engine->ProcessHmiCmd(cmd);
 				break;
 			default:
 				g_ptr_trace->PrintLog(LOG_ALARM, "收到不支持的HMI指令cmd=%d", cmd.cmd);

@@ -31,6 +31,7 @@ public:
 	bool IsOptStackEmpty(){return m_stack_opt.empty();}   //运算符栈是否为空
 	bool IsMacroFunOpt(const MacroOpt &opt){return (opt>=MACRO_OPT_FIX && opt<=MACRO_OPT_EXP)?true:false;}   //判断运算符opt是否为函数运算符
 	MacroOpt CurTopOpt(){return m_top_opt;}   //返回当前运算符栈的栈顶运算符
+	int CurOptCount(){return m_stack_opt.size();}
 
 private:
 	bool IsDualOpt(MacroOpt opt);  //是否双操作数运算符

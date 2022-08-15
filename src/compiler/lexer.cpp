@@ -526,6 +526,11 @@ bool Lexer::Compile(){
 					m_minus_flag = true;
 					break;
 				}
+				else if(!m_macro_exp.IsOptStackEmpty()  && m_macro_exp.CurTopOpt()==MACRO_OPT_LEFT_BRACKET)
+				{
+					m_minus_flag = true;
+					break;
+				}
 				m_macro_exp.PushOpt(MACRO_OPT_SUB);
 				break;
 			case '=':

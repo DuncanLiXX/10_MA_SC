@@ -25,3 +25,6 @@
 # build files
 Debug/
 Release/
+
+#
+*.user

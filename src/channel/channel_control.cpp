@@ -656,6 +656,11 @@ void ChannelControl::Reset(){
 	m_b_init_compiler_pos = false;  //编译器初始位置需要重新初始化
 	m_b_need_change_to_pause = false;
 	this->m_p_compiler->Reset();
+
+	char file_name[128];
+	memset(file_name, 0x0, 128);
+	m_p_compiler->GetCurNcFile(file_name);
+	this->SendOpenFileCmdToHmi(file_name);
 	this->m_macro_variable.Reset();   //宏变量复位
 	this->m_scene_auto.need_reload_flag = false;   //取消断点继续标志
 
@@ -3659,8 +3664,6 @@ bool ChannelControl::SendOpenFileCmdToHmi(char *filename){
 	cmd.cmd_extension = 0;
 	strcpy(cmd.data, filename);
 	cmd.data_len = strlen(cmd.data);
-
-	//printf("------------------------ hmi open file cmd : %s\n", filename);
 
 	return this->m_p_hmi_comm->SendCmd(cmd);
 }

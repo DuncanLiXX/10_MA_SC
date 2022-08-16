@@ -1839,7 +1839,7 @@ void Compiler::SetMode(CompilerWorkMode mode) {
 /**
  * @brief 编译器整体复位，停止编译，恢复初始状态
  */
-void Compiler::Reset() {
+void Compiler::Reset(){
 
 	printf("compiler reset !!!\n");
 
@@ -1868,24 +1868,13 @@ void Compiler::Reset() {
 				scene.compiler_status.mode.Reset();
 				scene.file_state = FILE_HEAD;
 				scene.head_state = HEAD_INFO;
-//				scene.list_label.Clear();
-//				scene.list_loop.Clear();
-//				scene.list_subprog.Clear();
+
 				scene.ln_cur_line_no = 1;
 				scene.ln_read_size = 0;
 				scene.n_sub_call_times = 0;
 				scene.p_last_move_msg = nullptr;
 				scene.ptr_cur_file_pos = nullptr;
 				scene.stack_loop.empty();
-
-				/*scene.list_ifelse.Clear();
-				for(int i=0; i<scene.if_index_len; i++){
-					scene.ifelse_record[i].Clear();
-				}
-				scene.if_index_cur = -1;
-				scene.if_index_len = 0;
-				scene.stack_if_record.empty();*/
-
 
 				m_stack_scene.push(scene);
 				printf("reset compiler stack:%d\n", m_stack_scene.size());
@@ -1947,14 +1936,6 @@ void Compiler::Reset() {
 
 	/********************************/
 
-	//编译过程中记录
-	//m_p_list_ifelse = nullptr;
-	//m_ifelse_vector.clear();
-	//if_index_cur=-1, if_index_len=0;
-	//m_else_count = 0;
-	//m_stack_if_record.empty();
-	//m_stack_else_count.empty();
-
 	// 复位运行时记录
 	m_node_stack_run.clear();
 	m_else_jump_stack_run.clear();
@@ -1969,7 +1950,6 @@ void Compiler::ResetState() {
 
 	//m_p_file_map_info->Clear();
 	m_p_file_map_info->ResetFile();
-
 	m_n_sub_program = MAIN_PROG;
 //	this->m_n_thread_state = IDLE;
 	this->m_compiler_status.mode.Reset();

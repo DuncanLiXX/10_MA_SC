@@ -812,7 +812,6 @@ bool PmcRegister::SetRegBitValue(PmcRegSection sec, uint16_t index, uint8_t bit,
 		}
 //		printf("SetRegBitValue, F[%hu]=0x%hhx\n", index, m_f_reg.all[index]);
 	}
-
 	return true;
 }
 

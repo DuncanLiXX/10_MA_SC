@@ -1823,9 +1823,10 @@ bool Parser::CreateModeMsg(const int gcode){
 	if(this->m_p_compiler_status->jump_flag)
 		new_msg->SetFlag(FLAG_JUMP, true);
 
-	if(ChannelEngine::GetInstance()->GetChnControl(m_n_channel_index)->IsStepMode())
-		new_msg->SetFlag(FLAG_WAIT_MOVE_OVER, true);
-
+	//if(ChannelEngine::GetInstance()->GetChnControl(m_n_channel_index)->IsStepMode())
+	//	new_msg->SetFlag(FLAG_WAIT_MOVE_OVER, true);
+	//@ 解决 G90  G01 xxx G91  中间的运动指令执行不了 G91指令等待运动结束 导致程序卡死问题
+	new_msg->SetFlag(FLAG_WAIT_MOVE_OVER, true);
 //	if(gcode == G90_CMD || gcode == G91_CMD || gcode == G20_CMD || gcode == G21_CMD){
 //		m_p_compiler_status->mode.gmode[GetModeGroup(gcode)] = gcode;   //G91/G90可能与轴移动指令同行，必须提前动作
 //	}

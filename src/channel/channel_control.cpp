@@ -412,7 +412,6 @@ bool ChannelControl::Initialize(uint8_t chn_index, ChannelEngine *engine, HMICom
 		goto END;
 	}
 
-
 	//默认打开文件
 	if(strlen(m_channel_status.cur_nc_file_name) > 0){
 		strcpy(path, PATH_NC_FILE);
@@ -1389,7 +1388,6 @@ bool ChannelControl::SetSysVarValue(const int index, const double &value){
 				HmiCoordConfig cfg;
 				memcpy(&cfg, &this->m_p_chn_ex_coord_config[coord], sizeof(HmiCoordConfig));
 				g_ptr_parm_manager->UpdateExCoordConfig(m_n_channel_index, coord, cfg, true);
-				printf("-----------------------> NotifyHmiWorkcoordExChanged\n");
 				this->NotifyHmiWorkcoordExChanged(coord);
 				if(this->m_channel_status.gmode[14] == (G5401_CMD+10*coord))
 					this->SetMcCoord(true);
@@ -1621,7 +1619,6 @@ void ChannelControl::StartRunGCode(){
 		state = MS_MACHIN_SIMULATING;
 
 	if(this->m_n_restart_mode != NOT_RESTART){  //加工复位
-		printf("----------------------------------------- reset!!!\n\n");
 		this->m_p_compiler->SetRestartPara(m_n_restart_line, m_n_restart_mode);  //设置编译器加工复位参数
 		this->InitRestartMode();
 		this->SendMessageToHmi(MSG_TIPS, MSG_ID_RESTARTING);   //发送HMI的提示信息
@@ -2349,7 +2346,6 @@ void ChannelControl::SendSimulateDataToHmi(MonitorDataType type, SimulateData &d
 	}else{
 		g_ptr_trace->PrintTrace(TRACE_WARNING, CHANNEL_CONTROL_SC, "仿真数据文件句柄为空！");
 	}
-
 #else
 
 	uint8_t data_type = type;
@@ -2363,7 +2359,6 @@ void ChannelControl::SendSimulateDataToHmi(MonitorDataType type, SimulateData &d
 	memcpy(buffer+1, &chn_index, 1);
 	memcpy(buffer+2, &data_len, 2);
 	memcpy(buffer+4, &data, data_len);
-
 
 	this->m_p_hmi_comm->SendMonitorData(buffer, buf_len);
 #endif
@@ -2458,7 +2453,6 @@ void ChannelControl::ProcessHmiGetMacroVarCmd(HMICmdFrame &cmd){
 		return;
 	}
 
-
 	memcpy(&start_index, &cmd.data[0], 4);
 	memcpy(&count, &cmd.data[4], 1);
 
@@ -2529,7 +2523,6 @@ void ChannelControl::ProcessHmiSetMacroVarCmd(HMICmdFrame &cmd){
 	cmd.cmd_extension = SUCCEED;
 
 	this->m_p_hmi_comm->SendCmd(cmd);
-
 }
 
 /**
@@ -4074,6 +4067,7 @@ int ChannelControl::Run(){
 	{
 		if(m_n_run_thread_state == RUN)
 		{
+			//printf("m_n_run_thread_state = RUN\n");
 			pthread_mutex_lock(&m_mutex_change_state);
 //			if(this->m_ln_cur_line_no%10000 == 1)
 //				gettimeofday(&tvStart, NULL);
@@ -4123,6 +4117,7 @@ int ChannelControl::Run(){
 								m_n_run_thread_state = ERROR; //编译出错
 							}else{  //执行未成功，转换为WAIT_EXECUTE状态
 								usleep(10000);   //休眠10ms
+
 							}
 						}
 					}
@@ -4182,6 +4177,7 @@ int ChannelControl::Run(){
 		else if(m_n_run_thread_state == STOP)
 		{
 			//TODO 编译结束，复位编译器状态及变量
+
 			m_n_run_thread_state = IDLE;
 
 			g_ptr_trace->PrintTrace(TRACE_INFO, CHANNEL_CONTROL_SC, "Compiler run STOP!!!!!\n");
@@ -4190,6 +4186,8 @@ int ChannelControl::Run(){
 			usleep(2000);
 		}
 		else if(m_n_run_thread_state == WAIT_EXECUTE){
+			//printf("m_n_run_thread_state = WAIT_EXECUTE\n");
+
 			pthread_mutex_lock(&m_mutex_change_state);
 			bf = ExecuteMessage();
 			pthread_mutex_unlock(&m_mutex_change_state);
@@ -4198,8 +4196,10 @@ int ChannelControl::Run(){
 					g_ptr_trace->PrintTrace(TRACE_WARNING, CHANNEL_CONTROL_SC, "execute message error4, %d\n", m_error_code);
 					m_n_run_thread_state = ERROR; //编译出错
 				}
-				else
+				else{
 					usleep(10000);
+				}
+
 			}
 		}
 		else if(m_n_run_thread_state == WAIT_RUN){
@@ -5304,7 +5304,7 @@ bool ChannelControl::ExecuteMessage(){
 		static uint64_t line_no = 0;
 		if(line_no != msg->GetLineNo()){
 			line_no = msg->GetLineNo();
-			printf("excute message line no -------> %llu\n", line_no);
+			printf("excute message msg type: %d line no -------> %llu\n", msg_type, line_no);
 		}
 
 		switch(msg_type){
@@ -5724,7 +5724,6 @@ bool ChannelControl::ExecuteAuxMsg(RecordMsg *msg){
 
 		mcode = tmp->GetMCode(m_index);
 		NotifyHmiMCode(mcode);
-		printf("mcode ---> %d\n", mcode);
 
 		switch(mcode){
 		case 30:  	//M30
@@ -7360,7 +7359,6 @@ bool ChannelControl::ExecuteModeMsg(RecordMsg *msg){
 //			return false;
 //		}
 //	}
-
 	ModeMsg *modemsg = (ModeMsg *)msg;
 
 	if(this->m_n_restart_mode != NOT_RESTART &&
@@ -7378,7 +7376,6 @@ bool ChannelControl::ExecuteModeMsg(RecordMsg *msg){
 	if(m_simulate_mode == SIM_OUTLINE && m_simulate_mode == SIM_TOOLPATH){  //轮廓仿真，刀路仿真
 		//设置当前行号
 		SetCurLineNo(msg->GetLineNo());
-
 		return true;
 	}
 
@@ -7387,7 +7384,6 @@ bool ChannelControl::ExecuteModeMsg(RecordMsg *msg){
 		if(this->ReadMcMoveDataCount() > 0 || !this->CheckBlockOverFlag() ||														   
 				m_channel_status.machining_state == MS_PAUSED ||
 				m_channel_status.machining_state == MS_WARNING){
-//			printf("ExecuteModeMsg: step=%d, %d, c = %d\n", m_channel_mc_status.step_over,m_channel_mc_status.auto_block_over, count);
 			return false;    //还未运行到位
 		}
 		else{

@@ -3745,7 +3745,7 @@ void ChannelEngine::ProcessHmiSetPmcReg(HMICmdFrame &cmd){
 				printf("failed to set pmc register bit value\n");
 				cmd.cmd_extension = FAILED;
 			}
-			printf("set pmc reg bit: sec = %hu, index = %hu, bit = %hhu, count = %hhu, value = %u\n", reg_sec, reg_index, bit_index, bit_count, bit_value32);
+			printf("set pmc2.0 reg bit: sec = %hu, index = %hu, bit = %hhu, count = %hhu, value = %u\n", reg_sec, reg_index, bit_index, bit_count, bit_value32);
 		}
 
 		break;
@@ -5399,9 +5399,8 @@ bool ChannelEngine::CheckAxisHardLimit(uint8_t phy_axis, int8_t dir){
 		if(this->m_hard_limit_negative & (0x01<<phy_axis))
 			return true;
 	}else
-		return true;
-
-	return false;
+		//return true;
+		return false;
 }
 
 /**
@@ -6903,7 +6902,6 @@ void ChannelEngine::SendMiPcData(uint8_t axis){
 
 		this->m_p_mi_comm->WriteCmd(cmd);
 	}
-
 }
 
 /**
@@ -8630,7 +8628,6 @@ bool ChannelEngine::SetPmcRegBitValue_8(uint16_t reg_sec, uint16_t reg_index, ui
 	}
 
 	res = this->m_p_pmc_reg->SetRegValue(static_cast<PmcRegSection>(reg_sec), reg_index, data);
-
 	return res;
 }
 

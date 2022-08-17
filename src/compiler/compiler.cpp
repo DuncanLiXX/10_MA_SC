@@ -2037,7 +2037,6 @@ bool Compiler::GetLineData() {
 	memset(m_line_buf, 0x00, static_cast<size_t>(kMaxLineSize));
 
 	if (m_b_eof || m_p_file_map_info->ln_file_size == 0) {
-		printf("eof 1111\n");
 		m_b_eof = true;
 		if(this->m_work_mode == MDA_COMPILER){  //MDA模式下，到文件尾结束编译
 			strcpy(m_line_buf, "M30");

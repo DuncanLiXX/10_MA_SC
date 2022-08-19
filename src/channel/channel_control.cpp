@@ -2441,6 +2441,7 @@ void ChannelControl::ProcessHmiFindRefCmd(HMICmdFrame &cmd){
  * @param cmd
  */
 void ChannelControl::ProcessHmiGetMacroVarCmd(HMICmdFrame &cmd){
+
 	cmd.frame_number |= 0x8000;   //设置回复标志
 
 	uint32_t start_index = 0;   //起始编号
@@ -2457,6 +2458,8 @@ void ChannelControl::ProcessHmiGetMacroVarCmd(HMICmdFrame &cmd){
 	memcpy(&count, &cmd.data[4], 1);
 
 	//拷贝数据
+	//printf("start_index: %d count: %d\n", start_index, count);
+
 	int len = this->m_macro_variable.CopyVar(&cmd.data[cmd.data_len], 1000, start_index, count);
 	if(0 == len){
 		cmd.cmd_extension = FAILED;
@@ -10359,7 +10362,7 @@ void ChannelControl::ManualMove2(uint8_t axis, int8_t dir, double vel, double in
 	uint8_t phy_axis = this->GetPhyAxis(axis);
 	if(phy_axis != 0xff){
 		if(m_p_channel_engine->CheckAxisHardLimit(phy_axis, dir)){   //硬限位告警，直接返回
-			printf("hard limit active, manual move return \n");
+			printf("hard limit active, manual move return 1 \n");
 			return;
 		}
 	}
@@ -10448,7 +10451,7 @@ void ChannelControl::ManualMove(int8_t dir){
 	uint8_t phy_axis = this->GetPhyAxis(m_channel_status.cur_axis);
 	if(phy_axis != 0xff){
 		if(m_p_channel_engine->CheckAxisHardLimit(phy_axis, dir)){   //硬限位告警，直接返回
-			printf("hard limit active, manual move return \n");
+			printf("hard limit active, manual move return 2 \n");
 			return;
 		}
 	}

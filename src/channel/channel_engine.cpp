@@ -4882,7 +4882,7 @@ void ChannelEngine::ManualMoveAbs(uint8_t phy_axis, double vel, double pos){
 void ChannelEngine::ManualMove(uint8_t phy_axis, int8_t dir, double vel, double inc_dis){
 	//检查硬限位
 	if(CheckAxisHardLimit(phy_axis, dir)){   //硬限位告警，直接返回
-		printf("hard limit active, manual move return \n");
+		printf("hard limit active, manual move return 3 \n");
 		return;
 	}
 
@@ -5398,9 +5398,11 @@ bool ChannelEngine::CheckAxisHardLimit(uint8_t phy_axis, int8_t dir){
 	}else if(dir == DIR_NEGATIVE){
 		if(this->m_hard_limit_negative & (0x01<<phy_axis))
 			return true;
-	}else
-		//return true;
-		return false;
+	}else{
+		return true;
+	}
+
+	return false;
 }
 
 /**

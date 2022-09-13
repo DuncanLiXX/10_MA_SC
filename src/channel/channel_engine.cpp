@@ -2300,7 +2300,8 @@ void ChannelEngine::ProcessHmiCmd(HMICmdFrame &cmd){
 		else
 			g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "命令[%d]通道号非法！%d", cmd.cmd, cmd.channel_index);
 		break;
-	case CMD_HMI_CLEAR_WORKPIECE:      //HMI请求SC将加工计数清零
+    case CMD_HMI_CLEAR_WORKPIECE:      //HMI请求SC将加工计数清零,临时计数(区分白夜班)
+    case CMD_HMI_CLEAR_TOTAL_PIECE:    //总共计数清零
 		if(cmd.channel_index < this->m_p_general_config->chn_count)
 			m_p_channel_control[cmd.channel_index].ProcessHmiCmd(cmd);
 		else if(cmd.channel_index == CHANNEL_ENGINE_INDEX){

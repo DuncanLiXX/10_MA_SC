@@ -966,7 +966,8 @@ int HMICommunication::ProcessHmiCmd(){
 			case CMD_HMI_SET_MACRO_VAR:        //HMI向SC设置宏变量寄存器的值
 			case CMD_HMI_SET_CALIBRATION:     //HMI向SC发出调高器标定指令 32
 			case CMD_HMI_AXIS_MANUAL_MOVE:     //HMI指令SC轴移动指令
-			case CMD_HMI_CLEAR_WORKPIECE:      //HMI请求SC将加工计数清零
+            case CMD_HMI_CLEAR_WORKPIECE:      //HMI请求SC将加工计数清零,临时计数(区分白夜班)
+            case CMD_HMI_CLEAR_TOTAL_PIECE:    //HMI请求SC将总共件数
 			case CMD_HMI_GET_LIC_INFO:            //HMI向SC请求授权信息   0x27
 			case CMD_HMI_SEND_LICENSE:            //HMI向SC发送授权码     0x28
 			case CMD_HMI_MANUAL_TOOL_MEASURE:     //HMI向SC发起手动对刀操作  0x29

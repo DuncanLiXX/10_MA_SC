@@ -29,6 +29,8 @@ const unsigned char McModeFlag[kMaxGModeCount] = {0, 0, 1, 1, 0, 1, 0, 1, 0, 1, 
 struct ChannelStatusCollect{
 	double rated_manual_speed; 			//手动速度，单位：mm/s
 	uint32_t workpiece_count;       	//工件计数，最大99999999
+    uint32_t workpiece_count_total;     //总共件数
+    uint32_t machinetime_total;         //累计加工时间
 	Mask32 func_state_flags;        	//系统功能状态标志，包括单段、跳段、选停、空运行、手轮跟踪、机床锁，辅助锁
 	int32_t rated_spindle_speed;           	//用户设定主轴转速，单位：转/分
 	uint32_t rated_feed; 				//用户设定进给速度，单位：um/s
@@ -70,6 +72,7 @@ struct ChannelRealtimeStatus{
 	uint32_t cur_feed; 					  //当前进给速度，单位：um/s
 	uint32_t machining_time; 				//加工时间，单位：秒
 	uint32_t machining_time_remains; 		//剩余加工时间，单位：秒
+    uint32_t machining_time_total;          //累计加工时间，单位：秒
 	uint32_t line_no;						//当前行号
 	
 #ifdef USES_SPEED_TORQUE_CTRL

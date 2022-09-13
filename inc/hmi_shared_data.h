@@ -142,7 +142,7 @@ enum HMICmdCode {
 	CMD_HMI_DISCONNECT,             //HMI关闭连接 5
 	CMD_HMI_SET_PARA,               //HMI参数设置命令 6
 	CMD_HMI_GET_PARA,               //HMI获取参数命令 7
-	CMD_HMI_CLEAR_WORKPIECE,        //HMI请求清空加工计数 8
+    CMD_HMI_CLEAR_WORKPIECE,        //HMI请求清空加工计数,临时计数(区分白夜班) 8
 	CMD_HMI_SET_CUR_CHANNEL,	    //HMI设置当前通道号 9
 	CMD_HMI_NEW_ALARM,              //HMI产生新的告警 10
 	CMD_HMI_RESTART,                //加工复位 11
@@ -166,6 +166,8 @@ enum HMICmdCode {
 	CMD_HMI_SET_REF_POINT,			 //HMI通知SC将当前位置设置为当前轴的原点
 	CMD_HMI_GET_MACRO_VAR,			 //HMI向SC请求宏变量的值
 	CMD_HMI_SET_MACRO_VAR,			 //HMI向SC设置宏变量寄存器的值
+    CMD_HMI_CLEAR_TOTAL_PIECE,       //HMI请求清空总共件数
+
 //	CMD_HMI_SET_CUR_PMC_AXIS,        //HMI设置当前PMC轴  0x20
 	CMD_HMI_SET_CALIBRATION = 35,	 //HMI向SC发出激光调高器标定指令  0x23
 	CMD_HMI_AXIS_MANUAL_MOVE = 37,   //HMI指令SC的某轴进行手动移动   0x25
@@ -898,6 +900,7 @@ struct HmiChannelRealtimeStatus {
 	uint32_t cur_feed; 						//当前进给速度，单位：um/s
 	uint32_t machining_time; 				//加工时间，单位：秒
 	uint32_t machining_time_remains; 		//剩余加工时间，单位：秒
+    uint32_t machining_time_total;          //累计加工时间，单位：秒
 	uint32_t line_no;						//当前行号
 
 //#ifdef USES_SPEED_TORQUE_CTRL
@@ -914,6 +917,7 @@ struct HmiChannelRealtimeStatus {
 struct HmiChannelStatus{
 	double rated_manual_speed; 		//手动速度，单位：mm/s
 	uint32_t workpiece_count;       //工件计数，最大99999999
+    uint32_t workpiece_count_total; //总共件数
 	Mask32 func_state_flags;        //系统功能状态标志，包括单段、跳段、选停、空运行、手轮跟踪、机床锁，辅助锁
 	int32_t rated_spindle_speed;    //用户设定主轴转速，单位：转/分钟
 	uint32_t rated_feed; 					//用户设定进给速度，单位：um/s

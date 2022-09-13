@@ -99,6 +99,10 @@ public:
 	void SetCurNcFile(uint8_t chn_index, char *file);		//设置指定通道当前打开的NC文件名称
 	void SetCurWorkPiece(uint8_t chn_index, uint32_t piece);   //设置指定通道的当前工件计数
 	uint32_t GetCurWorkPiece(uint8_t chn_index);          //获取指定通道的当前工件计数
+    void SetCurTotalMachiningTime(uint8_t chn_index, uint32_t totalTime);//设置指定通道的累计加工时间
+    uint32_t GetTotalWorkPiece(uint8_t chn_index); //获取指定通道的总共件数
+    void SetTotalWorkPiece(uint8_t chn_index, uint32_t piece); //设置指定通道的总共件数
+    uint32_t GetCurTotalMachingTime(uint8_t chn_index);    //获取指定通道的累计加工时间
 	uint8_t GetCurTool(uint8_t chn_index);                 //获取指定通道的当前刀号
 	void SetCurTool(uint8_t chn_index, uint8_t tool);     //设置指定通道的当前刀号
 	uint8_t GetCurProcParamIndex(uint8_t chn_index);    //获取指定通道的当前工艺参数号

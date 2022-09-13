@@ -106,6 +106,7 @@ int CircularBuffer<T>::WriteData(const T* data, int data_length) {
 		//如果缓冲区中已经不够将所有数据写入，则此次不写入任何数据，否则会造成命令数据包不完整
 	//	write_length = 0;
 		goto END;
+
 	}
 
 	tmp = write_length;

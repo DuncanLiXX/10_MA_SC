@@ -552,7 +552,7 @@ void ChannelControl::Reset(){
 
 	if(this->m_channel_status.machining_state == MS_RUNNING){   //运行中进行复位操作
 		this->StopRunGCode(false);
-		this->m_b_delay_to_reset = true;
+        this->m_b_delay_to_reset = true;
 	}else if(this->m_n_run_thread_state != IDLE){  //编译线程运行状态，先停止
 		this->StopCompilerRun();
 	}
@@ -2185,7 +2185,17 @@ void ChannelControl::RefreshAxisIntpPos(){
 			continue;
 		}
 		m_channel_rt_status.cur_pos_work.m_df_point[i] = m_channel_mc_status.intp_pos.GetAxisValue(count);
-		m_channel_rt_status.tar_pos_work.m_df_point[i] = m_channel_mc_status.intp_tar_pos.GetAxisValue(count);
+        // m_channel_rt_status.tar_pos_work.m_df_point[i] = m_channel_mc_status.intp_tar_pos.GetAxisValue(count);
+
+        // 暂停或准备状态，将目标位置的值改为当前位置
+        // 备注：这么改是为了解决复位/暂停后还保留余移动量的问题
+        // 后面如果MC解决该问题，再改回去
+        if(m_channel_status.machining_state == MS_READY)
+        {
+            m_channel_rt_status.tar_pos_work.m_df_point[i] = m_channel_rt_status.cur_pos_work.m_df_point[i];
+        }else{
+            m_channel_rt_status.tar_pos_work.m_df_point[i] = m_channel_mc_status.intp_tar_pos.GetAxisValue(count);
+        }
 		count++;
 	}
 }
@@ -3727,6 +3737,14 @@ void ChannelControl::SetWorkMode(uint8_t work_mode){
 //		mc_work_mode = 2;
 
 	static bool bSaveAutoScene = true;   //是否保存自动模式状态
+
+    // 解决运行中直接切换模式，导致的从新恢复自动时，导致的轴运动不正常的问题
+    if(m_channel_status.chn_work_mode == AUTO_MODE &&
+            m_channel_status.machining_state == MS_RUNNING)
+    {
+        this->Pause();
+        usleep(200000);
+    }
 
 	//处理当前模式的退出动作
 	switch(m_channel_status.chn_work_mode){
@@ -15690,7 +15708,7 @@ int ChannelControl::BreakContinueProcess(){
 			m_n_breakcontinue_segment = 50;
 			printf("goto step 50\n");
 			break;
-		case 50:	//回到断点位置，首先Z轴移动到安全高度
+        case 50:	//回到断点位置，首先Z轴移动到安全高度(如果没有其他轴需要移动，则不需要到安全高度)
 			if(this->m_channel_rt_status.cur_pos_machine == m_scene_auto.cur_pos_machine){
 				m_n_breakcontinue_segment = 0;
 				printf("axis not move !!!!\n");
@@ -15706,7 +15724,8 @@ int ChannelControl::BreakContinueProcess(){
 			if(phy_axis > 0){  //
 				safe_pos = m_p_axis_config[phy_axis-1].axis_home_pos[1];
 			}
-			if(m_channel_rt_status.cur_pos_machine.GetAxisValue(chn_axis_z)< safe_pos)  //当Z轴低于安全高度时，先抬到安全高度
+
+            if(m_channel_rt_status.cur_pos_machine.GetAxisValue(chn_axis_z)< safe_pos)  //当Z轴低于安全高度时，先抬到安全高度
 				this->ManualMove(chn_axis_z, safe_pos, 2000);		//TODO 使用机械坐标系
 			else{
 				m_n_breakcontinue_segment = 60;

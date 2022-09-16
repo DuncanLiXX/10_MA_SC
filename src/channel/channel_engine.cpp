@@ -111,7 +111,7 @@ ChannelEngine::ChannelEngine() {
 /**
  * @brief 析构函数
  */
-ChannelEngine::~ChannelEngine() {
+ChannelEngine::~ChannelEngine(){
 	// TODO Auto-generated destructor stub
 
 	void* thread_result;
@@ -3822,6 +3822,13 @@ void ChannelEngine::ProcessHmiSetPmcReg(HMICmdFrame &cmd){
 				cmd.cmd_extension = FAILED;
 			}
 			printf("set pmc reg bit: sec = %hu, index = %hu, bit = %hhu, count = %hhu, value = %u\n", reg_sec, reg_index, bit_index, bit_count, bit_value32);
+
+			// @test zk
+			if(reg_sec == 2 and reg_index == 82 and bit_index == 1 and bit_value32 == 1){
+				printf("冷却！！！\n");
+				this->m_p_channel_control[0].test();
+			}
+			// @test zk
 		}
 		break;
 #ifndef USES_PMC_2_0
@@ -4983,7 +4990,7 @@ void ChannelEngine::ManualMoveAbs(uint8_t phy_axis, double vel, double pos){
 void ChannelEngine::ManualMove(uint8_t phy_axis, int8_t dir, double vel, double inc_dis){
 	//检查硬限位
 	if(CheckAxisHardLimit(phy_axis, dir)){   //硬限位告警，直接返回
-		printf("hard limit active, manual move return \n");
+		printf("hard limit active, manual move return 3 \n");
 		return;
 	}
 
@@ -5499,9 +5506,11 @@ bool ChannelEngine::CheckAxisHardLimit(uint8_t phy_axis, int8_t dir){
 	}else if(dir == DIR_NEGATIVE){
 		if(this->m_hard_limit_negative & (0x01<<phy_axis))
 			return true;
-	}else
-		//return true;
-		return false;
+	}else{
+		return true;
+	}
+
+	return false;
 }
 
 /**
@@ -8433,8 +8442,6 @@ void ChannelEngine::ProcessPmcSignal(){
 
 	//处理PMC的告警，即A地址寄存器
 	this->ProcessPmcAlarm();
-	
-	
 	
 }
 

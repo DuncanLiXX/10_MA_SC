@@ -659,6 +659,7 @@ bool Parser::AnalyzeGCode(LexerGCode *gcode){
 
 
 
+	// 保存之前的模态处理
 	if(!has_move_code && !user_defined_code){//有轴位置指令，但是无轴移动指令和自定义G指令
 	//	printf("no move cmd!\n");
 		if(HasAxisPos()){
@@ -2309,7 +2310,7 @@ bool Parser::CreateArcMsg(const int gcode){
 //		m_error_code = ERR_COMPILER_INTER;
 //		return false;
 //	}
-
+    double i_number = 0, j_number = 0, r_number = 0;
 	//TODO 检查参数
 	DPointChn source = this->m_p_compiler_status->cur_pos;   //起点坐标
 	DPointChn target, center;  //终点坐标，圆心坐标
@@ -2335,11 +2336,11 @@ bool Parser::CreateArcMsg(const int gcode){
 		if((g_code->mask_dot & (0x01<<R_DATA)) == 0){
 			radius /= 1000.;   //省略小数点则以um为单位
 		}
-		if(radius < 0 )
-			major_flag = -1; 	//优弧
+		if(radius < 0 ) major_flag = -1; 	//优弧
 
-		radius = fabs(radius);
+		r_number = radius;
 
+        radius = fabs(radius);
 
 		//计算圆心坐标
 		if(!CalArcCenter(source, target, radius, major_flag*dir_flag, center)){
@@ -2355,12 +2356,14 @@ bool Parser::CreateArcMsg(const int gcode){
 				i /= 1000.;   //省略小数点则以um为单位
 			}
 			has_data = true;
+			i_number = i;
 		}
 		if(GetCodeData(J_DATA, j)){//读取I参数
 			if((g_code->mask_dot & (0x01<<J_DATA)) == 0){
 				j /= 1000.;   //省略小数点则以um为单位
 			}
 			has_data = true;
+            j_number = j;
 		}
 		if(GetCodeData(K_DATA, k)){//读取I参数
 			if((g_code->mask_dot & (0x01<<K_DATA)) == 0){
@@ -2424,14 +2427,20 @@ bool Parser::CreateArcMsg(const int gcode){
 
 	}
 
-
 	RecordMsg *new_msg = new ArcMsg(gcode, source, target, center, radius, m_p_compiler_status->mode.f_mode, axis_mask,
 			dir_flag, major_flag, circle_flag);
+
 	if(new_msg == nullptr){
 		//TODO 内存分配失败，告警
 		CreateError(ERR_MEMORY_NEW, FATAL_LEVEL, CLEAR_BY_RESET_POWER);
 		return false;
 	}
+
+    ArcMsg * msg = (ArcMsg *) new_msg;
+    msg->setI(i_number);
+    msg->setJ(j_number);
+    msg->setR(r_number);
+
 	new_msg->SetLineNo(this->m_p_lexer_result->line_no);  //设置当前行号
 	((ArcMsg *)new_msg)->SetPlaneMode(m_p_compiler_status->mode.gmode[2]);   //设置平面模态
 
@@ -2911,8 +2920,6 @@ bool Parser::CreateSpeedCtrlMsg(const int gcode){
 	ProcessLastBlockRec(new_msg);
 
 	this->m_p_compiler_status->mode.gmode[0] = gcode;
-
-
 
 	return true;
 }

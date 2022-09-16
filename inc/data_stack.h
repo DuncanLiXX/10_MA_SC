@@ -130,8 +130,6 @@ bool DataStack<T>::pop(T &data)
 {
 	if( m_n_count <= 0 ) return false;
 
-	printf("data stack pop&data 1\n");
-
     data = m_p_top->rec;
     StackRec<T> *p = m_p_top->down;
     if(p != nullptr)
@@ -141,8 +139,6 @@ bool DataStack<T>::pop(T &data)
     m_n_count--;
 
     if( m_n_count == 0 ) m_p_bottom = nullptr;
-
-    printf("data stack pop&data 2\n");
 
     return true;
 }

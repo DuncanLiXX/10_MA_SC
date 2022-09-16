@@ -210,6 +210,12 @@ bool MCCommunication::CanWriteGCode(uint8_t chn){
 	return true;
 }
 
+// @tset zk
+void MCCommunication::test(int16_t frame_index){
+
+
+}
+
 /**
  * @brief 写入G代码编译出的运动控制数据
  * @param chn : 通道索引号，0开始
@@ -602,6 +608,7 @@ bool MCCommunication::ReadAutoBlockRunOverFlag(const uint8_t chn_index){
 	if((value & 0xFFFF0000) & (0x00010000<<chn_index))
 		flag = true;
 
+	//printf("ReadAutoBlockRunOverFlag ---> %d\n", flag);
 	return flag;
 }
 
@@ -626,6 +633,8 @@ bool MCCommunication::ReadMdaBlockRunOverFlag(const uint8_t chn_index){
 	if((value & 0x0000FFFF) & (0x0001<<chn_index))
 		flag = true;
 
+	// @test
+	//printf("ReadMdaBlockRunOverFlag ---> %d\n", flag);
 	return flag;
 }
 
@@ -669,6 +678,7 @@ bool MCCommunication::ReadStepRunOverFlag(const uint8_t chn_index){
 	if((value & 0x0000FFFF) & (0x0001<<chn_index))
 		flag = true;
 
+	//printf("ReadStepRunOverFlag ---> %d\n", flag);
 	return flag;
 }
 
@@ -693,7 +703,9 @@ void MCCommunication::CalMcGCodeFrameCrc(GCodeFrame &data){
 	uint16_t crc = 0xFFFF;
 	int count = kMaxGCodeDataCount*2;
 	for(int i = 1; i < count; i++) //不包括CRC字段本身
+	{
 		crc ^= data.data_crc[i];
+	}
 
 	data.data.crc = crc;
 //	printf("GCode CRC : 0x%X\n", data.data.crc);
@@ -766,7 +778,7 @@ bool MCCommunication::WriteCmd(McCmdFrame &data, bool resend){
 	}
 
 	WriteRegister(MC_CMD_DOWN_WRITE_OVER, 0);  //写入前置零
-
+	//printf("--------> sc -> mc cmd no: %04x--%d\n", data.data.cmd, data.data.data[0]);
 	//发送数据
 	WriteRegister(MC_CMD_DOWN_DATA0, data.data_w[0]);
 	WriteRegister(MC_CMD_DOWN_DATA1, data.data_w[1]);

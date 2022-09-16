@@ -406,8 +406,6 @@ bool ParmManager::ReadSysConfig(){
 
 		m_sc_system_config->hw_rev_trace = m_ini_system->GetIntValueOrDefault("system", "hw_rev_trace", 0);
 
-
-
 		g_ptr_trace->PrintTrace(TRACE_INFO, PARAM_MANAGER, "读取系统配置文件成功！\n");
 
 	}else{
@@ -4110,11 +4108,12 @@ bool ParmManager::UpdateAxisParam(uint8_t axis_index, uint32_t param_no, ParamVa
 		m_ini_axis->SetDoubleValue(sname, kname, value.value_double);
 		break;
 	case 1400:  //正向反向间隙
-		printf("update axis 1400 \n");
+		printf("update axis 1400 val: %d\n", value.value_int16);
 		sprintf(kname, "backlash_forward");
 		m_ini_axis->SetIntValue(sname, kname, value.value_int16);
 		break;
 	case 1401:  //负向反向间隙
+		printf("update axis 1401 val: %d\n", value.value_int16);
 		sprintf(kname, "backlash_negative");
 		m_ini_axis->SetIntValue(sname, kname, value.value_int16);
 		break;

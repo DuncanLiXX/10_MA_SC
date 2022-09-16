@@ -205,7 +205,6 @@ private:
 	IniFile *m_ini_proc_chn;       //通道工艺相关参数文件
 	IniFile *m_ini_proc_axis;      //轴工艺相关参数文件
 
-
 	IniFile *m_ini_chn_scene;		//通道状态参数文件，保存如当前打开文件等状态
 
 	UpdateParamList *m_list_new_start;	//新一次加工生效的参数

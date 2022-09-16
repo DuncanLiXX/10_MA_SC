@@ -389,7 +389,9 @@ bool Compiler::SetCurGMode(){
  * @return true--成功   false--失败
  */
 bool Compiler::SaveScene() {
-	printf("-----------------------------> save scene !!!\n");
+
+	// @test zk
+	printf("save scene !!!\n");
 	CompilerScene scene;
 //	if(scene == nullptr){
 //		g_ptr_trace->PrintLog(LOG_ALARM, "保存编译器状态，分配内存失败！");
@@ -455,7 +457,8 @@ bool Compiler::ReloadScene(bool bRecPos) {
 	DPointChn pos_tmp;
 	ModeCollect mode_tmp;
 
-	printf("----------------------------> reload scene !!!\n");
+	// @test zk
+	printf("reload scene !!!\n");
 
 	if (this->m_stack_scene.size() == 0)
 		return false;
@@ -770,8 +773,6 @@ void Compiler::PreScan() {
 
 
 	/*** test if else */
-
-	printf("************************************************\n");
 	for(unsigned int i=0; i<m_node_vectors_vector.size(); i++){
 		vector<IfElseOffset> node_vector = m_node_vectors_vector.at(i);
 		printf("node number: %d\n", i+1);
@@ -2070,16 +2071,16 @@ bool Compiler::GetLineData() {
 	bool bSpace = false;   //前一个字符为空白字符
 	bool bFirst = false;    //遇到第一个非空白字符
 	bool bSwapdown = false;  //向下翻页
-//	printf("enter getlinedata11111111111:%d\n", (int)m_p_cur_file_pos);
+
 	char c_cur = *m_p_cur_file_pos;     //当前字符
-//	printf("enter getlinedata2222222222\n");
+
 	char c_next = '\0';   //下一个字符
 	uint64_t block_limit = m_p_file_map_info->ln_map_start
 			+ m_p_file_map_info->ln_map_blocksize;
 
 	this->m_compiler_status.jump_flag = false;
 
-//	printf("enter getlinedata333333333333333333\n");
+
 
 	REDO:
 	//读取下一个字符
@@ -2099,8 +2100,6 @@ bool Compiler::GetLineData() {
 		}
 	} else
 		c_next = *(m_p_cur_file_pos + 1);   //下一个字符
-
-//	printf("enter getlinedata4444444444444444444\n");
 
 	this->m_lexer_result.line_no = this->m_ln_cur_line_no;   //更新行号
 	this->m_lexer_result.offset = this->m_ln_read_size;      //保存行首偏移量
@@ -2188,8 +2187,6 @@ bool Compiler::GetLineData() {
 			c_next = *(m_p_cur_file_pos + 1);   //下一个字符
 	}
 
-//	printf("enter getlinedata5555555555555555\n");
-
 	if (m_b_comment && !m_b_left)
 		m_b_comment = false;  //对于"//"开始的单行注释，进行标志复位
 
@@ -2255,20 +2252,7 @@ bool Compiler::GetLineData() {
 		}
 
 	}
-
-//	if(strcmp(this->m_line_buf, "%") == 0){
-//		printf("compiler state: %d\n", this->m_n_compile_state);
-//	}
-
-//	printf("getlinedata[%lld]: %s\n", m_lexer_result.line_no, this->m_line_buf);
-
-//	gettimeofday(&tvNow, NULL);
-//	nTimeDelay = (tvNow.tv_sec-tvStart.tv_sec)*1000000+tvNow.tv_usec-tvStart.tv_usec;
-//	total_time +=nTimeDelay;
-//	if(m_lexer_result.line_no % 10000 == 0){
-//		printf("get 10000 line cost %ldus\n", total_time);
-//		total_time = 0;
-//	}
+	printf("------> get_line_data lineno = %lld\n", this->m_lexer_result.line_no);
 
 	return res;
 }
@@ -2284,6 +2268,8 @@ bool Compiler::CompileLine() {
 //	unsigned int nTimeDelay = 0;
 //
 //	gettimeofday(&tvStart, NULL);
+
+	printf("------> compile line ...\n");
 
 	bool res = true;
 
@@ -2328,8 +2314,12 @@ bool Compiler::RunMessage() {
 
 	ListNode<RecordMsg *> *node = m_p_parser_result->HeadNode();
 	CodeMsgType msg_type = NORMAL_MSG;
+
+	printf("------> run message ...\n");
+
 	while (node != nullptr) {
 		msg = static_cast<RecordMsg *>(node->data);
+
 		if (msg != nullptr) {
 			if(msg->CheckFlag(FLAG_JUMP) && this->m_p_channel_control->CheckFuncState(FS_BLOCK_SKIP)){  //跳段激活,则当前指令取消
 				this->m_p_parser_result->RemoveHead();
@@ -2339,6 +2329,16 @@ bool Compiler::RunMessage() {
 			}
 			msg_type = msg->GetMsgType();
 			
+			// @test zk
+			static uint64_t cur_line = 0;
+
+			if(cur_line != msg->GetLineNo()){
+				cur_line = msg->GetLineNo();
+				//printf("compiler run message  line no: %llu,  type: %d\n", cur_line, msg_type);
+
+			}
+			// @test zk
+
 			switch (msg_type) {
 			case AUX_MSG:
 				res = RunAuxMsg(msg);
@@ -2493,6 +2493,7 @@ bool Compiler::RunAuxMsg(RecordMsg *msg) {
 			} else {
 				this->m_b_compile_over = true;
 				printf("compiler run M30\n");
+				m_p_tool_compensate->Reset();
 			}
 
 			break;
@@ -3017,7 +3018,7 @@ bool Compiler::RunFeedMsg(RecordMsg *msg) {
 
 	m_compiler_status.mode.f_mode = tmp->GetFeed();
 
-//	printf("run feed message: %lf~~~~~\n", m_compiler_status.mode.f_mode);
+	//printf("run feed message: %lf~~~~~\n", m_compiler_status.mode.f_mode);
 
 	return true;
 }
@@ -3079,6 +3080,16 @@ bool Compiler::RunCompensateMsg(RecordMsg *msg) {
 
 		tmp->SetCompLastValue(m_compiler_status.mode.d_mode);  //记录历史值
 		m_compiler_status.mode.d_mode = tmp->GetCompValue();   //修改编译器状态
+
+        SCToolOffsetConfig * offset_config = g_ptr_parm_manager->GetToolConfig(m_n_channel_index);
+        int d_value = tmp->GetCompValue();
+        if(d_value > kMaxToolCount  or d_value < 0) return false;
+        if(d_value == 0){
+            this->m_p_tool_compensate->setToolRadius(0);
+        }else {
+            double radius = offset_config->radius_compensation[d_value - 1];
+            this->m_p_tool_compensate->setToolRadius(radius);
+        }
 
 	} else if (gcode == G43_CMD || gcode == G44_CMD || gcode == G43_4_CMD) {  //刀具长度补偿
 		tmp->SetCompLastValue(m_compiler_status.mode.h_mode);  //记录历史值
@@ -3880,11 +3891,15 @@ bool Compiler::RunLoopMsg(RecordMsg *msg) {
 	m_compiler_status.mode.gmode[GetModeGroup(gcode)] = gcode;   //修改编译器G模态
 
 	//保存当前编译器状态
+	// @test zk
 	this->SaveScene();
 
 	Variable *pv = m_p_channel_control->GetMacroVar();
 	//局部变量入栈
+
+	// @test zk  将当前局部变量存到scene中  清零当前局部变量。
 	pv->PushLocalVar();
+
 
 	//赋值自变量参数到局部变量
 	uint8_t pc = 0;
@@ -3899,13 +3914,15 @@ bool Compiler::RunLoopMsg(RecordMsg *msg) {
 	//写入忽略的轴坐标参数
 	uint8_t chn_axis_count = this->m_p_channel_control->GetChnAxisCount();
 	uint8_t chn_axis_data = 0;
+
+	// @zk 这一步会将当前坐标值保存到对应的局部变量 (指定 X_ Y_ Z_ ...)
 	for(uint8_t i = 0; i < chn_axis_count; i++){
 		chn_axis_data = this->MapAxisNameToParamIdx(m_p_channel_control->GetChnAxisName(i));
 		if((pm & (0x01<<chn_axis_data)) == 0){
 			pv->SetVarValue(kLoopParamToLocalVarIndex[chn_axis_data], m_compiler_status.cur_pos.GetAxisValue(i));
 		}
 	}
-
+	// @zk 将固定循环指令指定的参数 保存到局部变量 (覆盖 X_ Y_ Z_ ...)
 	while(pm != 0){
 		if(pm & 0x01){
 			pv->SetVarValue(kLoopParamToLocalVarIndex[i], *pp);
@@ -3914,6 +3931,9 @@ bool Compiler::RunLoopMsg(RecordMsg *msg) {
 		pm = pm>>1;
 		i++;
 	}
+
+	// @test zk  不打开子程序  代码控制固定循环
+	//return true;
 
 	this->m_n_sub_call_times = 1;//调用次数
 
@@ -3936,7 +3956,6 @@ bool Compiler::RunLoopMsg(RecordMsg *msg) {
 		this->m_n_compile_state = FILE_MAIN;
 	this->m_n_head_state = HEAD_INFO;
 
-//	printf("run loop msg: %d\n", gcode);
 	return true;
 }
 
@@ -4256,9 +4275,7 @@ int Compiler::CallMarcoProgWithNoPara(int macro_index, bool flag){
 
 	//TODO 向HMI发送命令打开子文件
 	if(flag && g_ptr_parm_manager->GetSystemConfig()->debug_mode > 0){ //调式模式下，打开宏程序文件
-
 		this->m_p_channel_control->SendOpenFileCmdToHmi(filepath);
-
 	}
 
 	return macro_loc;
@@ -4377,6 +4394,7 @@ bool Compiler::ReturnFromSubProg() {
 		bool ret_macro_prog = (m_n_sub_program==MACRO_PROG)?true:false;    //返回的调用类型
 
 		//局部变量出栈
+		// @test 恢复栈顶局部变量
 		m_p_channel_control->GetMacroVar()->PopLocalVar();
 
 		//子程序结束，恢复现场
@@ -4822,6 +4840,7 @@ uint8_t Compiler::MapAxisNameToParamIdx(uint8_t axis_name){
  * @param loop : 循环指令消息
  */
 void Compiler::SaveLoopParam(LoopMsg *loop){
+
 	if(loop == nullptr)
 		return;
 

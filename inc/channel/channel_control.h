@@ -331,6 +331,8 @@ public:
 	
 	void SetHmiGraphMode(bool flag){this->m_b_hmi_graph = flag;}   //设置HMI图形显示模式
 
+    void ClearMachineTimeTotal();
+
 #ifdef USES_ADDITIONAL_PROGRAM
 	bool CallAdditionalProgram(AddProgType type);  //调用附加程序（前置/后置）
 #endif
@@ -427,7 +429,7 @@ private:
 	bool SendModeChangToHmi(uint16_t mode_type);			//向HMI发送非G模态状态改变命令，包含T/D/H/F/S
 	bool SendMdaDataReqToHmi();			//向HMI发送MDA数据请求
 	bool SendMessageToHmi(uint16_t msg_type, uint32_t msg_id, uint32_t msg_param = 0);		//向HMI发送提示信息
-	bool SendWorkCountToHmi(uint32_t count);   //向HMI更新加工计数
+    bool SendWorkCountToHmi(uint32_t count, uint32_t totalCount);   //向HMI更新加工计数
 	bool SendMachOverToHmi();    //通知HMI加工完成
 
 	bool SendManualToolMeasureResToHmi(bool res);  //发送手动对刀结果给HMI

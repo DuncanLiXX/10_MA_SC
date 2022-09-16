@@ -982,6 +982,7 @@ int HMICommunication::ProcessHmiCmd(){
 			case CMD_HMI_SYNC_AXIS_OPT:           //HMI通知HMI进行同步轴使能操作 0x34
 			case CMD_HMI_NOTIFY_GRAPH:            //HMI通知SC进入图形模式    0x35
 			case CMD_HMI_CHECK_SYNC_EN:           //HMI向SC查询同步轴状态 0x37
+            case CMD_HMI_CLEAR_MACHINETIME_TOTAL: //HMI向SC请求清除累计时间
 #ifdef USES_GRIND_MACHINE
 			case CMD_SC_MECH_ARM_ERR:         //HMI响应机械手告警指令
 #endif

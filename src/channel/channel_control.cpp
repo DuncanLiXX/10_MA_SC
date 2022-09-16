@@ -101,6 +101,8 @@ ChannelControl::ChannelControl() {
     m_channel_rt_status.machining_time_total = 0;
 	m_channel_rt_status.line_no = 1;
 
+    m_time_remain = 0;
+
 	m_n_hw_trace_state = NONE_TRACE;
 	this->m_n_hw_trace_state_change_to = NONE_TRACE;
 	this->m_b_change_hw_trace_state = false;
@@ -1519,7 +1521,15 @@ void ChannelControl::GetMdaFilePath(char *path){
 	if(path == nullptr)
 		return;
 
-	sprintf(path, PATH_MDA_FILE, this->m_n_channel_index);
+    sprintf(path, PATH_MDA_FILE, this->m_n_channel_index);
+}
+
+/**
+ * @brief 清除加工累计时间
+ */
+void ChannelControl::ClearMachineTimeTotal()
+{
+    m_channel_rt_status.machining_time_total = 0;
 }
 
 /**
@@ -2424,7 +2434,7 @@ void ChannelControl::ProcessHmiCmd(HMICmdFrame &cmd){
 
     case CMD_HMI_CLEAR_WORKPIECE:      //HMI请求SC将加工计数清零,临时计数(区分白夜班)
 		this->ProcessHmiClearWorkPieceCmd(cmd);
-		this->SendWorkCountToHmi(m_channel_status.workpiece_count);   //通知HMI加工计数变更
+        this->SendWorkCountToHmi(m_channel_status.workpiece_count, m_channel_status.workpiece_count_total);   //通知HMI加工计数变更
 		break;
 #ifdef USES_LASER_MACHINE
 	case CMD_HMI_SET_CALIBRATION:     //HMI向SC发出调高器标定指令 32
@@ -2434,7 +2444,7 @@ void ChannelControl::ProcessHmiCmd(HMICmdFrame &cmd){
 #endif
     case CMD_HMI_CLEAR_TOTAL_PIECE:    //总共计数清零
         this->ProcessHmiClearTotalPieceCmd(cmd);
-        this->SendWorkCountToHmi(m_channel_status.workpiece_count_total);   //通知HMI加工计数变更
+        this->SendWorkCountToHmi(m_channel_status.workpiece_count, m_channel_status.workpiece_count_total);   //通知HMI加工计数变更
         break;
 	case CMD_HMI_AXIS_MANUAL_MOVE:     //HMI指令轴移动
 		break;
@@ -2566,7 +2576,7 @@ void ChannelControl::ProcessHmiClearWorkPieceCmd(HMICmdFrame &cmd){
 	this->m_p_hmi_comm->SendCmd(cmd);
 	
 	g_ptr_parm_manager->SetCurWorkPiece(m_n_channel_index, m_channel_status.workpiece_count);
-    this->SendWorkCountToHmi(m_channel_status.workpiece_count);   //通知HMI加工计数变更
+    this->SendWorkCountToHmi(m_channel_status.workpiece_count, m_channel_status.workpiece_count_total);   //通知HMI加工计数变更
 }
 
 /**
@@ -2585,7 +2595,7 @@ void ChannelControl::ProcessHmiClearTotalPieceCmd(HMICmdFrame &cmd)
 
     g_ptr_parm_manager->SetCurWorkPiece(m_n_channel_index, m_channel_status.workpiece_count);
     g_ptr_parm_manager->SetTotalWorkPiece(m_n_channel_index, m_channel_status.workpiece_count_total);
-    this->SendWorkCountToHmi(m_channel_status.workpiece_count_total);   //通知HMI加工计数变更
+    this->SendWorkCountToHmi(m_channel_status.workpiece_count, m_channel_status.workpiece_count_total);   //通知HMI加工计数变更
 }
 
 /**
@@ -3353,6 +3363,8 @@ void ChannelControl::ProcessHmiSimulateCmd(HMICmdFrame &cmd){
 void ChannelControl::ProcessHmiSetNcFileCmd(HMICmdFrame &cmd){
 
 	cmd.frame_number |= 0x8000;   //设置回复标志
+    if (strcmp(m_channel_status.cur_nc_file_name, cmd.data))
+        m_time_remain = 0;
 	if(this->m_channel_status.chn_work_mode != AUTO_MODE){   //非自动模式
 		strcpy(m_channel_status.cur_nc_file_name, cmd.data);
 		cmd.cmd_extension = SUCCEED;
@@ -3667,13 +3679,14 @@ bool ChannelControl::ClearHmiInfoMsg(){
  * @param count : 工件计数
  * @return true--成功   false--失败
  */
-bool ChannelControl::SendWorkCountToHmi(uint32_t count){
+bool ChannelControl::SendWorkCountToHmi(uint32_t count, uint32_t totalCount){
 	HMICmdFrame cmd;
 	memset((void *)&cmd, 0x00, sizeof(HMICmdFrame));
 	cmd.channel_index = m_n_channel_index;
 	cmd.cmd = CMD_SC_WORKPIECE_COUNT;
-	cmd.data_len = sizeof(uint32_t);
+    cmd.data_len = sizeof(uint32_t)*2;
 	memcpy(cmd.data, &count, sizeof(uint32_t));
+    memcpy(cmd.data+sizeof(uint32_t), &totalCount, sizeof(uint32_t));
 
 	return this->m_p_hmi_comm->SendCmd(cmd);
 }
@@ -5886,7 +5899,7 @@ bool ChannelControl::ExecuteAuxMsg(RecordMsg *msg){
 						g_ptr_parm_manager->SetCurWorkPiece(m_n_channel_index, m_channel_status.workpiece_count);
                         this->m_channel_status.workpiece_count_total++;
                         g_ptr_parm_manager->SetTotalWorkPiece(m_n_channel_index, m_channel_status.workpiece_count_total);
-						this->SendWorkCountToHmi(m_channel_status.workpiece_count);  //通知HMI更新加工计数
+                        this->SendWorkCountToHmi(m_channel_status.workpiece_count, m_channel_status.workpiece_count_total);  //通知HMI更新加工计数
 
 						this->ResetMode();   //模态恢复默认值
 
@@ -6514,7 +6527,7 @@ bool ChannelControl::ExecuteAuxMsg(RecordMsg *msg){
 					g_ptr_parm_manager->SetCurWorkPiece(m_n_channel_index, m_channel_status.workpiece_count);
                     this->m_channel_status.workpiece_count_total++;
                     g_ptr_parm_manager->SetTotalWorkPiece(m_n_channel_index, m_channel_status.workpiece_count_total);
-					this->SendWorkCountToHmi(m_channel_status.workpiece_count);  //通知HMI更新加工计数
+                    this->SendWorkCountToHmi(m_channel_status.workpiece_count, m_channel_status.workpiece_count_total);  //通知HMI更新加工计数
 
 		#ifdef USES_GRIND_MACHINE
 					if(this->m_channel_status.workpiece_count >= this->m_p_mech_arm_param->grind_wheel_life){

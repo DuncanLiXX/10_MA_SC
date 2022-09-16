@@ -189,6 +189,7 @@ enum HMICmdCode {
 	CMD_HMI_SYNC_TIME,               //HMI向SC查询当前系统时间  0x36
 	CMD_HMI_CHECK_SYNC_EN,           //HMI向SC查询同步轴状态 0x37
 	CMD_HMI_GET_SYS_INFO,
+    CMD_HMI_CLEAR_MACHINETIME_TOTAL, //HMI向SC请求清除累计时间
 
 
 	//SC-->HMI

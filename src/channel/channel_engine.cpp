@@ -261,7 +261,98 @@ void ChannelEngine::DoSyncAxis(){
  * @brief PMC2.0版本，读取SD_LINK从站设备配置
  */
 void ChannelEngine::ReadIoDev_pmc2(){
-	this->m_list_bdio_dev.Clear();
+    this->m_list_bdio_dev.Clear();
+
+    std::ifstream ifs;
+    ifs.open(PATH_PMC_LDR, std::ios::binary | std::ios::in);
+
+    if (ifs.is_open())
+    {
+        char readChar[11] = {0};
+        while(!ifs.eof())
+        {
+            char ch = ifs.get();
+            if (ch == '#')
+            {
+               ifs.read(&readChar[0], 10);
+               if (!strcmp(readChar, "SDLINKIO@#"))
+                   break;
+            }
+        }
+
+        int num = 0;
+        ifs.read(reinterpret_cast<char *>(&num), sizeof(num));
+        num = BigLittleSwitch32(num);
+
+        const std::string devName[] = {"SA1", " ", "SC1", "SD1", "SE1"};
+        for(int i = 0; i < num; ++i)
+        {
+            BdioDevInfo devInfo;
+
+            int deviceType = 0;
+            ifs.read(reinterpret_cast<char *>(&deviceType), sizeof(deviceType));
+            deviceType = BigLittleSwitch32(deviceType);
+            devInfo.device_type = deviceType;
+            std::cout << "device_type " << devInfo.device_type << std::endl;
+
+            int group = 0;
+            ifs.read(reinterpret_cast<char *>(&group), sizeof(group));
+            group = BigLittleSwitch32(group);
+            devInfo.group_index = group;
+            std::cout << "group " << devInfo.group_index << std::endl;
+
+            int base = 0;
+            ifs.read(reinterpret_cast<char *>(&base), sizeof(base));
+            base = BigLittleSwitch32(base);
+            devInfo.base_index = base;
+            std::cout << "base " << devInfo.base_index << std::endl;
+
+            int slot = 0;
+            ifs.read(reinterpret_cast<char *>(&slot), sizeof(slot));
+            slot = BigLittleSwitch32(slot);
+            devInfo.slot_index = slot;
+            std::cout << "slot " << devInfo.slot_index << std::endl;
+
+            int inBytes = 0;
+            ifs.read(reinterpret_cast<char *>(&inBytes), sizeof(inBytes));
+            inBytes = BigLittleSwitch32(inBytes);
+            devInfo.in_bytes = inBytes;
+            std::cout << "inBytes " << devInfo.in_bytes << std::endl;
+
+            int outBytes = 0;
+            ifs.read(reinterpret_cast<char *>(&outBytes), sizeof(outBytes));
+            outBytes = BigLittleSwitch32(outBytes);
+            devInfo.out_bytes = outBytes;
+            std::cout << "outBytes " << devInfo.out_bytes << std::endl;
+
+            int inAddr;
+            ifs.read(reinterpret_cast<char *>(&inAddr), sizeof(inAddr));
+            inAddr = BigLittleSwitch32(inAddr);
+            devInfo.input_start = inAddr;
+            std::cout << "inAddr " << devInfo.input_start << std::endl;
+
+            int outAddr;
+            ifs.read(reinterpret_cast<char *>(&outAddr), sizeof(outAddr));
+            outAddr = BigLittleSwitch32(outAddr);
+            devInfo.output_start = outAddr;
+            std::cout << "outAddr " << outAddr << std::endl;
+
+            //check();
+            devInfo.handwheel_map = 0;
+            devInfo.info_name = devName[deviceType-1] + "-" + std::to_string(group);
+            std::cout << "info_name" << devInfo.info_name;
+
+            m_list_bdio_dev.Append(devInfo);
+        }
+
+        //没有设置轴选值时，确定默认手轮通道映射
+
+        ifs.close();
+    }
+    else
+    {
+        printf("初始化SD-LINK设备失败，无法打开梯图文件\n");
+    }
 
 }
 #else
@@ -2413,6 +2504,15 @@ void ChannelEngine::ProcessHmiCmd(HMICmdFrame &cmd){
 		 printf("The cpu temp is %.2f\r\n",temp_value);
 		 fclose(stream);
 		break;}
+    case CMD_HMI_CLEAR_MACHINETIME_TOTAL:
+        if(cmd.channel_index < this->m_p_general_config->chn_count)
+            m_p_channel_control[cmd.channel_index].ClearMachineTimeTotal();
+        else if(cmd.channel_index == CHANNEL_ENGINE_INDEX){
+            for(int i = 0; i < this->m_p_general_config->chn_count; i++){
+                this->m_p_channel_control[i].ClearMachineTimeTotal();
+            }
+        }
+        break;
 	default:
 		g_ptr_trace->PrintTrace(TRACE_WARNING, CHANNEL_ENGINE_SC, "不支持的HMI指令[%d]", cmd.cmd);
 		break;
@@ -5390,7 +5490,7 @@ void ChannelEngine::SpindleOut(int dir){
  * @return true--触发限位   false--没有触发
  */
 bool ChannelEngine::CheckAxisHardLimit(uint8_t phy_axis, int8_t dir){
-//	printf("cur phy axis: %hhu, dir = %hhu, post_mask = 0x%llx, neg_mask = 0x%llx\n", phy_axis, dir, this->m_hard_limit_postive, m_hard_limit_negative);
+    printf("cur phy axis: %hhu, dir = %hhu, post_mask = 0x%llx, neg_mask = 0x%llx\n", phy_axis, dir, this->m_hard_limit_postive, m_hard_limit_negative);
 	if(this->m_b_ret_ref || this->m_b_ret_ref_auto)   //回参考点时屏蔽硬限位
 		return false;
 	if(dir == DIR_POSITIVE){
@@ -7160,6 +7260,108 @@ void ChannelEngine::SetMcAutoBufMax(uint16_t count){
  * @brief 设置SD-LINK从站数据
  */
 void ChannelEngine::SetSlaveInfo(){
+#ifdef USES_PMC_2_0
+    MiCmdFrame cmd;
+
+    //test 模拟
+    BdioDevInfo info1;
+    info1.group_index = 1;
+    info1.device_type = 5;
+    info1.base_index = 0;
+    info1.slot_index = 0;
+    info1.in_bytes = 4;
+    info1.out_bytes = 8;
+    info1.input_start = 10;
+    info1.output_start = 10;
+    info1.handwheel_map = 0;
+
+    //test 模拟
+    BdioDevInfo info2;
+    info2.group_index = 2;
+    info2.device_type = 5;
+    info2.base_index = 0;
+    info2.slot_index = 0;
+    info2.in_bytes = 7;
+    info2.out_bytes = 8;
+    info2.input_start = 20;
+    info2.output_start = 20;
+    info2.handwheel_map = 1;
+
+    //test 模拟
+    //this->m_list_bdio_dev.Append(info1);
+    //this->m_list_bdio_dev.Append(info2);
+
+
+    //配置扩展IO板卡信息命令
+    memset(&cmd, 0x00, sizeof(cmd));
+    cmd.data.cmd = CMD_MI_SET_SDLINK_SLAVE;
+    cmd.data.axis_index = NO_AXIS;
+
+    int dev_count = 0;          //从站总数
+    int total_in = 0;           //总输入字节数
+    int total_out = 0;          //总输出字节数
+    int handwheel_count = 0;    //手轮个数
+
+    ListNode<BdioDevInfo> *node = this->m_list_bdio_dev.HeadNode();
+    while(node != nullptr){
+        //参数拼接
+        char16_t data0 = (node->data.device_type << 8) | (node->data.group_index);
+        char16_t data1 = 0;
+        char16_t data2 = node->data.in_bytes;
+        char16_t data3 = node->data.out_bytes;
+        char16_t data4 = (node->data.output_start << 8) | (node->data.input_start);
+        char16_t data5 = node->data.handwheel_map;
+
+        cmd.data.data[0] = data0;
+        cmd.data.data[1] = data1;
+        cmd.data.data[2] = data2;
+        cmd.data.data[3] = data3;
+        cmd.data.data[4] = data4;
+        cmd.data.data[5] = data5;
+
+        //test 模拟
+        printf("node data0 %d------------------\n", cmd.data.data[0]);
+        printf("node data1 %d------------------\n", cmd.data.data[1]);
+        printf("node data2 %d------------------\n", cmd.data.data[2]);
+        printf("node data3 %d------------------\n", cmd.data.data[3]);
+        printf("node data4 %d------------------\n", cmd.data.data[4]);
+        printf("node data5 %d------------------\n", cmd.data.data[5]);
+        printf("node data6 %d------------------\n", cmd.data.data[6]);
+        printf("\n");
+
+        //数据发送
+        this->m_p_mi_comm->WriteCmd(cmd);
+        total_in += node->data.in_bytes;
+        total_out += node->data.out_bytes;
+        dev_count++;
+        if (node->data.handwheel_map)
+            ++handwheel_count;
+
+        node = node->next;
+    }
+
+    //扩展IO板卡配置完成命令
+    memset(&cmd, 0x00, sizeof(cmd));
+    cmd.data.axis_index = NO_AXIS;
+    cmd.data.cmd = CMD_MI_SET_SDLINK_COMPLETE;
+    cmd.data.data[0] = dev_count;
+    cmd.data.data[1] = total_in;
+    cmd.data.data[2] = total_out;
+    cmd.data.data[3] = handwheel_count;
+
+    //test 模拟
+    printf("node data0 %d------------------\n", cmd.data.data[0]);
+    printf("node data1 %d------------------\n", cmd.data.data[1]);
+    printf("node data2 %d------------------\n", cmd.data.data[2]);
+    printf("node data3 %d------------------\n", cmd.data.data[3]);
+    printf("node data4 %d------------------\n", cmd.data.data[4]);
+    printf("node data5 %d------------------\n", cmd.data.data[5]);
+    printf("node data6 %d------------------\n", cmd.data.data[6]);
+    printf("\n");
+
+    this->m_p_mi_comm->WriteCmd(cmd);
+
+#else
 	MiCmdFrame cmd;
 	memset(&cmd, 0x00, sizeof(cmd));
 	cmd.data.cmd = CMD_MI_SET_SDLINK_SLAVE;
@@ -7192,6 +7394,7 @@ void ChannelEngine::SetSlaveInfo(){
 
 	this->m_p_mi_comm->WriteCmd(cmd);
 
+#endif
 
 }
 

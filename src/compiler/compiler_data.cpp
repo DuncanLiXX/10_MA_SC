@@ -119,7 +119,6 @@ bool AsFileMapInfo::OpenFile(const char *name, bool sub_flag){
 		}
 	}
 
-
 	return true;
 }
 

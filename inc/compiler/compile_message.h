@@ -67,6 +67,11 @@ public:
 	bool CheckFlag(RecordFlag flag){return (m_n_flags.all & flag)?true:false;}  //获取对应标志状态
 	void SetFlag(RecordFlag flag, bool value);   //设置对应标志的状态
 
+	// @modified by zk
+	RecordMsgFlag GetFlags(){return m_n_flags;}
+	void SetFlags(RecordMsgFlag flags){m_n_flags = flags;}
+    // @modified by zk
+
 	bool IsNeedWaitMsg(){return (m_n_flags.all & FLAG_WAIT_MOVE_OVER)?true:false;}    //判断是否是需要等待轴运动到位的消息
 	bool IsEndMsg(){return (m_n_flags.all & FLAG_EOF)?true:false;}	//判断是否程序结束指令
 	bool IsMoveMsg(){return (m_n_flags.all & FLAG_AXIS_MOVE)?true:false;} //判断是否轴移动指令
@@ -169,15 +174,7 @@ public:
 	int GetGCode(){return m_n_g_code;}   //返回G指令代码
 	void SetLastGCode(int gcode_last){this->m_n_last_g_code = gcode_last;}   //设置历史模态值
 	int GetLastGCode(){return this->m_n_last_g_code;}    //获取历史模态值
-	
-//	void SetToolCompIndex(int16_t toolcomp_index){this->m_b_toolcomp_index = toolcomp_index;}
-//	int16_t GetToolCompIndex(){return this->m_b_toolcomp_index;}
-//	void SetToolCompRadius(double fradius){this->m_b_toolcomp_radius = fradius;}
-//	double GetToolCompRadius(){return this->m_b_toolcomp_radius;}
-//	void SetToolCompDir(int8_t toolcomp_dir){this->m_b_toolcomp_dir = toolcomp_dir;}
-//	int8_t GetToolCompDir(){return this->m_b_toolcomp_dir;}
-//	void SetToolPlane(int8_t work_plane){this->m_b_work_plane = work_plane;}
-//	int8_t GetToolPlane(){return this->m_b_work_plane;}
+
 	ToolRec GetAToolRec(){return this->m_tool_info;}
 	void SetAToolRec(ToolRec tool){this->m_tool_info = tool;}
 
@@ -187,12 +184,6 @@ public:
 protected:
 	int m_n_g_code;   //G指令代码，放大十倍存储，例如G43.4存储值为434
 	int m_n_last_g_code;    //前一个模态，为了支持手轮反向引导功能
-//	bool m_b_mach_coord;    //当前是否机械坐标系
-
-//	int16_t m_b_toolcomp_index;    // 刀补号    D
-//	int8_t m_b_toolcomp_dir;    // 刀补方向     G40 G41 G42
-//	double m_b_toolcomp_radius;  // 刀补半径值
-//	int8_t m_b_work_plane;      // 工作平面 G17 G18 G19
 
 	ToolRec m_tool_info;
 };
@@ -669,11 +660,11 @@ protected:
 	uint32_t m_axis_move_mask;  //移动轴mask，bit0-bit15分别标志通道第1-16轴是否有移动指令
 	uint8_t m_io_data;       //io输出数据，0x00表示无IO输出   从1开始，有效范围1~127
 
-//	double *m_p_pmc_target;  //PMC轴的目标位置
-//	uint32_t m_pmc_move_mask;   //PMC移动轴mask
 	uint8_t m_n_pmc_count;     //PMC移动轴数量
-//	bool m_b_inc_pos;          //PMC轴目标地址是否增量模式
 	uint8_t m_n_exec_step;     //执行阶段标志
+    //	double *m_p_pmc_target;  //PMC轴的目标位置
+    //	uint32_t m_pmc_move_mask;   //PMC移动轴mask
+    //	bool m_b_inc_pos;          //PMC轴目标地址是否增量模式
 };
 
 /**
@@ -704,6 +695,7 @@ private:
 
 /**
  * @brief 自动对刀
+ * G37  ...
  */
 class AutoToolMeasureMsg : public ModeMsg{
 public:
@@ -819,6 +811,15 @@ public:
 
 	void SetIoData(uint8_t data){this->m_io_data = data;}   //设置IO数据
 
+	int getDirect(){return m_flag_direct;}
+
+	void setI(double i){ i_number = i;}
+	void setJ(double j){ j_number = j;}
+	void setR(double r){ r_number = r;}
+    double getI(){ return i_number;}
+    double getJ(){ return j_number;}
+    double getR(){ return r_number;}
+
 	ArcMsg& operator=( const ArcMsg& msg);  //赋值运算符
 	friend bool operator ==( const ArcMsg &one, ArcMsg &two);  //判断运算符
 
@@ -834,6 +835,7 @@ private:
 	uint32_t m_axis_move_mask;  //移动轴mask，bit0-bit15分别标志通道第1-16轴是否有移动指令
 	uint8_t m_io_data;       //io输出数据，0x00表示无IO输出   从1开始，有效范围1~127
 	uint16_t m_gmode_2;     //加工平面模态
+	double i_number, j_number, r_number;
 };
 
 /**

@@ -78,7 +78,6 @@ void InitSysState(){
 	g_sys_state.eth0_running = CheckNetState("eth0");  //初始化网络连接状态
 	memset(g_sys_state.hmi_host_addr, 0x00, 16);       //
 	memset(g_sys_state.local_host_addr, 0x00, 16);
-
 	GetLocalIP("eth0", g_sys_state.local_host_addr);    //获取本地IP地址
 }
 
@@ -108,8 +107,6 @@ int LoadSp6Data(){
 	strcpy(file_path, PATH_SPARTAN6_PROGRAM);
 
 	bool bak_flag = false;  //是否使用备份版本
-
-
 
 	LOAD:
 	if(access(file_path, F_OK) == -1){	//文件不存在，告警
@@ -189,8 +186,6 @@ int LoadSp6Data(){
 		WriteReg(SP6_INIT_DATA(2), data_buf.data_32[2]);
 		WriteReg(SP6_INIT_DATA(3), data_buf.data_32[3]);
 
-
-
 		//写入完成标志
 		WriteReg(SP6_INIT_DATA_WRITE, 0x01);
 	}
@@ -208,7 +203,7 @@ int LoadSp6Data(){
 		ReadReg(SP6_INIT_DATA_CHECK_RES, check_res);
 	}
 
-	if(check_res == 0 && wait_count>=10000){//等待超时
+	if(check_res == 0 && wait_count >= 10000){//等待超时
 		res = ERR_LOAD_SP6;
 		g_ptr_trace->PrintLog(LOG_ALARM, "LoadSp6Data() 读取校验结果超时!");
 		goto END;
@@ -225,8 +220,6 @@ int LoadSp6Data(){
 			}
 		}
 	}
-
-
 
 	END:
 	//取消内存映射
@@ -843,8 +836,6 @@ int main()
 //	pthread_attr_destroy(&attr);
 
 	res = Initialize();
-
-
 
 	signal(SIGINT, ProgramQuit);
 	signal(SIGTERM, ProgramQuit);

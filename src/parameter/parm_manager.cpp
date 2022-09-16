@@ -406,8 +406,6 @@ bool ParmManager::ReadSysConfig(){
 
 		m_sc_system_config->hw_rev_trace = m_ini_system->GetIntValueOrDefault("system", "hw_rev_trace", 0);
 
-
-
 		g_ptr_trace->PrintTrace(TRACE_INFO, PARAM_MANAGER, "读取系统配置文件成功！\n");
 
 	}else{

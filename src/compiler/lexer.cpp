@@ -788,6 +788,7 @@ bool Lexer::GetOneGCode(){
 
 			if(m_has_dot)
 				g_code->mask_dot_ex[index_name] |= (0x01<<(m_n_axis_name_ex-1));   //置位小数点标志
+
 		}else{
 			g_code->value[domain_index] = atof(m_digit_buf);
 

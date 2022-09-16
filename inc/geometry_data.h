@@ -83,7 +83,7 @@ public:
 	DPointChn(double x, double y, double z); //
 
     void Round(uint8_t round_type = 0);   //四舍五入  round_type = 0 : 0.05um精度  round_type = 1 ： 0.5um精度
-    double GetAxisValue(int index);    //获取单轴坐标
+    double GetAxisValue(int index);       //获取单轴坐标
     void SetAxisValue(int index, double value);      //设置单轴坐标
 
     DPointChn& operator=( const DPointChn& c);

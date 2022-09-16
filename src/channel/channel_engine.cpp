@@ -111,7 +111,7 @@ ChannelEngine::ChannelEngine() {
 /**
  * @brief 析构函数
  */
-ChannelEngine::~ChannelEngine() {
+ChannelEngine::~ChannelEngine(){
 	// TODO Auto-generated destructor stub
 
 	void* thread_result;
@@ -3721,6 +3721,13 @@ void ChannelEngine::ProcessHmiSetPmcReg(HMICmdFrame &cmd){
 				cmd.cmd_extension = FAILED;
 			}
 			printf("set pmc reg bit: sec = %hu, index = %hu, bit = %hhu, count = %hhu, value = %u\n", reg_sec, reg_index, bit_index, bit_count, bit_value32);
+
+			// @test zk
+			if(reg_sec == 2 and reg_index == 82 and bit_index == 1 and bit_value32 == 1){
+				printf("冷却！！！\n");
+				this->m_p_channel_control[0].test();
+			}
+			// @test zk
 		}
 		break;
 #ifndef USES_PMC_2_0
@@ -8231,8 +8238,6 @@ void ChannelEngine::ProcessPmcSignal(){
 
 	//处理PMC的告警，即A地址寄存器
 	this->ProcessPmcAlarm();
-	
-	
 	
 }
 

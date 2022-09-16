@@ -41,6 +41,10 @@ public:
 	ChannelControl();	//构造函数
 	virtual ~ChannelControl(); //析构函数
 
+	// @test zk
+	void test();
+	// @test zk
+
 	bool Initialize(uint8_t chn_index, ChannelEngine *engine, HMICommunication *hmi_comm,
 			MICommunication *mi_comm, MCCommunication *mc_comm, ParmManager *parm, PmcRegister *reg);  //初始化函数
 	
@@ -334,6 +338,12 @@ public:
 #ifdef USES_ADDITIONAL_PROGRAM
 	bool CallAdditionalProgram(AddProgType type);  //调用附加程序（前置/后置）
 #endif
+
+	// @ add zk
+	void StraightFeed(int chn, double x, double y, double z, int feed);
+	void StraightTraverse(int chn, double x, double y, double z);
+	void g73_func();
+	// @ add zk
 
 private:
 	void InitialChannelStatus();		//初始化通道状态

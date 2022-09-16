@@ -91,6 +91,11 @@ public://公共接口
 
 	int CallMarcoProgWithNoPara(int macro_index, bool flag = true);    //无参数调用宏程序
 
+	// @add zk
+	double GetFValue(){
+		return m_compiler_status.mode.f_mode;
+	}
+
 #ifdef USES_WOOD_MACHINE
 	bool FindPreStartSpdCmd(uint64_t line_min , uint64_t line_max, SpindleStartOffset &spd_cmd);   //查找是否存在可预启动的主轴指令
 #endif
@@ -182,7 +187,7 @@ private://私有接口
 
 	uint8_t MapAxisNameToParamIdx(uint8_t axis_name);   //将轴名称映射为变量ID
 
-	void SaveLoopParam(LoopMsg *loop);    //保存循环指令的参数到宏变量#171~#195
+	void SaveLoopParam(LoopMsg *loop);    //保存循环指令的参数到宏变量 根据global决定是全局变量还是局部变量
 	void ResetLoopParam();                //复位循环指令参数对应的宏变量#171~#195
 
 	bool JumpLine(int line_no, uint64_t offset, MacroCmdMsg *tmp);

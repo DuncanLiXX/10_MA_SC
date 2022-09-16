@@ -109,6 +109,9 @@ typedef ListBuffer<McCmdFrame> McCmdBuffer;   //待输出的指令消息队列
 class MCCommunication {
 public:
 
+	// @test zk
+	void test(int16_t frame_index);
+
 	virtual ~MCCommunication();	//析构函数
 
 	static MCCommunication *GetInstance();   //单例模式，获取此类实例的唯一访问点
@@ -126,8 +129,6 @@ public:
 	bool ReadCmdRsp(McCmdFrame &data);    //读取指令
 	uint32_t ReadCmdFifoCount();        //读取命令通道FIFO中当前数据个数
 	uint32_t ReadCmdBufferLen();          //读取命令缓冲数据个数
-
-
 
 	//读取轴插补位置
 	void ReadAxisIntpPos(const uint8_t chn_index, DPoint &cur_pos, DPoint &tar_pos);

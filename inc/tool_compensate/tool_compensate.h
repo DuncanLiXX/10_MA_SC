@@ -12,38 +12,48 @@
 #ifndef TOOL_COMPENSATE_H_
 #define TOOL_COMPENSATE_H_
 
-#include "tool_comp_data.h"
-#include "tools_comp.h"
 #include "list_buffer.h"
 #include "compile_message.h"
 
+#define None 12345.123
+
 class ChannelControl;
 
-
-const int kCompTypes = 5;
-
-
-//刀补状态
-enum ToolCompensateState{
-	COMP_NONE = 0,  //无刀补
-	COMP_INIT,      //刀补建立
-	COMP_RUN,       //刀补中
-	COMP_CANCEL,    //刀补撤销
-	COMP_CANCEL_PRE,  //刀补撤销前一段
-
+class Qc{
+public:
+    int type = 0;
 };
 
-//刀补插入数据类型
-enum CompInsertType{
-	INSERT_ARC = 0,   //插入圆弧
-	INSERT_LINE       //插入直线
+class StraightTraverseQc : public Qc{
+public:
+    int type = 0;
+    double dx = 0;
+    double dy = 0;
+    double x = 0;
+    double y = 0;
 };
 
-//刀补衔接类型
-enum CompJoinType{
-	JOIN_EXTEND = 0,      //延长型
-	JOIN_SHORT			  //缩短型
+class StraightFeedQc : public Qc{
+public:
+    int type = 1;
+    double dx = 0;
+    double dy = 0;
+    double x = 0;
+    double y = 0;
 };
+
+class ArcFeedQc : public Qc{
+public:
+    int type = 2;
+    int original_turns = 0;
+    double end1 = 0;
+    double end2 = 0;
+    double center1 = 0;
+    double center2 = 0;
+    int turn = 0;
+};
+
+
 
 class ToolCompensate {
 public:
@@ -55,41 +65,100 @@ public:
 	void ProcessData(ListNode<RecordMsg *> *node);    //数据处理入口函数
 
 	void ResetAllDatas();      // 复位或初始化内部数据
-
-	void SetCurPlane(int plane){m_cur_plane = (GCode)plane;}   //设置当前平面
-
 	void SetChannelIndex(uint8_t chn_index);    //设置通道号
+
+    //void setDMode(int Dvalue);
+    void setToolRadius(double radius){__cutter_comp_radius = radius;}
+
+    void Reset();
 
 
 private:   //私有接口函数
-	int CompensateOut();     //刀补处理函数
+    void __convert_cutter_compensation(RecordMsg *msg);
+    void __convert_cutter_compensation_on(int side);
+    void __convert_cutter_compensation_off();
+    void __move_endpoint_and_flush(double x, double y);
+    void __dequeue_canons();
+    void __set_endpoint(double x, double y);
 
-	void StateMachine();   //刀补状态机
+    double __find_turn(double x1, double y1, double center_x, double center_y, int turn, double x2, double y2);
+
+    void __convert_straight(int move);
+    void __convert_straight_comp1(int move, double px, double py);
+    void __convert_straight_comp2(int move, double px, double py);
+
+    void __convert_arc(int move);
+    void __convert_arc2(int move, double end1, double end2, double offset1, double offset2);
+    void __convert_arc_comp1(int move, double end_x, double end_y, double offset_x, double offset_y);
+    void __convert_arc_comp2(int move, double end_x, double end_y, double offset_x, double offset_y);
+
+    void __find_ends(double *end_x, double *end_y);
+    void __checkRadius(int clockWise, double xStart, double yStart, double xEnd, double yEnd, double radius, double *i, double *j);
+
+    void __ARC_FEED(double first_end, double second_end, double first_axis, double second_axis, int rotation);
+    void __STRAIGHT_FEED(double end_x, double end_y);
+    void __STRAIGHT_TRAVERSE(double end_x, double end_y);
+    void __enqueue_STRAIGHT_TRAVERSE(double dx, double dy, double x, double y);
+    void __enqueue_STRAIGHT_FEED(double dx, double dy, double x, double y);
+    void __enqueue_ARC_FEED(int original_turns, double end1, double end2, double center1, double center2, int turn);
+    bool __TOOL_INSIDE_ARC(int side, int turn){
+        return (side == 1 and turn > 0) or (side == 2 and turn < 0);
+    }
+
+    void __arc_data_ijk(int move, double current_x, double current_y, double end_x, double end_y,
+                        double i_number, double j_number, double radius_tolerance, double spiral_abs_tolerance,
+                        double spiral_rel_tolerance);
+
+    void __arc_data_comp_ijk(int move, int side, double tool_radius,double current_x,double current_y,
+                             double end_x,double end_y,double i_number,double j_number,
+                             double radius_tolerance,double spiral_abs_tolerance,double spiral_rel_tolerance);
+
+
 
 private:
 	uint8_t m_n_channel_index;     //所属通道号
 	ChannelControl *m_p_channel_control;    //通道控制对象
-	ToolCompMsgList m_n_toolcomp_list_msg;   //从编译模块输入的编译数据缓冲
+	//ToolCompMsgList m_n_toolcomp_list_msg;   //从编译模块输入的编译数据缓冲
 
 	OutputMsgList *m_p_output_msg_list;   //待输出至MC的指令消息队列
-
-//	uint8_t m_n_select[kCompTypes][kCompTypes];
-//	ToolCompensateState m_n_comp_state;   	//0 --无刀补 ；1 --刀补建立；// 2 --刀补进行中  3 --刀补撤消 4--撤消前一段  其它 --异常，无刀补
-//	CompInsertType m_n_comp_type;     		//0圆弧插入,1为直线插入
-//	CompJoinType m_n_type_flag;                      	//1--缩短型    0----为非缩短型
-//	double m_df_angle_pre,m_df_angle_after;
-//	DataLine *m_vec_line1, *m_vec_line2,*m_vec_line3, *m_vec_line4;   //用于干涉检查的方向向量
-//	DPoint   m_pos_target_old, m_pos_target, m_pos_target_new;
-
-//  int16_t  m_cur_tool_index;   // 当前刀补号  D值
-//  int8_t m_cur_tool_dir; // 0--G41左刀补  1--G42右刀补 
-//  int8_t m_cur_work_plane; // 
-//	double m_df_tool_radius;    //当前刀补半径  单位：mm
-	GCode m_cur_plane;       //当前刀补平面  G17_CMD/G18_CMD/G19_CMD
-	GCode m_cur_cmd;         //当前刀补类型  G40_CMD/G41_CMD/G42_CMD
 	
 	ToolRec m_cur_tool;
-	CompensateTroop *m_p_ToolCompBuffer;
+
+    double __current_x = 0;       // 当前X实际位置
+    double __current_y = 0;     // 当前Y实际位置
+    double __program_x = 0;      // 当前X编程位置
+    double __program_y = 0;       // 当前Y编程位置
+
+    double __x_number = None;                  // action中的x,y位置信息
+    double __y_number = None;
+    double __i_number = 0;                 // action中的i,j位置信息
+    double __j_number = 0;
+    double __lo_x = 0;                    // 轨迹位置
+    double __lo_y = 0;
+    double __axis_offset_x = 0.0;              // G92偏移位置
+    double __axis_offset_y = 0.0;
+    double __g92_offset_x = 0.0;
+    double __g92_offset_y = 0.0;
+
+    double __cutter_comp_radius = 0;     // 刀具半径
+    vector<Qc *> __qc;                  // 用于刀具补偿的queue序列
+    bool __distance_mode = 0;        // 0-绝对位置, 1-相对位置
+    bool __cutter_comp_firstmove = true;    // 是否为G41/G42后的首个运动
+    int __cutter_comp_side = 0;             // 0-无刀具补偿, 1-G41补偿, 2-G42补偿
+    bool __arc_not_allowed = false;          // 是否允许下一段是圆弧
+    string __errInfo;                       // 错误信息
+
+    bool __endpoint_valid = false;              // 刀具补偿计算新的结束位置是否有效
+    double __endpoint_x = 0;
+    double __endpoint_y = 0;
+    double __center1 = 0;
+    double __center2 = 0;
+    int __turn;
+
+    uint64_t lineno = 0;
+    DPointChn cur_point;
+    bool first_move = true;
+    RecordMsg * msg;
 };
 
 #endif /* TOOL_COMPENSATE_H_ */

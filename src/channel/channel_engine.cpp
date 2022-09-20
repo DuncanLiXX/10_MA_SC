@@ -293,79 +293,52 @@ void ChannelEngine::ReadIoDev_pmc2(){
 
         if (!ifs.eof())
         {
-            int num = 0;
-            ifs.read(reinterpret_cast<char *>(&num), sizeof(num));
-            num = BigLittleSwitch32(num);
-
+            auto ReadSequenceValue = [&]()->int {//从梯图中读取数据
+                int val = 0;
+                ifs.read(reinterpret_cast<char *>(&val), sizeof(val));
+                val = BigLittleSwitch32(val);
+                return val;
+            };
+            HandWheelMapInfoVec infoVec;
             bool selectedHandWheel = false;
+
+            int num = ReadSequenceValue();
             for(int i = 0; i < num; ++i)
             {
                 BdioDevInfo devInfo;
 
-                int deviceType = 0;
-                ifs.read(reinterpret_cast<char *>(&deviceType), sizeof(deviceType));
-                deviceType = BigLittleSwitch32(deviceType);
-                devInfo.device_type = deviceType;
-
-                if (m_SDLINK_MAP.find(deviceType) != m_SDLINK_MAP.end())
+                devInfo.device_type = ReadSequenceValue();
+                if (m_SDLINK_MAP.find(devInfo.device_type) != m_SDLINK_MAP.end())
                 {
-                    SDLINK_SPEC sdlink_spec = m_SDLINK_MAP.at(deviceType);
+                    devInfo.group_index = ReadSequenceValue();
+                    devInfo.base_index = ReadSequenceValue();
+                    devInfo.slot_index = ReadSequenceValue();
+                    devInfo.in_bytes = ReadSequenceValue();
+                    devInfo.out_bytes = ReadSequenceValue();
+                    devInfo.input_start = ReadSequenceValue();
+                    devInfo.output_start = ReadSequenceValue();
 
-                    int group = 0;
-                    ifs.read(reinterpret_cast<char *>(&group), sizeof(group));
-                    group = BigLittleSwitch32(group);
-                    devInfo.group_index = group;
+                    SDLINK_SPEC sdlink_spec = m_SDLINK_MAP.at(devInfo.device_type);
+                    if (devInfo.in_bytes && sdlink_spec.withHandWheel)//梯图默认分配了手轮空间，需要去掉，选择手轮时，再由SC分配
+                    {
+                        devInfo.in_bytes -= m_HANDWHEEL_BYTES;
+                        ++devInfo.handwheel_num;
+                    }
+                    else
+                    {
+                        devInfo.handwheel_num = 0;
+                    }
+                    devInfo.handwheel_map = 0;
+                    devInfo.info_name = sdlink_spec.info_name + "_" + std::to_string(devInfo.group_index);
 
                     // 序号检查,序号必须连续
                     if (devInfo.group_index != m_list_bdio_dev.GetLength() + 1)
                     {
-                        std::cout << devInfo.group_index << "SD_LINK config error, group_index: " << static_cast<int>(devInfo.group_index) << std::endl;
                         m_list_bdio_dev.Clear();
+                        std::cout << static_cast<int>(devInfo.group_index) << " not sequence " << std::endl;
+                        CreateError(ERR_PMC_SDLINK_CONFIG, WARNING_LEVEL, CLEAR_BY_CLEAR_BUTTON);
                         break;
                     }
-
-
-                    int base = 0;
-                    ifs.read(reinterpret_cast<char *>(&base), sizeof(base));
-                    base = BigLittleSwitch32(base);
-                    devInfo.base_index = base;
-
-
-                    int slot = 0;
-                    ifs.read(reinterpret_cast<char *>(&slot), sizeof(slot));
-                    slot = BigLittleSwitch32(slot);
-                    devInfo.slot_index = slot;
-
-
-                    devInfo.handwheel_map = 0;
-
-
-                    int inBytes = 0;
-                    ifs.read(reinterpret_cast<char *>(&inBytes), sizeof(inBytes));
-                    inBytes = BigLittleSwitch32(inBytes);
-                    if (inBytes && sdlink_spec.withHandWheel)//梯图默认分配了手轮空间，需要去掉，选择手轮时，再由SC分配
-                        inBytes -= m_HANDWHEEL_BYTES;
-                    devInfo.in_bytes = inBytes;
-
-
-                    int outBytes = 0;
-                    ifs.read(reinterpret_cast<char *>(&outBytes), sizeof(outBytes));
-                    outBytes = BigLittleSwitch32(outBytes);
-                    devInfo.out_bytes = outBytes;
-
-
-                    int inAddr = 0;
-                    ifs.read(reinterpret_cast<char *>(&inAddr), sizeof(inAddr));
-                    inAddr = BigLittleSwitch32(inAddr);
-                    devInfo.input_start = inAddr;
-
-
-                    int outAddr = 0;
-                    ifs.read(reinterpret_cast<char *>(&outAddr), sizeof(outAddr));
-                    outAddr = BigLittleSwitch32(outAddr);
-                    devInfo.output_start = outAddr;
-
-                    devInfo.info_name = sdlink_spec.info_name + "_" + std::to_string(group);
                 }
 
                 if (!CheckIoDev_pmc2(devInfo))
@@ -375,36 +348,47 @@ void ChannelEngine::ReadIoDev_pmc2(){
                     break;
                 }
 
-
                 m_list_bdio_dev.Append(devInfo);
+                HandWheelMapInfo info(devInfo.group_index, i, devInfo.handwheel_map, devInfo.info_name);
+                infoVec.push_back(info);
                 if (!selectedHandWheel && SelectHandleWheel(devInfo.group_index, 1))
                 {//默认使用第一个找到的手轮
                     selectedHandWheel = true;
                 }
             }
+
+            HandWheelMapInfoVec configInfo = g_ptr_parm_manager->GetHandWheelVec();
+            if (configInfo == infoVec)
+            {//梯图没有改变ini结构（扩展板卡个数或者基本配置没有发生变化），直接复制即可
+                for (auto itr = configInfo.begin(); itr != configInfo.end(); ++itr)
+                {
+                    SelectHandleWheel(itr->devNum, itr->channelMap);
+                }
+            }
+            else
+            {//梯图改变了ini结构（扩展板卡个数或者基本配置发生变化），需要重写ini文件
+                g_ptr_parm_manager->UpdateHandWheelInfo(infoVec);
+            }
         }
 
-        //没有设置轴选值时，确定默认手轮通道映射
-        //SelectHandleWheel(2, 1);
-
         //test
-        ListNode<BdioDevInfo> *node1 = this->m_list_bdio_dev.HeadNode();
-        while(node1 != nullptr)
+        ListNode<BdioDevInfo> *node = this->m_list_bdio_dev.HeadNode();
+        while(node != nullptr)
         {
-              std::cout << "info_name " << node1->data.info_name << std::endl;
-              std::cout << "device_type " << static_cast<int>(node1->data.device_type) << std::endl;
-              std::cout << "group " << static_cast<int>(node1->data.group_index) << std::endl;
-              std::cout << "base " << static_cast<int>(node1->data.base_index) << std::endl;
-              std::cout << "slot " << static_cast<int>(node1->data.slot_index) << std::endl;
-              std::cout << "inBytes " << static_cast<int>(node1->data.in_bytes) << std::endl;
-              std::cout << "outBytes " << static_cast<int>(node1->data.out_bytes) << std::endl;
-              std::cout << "inAddr " << static_cast<int>(node1->data.input_start) << std::endl;
-              std::cout << "outAddr " << static_cast<int>(node1->data.output_start) << std::endl;
-              std::cout << "handwheel_map " << static_cast<int>(node1->data.handwheel_map) << std::endl;
+              std::cout << "info_name " << node->data.info_name << std::endl;
+              std::cout << "device_type " << static_cast<int>(node->data.device_type) << std::endl;
+              std::cout << "group " << static_cast<int>(node->data.group_index) << std::endl;
+              std::cout << "base " << static_cast<int>(node->data.base_index) << std::endl;
+              std::cout << "slot " << static_cast<int>(node->data.slot_index) << std::endl;
+              std::cout << "inBytes " << static_cast<int>(node->data.in_bytes) << std::endl;
+              std::cout << "outBytes " << static_cast<int>(node->data.out_bytes) << std::endl;
+              std::cout << "inAddr " << static_cast<int>(node->data.input_start) << std::endl;
+              std::cout << "outAddr " << static_cast<int>(node->data.output_start) << std::endl;
+              std::cout << "handwheel_map " << static_cast<int>(node->data.handwheel_map) << std::endl;
 
               std::cout << std::endl;
 
-              node1 = node1->next;
+              node = node->next;
         }
         ifs.close();
     }
@@ -447,7 +431,7 @@ bool ChannelEngine::CheckIoDev_pmc2(const BdioDevInfo &info)
 
         if (info.handwheel_map != 1)//手轮映射暂时只支持通道1
         {
-            std::cout << " handwheel_map " << static_cast<int>(info.handwheel_map) << std::endl;
+            std::cout << "handwheel_map " << static_cast<int>(info.handwheel_map) << std::endl;
             return false;
         }
     }

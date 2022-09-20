@@ -51,6 +51,7 @@ public:
 	SCCoordConfig *GetExCoordConfig(int chn_index = 0){return m_sc_ex_coord_config[chn_index];}
 	AxisPitchCompTable *GetPitchCompData(){return this->m_sc_pc_table;}   //返回螺补数据表
 	IoRemapList *GetIoRemapList(){return &this->m_sc_io_remap_list;}      //返回IO重定向数据表
+    HandWheelMapInfoVec GetHandWheelVec() {return m_p_handwheel_param; }  //返回手轮通道映射参数
 
 
 
@@ -91,6 +92,7 @@ public:
 
 	bool UpdateIoRemapInfo(IoRemapInfo &info);    //更新IO重映射数据
 
+    bool UpdateHandWheelInfo(const HandWheelMapInfoVec &infoVec);       //更新手轮通道映射
 
 	void ActiveResetParam();     //激活复位有效的参数
 	void ActiveNewStartParam();		//激活新一次加工有效的参数
@@ -128,6 +130,7 @@ private:
 
 	bool ReadChnProcParam();    //读取工艺相关通道参数
 	bool ReadAxisProcParam();   //读取工艺相关轴参数
+    bool ReadHandWheelParam();  //读取手轮通道映射参数
 
 #ifdef USES_FIVE_AXIS_FUNC
 	bool ReadFiveAxisConfig();	//读取五轴配置
@@ -187,6 +190,7 @@ private:
 
 	ChnProcParamGroup *m_p_chn_process_param;    //工艺相关通道参数
 	AxisProcParamGroup *m_p_axis_process_param;   //工艺相关轴参数
+    HandWheelMapInfoVec m_p_handwheel_param;      //手轮通道映射参数
 
 #ifdef USES_FIVE_AXIS_FUNC
 	IniFile *m_ini_five_axis;    //五轴参数配置文件
@@ -206,6 +210,8 @@ private:
 	IniFile *m_ini_proc_axis;      //轴工艺相关参数文件
 
 	IniFile *m_ini_chn_scene;		//通道状态参数文件，保存如当前打开文件等状态
+
+    IniFile *m_ini_handwheel_map;   //手轮通道映射关系
 
 	UpdateParamList *m_list_new_start;	//新一次加工生效的参数
 	UpdateParamList *m_list_reset;		//复位生效的参数

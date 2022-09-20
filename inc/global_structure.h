@@ -168,6 +168,7 @@ struct BdioDevInfo{
     int8_t input_start;   //输入起始点
     int8_t output_start;  //输出起始点
     int8_t handwheel_map; //手轮映射
+    int8_t handwheel_num; //设备所支持的手轮个数（@temp暂时确定只有一个）
     std::string info_name;//设备名称
 };
 

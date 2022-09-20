@@ -5346,8 +5346,6 @@ bool ChannelControl::ExecuteMessage(){
 			line_no = msg->GetLineNo();
 			printf("excute message line no %llu  msg type: %d \n", line_no, msg_type);
 		}
-		//printf("excute message msg type: %d line no -------> %llu\n", msg_type, line_no);
-		//printf("------> excute message... lino: %llu\n", msg->GetLineNo());
 		// @test zk
 
 		switch(msg_type){
@@ -7512,8 +7510,15 @@ bool ChannelControl::ExecuteModeMsg(RecordMsg *msg){
 
 	//TODO 执行各模态指令
 	printf("execute mode message : %d\n", cmd);
+	if(cmd == G98_CMD){
+		Variable *pv = GetMacroVar();
+		pv->SetVarValue(198, 1.0);
+	}
 
-
+	if(cmd == G99_CMD){
+		Variable *pv = GetMacroVar();
+		pv->SetVarValue(198, 0.0);
+	}
 
 	//通知HMI
 	this->SendChnStatusChangeCmdToHmi(G_MODE);
@@ -7759,9 +7764,6 @@ bool ChannelControl::ExecuteLoopMsg(RecordMsg *msg){
 		return false;
 	}
 
-	// @test zk
-	printf("sub prog count: %d   max prog count: %d\n", m_n_subprog_count, kMaxSubNestedCount);
-
 	if(m_n_subprog_count >= kMaxSubNestedCount){
 		this->m_error_code = ERR_SUB_NESTED_COUNT;   //子程序嵌套层数过多
 		CreateError(ERR_SUB_NESTED_COUNT, ERROR_LEVEL, CLEAR_BY_MCP_RESET, 0, m_n_channel_index);
@@ -7782,8 +7784,6 @@ bool ChannelControl::ExecuteLoopMsg(RecordMsg *msg){
 
 	//设置当前行号
 	SetCurLineNo(msg->GetLineNo());
-
-	printf("----------------------------> excute loop lino: %llu\n", msg->GetLineNo());
 
 	m_n_subprog_count++;
 	m_n_macroprog_count++;
@@ -7865,10 +7865,11 @@ bool ChannelControl::ExecuteLoopMsg(RecordMsg *msg){
 	//if(loopmsg->GetGCode() == G73_CMD){
 	//	g73_func();
 	//}
-
+	//StartMcIntepolate();
+	//StraightFeed(0,150,150,150,1000);
 	// @test zk
 
-	//通知HMI
+	// 通知HMI模态变化
 	this->SendChnStatusChangeCmdToHmi(G_MODE);
 
 	return true;
@@ -8747,13 +8748,13 @@ bool ChannelControl::ExecuteMacroCmdMsg(RecordMsg *msg){
 			break;
 
 		if(this->ReadMcMoveDataCount() > 0 ||
-				(!this->CheckStepOverFlag() && !this->CheckBlockOverFlag()) ||
+				// @test zk 解决MDI执行宏程序 遇到宏变量计算卡顿问题  不确定会不会产生新问题
+				//	(!this->CheckStepOverFlag() && !this->CheckBlockOverFlag()) ||
 				m_channel_status.machining_state == MS_PAUSED ||
 				m_channel_status.machining_state == MS_WARNING){
 			bool flag1 = this->CheckStepOverFlag();
 			bool flag2 = this->CheckBlockOverFlag();
 			bool flag3 = (!this->CheckStepOverFlag() && !this->CheckBlockOverFlag());
-			printf("------>  move data count:%d %d %d %d\n", this->ReadMcMoveDataCount(), flag1, flag2, flag3);
 			return false;    //还未运行到位
 		}
 		else{
@@ -8770,8 +8771,6 @@ bool ChannelControl::ExecuteMacroCmdMsg(RecordMsg *msg){
 		return false;
 	}
 
-
-	printf("------> 22222\n");
 	//设置当前行号
 	SetCurLineNo(msg->GetLineNo());
 
@@ -18845,7 +18844,7 @@ void ChannelControl::StraightTraverse(int chn, double x, double y, double z)
 
 
 void ChannelControl::g73_func(){
-	//StartMcIntepolate();
+	StartMcIntepolate();
 
 	double data;
 

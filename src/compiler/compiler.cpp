@@ -2252,7 +2252,6 @@ bool Compiler::GetLineData() {
 		}
 
 	}
-	printf("------> get_line_data lineno = %lld\n", this->m_lexer_result.line_no);
 
 	return res;
 }
@@ -2269,7 +2268,7 @@ bool Compiler::CompileLine() {
 //
 //	gettimeofday(&tvStart, NULL);
 
-	printf("------> compile line ...\n");
+//	printf("------> compile line ...\n");
 
 	bool res = true;
 
@@ -2315,7 +2314,7 @@ bool Compiler::RunMessage() {
 	ListNode<RecordMsg *> *node = m_p_parser_result->HeadNode();
 	CodeMsgType msg_type = NORMAL_MSG;
 
-	printf("------> run message ...\n");
+//	printf("------> run message ...\n");
 
 	while (node != nullptr) {
 		msg = static_cast<RecordMsg *>(node->data);
@@ -2334,8 +2333,7 @@ bool Compiler::RunMessage() {
 
 			if(cur_line != msg->GetLineNo()){
 				cur_line = msg->GetLineNo();
-				//printf("compiler run message  line no: %llu,  type: %d\n", cur_line, msg_type);
-
+				printf("compiler run message  line no: %llu,  type: %d\n", cur_line, msg_type);
 			}
 			// @test zk
 
@@ -3865,6 +3863,7 @@ bool Compiler::RunToolMsg(RecordMsg *msg) {
 bool Compiler::RunLoopMsg(RecordMsg *msg) {
 	if (msg == nullptr)
 		return true;
+
 	LoopMsg *sub_msg = (LoopMsg *) msg;
 	int gcode = sub_msg->GetGCode();
 
@@ -3891,7 +3890,6 @@ bool Compiler::RunLoopMsg(RecordMsg *msg) {
 	m_compiler_status.mode.gmode[GetModeGroup(gcode)] = gcode;   //修改编译器G模态
 
 	//保存当前编译器状态
-	// @test zk
 	this->SaveScene();
 
 	Variable *pv = m_p_channel_control->GetMacroVar();
@@ -3918,6 +3916,7 @@ bool Compiler::RunLoopMsg(RecordMsg *msg) {
 	// @zk 这一步会将当前坐标值保存到对应的局部变量 (指定 X_ Y_ Z_ ...)
 	for(uint8_t i = 0; i < chn_axis_count; i++){
 		chn_axis_data = this->MapAxisNameToParamIdx(m_p_channel_control->GetChnAxisName(i));
+
 		if((pm & (0x01<<chn_axis_data)) == 0){
 			pv->SetVarValue(kLoopParamToLocalVarIndex[chn_axis_data], m_compiler_status.cur_pos.GetAxisValue(i));
 		}
@@ -4840,16 +4839,15 @@ uint8_t Compiler::MapAxisNameToParamIdx(uint8_t axis_name){
  * @param loop : 循环指令消息
  */
 void Compiler::SaveLoopParam(LoopMsg *loop){
-
 	if(loop == nullptr)
 		return;
-
 	uint8_t pc = 0;   //参数个数
 	uint32_t pm = 0;  //参数掩码
 	int i  = 0;
 	double *pp = loop->GetParameter(pm, pc);
 	Variable *pv = m_p_channel_control->GetMacroVar();
 
+	// @question 在run message之前模态就被改了  此条件感觉永远成立不了
 	if(m_compiler_status.mode.gmode[9] == G80_CMD){  //由非循环模态转入循环指令模态
 		this->ResetLoopParam();   //先复位参数
 		//写入忽略的轴坐标参数
@@ -4857,6 +4855,12 @@ void Compiler::SaveLoopParam(LoopMsg *loop){
 		uint8_t chn_axis_data = 0;
 		for(uint8_t i = 0; i < chn_axis_count; i++){
 			chn_axis_data = this->MapAxisNameToParamIdx(m_p_channel_control->GetChnAxisName(i));
+
+			//@add zk 记录初始平面
+			if(chn_axis_data == 25){
+				pv->SetVarValue(199, m_compiler_status.cur_pos.GetAxisValue(i));
+			}
+
 			if((pm & (0x01<<chn_axis_data)) == 0){
 				pv->SetVarValue(kLoopParamToGlobalVarIndex[chn_axis_data], m_compiler_status.cur_pos.GetAxisValue(i));
 			}

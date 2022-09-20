@@ -1876,7 +1876,8 @@ bool Parser::CreateLoopMsg(const int gcode){
 		new_msg->SetFlag(FLAG_JUMP, true);
 
 	m_p_parser_result->Append(new_msg);
-	this->m_p_compiler_status->mode.gmode[GetModeGroup(gcode)] = gcode;
+	//@test zk run message时会去修改模态  在这里修改太早了
+	//this->m_p_compiler_status->mode.gmode[GetModeGroup(gcode)] = gcode;
 //	this->m_p_compiler_status->mode.move_mode = 9;
 
 //	printf("create loop msg : %d\n", gcode);

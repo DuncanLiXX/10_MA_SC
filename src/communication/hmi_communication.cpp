@@ -1100,7 +1100,7 @@ int HMICommunication::TransFile(){
 				//	printf("ERROR! Failed to accept file trans link!err=%d\n", errno);
 					this->m_b_trans_file = false;   //复位文件传输标志
 					g_ptr_trace->PrintLog(LOG_ALARM, "接受文件传输连接失败！errno = %d", errno);
-					CreateError(ERR_FILE_TRANS, ERROR_LEVEL, CLEAR_BY_CLEAR_BUTTON, errno);
+                    CreateError(ERR_FILE_TRANS, ERROR_LEVEL, CLEAR_BY_CLEAR_BUTTON, errno);
 					continue;
 				}
 				else

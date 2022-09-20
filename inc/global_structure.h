@@ -170,6 +170,19 @@ struct BdioDevInfo{
     int8_t handwheel_map; //手轮映射
     std::string info_name;//设备名称
 };
+
+/**
+ * @brief SD_LINK扩展板卡规格
+ */
+struct SDLINK_SPEC {
+    int8_t  inBytes;
+    int8_t  outBytes;
+    std::string info_name;
+    bool    withHandWheel;
+    SDLINK_SPEC(std::string name, int in, int out, bool handWheel) :
+        inBytes(in), outBytes(out), info_name(name), withHandWheel(handWheel) {}
+};
+
 #else
 /**
  * @brief SD-LINK从站设备信息结构

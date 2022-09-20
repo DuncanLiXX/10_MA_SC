@@ -63,7 +63,9 @@ void SetMcArmComm(MCArmCommunication *comm){this->m_p_mc_arm_comm = comm;}   //…
 	void InitBdioDev();   //≥ı ºªØSD-LINK¥”’æ…Ë±∏≈‰÷√
 
 #ifdef USES_PMC_2_0
-	void ReadIoDev_pmc2();   //PMC2.0∞Ê±æ£¨∂¡»°SD_LINK¥”’æ…Ë±∏≈‰÷√
+    void ReadIoDev_pmc2();                               //PMC2.0∞Ê±æ£¨∂¡»°SD_LINK¥”’æ…Ë±∏≈‰÷√
+    bool CheckIoDev_pmc2(const BdioDevInfo &info);       //ºÏ≤‚SD_LINK≤Œ ˝ «∑Ò∫œ¿Ì
+    bool SelectHandleWheel(int indexId, int channelId);  //≈‰÷√ ÷¬÷Õ®µ¿”≥…‰
 #else
 	void ReadIoDev_pmc1();     //PMC1.0∞Ê±æ£¨∂¡»°SD_LINK¥”’æ…Ë±∏≈‰÷√
 #endif
@@ -581,6 +583,9 @@ private:  //ÀΩ”–≥…‘±±‰¡ø
 	uint8_t m_mask_delay_svo_off;   //¥˝—”≥Ÿœ¬À≈∑˛µƒÕ®µ¿mask
 	uint8_t m_mask_delay_svo_off_over;   //“—æ≠Õ£÷πµΩŒªµƒÕ®µ¿µƒmask
 #endif
+
+    const int m_HANDWHEEL_BYTES = 3;
+    const static map<int, SDLINK_SPEC> m_SDLINK_MAP;
 
 };
 

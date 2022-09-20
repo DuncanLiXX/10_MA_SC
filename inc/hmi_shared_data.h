@@ -370,6 +370,7 @@ enum ErrorType {
 	ERR_POWER_OFF,				//掉电告警
 	ERR_IMPORT_CONFIG,          //配置导入后请先重启
 	ERR_CHN_SPINDLE_OVERRUN,    //通道主轴数量超限
+    ERR_PMC_SDLINK_CONFIG,      //SDLINK配置信息错误
 
 
 	ERR_SYSTEM_TIME = 80,       //系统时间异常

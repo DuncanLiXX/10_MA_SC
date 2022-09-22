@@ -92,7 +92,7 @@ public:
 
 	bool UpdateIoRemapInfo(IoRemapInfo &info);    //更新IO重映射数据
 
-    bool UpdateHandWheelInfo(const HandWheelMapInfoVec &infoVec);       //更新手轮通道映射
+    bool SyncHandWheelInfo(const HandWheelMapInfoVec &infoVec, bool bRestart = false);       //更新手轮通道映射
 
 	void ActiveResetParam();     //激活复位有效的参数
 	void ActiveNewStartParam();		//激活新一次加工有效的参数

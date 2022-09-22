@@ -190,6 +190,8 @@ enum HMICmdCode {
 	CMD_HMI_CHECK_SYNC_EN,           //HMI向SC查询同步轴状态 0x37
 	CMD_HMI_GET_SYS_INFO,
     CMD_HMI_CLEAR_MACHINETIME_TOTAL, //HMI向SC请求清除累计时间
+    CMD_HMI_GET_HANDWHEEL_INFO,      //HMI向SC获取手轮信息
+    CMD_HMI_SET_HANDWHEEL_INFO,      //HMI向SC设置手轮信息
 
 
 	//SC-->HMI

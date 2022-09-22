@@ -349,12 +349,13 @@ void ChannelEngine::ReadIoDev_pmc2(){
                 }
 
                 m_list_bdio_dev.Append(devInfo);
-                HandWheelMapInfo info(devInfo.group_index, i, devInfo.handwheel_map, devInfo.info_name);
-                infoVec.push_back(info);
                 if (!selectedHandWheel && SelectHandleWheel(devInfo.group_index, 1))
                 {//默认使用第一个找到的手轮
                     selectedHandWheel = true;
+                    devInfo.handwheel_map = 1;
                 }
+                HandWheelMapInfo info(devInfo.group_index, 0, devInfo.handwheel_map, devInfo.info_name);
+                infoVec.push_back(info);
             }
 
             HandWheelMapInfoVec configInfo = g_ptr_parm_manager->GetHandWheelVec();
@@ -367,7 +368,7 @@ void ChannelEngine::ReadIoDev_pmc2(){
             }
             else
             {//梯图改变了ini结构（扩展板卡个数或者基本配置发生变化），需要重写ini文件
-                g_ptr_parm_manager->UpdateHandWheelInfo(infoVec);
+                g_ptr_parm_manager->SyncHandWheelInfo(infoVec);
             }
         }
 
@@ -2692,6 +2693,28 @@ void ChannelEngine::ProcessHmiCmd(HMICmdFrame &cmd){
             }
         }
         break;
+    case CMD_HMI_GET_HANDWHEEL_INFO:           // hmi向sc查询手轮映射关系
+        ProcessHmiHandWheelCmd(cmd);
+        break;
+    case CMD_HMI_SET_HANDWHEEL_INFO:           // hmi向sc设置手轮信息
+    {
+        HandWheelMapInfoVec configInfo = g_ptr_parm_manager->GetHandWheelVec();
+        std::cout << cmd.cmd_extension << " " << configInfo.size() << std::endl;
+        if (cmd.cmd_extension - 1 < configInfo.size())
+        {
+            for(auto itr = configInfo.begin(); itr != configInfo.end(); ++itr)
+            {
+                itr->devNum == cmd.cmd_extension
+                        ? itr->channelMap = cmd.channel_index : itr->channelMap = 0;
+            }
+            g_ptr_parm_manager->SyncHandWheelInfo(configInfo, true);
+        }
+        else
+        {
+            CreateError(ERR_PMC_SDLINK_CONFIG, WARNING_LEVEL, CLEAR_BY_CLEAR_BUTTON);
+        }
+    }
+        break;
 	default:
 		g_ptr_trace->PrintTrace(TRACE_WARNING, CHANNEL_ENGINE_SC, "不支持的HMI指令[%d]", cmd.cmd);
 		break;
@@ -3119,7 +3142,28 @@ void ChannelEngine::ProcessHmiNotifyGraphCmd(HMICmdFrame &cmd){
 		}
 	}
 
-	this->m_p_hmi_comm->SendCmd(cmd);
+    this->m_p_hmi_comm->SendCmd(cmd);
+}
+
+void ChannelEngine::ProcessHmiHandWheelCmd(HMICmdFrame &cmd)
+{
+    cmd.frame_number |= 0x8000;
+
+    HandWheelMapInfoVec infoVec = g_ptr_parm_manager->GetHandWheelVec();
+    cmd.data[0] = 0;
+    cmd.data_len = 0;
+
+    size_t infoLen = sizeof(HandWheelMapInfo);
+    for (auto itr = infoVec.begin(); itr != infoVec.end(); ++itr)
+    {
+        cmd.data[0 + cmd.data_len] = itr->devNum;
+        cmd.data[1 + cmd.data_len] = itr->wheelID;
+        cmd.data[2 + cmd.data_len] = itr->channelMap;
+        cmd.data[3 + cmd.data_len] = itr->reserve;
+        memcpy(&cmd.data[4 + cmd.data_len], itr->devName, sizeof(itr->devName));
+        cmd.data_len += infoLen;
+    }
+    this->m_p_hmi_comm->SendCmd(cmd);
 }
 
 

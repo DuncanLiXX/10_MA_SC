@@ -365,8 +365,10 @@ private:	//私有成员函数
 	void ProcessHmiCheckSyncCmd(HMICmdFrame &cmd);      //处理HMI查询同步轴使能命令
 
 	void ProcessHmiNotifyGraphCmd(HMICmdFrame &cmd);    //处理HMI通知图形模式命令
+    void ProcessHmiHandWheelCmd(HMICmdFrame &cmd);
 
 	void SendHmiUpdateStatus(uint8_t total_step, uint8_t cur_step);  //给HMI发送升级状态
+
 
 
 	void ProcessPmcSignal();		//处理PMC的G变量

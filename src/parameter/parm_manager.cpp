@@ -1202,7 +1202,12 @@ bool ParmManager::ReadHandWheelParam()
             info.channelMap = m_ini_handwheel_map->GetIntValueOrDefault(*itr, "channelMap", -1);
             std::string strValue;
             m_ini_handwheel_map->GetStringValueOrDefault(*itr, "devName", &strValue, "null");
-            info.devName = strValue;
+
+            size_t len = strValue.length();
+            if(len >= sizeof(info.devName))
+                len = sizeof(info.devName)-1;
+            strValue.copy(info.devName, len, 0);
+            //info.devName = strValue;
 
             m_p_handwheel_param.push_back(info);
         }
@@ -3365,11 +3370,11 @@ bool ParmManager::UpdateIoRemapInfo(IoRemapInfo &info){
 
 /**
  * @brief 更新手轮通道映射
- * @param devID : 扩展设备编号
- * @param channelMap : 手轮对应的通道
+ * @param HandWheelMapInfoVec : 手轮通道映射关系
+ * @param bRestart : 是否重启生效
  * @return true--成功    false--失败
  */
-bool ParmManager::UpdateHandWheelInfo(const HandWheelMapInfoVec &infoVec)
+bool ParmManager::SyncHandWheelInfo(const HandWheelMapInfoVec &infoVec, bool bRestart)
 {
     char sectionName[30];
     if (m_p_handwheel_param == infoVec)
@@ -3377,20 +3382,18 @@ bool ParmManager::UpdateHandWheelInfo(const HandWheelMapInfoVec &infoVec)
         for(unsigned int i = 0; i < infoVec.size(); ++i)
         {
             memset(sectionName, 0x00, sizeof(sectionName));
-            sprintf(sectionName, "handwheel%d", i+1);
-            m_p_handwheel_param[i].channelMap = infoVec[i].channelMap;
+            sprintf(sectionName, "handwheel%d", infoVec[i].devNum);
+            if (!bRestart)
+                m_p_handwheel_param[i].channelMap = infoVec[i].channelMap;
             m_ini_handwheel_map->SetIntValue(sectionName, "channelMap", infoVec[i].channelMap);
-            m_ini_handwheel_map->Save();
         }
+        m_ini_handwheel_map->Save();
     }
     else
     {//梯图配置结构改变，需要重新写入ini
-        vector<string> sections;
-        for(auto itr = sections.begin(); itr != sections.end(); ++itr)
-        {
-            m_ini_handwheel_map->DeleteSection(*itr);
-            m_ini_handwheel_map->Save();
-        }
+        remove(HANDWHEEL_CONFIG_FILE);
+        sync();
+        m_ini_handwheel_map->Load(HANDWHEEL_CONFIG_FILE);
         for(unsigned int i = 0; i < infoVec.size(); ++i)
         {
             memset(sectionName, 0x00, sizeof(sectionName));
@@ -3401,7 +3404,8 @@ bool ParmManager::UpdateHandWheelInfo(const HandWheelMapInfoVec &infoVec)
             m_ini_handwheel_map->SetIntValue(sectionName, "channelMap", infoVec[i].channelMap);
             m_ini_handwheel_map->SetStringValue(sectionName, "devName", infoVec[i].devName);
         }
-        m_p_handwheel_param = infoVec;
+        if (!bRestart)
+            m_p_handwheel_param = infoVec;
         m_ini_handwheel_map->Save();
     }
     return true;

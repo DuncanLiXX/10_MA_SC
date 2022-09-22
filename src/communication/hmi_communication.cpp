@@ -983,6 +983,8 @@ int HMICommunication::ProcessHmiCmd(){
 			case CMD_HMI_NOTIFY_GRAPH:            //HMI通知SC进入图形模式    0x35
 			case CMD_HMI_CHECK_SYNC_EN:           //HMI向SC查询同步轴状态 0x37
             case CMD_HMI_CLEAR_MACHINETIME_TOTAL: //HMI向SC请求清除累计时间
+            case CMD_HMI_GET_HANDWHEEL_INFO:      //HMI向SC获取手轮信息
+            case CMD_HMI_SET_HANDWHEEL_INFO:      //HMI向SC设置手轮信息
 #ifdef USES_GRIND_MACHINE
 			case CMD_SC_MECH_ARM_ERR:         //HMI响应机械手告警指令
 #endif

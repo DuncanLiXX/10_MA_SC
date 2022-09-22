@@ -400,13 +400,24 @@ struct HandWheelMapInfo {
     uint8_t devNum = 0;
     uint8_t wheelID = 0;
     uint8_t channelMap = 0;
-    std::string devName = "";
+    uint8_t reserve = 0;
+    //std::string devName = "";
+    char devName[16] = { };
     HandWheelMapInfo() = default;
     HandWheelMapInfo(int dNum, int wId, int cMap, std::string dName):
-        devNum(dNum), wheelID(wId), channelMap(cMap), devName(dName) {}
+        devNum(dNum), wheelID(wId), channelMap(cMap)
+    {
+        reserve = 0;
+        size_t len = sizeof(devName);
+        memset(devName, 0, len);
+        int sizeCpy = dName.size();
+        if (dName.length() >= len)
+            sizeCpy = len - 1;
+        memcpy(devName, dName.c_str(), sizeCpy);
+    }
 
     bool operator ==(const HandWheelMapInfo &lhs) const{
-        return (devNum == lhs.devNum) && (wheelID == lhs.wheelID) && (devName == lhs.devName);
+        return (devNum == lhs.devNum) && (wheelID == lhs.wheelID) && (std::string(devName) == std::string(lhs.devName));
     }
 };
 

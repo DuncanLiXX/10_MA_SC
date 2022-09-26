@@ -449,6 +449,7 @@ private:
 	void SendWorkModeToMc(uint16_t work_mode);    //向MC模块发送加工模式命令，主要用于区分插补目标位置，方便计算不同模式的余移动量
 	void PauseMc();		//暂停MC模块的运行
 	void SetMcAxisOrigin(uint8_t axis_index);		//向MC设置轴的工件坐标系原点
+	void SetMcAxisOrigin(uint8_t axis_index, int64_t origin_pos); //向MC设置轴的工件坐标系原点
 	void ActiveMcOrigin(bool active_flag);		//激活设置的工件坐标系
 	void SetMcAxisToolOffset(uint8_t axis_index); 	//向MC设置各轴刀具偏置
 	void ActiveMcToolOffset(bool active_flag);		//激活设置的刀具偏置
@@ -457,13 +458,11 @@ private:
 
 	void SendMcResetCmd();		//发送MC复位指令
 
-
 	uint16_t ReadMcMoveDataCount();   //读取当前MC中运动数据的数量
 	bool CheckBlockOverFlag();	//当前分块到位标志是否有效
 	bool CheckStepOverFlag();	//当前单段到位标志是否有效
 
 	bool IsMcNeedStart();   //MC是否需要发送启动命令
-
 
 	void StartMcIntepolate();    			//启动MC开始插补
 

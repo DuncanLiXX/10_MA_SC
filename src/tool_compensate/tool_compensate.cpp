@@ -17,7 +17,7 @@
 
 void ToolCompensate::__ARC_FEED(double first_end, double second_end,
                                 double first_axis, double second_axis,
-                                int rotation)
+                                int rotation, uint64_t lino)
 {
     DPointChn target;
     double feed;
@@ -53,60 +53,81 @@ void ToolCompensate::__ARC_FEED(double first_end, double second_end,
     center.SetAxisValue(1, cur_point.GetAxisValue(1) + second_axis);
     double radius = sqrt(first_axis*first_axis + second_axis+second_axis);
     int code = rotation < 0? 2:3;
-    ArcMsg * new_msg = new ArcMsg(code, cur_point, target, center, radius, feed, mask);
-    new_msg->SetLineNo(lineno);
 
-    new_msg->SetFlags(msg->GetFlags());
+    ArcMsg * new_msg = new ArcMsg(code, cur_point, target, center, radius, feed, mask);
+    new_msg->SetLineNo(0);
+
+    RecordMsgFlag flags;
+    flags.all = 71;
+    new_msg->SetFlags(flags);
+
     m_p_output_msg_list->Append(new_msg);
     cur_point = target;
 }
 
-void ToolCompensate::__STRAIGHT_FEED(double end_x, double end_y) {
-    LineMsg * old_msg = (LineMsg *)msg;
+void ToolCompensate::__STRAIGHT_FEED(double end_x, double end_y, uint64_t lino) {
+
+	LineMsg * old_msg = (LineMsg *)msg;
     DPointChn target = old_msg->GetTargetPos();
     target.SetAxisValue(0, end_x);
     target.SetAxisValue(1, end_y);
     LineMsg * new_msg = new LineMsg(cur_point, target, old_msg->GetFeed(), old_msg->GetAxisMoveMask());
-    new_msg->SetLineNo(lineno);
 
-    new_msg->SetFlags(old_msg->GetFlags());
+
+    RecordMsgFlag flags;
+    flags.all = 71;
+    new_msg->SetFlags(flags);
+
+    lino==0?new_msg->SetLineNo(old_msg->GetLineNo())
+    		:new_msg->SetLineNo(lino);
+
+    printf("straight feed end point : %lf  %lf %d\n", end_x, end_y, old_msg->GetFlags());
     m_p_output_msg_list->Append(new_msg);
     cur_point = target;
 }
 
-void ToolCompensate::__STRAIGHT_TRAVERSE(double end_x, double end_y) {
+void ToolCompensate::__STRAIGHT_TRAVERSE(double end_x, double end_y, uint64_t lino) {
     RapidMsg * old_msg = (RapidMsg *)msg;
     DPointChn target = old_msg->GetTargetPos();
     target.SetAxisValue(0, end_x);
     target.SetAxisValue(1, end_y);
     RapidMsg * new_msg = new RapidMsg(cur_point, target, old_msg->GetAxisMoveMask());
-    new_msg->SetLineNo(lineno);
 
-    new_msg->SetFlags(old_msg->GetFlags());
+
+    RecordMsgFlag flags;
+    flags.all = 71;
+    new_msg->SetFlags(flags);
+
+    lino==0?new_msg->SetLineNo(old_msg->GetLineNo())
+    		:new_msg->SetLineNo(lino);
+
+	printf("straight feed end point : %lf  %lf %d\n", end_x, end_y, old_msg->GetFlags());
     m_p_output_msg_list->Append(new_msg);
     cur_point = target;
 }
 
-void ToolCompensate::__enqueue_STRAIGHT_TRAVERSE(double dx, double dy, double x, double y) {
+void ToolCompensate::__enqueue_STRAIGHT_TRAVERSE(double dx, double dy, double x, double y, uint64_t lino) {
     StraightTraverseQc * qc = new StraightTraverseQc();
     qc->dx = dx;
     qc->dy = dy;
     qc->x = x;
     qc->y = y;
+    qc->type = 0;
     __qc.push_back(qc);
 }
 
-void ToolCompensate::__enqueue_STRAIGHT_FEED(double dx, double dy, double x, double y) {
+void ToolCompensate::__enqueue_STRAIGHT_FEED(double dx, double dy, double x, double y, uint64_t lino) {
     StraightFeedQc *qc = new StraightFeedQc();
     qc->dx = dx;
     qc->dy = dy;
     qc->x = x;
     qc->y = y;
+    qc->type = 1;
     __qc.push_back(qc);
 }
 
 void ToolCompensate::__enqueue_ARC_FEED(int original_turns, double end1, double end2,
-                                        double center1, double center2,int turn)
+                                        double center1, double center2,int turn, uint64_t lino)
 {
     ArcFeedQc * qc = new ArcFeedQc();
     qc->original_turns = original_turns;
@@ -115,6 +136,7 @@ void ToolCompensate::__enqueue_ARC_FEED(int original_turns, double end1, double 
     qc->center1 = center1;
     qc->center2 = center2;
     qc->turn = turn;
+    qc->type = 2;
     __qc.push_back(qc);
 }
 
@@ -181,7 +203,6 @@ void ToolCompensate::Reset(){
 	__center1 = 0;
 	__center2 = 0;
 
-	lineno = 0;
 	//DPointChn cur_point;
 	first_move = true;
 }
@@ -193,11 +214,8 @@ void ToolCompensate::Reset(){
  */
 void ToolCompensate::ProcessData(ListNode<RecordMsg *> *node){
 
-    msg = node->data;
-    // 记录行号
-    lineno = msg->GetLineNo();
-
-
+	msg = node->data;
+	// 记录行号
     switch(msg->GetMsgType()){
         case LINE_MSG:{
             LineMsg * line_msg = (LineMsg *) msg;
@@ -213,10 +231,8 @@ void ToolCompensate::ProcessData(ListNode<RecordMsg *> *node){
             __convert_straight(1);   // G01  move : 1   G00  move : 0
 
             if(!__errInfo.empty()){
-            	std::cout << "compensate error: " <<  __errInfo << std::endl;
+            	std::cout << "---------------------------> compensate error: " <<  __errInfo << std::endl;
             }
-
-            //delete node;
 
             return;
         }
@@ -232,10 +248,9 @@ void ToolCompensate::ProcessData(ListNode<RecordMsg *> *node){
             __convert_straight(0);
 
             if(!__errInfo.empty()){
-				std::cout << "compensate error: " <<  __errInfo << std::endl;
+				std::cout << "---------------------------> compensate error: " <<  __errInfo << std::endl;
 			}
 
-            //delete node;
             return;
         }
         case ARC_MSG:{
@@ -271,7 +286,6 @@ void ToolCompensate::ProcessData(ListNode<RecordMsg *> *node){
             	std::cout << "compensate error: " <<  __errInfo << std::endl;
 			}
 
-            //delete node;
             return;
         }
         case COMPENSATE_MSG: {
@@ -279,7 +293,10 @@ void ToolCompensate::ProcessData(ListNode<RecordMsg *> *node){
             CompensateMsg * comp_msg = (CompensateMsg *) msg;
 
             break;
-        }default:{
+        }
+
+        default:{
+        	__dequeue_canons();
         	break;
         }
     }
@@ -410,21 +427,21 @@ void ToolCompensate::__dequeue_canons() {
     if(__qc.empty()) return;
 
     for(Qc *q : __qc){
-        if(q->type == 2){
+    	if(q->type == 2){
             ArcFeedQc *qc = (ArcFeedQc *) q;
             __ARC_FEED(qc->end1, qc->end2, qc->center1, qc->center2, qc->turn);
 
         }else if(q->type == 1){
             StraightFeedQc *qc = (StraightFeedQc *) q;
-            __STRAIGHT_FEED(qc->x, qc->y);
+            __STRAIGHT_FEED(qc->x, qc->y, qc->lino);
         }else if(q->type == 0){
             StraightTraverseQc *qc = (StraightTraverseQc *)q;
-            __STRAIGHT_TRAVERSE(qc->x, qc->y);
+            __STRAIGHT_TRAVERSE(qc->x, qc->y, qc->lino);
         }
     }
 
     for(Qc *q:__qc) {
-        delete q;
+       delete q;
     }
     // clear 并不能delete 指针
     __qc.clear();
@@ -488,7 +505,8 @@ void ToolCompensate::__find_ends(double *end_x, double *end_y) {
 }
 
 void ToolCompensate::__convert_straight_comp1(int move, double px, double py) {
-    // 执行G41/42后首次直线运动
+    printf("---------------------> straight comp1\n");
+	// 执行G41/42后首次直线运动
     double radius = __cutter_comp_radius;
     int side = __cutter_comp_side;
     double cx = __current_x;
@@ -500,14 +518,22 @@ void ToolCompensate::__convert_straight_comp1(int move, double px, double py) {
     }
 
     double alpha = atan2(py-cy, px-cx);
+
+    if(side == 1){
+    	alpha += M_PI_2;
+    }else{
+    	alpha -= M_PI_2;
+    }
+
+
     double end_x = px + radius*cos(alpha);
     double end_y = py + radius*sin(alpha);
     __set_endpoint(cx, cy);
 
     if(move == 0){
-        __enqueue_STRAIGHT_TRAVERSE(cos(alpha), sin(alpha), end_x, end_y);
+    	__enqueue_STRAIGHT_TRAVERSE(cos(alpha), sin(alpha), end_x, end_y, msg->GetLineNo());
     }else{
-        __enqueue_STRAIGHT_FEED(cos(alpha), sin(alpha), end_x, end_y);
+    	__enqueue_STRAIGHT_FEED(cos(alpha), sin(alpha), end_x, end_y, msg->GetLineNo());
     }
 
     __cutter_comp_firstmove = false;
@@ -518,7 +544,8 @@ void ToolCompensate::__convert_straight_comp1(int move, double px, double py) {
 }
 
 void ToolCompensate::__convert_straight_comp2(int move, double px, double py) {
-   //# 执行G41/42后非首次直线运动
+	printf("---------------------> straight comp2\n");
+	//# 执行G41/42后非首次直线运动
     double small = 0.05;
     double cx = __current_x;
     double cy = __current_y;
@@ -539,7 +566,6 @@ void ToolCompensate::__convert_straight_comp2(int move, double px, double py) {
 
         if(side == 1){
             if(theta < alpha) theta += 2*M_PI;
-
             beta = theta - alpha - M_PI_2;
             gamma = M_PI_2;
         }else{
@@ -567,7 +593,7 @@ void ToolCompensate::__convert_straight_comp2(int move, double px, double py) {
             concave = false;
         }
 
-        if(!concave and (beta < small)){
+        if(!concave and (beta > small)){
             __move_endpoint_and_flush(cx, cy);
 
             if(!__errInfo.empty()) return;
@@ -575,10 +601,11 @@ void ToolCompensate::__convert_straight_comp2(int move, double px, double py) {
             if(move == 1){
                 // original_turn=0.0, doesn't matter, since we will not move this arc's endpoint
                 int turn = side == 1 ? -1 : 1;
+                printf("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\n");
                 __enqueue_ARC_FEED(0.0, mid_x, mid_y, opx, opy, turn);
             }else{
                 // 快速移动 不需要圆弧过渡
-                __enqueue_STRAIGHT_TRAVERSE(0.0, 0.0, mid_x, mid_y);
+                __enqueue_STRAIGHT_TRAVERSE(0.0, 0.0, mid_x, mid_y, msg->GetLineNo());
             }
             __dequeue_canons();
             if(!__errInfo.empty()) return;
@@ -673,12 +700,11 @@ void ToolCompensate::__convert_straight_comp2(int move, double px, double py) {
         }
 
         if(move == 0){
-            __enqueue_STRAIGHT_TRAVERSE(px - opx, py - opy, end_x, end_y);
+        	__enqueue_STRAIGHT_TRAVERSE(px - opx, py - opy, end_x, end_y, msg->GetLineNo());
         }else{
-            __enqueue_STRAIGHT_FEED(px - opx, py - opy, end_x, end_y);
+            __enqueue_STRAIGHT_FEED(px - opx, py - opy, end_x, end_y, msg->GetLineNo());
         }
     }
-
     __current_x = end_x;
     __current_y = end_y;
     __program_x = px;

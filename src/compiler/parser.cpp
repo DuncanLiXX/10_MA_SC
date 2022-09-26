@@ -616,7 +616,6 @@ bool Parser::AnalyzeGCode(LexerGCode *gcode){
 			return false;
 	}
 
-
 	//处理10组模态指令：G98/G99 固定循环（初始平面/R点平面）返回
 	if(m_mode_mask & GMODE_10){
 		if(!CreateModeMsg(m_mode_code[10]))
@@ -1908,7 +1907,6 @@ bool Parser::CreateCoordMsg(const int gcode){
 		CreateError(ERR_MEMORY_NEW, FATAL_LEVEL, CLEAR_BY_RESET_POWER);
 		return false;
 	}
-
 
 	new_msg->SetLineNo(this->m_p_lexer_result->line_no);  //设置当前行号
 	if(this->m_p_compiler_status->jump_flag)

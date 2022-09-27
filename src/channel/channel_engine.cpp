@@ -5,7 +5,7 @@
  *@file ChannelEngine.cpp
  *@author gonghao
  *@date 2020/03/19
- *@brief ±¾ÎÄ¼þÎªÍ¨µÀÒýÇæÀàµÄÊµÏÖ
+ *@brief ï¿½ï¿½ï¿½Ä¼ï¿½ÎªÍ¨ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Êµï¿½ï¿½
  *@version
  */
 
@@ -25,11 +25,11 @@
 //#include <unistd.h>
 //#include <stropts.h>
 
-ChannelEngine* ChannelEngine::m_p_instance = nullptr;  //³õÊ¼»¯µ¥Àý¶ÔÏóÖ¸ÕýÎª¿Õ
+ChannelEngine* ChannelEngine::m_p_instance = nullptr;  //ï¿½ï¿½Ê¼ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ö¸ï¿½ï¿½Îªï¿½ï¿½
 const map<int, SDLINK_SPEC> ChannelEngine::m_SDLINK_MAP =
 {
     //id.SA1, 3.SC1, 4.SD1, 5.SE1
-    //¶ÔÓÚÓÐÊÖÂÖÀ©Õ¹µÄ°å¿¨£¬ÌÝÍ¼Ä¬ÈÏ·ÖÅäÁËÊÖÂÖ¿Õ¼ä£¬ÐèÒªÈ¥µô£¬ÒªÊ¹ÓÃÊÖÂÖÊ±£¬ÔÙÓÉSC·ÖÅä
+    //ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Õ¹ï¿½Ä°å¿¨ï¿½ï¿½ï¿½ï¿½Í¼Ä¬ï¿½Ï·ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ö¿Õ¼ä£¬ï¿½ï¿½ÒªÈ¥ï¿½ï¿½ï¿½ÒªÊ¹ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ê±ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½SCï¿½ï¿½ï¿½ï¿½
     //id    name    inbytes outBytes withHandWheel
     {1,     {"SA1",  9-3,    4,      true}},
     {3,     {"SC1",  16,     16,     false}},
@@ -37,10 +37,10 @@ const map<int, SDLINK_SPEC> ChannelEngine::m_SDLINK_MAP =
     {5,     {"SE1",  7-3,    8,      true}}
 };
 
-const uint32_t MC_UPDATE_BLOCK_SIZE = 100;		//MCÉý¼¶ÎÄ¼þÖ¡£¬Ã¿Ö¡°üº¬100×Ö½ÚÊý¾Ý,50¸öuint16
+const uint32_t MC_UPDATE_BLOCK_SIZE = 100;		//MCï¿½ï¿½ï¿½ï¿½ï¿½Ä¼ï¿½Ö¡ï¿½ï¿½Ã¿Ö¡ï¿½ï¿½ï¿½ï¿½100ï¿½Ö½ï¿½ï¿½ï¿½ï¿½ï¿½,50ï¿½ï¿½uint16
 
 /**
- * @brief ¹¹Ôìº¯Êý
+ * @brief ï¿½ï¿½ï¿½ìº¯ï¿½ï¿½
  */
 ChannelEngine::ChannelEngine() {
 	// TODO Auto-generated constructor stub
@@ -65,8 +65,8 @@ ChannelEngine::ChannelEngine() {
 	m_p_pmc_reg = nullptr;
 
 	memset(this->m_device_sn, 0x00, SN_COUNT+1);
-	strcpy(this->m_device_sn, "LIT0123456789");   //Ä¬ÈÏÐòÁÐºÅ"LIT0123456789"
-	this->m_lic_info.InitData();     //³õÊ¼»¯Êý¾Ý
+	strcpy(this->m_device_sn, "LIT0123456789");   //Ä¬ï¿½ï¿½ï¿½ï¿½ï¿½Ðºï¿½"LIT0123456789"
+	this->m_lic_info.InitData();     //ï¿½ï¿½Ê¼ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 
 
 	m_thread_update = 0;
@@ -85,27 +85,27 @@ ChannelEngine::ChannelEngine() {
 	this->m_b_delay_servo_off = false;
 #endif
 
-	this->m_n_cur_pmc_axis = 0xFF;   //Ä¬ÈÏÃ»ÓÐµ±Ç°Öá
+	this->m_n_cur_pmc_axis = 0xFF;   //Ä¬ï¿½ï¿½Ã»ï¿½Ðµï¿½Ç°ï¿½ï¿½
 
 	this->m_hard_limit_negative = 0;
 	this->m_hard_limit_postive = 0;
 
 	this->m_n_pmc_axis_count = 0;
-	m_n_run_axis_mask = 0x00;  //µ±Ç°ÔËÐÐµÄÖáµÄmask
-	m_n_runover_axis_mask = 0x00;   //µ±Ç°ÔËÐÐÍê³ÉµÄÖáµÄmask
+	m_n_run_axis_mask = 0x00;  //ï¿½ï¿½Ç°ï¿½ï¿½ï¿½Ðµï¿½ï¿½ï¿½ï¿½mask
+	m_n_runover_axis_mask = 0x00;   //ï¿½ï¿½Ç°ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Éµï¿½ï¿½ï¿½ï¿½mask
 
-	m_mask_import_param = 0;    //³õÊ¼»¯µ¼Èë²ÎÊý±êÖ¾
+	m_mask_import_param = 0;    //ï¿½ï¿½Ê¼ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ö¾
 
-//	m_n_mc_auto_buf_max = 200;   //Ä¬ÈÏ200
+//	m_n_mc_auto_buf_max = 200;   //Ä¬ï¿½ï¿½200
 
-	//³õÊ¼»¯»Ø²Î¿¼µã±äÁ¿
+	//ï¿½ï¿½Ê¼ï¿½ï¿½ï¿½Ø²Î¿ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 	this->m_b_ret_ref = false;
 	this->m_b_ret_ref_auto = false;
 	m_n_mask_ret_ref_over = 0;
 	this->m_n_mask_ret_ref = 0;
 	memset(this->m_n_ret_ref_step, 0x00, kMaxAxisNum*sizeof(int));
 	
-	//³õÊ¼»¯mcÍ¨µÀÔËÐÐ±êÖ¾
+	//ï¿½ï¿½Ê¼ï¿½ï¿½mcÍ¨ï¿½ï¿½ï¿½ï¿½ï¿½Ð±ï¿½Ö¾
 	m_mc_run_on_arm[0] = false;
 	for(uint16_t i=1; i<kMaxChnCount; i++)
 	    m_mc_run_on_arm[i] = false;
@@ -119,7 +119,7 @@ ChannelEngine::ChannelEngine() {
 }
 
 /**
- * @brief Îö¹¹º¯Êý
+ * @brief ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
  */
 ChannelEngine::~ChannelEngine(){
 	// TODO Auto-generated destructor stub
@@ -127,7 +127,7 @@ ChannelEngine::~ChannelEngine(){
 	void* thread_result;
 	int res = ERR_NONE;
 
-	//ÍË³ö±àÒëÔËÐÐÏß³Ì
+	//ï¿½Ë³ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ß³ï¿½
 	if(this->m_thread_update != 0){
 		res = pthread_cancel(m_thread_update);
 		if (res != ERR_NONE) {
@@ -135,20 +135,20 @@ ChannelEngine::~ChannelEngine(){
 		}
 
 		//	usleep(1000);
-		res = pthread_join(m_thread_update, &thread_result);//µÈ´ý±àÒëÆ÷Ïß³ÌÍË³öÍê³É
+		res = pthread_join(m_thread_update, &thread_result);//ï¿½È´ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ß³ï¿½ï¿½Ë³ï¿½ï¿½ï¿½ï¿½
 		if (res != ERR_NONE) {
 			printf("Update thread join failed\n");
 		}
 		m_thread_update = 0;
 	}
 
-	//Ïú»Ù·½Ê½×é¶ÔÏó
+	//ï¿½ï¿½ï¿½Ù·ï¿½Ê½ï¿½ï¿½ï¿½ï¿½ï¿½
 	if(this->m_p_channel_mode_group){
 		delete []m_p_channel_mode_group;
 		this->m_p_channel_mode_group = nullptr;
 	}
 
-	//Ïú»ÙÍ¨µÀ¿ØÖÆ¶ÔÏó
+	//ï¿½ï¿½ï¿½ï¿½Í¨ï¿½ï¿½ï¿½ï¿½ï¿½Æ¶ï¿½ï¿½ï¿½
 	if(m_p_channel_control != nullptr){
 		delete []m_p_channel_control;
 		m_p_channel_control = nullptr;
@@ -186,7 +186,7 @@ ChannelEngine::~ChannelEngine(){
 	}
 #endif	
 
-	//ÊÍ·ÅPMC¼Ä´æÆ÷¶ÔÏó
+	//ï¿½Í·ï¿½PMCï¿½Ä´ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 	if(this->m_p_pmc_reg){
 		delete m_p_pmc_reg;
 		m_p_pmc_reg = nullptr;
@@ -194,7 +194,7 @@ ChannelEngine::~ChannelEngine(){
 }
 
 /**
- * @brief »ñÈ¡ÀàÊµÀýµÄÎ¨Ò»·ÃÎÊ½Ó¿Úº¯Êý£¬µ¥ÀýÄ£Ê½
+ * @brief ï¿½ï¿½È¡ï¿½ï¿½Êµï¿½ï¿½ï¿½ï¿½Î¨Ò»ï¿½ï¿½ï¿½Ê½Ó¿Úºï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ä£Ê½
  */
 ChannelEngine* ChannelEngine::GetInstance(){
 	if(nullptr == m_p_instance){
@@ -204,7 +204,7 @@ ChannelEngine* ChannelEngine::GetInstance(){
 }
 
 /**
- * @brief ³õÊ¼»¯ÎïÀíÖáÓëÍ¨µÀµÄÓ³Éä
+ * @brief ï¿½ï¿½Ê¼ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Í¨ï¿½ï¿½ï¿½ï¿½Ó³ï¿½ï¿½
  */
 void ChannelEngine::InitPhyAxisChn(){
 	memset(m_map_phy_axis_chn, 0xFF, kMaxAxisNum);
@@ -218,7 +218,7 @@ void ChannelEngine::InitPhyAxisChn(){
 }
 
 /**
- * @brief ³õÊ¼»¯Í¬²½ÖáÏà¹Ø±äÁ¿
+ * @brief ï¿½ï¿½Ê¼ï¿½ï¿½Í¬ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ø±ï¿½ï¿½ï¿½
  */
 void ChannelEngine::InitSyncAxis(){
 	this->m_n_sync_axis_mask = 0;
@@ -232,22 +232,22 @@ void ChannelEngine::InitSyncAxis(){
 		}
 	}
 
-	this->m_n_sync_axis_enable_mask = this->m_n_sync_axis_mask;  //Ä¬ÈÏÍ¬²½Öá¶¼ÉÏÊ¹ÄÜ
+	this->m_n_sync_axis_enable_mask = this->m_n_sync_axis_mask;  //Ä¬ï¿½ï¿½Í¬ï¿½ï¿½ï¿½á¶¼ï¿½ï¿½Ê¹ï¿½ï¿½
 
 	g_ptr_trace->PrintTrace(TRACE_INFO, CHANNEL_ENGINE_SC, "Init syn axis mask :0x%llx\n", m_n_sync_axis_mask);
 }
 
 /**
- * @brief Í¬²½ÖáÖ´ÐÐÍ¬²½
+ * @brief Í¬ï¿½ï¿½ï¿½ï¿½Ö´ï¿½ï¿½Í¬ï¿½ï¿½
  */
 void ChannelEngine::DoSyncAxis(){
 	if(this->m_b_send_sync_cmd)
 		return;
-	int64_t mask = ((m_n_sync_axis_mask & m_n_sync_axis_enable_mask) ^ this->m_n_sync_over);  //Òì»ò¼ÆËã³öÎ´Í¬²½Íê³ÉÖá
+	int64_t mask = ((m_n_sync_axis_mask & m_n_sync_axis_enable_mask) ^ this->m_n_sync_over);  //ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Î´Í¬ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 	if(mask == 0)
 		return;
 
-	if((mask & this->m_n_phy_axis_svo_on) != mask)  //µÈ´ýÉÏËÅ·þÍê³É
+	if((mask & this->m_n_phy_axis_svo_on) != mask)  //ï¿½È´ï¿½ï¿½ï¿½ï¿½Å·ï¿½ï¿½ï¿½ï¿½
 		return;
 
 	MiCmdFrame cmd;
@@ -268,7 +268,7 @@ void ChannelEngine::DoSyncAxis(){
 
 #ifdef USES_PMC_2_0
 /**
- * @brief PMC2.0°æ±¾£¬¶ÁÈ¡SD_LINK´ÓÕ¾Éè±¸ÅäÖÃ
+ * @brief PMC2.0ï¿½æ±¾ï¿½ï¿½ï¿½ï¿½È¡SD_LINKï¿½ï¿½Õ¾ï¿½è±¸ï¿½ï¿½ï¿½ï¿½
  */
 void ChannelEngine::ReadIoDev_pmc2(){
     this->m_list_bdio_dev.Clear();
@@ -278,7 +278,7 @@ void ChannelEngine::ReadIoDev_pmc2(){
 
     if (ifs.is_open())
     {
-        //#SDLINKIO@# ´ÓÌÝÍ¼ÎÄ¼þÖÐÕÒµ½SD-LINKÅäÖÃ
+        // #SDLINKIO@# ï¿½ï¿½ï¿½ï¿½Í¼ï¿½Ä¼ï¿½ï¿½ï¿½ï¿½Òµï¿½SD-LINKï¿½ï¿½ï¿½ï¿½
         char readChar[11] = {0};
         while(!ifs.eof())
         {
@@ -293,14 +293,14 @@ void ChannelEngine::ReadIoDev_pmc2(){
 
         if (!ifs.eof())
         {
-            auto ReadSequenceValue = [&]()->int {//´ÓÌÝÍ¼ÖÐ¶ÁÈ¡Êý¾Ý
+            auto ReadSequenceValue = [&]()->int {// ï¿½ï¿½ï¿½ï¿½Í¼ï¿½Ð¶ï¿½È¡ï¿½ï¿½ï¿½ï¿½
                 int val = 0;
                 ifs.read(reinterpret_cast<char *>(&val), sizeof(val));
                 val = BigLittleSwitch32(val);
                 return val;
             };
             HandWheelMapInfoVec infoVec;
-            bool selectedHandWheel = false;
+            bool findHandWheel = false; // ï¿½ï¿½ï¿½Ö¹ï¿½ï¿½Ü£ï¿½Ä¬ï¿½ï¿½Ö»ï¿½ï¿½ï¿½Ã²ï¿½ï¿½Òµï¿½ï¿½Äµï¿½Ò»ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ö¹ï¿½ï¿½Üµï¿½ï¿½ï¿½Õ¹ï¿½å¿¨
 
             int num = ReadSequenceValue();
             for(int i = 0; i < num; ++i)
@@ -319,9 +319,10 @@ void ChannelEngine::ReadIoDev_pmc2(){
                     devInfo.output_start = ReadSequenceValue();
 
                     SDLINK_SPEC sdlink_spec = m_SDLINK_MAP.at(devInfo.device_type);
-                    if (devInfo.in_bytes && sdlink_spec.withHandWheel)//ÌÝÍ¼Ä¬ÈÏ·ÖÅäÁËÊÖÂÖ¿Õ¼ä£¬ÐèÒªÈ¥µô£¬Ñ¡ÔñÊÖÂÖÊ±£¬ÔÙÓÉSC·ÖÅä
+                    // ï¿½ï¿½Í¼Ä¬ï¿½Ï·ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ö¿Õ¼ä£¬ï¿½ï¿½ï¿½ï¿½ï¿½Öµï¿½ï¿½ï¿½Õ¹ï¿½å¿¨ï¿½ï¿½ÒªÈ¥ï¿½ï¿½ï¿½ï¿½ï¿½Ö¿Õ¼ä£¬ï¿½ï¿½ï¿½ï¿½ÒªÊ¹ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ê±ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½SCï¿½ï¿½ï¿½ï¿½
+                    if (devInfo.in_bytes && sdlink_spec.withHandWheel)
                     {
-                        devInfo.in_bytes -= m_HANDWHEEL_BYTES;
+                        devInfo.in_bytes -= HANDWHEEL_BYTES;
                         ++devInfo.handwheel_num;
                     }
                     else
@@ -331,7 +332,7 @@ void ChannelEngine::ReadIoDev_pmc2(){
                     devInfo.handwheel_map = 0;
                     devInfo.info_name = sdlink_spec.info_name + "_" + std::to_string(devInfo.group_index);
 
-                    // ÐòºÅ¼ì²é,ÐòºÅ±ØÐëÁ¬Ðø
+                    // ï¿½ï¿½Å¼ï¿½ï¿½,ï¿½ï¿½Å±ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
                     if (devInfo.group_index != m_list_bdio_dev.GetLength() + 1)
                     {
                         m_list_bdio_dev.Clear();
@@ -341,17 +342,10 @@ void ChannelEngine::ReadIoDev_pmc2(){
                     }
                 }
 
-                if (!CheckIoDev_pmc2(devInfo))
-                {
-                    m_list_bdio_dev.Clear();
-                    CreateError(ERR_PMC_SDLINK_CONFIG, WARNING_LEVEL, CLEAR_BY_CLEAR_BUTTON);
-                    break;
-                }
-
                 m_list_bdio_dev.Append(devInfo);
-                if (!selectedHandWheel && SelectHandleWheel(devInfo.group_index, 1))
-                {//Ä¬ÈÏÊ¹ÓÃµÚÒ»¸öÕÒµ½µÄÊÖÂÖ
-                    selectedHandWheel = true;
+                if (!findHandWheel && SelectHandleWheel(devInfo.group_index, 1))
+                {// Ä¬ï¿½ï¿½Ê¹ï¿½Ãµï¿½Ò»ï¿½ï¿½ï¿½Òµï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+                    findHandWheel = true;
                     devInfo.handwheel_map = 1;
                 }
                 HandWheelMapInfo info(devInfo.group_index, 0, devInfo.handwheel_map, devInfo.info_name);
@@ -360,54 +354,59 @@ void ChannelEngine::ReadIoDev_pmc2(){
 
             HandWheelMapInfoVec configInfo = g_ptr_parm_manager->GetHandWheelVec();
             if (configInfo == infoVec)
-            {//ÌÝÍ¼Ã»ÓÐ¸Ä±äini½á¹¹£¨À©Õ¹°å¿¨¸öÊý»òÕß»ù±¾ÅäÖÃÃ»ÓÐ·¢Éú±ä»¯£©£¬Ö±½Ó¸´ÖÆ¼´¿É
+            {// ï¿½ï¿½Í¼ï¿½ï¿½Õ¹ï¿½å¿¨ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ï¢ï¿½ï¿½ï¿½ï¿½å¿¨ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Î´ï¿½ï¿½ï¿½ï¿½ï¿½ä»¯ï¿½ï¿½Ê¹ï¿½ï¿½ï¿½Ã»ï¿½ï¿½ï¿½ï¿½Ã²ï¿½ï¿½ï¿½
                 for (auto itr = configInfo.begin(); itr != configInfo.end(); ++itr)
                 {
                     SelectHandleWheel(itr->devNum, itr->channelMap);
                 }
             }
             else
-            {//ÌÝÍ¼¸Ä±äÁËini½á¹¹£¨À©Õ¹°å¿¨¸öÊý»òÕß»ù±¾ÅäÖÃ·¢Éú±ä»¯£©£¬ÐèÒªÖØÐ´iniÎÄ¼þ
+            {// ï¿½ï¿½Í¼ï¿½ï¿½Õ¹ï¿½å¿¨ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ï¢ï¿½ï¿½ï¿½ï¿½å¿¨ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ä»¯ï¿½ï¿½Ê¹ï¿½ï¿½Ä¬ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ä¼ï¿½
                 g_ptr_parm_manager->SyncHandWheelInfo(infoVec);
             }
         }
 
-        //test
         ListNode<BdioDevInfo> *node = this->m_list_bdio_dev.HeadNode();
         while(node != nullptr)
         {
-              std::cout << "info_name " << node->data.info_name << std::endl;
-              std::cout << "device_type " << static_cast<int>(node->data.device_type) << std::endl;
-              std::cout << "group " << static_cast<int>(node->data.group_index) << std::endl;
-              std::cout << "base " << static_cast<int>(node->data.base_index) << std::endl;
-              std::cout << "slot " << static_cast<int>(node->data.slot_index) << std::endl;
-              std::cout << "inBytes " << static_cast<int>(node->data.in_bytes) << std::endl;
-              std::cout << "outBytes " << static_cast<int>(node->data.out_bytes) << std::endl;
-              std::cout << "inAddr " << static_cast<int>(node->data.input_start) << std::endl;
-              std::cout << "outAddr " << static_cast<int>(node->data.output_start) << std::endl;
-              std::cout << "handwheel_map " << static_cast<int>(node->data.handwheel_map) << std::endl;
+            if (!CheckIoDev_pmc2(node->data))
+            {
+                m_list_bdio_dev.Clear();
+                CreateError(ERR_PMC_SDLINK_CONFIG, WARNING_LEVEL, CLEAR_BY_CLEAR_BUTTON);
+                break;
+            }
+            //test
+            std::cout << "info_name " << node->data.info_name << std::endl;
+            std::cout << "device_type " << static_cast<int>(node->data.device_type) << std::endl;
+            std::cout << "group " << static_cast<int>(node->data.group_index) << std::endl;
+            std::cout << "base " << static_cast<int>(node->data.base_index) << std::endl;
+            std::cout << "slot " << static_cast<int>(node->data.slot_index) << std::endl;
+            std::cout << "inBytes " << static_cast<int>(node->data.in_bytes) << std::endl;
+            std::cout << "outBytes " << static_cast<int>(node->data.out_bytes) << std::endl;
+            std::cout << "inAddr " << static_cast<int>(node->data.input_start) << std::endl;
+            std::cout << "outAddr " << static_cast<int>(node->data.output_start) << std::endl;
+            std::cout << "handwheel_map " << static_cast<int>(node->data.handwheel_map) << std::endl;
+            std::cout << std::endl;
 
-              std::cout << std::endl;
-
-              node = node->next;
+            node = node->next;
         }
         ifs.close();
     }
     else
     {
-        printf("³õÊ¼»¯SD-LINKÉè±¸Ê§°Ü£¬ÎÞ·¨´ò¿ªÌÝÍ¼ÎÄ¼þ\n");
+        printf("ï¿½ï¿½Ê¼ï¿½ï¿½SD-LINKï¿½è±¸Ê§ï¿½Ü£ï¿½ï¿½Þ·ï¿½ï¿½ï¿½ï¿½ï¿½Í¼ï¿½Ä¼ï¿½\n");
     }
     return;
 
 }
 
 /**
- * @brief PMC2.0°æ±¾£¬¼ì²âSD_LINK²ÎÊýÊÇ·ñºÏÀí
- * @return true--ºÏ·¨     false--·Ç·¨
+ * @brief PMC2.0ï¿½æ±¾ï¿½ï¿½ï¿½ï¿½ï¿½SD_LINKï¿½ï¿½ï¿½ï¿½ï¿½Ç·ï¿½ï¿½ï¿½ï¿½
+ * @return true--ï¿½Ï·ï¿½     false--ï¿½Ç·ï¿½
  */
 bool ChannelEngine::CheckIoDev_pmc2(const BdioDevInfo &info)
 {
-    // Éè±¸ÀàÐÍ¼ì²é
+    // ï¿½è±¸ï¿½ï¿½ï¿½Í¼ï¿½ï¿½
     if (m_SDLINK_MAP.find(info.device_type) == m_SDLINK_MAP.end())
     {
        std::cout << info.group_index << " config error, device_type: " << static_cast<int>(info.device_type) << std::endl;
@@ -415,22 +414,22 @@ bool ChannelEngine::CheckIoDev_pmc2(const BdioDevInfo &info)
     }
 
     SDLINK_SPEC sdLink_spec = m_SDLINK_MAP.at(info.device_type);
-    // ÊäÈëµã¼ì²é
+    // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
     int standard_InBytes = sdLink_spec.inBytes;
     if (info.handwheel_map != 0)
     {
         if (sdLink_spec.withHandWheel)
         {
-            standard_InBytes += m_HANDWHEEL_BYTES;
+            standard_InBytes += HANDWHEEL_BYTES;
         }
         else
-        {   // ²»Ö§³ÖÊÖÂÖµÄ°å¿¨
+        {   // ï¿½ï¿½Ö§ï¿½ï¿½ï¿½ï¿½ï¿½ÖµÄ°å¿¨
             std::cout << info.group_index << " device_type " << static_cast<int>(info.device_type)
                       << " handwheel_map " << static_cast<int>(info.handwheel_map) << std::endl;
             return false;
         }
 
-        if (info.handwheel_map != 1)//ÊÖÂÖÓ³ÉäÔÝÊ±Ö»Ö§³ÖÍ¨µÀ1
+        if (info.handwheel_map != 1)//ï¿½ï¿½ï¿½ï¿½Ó³ï¿½ï¿½ï¿½ï¿½Ê±Ö»Ö§ï¿½ï¿½Í¨ï¿½ï¿½1
         {
             std::cout << "handwheel_map " << static_cast<int>(info.handwheel_map) << std::endl;
             return false;
@@ -458,7 +457,7 @@ bool ChannelEngine::CheckIoDev_pmc2(const BdioDevInfo &info)
         return false;
     }
 
-    // Êä³öµã¼ì²é
+    // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
     int stanard_OutBytes = sdLink_spec.outBytes;
     int real_OutBytes = info.out_bytes;
     if (real_OutBytes)
@@ -485,14 +484,14 @@ bool ChannelEngine::CheckIoDev_pmc2(const BdioDevInfo &info)
 }
 
 /**
- * @brief PMC2.0°æ±¾£¬ÅäÖÃÊÖÂÖÍ¨µÀÓ³Éä
- * @param indexId   : ÊÖÂÖËùÔÚµÄÀ©Õ¹°åºÅ
- * @param channelId : Í¨µÀºÅ 1,2,3,4
- * @return true -- ³É¹¦   false -- Ê§°Ü
+ * @brief PMC2.0ï¿½æ±¾ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Í¨ï¿½ï¿½Ó³ï¿½ï¿½
+ * @param indexId   : ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Úµï¿½ï¿½ï¿½Õ¹ï¿½ï¿½ï¿½
+ * @param channelId : Í¨ï¿½ï¿½ï¿½ï¿½ 1,2,3,4
+ * @return true -- ï¿½É¹ï¿½   false -- Ê§ï¿½ï¿½
  */
 bool ChannelEngine::SelectHandleWheel(int indexId, int channelId)
 {
-    if (channelId - 1 != 0)//ÔÝÊ±Ö»Ö§³Öµ¥Í¨µÀ
+    if (channelId - 1 != 0)//ï¿½ï¿½Ê±Ö»Ö§ï¿½Öµï¿½Í¨ï¿½ï¿½
         return false;
 
     ListNode<BdioDevInfo> *node = this->m_list_bdio_dev.HeadNode();
@@ -519,12 +518,12 @@ bool ChannelEngine::SelectHandleWheel(int indexId, int channelId)
             if (node->data.group_index == indexId)
             {
                 node->data.handwheel_map = channelId;
-                node->data.in_bytes = m_SDLINK_MAP.at(node->data.device_type).inBytes + m_HANDWHEEL_BYTES;
+                node->data.in_bytes = m_SDLINK_MAP.at(node->data.device_type).inBytes + HANDWHEEL_BYTES;
             }
-            else if (node->data.handwheel_map == channelId) // Ò»¸öÍ¨µÀÔÝÊ±Ö»Ö§³ÖÒ»¸öÊÖÂÖ
+            else if (node->data.handwheel_map == channelId) // Ò»ï¿½ï¿½Í¨ï¿½ï¿½ï¿½ï¿½Ê±Ö»Ö§ï¿½ï¿½Ò»ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
             {
                 node->data.handwheel_map = 0;
-                node->data.in_bytes -= m_HANDWHEEL_BYTES;
+                node->data.in_bytes -= HANDWHEEL_BYTES;
             }
             node = node->next;
         }
@@ -537,129 +536,129 @@ bool ChannelEngine::SelectHandleWheel(int indexId, int channelId)
 }
 #else
 /**
- * @breif PMC1.0°æ±¾£¬¶ÁÈ¡SD_LINK´ÓÕ¾Éè±¸ÅäÖÃ
+ * @breif PMC1.0ï¿½æ±¾ï¿½ï¿½ï¿½ï¿½È¡SD_LINKï¿½ï¿½Õ¾ï¿½è±¸ï¿½ï¿½ï¿½ï¿½
  */
 void ChannelEngine::ReadIoDev_pmc1(){
 	this->m_list_bdio_dev.Clear();
 
-	//´ò¿ªÌÝÍ¼ÎÄ¼þ
+	//ï¿½ï¿½ï¿½ï¿½Í¼ï¿½Ä¼ï¿½
 	int fd = open(PATH_PMC_LDR, O_RDONLY);
 	if(fd == -1){
-		printf("³õÊ¼»¯SD-LINKÉè±¸Ê§°Ü£¬ÎÞ·¨´ò¿ªÌÝÍ¼ÎÄ¼þ\n");
+		printf("ï¿½ï¿½Ê¼ï¿½ï¿½SD-LINKï¿½è±¸Ê§ï¿½Ü£ï¿½ï¿½Þ·ï¿½ï¿½ï¿½ï¿½ï¿½Í¼ï¿½Ä¼ï¿½\n");
 		return;
 	}
 
-//	//Ê×ÏÈ¶ÁÈ¡ÎÄ¼þ´óÐ¡
+//	//ï¿½ï¿½ï¿½È¶ï¿½È¡ï¿½Ä¼ï¿½ï¿½ï¿½Ð¡
 //	uint64_t file_size = lseek(fd, 0, SEEK_END);
 //
-//	lseek(fd, 0, SEEK_SET);  //Ìø»ØÎÄ¼þÍ·
+//	lseek(fd, 0, SEEK_SET);  //ï¿½ï¿½ï¿½ï¿½ï¿½Ä¼ï¿½Í·
 
-	int doc_ver;  //ÎÄµµ°æ±¾
-	char uuid[17];  //16×Ö½Ú³¤¶ÈµÄUUID
-	int machine_type;   //Éè±¸ÀàÐÍ
-	BdioDevInfo dev_info;    //´ÓÕ¾Éè±¸
-	int dev_count = 0;   //bdioÉè±¸ÊýÁ¿
+	int doc_ver;  //ï¿½Äµï¿½ï¿½æ±¾
+	char uuid[17];  //16ï¿½Ö½Ú³ï¿½ï¿½Èµï¿½UUID
+	int machine_type;   //ï¿½è±¸ï¿½ï¿½ï¿½ï¿½
+	BdioDevInfo dev_info;    //ï¿½ï¿½Õ¾ï¿½è±¸
+	int dev_count = 0;   //bdioï¿½è±¸ï¿½ï¿½ï¿½ï¿½
 	int sub_index = 0, dev_type = 0, in_count = 0, out_count = 0;
 	int i = 0;
 	int tt = 0;
 
-	//¶ÁÈ¡ÎÄµµ°æ±¾
+	//ï¿½ï¿½È¡ï¿½Äµï¿½ï¿½æ±¾
 	int count = read(fd, &doc_ver, sizeof(int));
 	if(count != sizeof(int)){
-		printf("¶ÁÈ¡ÎÄµµ°æ±¾Ê§°Ü[%d, %d]\n", count, sizeof(int));
+		printf("ï¿½ï¿½È¡ï¿½Äµï¿½ï¿½æ±¾Ê§ï¿½ï¿½[%d, %d]\n", count, sizeof(int));
 		goto END;
 	}
 	doc_ver = BigLittleSwitch32(doc_ver);
 
 	printf("read ldr file ver: %d\n", doc_ver);
 
-	//¶ÁÈ¡UUID
+	//ï¿½ï¿½È¡UUID
 	memset(uuid, 0x00, 17);
 	count = read(fd, uuid, 16);
 	if(count != 16){
-		printf("¶ÁÈ¡ÌÝÍ¼UUIDÊ§°Ü[%d, 16]\n", count);
+		printf("ï¿½ï¿½È¡ï¿½ï¿½Í¼UUIDÊ§ï¿½ï¿½[%d, 16]\n", count);
 		goto END;
 	}
 
-	//¶ÁÈ¡Éè±¸ÀàÐÍ
+	//ï¿½ï¿½È¡ï¿½è±¸ï¿½ï¿½ï¿½ï¿½
 	count = read(fd, &machine_type, sizeof(int));
 	if(count != sizeof(int)){
-		printf("¶ÁÈ¡Éè±¸ÀàÐÍÊ§°Ü[%d, %d]\n", count, sizeof(int));
+		printf("ï¿½ï¿½È¡ï¿½è±¸ï¿½ï¿½ï¿½ï¿½Ê§ï¿½ï¿½[%d, %d]\n", count, sizeof(int));
 		goto END;
 	}
 	machine_type = BigLittleSwitch32(machine_type);
 	printf("machine type = %d\n", machine_type);
 
-	//¶ÁÈ¡BDIOÉè±¸
+	//ï¿½ï¿½È¡BDIOï¿½è±¸
 	count = read(fd, &dev_count, sizeof(int));
 	if(count != sizeof(int)){
-		printf("¶ÁÈ¡BDIOÉè±¸ÊýÊ§°Ü[%d, %d]\n", count, sizeof(int));
+		printf("ï¿½ï¿½È¡BDIOï¿½è±¸ï¿½ï¿½Ê§ï¿½ï¿½[%d, %d]\n", count, sizeof(int));
 		goto END;
 	}
 	dev_count = BigLittleSwitch32(dev_count);
 	printf("slave count = %d\n", dev_count);
 
-	//¶ÁÈ¡¾ßÌå´ÓÕ¾Êý¾Ý
+	//ï¿½ï¿½È¡ï¿½ï¿½ï¿½ï¿½ï¿½Õ¾ï¿½ï¿½ï¿½ï¿½
 	for(i = 0; i < dev_count; i++){
-		//´ÓÕ¾ºÅ
+		//ï¿½ï¿½Õ¾ï¿½ï¿½
 		count = read(fd, &sub_index, sizeof(int));
 		if(count != sizeof(int)){
-			printf("¶ÁÈ¡BDIOÉè±¸´ÓÕ¾ºÅÊ§°Ü[%d]\n", count);
+			printf("ï¿½ï¿½È¡BDIOï¿½è±¸ï¿½ï¿½Õ¾ï¿½ï¿½Ê§ï¿½ï¿½[%d]\n", count);
 			goto END;
 		}
 		sub_index = BigLittleSwitch32(sub_index);
 
-		//´ÓÕ¾ÀàÐÍ
+		//ï¿½ï¿½Õ¾ï¿½ï¿½ï¿½ï¿½
 		count = read(fd, &dev_type, sizeof(int));
 		if(count != sizeof(int)){
-			printf("¶ÁÈ¡BDIOÉè±¸ÀàÐÍÊ§°Ü[%d]\n", count);
+			printf("ï¿½ï¿½È¡BDIOï¿½è±¸ï¿½ï¿½ï¿½ï¿½Ê§ï¿½ï¿½[%d]\n", count);
 			goto END;
 		}
 		dev_type = BigLittleSwitch32(dev_type);
 
-		//ÊäÈë×Ö½ÚÊý
+		//ï¿½ï¿½ï¿½ï¿½ï¿½Ö½ï¿½ï¿½ï¿½
 		count = read(fd, &in_count, sizeof(int));
 		if(count != sizeof(int)){
-			printf("¶ÁÈ¡BDIOÉè±¸ÊäÈë×Ö½ÚÊ§°Ü[%d]\n", count);
+			printf("ï¿½ï¿½È¡BDIOï¿½è±¸ï¿½ï¿½ï¿½ï¿½ï¿½Ö½ï¿½Ê§ï¿½ï¿½[%d]\n", count);
 			goto END;
 		}
 		in_count = BigLittleSwitch32(in_count);
 
-		//Êä³ö×Ö½ÚÊý
+		//ï¿½ï¿½ï¿½ï¿½Ö½ï¿½ï¿½ï¿½
 		count = read(fd, &out_count, sizeof(int));
 		if(count != sizeof(int)){
-			printf("¶ÁÈ¡BDIOÉè±¸Êä³ö×Ö½ÚÊ§°Ü[%d]\n", count);
+			printf("ï¿½ï¿½È¡BDIOï¿½è±¸ï¿½ï¿½ï¿½ï¿½Ö½ï¿½Ê§ï¿½ï¿½[%d]\n", count);
 			goto END;
 		}
 		out_count = BigLittleSwitch32(out_count);
 
-		//Ìø¹ýÊäÈëµØÖ·£¬Êä³öµØÖ·
+		//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ö·ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ö·
 		if(-1 == lseek(fd, 2*sizeof(int), SEEK_CUR)){
-			printf("Ìø¹ýÊäÈëÊä³öµØÖ·Ê§°Ü\n");
+			printf("ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ö·Ê§ï¿½ï¿½\n");
 			goto END;
 		}
 
-		//Ìø¹ýÉè±¸Ãû³Æ
+		//ï¿½ï¿½ï¿½ï¿½ï¿½è±¸ï¿½ï¿½ï¿½ï¿½
 		count = read(fd, &tt, sizeof(int));
 		if(count != sizeof(int)){
-			printf("¶ÁÈ¡Éè±¸Ãû³Æ³¤¶ÈÊ§°Ü[%d]\n", count);
+			printf("ï¿½ï¿½È¡ï¿½è±¸ï¿½ï¿½ï¿½Æ³ï¿½ï¿½ï¿½Ê§ï¿½ï¿½[%d]\n", count);
 			goto END;
 		}
 		tt = BigLittleSwitch32(tt);
 		if(-1 == lseek(fd, tt, SEEK_CUR)){
-			printf("Ìø¹ýÉè±¸Ãû³ÆÊ§°Ü\n");
+			printf("ï¿½ï¿½ï¿½ï¿½ï¿½è±¸ï¿½ï¿½ï¿½ï¿½Ê§ï¿½ï¿½\n");
 			goto END;
 		}
 
-		//Ìø¹ýµØÖ·×Ö·û´®
+		//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ö·ï¿½Ö·ï¿½ï¿½ï¿½
 		count = read(fd, &tt, sizeof(int));
 		if(count != sizeof(int)){
-			printf("¶ÁÈ¡µØÖ·×Ö·û´®³¤¶ÈÊ§°Ü[%d]\n", count);
+			printf("ï¿½ï¿½È¡ï¿½ï¿½Ö·ï¿½Ö·ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ê§ï¿½ï¿½[%d]\n", count);
 			goto END;
 		}
 		tt = BigLittleSwitch32(tt);
 		if(-1 == lseek(fd, tt, SEEK_CUR)){
-			printf("Ìø¹ýµØÖ·×Ö·û´®Ê§°Ü\n");
+			printf("ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ö·ï¿½Ö·ï¿½ï¿½ï¿½Ê§ï¿½ï¿½\n");
 			goto END;
 		}
 
@@ -673,12 +672,12 @@ void ChannelEngine::ReadIoDev_pmc1(){
 	}
 
 	END:
-	close(fd);   //¹Ø±ÕÎÄ¼þ
+	close(fd);   //ï¿½Ø±ï¿½ï¿½Ä¼ï¿½
 }
 #endif
 
 /**
- * @brief ³õÊ¼»¯SD-LINK´ÓÕ¾Éè±¸ÅäÖÃ
+ * @brief ï¿½ï¿½Ê¼ï¿½ï¿½SD-LINKï¿½ï¿½Õ¾ï¿½è±¸ï¿½ï¿½ï¿½ï¿½
  */
 void ChannelEngine::InitBdioDev(){
 
@@ -691,7 +690,7 @@ void ChannelEngine::InitBdioDev(){
 }
 
 /**
- * @brief ¼ì²éÖáÉÏËÅ·þÐÅºÅ
+ * @brief ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Å·ï¿½ï¿½Åºï¿½
  */
 void ChannelEngine::CheckAxisSrvOn(){
 	for(uint8_t i = 0; i < this->m_p_general_config->chn_count; i++){
@@ -700,7 +699,7 @@ void ChannelEngine::CheckAxisSrvOn(){
 }
 
 /**
- * @brief ÏòMI·¢ËÍ¸÷Öá»Ø²Î¿¼µã±êÖ¾
+ * @brief ï¿½ï¿½MIï¿½ï¿½ï¿½Í¸ï¿½ï¿½ï¿½Ø²Î¿ï¿½ï¿½ï¿½ï¿½Ö¾
  */
 void ChannelEngine::SetAxisRetRefFlag(){
 	MiCmdFrame cmd;
@@ -715,14 +714,14 @@ void ChannelEngine::SetAxisRetRefFlag(){
 }
 
 /**
- * @brief ÏòMI·¢ËÍÎïÀíÖáµÄ·´À¡
+ * @brief ï¿½ï¿½MIï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ä·ï¿½ï¿½ï¿½
  */
 void ChannelEngine::SendMiPhyAxisEncoder(){
-	FILE *fp = fopen(PATH_PHY_AXIS_ENCODER, "rb");//´ò¿ªÎÄ¼þ
+	FILE *fp = fopen(PATH_PHY_AXIS_ENCODER, "rb");//ï¿½ï¿½ï¿½Ä¼ï¿½
 
 	if(fp == nullptr){
-		g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "´ò¿ªÎïÀíÖáµ±Ç°·´À¡Êý¾ÝÊ§°Ü£¡");
-		return;//ÎÄ¼þ´ò¿ªÊ§°Ü
+		g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½áµ±Ç°ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ê§ï¿½Ü£ï¿½");
+		return;//ï¿½Ä¼ï¿½ï¿½ï¿½Ê§ï¿½ï¿½
 	}
 
 	int64_t data[m_p_general_config->axis_count];
@@ -747,8 +746,8 @@ void ChannelEngine::SendMiPhyAxisEncoder(){
 }
 
 /**
- * @brief ÉèÖÃMIÄ£¿é¹¤×÷Ä£Ê½
- * @param value : ¹¤×÷Ä£Ê½±íÊ¾£¬ 0x00--×Ô¶¯Ä£Ê½    0x10--½øÈëÊÖÂÖÄ£Ê½     0x20--ÊÖ¶¯Ä£Ê½
+ * @brief ï¿½ï¿½ï¿½ï¿½MIÄ£ï¿½é¹¤ï¿½ï¿½Ä£Ê½
+ * @param value : ï¿½ï¿½ï¿½ï¿½Ä£Ê½ï¿½ï¿½Ê¾ï¿½ï¿½ 0x00--ï¿½Ô¶ï¿½Ä£Ê½    0x10--ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ä£Ê½     0x20--ï¿½Ö¶ï¿½Ä£Ê½
  */
 void ChannelEngine::SetMiWorkMode(uint8_t value){
 //	printf("SetMiWorkMode: %hhu\n", value);
@@ -761,7 +760,7 @@ void ChannelEngine::SetMiWorkMode(uint8_t value){
 	uint8_t chn_count = this->m_p_channel_mode_group[this->m_n_cur_chn_group_index].GetChannelCount();
 	for(uint i = 0; i < chn_count; i++){
 		cmd.data.axis_index = NO_AXIS;
-		cmd.data.reserved = this->m_p_channel_mode_group[this->m_n_cur_chn_group_index].GetChannel(i);  //Í¨µÀºÅ£¬´Ó0¿ªÊ¼
+		cmd.data.reserved = this->m_p_channel_mode_group[this->m_n_cur_chn_group_index].GetChannel(i);  //Í¨ï¿½ï¿½ï¿½Å£ï¿½ï¿½ï¿½0ï¿½ï¿½Ê¼
 
 		if(cmd.data.reserved == 0xFF)
 			continue;
@@ -772,21 +771,21 @@ void ChannelEngine::SetMiWorkMode(uint8_t value){
 }
 
 /**
- * @brief ÉèÖÃMIÄ£¿éÊÖÂÖ¸ú×ÙÄ£Ê½
- * @param flag : true -- ´ò¿ªÊÖÂÖ¸ú×Ù  false--¹Ø±ÕÊÖÂÖ¸ú×Ù
- * @param chn : Í¨µÀºÅ£¬´Ó0¿ªÊ¼
+ * @brief ï¿½ï¿½ï¿½ï¿½MIÄ£ï¿½ï¿½ï¿½ï¿½ï¿½Ö¸ï¿½ï¿½ï¿½Ä£Ê½
+ * @param flag : true -- ï¿½ï¿½ï¿½ï¿½ï¿½Ö¸ï¿½ï¿½ï¿½  false--ï¿½Ø±ï¿½ï¿½ï¿½ï¿½Ö¸ï¿½ï¿½ï¿½
+ * @param chn : Í¨ï¿½ï¿½ï¿½Å£ï¿½ï¿½ï¿½0ï¿½ï¿½Ê¼
  */
 void ChannelEngine::SetMiHandwheelTrace(bool flag, uint8_t chn){
-	g_ptr_trace->PrintTrace(TRACE_INFO, CHANNEL_ENGINE_SC, "SetMiHandwheelTrace: %hhu£¬ curgroup=%hhu\n", flag, m_n_cur_chn_group_index);
+	g_ptr_trace->PrintTrace(TRACE_INFO, CHANNEL_ENGINE_SC, "SetMiHandwheelTrace: %hhuï¿½ï¿½ curgroup=%hhu\n", flag, m_n_cur_chn_group_index);
 	MiCmdFrame cmd;
 	memset(&cmd, 0x00, sizeof(cmd));
 	cmd.data.cmd = CMD_MI_SET_HANDWHEEL_TRACE;
 
 	cmd.data.data[0] = flag?0x10:0x00;
-	cmd.data.data[1] = this->m_p_general_config->hw_rev_trace;   //ÊÖÂÖ·´ÏòÒýµ¼Ê¹ÄÜ
+	cmd.data.data[1] = this->m_p_general_config->hw_rev_trace;   //ï¿½ï¿½ï¿½Ö·ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ê¹ï¿½ï¿½
 						 
 	cmd.data.axis_index = NO_AXIS;
-	cmd.data.reserved = chn;   //Í¨µÀ£¬´Ó0¿ªÊ¼
+	cmd.data.reserved = chn;   //Í¨ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½0ï¿½ï¿½Ê¼
 
 							   
 	this->m_p_mi_comm->WriteCmd(cmd);
@@ -794,7 +793,7 @@ void ChannelEngine::SetMiHandwheelTrace(bool flag, uint8_t chn){
 //	uint8_t chn_count = this->m_p_channel_mode_group[this->m_n_cur_chn_group_index].GetChannelCount();
 //	for(uint i = 0; i < chn_count; i++){
 //		cmd.data.axis_index = NO_AXIS;
-//		cmd.data.reserved = this->m_p_channel_mode_group[this->m_n_cur_chn_group_index].GetChannel(i);    //Í¨µÀ£¬´Ó0¿ªÊ¼
+//		cmd.data.reserved = this->m_p_channel_mode_group[this->m_n_cur_chn_group_index].GetChannel(i);    //Í¨ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½0ï¿½ï¿½Ê¼
 //
 //		if(cmd.data.reserved == 0xFF)
 //			continue;
@@ -806,7 +805,7 @@ void ChannelEngine::SetMiHandwheelTrace(bool flag, uint8_t chn){
 }
 
 /**
- * @brief ÉèÖÃMIµ±Ç°Í¨µÀºÅ
+ * @brief ï¿½ï¿½ï¿½ï¿½MIï¿½ï¿½Ç°Í¨ï¿½ï¿½ï¿½ï¿½
  */
 void ChannelEngine::SetMiCurChannel(){
 	MiCmdFrame cmd;
@@ -823,9 +822,9 @@ void ChannelEngine::SetMiCurChannel(){
 
 
 /**
- * @brief ³õÊ¼»¯ÉèÖÃÍâ²¿½Ó¿ÚÒÔ¼°´´½¨Í¨µÀ¿ØÖÆ¶ÔÏó
- * @param hmi_comm £ºÓëHMIµÄÍ¨Ñ¶½Ó¿ÚÀàÖ¸Õë
- * @param parm £º²ÎÊý·ÃÎÊ½Ó¿Ú
+ * @brief ï¿½ï¿½Ê¼ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½â²¿ï¿½Ó¿ï¿½ï¿½Ô¼ï¿½ï¿½ï¿½ï¿½ï¿½Í¨ï¿½ï¿½ï¿½ï¿½ï¿½Æ¶ï¿½ï¿½ï¿½
+ * @param hmi_comm ï¿½ï¿½ï¿½ï¿½HMIï¿½ï¿½Í¨Ñ¶ï¿½Ó¿ï¿½ï¿½ï¿½Ö¸ï¿½ï¿½
+ * @param parm ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ê½Ó¿ï¿½
  */
 void ChannelEngine::Initialize(HMICommunication *hmi_comm, MICommunication *mi_comm,
 		MCCommunication *mc_comm, ParmManager *parm){
@@ -834,11 +833,11 @@ void ChannelEngine::Initialize(HMICommunication *hmi_comm, MICommunication *mi_c
 			mi_comm == nullptr ||
 			mc_comm == nullptr ||
 			parm == nullptr){
-		m_error_code = ERR_SC_INIT;  //³õÊ¼»¯Ê§°Ü£¬¸æ¾¯
+		m_error_code = ERR_SC_INIT;  //ï¿½ï¿½Ê¼ï¿½ï¿½Ê§ï¿½Ü£ï¿½ï¿½æ¾¯
 		return;
 	}
 
-	this->m_n_update_state = MODULE_UPDATE_NONE;  //Ä¬ÈÏ·ÇÉý¼¶×´Ì¬
+	this->m_n_update_state = MODULE_UPDATE_NONE;  //Ä¬ï¿½Ï·ï¿½ï¿½ï¿½ï¿½ï¿½×´Ì¬
 
 	this->m_p_hmi_comm = hmi_comm;
 	this->m_p_mi_comm = mi_comm;
@@ -853,11 +852,11 @@ void ChannelEngine::Initialize(HMICommunication *hmi_comm, MICommunication *mi_c
 
 	this->m_n_pmc_axis_count = parm->GetPmcAxisCount();
 
-	//´´½¨PMC¼Ä´æÆ÷Àà¶ÔÏó
+	//ï¿½ï¿½ï¿½ï¿½PMCï¿½Ä´ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 	this->m_p_pmc_reg = new PmcRegister();
 	if(m_p_pmc_reg == nullptr){
-		g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "Í¨µÀÒýÇæ´´½¨PMC¼Ä´æÆ÷¶ÔÏóÊ§°Ü!");
-		m_error_code = ERR_MEMORY_NEW;  //³õÊ¼»¯Ê§°Ü
+		g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "Í¨ï¿½ï¿½ï¿½ï¿½ï¿½æ´´ï¿½ï¿½PMCï¿½Ä´ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ê§ï¿½ï¿½!");
+		m_error_code = ERR_MEMORY_NEW;  //ï¿½ï¿½Ê¼ï¿½ï¿½Ê§ï¿½ï¿½
 		return;
 	}
 	memset(m_g_reg_last.all, 0x00, sizeof(m_g_reg_last.all));
@@ -872,35 +871,35 @@ void ChannelEngine::Initialize(HMICommunication *hmi_comm, MICommunication *mi_c
 
 	this->InitPcAllocList();
 
-	InitSyncAxis();  //³õÊ¼»¯Í¬²½Öá
+	InitSyncAxis();  //ï¿½ï¿½Ê¼ï¿½ï¿½Í¬ï¿½ï¿½ï¿½ï¿½
 
 	this->m_n_da_prec = pow(2, this->m_p_general_config->da_prec-1);
 
-	this->m_df_phy_axis_pos_feedback = new double[m_p_general_config->axis_count];  //·ÖÅäÎïÀíÖáµ±Ç°·´À¡»úÐµ×ø±ê´æ´¢Çø
+	this->m_df_phy_axis_pos_feedback = new double[m_p_general_config->axis_count];  //ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½áµ±Ç°ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ðµï¿½ï¿½ï¿½ï¿½æ´¢ï¿½ï¿½
 	memset(m_df_phy_axis_pos_feedback, 0, sizeof(double)*m_p_general_config->axis_count);
 
-	this->m_df_phy_axis_pos_intp = new double[m_p_general_config->axis_count];  //·ÖÅäÎïÀíÖáµ±Ç°²å²¹»úÐµ×ø±ê´æ´¢Çø
+	this->m_df_phy_axis_pos_intp = new double[m_p_general_config->axis_count];  //ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½áµ±Ç°ï¿½å²¹ï¿½ï¿½Ðµï¿½ï¿½ï¿½ï¿½æ´¢ï¿½ï¿½
 	memset(m_df_phy_axis_pos_intp, 0, sizeof(double)*m_p_general_config->axis_count);
 
-	this->m_df_phy_axis_pos_intp_after = new double[m_p_general_config->axis_count];  //·ÖÅäÎïÀíÖáµ±Ç°²å²¹ºóÊä³öµÄ»úÐµ×ø±ê´æ´¢Çø
+	this->m_df_phy_axis_pos_intp_after = new double[m_p_general_config->axis_count];  //ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½áµ±Ç°ï¿½å²¹ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ä»ï¿½Ðµï¿½ï¿½ï¿½ï¿½æ´¢ï¿½ï¿½
 	memset(m_df_phy_axis_pos_intp_after, 0, sizeof(double)*m_p_general_config->axis_count);
 
-	this->m_df_pmc_axis_remain = new double[m_p_general_config->axis_count];  //·ÖÅäPMCÖáµ±Ç°ÓàÒÆ¶¯Á¿´æ´¢Çø
+	this->m_df_pmc_axis_remain = new double[m_p_general_config->axis_count];  //ï¿½ï¿½ï¿½ï¿½PMCï¿½áµ±Ç°ï¿½ï¿½ï¿½Æ¶ï¿½ï¿½ï¿½ï¿½æ´¢ï¿½ï¿½
 	memset(m_df_pmc_axis_remain, 0, sizeof(double)*m_p_general_config->axis_count);
 
 #ifdef USES_SPEED_TORQUE_CTRL	
-	this->m_df_phy_axis_speed_feedback = new double[m_p_general_config->axis_count];  //·ÖÅäÎïÀíÖáµ±Ç°·´À¡»úÐµ×ø±ê´æ´¢Çø
+	this->m_df_phy_axis_speed_feedback = new double[m_p_general_config->axis_count];  //ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½áµ±Ç°ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ðµï¿½ï¿½ï¿½ï¿½æ´¢ï¿½ï¿½
 	memset(m_df_phy_axis_speed_feedback, 0, sizeof(double)*m_p_general_config->axis_count);
 	
-	this->m_df_phy_axis_torque_feedback = new double[m_p_general_config->axis_count];  //·ÖÅäÎïÀíÖáµ±Ç°·´À¡»úÐµ×ø±ê´æ´¢Çø
+	this->m_df_phy_axis_torque_feedback = new double[m_p_general_config->axis_count];  //ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½áµ±Ç°ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ðµï¿½ï¿½ï¿½ï¿½æ´¢ï¿½ï¿½
 	memset(m_df_phy_axis_torque_feedback, 0, sizeof(double)*m_p_general_config->axis_count);
 #endif
 
-	//´´½¨Í¨µÀ¶ÔÏó
+	//ï¿½ï¿½ï¿½ï¿½Í¨ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 	this->m_p_channel_control = new ChannelControl[m_p_general_config->chn_count];
 	if(m_p_channel_control == nullptr){
-		//ÄÚ´æ·ÖÅäÊ§°Ü£¬¸æ¾¯
-		g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "Í¨µÀÒýÇæ´´½¨Í¨µÀ¿ØÖÆ¶ÔÏóÊ§°Ü!");
+		//ï¿½Ú´ï¿½ï¿½ï¿½ï¿½Ê§ï¿½Ü£ï¿½ï¿½æ¾¯
+		g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "Í¨ï¿½ï¿½ï¿½ï¿½ï¿½æ´´ï¿½ï¿½Í¨ï¿½ï¿½ï¿½ï¿½ï¿½Æ¶ï¿½ï¿½ï¿½Ê§ï¿½ï¿½!");
 		m_error_code = ERR_MEMORY_NEW;
 		return;
 	}
@@ -917,24 +916,24 @@ void ChannelEngine::Initialize(HMICommunication *hmi_comm, MICommunication *mi_c
 	}
 
 	printf("init pmc axis ctrl \n");
-	//³õÊ¼ÉèÖÃPMCÍ¨µÀ¿ØÖÆ¶ÔÏó
+	//ï¿½ï¿½Ê¼ï¿½ï¿½ï¿½ï¿½PMCÍ¨ï¿½ï¿½ï¿½ï¿½ï¿½Æ¶ï¿½ï¿½ï¿½
 	for(uint8_t i = 0; i < kMaxPmcAxisCtrlGroup; i++)
 		this->m_pmc_axis_ctrl[i].SetGroupIndex(i);
 	printf("succeed to init pmc axis ctrl\n");
 
-	//³õÊ¼»¯·½Ê½×éÅäÖÃ
+	//ï¿½ï¿½Ê¼ï¿½ï¿½ï¿½ï¿½Ê½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 	this->InitChnModeGroup();
 
-	//³õÊ¼»¯µ±Ç°Í¨µÀÎªµÚÒ»Í¨µÀ
+	//ï¿½ï¿½Ê¼ï¿½ï¿½ï¿½ï¿½Ç°Í¨ï¿½ï¿½Îªï¿½ï¿½Ò»Í¨ï¿½ï¿½
 	this->SetCurWorkChanl(0);
 
-	//³õÊ¼»¯»Ø²Î¿¼µã±êÖ¾
+	//ï¿½ï¿½Ê¼ï¿½ï¿½ï¿½Ø²Î¿ï¿½ï¿½ï¿½ï¿½Ö¾
 	this->m_n_mask_ret_ref_over = 0;
 	for(int i = 0; i < this->m_p_general_config->axis_count; i++){
-		if(m_p_axis_config[i].axis_interface == VIRTUAL_AXIS || m_p_axis_config[i].axis_type == AXIS_SPINDLE	//Ö÷ÖáºÍÐéÄâÖá²»ÓÃ»Ø²Î¿¼µã
-			|| (m_p_axis_config[i].feedback_mode == NO_ENCODER && m_p_axis_config[i].ret_ref_mode == 0)    //ÎÞ·´À¡£¬²¢ÇÒ½ûÖ¹»Ø²Î¿¼µã
-			|| (m_p_axis_config[i].feedback_mode != INCREMENTAL_ENCODER && m_p_axis_config[i].feedback_mode != NO_ENCODER && m_p_axis_config[i].ref_encoder != kAxisRefNoDef)    //¾ø¶ÔÖµ±àÂëÆ÷£¬ÒÑÉè¶¨²Î¿¼µã
-			|| (m_p_axis_config[i].feedback_mode == INCREMENTAL_ENCODER && m_p_axis_config[i].ret_ref_mode == 0)){  //ÔöÁ¿±àÂëÆ÷£¬½ûÖ¹»Ø²Î¿¼µã
+		if(m_p_axis_config[i].axis_interface == VIRTUAL_AXIS || m_p_axis_config[i].axis_type == AXIS_SPINDLE	//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½á²»ï¿½Ã»Ø²Î¿ï¿½ï¿½ï¿½
+			|| (m_p_axis_config[i].feedback_mode == NO_ENCODER && m_p_axis_config[i].ret_ref_mode == 0)    //ï¿½Þ·ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ò½ï¿½Ö¹ï¿½Ø²Î¿ï¿½ï¿½ï¿½
+			|| (m_p_axis_config[i].feedback_mode != INCREMENTAL_ENCODER && m_p_axis_config[i].feedback_mode != NO_ENCODER && m_p_axis_config[i].ref_encoder != kAxisRefNoDef)    //ï¿½ï¿½ï¿½ï¿½Öµï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½è¶¨ï¿½Î¿ï¿½ï¿½ï¿½
+			|| (m_p_axis_config[i].feedback_mode == INCREMENTAL_ENCODER && m_p_axis_config[i].ret_ref_mode == 0)){  //ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ö¹ï¿½Ø²Î¿ï¿½ï¿½ï¿½
 //			m_n_mask_ret_ref_over |= (0x01<<i);
 			this->SetRetRefFlag(i, true);
 		}
@@ -945,37 +944,37 @@ void ChannelEngine::Initialize(HMICommunication *hmi_comm, MICommunication *mi_c
 	struct sched_param param;
 	int res = 0;
 
-	//³õÊ¼»¯ÊÚÈ¨Ïà¹Ø
-	if(!ReadDevSn(m_device_sn)){  //¶ÁÈ¡Éè±¸ÐòÁÐºÅÊ§°Ü
+	//ï¿½ï¿½Ê¼ï¿½ï¿½ï¿½ï¿½È¨ï¿½ï¿½ï¿½
+	if(!ReadDevSn(m_device_sn)){  //ï¿½ï¿½È¡ï¿½è±¸ï¿½ï¿½ï¿½Ðºï¿½Ê§ï¿½ï¿½
 		printf("Failed to read device sn\n");
 	}else{
 		printf("device SN: %s\n",m_device_sn);
 	}
 #ifdef USES_LICENSE_FUNC
-	m_ln_local_time = ReadLocalTime(m_device_sn);//¶ÁÈ¡±¾µØ¼ÆÊ±ÎÄ¼þ
-	if(m_ln_local_time < 0){//¶ÁÈ¡±¾µØ¼ÆÊ±ÎÄ¼þÒì³£
+	m_ln_local_time = ReadLocalTime(m_device_sn);//ï¿½ï¿½È¡ï¿½ï¿½ï¿½Ø¼ï¿½Ê±ï¿½Ä¼ï¿½
+	if(m_ln_local_time < 0){//ï¿½ï¿½È¡ï¿½ï¿½ï¿½Ø¼ï¿½Ê±ï¿½Ä¼ï¿½ï¿½ì³£
 		if(m_ln_local_time == -1){
-			g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "±¾µØ¼ÆÊ±ÎÄ¼þ²»´æÔÚ!");
+			g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "ï¿½ï¿½ï¿½Ø¼ï¿½Ê±ï¿½Ä¼ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½!");
 		}else if(m_ln_local_time == -2){
-			g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "±¾µØ¼ÆÊ±ÎÄ¼þÒÑËð»µ!");
+			g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "ï¿½ï¿½ï¿½Ø¼ï¿½Ê±ï¿½Ä¼ï¿½ï¿½ï¿½ï¿½ï¿½!");
 		}else if(m_ln_local_time == -3){
-			g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "·Ç·¨±¾µØ¼ÆÊ±ÎÄ¼þ!");
+			g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "ï¿½Ç·ï¿½ï¿½ï¿½ï¿½Ø¼ï¿½Ê±ï¿½Ä¼ï¿½!");
 		}
 		m_error_code = ERR_SYSTEM_FILE;
 		CreateError(m_error_code, ERROR_LEVEL, CLEAR_BY_MCP_RESET);
 	}
-	if(!ReadLicense(this->m_device_sn, &this->m_lic_info)){    //¶ÁÈ¡ÊÚÈ¨ÐÅÏ¢
-		g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "¶ÁÈ¡ÊÚÈ¨ÎÄ¼þÊ§°Ü!");
+	if(!ReadLicense(this->m_device_sn, &this->m_lic_info)){    //ï¿½ï¿½È¡ï¿½ï¿½È¨ï¿½ï¿½Ï¢
+		g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "ï¿½ï¿½È¡ï¿½ï¿½È¨ï¿½Ä¼ï¿½Ê§ï¿½ï¿½!");
 	}
 
 	if(-4 == CheckLocalTime(&m_lic_info, m_ln_local_time)){
-		g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "ÏµÍ³Ê±¼äÒì³£!");
+		g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "ÏµÍ³Ê±ï¿½ï¿½ï¿½ì³£!");
 		m_error_code = ERR_SYSTEM_TIME;
 		CreateError(m_error_code, ERROR_LEVEL, CLEAR_BY_MCP_RESET);
 	}
 
 	if(1 == this->CheckLicense(true)){
-		g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "ÏµÍ³ÊÚÈ¨·Ç·¨!");
+		g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "ÏµÍ³ï¿½ï¿½È¨ï¿½Ç·ï¿½!");
 	}
 
 	printf("license info: flag = %c, deadline=%04d-%02d-%02d\n", this->m_lic_info.licflag, this->m_lic_info.dead_line.year,
@@ -983,21 +982,21 @@ void ChannelEngine::Initialize(HMICommunication *hmi_comm, MICommunication *mi_c
 #endif
 
 
-	//´´½¨×´Ì¬Ë¢ÐÂË¢ÐÂÏß³Ì
+	//ï¿½ï¿½ï¿½ï¿½×´Ì¬Ë¢ï¿½ï¿½Ë¢ï¿½ï¿½ï¿½ß³ï¿½
 	pthread_attr_init(&attr);
 	pthread_attr_setschedpolicy(&attr, SCHED_RR);
 	pthread_attr_setstacksize(&attr, kThreadStackSize);	//
 	param.__sched_priority = 36; //96;
 	pthread_attr_setschedparam(&attr, &param);
-	res = pthread_attr_setinheritsched(&attr, PTHREAD_EXPLICIT_SCHED); //²»¼Ì³Ð¸¸Ïß³Ìµ÷¶È·½Ê½£¬·ñÔòÒÔÉÏµÄÉèÖÃ²»ÉúÐ§
+	res = pthread_attr_setinheritsched(&attr, PTHREAD_EXPLICIT_SCHED); //ï¿½ï¿½ï¿½Ì³Ð¸ï¿½ï¿½ß³Ìµï¿½ï¿½È·ï¿½Ê½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ïµï¿½ï¿½ï¿½ï¿½Ã²ï¿½ï¿½ï¿½Ð§
 	if (res) {
 		printf("pthread setinheritsched failed\n");
 	}
 
 	res = pthread_create(&m_thread_refresh_mi_status, &attr,
-			ChannelEngine::RefreshMiStatusThread, this);    //¿ªÆôÍ¨µÀ×´Ì¬Ë¢ÐÂÏß³Ì
+			ChannelEngine::RefreshMiStatusThread, this);    //ï¿½ï¿½ï¿½ï¿½Í¨ï¿½ï¿½×´Ì¬Ë¢ï¿½ï¿½ï¿½ß³ï¿½
 	if (res != 0) {
-		g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "Í¨µÀÒýÇæ´´½¨MI×´Ì¬Ë¢ÐÂÏß³ÌÊ§°Ü£¡");
+		g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "Í¨ï¿½ï¿½ï¿½ï¿½ï¿½æ´´ï¿½ï¿½MI×´Ì¬Ë¢ï¿½ï¿½ï¿½ß³ï¿½Ê§ï¿½Ü£ï¿½");
 		m_error_code = ERR_SC_INIT;
 		return;
 	}
@@ -1008,13 +1007,13 @@ void ChannelEngine::Initialize(HMICommunication *hmi_comm, MICommunication *mi_c
 }
 
 /**
- * @brief ³õÊ¼»¯·½Ê½×éÊý¾Ý£¬±ØÐëÔÚ¶ÁÈ¡Í¨µÀÅäÖÃÖ®ºóµ÷ÓÃ
+ * @brief ï¿½ï¿½Ê¼ï¿½ï¿½ï¿½ï¿½Ê½ï¿½ï¿½ï¿½ï¿½ï¿½Ý£ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ú¶ï¿½È¡Í¨ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ö®ï¿½ï¿½ï¿½ï¿½ï¿½
  */
 void ChannelEngine::InitChnModeGroup(){
 	if(this->m_p_channel_config == nullptr)
 		return;
 
-	this->m_p_channel_mode_group = new ChannelModeGroup[this->m_p_general_config->chn_count];    //·½Ê½×é×î´óÊýÁ¿µÈÓÚÍ¨µÀÊýÁ¿
+	this->m_p_channel_mode_group = new ChannelModeGroup[this->m_p_general_config->chn_count];    //ï¿½ï¿½Ê½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Í¨ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 
 	if(this->m_p_channel_mode_group == nullptr){
 		CreateError(ERR_SC_INIT, ERROR_LEVEL, CLEAR_BY_RESET_POWER);
@@ -1032,22 +1031,22 @@ void ChannelEngine::InitChnModeGroup(){
 }
 
 /**
- * @brief ³õÊ¼»¯ÂÝ²¹Êý¾Ý·Ö²¼±í
+ * @brief ï¿½ï¿½Ê¼ï¿½ï¿½ï¿½Ý²ï¿½ï¿½ï¿½ï¿½Ý·Ö²ï¿½ï¿½ï¿½
  */
 void ChannelEngine::InitPcAllocList(){
 	this->m_list_pc_alloc.Clear();
 
 	AxisPcDataAlloc pc_alloc;
 	for(int i = 0; i < m_p_general_config->axis_count; i++){
-		uint16_t flag = this->m_p_axis_config[i].pc_type; // 0 µ¥ÏòÂÝ²¹  1 Ë«ÏòÂÝ²¹
+		uint16_t flag = this->m_p_axis_config[i].pc_type; // 0 ï¿½ï¿½ï¿½ï¿½ï¿½Ý²ï¿½  1 Ë«ï¿½ï¿½ï¿½Ý²ï¿½
 		if(this->m_p_axis_config[i].pc_count == 0)
 			continue;
 		pc_alloc.axis_index = i;
 
 		if(flag == 1){
-			pc_alloc.pc_count = m_p_axis_config[i].pc_count*2;  // Ë«ÏòÂÝ²¹
+			pc_alloc.pc_count = m_p_axis_config[i].pc_count*2;  // Ë«ï¿½ï¿½ï¿½Ý²ï¿½
 		}else{
-			pc_alloc.pc_count = m_p_axis_config[i].pc_count;  // µ¥ÏòÂÝ²¹
+			pc_alloc.pc_count = m_p_axis_config[i].pc_count;  // ï¿½ï¿½ï¿½ï¿½ï¿½Ý²ï¿½
 		}
 
 		pc_alloc.start_index = m_p_axis_config[i].pc_offset>0?m_p_axis_config[i].pc_offset-1:0;
@@ -1056,7 +1055,7 @@ void ChannelEngine::InitPcAllocList(){
 
 		printf("axis %d -- start_index %d  -- end_index %d\n", i, pc_alloc.start_index, pc_alloc.end_index);
 
-		//°´ÆðÊ¼Æ«ÒÆ´ÓÐ¡µ½´óµÄË³Ðò²åÈëlist
+		//ï¿½ï¿½ï¿½ï¿½Ê¼Æ«ï¿½Æ´ï¿½Ð¡ï¿½ï¿½ï¿½ï¿½ï¿½Ë³ï¿½ï¿½ï¿½ï¿½ï¿½list
 		ListNode<AxisPcDataAlloc> *node = this->m_list_pc_alloc.HeadNode();
 
 		while(node != nullptr){
@@ -1073,10 +1072,10 @@ void ChannelEngine::InitPcAllocList(){
 }
 
 /**
- * @brief ¸Ä±äÖ¸¶¨Í¨µÀµÄËùÊô·½Ê½×é
- * @param chn : Í¨µÀºÅ£¬´Ó0¿ªÊ¼
- * @param group_old £ºÔ­ËùÊô·½Ê½×éºÅ£¬´Ó0¿ªÊ¼
- * @param group_new £ºÐÂËùÊô·½Ê½×éºÅ£¬´Ó0¿ªÊ¼
+ * @brief ï¿½Ä±ï¿½Ö¸ï¿½ï¿½Í¨ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ê½ï¿½ï¿½
+ * @param chn : Í¨ï¿½ï¿½ï¿½Å£ï¿½ï¿½ï¿½0ï¿½ï¿½Ê¼
+ * @param group_old ï¿½ï¿½Ô­ï¿½ï¿½ï¿½ï¿½ï¿½Ê½ï¿½ï¿½Å£ï¿½ï¿½ï¿½0ï¿½ï¿½Ê¼
+ * @param group_new ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ê½ï¿½ï¿½Å£ï¿½ï¿½ï¿½0ï¿½ï¿½Ê¼
  */
 void ChannelEngine::ChangeChnGroupIndex(uint8_t chn, uint8_t group_old, uint8_t group_new){
 	if(chn >= m_p_general_config->chn_count ||
@@ -1087,12 +1086,12 @@ void ChannelEngine::ChangeChnGroupIndex(uint8_t chn, uint8_t group_old, uint8_t 
 	if(group_old == group_new)
 		return;
 
-	this->m_p_channel_mode_group[group_old].RemoveChannel(chn);    //´ÓÔ­·½Ê½×éÖÐÒÆ³ýÍ¨µÀchn
+	this->m_p_channel_mode_group[group_old].RemoveChannel(chn);    //ï¿½ï¿½Ô­ï¿½ï¿½Ê½ï¿½ï¿½ï¿½ï¿½ï¿½Æ³ï¿½Í¨ï¿½ï¿½chn
 	this->m_p_channel_mode_group[group_new].AddChannel(chn);       //
 }
 
 /**
- * @brief »ñÈ¡Ö¸¶¨Í¨µÀµÄF¼Ä´æÆ÷Ö¸Õë
+ * @brief ï¿½ï¿½È¡Ö¸ï¿½ï¿½Í¨ï¿½ï¿½ï¿½ï¿½Fï¿½Ä´ï¿½ï¿½ï¿½Ö¸ï¿½ï¿½
  * @param chn_index
  * @return
  */
@@ -1103,7 +1102,7 @@ FRegBits *ChannelEngine::GetChnFRegBits(uint8_t chn_index){
 }
 
 /**
- * @brief »ñÈ¡Ö¸¶¨Í¨µÀµÄG¼Ä´æÆ÷Ö¸Õë
+ * @brief ï¿½ï¿½È¡Ö¸ï¿½ï¿½Í¨ï¿½ï¿½ï¿½ï¿½Gï¿½Ä´ï¿½ï¿½ï¿½Ö¸ï¿½ï¿½
  * @param chn_index
  * @return
  */
@@ -1121,13 +1120,13 @@ const GRegBits *ChannelEngine::GetChnGRegBits(uint8_t chn_index){
 //}
 
 /**
- * @brief ¿ÕÏÐ´¦Àíº¯Êý
+ * @brief ï¿½ï¿½ï¿½Ð´ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
  */
 void ChannelEngine::DoIdle(){
 	uint8_t i = 0;
 	this->m_n_idle_count++;
 //
-//	//¿ÕÏÐÊ±±£´æPMC¼Ä´æÆ÷Êý¾Ý
+//	//ï¿½ï¿½ï¿½ï¿½Ê±ï¿½ï¿½ï¿½ï¿½PMCï¿½Ä´ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 //	if(m_n_idle_count%100 == 0){
 //		bool idle = true;
 //		for(i = 0; i < this->m_p_general_config->chn_count; i++){
@@ -1136,20 +1135,20 @@ void ChannelEngine::DoIdle(){
 //				break;
 //			}
 //		}
-//		if(idle && this->m_p_pmc_reg->IsKeepRegChanged()){//±£´æ¼Ä´æÆ÷Êý¾Ý
+//		if(idle && this->m_p_pmc_reg->IsKeepRegChanged()){//ï¿½ï¿½ï¿½ï¿½Ä´ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 //			this->m_p_pmc_reg->SaveRegData();
 //		}
 //	}
 //
 //
-	//µ÷ÓÃÍ¨µÀµÄ¿ÕÏÐº¯Êý
+	//ï¿½ï¿½ï¿½ï¿½Í¨ï¿½ï¿½ï¿½Ä¿ï¿½ï¿½Ðºï¿½ï¿½ï¿½
 	for(i = 0; i < this->m_p_general_config->chn_count; i++){
 		this->m_p_channel_control[i].DoIdle(m_n_idle_count);
 	}
 }
 
 /**
- * @brief ³õÊ¼¹ØÁªµôµçÐÅºÅºÍµôµç´¦Àíº¯Êý
+ * @brief ï¿½ï¿½Ê¼ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ÅºÅºÍµï¿½ç´¦ï¿½ï¿½ï¿½ï¿½ï¿½
  */
 void ChannelEngine::InitPoweroffHandler(){
 	struct sigaction sa;
@@ -1168,8 +1167,8 @@ void ChannelEngine::InitPoweroffHandler(){
 		return;
 	}
 
-	ioctl(fd, SET_NOTIFY_PID, getpid()); //ÉèÖÃÍ¨ÖªpidÎª×Ô¼º
-	ioctl(fd, SET_NOTIFY_INTERVAL, 0);	//ÉèÖÃ¼ä¸ôÎª0
+	ioctl(fd, SET_NOTIFY_PID, getpid()); //ï¿½ï¿½ï¿½ï¿½Í¨ÖªpidÎªï¿½Ô¼ï¿½
+	ioctl(fd, SET_NOTIFY_INTERVAL, 0);	//ï¿½ï¿½ï¿½Ã¼ï¿½ï¿½Îª0
 
 	close(fd);
 
@@ -1177,7 +1176,7 @@ void ChannelEngine::InitPoweroffHandler(){
 }
 
 /**
- * @brief µôµç´¦Àíº¯Êý
+ * @brief ï¿½ï¿½ç´¦ï¿½ï¿½ï¿½ï¿½ï¿½
  * @param signo
  * @param info
  * @param context
@@ -1203,26 +1202,26 @@ void ChannelEngine::PoweroffHandler(int signo, siginfo_t *info, void *context){
 }
 
 /**
- * @brief µôµçÊ±±£´æÊý¾Ý
+ * @brief ï¿½ï¿½ï¿½Ê±ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
  */
 void ChannelEngine::SaveDataPoweroff(){
 
-	//±£´æPMC¼Ä´æÆ÷Êý¾Ý
+	//ï¿½ï¿½ï¿½ï¿½PMCï¿½Ä´ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 	if((this->m_mask_import_param & (0x01<<CONFIG_PMC_REG)) == 0)
 		this->m_p_pmc_reg->SaveRegData();
 
-	//±£´æ·ÇÒ×Ê§ÐÔºê±äÁ¿
+	//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ê§ï¿½Ôºï¿½ï¿½ï¿½ï¿½
 	if((this->m_mask_import_param & (0x01<<CONFIG_MACRO_VAR)) == 0)
 		this->SaveKeepMacroVar();
 
 
-	//±£´æ¸÷Í¨µÀµ±Ç°Ðè±£´æµÄ×´Ì¬
-//	g_ptr_parm_manager->SaveParm(CHN_STATE_SCENE);    //×¢ÊÍÔ­Òò£º´ËÎªµÍÆµ²Ù×÷£¬¸ÄÎªÔÚÍ¨µÀ×´Ì¬ÐÞ¸ÄÊ±¼´Ê±±£´æ£¬²»ÔÙµôµçÊ±Ôö¼ÓºÄÊ±
+	//ï¿½ï¿½ï¿½ï¿½ï¿½Í¨ï¿½ï¿½ï¿½ï¿½Ç°ï¿½è±£ï¿½ï¿½ï¿½×´Ì¬
+//	g_ptr_parm_manager->SaveParm(CHN_STATE_SCENE);    //×¢ï¿½ï¿½Ô­ï¿½ò£º´ï¿½Îªï¿½ï¿½Æµï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Îªï¿½ï¿½Í¨ï¿½ï¿½×´Ì¬ï¿½Þ¸ï¿½Ê±ï¿½ï¿½Ê±ï¿½ï¿½ï¿½æ£¬ï¿½ï¿½ï¿½Ùµï¿½ï¿½Ê±ï¿½ï¿½ï¿½Óºï¿½Ê±
 
-	//±£´æ¸÷Öáµ±Ç°Î»ÖÃ
+	//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½áµ±Ç°Î»ï¿½ï¿½
 	this->SaveCurPhyAxisEncoder();
 
-	//±£´æµ¶¾ßÊÙÃüÐÅÏ¢
+	//ï¿½ï¿½ï¿½æµ¶ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ï¢
 #ifdef USES_WOOD_MACHINE
 	this->SaveToolInfo();
 #endif
@@ -1234,7 +1233,7 @@ void ChannelEngine::SaveDataPoweroff(){
 }
 
 /**
- * @brief µôµç±£´æ·ÇÒ×Ê§ÐÔºê±äÁ¿
+ * @brief ï¿½ï¿½ç±£ï¿½ï¿½ï¿½ï¿½ï¿½Ê§ï¿½Ôºï¿½ï¿½ï¿½ï¿½
  */
 void ChannelEngine::SaveKeepMacroVar(){
 
@@ -1245,10 +1244,10 @@ void ChannelEngine::SaveKeepMacroVar(){
 }
 
 /**
- * @brief Í¬²½±£´æÎÄ¼þ
+ * @brief Í¬ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ä¼ï¿½
  */
 void ChannelEngine::SyncKeepVar(){
-	//±£´æPMC¼Ä´æÆ÷Êý¾Ý
+	//ï¿½ï¿½ï¿½ï¿½PMCï¿½Ä´ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 	this->m_p_pmc_reg->SaveRegData();
 
 	for(uint8_t i = 0; i < this->m_p_general_config->chn_count; i++){
@@ -1259,8 +1258,8 @@ void ChannelEngine::SyncKeepVar(){
 }
 
 /**
- * @brief ÉèÖÃ²ÎÊýµ¼Èë±êÖ¾
- * @param param_type : ²ÎÊýÀàÐÍ
+ * @brief ï¿½ï¿½ï¿½Ã²ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ö¾
+ * @param param_type : ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
  */
 void ChannelEngine::SetParamImportMask(int param_type){
 	if(param_type >= CONFIG_TYPE_COUNT)
@@ -1271,15 +1270,15 @@ void ChannelEngine::SetParamImportMask(int param_type){
 
 
 /**
- * @brief µôµç±£´æµ±Ç°ËùÓÐÎïÀíÖáµÄ±àÂëÆ÷·´À¡
+ * @brief ï¿½ï¿½ç±£ï¿½æµ±Ç°ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ä±ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
  */
 void ChannelEngine::SaveCurPhyAxisEncoder(){
 
-	FILE *fp = fopen(PATH_PHY_AXIS_ENCODER, "wb");//´ò¿ªÎÄ¼þ
+	FILE *fp = fopen(PATH_PHY_AXIS_ENCODER, "wb");//ï¿½ï¿½ï¿½Ä¼ï¿½
 
 	if(fp == nullptr){
-		g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "´ò¿ªÎïÀíÖáµ±Ç°·´À¡Êý¾ÝÊ§°Ü£¡");
-		return;//ÎÄ¼þ´ò¿ªÊ§°Ü
+		g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½áµ±Ç°ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ê§ï¿½Ü£ï¿½");
+		return;//ï¿½Ä¼ï¿½ï¿½ï¿½Ê§ï¿½ï¿½
 	}
 
 	int64_t data[m_p_general_config->axis_count];
@@ -1297,7 +1296,7 @@ void ChannelEngine::SaveCurPhyAxisEncoder(){
 
 
 /**
- * @brief ÏòMCÄ£¿é·¢ËÍÎÕÊÖÃüÁî
+ * @brief ï¿½ï¿½MCÄ£ï¿½é·¢ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
  */
 void ChannelEngine::ShakeHandWithMc(){
 	McCmdFrame cmd;
@@ -1315,7 +1314,7 @@ void ChannelEngine::ShakeHandWithMc(){
 }
 
 /**
- * @brief ÏòMIÄ£¿é·¢ËÍÎÕÊÖÃüÁî
+ * @brief ï¿½ï¿½MIÄ£ï¿½é·¢ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
  */
 void ChannelEngine::ShakeHandWithMi(){
 	MiCmdFrame cmd;
@@ -1330,7 +1329,7 @@ void ChannelEngine::ShakeHandWithMi(){
 }
 
 /**
- * @brief ÏòMC·¢ËÍ²å²¹ÖÜÆÚ²ÎÊý
+ * @brief ï¿½ï¿½MCï¿½ï¿½ï¿½Í²å²¹ï¿½ï¿½ï¿½Ú²ï¿½ï¿½ï¿½
  */
 void ChannelEngine::SendIntepolateCycle(){
 	McCmdFrame cmd;
@@ -1339,8 +1338,8 @@ void ChannelEngine::SendIntepolateCycle(){
 	cmd.data.channel_index = CHANNEL_ENGINE_INDEX;
 
 	cmd.data.cmd = CMD_MC_SET_INIT_PARAM;
-//	cmd.data.data[0] = 0x0001;   	//250usÖÜÆÚ
-	cmd.data.data[0] = this->m_p_general_config->bus_cycle; // this->m_p_channel_config[0].intep_cycle;   //²å²¹ÖÜÆÚ
+//	cmd.data.data[0] = 0x0001;   	//250usï¿½ï¿½ï¿½ï¿½
+	cmd.data.data[0] = this->m_p_general_config->bus_cycle; // this->m_p_channel_config[0].intep_cycle;   //ï¿½å²¹ï¿½ï¿½ï¿½ï¿½
 //	cmd.data.data[1] = 0x0002;		//-TÄ£Ê½
 
 
@@ -1354,7 +1353,7 @@ void ChannelEngine::SendIntepolateCycle(){
 }
 
 /**
- * @brief ·¢ËÍMC¸´Î»Ö¸Áî
+ * @brief ï¿½ï¿½ï¿½ï¿½MCï¿½ï¿½Î»Ö¸ï¿½ï¿½
  * @return
  */
 void ChannelEngine::SendMcResetCmd(){
@@ -1369,11 +1368,11 @@ void ChannelEngine::SendMcResetCmd(){
 	    m_p_mc_comm->WriteCmd(cmd);
 	
     if(true == this->m_mc_run_mi_flag)
-	    m_p_mc_arm_comm->WriteCmd(cmd);   // ??????????????????????????????????????????????  ¶þÑ¡Ò»  ÊÇ·ñ¼ÓÒ»¸öºê
+	    m_p_mc_arm_comm->WriteCmd(cmd);   // ??????????????????????????????????????????????  ï¿½ï¿½Ñ¡Ò»  ï¿½Ç·ï¿½ï¿½Ò»ï¿½ï¿½ï¿½ï¿½
 }
 
 /**
- * @brief ·¢ËÍMCÇå³ý¸æ¾¯Ö¸Áî
+ * @brief ï¿½ï¿½ï¿½ï¿½MCï¿½ï¿½ï¿½ï¿½æ¾¯Ö¸ï¿½ï¿½
  * @return
  */
 void ChannelEngine::ClearMcAlarm(){
@@ -1388,11 +1387,11 @@ void ChannelEngine::ClearMcAlarm(){
 	    m_p_mc_comm->WriteCmd(cmd);
 	
     if(true == this->m_mc_run_mi_flag)
-	    m_p_mc_arm_comm->WriteCmd(cmd);  // ??????????????????????????????????????????????  ¶þÑ¡Ò»  ÊÇ·ñ¼ÓÒ»¸öºê
+	    m_p_mc_arm_comm->WriteCmd(cmd);  // ??????????????????????????????????????????????  ï¿½ï¿½Ñ¡Ò»  ï¿½Ç·ï¿½ï¿½Ò»ï¿½ï¿½ï¿½ï¿½
 }
 
 /**
- * @brief ³õÊ¼»¯MCµÄÊý¾Ý»º³åÇø£¬ÉèÖÃÄ¬ÈÏ·Çµ¥¶ÎÄ£Ê½
+ * @brief ï¿½ï¿½Ê¼ï¿½ï¿½MCï¿½ï¿½ï¿½ï¿½ï¿½Ý»ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ä¬ï¿½Ï·Çµï¿½ï¿½ï¿½Ä£Ê½
  */
 void ChannelEngine::InitMcDataBuffer(){
 	for(int i = 0; i < this->m_p_general_config->chn_count; i++){
@@ -1403,7 +1402,7 @@ void ChannelEngine::InitMcDataBuffer(){
 }
 
 /**
- * @brief ³õÊ¼»¯ÉèÖÃMC¹¤¼þ×ø±êÏµ
+ * @brief ï¿½ï¿½Ê¼ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½MCï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ïµ
  */
 void ChannelEngine::InitMcCoord(){
 	for(int i = 0; i < this->m_p_general_config->chn_count; i++){
@@ -1412,12 +1411,12 @@ void ChannelEngine::InitMcCoord(){
 }
 
 /**
- * @brief ÉèÖÃMCµÄÏà¹Ø²ÎÊý
+ * @brief ï¿½ï¿½ï¿½ï¿½MCï¿½ï¿½ï¿½ï¿½Ø²ï¿½ï¿½ï¿½
  */
 void ChannelEngine::InitMcParam(){
-	SendIntepolateCycle();  //·¢ËÍ²å²¹ÖÜÆÚ
+	SendIntepolateCycle();  //ï¿½ï¿½ï¿½Í²å²¹ï¿½ï¿½ï¿½ï¿½
 
-	for(int i = 0; i < this->m_p_general_config->chn_count; i++){ //³õÊ¼»¯Í¨µÀ²ÎÊý
+	for(int i = 0; i < this->m_p_general_config->chn_count; i++){ //ï¿½ï¿½Ê¼ï¿½ï¿½Í¨ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 		this->m_p_channel_control[i].InitMcIntpAutoBuf();
 		this->m_p_channel_control[i].InitMcIntpMdaBuf();
 		this->m_p_channel_control[i].SetMcStepMode(false);
@@ -1427,14 +1426,14 @@ void ChannelEngine::InitMcParam(){
 		this->m_p_channel_control[i].SetMcChnCornerStopParam();
 		this->m_p_channel_control[i].SetChnAxisName();
 
-		this->m_p_channel_control[i].SetMcCoord(true);  //³õÊ¼»¯¹¤¼þ×ø±êÏµÆ«ÒÆ
+		this->m_p_channel_control[i].SetMcCoord(true);  //ï¿½ï¿½Ê¼ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ÏµÆ«ï¿½ï¿½
 
-		this->m_p_channel_control[i].SetChnAllAxisParam(); //³õÊ¼»¯Öá²ÎÊý
+		this->m_p_channel_control[i].SetChnAllAxisParam(); //ï¿½ï¿½Ê¼ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 #ifdef USES_FIVE_AXIS_FUNC
-		this->m_p_channel_control[i].SetMcChnFiveAxisParam();  //³õÊ¼»¯ÎåÖá²ÎÊý
+		this->m_p_channel_control[i].SetMcChnFiveAxisParam();  //ï¿½ï¿½Ê¼ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 #endif
 #ifdef USES_WOOD_MACHINE
-		this->m_p_channel_control[i].SetMcFlipCompParam();  //·¢ËÍÌô½Ç²¹³¥
+		this->m_p_channel_control[i].SetMcFlipCompParam();  //ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ç²ï¿½ï¿½ï¿½
 		this->m_p_channel_control[i].SetMcDebugParam(0);
 		this->m_p_channel_control[i].SetMcDebugParam(1);
 		this->m_p_channel_control[i].SetMcDebugParam(2);
@@ -1446,7 +1445,7 @@ void ChannelEngine::InitMcParam(){
 }
 
 /**
- * @brief »ñÈ¡MCÄ£¿éµÄ°æ±¾ÐÅÏ¢
+ * @brief ï¿½ï¿½È¡MCÄ£ï¿½ï¿½Ä°æ±¾ï¿½ï¿½Ï¢
  */
 void ChannelEngine::SendGetMcVersionCmd(){
 	McCmdFrame cmd;
@@ -1460,15 +1459,15 @@ void ChannelEngine::SendGetMcVersionCmd(){
 	if(true == this->m_mc_run_dsp_flag)
 	    m_p_mc_comm->WriteCmd(cmd);
     if(true == this->m_mc_run_mi_flag)
-	    m_p_mc_arm_comm->WriteCmd(cmd);  // ??????????????????????????????????????????????  ¶þÑ¡Ò»  ÊÇ·ñ¼ÓÒ»¸öºê
+	    m_p_mc_arm_comm->WriteCmd(cmd);  // ??????????????????????????????????????????????  ï¿½ï¿½Ñ¡Ò»  ï¿½Ç·ï¿½ï¿½Ò»ï¿½ï¿½ï¿½ï¿½
 }
 
 #ifdef USES_TIANJIN_PROJ
 /**
- * @brief PMCÖá»úÐµ×ø±êÏµµ½¹¤¼þ×ø±êÏµµÄ×ª»»
- * @param pos £º»úÐµ×ø±ê
- * @param pmc_axis_index £º PMCÖáÐòºÅ
- * @return ¹¤¼þ×ø±ê
+ * @brief PMCï¿½ï¿½ï¿½Ðµï¿½ï¿½ï¿½ï¿½Ïµï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ïµï¿½ï¿½×ªï¿½ï¿½
+ * @param pos ï¿½ï¿½ï¿½ï¿½Ðµï¿½ï¿½ï¿½ï¿½
+ * @param pmc_axis_index ï¿½ï¿½ PMCï¿½ï¿½ï¿½ï¿½ï¿½
+ * @return ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
  */
 double ChannelEngine::TransMachToWorkCoord(double &pos, uint8_t pmc_axis_index){
 	double work_pos = 0;
@@ -1479,10 +1478,10 @@ double ChannelEngine::TransMachToWorkCoord(double &pos, uint8_t pmc_axis_index){
 }
 
 /**
- * @brief PMCÖá¹¤¼þ×ø±êÏµµ½»úÐµ×ø±êÏµµÄ×ª»»
- * @param pos £º ¹¤¼þ×ø±ê
- * @param pmc_axis_index £º PMCÖáÐòºÅ
- * @return £º »úÐµ×ø±ê
+ * @brief PMCï¿½á¹¤ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ïµï¿½ï¿½ï¿½ï¿½Ðµï¿½ï¿½ï¿½ï¿½Ïµï¿½ï¿½×ªï¿½ï¿½
+ * @param pos ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+ * @param pmc_axis_index ï¿½ï¿½ PMCï¿½ï¿½ï¿½ï¿½ï¿½
+ * @return ï¿½ï¿½ ï¿½ï¿½Ðµï¿½ï¿½ï¿½ï¿½
  */
 double ChannelEngine::TransWorkToMachCoord(double &pos, uint8_t pmc_axis_index){
 	double mach_pos = 0;
@@ -1493,7 +1492,7 @@ double ChannelEngine::TransWorkToMachCoord(double &pos, uint8_t pmc_axis_index){
 #endif
 
 /**
- * @brief ·¢ËÍPMCÖáÎ»ÖÃ¸øHMI
+ * @brief ï¿½ï¿½ï¿½ï¿½PMCï¿½ï¿½Î»ï¿½Ã¸ï¿½HMI
  */
 void ChannelEngine::SendPmcAxisToHmi(){
 	if(this->m_n_pmc_axis_count == 0)
@@ -1515,12 +1514,12 @@ void ChannelEngine::SendPmcAxisToHmi(){
 	for(uint8_t i = 0; i < this->m_p_general_config->axis_count; i++){
 		if(this->m_p_axis_config[i].axis_pmc == 0)
 			continue;
-		axis.axis_no = i;  //´Ó0¿ªÊ¼±àºÅ
+		axis.axis_no = i;  //ï¿½ï¿½0ï¿½ï¿½Ê¼ï¿½ï¿½ï¿½
 		axis.mach_pos = this->m_df_phy_axis_pos_feedback[i];
 		axis.remain_dis = this->m_df_pmc_axis_remain[i];
 
 #ifdef USES_TIANJIN_PROJ
-		//»úÐµ×ø±ê×ª»»Îª¹¤¼þ×ø±ê
+		//ï¿½ï¿½Ðµï¿½ï¿½ï¿½ï¿½×ªï¿½ï¿½Îªï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 		axis.work_pos = this->TransMachToWorkCoord(axis.mach_pos, count);
 #endif
 
@@ -1535,12 +1534,12 @@ void ChannelEngine::SendPmcAxisToHmi(){
 
 
 /**
- * @brief ·¢ËÍ¼à¿ØÊý¾Ý
- * @param bAxis : ÊÇ·ñ·¢ËÍ×ø±êÖáÊµÊ±Î»ÖÃ
- * @param btime : ÊÇ·ñ¸üÐÂ¼Ó¹¤Ê±¼ä
+ * @brief ï¿½ï¿½ï¿½Í¼ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+ * @param bAxis : ï¿½Ç·ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ÊµÊ±Î»ï¿½ï¿½
+ * @param btime : ï¿½Ç·ï¿½ï¿½ï¿½Â¼Ó¹ï¿½Ê±ï¿½ï¿½
  */
 void ChannelEngine::SendMonitorData(bool bAxis, bool btime){
-	//´ÓMI¶ÁÈ¡ËùÓÐÖáµÄÎ»ÖÃ
+	//ï¿½ï¿½MIï¿½ï¿½È¡ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Î»ï¿½ï¿½
 	this->m_p_mi_comm->ReadPhyAxisCurFedBckPos(m_df_phy_axis_pos_feedback, m_df_phy_axis_pos_intp,m_df_phy_axis_speed_feedback,
 			m_df_phy_axis_torque_feedback, m_p_general_config->axis_count);
 
@@ -1549,18 +1548,18 @@ void ChannelEngine::SendMonitorData(bool bAxis, bool btime){
 //#endif
 
 	if(m_n_pmc_axis_count > 0)
-		this->m_p_mi_comm->ReadPmcAxisRemainDis(m_df_pmc_axis_remain, m_n_pmc_axis_count);   // ¶ÁÈ¡ÓàÒÆ¶¯Á¿
+		this->m_p_mi_comm->ReadPmcAxisRemainDis(m_df_pmc_axis_remain, m_n_pmc_axis_count);   // ï¿½ï¿½È¡ï¿½ï¿½ï¿½Æ¶ï¿½ï¿½ï¿½
 
 	for(int i = 0; i < this->m_p_general_config->chn_count; i++){
 		this->m_p_channel_control[i].SendMonitorData(bAxis, btime);
 	}
 
-	this->SendPmcAxisToHmi();   //·¢ËÍPMCÖáÊý¾Ý
+	this->SendPmcAxisToHmi();   //ï¿½ï¿½ï¿½ï¿½PMCï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 //	printf("send monitor data\n");
 }
 
 /**
- * @brief ´¦ÀíMCÄ£¿éµÄÖ¸Áî»Ø¸´
+ * @brief ï¿½ï¿½ï¿½ï¿½MCÄ£ï¿½ï¿½ï¿½Ö¸ï¿½ï¿½Ø¸ï¿½
  * @param rsp
  */
 void ChannelEngine::ProcessMcCmdRsp(McCmdFrame &rsp){
@@ -1568,31 +1567,31 @@ void ChannelEngine::ProcessMcCmdRsp(McCmdFrame &rsp){
 	switch(rsp.data.cmd){
 	case CMD_MC_SHAKEHANDS:
 		if(rsp.data.data[0] == 0x1234 && rsp.data.data[1] == 0x5678){
-			//ÎÕÊÖ³É¹¦
-			g_sys_state.module_ready_mask |= MC_READY;  //MCÄ£¿é¾ÍÐ÷
+			//ï¿½ï¿½ï¿½Ö³É¹ï¿½
+			g_sys_state.module_ready_mask |= MC_READY;  //MCÄ£ï¿½ï¿½ï¿½ï¿½ï¿½
 
 
-			this->SetMcAutoBufMax(rsp.data.data[2]);   //ÉèÖÃMC×Ô¶¯ÔË¶¯Êý¾Ý»º³å´óÐ¡
+			this->SetMcAutoBufMax(rsp.data.data[2]);   //ï¿½ï¿½ï¿½ï¿½MCï¿½Ô¶ï¿½ï¿½Ë¶ï¿½ï¿½ï¿½ï¿½Ý»ï¿½ï¿½ï¿½ï¿½Ð¡
 
 //			SendIntepolateCycle();
 //
-//			//³õÊ¼»¯×Ô¶¯ÓëMDAµÄÊý¾Ý»º³å
+//			//ï¿½ï¿½Ê¼ï¿½ï¿½ï¿½Ô¶ï¿½ï¿½ï¿½MDAï¿½ï¿½ï¿½ï¿½ï¿½Ý»ï¿½ï¿½ï¿½
 //			InitMcDataBuffer();
 //
-//			//³õÊ¼»¯¹¤¼þ×ø±êÏµ
+//			//ï¿½ï¿½Ê¼ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ïµ
 //			InitMcCoord();
 //
-//			//³õÊ¼»¯ÈíÏÞÎ»
+//			//ï¿½ï¿½Ê¼ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Î»
 //			for(uint8_t i = 0; i < this->m_p_general_config->axis_count; i++)
 //				this->SetAxisSoftLimit(i, 0);
 			InitMcParam();
 
-			this->SendGetMcVersionCmd();//·¢ËÍ»ñÈ¡°æ±¾Ö¸Áî
+			this->SendGetMcVersionCmd();//ï¿½ï¿½ï¿½Í»ï¿½È¡ï¿½æ±¾Ö¸ï¿½ï¿½
 			if(m_p_mc_comm->ReadPlVer()){
-				g_sys_state.module_ready_mask |= PL_READY;  //PLÄ£¿é¾ÍÐ÷
+				g_sys_state.module_ready_mask |= PL_READY;  //PLÄ£ï¿½ï¿½ï¿½ï¿½ï¿½
 			}
 			if(m_p_mc_comm->ReadSp6Ver()){
-				g_sys_state.module_ready_mask |= SPANTAN_READY;  //SP6Ä£¿é¾ÍÐ÷
+				g_sys_state.module_ready_mask |= SPANTAN_READY;  //SP6Ä£ï¿½ï¿½ï¿½ï¿½ï¿½
 			}
 
 			if((g_sys_state.module_ready_mask & NC_READY) == NC_READY)
@@ -1602,15 +1601,15 @@ void ChannelEngine::ProcessMcCmdRsp(McCmdFrame &rsp){
 
 
 		}
-		else{//ÎÕÊÖÊ§°Ü
-			g_sys_state.module_ready_mask &= (~MC_READY);  //MCÄ£¿éÆô¶¯Ê§°Ü
+		else{//ï¿½ï¿½ï¿½ï¿½Ê§ï¿½ï¿½
+			g_sys_state.module_ready_mask &= (~MC_READY);  //MCÄ£ï¿½ï¿½ï¿½ï¿½ï¿½Ê§ï¿½ï¿½
 			m_error_code = ERR_MC_INIT;
 			CreateError(ERR_MC_INIT, FATAL_LEVEL, CLEAR_BY_RESET_POWER);
 
 		}
 		break;
 	case CMD_MC_GET_UPDATE_STATE:
-//		this->m_n_mc_update_status = rsp.data_crc[1]&0x00FF;	//ÀÏ°æ±¾·µ»ØÖµ·ÅÔÚaxis_indexÉÏ
+//		this->m_n_mc_update_status = rsp.data_crc[1]&0x00FF;	//ï¿½Ï°æ±¾ï¿½ï¿½ï¿½ï¿½Öµï¿½ï¿½ï¿½ï¿½axis_indexï¿½ï¿½
 		this->m_n_mc_update_status = rsp.data.data[0]&0x00FF;
 		this->m_b_get_mc_update_status = true;
 		printf("get CMD_MC_GET_UPDATE_STATE rsp, %hu\n", m_n_mc_update_status);
@@ -1625,10 +1624,10 @@ void ChannelEngine::ProcessMcCmdRsp(McCmdFrame &rsp){
 
 
 /**
- * @brief ´¦ÀíMCÄ£¿é·µ»ØµÄ°æ±¾ÐÅÏ¢
+ * @brief ï¿½ï¿½ï¿½ï¿½MCÄ£ï¿½é·µï¿½ØµÄ°æ±¾ï¿½ï¿½Ï¢
  */
 void ChannelEngine::ProcessMcVersionCmd(McCmdFrame &cmd){
-	//´¦ÀíMCÄ£¿é·µ»ØµÄ°æ±¾ÐÅÏ¢
+	//ï¿½ï¿½ï¿½ï¿½MCÄ£ï¿½é·µï¿½ØµÄ°æ±¾ï¿½ï¿½Ï¢
 	uint16_t data1 = cmd.data.data[0], data2 = cmd.data.data[1], data3 = cmd.data.data[2], data4 = cmd.data.data[3];
 	uint8_t v_a = (data2>>8)&0xFF;
 	uint8_t v_b = (data2)&0xFF;
@@ -1639,7 +1638,7 @@ void ChannelEngine::ProcessMcVersionCmd(McCmdFrame &cmd){
 }
 
 /**
- * @brief ´¦ÀíMIÄ£¿é·µ»ØµÄ°æ±¾ÐÅÏ¢
+ * @brief ï¿½ï¿½ï¿½ï¿½MIÄ£ï¿½é·µï¿½ØµÄ°æ±¾ï¿½ï¿½Ï¢
  * @param cmd
  */
 void ChannelEngine::ProcessMiVersionCmd(MiCmdFrame &cmd){
@@ -1655,13 +1654,13 @@ void ChannelEngine::ProcessMiVersionCmd(MiCmdFrame &cmd){
 }
 
 /**
- * @brief ´¦ÀíMIÄ£¿éµÄÖ¸Áî
+ * @brief ï¿½ï¿½ï¿½ï¿½MIÄ£ï¿½ï¿½ï¿½Ö¸ï¿½ï¿½
  * @param cmd
  */
 void ChannelEngine::ProcessMiCmd(MiCmdFrame &cmd){
 	uint16_t cmd_no = cmd.data.cmd;
 
-//	bool rsp = (cmd_no & 0x8000) == 0 ? false:true;  //ÊÇ·ñÏìÓ¦°ü
+//	bool rsp = (cmd_no & 0x8000) == 0 ? false:true;  //ï¿½Ç·ï¿½ï¿½ï¿½Ó¦ï¿½ï¿½
 
 	cmd_no &= 0x7FFF;
 
@@ -1679,7 +1678,7 @@ void ChannelEngine::ProcessMiCmd(MiCmdFrame &cmd){
 	case CMD_MI_GET_ESB:
 		this->ProcessMiGetESBCmd(cmd);
 		break;
-	case CMD_MI_READY:	//MI×¼±¸ºÃ
+	case CMD_MI_READY:	//MI×¼ï¿½ï¿½ï¿½ï¿½
 		printf("get CMD_MI_READY, module_mask=0x%hhu\n", g_sys_state.module_ready_mask);
 		g_sys_state.module_ready_mask |= MI_READY;
 		if((g_sys_state.module_ready_mask & NC_READY) == NC_READY){
@@ -1691,13 +1690,13 @@ void ChannelEngine::ProcessMiCmd(MiCmdFrame &cmd){
 		this->SetMiCurChannel();
 
 		break;
-	case CMD_MI_ALARM:	//MI¸æ¾¯
+	case CMD_MI_ALARM:	//MIï¿½æ¾¯
 		this->ProcessMiAlarm(cmd);
 		break;
-	case CMD_MI_BUS_ALARM:		//×ÜÏß¸æ¾¯
+	case CMD_MI_BUS_ALARM:		//ï¿½ï¿½ï¿½ß¸æ¾¯
 		ProcessMiBusError(cmd);
 		break;
-	case CMD_MI_HEARTBEAT:	//MIÐÄÌø
+	case CMD_MI_HEARTBEAT:	//MIï¿½ï¿½ï¿½ï¿½
 		cmd.data.cmd |= 0x8000;
 		this->m_p_mi_comm->WriteCmd(cmd);
 		if(!m_b_recv_mi_heartbeat){
@@ -1705,39 +1704,39 @@ void ChannelEngine::ProcessMiCmd(MiCmdFrame &cmd){
 			this->InitMiParam();
 		}
 		break;
-	case CMD_MI_SET_REF_CUR:	//·µ»ØÁË±àÂëÆ÷Öµ
+	case CMD_MI_SET_REF_CUR:	//ï¿½ï¿½ï¿½ï¿½ï¿½Ë±ï¿½ï¿½ï¿½ï¿½ï¿½Öµ
 		this->ProcessMiSetRefCurRsp(cmd);
 		break;
-	case CMD_MI_CLEAR_ROT_AXIS_POS:		//´¦ÀíÎ»ÖÃÇåÕûÊýÈ¦Ö¸Áî»Ø¸´
+	case CMD_MI_CLEAR_ROT_AXIS_POS:		//ï¿½ï¿½ï¿½ï¿½Î»ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½È¦Ö¸ï¿½ï¿½Ø¸ï¿½
 		this->ProcessMiClearPosRsp(cmd);
 		break;
-	case CMD_MI_DO_SYNC_AXIS:		//´¦ÀíÍ¬²½ÖáÍ¬²½½á¹ûÏûÏ¢
+	case CMD_MI_DO_SYNC_AXIS:		//ï¿½ï¿½ï¿½ï¿½Í¬ï¿½ï¿½ï¿½ï¿½Í¬ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ï¢
 		this->ProcessMiSyncAxis(cmd);
 		break;
-	case CMD_MI_PMC_AXIS_RUNOVER:   //PMCÖáÔËÐÐµ½Î»
+	case CMD_MI_PMC_AXIS_RUNOVER:   //PMCï¿½ï¿½ï¿½ï¿½ï¿½Ðµï¿½Î»
 		this->PmcAxisRunOver(cmd);
 		break;
-	case CMD_MI_REFRESH_AXIS_ZERO:  //Ë¢ÐÂÖ¸¶¨ÖáµÄ»úÐµÁãµã±àÂëÆ÷Öµ
+	case CMD_MI_REFRESH_AXIS_ZERO:  //Ë¢ï¿½ï¿½Ö¸ï¿½ï¿½ï¿½ï¿½Ä»ï¿½Ðµï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Öµ
 		this->ProcessRefreshAxisZeroEncoder(cmd);
 		break;
-	case CMD_MI_GET_CUR_ENCODER:   //»ñÈ¡µ±Ç°±àÂëÆ÷·´À¡µ¥È¦¾ø¶ÔÖµµÄ·´À¡
+	case CMD_MI_GET_CUR_ENCODER:   //ï¿½ï¿½È¡ï¿½ï¿½Ç°ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½È¦ï¿½ï¿½ï¿½ï¿½Öµï¿½Ä·ï¿½ï¿½ï¿½
 		this->ProcessGetCurAxisEncodeRsp(cmd);
 		break;
-	case CMD_MI_SET_REF_POINT:   //ÉèÖÃ²Î¿¼µãÃüÁî£¬»Ø¸´
+	case CMD_MI_SET_REF_POINT:   //ï¿½ï¿½ï¿½Ã²Î¿ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½î£¬ï¿½Ø¸ï¿½
 		this->ProcessSetAxisRefRsp(cmd);
 		break;
-	case CMD_MI_GET_ZERO_ENCODER:  //»ñÈ¡Ö¸¶¨Öá»úÐµÁãµã¶ÔÓ¦µÄ±àÂëÆ÷Öµ
+	case CMD_MI_GET_ZERO_ENCODER:  //ï¿½ï¿½È¡Ö¸ï¿½ï¿½ï¿½ï¿½ï¿½Ðµï¿½ï¿½ï¿½ï¿½Ó¦ï¿½Ä±ï¿½ï¿½ï¿½ï¿½ï¿½Öµ
 		this->ProcessGetAxisZeroEncoderRsp(cmd);
 		break;
-	case CMD_MI_ACTIVE_SKIP:    //G31Ìø×ª
+	case CMD_MI_ACTIVE_SKIP:    //G31ï¿½ï¿½×ª
 		this->ProcessSkipCmdRsp(cmd);
 		break;
-	case CMD_MI_HW_TRACE_STATE_CHANGED:  //ÊÖÂÖ¸ú×Ù×´Ì¬ÇÐ»»
+	case CMD_MI_HW_TRACE_STATE_CHANGED:  //ï¿½ï¿½ï¿½Ö¸ï¿½ï¿½ï¿½×´Ì¬ï¿½Ð»ï¿½
 		this->ProcessMiHWTraceStateChanged(cmd);
 		break;
-	case CMD_MI_SET_AXIS_MACH_POS:   //ÉèÖÃÖáµ±Ç°»úÐµ×ø±ê
+	case CMD_MI_SET_AXIS_MACH_POS:   //ï¿½ï¿½ï¿½ï¿½ï¿½áµ±Ç°ï¿½ï¿½Ðµï¿½ï¿½ï¿½ï¿½
 		this->ProcessSetAxisCurMachPosRsp(cmd);
-	case CMD_MI_EN_SYNC_AXIS:    //Ê¹ÄÜÍ¬²½Öá
+	case CMD_MI_EN_SYNC_AXIS:    //Ê¹ï¿½ï¿½Í¬ï¿½ï¿½ï¿½ï¿½
 		this->ProcessMiEnSyncAxisRsp(cmd);
 		break;
 	default:
@@ -1747,48 +1746,48 @@ void ChannelEngine::ProcessMiCmd(MiCmdFrame &cmd){
 }
 
 /**
- * @brief ´¦ÀíMI·µ»ØµÄµ±Ç°±àÂëÆ÷µ¥È¦¾ø¶ÔÖµ£¬»Ø²Î¿¼µãÊ±Ê¹ÓÃ
- * @param cmd : miÖ¸Áî°ü
+ * @brief ï¿½ï¿½ï¿½ï¿½MIï¿½ï¿½ï¿½ØµÄµï¿½Ç°ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½È¦ï¿½ï¿½ï¿½ï¿½Öµï¿½ï¿½ï¿½Ø²Î¿ï¿½ï¿½ï¿½Ê±Ê¹ï¿½ï¿½
+ * @param cmd : miÖ¸ï¿½ï¿½ï¿½
  */
 void ChannelEngine::ProcessGetCurAxisEncodeRsp(MiCmdFrame &cmd){
 	g_ptr_trace->PrintTrace(TRACE_INFO, CHANNEL_ENGINE_SC, "ChannelEngine::ProcessGetCurAxisEncodeRsp: axis = %hhu\n", cmd.data.axis_index-1);
 	uint8_t phy_axis = cmd.data.axis_index-1;
 	uint64_t encoder = 0;
 	memcpy(&encoder, cmd.data.data, sizeof(encoder));
-	uint16_t ref_flag = 0x01;    //µ±Ç°¾«»ù×¼ÐÅºÅÎ»ÖÃ
+	uint16_t ref_flag = 0x01;    //ï¿½ï¿½Ç°ï¿½ï¿½ï¿½ï¿½×¼ï¿½Åºï¿½Î»ï¿½ï¿½
 	uint16_t ret_dir = this->m_p_axis_config[phy_axis].ret_ref_dir;
 
 	printf("get cur encoder : %llu\n", encoder);
 
 //	if(encoder < this->m_p_axis_config[phy_axis].motor_count_pr)
-//		ref_flag = 0x10;    //È¡ÉÏÒ»¸ö¾«»ù×¼ÐÅºÅÎ»ÖÃ
+//		ref_flag = 0x10;    //È¡ï¿½ï¿½Ò»ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½×¼ï¿½Åºï¿½Î»ï¿½ï¿½
 
 //	printf("ref_flag = 0x%hx\n", ref_flag);
 
 //	m_n_get_cur_encoder_count++;
-//	if(m_n_get_cur_encoder_count == 1){//µÚÒ»´Î»ñÈ¡
+//	if(m_n_get_cur_encoder_count == 1){//ï¿½ï¿½Ò»ï¿½Î»ï¿½È¡
 //		this->m_n_ret_ref_encoder = encoder;
 //
-//		m_n_ret_ref_step[phy_axis] = 7;   //ÔÙ»ñÈ¡Ò»´Î
+//		m_n_ret_ref_step[phy_axis] = 7;   //ï¿½Ù»ï¿½È¡Ò»ï¿½ï¿½
 //		return;
-//	}else if(m_n_get_cur_encoder_count == 2){ //µÚ¶þ´Î»ñÈ¡£¬ÓëµÚÒ»´Î±È½Ï£¬ÏàÍ¬Ôò½øÐÐÏÂÒ»²½£¬²»Í¬Ôò»ñÈ¡µÚÈý´Î
+//	}else if(m_n_get_cur_encoder_count == 2){ //ï¿½Ú¶ï¿½ï¿½Î»ï¿½È¡ï¿½ï¿½ï¿½ï¿½ï¿½Ò»ï¿½Î±È½Ï£ï¿½ï¿½ï¿½Í¬ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ò»ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Í¬ï¿½ï¿½ï¿½È¡ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 //		if(encoder != m_n_ret_ref_encoder){
 //			printf("###cur encoder not match: 1st=%llu, 2nd=%llu\n", m_n_ret_ref_encoder,
 //					encoder);
-//			m_n_ret_ref_step[phy_axis] = 7;   //ÔÙ»ñÈ¡Ò»´Î
+//			m_n_ret_ref_step[phy_axis] = 7;   //ï¿½Ù»ï¿½È¡Ò»ï¿½ï¿½
 //			return;
 //		}
 //	}else if(m_n_get_cur_encoder_count >= 3){
 //		printf("get 3rd encoder : %llu\n", encoder);
 //	}
 
-	//·¢ËÍÉèÖÃ²Î¿¼µãÃüÁî
+	//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ã²Î¿ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 	MiCmdFrame send;
 	memset(&send, 0x00, sizeof(send));
 	send.data.cmd = CMD_MI_SET_REF_POINT;
 	send.data.axis_index = phy_axis+1;
 	send.data.data[0] = ref_flag;
-	int64_t pos = m_p_axis_config[phy_axis].axis_home_pos[0]*1e7;   //µ¥Î»×ª»»,0.1nm
+	int64_t pos = m_p_axis_config[phy_axis].axis_home_pos[0]*1e7;   //ï¿½ï¿½Î»×ªï¿½ï¿½,0.1nm
 	memcpy(&send.data.data[1], &pos, sizeof(int64_t));
 	send.data.data[5] = this->m_p_axis_config[phy_axis].ref_signal;
 	send.data.data[6] = ret_dir;
@@ -1799,42 +1798,42 @@ void ChannelEngine::ProcessGetCurAxisEncodeRsp(MiCmdFrame &cmd){
 }
 
 /**
- * @brief ´¦ÀíMI·µ»ØµÄÉèÖÃÖá²Î¿¼µã»Ø¸´Ö¸Áî£¬»Ø²Î¿¼µãÊ±Ê¹ÓÃ
- * @param cmd : miÖ¸Áî°ü
+ * @brief ï¿½ï¿½ï¿½ï¿½MIï¿½ï¿½ï¿½Øµï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Î¿ï¿½ï¿½ï¿½Ø¸ï¿½Ö¸ï¿½î£¬ï¿½Ø²Î¿ï¿½ï¿½ï¿½Ê±Ê¹ï¿½ï¿½
+ * @param cmd : miÖ¸ï¿½ï¿½ï¿½
  */
 void ChannelEngine::ProcessSetAxisRefRsp(MiCmdFrame &cmd){
 	uint8_t axis = cmd.data.axis_index-1;
 	printf("ChannelEngine::ProcessSetAxisRefRsp, axis = 0x%hu\n", axis);
 	if(cmd.data.data[0] == FAILED){
 		printf("axis [%hhu] set ref point failed!\n", cmd.data.axis_index);
-		this->m_n_ret_ref_step[axis] = 20;   //Ìø×ªµ½Ê§°Ü´¦Àí
+		this->m_n_ret_ref_step[axis] = 20;   //ï¿½ï¿½×ªï¿½ï¿½Ê§ï¿½Ü´ï¿½ï¿½ï¿½
 	}else{
-		if(this->m_p_axis_config[axis].feedback_mode == NO_ENCODER){  //ÎÞ·´À¡Öá£¬Ö±½Ó½áÊø
-			m_n_ret_ref_step[axis] = 11;   //Ìø×ªµ½³É¹¦½áÊø
-		}else{//ÆäËüÀàÐÍ¶¼ÒÆ¶¯µ½µÚÒ»²Î¿¼µãÎ»ÖÃ
-			//ÈÃÖáÔË¶¯µ½µÚÒ»²Î¿¼µãÎ»ÖÃ
+		if(this->m_p_axis_config[axis].feedback_mode == NO_ENCODER){  //ï¿½Þ·ï¿½ï¿½ï¿½ï¿½á£¬Ö±ï¿½Ó½ï¿½ï¿½ï¿½
+			m_n_ret_ref_step[axis] = 11;   //ï¿½ï¿½×ªï¿½ï¿½ï¿½É¹ï¿½ï¿½ï¿½ï¿½ï¿½
+		}else{//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Í¶ï¿½ï¿½Æ¶ï¿½ï¿½ï¿½ï¿½ï¿½Ò»ï¿½Î¿ï¿½ï¿½ï¿½Î»ï¿½ï¿½
+			//ï¿½ï¿½ï¿½ï¿½ï¿½Ë¶ï¿½ï¿½ï¿½ï¿½ï¿½Ò»ï¿½Î¿ï¿½ï¿½ï¿½Î»ï¿½ï¿½
 		//	int64_t pos = 0;
 		//	int8_t dir = DIR_POSITIVE;
 		//	memcpy(&pos, &cmd.data.data[1], 8);
-	//		this->m_df_phy_axis_pos_feedback[axis] = (double)pos*1e-7;   //µ¥Î»×ª»»£º0.1nm --> mm
-	//		double dis = this->m_p_axis_config[axis].axis_home_pos[0]-(double)pos*1e-7;   //ÒÆ¶¯¾àÀë
+	//		this->m_df_phy_axis_pos_feedback[axis] = (double)pos*1e-7;   //ï¿½ï¿½Î»×ªï¿½ï¿½ï¿½ï¿½0.1nm --> mm
+	//		double dis = this->m_p_axis_config[axis].axis_home_pos[0]-(double)pos*1e-7;   //ï¿½Æ¶ï¿½ï¿½ï¿½ï¿½ï¿½
 	//		if(dis < 0)
 	//			dir = DIR_NEGATIVE;
 
 	//		printf("axis %hhu dir = %hhd, dis = %lf, curpos = %lld\n", axis, dir, dis, pos);
 
-			//¼ÆËã´Ö¾«»ù×¼Æ«²î
+			//ï¿½ï¿½ï¿½ï¿½Ö¾ï¿½ï¿½ï¿½×¼Æ«ï¿½ï¿½
 			if(this->m_p_axis_config[axis].ref_base_diff_check){
 				int64_t pos = 0;
 				double df_pos = 0;
 				memcpy(&pos, &cmd.data.data[1], 8);
 				df_pos = pos;
-				df_pos *= 1e-7;   //µ¥Î»×ª»»£º0.1nm-->mm
-				this->m_p_axis_config[axis].ref_base_diff = df_pos;    //´Ö¾«»ù×¼Îó²î
+				df_pos *= 1e-7;   //ï¿½ï¿½Î»×ªï¿½ï¿½ï¿½ï¿½0.1nm-->mm
+				this->m_p_axis_config[axis].ref_base_diff = df_pos;    //ï¿½Ö¾ï¿½ï¿½ï¿½×¼ï¿½ï¿½ï¿½
 				ParamValue value;
 				value.value_double = df_pos;
 				g_ptr_parm_manager->UpdateAxisParam(axis, 1312, value);
-				this->NotifyHmiAxisRefBaseDiffChanged(axis, df_pos);   //Í¨ÖªHMIÖá²ÎÊý¸Ä±ä
+				this->NotifyHmiAxisRefBaseDiffChanged(axis, df_pos);   //Í¨ÖªHMIï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ä±ï¿½
 				printf("axis %hhu ref base diff:%lf, %llu\n", axis, df_pos, pos);
 			}
 
@@ -1845,14 +1844,14 @@ void ChannelEngine::ProcessSetAxisRefRsp(MiCmdFrame &cmd){
 #else
 			this->ManualMoveAbs(axis, m_p_axis_config[axis].ret_ref_speed, m_p_axis_config[axis].axis_home_pos[0]);
 #endif
-			m_n_ret_ref_step[axis] = 10;   // Ìø×ªÏÂÒ»²½
+			m_n_ret_ref_step[axis] = 10;   // ï¿½ï¿½×ªï¿½ï¿½Ò»ï¿½ï¿½
 		}
 	}
 }
 
 /**
- * @brief ´¦ÀíMI·µ»ØµÄ»ñÈ¡»úÐµÁãµã±àÂëÆ÷ÖµÖ¸Áî£¬»Ø²Î¿¼µãÊ±Ê¹ÓÃ
- * @param cmd : MIÖ¸Áî°ü
+ * @brief ï¿½ï¿½ï¿½ï¿½MIï¿½ï¿½ï¿½ØµÄ»ï¿½È¡ï¿½ï¿½Ðµï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ÖµÖ¸ï¿½î£¬ï¿½Ø²Î¿ï¿½ï¿½ï¿½Ê±Ê¹ï¿½ï¿½
+ * @param cmd : MIÖ¸ï¿½ï¿½ï¿½
  */
 void ChannelEngine::ProcessGetAxisZeroEncoderRsp(MiCmdFrame &cmd){
 	uint8_t axis = cmd.data.axis_index-1;
@@ -1862,65 +1861,65 @@ void ChannelEngine::ProcessGetAxisZeroEncoderRsp(MiCmdFrame &cmd){
 		printf("axis [%hhu] get zero encoder failed!\n", cmd.data.axis_index);
 
 	}else{
-		//¶ÁÈ¡±àÂëÆ÷Öµ²¢±£´æ
+		//ï¿½ï¿½È¡ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Öµï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 		memcpy(&encoder_value, &cmd.data.data[1], sizeof(int64_t));
 		this->m_p_axis_config[axis].ref_encoder = encoder_value;
-		g_ptr_parm_manager->UpdateAxisRef(axis, encoder_value); //Ð´ÈëÎÄ¼þ
+		g_ptr_parm_manager->UpdateAxisRef(axis, encoder_value); //Ð´ï¿½ï¿½ï¿½Ä¼ï¿½
 		this->NotifyHmiAxisRefChanged(axis);  //Í¨ÖªHMI
 	}
 }
 
 /**
- * @brief ´¦ÀíMIË¢ÐÂÖáÁãµã±àÂëÆ÷ÖµÃüÁî
- * @param cmd : MIÖ¸Áî°ü
+ * @brief ï¿½ï¿½ï¿½ï¿½MIË¢ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Öµï¿½ï¿½ï¿½ï¿½
+ * @param cmd : MIÖ¸ï¿½ï¿½ï¿½
  */
 void ChannelEngine::ProcessRefreshAxisZeroEncoder(MiCmdFrame &cmd){
 	uint8_t axis = cmd.data.axis_index-1;
 	int64_t encoder_value = 0;
 	printf("ChannelEngine::ProcessRefreshAxisZeroEncoder, axis = 0x%hu\n", axis);
 
-	//¶ÁÈ¡±àÂëÆ÷Öµ²¢±£´æ
+	//ï¿½ï¿½È¡ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Öµï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 	memcpy(&encoder_value, &cmd.data.data[0], sizeof(int64_t));
 	this->m_p_axis_config[axis].ref_encoder = encoder_value;
-	g_ptr_parm_manager->UpdateAxisRef(axis, encoder_value); //Ð´ÈëÎÄ¼þ
+	g_ptr_parm_manager->UpdateAxisRef(axis, encoder_value); //Ð´ï¿½ï¿½ï¿½Ä¼ï¿½
 	this->NotifyHmiAxisRefChanged(axis);
 }
 
 /**
- * @brief ´¦ÀíMI·µ»ØµÄÌø×ªÃüÁîÏìÓ¦
- * @param cmd : MIÏìÓ¦ÃüÁî°ü
+ * @brief ï¿½ï¿½ï¿½ï¿½MIï¿½ï¿½ï¿½Øµï¿½ï¿½ï¿½×ªï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ó¦
+ * @param cmd : MIï¿½ï¿½Ó¦ï¿½ï¿½ï¿½ï¿½ï¿½
  */
 void ChannelEngine::ProcessSkipCmdRsp(MiCmdFrame &cmd){
-	uint8_t chn = cmd.data.data[4]-1;   //Í¨µÀºÅ´Ó1¿ªÊ¼
+	uint8_t chn = cmd.data.data[4]-1;   //Í¨ï¿½ï¿½ï¿½Å´ï¿½1ï¿½ï¿½Ê¼
 	if(chn < this->m_p_general_config->chn_count){
 		this->m_p_channel_control[chn].ProcessSkipCmdRsp(cmd);
 	}
 }
 
 /**
- * @brief ´¦ÀíMIÊ¹ÄÜÍ¬²½ÖáÖ¸ÁîµÄÏìÓ¦
- * @param cmd : MIÏìÓ¦ÃüÁî°ü
+ * @brief ï¿½ï¿½ï¿½ï¿½MIÊ¹ï¿½ï¿½Í¬ï¿½ï¿½ï¿½ï¿½Ö¸ï¿½ï¿½ï¿½ï¿½ï¿½Ó¦
+ * @param cmd : MIï¿½ï¿½Ó¦ï¿½ï¿½ï¿½ï¿½ï¿½
  */
 void ChannelEngine::ProcessMiEnSyncAxisRsp(MiCmdFrame &cmd){
 	printf("ProcessMiEnSyncAxisRsp, axis=%hhu, enable=%hhu, res=%hhu\n", cmd.data.axis_index, cmd.data.data[1], cmd.data.data[2]);
-	if(cmd.data.data[2] == FAILED){  //Ê§°Ü
-		if(cmd.data.data[1] == 0){  //½â³ýÍ¬²½
+	if(cmd.data.data[2] == FAILED){  //Ê§ï¿½ï¿½
+		if(cmd.data.data[1] == 0){  //ï¿½ï¿½ï¿½Í¬ï¿½ï¿½
 			this->m_error_code = ERR_DIS_SYNC_AXIS;
 			CreateError(m_error_code, ERROR_LEVEL, CLEAR_BY_MCP_RESET, cmd.data.data[0], CHANNEL_ENGINE_INDEX, cmd.data.axis_index);
-		}else if(cmd.data.data[1] == 1){ //½¨Á¢Í¬²½
+		}else if(cmd.data.data[1] == 1){ //ï¿½ï¿½ï¿½ï¿½Í¬ï¿½ï¿½
 			this->m_error_code = ERR_EN_SYNC_AXIS;
 			CreateError(m_error_code, ERROR_LEVEL, CLEAR_BY_MCP_RESET, cmd.data.data[0], CHANNEL_ENGINE_INDEX, cmd.data.axis_index);
 		}
 		return;
-	}else if(cmd.data.data[2] == SUCCEED){  //³É¹¦
-		uint8_t phy_axis = cmd.data.axis_index-1;   //´Ó¶¯ÖáºÅ£¬MI·µ»ØµÄÖµ´Ó1¿ªÊ¼£¬Òò´ËÐèÒª¼õÒ»
+	}else if(cmd.data.data[2] == SUCCEED){  //ï¿½É¹ï¿½
+		uint8_t phy_axis = cmd.data.axis_index-1;   //ï¿½Ó¶ï¿½ï¿½ï¿½Å£ï¿½MIï¿½ï¿½ï¿½Øµï¿½Öµï¿½ï¿½1ï¿½ï¿½Ê¼ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Òªï¿½ï¿½Ò»
 
 		int64_t mask = 1;
-		if(cmd.data.data[1] == 0){  //½â³ýÍ¬²½
+		if(cmd.data.data[1] == 0){  //ï¿½ï¿½ï¿½Í¬ï¿½ï¿½
 			this->m_n_sync_axis_enable_mask &= ~(mask<<phy_axis);
 			this->m_n_sync_over &= ~(mask<<phy_axis);
 
-		}else if(cmd.data.data[1] == 1){ //½¨Á¢Í¬²½
+		}else if(cmd.data.data[1] == 1){ //ï¿½ï¿½ï¿½ï¿½Í¬ï¿½ï¿½
 			this->m_n_sync_axis_enable_mask |= (mask<<phy_axis);
 			this->m_n_sync_over |= (mask<<phy_axis);
 		}
@@ -1928,26 +1927,26 @@ void ChannelEngine::ProcessMiEnSyncAxisRsp(MiCmdFrame &cmd){
 }
 
 /**
- * @brief ´¦ÀíMI¶ÔÉèÖÃÖáµ±Ç°Î»ÖÃ»úÐµ×ø±êÃüÁîµÄÏìÓ¦
- * @param cmd : MIÏìÓ¦ÃüÁî°ü
+ * @brief ï¿½ï¿½ï¿½ï¿½MIï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½áµ±Ç°Î»ï¿½Ã»ï¿½Ðµï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ó¦
+ * @param cmd : MIï¿½ï¿½Ó¦ï¿½ï¿½ï¿½ï¿½ï¿½
  */
 void ChannelEngine::ProcessSetAxisCurMachPosRsp(MiCmdFrame &cmd){
-	uint8_t phy_axis = cmd.data.axis_index-1;   //Í¨µÀºÅ´Ó1¿ªÊ¼
+	uint8_t phy_axis = cmd.data.axis_index-1;   //Í¨ï¿½ï¿½ï¿½Å´ï¿½1ï¿½ï¿½Ê¼
 	int64_t encoder_value = 0;
 	printf("ChannelEngine::ProcessSetAxisCurMachPosRsp, phy_axis = 0x%hhu, res = %hu\n", phy_axis, cmd.data.data[0]);
 
-	//¶ÁÈ¡±àÂëÆ÷Öµ²¢±£´æ
+	//ï¿½ï¿½È¡ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Öµï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 	memcpy(&encoder_value, &cmd.data.data[1], sizeof(int64_t));
 	this->m_p_axis_config[phy_axis].ref_encoder = encoder_value;
-	g_ptr_parm_manager->UpdateAxisRef(phy_axis, encoder_value); //Ð´ÈëÎÄ¼þ
+	g_ptr_parm_manager->UpdateAxisRef(phy_axis, encoder_value); //Ð´ï¿½ï¿½ï¿½Ä¼ï¿½
 	this->NotifyHmiAxisRefChanged(phy_axis);
 }
 
 /**
- * @brief Í¨ÖªHMIÖá²ÎÊý²Î¿¼µã´Ö¾«»ù×¼Î»ÖÃÆ«²î·¢Éú±ä¸ü
- * @param axis £º ÎïÀíÖáºÅ£¬´Ó0¿ªÊ¼
- * @param diff £º ´Ö¾«»ù×¼Î»ÖÃÆ«²î
- * @return true--³É¹¦    false--Ê§°Ü
+ * @brief Í¨ÖªHMIï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Î¿ï¿½ï¿½ï¿½Ö¾ï¿½ï¿½ï¿½×¼Î»ï¿½ï¿½Æ«ï¿½î·¢ï¿½ï¿½ï¿½ï¿½ï¿½
+ * @param axis ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Å£ï¿½ï¿½ï¿½0ï¿½ï¿½Ê¼
+ * @param diff ï¿½ï¿½ ï¿½Ö¾ï¿½ï¿½ï¿½×¼Î»ï¿½ï¿½Æ«ï¿½ï¿½
+ * @return true--ï¿½É¹ï¿½    false--Ê§ï¿½ï¿½
  */
 bool ChannelEngine::NotifyHmiAxisRefBaseDiffChanged(uint8_t axis, double diff){
 	HMICmdFrame cmd;
@@ -1959,16 +1958,16 @@ bool ChannelEngine::NotifyHmiAxisRefBaseDiffChanged(uint8_t axis, double diff){
 	cmd.data[0] = axis;
 	uint32_t param_no = 1312;
 	memcpy(&cmd.data[1], &param_no, sizeof(uint32_t));
-	cmd.data[5] = 8;    //ÖµÀàÐÍ£¬double
+	cmd.data[5] = 8;    //Öµï¿½ï¿½ï¿½Í£ï¿½double
 	memcpy(&cmd.data[6], &diff, sizeof(double));
 
 	return this->m_p_hmi_comm->SendCmd(cmd);
 }
 
 /**
- * @brief Í¨ÖªHMIÖá²Î¿¼µã¶ÔÓ¦µÄ±àÂëÆ÷Öµ±ä¸ü
- * @param phy_axis £º ÎïÀíÖáºÅ£¬´Ó0¿ªÊ¼
- * @return true--³É¹¦    false--Ê§°Ü
+ * @brief Í¨ÖªHMIï¿½ï¿½Î¿ï¿½ï¿½ï¿½ï¿½Ó¦ï¿½Ä±ï¿½ï¿½ï¿½ï¿½ï¿½Öµï¿½ï¿½ï¿½
+ * @param phy_axis ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Å£ï¿½ï¿½ï¿½0ï¿½ï¿½Ê¼
+ * @return true--ï¿½É¹ï¿½    false--Ê§ï¿½ï¿½
  */
 bool ChannelEngine::NotifyHmiAxisRefChanged(uint8_t phy_axis){
 	HMICmdFrame cmd;
@@ -1980,7 +1979,7 @@ bool ChannelEngine::NotifyHmiAxisRefChanged(uint8_t phy_axis){
 	cmd.data[0] = phy_axis;
 	uint32_t param_no = 1314;
 	memcpy(&cmd.data[1], &param_no, sizeof(uint32_t));
-	cmd.data[5] = 7;    //ÖµÀàÐÍ£¬int64
+	cmd.data[5] = 7;    //Öµï¿½ï¿½ï¿½Í£ï¿½int64
 	memcpy(&cmd.data[6], &this->m_p_axis_config[phy_axis].ref_encoder, sizeof(int64_t));
 
 	return this->m_p_hmi_comm->SendCmd(cmd);
@@ -1988,8 +1987,8 @@ bool ChannelEngine::NotifyHmiAxisRefChanged(uint8_t phy_axis){
 
 
 /**
- * @brief Í¨ÖªHMIÂÝ²¹Êý¾Ý¸ü¸Ä
- * @return true--³É¹¦    false--Ê§°Ü
+ * @brief Í¨ÖªHMIï¿½Ý²ï¿½ï¿½ï¿½ï¿½Ý¸ï¿½ï¿½ï¿½
+ * @return true--ï¿½É¹ï¿½    false--Ê§ï¿½ï¿½
  */
 bool ChannelEngine::NotifyHmiPitchCompDataChanged(){
 	HMICmdFrame cmd;
@@ -2004,9 +2003,9 @@ bool ChannelEngine::NotifyHmiPitchCompDataChanged(){
 }
 
 /**
- * @brief ÊÚÈ¨Ð£Ñé
- * @param force £º Ç¿ÖÆÐ£Ñé
- * @return 0--ºÏ·¨ÊÚÈ¨   1--·Ç·¨ÊÚÈ¨
+ * @brief ï¿½ï¿½È¨Ð£ï¿½ï¿½
+ * @param force ï¿½ï¿½ Ç¿ï¿½ï¿½Ð£ï¿½ï¿½
+ * @return 0--ï¿½Ï·ï¿½ï¿½ï¿½È¨   1--ï¿½Ç·ï¿½ï¿½ï¿½È¨
  */
 int ChannelEngine::CheckLicense(bool force){
 
@@ -2025,7 +2024,7 @@ int ChannelEngine::CheckLicense(bool force){
 		lpLicInfo->licflag = 'v';
 
 		CreateError(ERR_LICENSE_INVALID, ERROR_LEVEL, CLEAR_BY_MCP_RESET);
-		return 1;   //·Ç·¨ÊÚÈ¨
+		return 1;   //ï¿½Ç·ï¿½ï¿½ï¿½È¨
 	}
 
 	////////////////////////////////////////////////////
@@ -2038,7 +2037,7 @@ int ChannelEngine::CheckLicense(bool force){
 			CreateError(ERR_LIC_OVERTIME, ERROR_LEVEL, CLEAR_BY_MCP_RESET);
 		else
 			CreateError(ERR_NO_LIC, ERROR_LEVEL, CLEAR_BY_MCP_RESET);
-		return 1; //·Ç·¨ÊÚÈ¨
+		return 1; //ï¿½Ç·ï¿½ï¿½ï¿½È¨
 	}
 
 	if(!force && lpLicInfo->licflag == 'f')
@@ -2053,40 +2052,40 @@ int ChannelEngine::CheckLicense(bool force){
 
 
 
-	time_t now = time(nullptr);  //»ñÈ¡µ±Ç°ÈÕÆÚ
+	time_t now = time(nullptr);  //ï¿½ï¿½È¡ï¿½ï¿½Ç°ï¿½ï¿½ï¿½ï¿½
 	struct tm nowday;
 	localtime_r(&now, &nowday);
 	long curdaycount = (nowday.tm_year+1900) * 365L + nowday.tm_mon * 30 + nowday.tm_mday;
 	long deaddaycount = lpLicInfo->dead_line.year * 365L + (lpLicInfo->dead_line.month - 1) * 30
 	                    + lpLicInfo->dead_line.day;
 
-	curdaycount = (curdaycount - 1) * 24 + nowday.tm_hour;   //Ð¡Ê±Êý
+	curdaycount = (curdaycount - 1) * 24 + nowday.tm_hour;   //Ð¡Ê±ï¿½ï¿½
 	deaddaycount = (deaddaycount - 1) * 24 + 12;
 
 	long leave = deaddaycount - curdaycount;
 
 	if(deaddaycount < curdaycount)
 	{
-		//Ðí¿É¹ýÆÚ
+		//ï¿½ï¿½É¹ï¿½ï¿½ï¿½
 		lpLicInfo->licflag = 'o';
 		CreateError(ERR_LIC_OVERTIME, ERROR_LEVEL, CLEAR_BY_MCP_RESET);
 		return 1;
 	}
 	else if(leave <= 48)
 	{
-		//Ðí¿É¼´½«¹ýÆÚ
+		//ï¿½ï¿½É¼ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 		lpLicInfo->licflag = 'm';
 
 		if(leave != lpLicInfo->nWarn){
 			lpLicInfo->nInfo = 1;
-			lpLicInfo->nWarn = leave;   //Ê£ÓàÐ¡Ê±Êý
+			lpLicInfo->nWarn = leave;   //Ê£ï¿½ï¿½Ð¡Ê±ï¿½ï¿½
 
 			CreateError(ERR_LIC_DUE_SOON, INFO_LEVEL, CLEAR_BY_CLEAR_BUTTON, leave);
 		}
 	}
 	else if((deaddaycount - curdaycount) > 48)
 	{
-		//Ðí¿ÉÆÚÄÚ
+		//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 		lpLicInfo->licflag = 'p';
 		lpLicInfo->nInfo = 0;
 		lpLicInfo->nWarn = 0;
@@ -2097,11 +2096,11 @@ int ChannelEngine::CheckLicense(bool force){
 }
 
 /**
- * @brief ÏòHMI·¢ËÍÌáÊ¾ÐÅÏ¢
- * @param msg_type : ÏûÏ¢ÀàÐÍ
- * @param msg_id £º ÏûÏ¢ID
- * @param msg_param : ÏûÏ¢²ÎÊý
- * @return true--·¢ËÍ³É¹¦  false--·¢ËÍÊ§°Ü
+ * @brief ï¿½ï¿½HMIï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ê¾ï¿½ï¿½Ï¢
+ * @param msg_type : ï¿½ï¿½Ï¢ï¿½ï¿½ï¿½ï¿½
+ * @param msg_id ï¿½ï¿½ ï¿½ï¿½Ï¢ID
+ * @param msg_param : ï¿½ï¿½Ï¢ï¿½ï¿½ï¿½ï¿½
+ * @return true--ï¿½ï¿½ï¿½Í³É¹ï¿½  false--ï¿½ï¿½ï¿½ï¿½Ê§ï¿½ï¿½
  */
 bool ChannelEngine::SendMessageToHmi(uint16_t msg_type, uint32_t msg_id, uint32_t msg_param){
 	HMICmdFrame cmd;
@@ -2117,21 +2116,21 @@ bool ChannelEngine::SendMessageToHmi(uint16_t msg_type, uint32_t msg_id, uint32_
 }
 
 /**
- * @brief ´¦ÀíMIÎÕÊÖÖ¸Áî
+ * @brief ï¿½ï¿½ï¿½ï¿½MIï¿½ï¿½ï¿½ï¿½Ö¸ï¿½ï¿½
  * @param cmd
  */
 void ChannelEngine::ProcessMiShakehand(MiCmdFrame &cmd){
-//	bool rsp = (cmd.data.cmd & 0x8000) == 0 ? false:true;  //ÊÇ·ñÏìÓ¦°ü
+//	bool rsp = (cmd.data.cmd & 0x8000) == 0 ? false:true;  //ï¿½Ç·ï¿½ï¿½ï¿½Ó¦ï¿½ï¿½
 
 	if(cmd.data.data[0] == 0x9696){
 		g_ptr_trace->PrintTrace(TRACE_INFO, CHANNEL_ENGINE_SC, "@#@#Get MI Shakehand cmd, module=0x%hhx\n", g_sys_state.module_ready_mask);
-		this->ProcessMiVersionCmd(cmd);   //»ñÈ¡MI°æ±¾ºÅ
+		this->ProcessMiVersionCmd(cmd);   //ï¿½ï¿½È¡MIï¿½æ±¾ï¿½ï¿½
 		cmd.data.cmd |= 0x8000;
 		if(g_sys_state.module_ready_mask & SC_READY){
 			cmd.data.data[0] = 0x8888;
-			cmd.data.data[1] = this->m_p_general_config->bus_cycle+1;  //MIµÄ²ÎÊý´Ó1¿ªÊ¼,1±íÊ¾125us£¬2±íÊ¾250us
-			cmd.data.data[2] = (this->m_p_general_config->chn_count << 8) + this->m_p_general_config->axis_count;   //Êµ¼ÊÎïÀíÖáÊýÁ¿         Êµ¼ÊÍ¨µÀÊýÁ¿
-//			cmd.data.data[2] = this->m_p_general_config->axis_count;   //Êµ¼ÊÎïÀíÖáÊýÁ¿  // ??????????????????????????????????????????????  ¶þÑ¡Ò»  ÊÇ·ñ¼ÓÒ»¸öºê
+			cmd.data.data[1] = this->m_p_general_config->bus_cycle+1;  //MIï¿½Ä²ï¿½ï¿½ï¿½ï¿½ï¿½1ï¿½ï¿½Ê¼,1ï¿½ï¿½Ê¾125usï¿½ï¿½2ï¿½ï¿½Ê¾250us
+			cmd.data.data[2] = (this->m_p_general_config->chn_count << 8) + this->m_p_general_config->axis_count;   //Êµï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½         Êµï¿½ï¿½Í¨ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+//			cmd.data.data[2] = this->m_p_general_config->axis_count;   //Êµï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½  // ??????????????????????????????????????????????  ï¿½ï¿½Ñ¡Ò»  ï¿½Ç·ï¿½ï¿½Ò»ï¿½ï¿½ï¿½ï¿½
 			
 			cmd.data.data[3] = this->GetBusAxisCount();
 
@@ -2147,14 +2146,14 @@ void ChannelEngine::ProcessMiShakehand(MiCmdFrame &cmd){
 }
 
 /**
- * @brief ´¦ÀíPMCÌÝÐÎÍ¼ÇëÇóÃüÁî
- * @param cmd : ´ý´¦ÀíMIÃüÁî
+ * @brief ï¿½ï¿½ï¿½ï¿½PMCï¿½ï¿½ï¿½ï¿½Í¼ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+ * @param cmd : ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½MIï¿½ï¿½ï¿½ï¿½
  */
 void ChannelEngine::ProcessMiPmcLadderReq(MiCmdFrame &cmd){
 
 	uint16_t index = cmd.data.data[0];
 
-	uint32_t res = LoadPmcLadderData(index, cmd.data.data[3]); //¼ÓÔØÌÝÐÎÍ¼Êý¾Ý
+	uint32_t res = LoadPmcLadderData(index, cmd.data.data[3]); //ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Í¼ï¿½ï¿½ï¿½ï¿½
 	memcpy(cmd.data.data, &res, sizeof(uint32_t));
 	cmd.data.data[2] = index;
 
@@ -2164,13 +2163,13 @@ void ChannelEngine::ProcessMiPmcLadderReq(MiCmdFrame &cmd){
 }
 
 /**
- * @brief ´¦ÀíMI»ñÈ¡ËÅ·þÃèÊöÎÄ¼þÃüÁî
- * @param cmd : ´ý´¦ÀíMIÃüÁî
+ * @brief ï¿½ï¿½ï¿½ï¿½MIï¿½ï¿½È¡ï¿½Å·ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ä¼ï¿½ï¿½ï¿½ï¿½ï¿½
+ * @param cmd : ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½MIï¿½ï¿½ï¿½ï¿½
  */
 void ChannelEngine::ProcessMiGetESBCmd(MiCmdFrame &cmd){
 	uint16_t index = cmd.data.data[0];
 
-	uint32_t res = LoadEsbData(index, cmd.data.data[3]); //¼ÓÔØESBÎÄ¼þÊý¾Ý
+	uint32_t res = LoadEsbData(index, cmd.data.data[3]); //ï¿½ï¿½ï¿½ï¿½ESBï¿½Ä¼ï¿½ï¿½ï¿½ï¿½ï¿½
 	memcpy(cmd.data.data, &res, sizeof(uint32_t));
 	cmd.data.data[2] = index;
 
@@ -2179,7 +2178,7 @@ void ChannelEngine::ProcessMiGetESBCmd(MiCmdFrame &cmd){
 }
 
 /**
- * @brief ´¦ÀíMI¸æ¾¯ÐÅÏ¢
+ * @brief ï¿½ï¿½ï¿½ï¿½MIï¿½æ¾¯ï¿½ï¿½Ï¢
  * @param cmd
  */
 void ChannelEngine::ProcessMiAlarm(MiCmdFrame &cmd){
@@ -2187,9 +2186,9 @@ void ChannelEngine::ProcessMiAlarm(MiCmdFrame &cmd){
 	uint16_t alarm_level = INFO_LEVEL;
 	uint8_t clear_type = CLEAR_BY_MCP_RESET;
 
-	alarm_id = cmd.data.data[1]; //¸ß16Î»
+	alarm_id = cmd.data.data[1]; //ï¿½ï¿½16Î»
 	alarm_id = alarm_id<<16;
-	alarm_id += cmd.data.data[0];   //µÍ16Î»
+	alarm_id += cmd.data.data[0];   //ï¿½ï¿½16Î»
 	alarm_level = cmd.data.data[2];
 
 	if(alarm_level >= WARNING_LEVEL)
@@ -2201,24 +2200,24 @@ void ChannelEngine::ProcessMiAlarm(MiCmdFrame &cmd){
 }
 
 /**
- * @brief ´¦ÀíMI·µ»ØµÄ±àÂëÆ÷Öµ
+ * @brief ï¿½ï¿½ï¿½ï¿½MIï¿½ï¿½ï¿½ØµÄ±ï¿½ï¿½ï¿½ï¿½ï¿½Öµ
  * @param cmd
  */
 void ChannelEngine::ProcessMiSetRefCurRsp(MiCmdFrame &cmd){
 	int64_t encoder_value = 0;
-	uint8_t axis = cmd.data.axis_index-1;  //MIµÄÖáºÅ´Ó1¿ªÊ¼£¬MCÖÐ´Ó0¿ªÊ¼
+	uint8_t axis = cmd.data.axis_index-1;  //MIï¿½ï¿½ï¿½ï¿½Å´ï¿½1ï¿½ï¿½Ê¼ï¿½ï¿½MCï¿½Ð´ï¿½0ï¿½ï¿½Ê¼
 
 	if(axis >= this->m_p_general_config->axis_count){
-		printf("ChannelEngine::ProcessMiSetRefCurRsp(),·Ç·¨ÖáºÅ£º%hhu\n", axis);
+		printf("ChannelEngine::ProcessMiSetRefCurRsp(),ï¿½Ç·ï¿½ï¿½ï¿½Å£ï¿½%hhu\n", axis);
 		return;
 	}
 
 	this->SetRetRefFlag(axis, true);
-	this->m_p_pmc_reg->FReg().bits[0].in_ref_point |= (0x01<<axis);   //ÖÃÎ»µ½²Î¿¼µã±êÖ¾
+	this->m_p_pmc_reg->FReg().bits[0].in_ref_point |= (0x01<<axis);   //ï¿½ï¿½Î»ï¿½ï¿½ï¿½Î¿ï¿½ï¿½ï¿½ï¿½Ö¾
 
 	memcpy(&encoder_value, cmd.data.data, sizeof(int64_t));
 	this->m_p_axis_config[axis].ref_encoder = encoder_value;
-	g_ptr_parm_manager->UpdateAxisRef(axis, encoder_value); //Ð´ÈëÎÄ¼þ
+	g_ptr_parm_manager->UpdateAxisRef(axis, encoder_value); //Ð´ï¿½ï¿½ï¿½Ä¼ï¿½
 
 	this->NotifyHmiAxisRefChanged(axis);
 
@@ -2227,18 +2226,18 @@ void ChannelEngine::ProcessMiSetRefCurRsp(MiCmdFrame &cmd){
 }
 
 /**
- * @brief ´¦ÀíMI·µ»ØµÄÇåÕûÊýÈ¦Î»ÖÃÖ¸Áî»Ø¸´
+ * @brief ï¿½ï¿½ï¿½ï¿½MIï¿½ï¿½ï¿½Øµï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½È¦Î»ï¿½ï¿½Ö¸ï¿½ï¿½Ø¸ï¿½
  * @param cmd
  */
 void ChannelEngine::ProcessMiClearPosRsp(MiCmdFrame &cmd){
 	int64_t encoder_value = 0;
-	uint8_t axis = cmd.data.axis_index-1;  //MIµÄÖáºÅ´Ó1¿ªÊ¼£¬MCÖÐ´Ó0¿ªÊ¼
+	uint8_t axis = cmd.data.axis_index-1;  //MIï¿½ï¿½ï¿½ï¿½Å´ï¿½1ï¿½ï¿½Ê¼ï¿½ï¿½MCï¿½Ð´ï¿½0ï¿½ï¿½Ê¼
 
 	printf("ProcessMiClearPosRsp , axis = %hhu\n", axis);
 
 	memcpy(&encoder_value, cmd.data.data, sizeof(int64_t));
 	this->m_p_axis_config[axis].ref_encoder = encoder_value;
-	g_ptr_parm_manager->UpdateAxisRef(axis, encoder_value); //Ð´ÈëÎÄ¼þ
+	g_ptr_parm_manager->UpdateAxisRef(axis, encoder_value); //Ð´ï¿½ï¿½ï¿½Ä¼ï¿½
 
 	this->NotifyHmiAxisRefChanged(axis);
 
@@ -2248,7 +2247,7 @@ void ChannelEngine::ProcessMiClearPosRsp(MiCmdFrame &cmd){
 }
 
 /**
- * @brief ´¦ÀíMI·µ»ØµÄÍ¬²½ÖáÍ¬²½½á¹û
+ * @brief ï¿½ï¿½ï¿½ï¿½MIï¿½ï¿½ï¿½Øµï¿½Í¬ï¿½ï¿½ï¿½ï¿½Í¬ï¿½ï¿½ï¿½ï¿½ï¿½
  * @param cmd
  */
 void ChannelEngine::ProcessMiSyncAxis(MiCmdFrame &cmd){
@@ -2258,7 +2257,7 @@ void ChannelEngine::ProcessMiSyncAxis(MiCmdFrame &cmd){
 
 	this->m_n_sync_over = mask;
 	if((this->m_n_sync_axis_mask & this->m_n_sync_axis_enable_mask) != mask){
-		mask = (this->m_n_sync_axis_mask & this->m_n_sync_axis_enable_mask)^mask;  //ÎªÍê³ÉÍ¬²½µÄÖá
+		mask = (this->m_n_sync_axis_mask & this->m_n_sync_axis_enable_mask)^mask;  //Îªï¿½ï¿½ï¿½Í¬ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 		this->m_error_code = ERR_INIT_SYNC_AXIS;
 		CreateError(m_error_code, ERROR_LEVEL, CLEAR_BY_MCP_RESET, mask);
 		return;
@@ -2268,23 +2267,23 @@ void ChannelEngine::ProcessMiSyncAxis(MiCmdFrame &cmd){
 }
 
 /**
- * @brief ´¦ÀíMI·¢ËÍµÄÊÖÂÖ¸ú×Ù×´Ì¬ÇÐ»»Ö¸Áî
- * @param cmd : MIµÄÃüÁî
+ * @brief ï¿½ï¿½ï¿½ï¿½MIï¿½ï¿½ï¿½Íµï¿½ï¿½ï¿½ï¿½Ö¸ï¿½ï¿½ï¿½×´Ì¬ï¿½Ð»ï¿½Ö¸ï¿½ï¿½
+ * @param cmd : MIï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
  */
 void ChannelEngine::ProcessMiHWTraceStateChanged(MiCmdFrame &cmd){
-	uint8_t chn_idx = cmd.data.reserved;   //Í¨µÀºÅ
+	uint8_t chn_idx = cmd.data.reserved;   //Í¨ï¿½ï¿½ï¿½ï¿½
 	this->m_p_channel_control[chn_idx].ProcessMiHWTraceStateChanged(cmd);
 }
 
 /**
- * @brief ´¦ÀíMI·µ»ØµÄ×ÜÏß´íÎó
- * @param cmd : MIÃüÁî°ü
+ * @brief ï¿½ï¿½ï¿½ï¿½MIï¿½ï¿½ï¿½Øµï¿½ï¿½ï¿½ï¿½ß´ï¿½ï¿½ï¿½
+ * @param cmd : MIï¿½ï¿½ï¿½ï¿½ï¿½
  */
 void ChannelEngine::ProcessMiBusError(MiCmdFrame &cmd){
-	uint8_t slave_no = 0;	//³ö´í´ÓÕ¾ºÅ
-	uint8_t err_sub_index = 0;	//×ÓË÷Òý
-	uint16_t err_index = 0;	//Ë÷Òý
-	uint16_t err_code = 0; //´íÎóÂë
+	uint8_t slave_no = 0;	//ï¿½ï¿½ï¿½ï¿½ï¿½Õ¾ï¿½ï¿½
+	uint8_t err_sub_index = 0;	//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+	uint16_t err_index = 0;	//ï¿½ï¿½ï¿½ï¿½
+	uint16_t err_code = 0; //ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 
 	slave_no = (cmd.data.data[0] & 0xFF);
 	err_sub_index = ((cmd.data.data[0]>>8)&0xFF);
@@ -2305,33 +2304,33 @@ void ChannelEngine::ProcessMiBusError(MiCmdFrame &cmd){
 }
 
 /**
- * @brief ¼ÓÔØPMCÌÝÐÎÍ¼ÖÁ¹²ÏíÇø
- * @param index : ÌÝÐÎÍ¼Êý¾ÝÖ¡ºÅ£¬Ò»Ö¡Êý¾Ý×î´ó128KB
- * @param flag[out] : ÊÇ·ñ»¹ÓÐºóÐøÊý¾Ý£¬ 1--»¹ÓÐºóÐøÖ¡    0--Ã»ÓÐºóÐøÖ¡
- * @return ·µ»Ø¼ÓÔØµÄÊý¾Ý×Ö½ÚÊý
+ * @brief ï¿½ï¿½ï¿½ï¿½PMCï¿½ï¿½ï¿½ï¿½Í¼ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+ * @param index : ï¿½ï¿½ï¿½ï¿½Í¼ï¿½ï¿½ï¿½ï¿½Ö¡ï¿½Å£ï¿½Ò»Ö¡ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½128KB
+ * @param flag[out] : ï¿½Ç·ï¿½ï¿½Ðºï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ý£ï¿½ 1--ï¿½ï¿½ï¿½Ðºï¿½ï¿½ï¿½Ö¡    0--Ã»ï¿½Ðºï¿½ï¿½ï¿½Ö¡
+ * @return ï¿½ï¿½ï¿½Ø¼ï¿½ï¿½Øµï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ö½ï¿½ï¿½ï¿½
  */
 int32_t ChannelEngine::LoadPmcLadderData(uint16_t index, uint16_t &flag){
 	int32_t res = 0;
 
-	//´ò¿ªÌÝÐÎÍ¼ÎÄ¼þ
+	//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Í¼ï¿½Ä¼ï¿½
 	struct stat statbuf;
 	int file_size = 0;
 	if(stat(PATH_PMC_DATA, &statbuf) == 0)
-		file_size = statbuf.st_size;  //»ñÈ¡ÎÄ¼þ×Ü´óÐ¡
+		file_size = statbuf.st_size;  //ï¿½ï¿½È¡ï¿½Ä¼ï¿½ï¿½Ü´ï¿½Ð¡
 	else{
-		g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "»ñÈ¡ÎÄ¼þ[%s]´óÐ¡Ê§°Ü£¡", PATH_PMC_DATA);
-		return res;			//»ñÈ¡ÎÄ¼þ´óÐ¡Ê§°Ü
+		g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "ï¿½ï¿½È¡ï¿½Ä¼ï¿½[%s]ï¿½ï¿½Ð¡Ê§ï¿½Ü£ï¿½", PATH_PMC_DATA);
+		return res;			//ï¿½ï¿½È¡ï¿½Ä¼ï¿½ï¿½ï¿½Ð¡Ê§ï¿½ï¿½
 	}
 
 	printf("read pmc file size : %d\n", file_size);
 
-	int fp = open(PATH_PMC_DATA, O_RDONLY); //Ö»¶Á´ò¿ªÎÄ¼þ
+	int fp = open(PATH_PMC_DATA, O_RDONLY); //Ö»ï¿½ï¿½ï¿½ï¿½ï¿½Ä¼ï¿½
 	if(fp < 0){
-		g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "´ò¿ªÎÄ¼þ[%s]Ê§°Ü£¡", PATH_PMC_DATA);
-		return res;//ÎÄ¼þ´ò¿ªÊ§°Ü
+		g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "ï¿½ï¿½ï¿½Ä¼ï¿½[%s]Ê§ï¿½Ü£ï¿½", PATH_PMC_DATA);
+		return res;//ï¿½Ä¼ï¿½ï¿½ï¿½Ê§ï¿½ï¿½
 	}
 
-	//¼ÆËãÎÄ¼þ×ÜÖ¡Êý
+	//ï¿½ï¿½ï¿½ï¿½ï¿½Ä¼ï¿½ï¿½ï¿½Ö¡ï¿½ï¿½
 	int block_total = file_size/MI_PMC_DATA_SIZE;
 	if(file_size%MI_PMC_DATA_SIZE)
 		block_total++;
@@ -2339,7 +2338,7 @@ int32_t ChannelEngine::LoadPmcLadderData(uint16_t index, uint16_t &flag){
 	if(index >= block_total){
 		close(fp);
 		printf("invalid parameter, index = %d, block_total = %d!\n", index, block_total);
-		return res;  	//index²»ºÏ·¨
+		return res;  	//indexï¿½ï¿½ï¿½Ï·ï¿½
 	}
 
 	uint64_t offset = MI_PMC_DATA_SIZE*index;
@@ -2352,7 +2351,7 @@ int32_t ChannelEngine::LoadPmcLadderData(uint16_t index, uint16_t &flag){
 
 
 
-	//¶ÁÈ¡Êý¾Ý
+	//ï¿½ï¿½È¡ï¿½ï¿½ï¿½ï¿½
 	int32_t read_size = file_size - offset;
 	if(read_size > MI_PMC_DATA_SIZE)
 		read_size = MI_PMC_DATA_SIZE;
@@ -2360,7 +2359,7 @@ int32_t ChannelEngine::LoadPmcLadderData(uint16_t index, uint16_t &flag){
 	res = read(fp, ptr_data, read_size);
 
 
-	if(res == -1 || res != read_size){  //readÊ§°Ü
+	if(res == -1 || res != read_size){  //readÊ§ï¿½ï¿½
 		printf("read pmc file failed, errno = %d, block = %d\n", errno, block_total);
 		close(fp);
 		return 0;
@@ -2378,16 +2377,16 @@ int32_t ChannelEngine::LoadPmcLadderData(uint16_t index, uint16_t &flag){
 }
 
 /**
- * @brief ¼ÓÔØESBÎÄ¼þÊý¾Ý£¬ËÅ·þÃèÊöÎÄ¼þ
- * @param index : ÎÄ¼þË³ÐòºÅ£¬´Ó0¿ªÊ¼
- * @param flag £ºÊÇ·ñ»¹ÓÐºóÐøÎÄ¼þ±êÖ¾£¬0±íÊ¾ÎÞºóÐøÎÄ¼þ£¬1±íÊ¾ÓÐºóÐøÎÄ¼þ
- * @return ·µ»Ø¶ÁÈ¡ÎÄ¼þ×Ö½ÚÊý
+ * @brief ï¿½ï¿½ï¿½ï¿½ESBï¿½Ä¼ï¿½ï¿½ï¿½ï¿½Ý£ï¿½ï¿½Å·ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ä¼ï¿½
+ * @param index : ï¿½Ä¼ï¿½Ë³ï¿½ï¿½Å£ï¿½ï¿½ï¿½0ï¿½ï¿½Ê¼
+ * @param flag ï¿½ï¿½ï¿½Ç·ï¿½ï¿½Ðºï¿½ï¿½ï¿½ï¿½Ä¼ï¿½ï¿½ï¿½Ö¾ï¿½ï¿½0ï¿½ï¿½Ê¾ï¿½Þºï¿½ï¿½ï¿½ï¿½Ä¼ï¿½ï¿½ï¿½1ï¿½ï¿½Ê¾ï¿½Ðºï¿½ï¿½ï¿½ï¿½Ä¼ï¿½
+ * @return ï¿½ï¿½ï¿½Ø¶ï¿½È¡ï¿½Ä¼ï¿½ï¿½Ö½ï¿½ï¿½ï¿½
  */
 int32_t ChannelEngine::LoadEsbData(uint16_t index, uint16_t &flag){
 	g_ptr_trace->PrintTrace(TRACE_INFO, CHANNEL_ENGINE_SC, "Enter ChannelEngine::LoadEsbData(), index=%hu", index);
 	int32_t res = 0;
 
-	flag = 0;  //Ä¬ÈÏºóÐøÎÞÎÄ¼þ
+	flag = 0;  //Ä¬ï¿½Ïºï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ä¼ï¿½
 
 
 	DIR *pdir = nullptr;
@@ -2396,41 +2395,41 @@ int32_t ChannelEngine::LoadEsbData(uint16_t index, uint16_t &flag){
 	int idx = 0;
 	int len = 0;
 	char *pt = nullptr;
-	bool bfind = false;   //ÕÒµ½¶ÔÓ¦ÎÄ¼þ
+	bool bfind = false;   //ï¿½Òµï¿½ï¿½ï¿½Ó¦ï¿½Ä¼ï¿½
 
 
 	pdir  = opendir(PATH_ESB_FILE);
-	if(pdir == nullptr){//Â·¾¶´ò¿ªÊ§°Ü
-		//´´½¨Ä¿Â¼
-		if(mkdir(PATH_ESB_FILE, 0755) == -1){//´´½¨Ä¿Â¼Ê§°Ü
-			g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "´´½¨Ä¿Â¼Ê§°Ü£¡[%s]", PATH_ESB_FILE);
+	if(pdir == nullptr){//Â·ï¿½ï¿½ï¿½ï¿½Ê§ï¿½ï¿½
+		//ï¿½ï¿½ï¿½ï¿½Ä¿Â¼
+		if(mkdir(PATH_ESB_FILE, 0755) == -1){//ï¿½ï¿½ï¿½ï¿½Ä¿Â¼Ê§ï¿½ï¿½
+			g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "ï¿½ï¿½ï¿½ï¿½Ä¿Â¼Ê§ï¿½Ü£ï¿½[%s]", PATH_ESB_FILE);
 		}else{
-			g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "´ò¿ªÄ¿Â¼[%s]Ê§°Ü£¡×Ô¶¯´´½¨¸ÄÄ¿Â¼£¡", PATH_ESB_FILE);
+			g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "ï¿½ï¿½Ä¿Â¼[%s]Ê§ï¿½Ü£ï¿½ï¿½Ô¶ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ä¿Â¼ï¿½ï¿½", PATH_ESB_FILE);
 		}
 
-		//·µ»Ø¶ÁÈ¡Ê§°Ü
+		//ï¿½ï¿½ï¿½Ø¶ï¿½È¡Ê§ï¿½ï¿½
 		return res;
 	}
 
-	//±éÀúESBÎÄ¼þÄ¿Â¼
+	//ï¿½ï¿½ï¿½ï¿½ESBï¿½Ä¼ï¿½Ä¿Â¼
 	while((ent = readdir(pdir)) != nullptr){
 		if(ent->d_type &DT_DIR){//Ä¿Â¼
 			continue;
-		}else if(ent->d_type & DT_REG){//ÆÕÍ¨ÎÄ¼þ
-			//Ð£ÑéÎÄ¼þºó×ºÊÇ²»ÊÇ.esb
+		}else if(ent->d_type & DT_REG){//ï¿½ï¿½Í¨ï¿½Ä¼ï¿½
+			//Ð£ï¿½ï¿½ï¿½Ä¼ï¿½ï¿½ï¿½×ºï¿½Ç²ï¿½ï¿½ï¿½.esb
 			len = strlen(ent->d_name);
 			if(len > 4){
 				pt = strrchr(ent->d_name, '.');
-				if(pt && strcasecmp(pt, "esb")){  //ºó×ºÆ¥Åä
-					if(idx >= index){//Ë³ÐòºÅÆ¥Åä
-						//Éú³Éµ±Ç°¼ÓÔØÎÄ¼þÂ·¾¶
+				if(pt && strcasecmp(pt, "esb")){  //ï¿½ï¿½×ºÆ¥ï¿½ï¿½
+					if(idx >= index){//Ë³ï¿½ï¿½ï¿½Æ¥ï¿½ï¿½
+						//ï¿½ï¿½ï¿½Éµï¿½Ç°ï¿½ï¿½ï¿½ï¿½ï¿½Ä¼ï¿½Â·ï¿½ï¿½
 						if(!bfind){
 							bfind = true;
 							strcpy(file_path, PATH_ESB_FILE);
 							strcat(file_path, ent->d_name);
 							printf("open esb file:%s\n", file_path);
 						}else{
-							flag = 1;   //ºóÐø»¹ÓÐÎÄ¼þ
+							flag = 1;   //ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ä¼ï¿½
 							break;
 						}
 
@@ -2441,40 +2440,40 @@ int32_t ChannelEngine::LoadEsbData(uint16_t index, uint16_t &flag){
 		}
 	}
 
-	//¼ÓÔØµ±Ç°Ö¸¶¨Ë³ÐòºÅµÄÎÄ¼þ
+	//ï¿½ï¿½ï¿½Øµï¿½Ç°Ö¸ï¿½ï¿½Ë³ï¿½ï¿½Åµï¿½ï¿½Ä¼ï¿½
 	struct stat statbuf;
 	int file_size = 0;
 	if(stat(file_path, &statbuf) == 0)
-		file_size = statbuf.st_size;  //»ñÈ¡ÎÄ¼þ×Ü´óÐ¡
+		file_size = statbuf.st_size;  //ï¿½ï¿½È¡ï¿½Ä¼ï¿½ï¿½Ü´ï¿½Ð¡
 	else{
-		g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "»ñÈ¡ÎÄ¼þ[%s]´óÐ¡Ê§°Ü£¡", file_path);
+		g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "ï¿½ï¿½È¡ï¿½Ä¼ï¿½[%s]ï¿½ï¿½Ð¡Ê§ï¿½Ü£ï¿½", file_path);
 		closedir(pdir);
-		return res;			//»ñÈ¡ÎÄ¼þ´óÐ¡Ê§°Ü
+		return res;			//ï¿½ï¿½È¡ï¿½Ä¼ï¿½ï¿½ï¿½Ð¡Ê§ï¿½ï¿½
 	}
 
 	if(file_size < kEsbDataSize){
-		g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "ESBÎÄ¼þ[%s]´óÐ¡²»Æ¥Åä[size=%d]£¡", file_path, file_size);
+		g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "ESBï¿½Ä¼ï¿½[%s]ï¿½ï¿½Ð¡ï¿½ï¿½Æ¥ï¿½ï¿½[size=%d]ï¿½ï¿½", file_path, file_size);
 		closedir(pdir);
-		return res;   //ÎÄ¼þ´óÐ¡²»Æ¥Åä
+		return res;   //ï¿½Ä¼ï¿½ï¿½ï¿½Ð¡ï¿½ï¿½Æ¥ï¿½ï¿½
 	}
 
 	printf("read esb file size : %d\n", file_size);
 
-	int fp = open(file_path, O_RDONLY); //Ö»¶Á´ò¿ªÎÄ¼þ
+	int fp = open(file_path, O_RDONLY); //Ö»ï¿½ï¿½ï¿½ï¿½ï¿½Ä¼ï¿½
 	if(fp < 0){
-		g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "´ò¿ªÎÄ¼þ[%s]Ê§°Ü£¡", file_path);
+		g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "ï¿½ï¿½ï¿½Ä¼ï¿½[%s]Ê§ï¿½Ü£ï¿½", file_path);
 		closedir(pdir);
-		return res;//ÎÄ¼þ´ò¿ªÊ§°Ü
+		return res;//ï¿½Ä¼ï¿½ï¿½ï¿½Ê§ï¿½ï¿½
 	}
 
-	//¶ÁÈ¡Êý¾Ý
+	//ï¿½ï¿½È¡ï¿½ï¿½ï¿½ï¿½
 	int32_t read_size = kEsbDataSize;
-	char *ptr_data = this->m_p_mi_comm->GetPmcDataAddr();   //¸´ÓÃPMCÌÝÍ¼µÄ´«ÊäÇøÓò
+	char *ptr_data = this->m_p_mi_comm->GetPmcDataAddr();   //ï¿½ï¿½ï¿½ï¿½PMCï¿½ï¿½Í¼ï¿½Ä´ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 	res = read(fp, ptr_data, read_size);
 
 
-	if(res == -1 || res != read_size){  //readÊ§°Ü
-		g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "¶ÁÈ¡ÎÄ¼þ[%s]Ê§°Ü£¡Êµ¼Ê¶ÁÈ¡´óÐ¡[%d]×Ö½Ú", file_path, res);
+	if(res == -1 || res != read_size){  //readÊ§ï¿½ï¿½
+		g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "ï¿½ï¿½È¡ï¿½Ä¼ï¿½[%s]Ê§ï¿½Ü£ï¿½Êµï¿½Ê¶ï¿½È¡ï¿½ï¿½Ð¡[%d]ï¿½Ö½ï¿½", file_path, res);
 		close(fp);
 		closedir(pdir);
 		return 0;
@@ -2487,7 +2486,7 @@ int32_t ChannelEngine::LoadEsbData(uint16_t index, uint16_t &flag){
 }
 
 /**
- * @brief ´¦ÀíHMIµÄIOÇëÇó
+ * @brief ï¿½ï¿½ï¿½ï¿½HMIï¿½ï¿½IOï¿½ï¿½ï¿½ï¿½
  * @param cmd
  */
 void ChannelEngine::ProcessHmiIOCmd(HMICmdFrame &cmd){
@@ -2500,24 +2499,24 @@ void ChannelEngine::ProcessHmiIOCmd(HMICmdFrame &cmd){
 }
 
 /**
- * @brief ´¦ÀíHMIÄ£¿é·¢ËÍµÄÃüÁî
- * @param cmd £º´ý´¦ÀíµÄHMIÃüÁî°ü
+ * @brief ï¿½ï¿½ï¿½ï¿½HMIÄ£ï¿½é·¢ï¿½Íµï¿½ï¿½ï¿½ï¿½ï¿½
+ * @param cmd ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½HMIï¿½ï¿½ï¿½ï¿½ï¿½
  */
 void ChannelEngine::ProcessHmiCmd(HMICmdFrame &cmd){
 
 	int i = 0;
 	switch(cmd.cmd){
-	case CMD_HMI_GET_CHN_STATE:   //HMI»ñÈ¡Í¨µÀµ±Ç°×´Ì¬
+	case CMD_HMI_GET_CHN_STATE:   //HMIï¿½ï¿½È¡Í¨ï¿½ï¿½ï¿½ï¿½Ç°×´Ì¬
 		if(cmd.channel_index >= this->m_p_general_config->chn_count){
 			cmd.cmd_extension = FAILED;
 			cmd.frame_number |= 0x8000;
 			this->m_p_hmi_comm->SendCmd(cmd);
-			g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "ÃüÁî[%d]Í¨µÀºÅ·Ç·¨£¡%d", cmd.cmd, cmd.channel_index);
+			g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "ï¿½ï¿½ï¿½ï¿½[%d]Í¨ï¿½ï¿½ï¿½Å·Ç·ï¿½ï¿½ï¿½%d", cmd.cmd, cmd.channel_index);
 		}else
 			this->m_p_channel_control[cmd.channel_index].ProcessHmiCmd(cmd);
 		break;
-	case CMD_HMI_RESTART:               //¼Ó¹¤¸´Î» 11
-	case CMD_HMI_SIMULATE:				//·ÂÕæ 12
+	case CMD_HMI_RESTART:               //ï¿½Ó¹ï¿½ï¿½ï¿½Î» 11
+	case CMD_HMI_SIMULATE:				//ï¿½ï¿½ï¿½ï¿½ 12
 		if(cmd.channel_index == CHANNEL_ENGINE_INDEX){
 			for(i = 0; i < m_p_general_config->chn_count; i++){
 				m_p_channel_control[i].ProcessHmiCmd(cmd);
@@ -2528,13 +2527,13 @@ void ChannelEngine::ProcessHmiCmd(HMICmdFrame &cmd){
 			cmd.data_len = 1;
 			cmd.data[0] = FAILED;
 			this->m_p_hmi_comm->SendCmd(cmd);
-			g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "ÃüÁî[%d]Í¨µÀºÅ·Ç·¨£¡%d", cmd.cmd, cmd.channel_index);
+			g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "ï¿½ï¿½ï¿½ï¿½[%d]Í¨ï¿½ï¿½ï¿½Å·Ç·ï¿½ï¿½ï¿½%d", cmd.cmd, cmd.channel_index);
 		}
 		else{
 			m_p_channel_control[cmd.channel_index].ProcessHmiCmd(cmd);
 		}
 		break;
-	case CMD_HMI_SET_NC_FILE:	    //ÉèÖÃµ±Ç°¼Ó¹¤ÎÄ¼þ 13
+	case CMD_HMI_SET_NC_FILE:	    //ï¿½ï¿½ï¿½Ãµï¿½Ç°ï¿½Ó¹ï¿½ï¿½Ä¼ï¿½ 13
 		if(cmd.channel_index == CHANNEL_ENGINE_INDEX){
 			for(i = 0; i < m_p_general_config->chn_count; i++){
 				m_p_channel_control[i].ProcessHmiCmd(cmd);
@@ -2544,16 +2543,16 @@ void ChannelEngine::ProcessHmiCmd(HMICmdFrame &cmd){
 			cmd.frame_number |= 0x8000;
 			cmd.cmd_extension = FAILED;
 			this->m_p_hmi_comm->SendCmd(cmd);
-			g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "ÃüÁî[%d]Í¨µÀºÅ·Ç·¨£¡%d", cmd.cmd, cmd.channel_index);
+			g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "ï¿½ï¿½ï¿½ï¿½[%d]Í¨ï¿½ï¿½ï¿½Å·Ç·ï¿½ï¿½ï¿½%d", cmd.cmd, cmd.channel_index);
 		}
 		else{
 			m_p_channel_control[cmd.channel_index].ProcessHmiCmd(cmd);
 		}
 		break;
-	case CMD_HMI_FIND_REF_POINT:		//È·¶¨²Î¿¼µã 14
+	case CMD_HMI_FIND_REF_POINT:		//È·ï¿½ï¿½ï¿½Î¿ï¿½ï¿½ï¿½ 14
 		this->ProcessHmiFindRefCmd(cmd);
 		break;
-	case CMD_HMI_SET_REF_POINT:			//ÉèÖÃÖáÔ­µã£¬Õë¶Ô¾ø¶ÔÖµ±àÂëÆ÷
+	case CMD_HMI_SET_REF_POINT:			//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ô­ï¿½ã£¬ï¿½ï¿½Ô¾ï¿½ï¿½ï¿½Öµï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 		if(this->m_n_cur_pmc_axis != 0xFF){
 			this->ProcessHmiSetRefCmd(cmd);
 		}else{
@@ -2561,18 +2560,18 @@ void ChannelEngine::ProcessHmiCmd(HMICmdFrame &cmd){
 		}
 
 		break;
-	case CMD_SC_MDA_DATA_REQ:			//MDA´úÂëÇëÇó 115
-	case CMD_HMI_GET_MACRO_VAR:			//HMIÏòSCÇëÇóºê±äÁ¿µÄÖµ   30
-	case CMD_HMI_SET_MACRO_VAR:        //HMIÏòSCÉèÖÃºê±äÁ¿¼Ä´æÆ÷µÄÖµ   31
-	case CMD_HMI_SET_CALIBRATION:      //HMIÏòSC·¢³öµ÷¸ßÆ÷±ê¶¨Ö¸Áî 32
-	case CMD_HMI_MANUAL_TOOL_MEASURE:     //HMIÏòSC·¢ÆðÊÖ¶¯¶Ôµ¶²Ù×÷  0x29
+	case CMD_SC_MDA_DATA_REQ:			//MDAï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ 115
+	case CMD_HMI_GET_MACRO_VAR:			//HMIï¿½ï¿½SCï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Öµ   30
+	case CMD_HMI_SET_MACRO_VAR:        //HMIï¿½ï¿½SCï¿½ï¿½ï¿½Ãºï¿½ï¿½ï¿½ï¿½ï¿½Ä´ï¿½ï¿½ï¿½ï¿½ï¿½Öµ   31
+	case CMD_HMI_SET_CALIBRATION:      //HMIï¿½ï¿½SCï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ê¶¨Ö¸ï¿½ï¿½ 32
+	case CMD_HMI_MANUAL_TOOL_MEASURE:     //HMIï¿½ï¿½SCï¿½ï¿½ï¿½ï¿½ï¿½Ö¶ï¿½ï¿½Ôµï¿½ï¿½ï¿½ï¿½ï¿½  0x29
 		if(cmd.channel_index < this->m_p_general_config->chn_count)
 			m_p_channel_control[cmd.channel_index].ProcessHmiCmd(cmd);
 		else
-			g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "ÃüÁî[%d]Í¨µÀºÅ·Ç·¨£¡%d", cmd.cmd, cmd.channel_index);
+			g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "ï¿½ï¿½ï¿½ï¿½[%d]Í¨ï¿½ï¿½ï¿½Å·Ç·ï¿½ï¿½ï¿½%d", cmd.cmd, cmd.channel_index);
 		break;
-    case CMD_HMI_CLEAR_WORKPIECE:      //HMIÇëÇóSC½«¼Ó¹¤¼ÆÊýÇåÁã,ÁÙÊ±¼ÆÊý(Çø·Ö°×Ò¹°à)
-    case CMD_HMI_CLEAR_TOTAL_PIECE:    //×Ü¹²¼ÆÊýÇåÁã
+    case CMD_HMI_CLEAR_WORKPIECE:      //HMIï¿½ï¿½ï¿½ï¿½SCï¿½ï¿½ï¿½Ó¹ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½,ï¿½ï¿½Ê±ï¿½ï¿½ï¿½ï¿½(ï¿½ï¿½ï¿½Ö°ï¿½Ò¹ï¿½ï¿½)
+    case CMD_HMI_CLEAR_TOTAL_PIECE:    //ï¿½Ü¹ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 		if(cmd.channel_index < this->m_p_general_config->chn_count)
 			m_p_channel_control[cmd.channel_index].ProcessHmiCmd(cmd);
 		else if(cmd.channel_index == CHANNEL_ENGINE_INDEX){
@@ -2580,70 +2579,70 @@ void ChannelEngine::ProcessHmiCmd(HMICmdFrame &cmd){
 				this->m_p_channel_control[i].ProcessHmiCmd(cmd);
 			}
 		}else
-			g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "ÃüÁî[%d]Í¨µÀºÅ·Ç·¨£¡%d", cmd.cmd, cmd.channel_index);
+			g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "ï¿½ï¿½ï¿½ï¿½[%d]Í¨ï¿½ï¿½ï¿½Å·Ç·ï¿½ï¿½ï¿½%d", cmd.cmd, cmd.channel_index);
 		break;
-	case CMD_HMI_SET_PARA:		//ÉèÖÃ²ÎÊý
+	case CMD_HMI_SET_PARA:		//ï¿½ï¿½ï¿½Ã²ï¿½ï¿½ï¿½
 		this->ProcessHmiSetParam(cmd);
 		break;
-	case CMD_HMI_GET_PARA:		//»ñÈ¡²ÎÊý
+	case CMD_HMI_GET_PARA:		//ï¿½ï¿½È¡ï¿½ï¿½ï¿½ï¿½
 		this->ProcessHmiGetParam(cmd);
 		break;
-	case CMD_HMI_UPDATE:		//HMIÍ¨ÖªSCÇëÇó½øÐÐÉý¼¶ÎÄ¼þ´«ËÍ
+	case CMD_HMI_UPDATE:		//HMIÍ¨ÖªSCï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ä¼ï¿½ï¿½ï¿½ï¿½ï¿½
 		this->ProcessHmiUpdateReq(cmd);
 		break;
-	case CMD_HMI_GET_PMC_REG:			//»ñÈ¡PMC¼Ä´æÆ÷
+	case CMD_HMI_GET_PMC_REG:			//ï¿½ï¿½È¡PMCï¿½Ä´ï¿½ï¿½ï¿½
 		this->ProcessHmiGetPmcReg(cmd);
 		break;
-	case CMD_HMI_SET_PMC_REG:			//ÉèÖÃPMC¼Ä´æÆ÷
+	case CMD_HMI_SET_PMC_REG:			//ï¿½ï¿½ï¿½ï¿½PMCï¿½Ä´ï¿½ï¿½ï¿½
 		this->ProcessHmiSetPmcReg(cmd);
 		break;
 	case CMD_HMI_GET_PMC_UUID:
-		this->ProcessHmiGetPmcUuid(cmd);	//»ñÈ¡pmcµÄuuid
+		this->ProcessHmiGetPmcUuid(cmd);	//ï¿½ï¿½È¡pmcï¿½ï¿½uuid
 		break;
-	case CMD_HMI_AXIS_MANUAL_MOVE:     //HMIÖ¸ÁîÖáÒÆ¶¯
+	case CMD_HMI_AXIS_MANUAL_MOVE:     //HMIÖ¸ï¿½ï¿½ï¿½ï¿½ï¿½Æ¶ï¿½
 		this->ProcessHmiAxisMoveCmd(cmd);
 		break;
-	case CMD_HMI_GET_LIC_INFO:            //HMIÏòSCÇëÇóÊÚÈ¨ÐÅÏ¢   0x27
+	case CMD_HMI_GET_LIC_INFO:            //HMIï¿½ï¿½SCï¿½ï¿½ï¿½ï¿½ï¿½ï¿½È¨ï¿½ï¿½Ï¢   0x27
 		this->ProcessHmiGetLicInfoCmd(cmd);
 		break;
-	case CMD_HMI_SEND_LICENSE:            //HMIÏòSC·¢ËÍÊÚÈ¨Âë     0x28
+	case CMD_HMI_SEND_LICENSE:            //HMIï¿½ï¿½SCï¿½ï¿½ï¿½ï¿½ï¿½ï¿½È¨ï¿½ï¿½     0x28
 		this->ProcessHmiRegLicCmd(cmd);
 		break;
-	case CMD_HMI_GET_ESB_INFO:            //HMIÏòSC»ñÈ¡ESBÎÄ¼þÊý¾Ý   0x2A
+	case CMD_HMI_GET_ESB_INFO:            //HMIï¿½ï¿½SCï¿½ï¿½È¡ESBï¿½Ä¼ï¿½ï¿½ï¿½ï¿½ï¿½   0x2A
 
 		break;
-	case CMD_HMI_ESB_OPERATE:            //HMIÍ¨ÖªSC¶ÔÖ¸¶¨ESBÎÄ¼þ½øÐÐ²Ù×÷  0x2B
+	case CMD_HMI_ESB_OPERATE:            //HMIÍ¨ÖªSCï¿½ï¿½Ö¸ï¿½ï¿½ESBï¿½Ä¼ï¿½ï¿½ï¿½ï¿½Ð²ï¿½ï¿½ï¿½  0x2B
 
 		break;
-	case CMD_HMI_GET_IO_REMAP:			//HMIÏòSC»ñÈ¡IOÖØ¶¨ÏòÊý¾Ý  0x2C
+	case CMD_HMI_GET_IO_REMAP:			//HMIï¿½ï¿½SCï¿½ï¿½È¡IOï¿½Ø¶ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½  0x2C
 		this->ProcessHmiGetIoRemapInfoCmd(cmd);
 		break;
-	case CMD_HMI_SET_IO_REMAP:         //HMIÏòSCÉèÖÃIOÖØ¶¨ÏòÊý¾Ý  0x2D
+	case CMD_HMI_SET_IO_REMAP:         //HMIï¿½ï¿½SCï¿½ï¿½ï¿½ï¿½IOï¿½Ø¶ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½  0x2D
 		this->ProcessHmiSetIoRemapInfoCmd(cmd);
 		break;
-	case CMD_HMI_SET_PROC_PARAM:      //HMIÏòSCÉèÖÃ¹¤ÒÕÏà¹Ø²ÎÊý  0x2E
+	case CMD_HMI_SET_PROC_PARAM:      //HMIï¿½ï¿½SCï¿½ï¿½ï¿½Ã¹ï¿½ï¿½ï¿½ï¿½ï¿½Ø²ï¿½ï¿½ï¿½  0x2E
 		this->ProcessHmiSetProcParamCmd(cmd);
 		break;
-	case CMD_HMI_GET_PROC_PARAM:          //HMIÏòSC»ñÈ¡¹¤ÒÕÏà¹Ø²ÎÊý  0x2F
+	case CMD_HMI_GET_PROC_PARAM:          //HMIï¿½ï¿½SCï¿½ï¿½È¡ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ø²ï¿½ï¿½ï¿½  0x2F
 		this->ProcessHmiGetProcParamCmd(cmd);
 		break;
-	case CMD_HMI_SET_PROC_GROUP:          //HMIÏòSCÉèÖÃµ±Ç°¹¤ÒÕ²ÎÊý×éºÅ  0x30
+	case CMD_HMI_SET_PROC_GROUP:          //HMIï¿½ï¿½SCï¿½ï¿½ï¿½Ãµï¿½Ç°ï¿½ï¿½ï¿½Õ²ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½  0x30
 		this->ProcessHmiSetCurProcIndex(cmd);
 		break;
-	case CMD_HMI_GET_PROC_GROUP:          //HMIÏòSC»ñÈ¡µ±Ç°¹¤ÒÕ²ÎÊý×éºÅ  0x31
+	case CMD_HMI_GET_PROC_GROUP:          //HMIï¿½ï¿½SCï¿½ï¿½È¡ï¿½ï¿½Ç°ï¿½ï¿½ï¿½Õ²ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½  0x31
 		this->ProcessHmiGetCurProcIndex(cmd);
 		break;
-	case CMD_HMI_SET_CUR_MACH_POS:        //HMIÏòSCÖØÉèÖ¸¶¨ÖáµÄ»úÐµ×ø±ê  0x32
+	case CMD_HMI_SET_CUR_MACH_POS:        //HMIï¿½ï¿½SCï¿½ï¿½ï¿½ï¿½Ö¸ï¿½ï¿½ï¿½ï¿½Ä»ï¿½Ðµï¿½ï¿½ï¿½ï¿½  0x32
 		if(cmd.channel_index >= this->m_p_general_config->chn_count){
 			cmd.frame_number |= 0x8000;
 			cmd.data[9] = FAILED;
 			cmd.data_len = 10;
 			this->m_p_hmi_comm->SendCmd(cmd);
-			g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "ÃüÁî[%d]Í¨µÀºÅ·Ç·¨£¡%d", cmd.cmd, cmd.channel_index);
+			g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "ï¿½ï¿½ï¿½ï¿½[%d]Í¨ï¿½ï¿½ï¿½Å·Ç·ï¿½ï¿½ï¿½%d", cmd.cmd, cmd.channel_index);
 		}else
 			this->m_p_channel_control[cmd.channel_index].ProcessHmiCmd(cmd);
 		break;
-	case CMD_HMI_CLEAR_MSG:               //HMIÍ¨ÖªSCÇå³ýÏûÏ¢  0x33
+	case CMD_HMI_CLEAR_MSG:               //HMIÍ¨ÖªSCï¿½ï¿½ï¿½ï¿½ï¿½Ï¢  0x33
 		printf("process CMD_HMI_CLEAR_MSG:%hhu, cmd_ex=%hhu \n", cmd.channel_index, cmd.cmd_extension);
 //		if(cmd.channel_index == CHANNEL_ENGINE_INDEX){
 //			this->ProcessHmiClearMsgCmd(cmd);
@@ -2654,16 +2653,16 @@ void ChannelEngine::ProcessHmiCmd(HMICmdFrame &cmd){
 //			cmd.cmd_extension = FAILED;
 //			cmd.data_len = 0;
 //			this->m_p_hmi_comm->SendCmd(cmd);
-//			g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "ÃüÁî[%d]Í¨µÀºÅ·Ç·¨£¡%d", cmd.cmd, cmd.channel_index);
+//			g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "ï¿½ï¿½ï¿½ï¿½[%d]Í¨ï¿½ï¿½ï¿½Å·Ç·ï¿½ï¿½ï¿½%d", cmd.cmd, cmd.channel_index);
 //		}
 		break;
-	case CMD_HMI_SYNC_AXIS_OPT:           //HMIÍ¨ÖªHMI½øÐÐÍ¬²½ÖáÊ¹ÄÜ²Ù×÷ 0x34
+	case CMD_HMI_SYNC_AXIS_OPT:           //HMIÍ¨ÖªHMIï¿½ï¿½ï¿½ï¿½Í¬ï¿½ï¿½ï¿½ï¿½Ê¹ï¿½Ü²ï¿½ï¿½ï¿½ 0x34
 		this->ProcessHmiEnableSyncAxisCmd(cmd);
 		break;
-	case CMD_HMI_NOTIFY_GRAPH:            //HMIÍ¨ÖªSC½øÈëÍ¼ÐÎÄ£Ê½    0x35
+	case CMD_HMI_NOTIFY_GRAPH:            //HMIÍ¨ÖªSCï¿½ï¿½ï¿½ï¿½Í¼ï¿½ï¿½Ä£Ê½    0x35
 		this->ProcessHmiNotifyGraphCmd(cmd);
 		break;
-	case CMD_HMI_CHECK_SYNC_EN:           //HMIÏòSC²éÑ¯Í¬²½Öá×´Ì¬ 0x37
+	case CMD_HMI_CHECK_SYNC_EN:           //HMIï¿½ï¿½SCï¿½ï¿½Ñ¯Í¬ï¿½ï¿½ï¿½ï¿½×´Ì¬ 0x37
 		this->ProcessHmiCheckSyncCmd(cmd);
 		break;
 	case CMD_HMI_GET_SYS_INFO:
@@ -2693,14 +2692,13 @@ void ChannelEngine::ProcessHmiCmd(HMICmdFrame &cmd){
             }
         }
         break;
-    case CMD_HMI_GET_HANDWHEEL_INFO:           // hmiÏòsc²éÑ¯ÊÖÂÖÓ³Éä¹ØÏµ
+    case CMD_HMI_GET_HANDWHEEL_INFO:           // hmiï¿½ï¿½scï¿½ï¿½Ñ¯ï¿½ï¿½ï¿½ï¿½Ó³ï¿½ï¿½ï¿½Ïµ
         ProcessHmiHandWheelCmd(cmd);
         break;
-    case CMD_HMI_SET_HANDWHEEL_INFO:           // hmiÏòscÉèÖÃÊÖÂÖÐÅÏ¢
+    case CMD_HMI_SET_HANDWHEEL_INFO:           // hmiï¿½ï¿½scï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ï¢
     {
         HandWheelMapInfoVec configInfo = g_ptr_parm_manager->GetHandWheelVec();
-        std::cout << cmd.cmd_extension << " " << configInfo.size() << std::endl;
-        if (cmd.cmd_extension - 1 < configInfo.size())
+        if (cmd.cmd_extension - 1 < configInfo.size() && cmd.channel_index <= 1)//ï¿½ï¿½Ê±Ö»Ö§ï¿½Öµï¿½Í¨ï¿½ï¿½
         {
             for(auto itr = configInfo.begin(); itr != configInfo.end(); ++itr)
             {
@@ -2716,28 +2714,28 @@ void ChannelEngine::ProcessHmiCmd(HMICmdFrame &cmd){
     }
         break;
 	default:
-		g_ptr_trace->PrintTrace(TRACE_WARNING, CHANNEL_ENGINE_SC, "²»Ö§³ÖµÄHMIÖ¸Áî[%d]", cmd.cmd);
+		g_ptr_trace->PrintTrace(TRACE_WARNING, CHANNEL_ENGINE_SC, "ï¿½ï¿½Ö§ï¿½Öµï¿½HMIÖ¸ï¿½ï¿½[%d]", cmd.cmd);
 		break;
 
 	}
 }
 
 /**
- * @brief ´¦ÀíHMI»ñÈ¡ÊÚÈ¨ÐÅÏ¢Ö¸Áî
- * @param cmd : HMIÖ¸Áî°ü
+ * @brief ï¿½ï¿½ï¿½ï¿½HMIï¿½ï¿½È¡ï¿½ï¿½È¨ï¿½ï¿½Ï¢Ö¸ï¿½ï¿½
+ * @param cmd : HMIÖ¸ï¿½ï¿½ï¿½
  */
 void ChannelEngine::ProcessHmiGetLicInfoCmd(HMICmdFrame &cmd){
-	cmd.frame_number |= 0x8000;  //ÉèÖÃ»Ø¸´±êÖ¾
+	cmd.frame_number |= 0x8000;  //ï¿½ï¿½ï¿½Ã»Ø¸ï¿½ï¿½ï¿½Ö¾
 	cmd.cmd_extension = SUCCEED;
 	cmd.data_len = 24;
 
-	memcpy(cmd.data, this->m_device_sn, SN_COUNT);  //13×Ö½Ú³¤¶ÈµÄÉè±¸SNºÅ
-	cmd.data[SN_COUNT] = this->m_lic_info.licflag;    //ÊÚÈ¨×´Ì¬
+	memcpy(cmd.data, this->m_device_sn, SN_COUNT);  //13ï¿½Ö½Ú³ï¿½ï¿½Èµï¿½ï¿½è±¸SNï¿½ï¿½
+	cmd.data[SN_COUNT] = this->m_lic_info.licflag;    //ï¿½ï¿½È¨×´Ì¬
 	if(this->m_lic_info.licflag == 'f'){
-		sprintf(cmd.data+SN_COUNT+1, "%s", "ÓÀ¾Ã");    //ÊÚÈ¨µ½ÆÚÊ±¼ä,10×Ö½Ú³¤¶È×Ö·û´®£¬¸ñÊ½Èç¡°2021-12-21¡±
+		sprintf(cmd.data+SN_COUNT+1, "%s", "ï¿½ï¿½ï¿½ï¿½");    //ï¿½ï¿½È¨ï¿½ï¿½ï¿½ï¿½Ê±ï¿½ï¿½,10ï¿½Ö½Ú³ï¿½ï¿½ï¿½ï¿½Ö·ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ê½ï¿½ç¡°2021-12-21ï¿½ï¿½
 	}else{
 		sprintf(cmd.data+SN_COUNT+1, "%d-%02d-%02d", this->m_lic_info.dead_line.year, this->m_lic_info.dead_line.month,
-				this->m_lic_info.dead_line.day);    //ÊÚÈ¨µ½ÆÚÊ±¼ä,10×Ö½Ú³¤¶È×Ö·û´®£¬¸ñÊ½Èç¡°2021-12-21¡±
+				this->m_lic_info.dead_line.day);    //ï¿½ï¿½È¨ï¿½ï¿½ï¿½ï¿½Ê±ï¿½ï¿½,10ï¿½Ö½Ú³ï¿½ï¿½ï¿½ï¿½Ö·ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ê½ï¿½ç¡°2021-12-21ï¿½ï¿½
 	}
 
 
@@ -2746,39 +2744,39 @@ void ChannelEngine::ProcessHmiGetLicInfoCmd(HMICmdFrame &cmd){
 }
 
 /**
- * @brief ´¦ÀíHMI×¢²áÊÚÈ¨Ö¸Áî
- * @param cmd : HMIÖ¸Áî°ü
+ * @brief ï¿½ï¿½ï¿½ï¿½HMI×¢ï¿½ï¿½ï¿½ï¿½È¨Ö¸ï¿½ï¿½
+ * @param cmd : HMIÖ¸ï¿½ï¿½ï¿½
  */
 void ChannelEngine::ProcessHmiRegLicCmd(HMICmdFrame &cmd){
-	cmd.frame_number |= 0x8000;  //ÉèÖÃ»Ø¸´±êÖ¾
+	cmd.frame_number |= 0x8000;  //ï¿½ï¿½ï¿½Ã»Ø¸ï¿½ï¿½ï¿½Ö¾
 
-	if(cmd.data_len != LICCODECOUNT){//ÊÚÈ¨Âë³¤¶È´íÎó£¬·µ»ØÊ§°Ü
+	if(cmd.data_len != LICCODECOUNT){//ï¿½ï¿½È¨ï¿½ë³¤ï¿½È´ï¿½ï¿½ó£¬·ï¿½ï¿½ï¿½Ê§ï¿½ï¿½
 		cmd.cmd_extension = FAILED;
 		cmd.data_len = 24;
 
-		memcpy(cmd.data, this->m_device_sn, SN_COUNT);  //13×Ö½Ú³¤¶ÈµÄÉè±¸SNºÅ
-		cmd.data[SN_COUNT] = this->m_lic_info.licflag;    //ÊÚÈ¨×´Ì¬
+		memcpy(cmd.data, this->m_device_sn, SN_COUNT);  //13ï¿½Ö½Ú³ï¿½ï¿½Èµï¿½ï¿½è±¸SNï¿½ï¿½
+		cmd.data[SN_COUNT] = this->m_lic_info.licflag;    //ï¿½ï¿½È¨×´Ì¬
 		sprintf(cmd.data+SN_COUNT+1, "%d-%02d-%02d", this->m_lic_info.dead_line.year, this->m_lic_info.dead_line.month,
-				this->m_lic_info.dead_line.day);    //ÊÚÈ¨µ½ÆÚÊ±¼ä,10×Ö½Ú³¤¶È×Ö·û´®£¬¸ñÊ½Èç¡°2021-12-21¡±
+				this->m_lic_info.dead_line.day);    //ï¿½ï¿½È¨ï¿½ï¿½ï¿½ï¿½Ê±ï¿½ï¿½,10ï¿½Ö½Ú³ï¿½ï¿½ï¿½ï¿½Ö·ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ê½ï¿½ç¡°2021-12-21ï¿½ï¿½
 		this->m_p_hmi_comm->SendCmd(cmd);
 		printf("register failed 1\n");
 		return;
 	}
 
-	char lic_code[LICCODECOUNT+1];   //ÊÚÈ¨Âë
+	char lic_code[LICCODECOUNT+1];   //ï¿½ï¿½È¨ï¿½ï¿½
 	memset(lic_code, 0x00, LICCODECOUNT+1);
-	memcpy(lic_code, cmd.data, LICCODECOUNT);  //24×Ö½Ú³¤¶ÈµÄÉè±¸ÊÚÈ¨Âë
+	memcpy(lic_code, cmd.data, LICCODECOUNT);  //24ï¿½Ö½Ú³ï¿½ï¿½Èµï¿½ï¿½è±¸ï¿½ï¿½È¨ï¿½ï¿½
 	printf("Get lic code:%s\n", lic_code);
 
-	//×¢²áÊÚÈ¨Âë
+	//×¢ï¿½ï¿½ï¿½ï¿½È¨ï¿½ï¿½
 	if(RegisterLicWithCode(this->m_device_sn, lic_code, &this->m_lic_info)){
 		cmd.cmd_extension = FAILED;
 		cmd.data_len = 24;
 
-		memcpy(cmd.data, m_device_sn, SN_COUNT);  //13×Ö½Ú³¤¶ÈµÄÉè±¸SNºÅ
-		cmd.data[SN_COUNT] = this->m_lic_info.licflag;    //ÊÚÈ¨×´Ì¬
+		memcpy(cmd.data, m_device_sn, SN_COUNT);  //13ï¿½Ö½Ú³ï¿½ï¿½Èµï¿½ï¿½è±¸SNï¿½ï¿½
+		cmd.data[SN_COUNT] = this->m_lic_info.licflag;    //ï¿½ï¿½È¨×´Ì¬
 		sprintf(cmd.data+SN_COUNT+1, "%d-%02d-%02d", this->m_lic_info.dead_line.year, this->m_lic_info.dead_line.month,
-				this->m_lic_info.dead_line.day);    //ÊÚÈ¨µ½ÆÚÊ±¼ä,10×Ö½Ú³¤¶È×Ö·û´®£¬¸ñÊ½Èç¡°2021-12-21¡±
+				this->m_lic_info.dead_line.day);    //ï¿½ï¿½È¨ï¿½ï¿½ï¿½ï¿½Ê±ï¿½ï¿½,10ï¿½Ö½Ú³ï¿½ï¿½ï¿½ï¿½Ö·ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ê½ï¿½ç¡°2021-12-21ï¿½ï¿½
 		this->m_p_hmi_comm->SendCmd(cmd);
 		printf("register failed 2\n");
 		return;
@@ -2788,35 +2786,35 @@ void ChannelEngine::ProcessHmiRegLicCmd(HMICmdFrame &cmd){
 
 	cmd.data_len = 24;
 
-	memcpy(cmd.data, m_device_sn, SN_COUNT);  //13×Ö½Ú³¤¶ÈµÄÉè±¸SNºÅ
-	cmd.data[SN_COUNT] = this->m_lic_info.licflag;    //ÊÚÈ¨×´Ì¬
+	memcpy(cmd.data, m_device_sn, SN_COUNT);  //13ï¿½Ö½Ú³ï¿½ï¿½Èµï¿½ï¿½è±¸SNï¿½ï¿½
+	cmd.data[SN_COUNT] = this->m_lic_info.licflag;    //ï¿½ï¿½È¨×´Ì¬
 	if(this->m_lic_info.licflag == 'f'){
-		sprintf(cmd.data+SN_COUNT+1, "%s", "ÓÀ¾Ã");    //ÊÚÈ¨µ½ÆÚÊ±¼ä,10×Ö½Ú³¤¶È×Ö·û´®£¬¸ñÊ½Èç¡°2021-12-21¡±
+		sprintf(cmd.data+SN_COUNT+1, "%s", "ï¿½ï¿½ï¿½ï¿½");    //ï¿½ï¿½È¨ï¿½ï¿½ï¿½ï¿½Ê±ï¿½ï¿½,10ï¿½Ö½Ú³ï¿½ï¿½ï¿½ï¿½Ö·ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ê½ï¿½ç¡°2021-12-21ï¿½ï¿½
 
 	}else{
 		sprintf(cmd.data+SN_COUNT+1, "%d-%02d-%02d", this->m_lic_info.dead_line.year, this->m_lic_info.dead_line.month,
-				this->m_lic_info.dead_line.day);    //ÊÚÈ¨µ½ÆÚÊ±¼ä,10×Ö½Ú³¤¶È×Ö·û´®£¬¸ñÊ½Èç¡°2021-12-21¡±
+				this->m_lic_info.dead_line.day);    //ï¿½ï¿½È¨ï¿½ï¿½ï¿½ï¿½Ê±ï¿½ï¿½,10ï¿½Ö½Ú³ï¿½ï¿½ï¿½ï¿½Ö·ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ê½ï¿½ç¡°2021-12-21ï¿½ï¿½
 	}
 
 	printf("register lic result: %s\n", cmd.data);
 
-	//·¢ËÍ»Ø¸´
+	//ï¿½ï¿½ï¿½Í»Ø¸ï¿½
 	cmd.cmd_extension = SUCCEED;
 	this->m_p_hmi_comm->SendCmd(cmd);
 }
 
 /**
- * @brief ´¦ÀíHMI»ñÈ¡IOÖØÓ³ÉäÐÅÏ¢ÃüÁî
- * @param cmd : HMIÖ¸Áî°ü
+ * @brief ï¿½ï¿½ï¿½ï¿½HMIï¿½ï¿½È¡IOï¿½ï¿½Ó³ï¿½ï¿½ï¿½ï¿½Ï¢ï¿½ï¿½ï¿½ï¿½
+ * @param cmd : HMIÖ¸ï¿½ï¿½ï¿½
  */
 void ChannelEngine::ProcessHmiGetIoRemapInfoCmd(HMICmdFrame &cmd){
 	int count = this->m_p_io_remap->GetLength();
 
-	int count_per = count;   //µ¥´Î·¢ËÍÊý¾ÝÁ¿
+	int count_per = count;   //ï¿½ï¿½ï¿½Î·ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 	int i = 0;
 	ListNode<IoRemapInfo> *info_node = this->m_p_io_remap->HeadNode();
 
-	cmd.frame_number |= 0x8000;  //ÉèÖÃ»Ø¸´±êÖ¾
+	cmd.frame_number |= 0x8000;  //ï¿½ï¿½ï¿½Ã»Ø¸ï¿½ï¿½ï¿½Ö¾
 	if(count == 0){
 		cmd.cmd_extension = 0x00;
 		cmd.data_len = 0;
@@ -2855,11 +2853,11 @@ void ChannelEngine::ProcessHmiGetIoRemapInfoCmd(HMICmdFrame &cmd){
 }
 
 /**
- * @brief ´¦ÀíHMIÉèÖÃIOÖØÓ³ÉäÐÅÏ¢ÃüÁî
- * @param cmd : HMIÖ¸Áî°ü
+ * @brief ï¿½ï¿½ï¿½ï¿½HMIï¿½ï¿½ï¿½ï¿½IOï¿½ï¿½Ó³ï¿½ï¿½ï¿½ï¿½Ï¢ï¿½ï¿½ï¿½ï¿½
+ * @param cmd : HMIÖ¸ï¿½ï¿½ï¿½
  */
 void ChannelEngine::ProcessHmiSetIoRemapInfoCmd(HMICmdFrame &cmd){
-	cmd.frame_number |= 0x8000;  //ÉèÖÃ»Ø¸´±êÖ¾
+	cmd.frame_number |= 0x8000;  //ï¿½ï¿½ï¿½Ã»Ø¸ï¿½ï¿½ï¿½Ö¾
 
 	IoRemapInfo info;
 	info.iotype = cmd.data[0];
@@ -2883,31 +2881,31 @@ void ChannelEngine::ProcessHmiSetIoRemapInfoCmd(HMICmdFrame &cmd){
 		info_node = info_node->next;
 	}
 
-	if(!flag){  //ÐÂÔö
+	if(!flag){  //ï¿½ï¿½ï¿½ï¿½
 		this->m_p_io_remap->Append(info);
 	}
 
 	if(!g_ptr_parm_manager->UpdateIoRemapInfo(info)){
-		cmd.cmd_extension = 0x01;  //¸üÐÂÊ§°Ü
+		cmd.cmd_extension = 0x01;  //ï¿½ï¿½ï¿½ï¿½Ê§ï¿½ï¿½
 	}
 
-	this->SendMiIoRemapInfo(info);   //¸üÐÂMIÊý¾Ý
+	this->SendMiIoRemapInfo(info);   //ï¿½ï¿½ï¿½ï¿½MIï¿½ï¿½ï¿½ï¿½
 
 	this->m_p_hmi_comm->SendCmd(cmd);
 }
 
 /**
- * @brief ´¦ÀíHMIÉèÖÃ¹¤ÒÕÏà¹Ø²ÎÊýµÄÃüÁî
- * @param cmd : HMIÖ¸Áî°ü
+ * @brief ï¿½ï¿½ï¿½ï¿½HMIï¿½ï¿½ï¿½Ã¹ï¿½ï¿½ï¿½ï¿½ï¿½Ø²ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+ * @param cmd : HMIÖ¸ï¿½ï¿½ï¿½
  */
 void ChannelEngine::ProcessHmiSetProcParamCmd(HMICmdFrame &cmd){
 //	printf("enter ProcessHmiSetProcParamCmd\n");
-	cmd.frame_number |= 0x8000;  //ÉèÖÃ»Ø¸´±êÖ¾
+	cmd.frame_number |= 0x8000;  //ï¿½ï¿½ï¿½Ã»Ø¸ï¿½ï¿½ï¿½Ö¾
 
-	uint8_t active_type = ACTIVE_BY_POWEROFF;	//¼¤»îÀàÐÍ
+	uint8_t active_type = ACTIVE_BY_POWEROFF;	//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 	ProcParamUpdate update;
-	update.param_data.param_type = cmd.cmd_extension;  //²ÎÊýÀàÐÍ£¬2--Í¨µÀ²ÎÊý  3--Öá²ÎÊý
-	update.group_index = cmd.data[0];       //¹¤ÒÕ²ÎÊý×éºÅ
+	update.param_data.param_type = cmd.cmd_extension;  //ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Í£ï¿½2--Í¨ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½  3--ï¿½ï¿½ï¿½ï¿½ï¿½
+	update.group_index = cmd.data[0];       //ï¿½ï¿½ï¿½Õ²ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 
 	switch(cmd.cmd_extension){
 	case CHN_CONFIG:
@@ -2945,8 +2943,8 @@ void ChannelEngine::ProcessHmiSetProcParamCmd(HMICmdFrame &cmd){
 }
 
 /**
- * @brief ´¦ÀíHMI»ñÈ¡¹¤ÒÕÏà¹Ø²ÎÊýµÄÃüÁî
- * @param cmd : HMIÖ¸Áî°ü
+ * @brief ï¿½ï¿½ï¿½ï¿½HMIï¿½ï¿½È¡ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ø²ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+ * @param cmd : HMIÖ¸ï¿½ï¿½ï¿½
  */
 void ChannelEngine::ProcessHmiGetProcParamCmd(HMICmdFrame &cmd){
 //	printf("enter ProcessHmiGetProcParamCmd\n");
@@ -2954,28 +2952,28 @@ void ChannelEngine::ProcessHmiGetProcParamCmd(HMICmdFrame &cmd){
 	uint8_t axis = 0;
 	switch(cmd.cmd_extension){
 	case CHN_CONFIG:
-		index = cmd.data[0];    //¹¤ÒÕ²ÎÊý×éºÅ
+		index = cmd.data[0];    //ï¿½ï¿½ï¿½Õ²ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 //		printf("get chn proc config :chn = %hhu, proc_idx=%hhu\n", cmd.channel_index, index);
-		if(cmd.channel_index >= m_p_general_config->max_chn_count || index >= kMaxProcParamCount)//Í¨µÀË÷Òý³¬·¶Î§
+		if(cmd.channel_index >= m_p_general_config->max_chn_count || index >= kMaxProcParamCount)//Í¨ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Î§
 			cmd.data_len = 0;
 		else{
 			cmd.data_len = sizeof(ProcessParamChn);
 			memcpy(&cmd.data[1], &this->m_p_chn_proc_param[cmd.channel_index].chn_param[index], cmd.data_len);
-			cmd.data_len += 1;  //Êý¾Ý³¤¶È¼ÓÒ»£¬¼ÓÉÏ×éºÅ
+			cmd.data_len += 1;  //ï¿½ï¿½ï¿½Ý³ï¿½ï¿½È¼ï¿½Ò»ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 		}
 		break;
 	case AXIS_CONFIG:
 		index = cmd.data[0];
 		axis = cmd.data[1];
 //		printf("get axis proc config: axis =  %hhu, idx = %hhu\n", axis, index);
-		if(axis >= m_p_general_config->max_axis_count || index >= kMaxProcParamCount){//ÖáºÅ³¬·¶Î§£¬Ö§³Ö²ÎÊýÐÞ¸ÄºóÒ»´ÎÖØÆô
+		if(axis >= m_p_general_config->max_axis_count || index >= kMaxProcParamCount){//ï¿½ï¿½Å³ï¿½ï¿½ï¿½Î§ï¿½ï¿½Ö§ï¿½Ö²ï¿½ï¿½ï¿½ï¿½Þ¸Äºï¿½Ò»ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 			printf("get axis proc config failed, index=%hhu, axis_count:%hhu\n", axis, m_p_general_config->max_axis_count);
 			cmd.data_len = 0;
 		}
 		else{
 			cmd.data_len = sizeof(ProcessParamAxis);
 			memcpy(cmd.data+2, &this->m_p_axis_proc_param[axis].axis_param[index], cmd.data_len);
-			cmd.data_len += 2;   // Êý¾Ý³¤¶È¼ÓÉÏ×éºÅºÍÖáºÅ
+			cmd.data_len += 2;   // ï¿½ï¿½ï¿½Ý³ï¿½ï¿½È¼ï¿½ï¿½ï¿½ï¿½ï¿½Åºï¿½ï¿½ï¿½ï¿½
 	//		printf("get axis config succeed, data_len:%hu\n", cmd.data_len);
 		}
 
@@ -2985,14 +2983,14 @@ void ChannelEngine::ProcessHmiGetProcParamCmd(HMICmdFrame &cmd){
 		break;
 	}
 	cmd.frame_number |= 0x8000;
-	this->m_p_hmi_comm->SendCmd(cmd);	//·¢ËÍÏìÓ¦
+	this->m_p_hmi_comm->SendCmd(cmd);	//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ó¦
 
 //	printf("exit ProcessHmiGetProcParamCmd\n");
 }
 
 /**
- * @brief ´¦ÀíHMIÉèÖÃÍ¨µÀµ±Ç°¹¤ÒÕ×éºÅµÄÃüÁî
- * @param cmd : HMIÖ¸Áî°ü
+ * @brief ï¿½ï¿½ï¿½ï¿½HMIï¿½ï¿½ï¿½ï¿½Í¨ï¿½ï¿½ï¿½ï¿½Ç°ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Åµï¿½ï¿½ï¿½ï¿½ï¿½
+ * @param cmd : HMIÖ¸ï¿½ï¿½ï¿½
  */
 void ChannelEngine::ProcessHmiSetCurProcIndex(HMICmdFrame &cmd){
 //	printf("enter ProcessHmiSetCurProcIndex\n");
@@ -3014,7 +3012,7 @@ void ChannelEngine::ProcessHmiSetCurProcIndex(HMICmdFrame &cmd){
 	else if(cmd.channel_index >= this->m_p_general_config->chn_count){
 		cmd.cmd_extension = FAILED;
 
-		g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "ÃüÁî[%d]Í¨µÀºÅ·Ç·¨£¡%d", cmd.cmd, cmd.channel_index);
+		g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "ï¿½ï¿½ï¿½ï¿½[%d]Í¨ï¿½ï¿½ï¿½Å·Ç·ï¿½ï¿½ï¿½%d", cmd.cmd, cmd.channel_index);
 	}
 	else{
 		if(m_p_channel_control[cmd.channel_index].SetCurProcParamIndex(cmd.data[0]))
@@ -3027,8 +3025,8 @@ void ChannelEngine::ProcessHmiSetCurProcIndex(HMICmdFrame &cmd){
 }
 
 /**
- * @brief ´¦ÀíHMI»ñÈ¡¹¤ÒÕ²ÎÊý×éºÅµÄÃüÁî
- * @param cmd : HMIÖ¸Áî°ü
+ * @brief ï¿½ï¿½ï¿½ï¿½HMIï¿½ï¿½È¡ï¿½ï¿½ï¿½Õ²ï¿½ï¿½ï¿½ï¿½ï¿½Åµï¿½ï¿½ï¿½ï¿½ï¿½
+ * @param cmd : HMIÖ¸ï¿½ï¿½ï¿½
  */
 void ChannelEngine::ProcessHmiGetCurProcIndex(HMICmdFrame &cmd){
 //	printf("enter ProcessHmiGetCurProcIndex\n");
@@ -3042,15 +3040,15 @@ void ChannelEngine::ProcessHmiGetCurProcIndex(HMICmdFrame &cmd){
 	else{
 		cmd.data_len = 0;
 
-		g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "ÃüÁî[%d]Í¨µÀºÅ·Ç·¨£¡%d", cmd.cmd, cmd.channel_index);
+		g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "ï¿½ï¿½ï¿½ï¿½[%d]Í¨ï¿½ï¿½ï¿½Å·Ç·ï¿½ï¿½ï¿½%d", cmd.cmd, cmd.channel_index);
 	}
 	this->m_p_hmi_comm->SendCmd(cmd);
 //	printf("exit ProcessHmiGetCurProcIndex\n");
 }
 
 /**
- * @brief ´¦ÀíHMIÇå³ýÏûÏ¢ÃüÁî
- * @param cmd : HMIÖ¸Áî°ü
+ * @brief ï¿½ï¿½ï¿½ï¿½HMIï¿½ï¿½ï¿½ï¿½ï¿½Ï¢ï¿½ï¿½ï¿½ï¿½
+ * @param cmd : HMIÖ¸ï¿½ï¿½ï¿½
  */
 void ChannelEngine::ProcessHmiClearMsgCmd(HMICmdFrame &cmd){
 	cmd.frame_number |= 0x8000;
@@ -3058,10 +3056,10 @@ void ChannelEngine::ProcessHmiClearMsgCmd(HMICmdFrame &cmd){
 
 
 
-	if(cmd.cmd_extension == 0xFF){  //Çå¿Õ¸æ¾¯¶ÓÁÐ
+	if(cmd.cmd_extension == 0xFF){  //ï¿½ï¿½Õ¸æ¾¯ï¿½ï¿½ï¿½ï¿½
 		g_ptr_alarm_processor->Clear();
 		cmd.cmd_extension = SUCCEED;
-	}else if(cmd.cmd_extension == 0xEE){  //Çå³ý¾¯¸æ¼°ÌáÊ¾ÐÅÏ¢
+	}else if(cmd.cmd_extension == 0xEE){  //ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½æ¼°ï¿½ï¿½Ê¾ï¿½ï¿½Ï¢
 		g_ptr_alarm_processor->ClearWarning(CHANNEL_ENGINE_INDEX);
 		cmd.cmd_extension = SUCCEED;
 	}else{
@@ -3072,8 +3070,8 @@ void ChannelEngine::ProcessHmiClearMsgCmd(HMICmdFrame &cmd){
 }
 
 /**
- * @brief ´¦ÀíHMIÊ¹ÄÜÍ¬²½ÖáÃüÁî
- * @param cmd  : HMIÖ¸Áî°ü
+ * @brief ï¿½ï¿½ï¿½ï¿½HMIÊ¹ï¿½ï¿½Í¬ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+ * @param cmd  : HMIÖ¸ï¿½ï¿½ï¿½
  */
 void ChannelEngine::ProcessHmiEnableSyncAxisCmd(HMICmdFrame &cmd){
 	cmd.frame_number |= 0x8000;
@@ -3083,18 +3081,18 @@ void ChannelEngine::ProcessHmiEnableSyncAxisCmd(HMICmdFrame &cmd){
 	mi_cmd.data.cmd = CMD_MI_EN_SYNC_AXIS;
 
 //
-	if(cmd.cmd_extension == 0x00){  //½â³ýÍ¬²½¹ØÏµ
-		mi_cmd.data.axis_index = cmd.data[0]+1;   //´Ó¶¯ÖáºÅ£¬´Ó1¿ªÊ¼
-		mi_cmd.data.data[0] = cmd.data[1]+1;      //Ö÷¶¯ÖáºÅ£¬´Ó1¿ªÊ¼
+	if(cmd.cmd_extension == 0x00){  //ï¿½ï¿½ï¿½Í¬ï¿½ï¿½ï¿½ï¿½Ïµ
+		mi_cmd.data.axis_index = cmd.data[0]+1;   //ï¿½Ó¶ï¿½ï¿½ï¿½Å£ï¿½ï¿½ï¿½1ï¿½ï¿½Ê¼
+		mi_cmd.data.data[0] = cmd.data[1]+1;      //ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Å£ï¿½ï¿½ï¿½1ï¿½ï¿½Ê¼
 		mi_cmd.data.data[1] = 0;
 
 		this->m_p_mi_comm->WriteCmd(mi_cmd);
 
 		cmd.data[cmd.data_len] = SUCCEED;
 		cmd.data_len++;
-	}else if(cmd.cmd_extension == 0x01){  //½¨Á¢Í¬²½¹ØÏµ
-		mi_cmd.data.axis_index = cmd.data[0]+1;   //´Ó¶¯ÖáºÅ£¬´Ó1¿ªÊ¼
-		mi_cmd.data.data[0] = cmd.data[1]+1;      //Ö÷¶¯ÖáºÅ£¬´Ó1¿ªÊ¼
+	}else if(cmd.cmd_extension == 0x01){  //ï¿½ï¿½ï¿½ï¿½Í¬ï¿½ï¿½ï¿½ï¿½Ïµ
+		mi_cmd.data.axis_index = cmd.data[0]+1;   //ï¿½Ó¶ï¿½ï¿½ï¿½Å£ï¿½ï¿½ï¿½1ï¿½ï¿½Ê¼
+		mi_cmd.data.data[0] = cmd.data[1]+1;      //ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Å£ï¿½ï¿½ï¿½1ï¿½ï¿½Ê¼
 		mi_cmd.data.data[1] = 1;
 
 		this->m_p_mi_comm->WriteCmd(mi_cmd);
@@ -3109,8 +3107,8 @@ void ChannelEngine::ProcessHmiEnableSyncAxisCmd(HMICmdFrame &cmd){
 }
 
 /**
- * @brief ´¦ÀíHMI²éÑ¯Í¬²½ÖáÊ¹ÄÜÃüÁî
- * @param cmd : HMIÖ¸Áî°ü
+ * @brief ï¿½ï¿½ï¿½ï¿½HMIï¿½ï¿½Ñ¯Í¬ï¿½ï¿½ï¿½ï¿½Ê¹ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+ * @param cmd : HMIÖ¸ï¿½ï¿½ï¿½
  */
 void ChannelEngine::ProcessHmiCheckSyncCmd(HMICmdFrame &cmd){
 	cmd.frame_number |= 0x8000;
@@ -3128,8 +3126,8 @@ void ChannelEngine::ProcessHmiCheckSyncCmd(HMICmdFrame &cmd){
 
 
 /**
- * @brief ´¦ÀíHMIÍ¨ÖªÍ¼ÐÎÄ£Ê½ÃüÁî
- * @param cmd : HMIÖ¸Áî°ü
+ * @brief ï¿½ï¿½ï¿½ï¿½HMIÍ¨ÖªÍ¼ï¿½ï¿½Ä£Ê½ï¿½ï¿½ï¿½ï¿½
+ * @param cmd : HMIÖ¸ï¿½ï¿½ï¿½
  */
 void ChannelEngine::ProcessHmiNotifyGraphCmd(HMICmdFrame &cmd){
 	cmd.frame_number |= 0x8000;
@@ -3168,23 +3166,23 @@ void ChannelEngine::ProcessHmiHandWheelCmd(HMICmdFrame &cmd)
 
 
 /**
- * @brief ´¦ÀíHMIÖáÒÆ¶¯Ö¸Áî
- * @param cmd : HMIÖ¸Áî°ü
+ * @brief ï¿½ï¿½ï¿½ï¿½HMIï¿½ï¿½ï¿½Æ¶ï¿½Ö¸ï¿½ï¿½
+ * @param cmd : HMIÖ¸ï¿½ï¿½ï¿½
  */
 void ChannelEngine::ProcessHmiAxisMoveCmd(HMICmdFrame &cmd){
-	cmd.frame_number |= 0x8000;  //ÉèÖÃ»Ø¸´±êÖ¾
+	cmd.frame_number |= 0x8000;  //ï¿½ï¿½ï¿½Ã»Ø¸ï¿½ï¿½ï¿½Ö¾
 	uint8_t axis = 0;
 	uint32_t speed = 0;
 	int8_t dir = 0;
 	double tar_pos = 0;
 
-	if(cmd.data_len == 6){ //Î´Ö¸¶¨Ä¿±êÎ»ÖÃ
+	if(cmd.data_len == 6){ //Î´Ö¸ï¿½ï¿½Ä¿ï¿½ï¿½Î»ï¿½ï¿½
 		axis = cmd.data[0];
 		memcpy(&speed, &cmd.data[1], 4);
 		dir = cmd.data[5];
 		double vel = speed;
 
-		if(this->m_p_axis_config[axis].axis_pmc){ //PMCÖá
+		if(this->m_p_axis_config[axis].axis_pmc){ //PMCï¿½ï¿½
 			if(speed > 0)
 				this->ManualMovePmc(axis, 99999, vel, true);
 			else
@@ -3200,23 +3198,23 @@ void ChannelEngine::ProcessHmiAxisMoveCmd(HMICmdFrame &cmd){
 
 		cmd.cmd_extension = SUCCEED;
 
-	}else if(cmd.data_len == 14){//Ö¸¶¨Ä¿±êÎ»ÖÃ
+	}else if(cmd.data_len == 14){//Ö¸ï¿½ï¿½Ä¿ï¿½ï¿½Î»ï¿½ï¿½
 		axis = cmd.data[0];
 		memcpy(&speed, &cmd.data[1], 4);
 		dir = cmd.data[5];
-		memcpy(&tar_pos, &cmd.data[6], sizeof(double));  //¾ø¶ÔÄ¿±êÎ»ÖÃ
+		memcpy(&tar_pos, &cmd.data[6], sizeof(double));  //ï¿½ï¿½ï¿½ï¿½Ä¿ï¿½ï¿½Î»ï¿½ï¿½
 		double vel = speed;
 		if(speed == 0)
-			vel = this->m_p_axis_config[axis].rapid_speed;  //ËÙ¶È¸ø0ÔòÊ¹ÓÃÖá²ÎÊýÖÐµÄ¶¨Î»ËÙ¶È
+			vel = this->m_p_axis_config[axis].rapid_speed;  //ï¿½Ù¶È¸ï¿½0ï¿½ï¿½Ê¹ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ÐµÄ¶ï¿½Î»ï¿½Ù¶ï¿½
 
-		if(this->m_p_axis_config[axis].axis_pmc){ //PMCÖá
+		if(this->m_p_axis_config[axis].axis_pmc){ //PMCï¿½ï¿½
 			this->ManualMovePmc(axis, tar_pos, vel, false);
 		}else{
 			this->ManualMove(axis, dir, vel, tar_pos-this->GetPhyAxisMachPosFeedback(axis));
 		}
 		printf("ChannelEngine::ProcessHmiAxisMoveCmd:axis=%hhu, vel=%lf, tar=%lf\n", axis, vel, tar_pos);
 		cmd.cmd_extension = SUCCEED;
-	}else{//ÃüÁî°ü¸ñÊ½´íÎó
+	}else{//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ê½ï¿½ï¿½ï¿½ï¿½
 		cmd.cmd_extension = FAILED;
 	}
 
@@ -3225,9 +3223,9 @@ void ChannelEngine::ProcessHmiAxisMoveCmd(HMICmdFrame &cmd){
 
 
 /**
- * @brief ´ÓÃüÁî°üÖÐ»ñÈ¡²ÎÊýÊý¾Ý
- * @param data : ²ÎÊýÉý¼¶½á¹¹
- * @param src : Êý¾ÝÔ´
+ * @brief ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ð»ï¿½È¡ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+ * @param data : ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½á¹¹
+ * @param src : ï¿½ï¿½ï¿½ï¿½Ô´
  */
 void ChannelEngine::GetParamValueFromCmd(ParamUpdate *data, char *src){
 
@@ -3266,19 +3264,19 @@ void ChannelEngine::GetParamValueFromCmd(ParamUpdate *data, char *src){
 //		printf("get param set double value:%f, %f\n", data->value.value_double, ff);
 		break;
 	default:
-		g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "²ÎÊýÉèÖÃÖ¸Áî£¬²ÎÊýÖµÀàÐÍ·Ç·¨£º%hhu", data->value_type);
+		g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ö¸ï¿½î£¬ï¿½ï¿½ï¿½ï¿½Öµï¿½ï¿½ï¿½Í·Ç·ï¿½ï¿½ï¿½%hhu", data->value_type);
 		break;
 	}
 }
 
 /**
- * @brief ´¦ÀíHMIÉèÖÃ²ÎÊýÖ¸Áî
- * @param cmd : Ö¸Áî
+ * @brief ï¿½ï¿½ï¿½ï¿½HMIï¿½ï¿½ï¿½Ã²ï¿½ï¿½ï¿½Ö¸ï¿½ï¿½
+ * @param cmd : Ö¸ï¿½ï¿½
  */
 void ChannelEngine::ProcessHmiSetParam(HMICmdFrame &cmd){
-//	uint32_t param_no = 0;	//²ÎÊýºÅ
-	uint8_t active_type = ACTIVE_BY_POWEROFF;	//¼¤»îÀàÐÍ
-//	uint8_t value_type = VALUE_UINT8;		//ÖµÀàÐÍ
+//	uint32_t param_no = 0;	//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+	uint8_t active_type = ACTIVE_BY_POWEROFF;	//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+//	uint8_t value_type = VALUE_UINT8;		//Öµï¿½ï¿½ï¿½ï¿½
 	ParamUpdate data;
 	data.param_type = cmd.cmd_extension;
 	data.chn_index = cmd.channel_index;
@@ -3309,8 +3307,8 @@ void ChannelEngine::ProcessHmiSetParam(HMICmdFrame &cmd){
 			cmd.data[1] = FAILED;
 	//	printf("update axis param, axis = %d\n", data.axis_index);
 		break;
-	case TOOL_OFFSET_CONFIG:	//µ¶¾ßÆ«ÖÃ
-		if(cmd.channel_index >= m_p_general_config->chn_count ||     //Í¨µÀË÷Òý³¬·¶Î§
+	case TOOL_OFFSET_CONFIG:	//ï¿½ï¿½ï¿½ï¿½Æ«ï¿½ï¿½
+		if(cmd.channel_index >= m_p_general_config->chn_count ||     //Í¨ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Î§
 				(uint8_t)cmd.data[0] >= kMaxToolCount){
 			cmd.data[0] = FAILED;
 		}
@@ -3321,8 +3319,8 @@ void ChannelEngine::ProcessHmiSetParam(HMICmdFrame &cmd){
 			cmd.data[0] = SUCCEED;
 		}
 		break;
-	case TOOL_POT_CONFIG:		//µ¶¾ßÎ»ÖÃ    Á¢¼´ÉúÐ§
-		if(cmd.channel_index >= m_p_general_config->chn_count){//Í¨µÀË÷Òý³¬·¶Î§
+	case TOOL_POT_CONFIG:		//ï¿½ï¿½ï¿½ï¿½Î»ï¿½ï¿½    ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ð§
+		if(cmd.channel_index >= m_p_general_config->chn_count){//Í¨ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Î§
 			cmd.data[0] = FAILED;
 		}
 		else{
@@ -3330,9 +3328,9 @@ void ChannelEngine::ProcessHmiSetParam(HMICmdFrame &cmd){
 			cmd.data[0] = SUCCEED;
 		}
 		break;
-	case COORD_CONFIG:			//¹¤¼þ×ø±êÏµ
-		if(cmd.channel_index >= m_p_general_config->chn_count ||        //Í¨µÀË÷Òý³¬·¶Î§
-				(uint8_t)cmd.data[0] >= kWorkCoordCount){						//×ø±êË÷Òý³¬·¶Î§
+	case COORD_CONFIG:			//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ïµ
+		if(cmd.channel_index >= m_p_general_config->chn_count ||        //Í¨ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Î§
+				(uint8_t)cmd.data[0] >= kWorkCoordCount){						//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Î§
 			cmd.data[0] = FAILED;
 			printf("update coord failed! chn = %hhu, coord=%hhu\n", cmd.channel_index, (uint8_t)cmd.data[0]);
 		}
@@ -3348,9 +3346,9 @@ void ChannelEngine::ProcessHmiSetParam(HMICmdFrame &cmd){
 
 		}
 		break;
-	case EX_COORD_CONFIG:		//À©Õ¹¹¤¼þ×ø±êÏµ
-		if(cmd.channel_index >= m_p_general_config->chn_count ||			//Í¨µÀË÷Òý³¬·¶Î§
-				(uint8_t)cmd.data[0] >= m_p_channel_config[cmd.channel_index].ex_coord_count){	//×ø±êË÷Òý³¬·¶Î§
+	case EX_COORD_CONFIG:		//ï¿½ï¿½Õ¹ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ïµ
+		if(cmd.channel_index >= m_p_general_config->chn_count ||			//Í¨ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Î§
+				(uint8_t)cmd.data[0] >= m_p_channel_config[cmd.channel_index].ex_coord_count){	//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Î§
 			cmd.data[0] = FAILED;
 		}
 		else{
@@ -3364,7 +3362,7 @@ void ChannelEngine::ProcessHmiSetParam(HMICmdFrame &cmd){
 
 		}
 		break;
-	case PITCH_COMP_DATA:   //ÂÝ²¹Êý¾Ý
+	case PITCH_COMP_DATA:   //ï¿½Ý²ï¿½ï¿½ï¿½ï¿½ï¿½
 		if(this->UpdateHmiPitchCompData(cmd))
 			cmd.data[0] = SUCCEED;
 		else
@@ -3391,12 +3389,12 @@ void ChannelEngine::ProcessHmiSetParam(HMICmdFrame &cmd){
 
 	cmd.data_len = 1;
 	cmd.frame_number |= 0x8000;
-	this->m_p_hmi_comm->SendCmd(cmd);	//·¢ËÍÏìÓ¦
+	this->m_p_hmi_comm->SendCmd(cmd);	//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ó¦
 }
 
 /**
- * @brief ´¦ÀíHMI»ñÈ¡²ÎÊýÖ¸Áî
- * @param cmd : Ö¸Áî
+ * @brief ï¿½ï¿½ï¿½ï¿½HMIï¿½ï¿½È¡ï¿½ï¿½ï¿½ï¿½Ö¸ï¿½ï¿½
+ * @param cmd : Ö¸ï¿½ï¿½
  */
 void ChannelEngine::ProcessHmiGetParam(HMICmdFrame &cmd){
 	uint8_t index = 0;
@@ -3407,7 +3405,7 @@ void ChannelEngine::ProcessHmiGetParam(HMICmdFrame &cmd){
 		memcpy(cmd.data, m_p_general_config, cmd.data_len);
 		break;
 	case CHN_CONFIG:
-		if(cmd.channel_index >= m_p_general_config->max_chn_count)//Í¨µÀË÷Òý³¬·¶Î§, Ö§³Ö²ÎÊýÐÞ¸ÄºóÒ»´ÎÖØÆô
+		if(cmd.channel_index >= m_p_general_config->max_chn_count)//Í¨ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Î§, Ö§ï¿½Ö²ï¿½ï¿½ï¿½ï¿½Þ¸Äºï¿½Ò»ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 			cmd.data_len = 0;
 		else{
 			cmd.data_len = sizeof(HmiChnConfig);
@@ -3417,7 +3415,7 @@ void ChannelEngine::ProcessHmiGetParam(HMICmdFrame &cmd){
 	case AXIS_CONFIG:
 		index = cmd.data[0];
 //		printf("get axis config %hhu, frameindex=%hu\n", index, cmd.frame_number);
-		if(index >= this->m_p_general_config->max_axis_count){//ÖáºÅ³¬·¶Î§, Ö§³Ö²ÎÊýÐÞ¸ÄºóÒ»´ÎÖØÆô
+		if(index >= this->m_p_general_config->max_axis_count){//ï¿½ï¿½Å³ï¿½ï¿½ï¿½Î§, Ö§ï¿½Ö²ï¿½ï¿½ï¿½ï¿½Þ¸Äºï¿½Ò»ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 			printf("get axis config failed, index=%hhu, axis_count:%hhu\n", index, m_p_general_config->max_axis_count);
 			cmd.data_len = 0;
 		}
@@ -3436,7 +3434,7 @@ void ChannelEngine::ProcessHmiGetParam(HMICmdFrame &cmd){
 #ifdef USES_INDEPEND_BASE_TOOL_OFFSET
 		if((index != 0xFF && index >= kMaxToolCount) || cmd.channel_index >= m_p_general_config->chn_count){
 			cmd.data_len = 0;
-		}else if(index == 0xFF){   //¶ÁÈ¡»ù×¼µ¶Êý¾Ý
+		}else if(index == 0xFF){   //ï¿½ï¿½È¡ï¿½ï¿½×¼ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 			cmd.data_len = sizeof(HmiToolOffsetConfig);
 			HmiToolOffsetConfig cfg;
 			SCToolOffsetConfig *pp = g_ptr_parm_manager->GetToolConfig(cmd.channel_index);
@@ -3471,7 +3469,7 @@ void ChannelEngine::ProcessHmiGetParam(HMICmdFrame &cmd){
 		break;
 	}
 	case TOOL_POT_CONFIG:
-		if(cmd.channel_index >= m_p_general_config->chn_count)//Í¨µÀË÷Òý³¬·¶Î§
+		if(cmd.channel_index >= m_p_general_config->chn_count)//Í¨ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Î§
 			cmd.data_len = 0;
 		else{
 			cmd.data_len = sizeof(HmiToolPotConfig);
@@ -3481,7 +3479,7 @@ void ChannelEngine::ProcessHmiGetParam(HMICmdFrame &cmd){
 	case COORD_CONFIG:
 		index = cmd.data[0];
 		if(cmd.channel_index >= m_p_general_config->chn_count ||
-				index >= kWorkCoordCount)//Í¨µÀË÷Òý³¬·¶Î§
+				index >= kWorkCoordCount)//Í¨ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Î§
 			cmd.data_len = 0;
 		else{
 			cmd.data_len = sizeof(HmiCoordConfig);
@@ -3492,7 +3490,7 @@ void ChannelEngine::ProcessHmiGetParam(HMICmdFrame &cmd){
 	case EX_COORD_CONFIG:
 		index = cmd.data[0];
 		if(cmd.channel_index >= m_p_general_config->chn_count ||
-				index >= m_p_channel_config[cmd.channel_index].ex_coord_count)//Í¨µÀË÷Òý³¬·¶Î§
+				index >= m_p_channel_config[cmd.channel_index].ex_coord_count)//Í¨ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Î§
 			cmd.data_len = 0;
 		else{
 			cmd.data_len = sizeof(HmiCoordConfig);
@@ -3501,12 +3499,12 @@ void ChannelEngine::ProcessHmiGetParam(HMICmdFrame &cmd){
 		}
 		break;
 
-	case PITCH_COMP_DATA:  //ÂÝ²¹Êý¾Ý
+	case PITCH_COMP_DATA:  //ï¿½Ý²ï¿½ï¿½ï¿½ï¿½ï¿½
 		this->ProcessHmiGetPcDataCmd(cmd);
 		break;
 #ifdef USES_FIVE_AXIS_FUNC
 	case FIVE_AXIS_CONFIG:
-		if(cmd.channel_index >= m_p_general_config->max_chn_count)//Í¨µÀË÷Òý³¬·¶Î§
+		if(cmd.channel_index >= m_p_general_config->max_chn_count)//Í¨ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Î§
 			cmd.data_len = 0;
 		else{
 			cmd.data_len = sizeof(FiveAxisConfig);
@@ -3516,21 +3514,21 @@ void ChannelEngine::ProcessHmiGetParam(HMICmdFrame &cmd){
 #endif
 	default:
 		cmd.data_len = 0;
-		g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "ÊÕµ½HMI²ÎÊý»ñÈ¡Ö¸Áî£¬²ÎÊýÀàÐÍ·Ç·¨[%d]", cmd.cmd_extension);
+		g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "ï¿½Õµï¿½HMIï¿½ï¿½ï¿½ï¿½ï¿½ï¿½È¡Ö¸ï¿½î£¬ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Í·Ç·ï¿½[%d]", cmd.cmd_extension);
 		break;
 	}
 
 	cmd.frame_number |= 0x8000;
-	this->m_p_hmi_comm->SendCmd(cmd);	//·¢ËÍÏìÓ¦
+	this->m_p_hmi_comm->SendCmd(cmd);	//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ó¦
 }
 
 
 /**
- * @brief ´¦ÀíHMI»ñÈ¡ÂÝ²¹Êý¾ÝÖ¸Áî
- * @param cmd : HMI·¢ËÍµÄÖ¸Áî
+ * @brief ï¿½ï¿½ï¿½ï¿½HMIï¿½ï¿½È¡ï¿½Ý²ï¿½ï¿½ï¿½ï¿½ï¿½Ö¸ï¿½ï¿½
+ * @param cmd : HMIï¿½ï¿½ï¿½Íµï¿½Ö¸ï¿½ï¿½
  */
 void ChannelEngine::ProcessHmiGetPcDataCmd(HMICmdFrame &cmd){
-	if(cmd.data_len != 6){  //¸ñÊ½²»Æ¥Åä£¬·µ»ØÊ§°Ü
+	if(cmd.data_len != 6){  //ï¿½ï¿½Ê½ï¿½ï¿½Æ¥ï¿½ä£¬ï¿½ï¿½ï¿½ï¿½Ê§ï¿½ï¿½
 		printf("ProcessHmiGetPcDataCmd return, data_len=%hu\n", cmd.data_len);
 		cmd.data_len = 0;
 		return;
@@ -3543,12 +3541,12 @@ void ChannelEngine::ProcessHmiGetPcDataCmd(HMICmdFrame &cmd){
 
 //	printf("ProcessHmiGetPcDataCmd, axis_index=%hhu, dir=%hhu, offset=%hu, count=%hu\n", axis_index, dir, offset, count);
 
-	if(axis_index == 0xFF){//²»°´ÖáË³Ðò»ñÈ¡
+	if(axis_index == 0xFF){//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ë³ï¿½ï¿½ï¿½È¡
 		uint16_t tmp_count = count, tmp_start = offset-1;
 		uint16_t tmp_end = tmp_start + count -1;
-		uint16_t tc = 0;  //µ¥´Î¿½±´ÊýÁ¿
-		uint16_t tmp_copy = 0;  //ÒÑ¿½±´ÊýÁ¿
-		int dc = sizeof(double);   //doubleÀàÐÍ×Ö½Ú´óÐ¡
+		uint16_t tc = 0;  //ï¿½ï¿½ï¿½Î¿ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+		uint16_t tmp_copy = 0;  //ï¿½Ñ¿ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+		int dc = sizeof(double);   //doubleï¿½ï¿½ï¿½ï¿½ï¿½Ö½Ú´ï¿½Ð¡
 
 		double *pp = nullptr;
 		ListNode<AxisPcDataAlloc> *node = this->m_list_pc_alloc.HeadNode();
@@ -3566,7 +3564,7 @@ void ChannelEngine::ProcessHmiGetPcDataCmd(HMICmdFrame &cmd){
 				tmp_copy += tc;
 				tmp_start += tc;
 
-				if(tmp_count > 0){//»¹ÐèÒª¿½±´Êý¾Ý
+				if(tmp_count > 0){//ï¿½ï¿½ï¿½ï¿½Òªï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 					if(tmp_end <= node->data.end_index){
 						tc = tmp_count;
 					}else{
@@ -3598,19 +3596,19 @@ void ChannelEngine::ProcessHmiGetPcDataCmd(HMICmdFrame &cmd){
 		}
 
 	}else{
-		if(axis_index >= this->m_p_general_config->axis_count ||              //ÖáÐòºÅ²»¶Ô
-			offset+count-1 > m_p_axis_config[axis_index].pc_count){  //»ñÈ¡µÄÊýÁ¿²»¶Ô
+		if(axis_index >= this->m_p_general_config->axis_count ||              //ï¿½ï¿½ï¿½ï¿½Å²ï¿½ï¿½ï¿½
+			offset+count-1 > m_p_axis_config[axis_index].pc_count){  //ï¿½ï¿½È¡ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 			cmd.data_len = 0;
 			printf("ProcessHmiGetPcDataCmd return, axis_index=%hhu, offset=%hu, count=%hu\n", axis_index, offset, count);
 			return;
 		}
 
 		double *pp = m_p_pc_table->pc_table[axis_index];
-		if(dir)  //ÕýÏòÂÝ²¹
+		if(dir)  //ï¿½ï¿½ï¿½ï¿½ï¿½Ý²ï¿½
 			memcpy(&cmd.data[6], &pp[offset-1], sizeof(double)*count);
-		else if(this->m_p_axis_config[axis_index].pc_type == 1)  //¸ºÏòÂÝ²¹
+		else if(this->m_p_axis_config[axis_index].pc_type == 1)  //ï¿½ï¿½ï¿½ï¿½ï¿½Ý²ï¿½
 			memcpy(&cmd.data[6], &pp[m_p_axis_config[axis_index].pc_count+offset-1], sizeof(double)*count);
-		else{ //µ¥ÏòÂÝ²¹Ä£Ê½£¬»ñÈ¡¸ºÏòÂÝ²¹Ê§°Ü
+		else{ //ï¿½ï¿½ï¿½ï¿½ï¿½Ý²ï¿½Ä£Ê½ï¿½ï¿½ï¿½ï¿½È¡ï¿½ï¿½ï¿½ï¿½ï¿½Ý²ï¿½Ê§ï¿½ï¿½
 			cmd.data_len = 0;
 			printf("ProcessHmiGetPcDataCmd return, dir=%hhu\n", dir);
 			return;
@@ -3625,33 +3623,33 @@ void ChannelEngine::ProcessHmiGetPcDataCmd(HMICmdFrame &cmd){
 }
 
 /**
- * @brief ´¦ÀíÂÝ²¹µ¼ÈëÊý¾Ý
- * @return true--³É¹¦   false--Ê§°Ü
+ * @brief ï¿½ï¿½ï¿½ï¿½ï¿½Ý²ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+ * @return true--ï¿½É¹ï¿½   false--Ê§ï¿½ï¿½
  */
 bool ChannelEngine::ProcessPcDataImport(){
 	bool res = true;
 
-	int fd = -1;                    //ÎÄ¼þ¾ä±ú
+	int fd = -1;                    //ï¿½Ä¼ï¿½ï¿½ï¿½ï¿½
 
 	struct stat statbuf;
 	int file_size = 0;
-	uint8_t phy_axis = 0;   //ÎïÀíÖáºÅ
-	uint8_t pc_type = 0;    //ÂÝ²¹ÀàÐÍ
-	uint16_t point_count = 0;  //ÂÝ²¹µãÊý
-	double inter_dis = 0;   //ÂÝ²¹¼ä¸ô  µ¥Î»£ºmm
+	uint8_t phy_axis = 0;   //ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+	uint8_t pc_type = 0;    //ï¿½Ý²ï¿½ï¿½ï¿½ï¿½ï¿½
+	uint16_t point_count = 0;  //ï¿½Ý²ï¿½ï¿½ï¿½ï¿½ï¿½
+	double inter_dis = 0;   //ï¿½Ý²ï¿½ï¿½ï¿½ï¿½  ï¿½ï¿½Î»ï¿½ï¿½mm
 	double *data = nullptr;
 
 	if(stat(PATH_PC_DATA_TMP, &statbuf) == 0)
-		file_size = statbuf.st_size;  //»ñÈ¡ÎÄ¼þ×Ü´óÐ¡
+		file_size = statbuf.st_size;  //ï¿½ï¿½È¡ï¿½Ä¼ï¿½ï¿½Ü´ï¿½Ð¡
 	else{
-		g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "»ñÈ¡ÎÄ¼þ[%s]´óÐ¡Ê§°Ü£¡", PATH_PC_DATA_TMP);
-		CreateError(ERR_IMPORT_PC_DATA, ERROR_LEVEL, CLEAR_BY_MCP_RESET, 1);   //»ñÈ¡ÎÄ¼þ´óÐ¡Ê§°Ü
+		g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "ï¿½ï¿½È¡ï¿½Ä¼ï¿½[%s]ï¿½ï¿½Ð¡Ê§ï¿½Ü£ï¿½", PATH_PC_DATA_TMP);
+		CreateError(ERR_IMPORT_PC_DATA, ERROR_LEVEL, CLEAR_BY_MCP_RESET, 1);   //ï¿½ï¿½È¡ï¿½Ä¼ï¿½ï¿½ï¿½Ð¡Ê§ï¿½ï¿½
 		return false;
 	}
 
-	if(file_size < 12){ //ÂÝ²¹µ¼ÈëÎÄ¼þÍ·ÓÐ12×Ö½Ú¹Ì¶¨Êý¾Ý
-		g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "ÎÄ¼þ[%s]´óÐ¡[%d×Ö½Ú]²»Æ¥Åä£¡", PATH_PC_DATA_TMP, file_size);
-		CreateError(ERR_IMPORT_PC_DATA, ERROR_LEVEL, CLEAR_BY_MCP_RESET, 2);   //»ñÈ¡ÎÄ¼þ´óÐ¡Ê§°Ü
+	if(file_size < 12){ //ï¿½Ý²ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ä¼ï¿½Í·ï¿½ï¿½12ï¿½Ö½Ú¹Ì¶ï¿½ï¿½ï¿½ï¿½ï¿½
+		g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "ï¿½Ä¼ï¿½[%s]ï¿½ï¿½Ð¡[%dï¿½Ö½ï¿½]ï¿½ï¿½Æ¥ï¿½ä£¡", PATH_PC_DATA_TMP, file_size);
+		CreateError(ERR_IMPORT_PC_DATA, ERROR_LEVEL, CLEAR_BY_MCP_RESET, 2);   //ï¿½ï¿½È¡ï¿½Ä¼ï¿½ï¿½ï¿½Ð¡Ê§ï¿½ï¿½
 		return false;
 	}
 
@@ -3659,77 +3657,77 @@ bool ChannelEngine::ProcessPcDataImport(){
 	fd = open(PATH_PC_DATA_TMP, O_RDONLY);
 
 	if(fd == -1){
-		g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "´ò¿ªÎÄ¼þÊ§°Ü[%s]", PATH_PC_DATA_TMP);
-		CreateError(ERR_IMPORT_PC_DATA, ERROR_LEVEL, CLEAR_BY_MCP_RESET, 3);   //´ò¿ªÎÄ¼þÊ§°Ü
+		g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "ï¿½ï¿½ï¿½Ä¼ï¿½Ê§ï¿½ï¿½[%s]", PATH_PC_DATA_TMP);
+		CreateError(ERR_IMPORT_PC_DATA, ERROR_LEVEL, CLEAR_BY_MCP_RESET, 3);   //ï¿½ï¿½ï¿½Ä¼ï¿½Ê§ï¿½ï¿½
 		return false;
 	}
 
 
-	read(fd, &phy_axis, 1);   //¶ÁÈ¡ÎïÀíÖá±àºÅ
-	read(fd, &pc_type, 1);    //¶ÁÈ¡ÂÝ²¹ÀàÐÍ£¬0--µ¥Ïò  1--Ë«Ïò  ÂÝ²¹ÎÄ¼þ¶Á³ö
-	read(fd, &point_count, 2);  //¶ÁÈ¡ÂÝ²¹µãÊý
-	read(fd, &inter_dis, 8);    //¶ÁÈ¡²¹³¥¼ä¸ô
+	read(fd, &phy_axis, 1);   //ï¿½ï¿½È¡ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+	read(fd, &pc_type, 1);    //ï¿½ï¿½È¡ï¿½Ý²ï¿½ï¿½ï¿½ï¿½Í£ï¿½0--ï¿½ï¿½ï¿½ï¿½  1--Ë«ï¿½ï¿½  ï¿½Ý²ï¿½ï¿½Ä¼ï¿½ï¿½ï¿½ï¿½ï¿½
+	read(fd, &point_count, 2);  //ï¿½ï¿½È¡ï¿½Ý²ï¿½ï¿½ï¿½ï¿½ï¿½
+	read(fd, &inter_dis, 8);    //ï¿½ï¿½È¡ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 /***********************************************************************/
 	if(this->m_p_axis_config[phy_axis].pc_type != pc_type){
-		g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "ÂÝ²¹ÀàÐÍÓëÉèÖÃ²»·û[%hhu : %hhu]£¡", m_p_axis_config[phy_axis].pc_type, pc_type);
-		CreateError(ERR_IMPORT_PC_DATA, ERROR_LEVEL, CLEAR_BY_MCP_RESET, 4);   //ÂÝ²¹ÀàÐÍ²»Æ¥Åä
+		g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "ï¿½Ý²ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ã²ï¿½ï¿½ï¿½[%hhu : %hhu]ï¿½ï¿½", m_p_axis_config[phy_axis].pc_type, pc_type);
+		CreateError(ERR_IMPORT_PC_DATA, ERROR_LEVEL, CLEAR_BY_MCP_RESET, 4);   //ï¿½Ý²ï¿½ï¿½ï¿½ï¿½Í²ï¿½Æ¥ï¿½ï¿½
 		close(fd);
 		return false;
 	}
 
 	if(fabs(m_p_axis_config[phy_axis].pc_inter_dist) != fabs(inter_dis)){
-		g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "ÂÝ²¹²âÁ¿¼ä¸ôÓëÉèÖÃ²»·û[%lf : %lf]£¡", fabs(m_p_axis_config[phy_axis].pc_inter_dist), fabs(inter_dis));
-		CreateError(ERR_IMPORT_PC_DATA, ERROR_LEVEL, CLEAR_BY_MCP_RESET, 5);   //ÂÝ²¹¼ä¸ô²»Æ¥Åä
+		g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "ï¿½Ý²ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ã²ï¿½ï¿½ï¿½[%lf : %lf]ï¿½ï¿½", fabs(m_p_axis_config[phy_axis].pc_inter_dist), fabs(inter_dis));
+		CreateError(ERR_IMPORT_PC_DATA, ERROR_LEVEL, CLEAR_BY_MCP_RESET, 5);   //ï¿½Ý²ï¿½ï¿½ï¿½ï¿½ï¿½Æ¥ï¿½ï¿½
 		close(fd);
 		return false;
 	}
 
 	if(this->m_p_axis_config[phy_axis].pc_count != point_count){
-		g_ptr_trace->PrintTrace(TRACE_WARNING, CHANNEL_ENGINE_SC, "ÂÝ²¹µãÊýÓëÉèÖÃ²»·û[%hu : %hu]£¡", m_p_axis_config[phy_axis].pc_count, point_count);
-		CreateError(ERR_IMPORT_PC_DATA, ERROR_LEVEL, CLEAR_BY_MCP_RESET, 6);   //ÂÝ²¹¼ä¸ô²»Æ¥Åä
+		g_ptr_trace->PrintTrace(TRACE_WARNING, CHANNEL_ENGINE_SC, "ï¿½Ý²ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ã²ï¿½ï¿½ï¿½[%hu : %hu]ï¿½ï¿½", m_p_axis_config[phy_axis].pc_count, point_count);
+		CreateError(ERR_IMPORT_PC_DATA, ERROR_LEVEL, CLEAR_BY_MCP_RESET, 6);   //ï¿½Ý²ï¿½ï¿½ï¿½ï¿½ï¿½Æ¥ï¿½ï¿½
 		close(fd);
 		return false;
 	}
 
 
-	if(pc_type == 1){//Ë«ÏòÂÝ²¹
-		point_count *= 2;   //Ë«ÏòÂÝ²¹ÔòÊý¾ÝÁ¿ÎªµãÊý³Ë2
+	if(pc_type == 1){//Ë«ï¿½ï¿½ï¿½Ý²ï¿½
+		point_count *= 2;   //Ë«ï¿½ï¿½ï¿½Ý²ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Îªï¿½ï¿½ï¿½ï¿½ï¿½ï¿½2
 	}
 
 	if((file_size-12) != (int)(point_count*sizeof(double))){
-		g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "ÂÝ²¹Êý¾Ý´óÐ¡[%d×Ö½Ú]Óë²¹³¥µãÊý[%hhu]²»Æ¥Åä£¡", file_size-12, point_count);
-		CreateError(ERR_IMPORT_PC_DATA, ERROR_LEVEL, CLEAR_BY_MCP_RESET, 7);   //»ñÈ¡ÎÄ¼þ´óÐ¡Ê§°Ü
+		g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "ï¿½Ý²ï¿½ï¿½ï¿½ï¿½Ý´ï¿½Ð¡[%dï¿½Ö½ï¿½]ï¿½ë²¹ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½[%hhu]ï¿½ï¿½Æ¥ï¿½ä£¡", file_size-12, point_count);
+		CreateError(ERR_IMPORT_PC_DATA, ERROR_LEVEL, CLEAR_BY_MCP_RESET, 7);   //ï¿½ï¿½È¡ï¿½Ä¼ï¿½ï¿½ï¿½Ð¡Ê§ï¿½ï¿½
 		close(fd);
 		return false;
 	}
 
-	bool dir_pos = true;  //³õÊ¼ÂÝ²¹·½ÏòÎªÕýÏò£¬Ä¬ÈÏÕýÏò
+	bool dir_pos = true;  //ï¿½ï¿½Ê¼ï¿½Ý²ï¿½ï¿½ï¿½ï¿½ï¿½Îªï¿½ï¿½ï¿½ï¿½Ä¬ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 	if(pc_type == 1 && inter_dis < 0)
 		dir_pos = false;
 
 	data = new double[point_count];
 	if(data == nullptr){
-		g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "ÂÝ²¹Êý¾Ýµ¼Èë£¬·ÖÅä»º³åÊ§°Ü£¡");
-		CreateError(ERR_IMPORT_PC_DATA, ERROR_LEVEL, CLEAR_BY_MCP_RESET, 8);   //·ÖÅä»º³åÊ§°Ü
+		g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "ï¿½Ý²ï¿½ï¿½ï¿½ï¿½Ýµï¿½ï¿½ë£¬ï¿½ï¿½ï¿½ä»ºï¿½ï¿½Ê§ï¿½Ü£ï¿½");
+		CreateError(ERR_IMPORT_PC_DATA, ERROR_LEVEL, CLEAR_BY_MCP_RESET, 8);   //ï¿½ï¿½ï¿½ä»ºï¿½ï¿½Ê§ï¿½ï¿½
 		close(fd);
 		return false;
 	}
 
-	//¶ÁÈ¡Êý¾Ý
+	//ï¿½ï¿½È¡ï¿½ï¿½ï¿½ï¿½
 	read(fd, data, sizeof(double)*point_count);
 
 	close(fd);
 
-	//Ð´ÈëÊý¾Ý
-	if(pc_type == 0){  //µ¥ÏòÂÝ²¹
+	//Ð´ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+	if(pc_type == 0){  //ï¿½ï¿½ï¿½ï¿½ï¿½Ý²ï¿½
 		res = g_ptr_parm_manager->UpdatePcData(phy_axis, dir_pos, 1, point_count, data);
-	}else if(pc_type == 1){  //Ë«ÏòÂÝ²¹
+	}else if(pc_type == 1){  //Ë«ï¿½ï¿½ï¿½Ý²ï¿½
 		int pcs = point_count/2;
 	    res = g_ptr_parm_manager->UpdatePcData(phy_axis, dir_pos, 1, pcs, data);
 	    if(res){
 	    	int pcs_half = pcs/2;
 	    	double tb = 0;
-	    	for(int i =0; i < pcs_half; i++){  //µ÷»»Ë³Ðò
+	    	for(int i =0; i < pcs_half; i++){  //ï¿½ï¿½ï¿½ï¿½Ë³ï¿½ï¿½
 	    		tb = data[point_count-1-i];
 	    		data[point_count-1-i] = data[pcs+i];
 	    		data[pcs+i] = tb;
@@ -3738,38 +3736,38 @@ bool ChannelEngine::ProcessPcDataImport(){
 	    }
 	}
 
-	delete []data;  //ÊÍ·Å»º³å
+	delete []data;  //ï¿½Í·Å»ï¿½ï¿½ï¿½
 
 	if(!res){
-		g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "ÂÝ²¹Êý¾Ýµ¼Èë£¬·ÖÅä»º³åÊ§°Ü£¡");
-		CreateError(ERR_IMPORT_PC_DATA, ERROR_LEVEL, CLEAR_BY_MCP_RESET, 8);   //·ÖÅä»º³åÊ§°Ü
+		g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "ï¿½Ý²ï¿½ï¿½ï¿½ï¿½Ýµï¿½ï¿½ë£¬ï¿½ï¿½ï¿½ä»ºï¿½ï¿½Ê§ï¿½Ü£ï¿½");
+		CreateError(ERR_IMPORT_PC_DATA, ERROR_LEVEL, CLEAR_BY_MCP_RESET, 8);   //ï¿½ï¿½ï¿½ä»ºï¿½ï¿½Ê§ï¿½ï¿½
 		close(fd);
 		return false;
 	}
 
-//	if(res == -1 || res != read_size){  //readÊ§°Ü
+//	if(res == -1 || res != read_size){  //readÊ§ï¿½ï¿½
 //		printf("read pmc file failed, errno = %d, block = %d\n", errno, block_total);
 //		close(fp);
 //		return 0;
 //	}
 
-	this->NotifyHmiPitchCompDataChanged();  //Í¨ÖªHMIÖØÐÂ»ñÈ¡ÂÝ²¹Êý¾Ý
+	this->NotifyHmiPitchCompDataChanged();  //Í¨ÖªHMIï¿½ï¿½ï¿½Â»ï¿½È¡ï¿½Ý²ï¿½ï¿½ï¿½ï¿½ï¿½
 
-	//¸üÐÂÊý¾Ý¸øMC
-	//·¢ËÍÖáÂÝ²¹Êý¾Ý±í
+	//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ý¸ï¿½MC
+	//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ý²ï¿½ï¿½ï¿½ï¿½Ý±ï¿½
 	this->SendMiPcData(phy_axis);
 
-	//·¢ËÍÖáÂÝ²¹ÉèÖÃ²ÎÊý
+	//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ý²ï¿½ï¿½ï¿½ï¿½Ã²ï¿½ï¿½ï¿½
 	this->SendMiPcParam(phy_axis);
 	this->SendMiPcParam2(phy_axis);
 
-	g_ptr_trace->PrintLog(LOG_CONFIG_MODIFY, "µÚ%hhuÖáÂÝ²¹Êý¾Ýµ¼Èë³É¹¦£¡", phy_axis+1);
+	g_ptr_trace->PrintLog(LOG_CONFIG_MODIFY, "ï¿½ï¿½%hhuï¿½ï¿½ï¿½Ý²ï¿½ï¿½ï¿½ï¿½Ýµï¿½ï¿½ï¿½É¹ï¿½ï¿½ï¿½", phy_axis+1);
 	return true;
 }
 
 #ifdef USES_WOOD_MACHINE
 /**
- * @brief ±£´æµ¶¾ßÐÅÏ¢Êý¾Ý
+ * @brief ï¿½ï¿½ï¿½æµ¶ï¿½ï¿½ï¿½ï¿½Ï¢ï¿½ï¿½ï¿½ï¿½
  */
 void ChannelEngine::SaveToolInfo(){
 	bool flag = false;
@@ -3786,15 +3784,15 @@ void ChannelEngine::SaveToolInfo(){
 
 
 /**
- * @brief ´¦ÀíHMI¸üÐÂÂÝ²¹Êý¾Ý
- * @param cmd : HMI·¢ËÍµÄÊý¾Ý¸üÐÂ°ü
- * @return true--Ö´ÐÐ³É¹¦   false--Ö´ÐÐÊ§°Ü
+ * @brief ï¿½ï¿½ï¿½ï¿½HMIï¿½ï¿½ï¿½ï¿½ï¿½Ý²ï¿½ï¿½ï¿½ï¿½ï¿½
+ * @param cmd : HMIï¿½ï¿½ï¿½Íµï¿½ï¿½ï¿½ï¿½Ý¸ï¿½ï¿½Â°ï¿½
+ * @return true--Ö´ï¿½Ð³É¹ï¿½   false--Ö´ï¿½ï¿½Ê§ï¿½ï¿½
  */
 bool ChannelEngine::UpdateHmiPitchCompData(HMICmdFrame &cmd){
 
 
 	uint8_t axis_index = cmd.data[0];
-	bool dir = (cmd.data[1]==0)?true:false;   //ÕýÏòÂÝ²¹±êÖ¾
+	bool dir = (cmd.data[1]==0)?true:false;   //ï¿½ï¿½ï¿½ï¿½ï¿½Ý²ï¿½ï¿½ï¿½Ö¾
 	uint16_t offset, count;
 	memcpy(&offset, &cmd.data[2], 2);
 	memcpy(&count, &cmd.data[4], 2);
@@ -3808,7 +3806,7 @@ bool ChannelEngine::UpdateHmiPitchCompData(HMICmdFrame &cmd){
 
 	double *data = (double *)&cmd.data[6];
 
-	if(axis_index == 0xFF){//²»°´ÖáË³ÐòÉèÖÃ
+	if(axis_index == 0xFF){//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ë³ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 		uint16_t tmp_start = offset-1;
 
 		ListNode<AxisPcDataAlloc> *node = this->m_list_pc_alloc.HeadNode();
@@ -3842,18 +3840,18 @@ bool ChannelEngine::UpdateHmiPitchCompData(HMICmdFrame &cmd){
 		}
 		axis_index = node->data.axis_index;
 
-	}else{//ÖáË³ÐòÉèÖÃ
+	}else{//ï¿½ï¿½Ë³ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 		if(!g_ptr_parm_manager->UpdatePcData(axis_index, dir, offset, count, data)){
 			printf("UpdateHmiPitchCompData: failed to update pc data2\n");
 			return false;
 		}
 	}
 
-	//¸üÐÂÊý¾Ý¸øMC
-	//·¢ËÍÖáÂÝ²¹Êý¾Ý±í
+	//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ý¸ï¿½MC
+	//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ý²ï¿½ï¿½ï¿½ï¿½Ý±ï¿½
 	this->SendMiPcData(axis_index);
 
-	//·¢ËÍÖáÂÝ²¹ÉèÖÃ²ÎÊý
+	//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ý²ï¿½ï¿½ï¿½ï¿½Ã²ï¿½ï¿½ï¿½
 	this->SendMiPcParam(axis_index);
 	this->SendMiPcParam2(axis_index);
 
@@ -3862,7 +3860,7 @@ bool ChannelEngine::UpdateHmiPitchCompData(HMICmdFrame &cmd){
 }
 
 /**
- * @brief ´¦ÀíHMI»ñÈ¡PMC¼Ä´æÆ÷ÖµµÃÖ¸Áî
+ * @brief ï¿½ï¿½ï¿½ï¿½HMIï¿½ï¿½È¡PMCï¿½Ä´ï¿½ï¿½ï¿½Öµï¿½ï¿½Ö¸ï¿½ï¿½
  * @param cmd
  */
 void ChannelEngine::ProcessHmiGetPmcReg(HMICmdFrame &cmd){
@@ -3872,12 +3870,12 @@ void ChannelEngine::ProcessHmiGetPmcReg(HMICmdFrame &cmd){
 	uint8_t *reg_value8 = nullptr;
 
 
-	memcpy(&reg_sec, cmd.data, 2);   //¼Ä´æÆ÷¶Î
-	memcpy(&reg_index, &cmd.data[2], 2);   	//¼Ä´æÆ÷¶ÎÄÚË÷ÒýºÅ
+	memcpy(&reg_sec, cmd.data, 2);   //ï¿½Ä´ï¿½ï¿½ï¿½ï¿½ï¿½
+	memcpy(&reg_index, &cmd.data[2], 2);   	//ï¿½Ä´ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 	if(cmd.data_len == 6)
-		memcpy(&reg_count, &cmd.data[4], 2);   //¼Ä´æÆ÷µØÖ·¸öÊý
+		memcpy(&reg_count, &cmd.data[4], 2);   //ï¿½Ä´ï¿½ï¿½ï¿½ï¿½ï¿½Ö·ï¿½ï¿½ï¿½ï¿½
 	else
-		reg_count = 1;   //¼æÈÝÀÏ°æ±¾Ð­Òé
+		reg_count = 1;   //ï¿½ï¿½ï¿½ï¿½ï¿½Ï°æ±¾Ð­ï¿½ï¿½
 
 //	printf("read pmc reg, sec = %hu, index= %hu, count = %hu\n", reg_sec, reg_index, reg_count);
 	cmd.cmd_extension = SUCCEED;
@@ -3938,7 +3936,7 @@ void ChannelEngine::ProcessHmiGetPmcReg(HMICmdFrame &cmd){
 #endif
 
 	default:
-		cmd.cmd_extension = FAILED;  //Ê§°Ü
+		cmd.cmd_extension = FAILED;  //Ê§ï¿½ï¿½
 		break;
 	}
 
@@ -3952,7 +3950,7 @@ void ChannelEngine::ProcessHmiGetPmcReg(HMICmdFrame &cmd){
 }
 
 /**
- * @brief ´¦ÀíHMIÇëÇóPMCµÄUUIDÖ¸Áî
+ * @brief ï¿½ï¿½ï¿½ï¿½HMIï¿½ï¿½ï¿½ï¿½PMCï¿½ï¿½UUIDÖ¸ï¿½ï¿½
  * @param cmd
  */
 void ChannelEngine::ProcessHmiGetPmcUuid(HMICmdFrame &cmd){
@@ -3961,7 +3959,7 @@ void ChannelEngine::ProcessHmiGetPmcUuid(HMICmdFrame &cmd){
 	strcpy(path, PATH_PMC_DATA);
 	memset(uuid, 0x00, 20);
 
-	if(access(path, F_OK) == -1){	//ÎÄ¼þ²»´æÔÚ
+	if(access(path, F_OK) == -1){	//ï¿½Ä¼ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 		cmd.cmd_extension = FAILED;
 		printf("#####ProcessHmiGetPmcUuid:failed!\n");
 	}else{
@@ -3971,12 +3969,12 @@ void ChannelEngine::ProcessHmiGetPmcUuid(HMICmdFrame &cmd){
 		if (nullptr == file_src)
 		{
 			cmd.cmd_extension = FAILED;
-			g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "PMCÖ´ÐÐÎÄ¼þ´ò¿ªÊ§°Ü£¡errno = %d", errno);
+			g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "PMCÖ´ï¿½ï¿½ï¿½Ä¼ï¿½ï¿½ï¿½Ê§ï¿½Ü£ï¿½errno = %d", errno);
 		}else{
 			int read = fread(uuid, 1, 16, file_src);
 			if(read != 16){
 				cmd.cmd_extension = FAILED;
-				g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "PMCÖ´ÐÐÎÄ¼þ¶ÁÈ¡UUIDÊ§°Ü£¡errno = %d", errno);
+				g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "PMCÖ´ï¿½ï¿½ï¿½Ä¼ï¿½ï¿½ï¿½È¡UUIDÊ§ï¿½Ü£ï¿½errno = %d", errno);
 			}else{
 				memcpy(cmd.data, uuid, 16);
 				cmd.data_len = 16;
@@ -3994,7 +3992,7 @@ void ChannelEngine::ProcessHmiGetPmcUuid(HMICmdFrame &cmd){
 }
 
 /**
- * @brief ´¦ÀíHMIÉèÖÃPMC¼Ä´æÆ÷ÖµµÃÖ¸Áî
+ * @brief ï¿½ï¿½ï¿½ï¿½HMIï¿½ï¿½ï¿½ï¿½PMCï¿½Ä´ï¿½ï¿½ï¿½Öµï¿½ï¿½Ö¸ï¿½ï¿½
  * @param cmd
  */
 void ChannelEngine::ProcessHmiSetPmcReg(HMICmdFrame &cmd){
@@ -4004,14 +4002,14 @@ void ChannelEngine::ProcessHmiSetPmcReg(HMICmdFrame &cmd){
 	uint8_t bit_index = 0;
 	uint8_t bit_count = 0;
 	uint32_t bit_value32 = 0;
-	bool bit_opt = cmd.cmd_extension==1?true:false;  //ÊÇ·ñÎ»²Ù×÷
+	bool bit_opt = cmd.cmd_extension==1?true:false;  //ï¿½Ç·ï¿½Î»ï¿½ï¿½ï¿½ï¿½
 
 #ifndef USES_PMC_2_0
 	uint16_t reg_value16 = 0;
 #endif
 
-	memcpy(&reg_sec, cmd.data, 2);   		//¼Ä´æÆ÷¶Î
-	memcpy(&reg_index, &cmd.data[2], 2);   	//¼Ä´æÆ÷¶ÎÄÚË÷ÒýºÅ
+	memcpy(&reg_sec, cmd.data, 2);   		//ï¿½Ä´ï¿½ï¿½ï¿½ï¿½ï¿½
+	memcpy(&reg_index, &cmd.data[2], 2);   	//ï¿½Ä´ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 
 	cmd.cmd_extension = SUCCEED;
 	switch(reg_sec){
@@ -4048,7 +4046,7 @@ void ChannelEngine::ProcessHmiSetPmcReg(HMICmdFrame &cmd){
 
 			// @test zk
 			if(reg_sec == 2 and reg_index == 82 and bit_index == 1 and bit_value32 == 1){
-				printf("ÀäÈ´£¡£¡£¡\n");
+				printf("ï¿½ï¿½È´ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½\n");
 				this->m_p_channel_control[0].test();
 			}
 			// @test zk
@@ -4082,7 +4080,7 @@ void ChannelEngine::ProcessHmiSetPmcReg(HMICmdFrame &cmd){
 		break;
 #endif
 	default:
-		cmd.cmd_extension = FAILED;  //Ê§°Ü
+		cmd.cmd_extension = FAILED;  //Ê§ï¿½ï¿½
 		break;
 	}
 
@@ -4092,16 +4090,16 @@ void ChannelEngine::ProcessHmiSetPmcReg(HMICmdFrame &cmd){
 }
 
 /**
- * @brief ´¦ÀíHMIÉý¼¶ÇëÇó
- * @param cmd :  ÃüÁîÊý¾Ý°ü
+ * @brief ï¿½ï¿½ï¿½ï¿½HMIï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+ * @param cmd :  ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ý°ï¿½
  */
 void ChannelEngine::ProcessHmiUpdateReq(HMICmdFrame &cmd){
-	bool flag = true;//ÄÜ·ñÉý¼¶
+	bool flag = true;//ï¿½Ü·ï¿½ï¿½ï¿½ï¿½ï¿½
 
 	if(this->m_n_update_state == MODULE_UPDATE_NONE){
 		HmiChannelStatus chn_status;
 
-		//ÂÖÑ¯¸÷Í¨µÀµ±Ç°¼Ó¹¤×´Ì¬
+		//ï¿½ï¿½Ñ¯ï¿½ï¿½Í¨ï¿½ï¿½ï¿½ï¿½Ç°ï¿½Ó¹ï¿½×´Ì¬
 		for(int i = 0; i < this->m_p_general_config->chn_count; i++){
 			this->m_p_channel_control[i].GetChnStatus(chn_status);
 			if(chn_status.machining_state != MS_READY &&
@@ -4113,44 +4111,44 @@ void ChannelEngine::ProcessHmiUpdateReq(HMICmdFrame &cmd){
 		}
 	}
 
-	//Çå¿ÕupdateÄ¿Â¼ÏÂµÄÎÄ¼þ
-	//×éºÏÉý¼¶ÎÄ¼þÃû×Ö
+	//ï¿½ï¿½ï¿½updateÄ¿Â¼ï¿½Âµï¿½ï¿½Ä¼ï¿½
+	//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ä¼ï¿½ï¿½ï¿½ï¿½ï¿½
 	char filepath[kMaxPathLen] = {0};
 	strcpy(filepath, PATH_UPDATE_PATH);
 	strcat(filepath, "*.*");
 	if( 0 != remove(filepath)){
-		//Çå¿ÕËùÓÐÎÄ¼þÊ§°Ü
-		g_ptr_trace->PrintTrace(TRACE_WARNING, CHANNEL_ENGINE_SC, "Ä£¿éÉý¼¶Ç°Çå¿ÕÉý¼¶ÎÄ¼þ¼ÐÊ§°Ü£¡errno = %d", errno);
+		//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ä¼ï¿½Ê§ï¿½ï¿½
+		g_ptr_trace->PrintTrace(TRACE_WARNING, CHANNEL_ENGINE_SC, "Ä£ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ç°ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ä¼ï¿½ï¿½ï¿½Ê§ï¿½Ü£ï¿½errno = %d", errno);
 	}
 
 	cmd.frame_number |= 0x8000;
 	cmd.data_len = 1;
 	cmd.data[0] = flag?APPROVE:REFUSE;
-	this->m_p_hmi_comm->SendCmd(cmd);	//·¢ËÍÏìÓ¦
+	this->m_p_hmi_comm->SendCmd(cmd);	//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ó¦
 }
 
 /**
- * @brief ´¦ÀíPMCÖáÈ·ÈÏ²Î¿¼µãÖ¸Áî
- * @param phy_axis : ÎïÀíÖáºÅ£¬´Ó0¿ªÊ¼
+ * @brief ï¿½ï¿½ï¿½ï¿½PMCï¿½ï¿½È·ï¿½Ï²Î¿ï¿½ï¿½ï¿½Ö¸ï¿½ï¿½
+ * @param phy_axis : ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Å£ï¿½ï¿½ï¿½0ï¿½ï¿½Ê¼
  */
 void ChannelEngine::ProcessPmcAxisFindRef(uint8_t phy_axis){
-	if(m_p_axis_config[phy_axis].axis_interface != VIRTUAL_AXIS		//·ÇÐéÄâÖá
-		&& m_p_axis_config[phy_axis].axis_type != AXIS_SPINDLE				//·ÇÖ÷Öá
+	if(m_p_axis_config[phy_axis].axis_interface != VIRTUAL_AXIS		//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+		&& m_p_axis_config[phy_axis].axis_type != AXIS_SPINDLE				//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 		&& /*(m_p_axis_config[phy_axis].feedback_mode == INCREMENTAL_ENCODER ||
-				m_p_axis_config[phy_axis].feedback_mode == NO_ENCODER)   //ÔöÁ¿Ê½±àÂëÆ÷»òÕßÎÞ·´À¡
-		&& */m_p_axis_config[phy_axis].ret_ref_mode > 0){	//·Ç½ûÖ¹»Ø²Î¿¼µã
+				m_p_axis_config[phy_axis].feedback_mode == NO_ENCODER)   //ï¿½ï¿½ï¿½ï¿½Ê½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Þ·ï¿½ï¿½ï¿½
+		&& */m_p_axis_config[phy_axis].ret_ref_mode > 0){	//ï¿½Ç½ï¿½Ö¹ï¿½Ø²Î¿ï¿½ï¿½ï¿½
 
 #ifdef USES_PMC_PROCESS
 		if(phy_axis == 5)
-			this->m_p_pmc_reg->FReg().bits[0].OUT8 = 1;  //pmc XÖá»ØÁã
+			this->m_p_pmc_reg->FReg().bits[0].OUT8 = 1;  //pmc Xï¿½ï¿½ï¿½ï¿½ï¿½
 		else if(phy_axis == 6)
-			this->m_p_pmc_reg->FReg().bits[0].OUT9 = 1;  //pmc YÖá»ØÁã
+			this->m_p_pmc_reg->FReg().bits[0].OUT9 = 1;  //pmc Yï¿½ï¿½ï¿½ï¿½ï¿½
 		else if(phy_axis == 7)
-			this->m_p_pmc_reg->FReg().bits[0].OUT10 = 1;  //pmc ×óZÖá»ØÁã
+			this->m_p_pmc_reg->FReg().bits[0].OUT10 = 1;  //pmc ï¿½ï¿½Zï¿½ï¿½ï¿½ï¿½ï¿½
 		else if(phy_axis == 8)
-			this->m_p_pmc_reg->FReg().bits[0].OUT11 = 1;  //pmc ÓÒZÖá»ØÁã
+			this->m_p_pmc_reg->FReg().bits[0].OUT11 = 1;  //pmc ï¿½ï¿½Zï¿½ï¿½ï¿½ï¿½ï¿½
 #else
-		//ÏµÍ³´¦Àí
+		//ÏµÍ³ï¿½ï¿½ï¿½ï¿½
 		this->m_n_mask_ret_ref |= (0x01<<phy_axis);
 		this->m_b_ret_ref = true;
 		this->m_b_ret_ref_auto = false;
@@ -4163,19 +4161,19 @@ void ChannelEngine::ProcessPmcAxisFindRef(uint8_t phy_axis){
 }
 
 /**
- * @brief ´¦ÀíHMI»Ø²Î¿¼µãÖ¸Áî£¬ÊÊÓÃÓÚÔöÁ¿Ê½±àÂëÆ÷
- * @param cmd £º HMIÖ¸Áî
+ * @brief ï¿½ï¿½ï¿½ï¿½HMIï¿½Ø²Î¿ï¿½ï¿½ï¿½Ö¸ï¿½î£¬ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ê½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+ * @param cmd ï¿½ï¿½ HMIÖ¸ï¿½ï¿½
  */
 void ChannelEngine::ProcessHmiFindRefCmd(HMICmdFrame &cmd){
 	printf("ChannelEngine::ProcessHmiFindRefCmd, ext = 0x%hx, chn=0x%hx\n", cmd.cmd_extension, cmd.channel_index);
-	if(this->m_b_ret_ref){ //ÒÑ¾­ÔÚ»Ø²Î¿¼µã
-		printf("ÒÑ´¦ÓÚ»Ø²Î¿¼µãÁ÷³ÌÖÐ,¾Ü¾ø£¡ret_ref_mask = 0x%llx\n", this->m_n_mask_ret_ref);
+	if(this->m_b_ret_ref){ //ï¿½Ñ¾ï¿½ï¿½Ú»Ø²Î¿ï¿½ï¿½ï¿½
+		printf("ï¿½Ñ´ï¿½ï¿½Ú»Ø²Î¿ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½,ï¿½Ü¾ï¿½ï¿½ï¿½ret_ref_mask = 0x%llx\n", this->m_n_mask_ret_ref);
 		cmd.data[0] = FAILED;
 
-	}else if(g_ptr_alarm_processor->HasErrorInfo()){ //ÓÐ¸æ¾¯£¬¾Ü¾ø»ØÁã
-		printf("ÓÐ¸æ¾¯£¬¾Ü¾ø»ØÁã£¡\n");
+	}else if(g_ptr_alarm_processor->HasErrorInfo()){ //ï¿½Ð¸æ¾¯ï¿½ï¿½ï¿½Ü¾ï¿½ï¿½ï¿½ï¿½ï¿½
+		printf("ï¿½Ð¸æ¾¯ï¿½ï¿½ï¿½Ü¾ï¿½ï¿½ï¿½ï¿½ã£¡\n");
 		cmd.data[0] = FAILED;
-	}else if(cmd.cmd_extension == 0x00){//µ±Ç°Öá»ØÁã
+	}else if(cmd.cmd_extension == 0x00){//ï¿½ï¿½Ç°ï¿½ï¿½ï¿½ï¿½ï¿½
 		if(this->m_n_cur_pmc_axis != 0xFF){
 			this->ProcessPmcAxisFindRef(m_n_cur_pmc_axis);
 		}else{
@@ -4185,18 +4183,18 @@ void ChannelEngine::ProcessHmiFindRefCmd(HMICmdFrame &cmd){
 		}
 
 
-	}else if(cmd.cmd_extension == 0x10){ //Í¨µÀÖá»ØÁã
+	}else if(cmd.cmd_extension == 0x10){ //Í¨ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 		this->m_p_channel_control[cmd.channel_index].ProcessHmiReturnRefCmd(true);
 		this->m_b_ret_ref = true;
 		this->m_b_ret_ref_auto = true;
 
-	}else if(cmd.cmd_extension == 0xFF){  //ËùÓÐÖá»ØÁã
+	}else if(cmd.cmd_extension == 0xFF){  //ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 		for(int i = 0; i < this->m_p_general_config->axis_count; i++){
-			if(m_p_axis_config[i].axis_interface != VIRTUAL_AXIS		//·ÇÐéÄâÖá
-				&& m_p_axis_config[i].axis_type != AXIS_SPINDLE				//·ÇÖ÷Öá
+			if(m_p_axis_config[i].axis_interface != VIRTUAL_AXIS		//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+				&& m_p_axis_config[i].axis_type != AXIS_SPINDLE				//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 				&& /*(m_p_axis_config[i].feedback_mode == INCREMENTAL_ENCODER ||
-					m_p_axis_config[i].feedback_mode == NO_ENCODER)//ÔöÁ¿Ê½±àÂëÆ÷»òÕßÎÞ·´À¡
-				&& */m_p_axis_config[i].ret_ref_mode > 0){	 //»Ø²Î¿¼µã·½Ê½·Ç½ûÖ¹
+					m_p_axis_config[i].feedback_mode == NO_ENCODER)//ï¿½ï¿½ï¿½ï¿½Ê½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Þ·ï¿½ï¿½ï¿½
+				&& */m_p_axis_config[i].ret_ref_mode > 0){	 //ï¿½Ø²Î¿ï¿½ï¿½ã·½Ê½ï¿½Ç½ï¿½Ö¹
 
 				this->m_n_mask_ret_ref |= (0x01<<i);
 			}
@@ -4204,8 +4202,8 @@ void ChannelEngine::ProcessHmiFindRefCmd(HMICmdFrame &cmd){
 		m_n_ret_ref_auto_cur = 0;
 		this->m_b_ret_ref = true;
 		this->m_b_ret_ref_auto = true;
-	}else{//·Ç·¨
-		printf("·Ç·¨µÄcmd_ext=%hu, ¾Ü¾ø£¡\n", cmd.cmd_extension);
+	}else{//ï¿½Ç·ï¿½
+		printf("ï¿½Ç·ï¿½ï¿½ï¿½cmd_ext=%hu, ï¿½Ü¾ï¿½ï¿½ï¿½\n", cmd.cmd_extension);
 		cmd.data[0] = FAILED;
 	}
 
@@ -4216,8 +4214,8 @@ void ChannelEngine::ProcessHmiFindRefCmd(HMICmdFrame &cmd){
 }
 
 /**
- * @brief ´¦ÀíPMCÖ¸ÁîµÄÎïÀíÖá»ØÁã
- * @param phy_axis : ÎïÀíÖáÐòºÅ£¬´Ó0¿ªÊ¼
+ * @brief ï¿½ï¿½ï¿½ï¿½PMCÖ¸ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+ * @param phy_axis : ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Å£ï¿½ï¿½ï¿½0ï¿½ï¿½Ê¼
  */
 void ChannelEngine::ProcessPmcRefRet(uint8_t phy_axis){
 	printf("ChannelEngine::ProcessPmcRefRet, phy_axis=0x%hhx\n", phy_axis);
@@ -4228,55 +4226,55 @@ void ChannelEngine::ProcessPmcRefRet(uint8_t phy_axis){
 
 	if(m_b_ret_ref || this->IsRefReturnning(phy_axis)){
 		printf("axis %hhu is returnning ref, return\n", phy_axis);
-		return;   //ÒÑÔÚ»Ø²Î¿¼µã¹ý³ÌÖÐ£¬·µ»Ø
+		return;   //ï¿½ï¿½ï¿½Ú»Ø²Î¿ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ð£ï¿½ï¿½ï¿½ï¿½ï¿½
 	}
 
 	HmiChannelStatus chn_status;
 	this->GetChnStatus(this->m_n_cur_channle_index, chn_status);
-	if(chn_status.machining_state != MS_READY){   //·Ç×¼±¸ºÃÄ£Ê½²»Ö´ÐÐ»ØÁã
+	if(chn_status.machining_state != MS_READY){   //ï¿½ï¿½×¼ï¿½ï¿½ï¿½ï¿½Ä£Ê½ï¿½ï¿½Ö´ï¿½Ð»ï¿½ï¿½ï¿½
 		printf("machine state is not ready:%hhu, return \n", chn_status.machining_state);
 		return;
 	}
-	if(g_ptr_alarm_processor->HasErrorInfo()){ //ÓÐ¸æ¾¯£¬¾Ü¾ø»ØÁã
+	if(g_ptr_alarm_processor->HasErrorInfo()){ //ï¿½Ð¸æ¾¯ï¿½ï¿½ï¿½Ü¾ï¿½ï¿½ï¿½ï¿½ï¿½
 		CreateError(ERR_RET_REF_FAILED, WARNING_LEVEL, CLEAR_BY_MCP_RESET, 0, CHANNEL_ENGINE_INDEX, 0);
 		return;
 	}
 
-	if(m_p_axis_config[phy_axis].axis_interface == VIRTUAL_AXIS || m_p_axis_config[phy_axis].axis_type == AXIS_SPINDLE	//Ö÷ÖáºÍÐéÄâÖá²»ÓÃ»Ø²Î¿¼µã
-		|| (m_p_axis_config[phy_axis].feedback_mode == NO_ENCODER && m_p_axis_config[phy_axis].ret_ref_mode == 0)    //ÎÞ·´À¡£¬²¢ÇÒ½ûÖ¹»Ø²Î¿¼µã
-		|| (m_p_axis_config[phy_axis].feedback_mode == INCREMENTAL_ENCODER && m_p_axis_config[phy_axis].ret_ref_mode == 0)){  //ÔöÁ¿±àÂëÆ÷£¬½ûÖ¹»Ø²Î¿¼µã
+	if(m_p_axis_config[phy_axis].axis_interface == VIRTUAL_AXIS || m_p_axis_config[phy_axis].axis_type == AXIS_SPINDLE	//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½á²»ï¿½Ã»Ø²Î¿ï¿½ï¿½ï¿½
+		|| (m_p_axis_config[phy_axis].feedback_mode == NO_ENCODER && m_p_axis_config[phy_axis].ret_ref_mode == 0)    //ï¿½Þ·ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ò½ï¿½Ö¹ï¿½Ø²Î¿ï¿½ï¿½ï¿½
+		|| (m_p_axis_config[phy_axis].feedback_mode == INCREMENTAL_ENCODER && m_p_axis_config[phy_axis].ret_ref_mode == 0)){  //ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ö¹ï¿½Ø²Î¿ï¿½ï¿½ï¿½
 		printf("no ret ref, return\n");
-		return;   //²»ÓÃ»Ø²Î¿¼µãµÄÖá½ûÖ¹½«»ØÁã±êÖ¾¸´Î»
+		return;   //ï¿½ï¿½ï¿½Ã»Ø²Î¿ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ö¹ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ö¾ï¿½ï¿½Î»
 	}
 
 	this->SetRetRefMask(phy_axis);
-	this->SetRetRefFlag(phy_axis, false);   //¸´Î»»Ø²Î¿¼µãÍê³É±êÖ¾
+	this->SetRetRefFlag(phy_axis, false);   //ï¿½ï¿½Î»ï¿½Ø²Î¿ï¿½ï¿½ï¿½ï¿½ï¿½É±ï¿½Ö¾
 
 	this->m_b_ret_ref = true;
 	this->m_b_ret_ref_auto = false;
 }
 
 /**
- * @brief ÉèÖÃ»Ø²Î¿¼µãÖámask
- * @param phy_axis : ÎïÀíÖáÐòºÅ£¬0¿ªÊ¼
+ * @brief ï¿½ï¿½ï¿½Ã»Ø²Î¿ï¿½ï¿½ï¿½ï¿½ï¿½mask
+ * @param phy_axis : ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Å£ï¿½0ï¿½ï¿½Ê¼
  */
 void ChannelEngine::SetRetRefMask(uint8_t phy_axis){
-	if(m_p_axis_config[phy_axis].axis_interface != VIRTUAL_AXIS		//·ÇÐéÄâÖá
-		&& m_p_axis_config[phy_axis].axis_type != AXIS_SPINDLE				//·ÇÖ÷Öá
+	if(m_p_axis_config[phy_axis].axis_interface != VIRTUAL_AXIS		//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+		&& m_p_axis_config[phy_axis].axis_type != AXIS_SPINDLE				//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 	/*	&& (m_p_axis_config[phy_axis].feedback_mode == INCREMENTAL_ENCODER ||
-				m_p_axis_config[phy_axis].feedback_mode == NO_ENCODER)*/){	//ËùÓÐ·´À¡ÀàÐÍ¶¼Ö§³Ö»Ø²Î¿¼µã
+				m_p_axis_config[phy_axis].feedback_mode == NO_ENCODER)*/){	//ï¿½ï¿½ï¿½Ð·ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Í¶ï¿½Ö§ï¿½Ö»Ø²Î¿ï¿½ï¿½ï¿½
 		this->m_n_mask_ret_ref |= (0x01<<phy_axis);
 	}
 }
 
 /**
- * @brief ÉèÖÃÖá»ØÁãÖÐÐÅºÅ
- * @param phy_axis : ÎïÀíÖáÐòºÅ£¬0¿ªÊ¼
- * @param flag : true--ÖÃ1  flase--ÖÃ0
+ * @brief ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Åºï¿½
+ * @param phy_axis : ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Å£ï¿½0ï¿½ï¿½Ê¼
+ * @param flag : true--ï¿½ï¿½1  flase--ï¿½ï¿½0
  */
 void ChannelEngine::SetInRetRefFlag(uint8_t phy_axis, bool flag){
 	if(phy_axis >= this->m_p_general_config->axis_count){
-		g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "ChannelEngine::SetInRetRefFlag() return, ÎïÀíÖáºÅ[%hhu: %hhu]·Ç·¨!", phy_axis, m_p_general_config->axis_count);
+		g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "ChannelEngine::SetInRetRefFlag() return, ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½[%hhu: %hhu]ï¿½Ç·ï¿½!", phy_axis, m_p_general_config->axis_count);
 		return;
 	}
 	uint8_t chn = phy_axis/16;
@@ -4289,9 +4287,9 @@ void ChannelEngine::SetInRetRefFlag(uint8_t phy_axis, bool flag){
 }
 
 /**
- * @brief Ö¸¶¨ÖáÊÇ·ñÕýÔÚ»ØÁãÖÐ
- * @param phy_axis  : ÎïÀíÖáÐòºÅ£¬0¿ªÊ¼
- * @return true--Ö¸¶¨Öáphy_axisÕýÔÚ»ØÁãÖÐ    false--Î´ÔÚ»ØÁã¹ý³ÌÖÐ
+ * @brief Ö¸ï¿½ï¿½ï¿½ï¿½ï¿½Ç·ï¿½ï¿½ï¿½ï¿½Ú»ï¿½ï¿½ï¿½ï¿½ï¿½
+ * @param phy_axis  : ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Å£ï¿½0ï¿½ï¿½Ê¼
+ * @return true--Ö¸ï¿½ï¿½ï¿½ï¿½phy_axisï¿½ï¿½ï¿½Ú»ï¿½ï¿½ï¿½ï¿½ï¿½    false--Î´ï¿½Ú»ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
  */
 bool ChannelEngine::IsRefReturnning(uint8_t phy_axis){
 	if(phy_axis >= this->m_p_general_config->axis_count)
@@ -4305,8 +4303,8 @@ bool ChannelEngine::IsRefReturnning(uint8_t phy_axis){
 }
 
 /**
- * @brief ´¦ÀíHMIÉèÖÃ²Î¿¼µãÖ¸Áî£¬ÊÊÓÃÓÚ¾ø¶ÔÖµ±àÂëÆ÷
- * @param cmd £º HMIÖ¸Áî
+ * @brief ï¿½ï¿½ï¿½ï¿½HMIï¿½ï¿½ï¿½Ã²Î¿ï¿½ï¿½ï¿½Ö¸ï¿½î£¬ï¿½ï¿½ï¿½ï¿½ï¿½Ú¾ï¿½ï¿½ï¿½Öµï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+ * @param cmd ï¿½ï¿½ HMIÖ¸ï¿½ï¿½
  */
 void ChannelEngine::ProcessHmiSetRefCmd(HMICmdFrame &cmd){
 
@@ -4318,7 +4316,7 @@ void ChannelEngine::ProcessHmiSetRefCmd(HMICmdFrame &cmd){
 		memset(&mi_cmd, 0x00, sizeof(mi_cmd));
 		mi_cmd.data.cmd = CMD_MI_SET_REF_CUR;
 		mi_cmd.data.axis_index = m_n_cur_pmc_axis+1;
-		int64_t pos = m_p_axis_config[m_n_cur_pmc_axis].axis_home_pos[0] * 1e7;   //µ¥Î»×ª»»£¬0.1nm
+		int64_t pos = m_p_axis_config[m_n_cur_pmc_axis].axis_home_pos[0] * 1e7;   //ï¿½ï¿½Î»×ªï¿½ï¿½ï¿½ï¿½0.1nm
 		memcpy(mi_cmd.data.data, &pos, sizeof(int64_t));
 
 		this->m_p_mi_comm->WriteCmd(mi_cmd);
@@ -4334,12 +4332,12 @@ void ChannelEngine::ProcessHmiSetRefCmd(HMICmdFrame &cmd){
 
 
 /**
- * @brief ¸øHMI·¢ËÍÉý¼¶×´Ì¬
- * @param total_step : ×Ü²½Êý
- * @param cur_step £ºµ±Ç°×´Ì¬
+ * @brief ï¿½ï¿½HMIï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½×´Ì¬
+ * @param total_step : ï¿½Ü²ï¿½ï¿½ï¿½
+ * @param cur_step ï¿½ï¿½ï¿½ï¿½Ç°×´Ì¬
  */
 void ChannelEngine::SendHmiUpdateStatus(uint8_t total_step, uint8_t cur_step){
-	//¸øHMI·¢ËÍÉý¼¶×´Ì¬
+	//ï¿½ï¿½HMIï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½×´Ì¬
 	HMICmdFrame cmd;
 	cmd.channel_index = CHANNEL_ENGINE_INDEX;
 	cmd.cmd = CMD_SC_UPDATE_MODULE_STATUS;
@@ -4353,7 +4351,7 @@ void ChannelEngine::SendHmiUpdateStatus(uint8_t total_step, uint8_t cur_step){
 }
 
 /**
- * @brief »ñÈ¡Ö¸¶¨µÄÍ¨µÀ¿ØÖÆ¶ÔÏóÖ¸Õë
+ * @brief ï¿½ï¿½È¡Ö¸ï¿½ï¿½ï¿½ï¿½Í¨ï¿½ï¿½ï¿½ï¿½ï¿½Æ¶ï¿½ï¿½ï¿½Ö¸ï¿½ï¿½
  * @param index
  * @return
  */
@@ -4362,14 +4360,14 @@ ChannelControl *ChannelEngine::GetChnControl(uint8_t index){
 }
 
 /**
- * @brief »ñÈ¡Í¨µÀ×´Ì¬
- * @param chn_index[in] : Í¨µÀË÷Òý
- * @param status[out] £ºÊä³öµÄÍ¨µÀ×´Ì¬
- * @return true--³É¹¦  false--Ê§°Ü
+ * @brief ï¿½ï¿½È¡Í¨ï¿½ï¿½×´Ì¬
+ * @param chn_index[in] : Í¨ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+ * @param status[out] ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Í¨ï¿½ï¿½×´Ì¬
+ * @return true--ï¿½É¹ï¿½  false--Ê§ï¿½ï¿½
  */
 bool ChannelEngine::GetChnStatus(uint8_t chn_index, HmiChannelStatus &status){
 	if(chn_index >= this->m_p_general_config->chn_count){
-		g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "Í¨µÀË÷ÒýºÅ[%d]·Ç·¨£¡", chn_index);
+		g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "Í¨ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½[%d]ï¿½Ç·ï¿½ï¿½ï¿½", chn_index);
 		return false;
 	}
 
@@ -4378,14 +4376,14 @@ bool ChannelEngine::GetChnStatus(uint8_t chn_index, HmiChannelStatus &status){
 }
 
 /**
- * @brief »ñÈ¡Ö¸¶¨Í¨µÀÄÚÖáËù¶ÔÓ¦µÄÎïÀíÖáºÅ
- * @param chn_index[in] : Í¨µÀË÷Òý
- * @param chn_axis[in] £ºÍ¨µÀÖáºÅ
- * @return ·µ»ØÎïÀíÖáºÅ,²»³É¹¦·µ»Ø0xff£¬³É¹¦·µ»Ø0¿ªÊ¼µÄÎïÀíÖáË÷ÒýºÅ
+ * @brief ï¿½ï¿½È¡Ö¸ï¿½ï¿½Í¨ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ó¦ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+ * @param chn_index[in] : Í¨ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+ * @param chn_axis[in] ï¿½ï¿½Í¨ï¿½ï¿½ï¿½ï¿½ï¿½
+ * @return ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½,ï¿½ï¿½ï¿½É¹ï¿½ï¿½ï¿½ï¿½ï¿½0xffï¿½ï¿½ï¿½É¹ï¿½ï¿½ï¿½ï¿½ï¿½0ï¿½ï¿½Ê¼ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
  */
 uint8_t ChannelEngine::GetChnAxistoPhyAixs(uint8_t chn_index, uint8_t chn_axis){
 	if(chn_index >= this->m_p_general_config->chn_count){
-		g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "Í¨µÀË÷ÒýºÅ[%d]·Ç·¨£¡", chn_index);
+		g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "Í¨ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½[%d]ï¿½Ç·ï¿½ï¿½ï¿½", chn_index);
 		return 0xff;
 	}
 
@@ -4394,47 +4392,47 @@ uint8_t ChannelEngine::GetChnAxistoPhyAixs(uint8_t chn_index, uint8_t chn_axis){
 }
 
 /**
- * @brief Æô¶¯³ÌÐò£¬ÓÃÓÚÏìÓ¦Ñ­»·Æô¶¯
- * @return true--³É¹¦   false--Ê§°Ü
+ * @brief ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ó¦Ñ­ï¿½ï¿½ï¿½ï¿½ï¿½
+ * @return true--ï¿½É¹ï¿½   false--Ê§ï¿½ï¿½
  */
 bool ChannelEngine::Start(){
 	if(this->m_b_emergency)
 		return false;
 
 #ifdef USES_LICENSE_FUNC
-	//¼ì²éÏµÍ³Ê±¼ä
-	if(m_ln_local_time < 0){//¶ÁÈ¡±¾µØ¼ÆÊ±ÎÄ¼þÒì³£
+	//ï¿½ï¿½ï¿½ÏµÍ³Ê±ï¿½ï¿½
+	if(m_ln_local_time < 0){//ï¿½ï¿½È¡ï¿½ï¿½ï¿½Ø¼ï¿½Ê±ï¿½Ä¼ï¿½ï¿½ì³£
 		if(m_ln_local_time == -1){
-			g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "±¾µØ¼ÆÊ±ÎÄ¼þ²»´æÔÚ!");
+			g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "ï¿½ï¿½ï¿½Ø¼ï¿½Ê±ï¿½Ä¼ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½!");
 		}else if(m_ln_local_time == -2){
-			g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "±¾µØ¼ÆÊ±ÎÄ¼þÒÑËð»µ!");
+			g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "ï¿½ï¿½ï¿½Ø¼ï¿½Ê±ï¿½Ä¼ï¿½ï¿½ï¿½ï¿½ï¿½!");
 		}else if(m_ln_local_time == -3){
-			g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "·Ç·¨±¾µØ¼ÆÊ±ÎÄ¼þ!");
+			g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "ï¿½Ç·ï¿½ï¿½ï¿½ï¿½Ø¼ï¿½Ê±ï¿½Ä¼ï¿½!");
 		}
 		m_error_code = ERR_SYSTEM_FILE;
 		CreateError(m_error_code, ERROR_LEVEL, CLEAR_BY_MCP_RESET);
 		return false;
 	}else if(-4 == CheckLocalTime(&m_lic_info, m_ln_local_time)){
-		g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "ÏµÍ³Ê±¼äÒì³£!");
+		g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "ÏµÍ³Ê±ï¿½ï¿½ï¿½ì³£!");
 		m_error_code = ERR_SYSTEM_TIME;
 		CreateError(m_error_code, ERROR_LEVEL, CLEAR_BY_MCP_RESET);
 		return false;
 	}
 
 
-	//¼ì²éÊÚÈ¨
-	if(1 == this->CheckLicense()){  //·Ç·¨ÊÚÈ¨
+	//ï¿½ï¿½ï¿½ï¿½ï¿½È¨
+	if(1 == this->CheckLicense()){  //ï¿½Ç·ï¿½ï¿½ï¿½È¨
 		return false;
 	}
 #endif
 
-	//¼ì²éÍ¬²½Öá×´Ì¬
+	//ï¿½ï¿½ï¿½Í¬ï¿½ï¿½ï¿½ï¿½×´Ì¬
 	if((m_n_sync_axis_mask & m_n_sync_axis_enable_mask) != this->m_n_sync_over){
 		CreateError(ERR_SYNC_AXIS, ERROR_LEVEL, CLEAR_BY_MCP_RESET);
 		return false;
 	}
 
-	//¼ì²éÊÇ·ñµ¼Èë¹ýÅäÖÃÊý¾Ý£¬ÌáÊ¾ÖØÆô
+	//ï¿½ï¿½ï¿½ï¿½Ç·ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ý£ï¿½ï¿½ï¿½Ê¾ï¿½ï¿½ï¿½ï¿½
 	if(this->m_mask_import_param != 0){
 		CreateError(ERR_IMPORT_CONFIG, WARNING_LEVEL, CLEAR_BY_MCP_RESET);
 		return false;
@@ -4452,7 +4450,7 @@ bool ChannelEngine::Start(){
 		uint8_t chn = 0;
 		for(uint8_t i = 0; i < m_p_channel_mode_group[m_n_cur_chn_group_index].GetChannelCount(); i++){
 			chn = m_p_channel_mode_group[m_n_cur_chn_group_index].GetChannel(i);
-			if(m_p_channel_control[chn].CheckFuncState(FS_HANDWHEEL_CONTOUR))   //ÔÙ´Î·¢ËÍÊÖÂÖ¸ú×Ù×´Ì¬¸øMI£¬·ÀÖ¹MC¸´Î»Ê±Çå³ý×´Ì¬
+			if(m_p_channel_control[chn].CheckFuncState(FS_HANDWHEEL_CONTOUR))   //ï¿½Ù´Î·ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ö¸ï¿½ï¿½ï¿½×´Ì¬ï¿½ï¿½MIï¿½ï¿½ï¿½ï¿½Ö¹MCï¿½ï¿½Î»Ê±ï¿½ï¿½ï¿½×´Ì¬
 				this->SetMiHandwheelTrace(true, chn);
 			else
 				this->SetMiHandwheelTrace(false, chn);
@@ -4468,8 +4466,8 @@ bool ChannelEngine::Start(){
 }
 
 /**
- * @brief ÔÝÍ£³ÌÐò£¬ÓÃÓÚÏìÓ¦½ø¸ø±£³Ö
- * @return true--³É¹¦   false--Ê§°Ü
+ * @brief ï¿½ï¿½Í£ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ó¦ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+ * @return true--ï¿½É¹ï¿½   false--Ê§ï¿½ï¿½
  */
 bool ChannelEngine::Pause(){
 	ChnWorkMode work_mode = (ChnWorkMode)m_p_channel_control[m_n_cur_channle_index].GetChnWorkMode();
@@ -4492,9 +4490,9 @@ bool ChannelEngine::Pause(){
 }
 
 /**
- * @brief Í£Ö¹³ÌÐòÖ´ÐÐ£¬ÓÃÓÚ´¦ÀíÏµÍ³¸æ¾¯ÏÂµÄ³ÌÐòÍ£Ö¹
- * @param reset : ÊÇ·ñ¸´Î»Êý¾ÝºÍÐÐºÅ£¬ true--¸´Î»   false--²»¸´Î»
- * @return true--³É¹¦   false--Ê§°Ü
+ * @brief Í£Ö¹ï¿½ï¿½ï¿½ï¿½Ö´ï¿½Ð£ï¿½ï¿½ï¿½ï¿½Ú´ï¿½ï¿½ï¿½ÏµÍ³ï¿½æ¾¯ï¿½ÂµÄ³ï¿½ï¿½ï¿½Í£Ö¹
+ * @param reset : ï¿½Ç·ï¿½Î»ï¿½ï¿½ï¿½Ýºï¿½ï¿½ÐºÅ£ï¿½ true--ï¿½ï¿½Î»   false--ï¿½ï¿½ï¿½ï¿½Î»
+ * @return true--ï¿½É¹ï¿½   false--Ê§ï¿½ï¿½
  */
 bool ChannelEngine::Stop(bool reset){
 	for(int i = 0; i < this->m_p_general_config->chn_count; i++){
@@ -4504,10 +4502,10 @@ bool ChannelEngine::Stop(bool reset){
 }
 
 /**
- * @brief Í£Ö¹³ÌÐòÖ´ÐÐ£¬ÓÃÓÚ´¦ÀíÏµÍ³¸æ¾¯ÏÂµÄ³ÌÐòÍ£Ö¹
- * @param chn : Í¨µÀºÅ,´Ó0¿ªÊ¼
- * @param reset : ÊÇ·ñ¸´Î»Êý¾ÝºÍÐÐºÅ£¬ true--¸´Î»   false--²»¸´Î»
- * @return true--³É¹¦   false--Ê§°Ü
+ * @brief Í£Ö¹ï¿½ï¿½ï¿½ï¿½Ö´ï¿½Ð£ï¿½ï¿½ï¿½ï¿½Ú´ï¿½ï¿½ï¿½ÏµÍ³ï¿½æ¾¯ï¿½ÂµÄ³ï¿½ï¿½ï¿½Í£Ö¹
+ * @param chn : Í¨ï¿½ï¿½ï¿½ï¿½,ï¿½ï¿½0ï¿½ï¿½Ê¼
+ * @param reset : ï¿½Ç·ï¿½Î»ï¿½ï¿½ï¿½Ýºï¿½ï¿½ÐºÅ£ï¿½ true--ï¿½ï¿½Î»   false--ï¿½ï¿½ï¿½ï¿½Î»
+ * @return true--ï¿½É¹ï¿½   false--Ê§ï¿½ï¿½
  */
 bool ChannelEngine::Stop(uint8_t chn, bool reset){
 	if(chn < this->m_p_general_config->chn_count){
@@ -4520,7 +4518,7 @@ bool ChannelEngine::Stop(uint8_t chn, bool reset){
 	return true;
 }
 /**
- * @brief ÉèÖÃµ±Ç°Í¨µÀºÅ
+ * @brief ï¿½ï¿½ï¿½Ãµï¿½Ç°Í¨ï¿½ï¿½ï¿½ï¿½
  * @param work_chan
  * @return
  */
@@ -4535,7 +4533,7 @@ bool ChannelEngine::SetCurWorkChanl(uint8_t work_chan){
 	
     m_n_cur_channle_index = work_chan;
 
-    // Í¨µÀ±ä»¯Ê± ½«F219 Ç°4Î»¸³Öµ
+    // Í¨ï¿½ï¿½ï¿½ä»¯Ê± ï¿½ï¿½F219 Ç°4Î»ï¿½ï¿½Öµ
     for(int i = 0; i < this->m_p_general_config->chn_count; i++){
     	m_p_pmc_reg->FReg().bits[i].CHNC = work_chan;
     }
@@ -4547,7 +4545,7 @@ bool ChannelEngine::SetCurWorkChanl(uint8_t work_chan){
 }
 
 /**
- * @brief ÉèÖÃ¹¤×÷Ä£Ê½, ×Ô¶¯¡¢MDA¡¢ÊÖ¶¯¡¢ÊÖÂÖ
+ * @brief ï¿½ï¿½ï¿½Ã¹ï¿½ï¿½ï¿½Ä£Ê½, ï¿½Ô¶ï¿½ï¿½ï¿½MDAï¿½ï¿½ï¿½Ö¶ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
  * @param work_mode
  * @return
  */
@@ -4574,27 +4572,27 @@ bool ChannelEngine::SetWorkMode(uint8_t work_mode){
 		this->SetMiWorkMode(0x10);
 	else if(work_mode == AUTO_MODE || work_mode == MDA_MODE)
 		this->SetMiWorkMode(0x00);
-	else if(work_mode == MANUAL_STEP_MODE || work_mode == MANUAL_MODE || work_mode == REF_MODE)   //²Î¿¼µãÄ£Ê½¶ÔMIµÈÐ§ÓÚÊÖ¶¯Ä£Ê½
+	else if(work_mode == MANUAL_STEP_MODE || work_mode == MANUAL_MODE || work_mode == REF_MODE)   //ï¿½Î¿ï¿½ï¿½ï¿½Ä£Ê½ï¿½ï¿½MIï¿½ï¿½Ð§ï¿½ï¿½ï¿½Ö¶ï¿½Ä£Ê½
 		this->SetMiWorkMode(0x20);
 
 	return true;
 }
 
 /**
- * @brief ÉèÖÃ¹¦ÄÜ×´Ì¬£¬ÀýÈç£ºµ¥¶Î£¬Ñ¡Í£µÈµÈ
- * @param chn £º Í¨µÀºÅ£¬ ´Ó0¿ªÊ¼, 0xFF±íÊ¾¶ÔËùÓÐÍ¨µÀ
- * @param state : ÉèÖÃµÄ×´Ì¬
- * @param mode : ×´Ì¬µÄ¿ª¹Ø   0--¹Ø±Õ   1--´ò¿ª    10--µã¶¯£¨¼´¸ù¾Ýµ±Ç°×´Ì¬È¡·´£©
+ * @brief ï¿½ï¿½ï¿½Ã¹ï¿½ï¿½ï¿½×´Ì¬ï¿½ï¿½ï¿½ï¿½ï¿½ç£ºï¿½ï¿½ï¿½Î£ï¿½Ñ¡Í£ï¿½Èµï¿½
+ * @param chn ï¿½ï¿½ Í¨ï¿½ï¿½ï¿½Å£ï¿½ ï¿½ï¿½0ï¿½ï¿½Ê¼, 0xFFï¿½ï¿½Ê¾ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Í¨ï¿½ï¿½
+ * @param state : ï¿½ï¿½ï¿½Ãµï¿½×´Ì¬
+ * @param mode : ×´Ì¬ï¿½Ä¿ï¿½ï¿½ï¿½   0--ï¿½Ø±ï¿½   1--ï¿½ï¿½    10--ï¿½ã¶¯ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ýµï¿½Ç°×´Ì¬È¡ï¿½ï¿½ï¿½ï¿½
  */
 void ChannelEngine::SetFuncState(uint8_t chn, int state, uint8_t mode){
 																		   
 	if(chn >= this->m_p_general_config->chn_count && chn != CHANNEL_ENGINE_INDEX)
-		return;  //Í¨µÀºÅ·Ç·¨
+		return;  //Í¨ï¿½ï¿½ï¿½Å·Ç·ï¿½
 												   
 	if(chn < m_p_general_config->chn_count){								   
 		this->m_p_channel_control[chn].SetFuncState(state, mode);
 
-		if(state == FS_HANDWHEEL_CONTOUR){ //ÊÖÂÖ¸ú×Ù£¬Í¨ÖªMIÇÐ»»×´Ì¬
+		if(state == FS_HANDWHEEL_CONTOUR){ //ï¿½ï¿½ï¿½Ö¸ï¿½ï¿½Ù£ï¿½Í¨ÖªMIï¿½Ð»ï¿½×´Ì¬
 			if(m_p_channel_control[chn].CheckFuncState(FS_HANDWHEEL_CONTOUR))
 				this->SetMiHandwheelTrace(true, chn);
 			else
@@ -4603,7 +4601,7 @@ void ChannelEngine::SetFuncState(uint8_t chn, int state, uint8_t mode){
 	}else{
 		for(uint8_t i = 0; i < m_p_general_config->chn_count; i++){
 			this->m_p_channel_control[i].SetFuncState(state, mode);
-			if(state == FS_HANDWHEEL_CONTOUR){ //ÊÖÂÖ¸ú×Ù£¬Í¨ÖªMIÇÐ»»×´Ì¬
+			if(state == FS_HANDWHEEL_CONTOUR){ //ï¿½ï¿½ï¿½Ö¸ï¿½ï¿½Ù£ï¿½Í¨ÖªMIï¿½Ð»ï¿½×´Ì¬
 				if(m_p_channel_control[i].CheckFuncState(FS_HANDWHEEL_CONTOUR))
 					this->SetMiHandwheelTrace(true, i);
 				else
@@ -4615,7 +4613,7 @@ void ChannelEngine::SetFuncState(uint8_t chn, int state, uint8_t mode){
 }
 
 /**
- * @brief ÏòMI¸üÐÂÊÖÂÖ·´Ïò¸ú×ÙÊ¹ÄÜ
+ * @brief ï¿½ï¿½MIï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ö·ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ê¹ï¿½ï¿½
  */
 void ChannelEngine::EnableHWTraceToMi(){
 	uint8_t chn_count = m_p_channel_mode_group[m_n_cur_chn_group_index].GetChannelCount();
@@ -4628,7 +4626,7 @@ void ChannelEngine::EnableHWTraceToMi(){
 }
 
 /**
- * @brief ÉèÖÃ×Ô¶¯±¶ÂÊ
+ * @brief ï¿½ï¿½ï¿½ï¿½ï¿½Ô¶ï¿½ï¿½ï¿½ï¿½ï¿½
  * @param ratio
  */
 void ChannelEngine::SetAutoRatio(uint8_t ratio){
@@ -4645,9 +4643,9 @@ void ChannelEngine::SetAutoRatio(uint8_t ratio){
 }
 
 /**
- * @brief ÉèÖÃ×Ô¶¯±¶ÂÊ
- * @param chn : Í¨µÀºÅ£¬´Ó0¿ªÊ¼
- * @param ratio £º ±¶ÂÊÖµ
+ * @brief ï¿½ï¿½ï¿½ï¿½ï¿½Ô¶ï¿½ï¿½ï¿½ï¿½ï¿½
+ * @param chn : Í¨ï¿½ï¿½ï¿½Å£ï¿½ï¿½ï¿½0ï¿½ï¿½Ê¼
+ * @param ratio ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½Öµ
  */
 void ChannelEngine::SetAutoRatio(uint8_t chn, uint8_t ratio){
 	if(this->m_p_channel_control[chn].GetAutoRatio() == ratio)
@@ -4656,7 +4654,7 @@ void ChannelEngine::SetAutoRatio(uint8_t chn, uint8_t ratio){
 }
 
 /**
- * @brief ÉèÖÃÊÖ¶¯±¶ÂÊ
+ * @brief ï¿½ï¿½ï¿½ï¿½ï¿½Ö¶ï¿½ï¿½ï¿½ï¿½ï¿½
  * @param ratio
  */
 void ChannelEngine::SetManualRatio(uint8_t ratio){
@@ -4674,9 +4672,9 @@ void ChannelEngine::SetManualRatio(uint8_t ratio){
 }
 
 /**
- * @brief ÉèÖÃÊÖ¶¯±¶ÂÊ
- * @param chn : Í¨µÀºÅ£¬´Ó0¿ªÊ¼
- * @param ratio : ±¶ÂÊÖµ
+ * @brief ï¿½ï¿½ï¿½ï¿½ï¿½Ö¶ï¿½ï¿½ï¿½ï¿½ï¿½
+ * @param chn : Í¨ï¿½ï¿½ï¿½Å£ï¿½ï¿½ï¿½0ï¿½ï¿½Ê¼
+ * @param ratio : ï¿½ï¿½ï¿½ï¿½Öµ
  */
 void ChannelEngine::SetManualRatio(uint8_t chn, uint8_t ratio){
 	printf("ChannelEngine::SetManualRatio, old = %hhu, new = %hhu\n", this->m_p_channel_control[chn].GetManualRatio(), ratio);
@@ -4686,7 +4684,7 @@ void ChannelEngine::SetManualRatio(uint8_t chn, uint8_t ratio){
 }
 
 /**
- * @brief ÉèÖÃ¿ìËÙ½ø¸ø±¶ÂÊ
+ * @brief ï¿½ï¿½ï¿½Ã¿ï¿½ï¿½Ù½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
  * @param ratio
  */
 void ChannelEngine::SetRapidRatio(uint8_t ratio){
@@ -4705,12 +4703,12 @@ void ChannelEngine::SetRapidRatio(uint8_t ratio){
 }
 
 /**
- * @brief ÉèÖÃ¿ìËÙ½ø¸ø±¶ÂÊ
- * @param chn : Í¨µÀºÅ£¬´Ó0¿ªÊ¼
- * @param ratio : ±¶ÂÊÖµ
+ * @brief ï¿½ï¿½ï¿½Ã¿ï¿½ï¿½Ù½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+ * @param chn : Í¨ï¿½ï¿½ï¿½Å£ï¿½ï¿½ï¿½0ï¿½ï¿½Ê¼
+ * @param ratio : ï¿½ï¿½ï¿½ï¿½Öµ
  */
 void ChannelEngine::SetRapidRatio(uint8_t chn, uint8_t ratio){
-	//±¶ÂÊÖµÓ³Éä
+	//ï¿½ï¿½ï¿½ï¿½ÖµÓ³ï¿½ï¿½
 //	switch(ratio){
 //	case 0:
 //		ratio = 100;
@@ -4731,7 +4729,7 @@ void ChannelEngine::SetRapidRatio(uint8_t chn, uint8_t ratio){
 }
 
 /**
- * @brief ÉèÖÃÖ÷Öá±¶ÂÊ
+ * @brief ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½á±¶ï¿½ï¿½
  * @param ratio
  */
 void ChannelEngine::SetSpindleRatio(uint8_t ratio){
@@ -4748,9 +4746,9 @@ void ChannelEngine::SetSpindleRatio(uint8_t ratio){
 }
 
 /**
- * @brief ÉèÖÃÖ÷Öá±¶ÂÊ
- * @param chn : Í¨µÀºÅ£¬´Ó0¿ªÊ¼
- * @param ratio : ±¶ÂÊÖµ
+ * @brief ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½á±¶ï¿½ï¿½
+ * @param chn : Í¨ï¿½ï¿½ï¿½Å£ï¿½ï¿½ï¿½0ï¿½ï¿½Ê¼
+ * @param ratio : ï¿½ï¿½ï¿½ï¿½Öµ
  */
 void ChannelEngine::SetSpindleRatio(uint8_t chn, uint8_t ratio){
 	if(this->m_p_channel_control[chn].GetSpindleRatio() == ratio)
@@ -4759,7 +4757,7 @@ void ChannelEngine::SetSpindleRatio(uint8_t chn, uint8_t ratio){
 }
 
 /**
- * @brief ÉèÖÃÊÖ¶¯²½³¤
+ * @brief ï¿½ï¿½ï¿½ï¿½ï¿½Ö¶ï¿½ï¿½ï¿½ï¿½ï¿½
  * @param step
  */
 void ChannelEngine::SetManualStep(uint16_t step){
@@ -4793,9 +4791,9 @@ void ChannelEngine::SetManualStep(uint16_t step){
 }
 
 /**
- * @brief ÉèÖÃÊÖ¶¯²½³¤
- * @param chn : Í¨µÀºÅ£¬´Ó0¿ªÊ¼
- * @param step : ²½³¤´úÂë
+ * @brief ï¿½ï¿½ï¿½ï¿½ï¿½Ö¶ï¿½ï¿½ï¿½ï¿½ï¿½
+ * @param chn : Í¨ï¿½ï¿½ï¿½Å£ï¿½ï¿½ï¿½0ï¿½ï¿½Ê¼
+ * @param step : ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
  */
 void ChannelEngine::SetManualStep(uint8_t chn, uint8_t step){
 	switch(step){
@@ -4817,8 +4815,8 @@ void ChannelEngine::SetManualStep(uint8_t chn, uint8_t step){
 }
 
 /**
- * @brief ÉèÖÃÊÖ¶¯¿ìËÙÒÆ¶¯×´Ì¬
- * @param mode : ×´Ì¬µÄ¿ª¹Ø   0--¹Ø±Õ   1--´ò¿ª    10--µã¶¯£¨¼´¸ù¾Ýµ±Ç°×´Ì¬È¡·´£©
+ * @brief ï¿½ï¿½ï¿½ï¿½ï¿½Ö¶ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Æ¶ï¿½×´Ì¬
+ * @param mode : ×´Ì¬ï¿½Ä¿ï¿½ï¿½ï¿½   0--ï¿½Ø±ï¿½   1--ï¿½ï¿½    10--ï¿½ã¶¯ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ýµï¿½Ç°×´Ì¬È¡ï¿½ï¿½ï¿½ï¿½
  */
 void ChannelEngine::SetManualRapidMove(uint8_t mode){
 //	this->m_p_channel_control[m_n_cur_channle_index].SetManualRapidMove();
@@ -4828,19 +4826,19 @@ void ChannelEngine::SetManualRapidMove(uint8_t mode){
 		this->m_p_channel_control[i].SetManualRapidMove();
 	}*/
 
-	uint8_t chn_count = m_p_channel_mode_group[m_n_cur_chn_group_index].GetChannelCount();   //µ±Ç°·½Ê½×éÍ¨µÀÊýÁ¿
+	uint8_t chn_count = m_p_channel_mode_group[m_n_cur_chn_group_index].GetChannelCount();   //ï¿½ï¿½Ç°ï¿½ï¿½Ê½ï¿½ï¿½Í¨ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 	for(uint8_t i = 0; i < chn_count; i++)
 		this->m_p_channel_control[m_p_channel_mode_group[m_n_cur_chn_group_index].GetChannel(i)].SetManualRapidMove(mode);
 }
 
 /**
- * @brief ÉèÖÃµ±Ç°Öá
- * @param axis : µ±Ç°Í¨µÀÖáºÅ
+ * @brief ï¿½ï¿½ï¿½Ãµï¿½Ç°ï¿½ï¿½
+ * @param axis : ï¿½ï¿½Ç°Í¨ï¿½ï¿½ï¿½ï¿½ï¿½
  */
 void ChannelEngine::SetCurAxis(uint8_t axis){
 //	int chn_count = this->m_p_general_config->chn_count;
 
-	this->m_n_cur_pmc_axis = 0xFF;  //È¡Ïûµ±Ç°PMCÖá
+	this->m_n_cur_pmc_axis = 0xFF;  //È¡ï¿½ï¿½ï¿½ï¿½Ç°PMCï¿½ï¿½
 //	this->m_p_channel_control[m_n_cur_channle_index].SetCurAxis(axis);
 	/*
 	for(int i = 0; i < chn_count; i++){
@@ -4853,18 +4851,18 @@ void ChannelEngine::SetCurAxis(uint8_t axis){
 }
 
 /**
- * @brief ÉèÖÃµ±Ç°Öá
- * @param chn : Í¨µÀºÅ£¬´Ó0¿ªÊ¼
- * @param axis £º Í¨µÀÖáºÅ£¬ ´Ó0¿ªÊ¼
+ * @brief ï¿½ï¿½ï¿½Ãµï¿½Ç°ï¿½ï¿½
+ * @param chn : Í¨ï¿½ï¿½ï¿½Å£ï¿½ï¿½ï¿½0ï¿½ï¿½Ê¼
+ * @param axis ï¿½ï¿½ Í¨ï¿½ï¿½ï¿½ï¿½Å£ï¿½ ï¿½ï¿½0ï¿½ï¿½Ê¼
  */
 void ChannelEngine::SetCurAxis(uint8_t chn, uint8_t axis){
-	this->m_n_cur_pmc_axis = 0xFF;  //È¡Ïûµ±Ç°PMCÖá
+	this->m_n_cur_pmc_axis = 0xFF;  //È¡ï¿½ï¿½ï¿½ï¿½Ç°PMCï¿½ï¿½
 	this->m_p_channel_control[chn].SetCurAxis(axis);
 }
 
 /**
- * @brief ÉèÖÃµ±Ç°PMCÖá
- * @param axis : ÎïÀíÖáºÅ£¬´Ó0¿ªÊ¼
+ * @brief ï¿½ï¿½ï¿½Ãµï¿½Ç°PMCï¿½ï¿½
+ * @param axis : ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Å£ï¿½ï¿½ï¿½0ï¿½ï¿½Ê¼
  */
 void ChannelEngine::SetCurPmcAxis(uint8_t axis){
 	if(this->m_p_axis_config[axis].axis_pmc > 0)
@@ -4874,9 +4872,9 @@ void ChannelEngine::SetCurPmcAxis(uint8_t axis){
 }
 
 /**
- * @brief ÉèÖÃÍ¨µÀ¼Ó¹¤×´Ì¬
- * @param chn : Í¨µÀË÷ÒýºÅ£¬0¿ªÊ¼£¬0xFF±íÊ¾Í¨µÀÒýÇæ
- * @param mach_state : ¼Ó¹¤×´Ì¬
+ * @brief ï¿½ï¿½ï¿½ï¿½Í¨ï¿½ï¿½ï¿½Ó¹ï¿½×´Ì¬
+ * @param chn : Í¨ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Å£ï¿½0ï¿½ï¿½Ê¼ï¿½ï¿½0xFFï¿½ï¿½Ê¾Í¨ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+ * @param mach_state : ï¿½Ó¹ï¿½×´Ì¬
  */
 void ChannelEngine::SetChnMachineState(uint8_t chn, uint8_t mach_state){
 	if(chn < m_p_general_config->chn_count){
@@ -4889,8 +4887,8 @@ void ChannelEngine::SetChnMachineState(uint8_t chn, uint8_t mach_state){
 }
 
 /**
- * @brief ÉèÖÃÖáÊ¹ÄÜ£¬ÒÔ¼°²å²¹Ä£Ê½£¨1--NCÖá²å²¹   2--PMCÖá²å²¹£©
- * @param index : ÖáºÅË÷Òý£¬´Ó0¿ªÊ¼
+ * @brief ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ê¹ï¿½Ü£ï¿½ï¿½Ô¼ï¿½ï¿½å²¹Ä£Ê½ï¿½ï¿½1--NCï¿½ï¿½å²¹   2--PMCï¿½ï¿½å²¹ï¿½ï¿½
+ * @param index : ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½0ï¿½ï¿½Ê¼
  */
  /*
 void ChannelEngine::SetAxisOn(uint8_t index){
@@ -4900,7 +4898,7 @@ void ChannelEngine::SetAxisOn(uint8_t index){
 
 	cmd.data.cmd = CMD_MC_SET_AXIS_ON;
 
-	//ÖáÊ¹ÄÜ  0--½ûÖ¹¸ÃÖá   1--Ê¹ÄÜ¸ÃÖá
+	//ï¿½ï¿½Ê¹ï¿½ï¿½  0--ï¿½ï¿½Ö¹ï¿½ï¿½ï¿½ï¿½   1--Ê¹ï¿½Ü¸ï¿½ï¿½ï¿½
 	SCAxisConfig &axis_config = this->m_p_axis_config[index];
 	if(axis_config.axis_type != AXIS_SPINDLE)
 		cmd.data.data[0] = 1;
@@ -4908,15 +4906,15 @@ void ChannelEngine::SetAxisOn(uint8_t index){
 		cmd.data.data[0] = 0;
 
 
-	//Öá²å²¹ÀàÐÍ   1--NCÖá²å²¹£¨×Ô¶¯¡¢ÊÖ¶¯¡¢MDI£©  2--PMCÖá²å²¹   ÆäËüÖµÎÞÐ§  £¨×¢Òâ10MCµÄDSPÔÝ²»Ö§³Ö ´¿´âPMCÖá£©
+	//ï¿½ï¿½å²¹ï¿½ï¿½ï¿½ï¿½   1--NCï¿½ï¿½å²¹ï¿½ï¿½ï¿½Ô¶ï¿½ï¿½ï¿½ï¿½Ö¶ï¿½ï¿½ï¿½MDIï¿½ï¿½  2--PMCï¿½ï¿½å²¹   ï¿½ï¿½ï¿½ï¿½Öµï¿½ï¿½Ð§  ï¿½ï¿½×¢ï¿½ï¿½10MCï¿½ï¿½DSPï¿½Ý²ï¿½Ö§ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½PMCï¿½á£©
 	cmd.data.data[1] = 1;
 
 	m_p_mc_comm->WriteCmd(cmd);
 }*/
 
 /**
- * @brief ÉèÖÃÖ¸¶¨ÖáµÄÂÝ¾à¼°×î´óËÙ¶ÈµÈ»ù±¾ÐÅÏ¢
- * @param index : ÖáË÷ÒýºÅ, ´Ó0¿ªÊ¼
+ * @brief ï¿½ï¿½ï¿½ï¿½Ö¸ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ý¾à¼°ï¿½ï¿½ï¿½ï¿½Ù¶ÈµÈ»ï¿½ï¿½ï¿½ï¿½ï¿½Ï¢
+ * @param index : ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½, ï¿½ï¿½0ï¿½ï¿½Ê¼
  */
  /*
 void ChannelEngine::SetAxisBaseParam(uint8_t index){
@@ -4927,15 +4925,15 @@ void ChannelEngine::SetAxisBaseParam(uint8_t index){
 	cmd.data.cmd = CMD_MC_SET_AXIS_BASE_INFO;
 
 	SCAxisConfig &axis_config = this->m_p_axis_config[index];
-	//ÖáÀàÐÍ   1--Ö±ÏßÖá   2--Ðý×ªÖá   3--Ö÷Öá
+	//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½   1--Ö±ï¿½ï¿½ï¿½ï¿½   2--ï¿½ï¿½×ªï¿½ï¿½   3--ï¿½ï¿½ï¿½ï¿½
 	cmd.data.data[0] = axis_config.axis_type+1;
 
-	//ÂÝ¾à£¬µ¥Î»£º1um
+	//ï¿½Ý¾à£¬ï¿½ï¿½Î»ï¿½ï¿½1um
 	uint32_t data = axis_config.move_pr * 1e3;  //mm->1um
 	cmd.data.data[1] = (data&0xFFFF);
 	cmd.data.data[2] = ((data>>16)&0xFFFF);
 
-	//×î´óËÙ¶ÈÏÞÖÆ£¬ µ¥Î»£ºum/s
+	//ï¿½ï¿½ï¿½ï¿½Ù¶ï¿½ï¿½ï¿½ï¿½Æ£ï¿½ ï¿½ï¿½Î»ï¿½ï¿½um/s
 	data = axis_config.move_pr * axis_config.motor_speed_max * 1000 /60;   //mm/min -> um/s
 	cmd.data.data[3] = (data&0xFFFF);
 	cmd.data.data[4] = ((data>>16)&0xFFFF);
@@ -4945,8 +4943,8 @@ void ChannelEngine::SetAxisBaseParam(uint8_t index){
 }*/
 
 /**
- * @brief ÉèÖÃÖ¸¶¨ÖáµÄËÙ¶ÈÏà¹ØÐÅÏ¢
- * @param index : ÖáË÷ÒýºÅ, ´Ó0¿ªÊ¼
+ * @brief ï¿½ï¿½ï¿½ï¿½Ö¸ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ù¶ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ï¢
+ * @param index : ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½, ï¿½ï¿½0ï¿½ï¿½Ê¼
  */
  /*
 void ChannelEngine::SetAxisSpeedParam(uint8_t index){
@@ -4957,19 +4955,19 @@ void ChannelEngine::SetAxisSpeedParam(uint8_t index){
 	cmd.data.cmd = CMD_MC_SET_AXIS_SPEED_LIMIT;
 
 	SCAxisConfig &axis_config = this->m_p_axis_config[index];
-	//G00ËÙ¶È£¬µ¥Î»£ºum/s
+	//G00ï¿½Ù¶È£ï¿½ï¿½ï¿½Î»ï¿½ï¿½um/s
 	uint32_t data = axis_config.rapid_speed * 1000 / 60;  //mm/min -> um/s
 //	printf("set axis %hhu g00 speed: %u\n", index, data);
 	cmd.data.data[0] = (data&0xFFFF);
 	cmd.data.data[1] = ((data>>16)&0xFFFF);
 //	printf("set axis %hhu g00 speed: 0x%hx,  0x%hx\n", index, cmd.data.data[0], cmd.data.data[1]);
 
-	//×ª½ÇËÙ¶È²îÏÞÖÆ£¬ µ¥Î»£ºum/s
+	//×ªï¿½ï¿½ï¿½Ù¶È²ï¿½ï¿½ï¿½ï¿½Æ£ï¿½ ï¿½ï¿½Î»ï¿½ï¿½um/s
 	data = axis_config.corner_acc_limit * 1000 /60;   //mm/min -> um/s
 	cmd.data.data[2] = (data&0xFFFF);
 	cmd.data.data[3] = ((data>>16)&0xFFFF);
 
-	//ÊÖ¶¯¹ý¶ÉËÙ¶È£¬µ¥Î»£ºum/s  //TODO ´Ë²ÎÊýºóÐø½«ÆôÓÃ£¬´Ë´¦´«ÊäÒ»¸ö¹Ì¶¨Öµ100mm/min
+	//ï¿½Ö¶ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ù¶È£ï¿½ï¿½ï¿½Î»ï¿½ï¿½um/s  //TODO ï¿½Ë²ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ã£ï¿½ï¿½Ë´ï¿½ï¿½ï¿½ï¿½ï¿½Ò»ï¿½ï¿½ï¿½Ì¶ï¿½Öµ100mm/min
 	data = 100 * 1000 / 60;    //mm/min -> um/s
 	cmd.data.data[4] = (data&0xFFFF);
 	cmd.data.data[5] = ((data>>16)&0xFFFF);
@@ -4978,8 +4976,8 @@ void ChannelEngine::SetAxisSpeedParam(uint8_t index){
 }*/
 
 /**
- * @brief ÉèÖÃÖ¸¶¨Öá¼ÓËÙ¶ÈÏà¹ØÐÅÏ¢
- * @param index : ÖáË÷ÒýºÅ, ´Ó0¿ªÊ¼
+ * @brief ï¿½ï¿½ï¿½ï¿½Ö¸ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ù¶ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ï¢
+ * @param index : ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½, ï¿½ï¿½0ï¿½ï¿½Ê¼
  */
  /*
 void ChannelEngine::SetAxisAccParam(uint8_t index){
@@ -4991,40 +4989,40 @@ void ChannelEngine::SetAxisAccParam(uint8_t index){
 //	printf("set axis[%hhu] acc:rap = %lf, start = %lf\n", index, m_p_axis_config[index].rapid_acc,
 //			m_p_axis_config[index].start_acc);
 
-	//G00¼ÓËÙ¶È£¬µ¥Î»£º10mm/s^2
+	//G00ï¿½ï¿½ï¿½Ù¶È£ï¿½ï¿½ï¿½Î»ï¿½ï¿½10mm/s^2
 	uint16_t data = m_p_axis_config[index].rapid_acc / 10;
 	cmd.data.data[0] = data;
 
-	//ÊÖ¶¯¼ÓËÙ¶È£¬ µ¥Î»£º10mm/s^2
+	//ï¿½Ö¶ï¿½ï¿½ï¿½ï¿½Ù¶È£ï¿½ ï¿½ï¿½Î»ï¿½ï¿½10mm/s^2
 	data = m_p_axis_config[index].manual_acc /10;
 	cmd.data.data[1] = data;
 
-	//ÊÖ¶¯¹ý¶É¼ÓËÙ¶È£¬µ¥Î»£º10mm/s^2
+	//ï¿½Ö¶ï¿½ï¿½ï¿½ï¿½É¼ï¿½ï¿½Ù¶È£ï¿½ï¿½ï¿½Î»ï¿½ï¿½10mm/s^2
 	data = m_p_axis_config[index].start_acc /10;
 	cmd.data.data[2] = data;
 
-	//G00 SÐÍÊ±¼ä³£Êý
+	//G00 Sï¿½ï¿½Ê±ï¿½ä³£ï¿½ï¿½
 	cmd.data.data[3] = m_p_axis_config[index].rapid_s_plan_filter_time;
 
 	m_p_mc_comm->WriteCmd(cmd);
 }*/
 
 /**
- * @brief ·¢ËÍPMCÖáÔË¶¯Ö¸Áî
- * @param cmd : PMCÖáÔË¶¯Ö¸Áî
+ * @brief ï¿½ï¿½ï¿½ï¿½PMCï¿½ï¿½ï¿½Ë¶ï¿½Ö¸ï¿½ï¿½
+ * @param cmd : PMCï¿½ï¿½ï¿½Ë¶ï¿½Ö¸ï¿½ï¿½
  */
 void ChannelEngine::SendPmcAxisCmd(PmcCmdFrame &cmd){
 	uint8_t phy_axis = cmd.data.axis_index-1;
 
-	this->m_n_run_axis_mask |= 0x01L<<phy_axis;  //ÉèÖÃµ±Ç°ÔËÐÐÖá
+	this->m_n_run_axis_mask |= 0x01L<<phy_axis;  //ï¿½ï¿½ï¿½Ãµï¿½Ç°ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 
 	this->m_p_mi_comm->SendPmcCmd(cmd);
 }
 
 /**
- * @brief »ñÈ¡pmcÖáµÄÉè¶¨¶¨Î»ËÙ¶È
- * @param axis : ÎïÀíÖáºÅ£¬ ´Ó0¿ªÊ¼
- * @return ·µ»Ø´ËÖá²ÎÊýÖÐÉèÖÃµÄ¶¨Î»ËÙ¶È
+ * @brief ï¿½ï¿½È¡pmcï¿½ï¿½ï¿½ï¿½è¶¨ï¿½ï¿½Î»ï¿½Ù¶ï¿½
+ * @param axis : ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Å£ï¿½ ï¿½ï¿½0ï¿½ï¿½Ê¼
+ * @return ï¿½ï¿½ï¿½Ø´ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ÃµÄ¶ï¿½Î»ï¿½Ù¶ï¿½
  */
 uint32_t ChannelEngine::GetPmcAxisRapidSpeed(uint8_t axis){
 	if(axis >= this->m_p_general_config->axis_count)
@@ -5033,32 +5031,32 @@ uint32_t ChannelEngine::GetPmcAxisRapidSpeed(uint8_t axis){
 }
 
 /**
- * @brief ÊÖ¶¯ÒÆ¶¯
- * @param dir : ÔË¶¯·½Ïò
+ * @brief ï¿½Ö¶ï¿½ï¿½Æ¶ï¿½
+ * @param dir : ï¿½Ë¶ï¿½ï¿½ï¿½ï¿½ï¿½
  */
 void ChannelEngine::ManualMove(int8_t dir){
 	if(this->m_b_emergency)
 		return;
-	if(this->m_n_cur_pmc_axis != 0xFF){  //ÒÆ¶¯PMCÖá
+	if(this->m_n_cur_pmc_axis != 0xFF){  //ï¿½Æ¶ï¿½PMCï¿½ï¿½
 		this->ManualMovePmc(dir);
 	}else
 		m_p_channel_control[m_n_cur_channle_index].ManualMove(dir);
 }
 
 /**
- * @brief ÊÖ¶¯ÒÔÄ¿±êËÙ¶ÈvelÒÆ¶¯ÖÁ¾ø¶ÔÄ¿±êÎ»ÖÃ
- * @param phy_axis : ÎïÀíÖáºÅ£¬´Ó0¿ªÊ¼
- * @param vel : ÔË¶¯ËÙ¶È, µ¥Î»£ºmm/min
- * @param pos : ¾ø¶ÔÎ»ÖÃ
+ * @brief ï¿½Ö¶ï¿½ï¿½ï¿½Ä¿ï¿½ï¿½ï¿½Ù¶ï¿½velï¿½Æ¶ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ä¿ï¿½ï¿½Î»ï¿½ï¿½
+ * @param phy_axis : ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Å£ï¿½ï¿½ï¿½0ï¿½ï¿½Ê¼
+ * @param vel : ï¿½Ë¶ï¿½ï¿½Ù¶ï¿½, ï¿½ï¿½Î»ï¿½ï¿½mm/min
+ * @param pos : ï¿½ï¿½ï¿½ï¿½Î»ï¿½ï¿½
  */
 void ChannelEngine::ManualMoveAbs(uint8_t phy_axis, double vel, double pos){
-	int64_t cur_pos = this->m_df_phy_axis_pos_feedback[phy_axis]*1e7;  //µ±Ç°Î»ÖÃ
-	//ÉèÖÃÄ¿±êÎ»ÖÃ
-	int64_t tar_pos = pos * 1e7;   //µ¥Î»×ª»»£ºmm-->0.1nms
-	int8_t dir = (tar_pos > cur_pos)?DIR_POSITIVE:DIR_NEGATIVE;  //ÒÆ¶¯·½Ïò
+	int64_t cur_pos = this->m_df_phy_axis_pos_feedback[phy_axis]*1e7;  //ï¿½ï¿½Ç°Î»ï¿½ï¿½
+	//ï¿½ï¿½ï¿½ï¿½Ä¿ï¿½ï¿½Î»ï¿½ï¿½
+	int64_t tar_pos = pos * 1e7;   //ï¿½ï¿½Î»×ªï¿½ï¿½ï¿½ï¿½mm-->0.1nms
+	int8_t dir = (tar_pos > cur_pos)?DIR_POSITIVE:DIR_NEGATIVE;  //ï¿½Æ¶ï¿½ï¿½ï¿½ï¿½ï¿½
 
-	//¼ì²éÓ²ÏÞÎ»
-	if(CheckAxisHardLimit(phy_axis, dir)){   //Ó²ÏÞÎ»¸æ¾¯£¬Ö±½Ó·µ»Ø
+	//ï¿½ï¿½ï¿½Ó²ï¿½ï¿½Î»
+	if(CheckAxisHardLimit(phy_axis, dir)){   //Ó²ï¿½ï¿½Î»ï¿½æ¾¯ï¿½ï¿½Ö±ï¿½Ó·ï¿½ï¿½ï¿½
 		printf("hard limit active, manual move abs return \n");
 		return;
 	}
@@ -5067,16 +5065,16 @@ void ChannelEngine::ManualMoveAbs(uint8_t phy_axis, double vel, double pos){
 	uint8_t chn_axis = 0, chn = 0;
 	chn = this->GetAxisChannel(phy_axis, chn_axis);
 
-	if(m_p_axis_config[phy_axis].axis_pmc == 0 && chn != CHANNEL_ENGINE_INDEX){ //Í¨µÀÖá
+	if(m_p_axis_config[phy_axis].axis_pmc == 0 && chn != CHANNEL_ENGINE_INDEX){ //Í¨ï¿½ï¿½ï¿½ï¿½
 		McCmdFrame cmd;
 		memset(&cmd, 0x00, sizeof(McCmdFrame));
 
 		cmd.data.channel_index = chn;
-		cmd.data.axis_index = chn_axis+1;   //ÖáºÅ´Ó1¿ªÊ¼
+		cmd.data.axis_index = chn_axis+1;   //ï¿½ï¿½Å´ï¿½1ï¿½ï¿½Ê¼
 		cmd.data.cmd = CMD_MC_AXIS_MAUAL_MOVE;
 
-		//ÉèÖÃËÙ¶È
-		uint32_t feed = vel*1000/60;   //×ª»»µ¥Î»Îªum/s
+		//ï¿½ï¿½ï¿½ï¿½ï¿½Ù¶ï¿½
+		uint32_t feed = vel*1000/60;   //×ªï¿½ï¿½ï¿½ï¿½Î»Îªum/s
 
 	//	memcpy(cmd.data.data, &feed, sizeof(feed));
 		cmd.data.data[0] = (feed & 0xFFFF);
@@ -5084,33 +5082,33 @@ void ChannelEngine::ManualMoveAbs(uint8_t phy_axis, double vel, double pos){
 
 
 		if((this->m_n_mask_ret_ref_over & (0x01<<phy_axis))
-				&& m_p_axis_config[phy_axis].soft_limit_check_1 == 1){//ÈíÏÞÎ»1ÓÐÐ§
+				&& m_p_axis_config[phy_axis].soft_limit_check_1 == 1){//ï¿½ï¿½ï¿½ï¿½Î»1ï¿½ï¿½Ð§
 
 			int64_t limit_pos = 0;
 
-			if(dir == DIR_POSITIVE){//ÕýÏò
+			if(dir == DIR_POSITIVE){//ï¿½ï¿½ï¿½ï¿½
 				limit_pos = m_p_axis_config[phy_axis].soft_limit_max_1*1e7;
 
 
-				if(limit_pos < cur_pos){//ÒÑ¾­ÔÚÏÞÎ»Íâ£¬¸æ¾¯
+				if(limit_pos < cur_pos){//ï¿½Ñ¾ï¿½ï¿½ï¿½ï¿½ï¿½Î»ï¿½â£¬ï¿½æ¾¯
 					CreateError(ERR_SOFTLIMIT_POS, WARNING_LEVEL, CLEAR_BY_MCP_RESET, 0, chn, chn_axis);
 				//	this->m_error_code = ERR_SOFTLIMIT_POS;
 					return;
-				}else if(limit_pos == cur_pos){  //ÒÑ¾­µ½´ïÕýÏÞÎ»¼«ÏÞÎ»ÖÃ
+				}else if(limit_pos == cur_pos){  //ï¿½Ñ¾ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Î»ï¿½ï¿½ï¿½ï¿½Î»ï¿½ï¿½
 					CreateError(ERR_SOFTLIMIT_POS, WARNING_LEVEL, CLEAR_BY_MCP_RESET, 0, chn, chn_axis);
 					return;
 				}else if(tar_pos > limit_pos){
 					tar_pos = limit_pos;
 
 				}
-			}else if(dir == DIR_NEGATIVE){//¸ºÏò
+			}else if(dir == DIR_NEGATIVE){//ï¿½ï¿½ï¿½ï¿½
 				limit_pos = m_p_axis_config[phy_axis].soft_limit_min_1*1e7;
 
-				if(limit_pos > cur_pos){//ÒÑ¾­ÔÚÏÞÎ»Íâ£¬¸æ¾¯
+				if(limit_pos > cur_pos){//ï¿½Ñ¾ï¿½ï¿½ï¿½ï¿½ï¿½Î»ï¿½â£¬ï¿½æ¾¯
 					CreateError(ERR_SOFTLIMIT_NEG, WARNING_LEVEL, CLEAR_BY_CLEAR_BUTTON, 0, chn, chn_axis);
 				//	this->m_error_code = ERR_SOFTLIMIT_NEG;
 					return;
-				}else if(limit_pos == cur_pos){  //ÒÑ¾­µ½´ï¸ºÏÞÎ»¼«ÏÞÎ»ÖÃ
+				}else if(limit_pos == cur_pos){  //ï¿½Ñ¾ï¿½ï¿½ï¿½ï¿½ï¸ºï¿½ï¿½Î»ï¿½ï¿½ï¿½ï¿½Î»ï¿½ï¿½
 					CreateError(ERR_SOFTLIMIT_NEG, WARNING_LEVEL, CLEAR_BY_CLEAR_BUTTON, 0, chn, chn_axis);
 					return;
 				}else if(tar_pos < limit_pos){
@@ -5124,7 +5122,7 @@ void ChannelEngine::ManualMoveAbs(uint8_t phy_axis, double vel, double pos){
 		cmd.data.data[4] = ((tar_pos>>32) & 0xFFFF);
 		cmd.data.data[5] = ((tar_pos>>48)&0xFFFF);
 
-		cmd.data.data[6] = 0x00;   //¾ø¶ÔÄ¿±êÎ»ÖÃ£¬»úÐµ×ø±êÏµ
+		cmd.data.data[6] = 0x00;   //ï¿½ï¿½ï¿½ï¿½Ä¿ï¿½ï¿½Î»ï¿½Ã£ï¿½ï¿½ï¿½Ðµï¿½ï¿½ï¿½ï¿½Ïµ
 
 		if(!this->m_mc_run_on_arm[chn])
 			m_p_mc_comm->WriteCmd(cmd);
@@ -5132,52 +5130,52 @@ void ChannelEngine::ManualMoveAbs(uint8_t phy_axis, double vel, double pos){
 			m_p_mc_arm_comm->WriteCmd(cmd);
 		
 		printf("ChannelEngine::ManualMoveAbs: axis = %d, tar_pos = %lld\n", phy_axis, tar_pos);
-	}else if(m_p_axis_config[phy_axis].axis_pmc){  //PMCÖá
+	}else if(m_p_axis_config[phy_axis].axis_pmc){  //PMCï¿½ï¿½
 #ifdef USES_GRIND_MACHINE
-		//¶¯×÷Ç°¼Ð×¦±ØÐëÉÏµ½Î»£¬±£»¤´ëÊ©
+		//ï¿½ï¿½ï¿½ï¿½Ç°ï¿½ï¿½×¦ï¿½ï¿½ï¿½ï¿½ï¿½Ïµï¿½Î»ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ê©
 		if(this->m_p_pmc_reg->GReg().bits[0].left_claw_up_check == 0 ||
-				this->m_p_pmc_reg->GReg().bits[0].right_claw_up_check == 0){//¼Ð×¦Î»ÉÏµ½Î»
+				this->m_p_pmc_reg->GReg().bits[0].right_claw_up_check == 0){//ï¿½ï¿½×¦Î»ï¿½Ïµï¿½Î»
 			return;
 		}
 #endif
 		PmcCmdFrame cmd;
 		memset(&cmd, 0x00, sizeof(PmcCmdFrame));
 
-		cmd.data.axis_index = phy_axis+1;   //ÖáºÅ´Ó1¿ªÊ¼
-		cmd.data.axis_index |= 0xFF00;      //±êÖ¾Í¨µÀÒýÇæ
-		cmd.data.cmd = 0;   //¾ø¶ÔÎ»ÖÃ
+		cmd.data.axis_index = phy_axis+1;   //ï¿½ï¿½Å´ï¿½1ï¿½ï¿½Ê¼
+		cmd.data.axis_index |= 0xFF00;      //ï¿½ï¿½Ö¾Í¨ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+		cmd.data.cmd = 0;   //ï¿½ï¿½ï¿½ï¿½Î»ï¿½ï¿½
 
-		//ÉèÖÃËÙ¶È
-		uint32_t feed = vel*1000/60;   //×ª»»µ¥Î»Îªum/s
+		//ï¿½ï¿½ï¿½ï¿½ï¿½Ù¶ï¿½
+		uint32_t feed = vel*1000/60;   //×ªï¿½ï¿½ï¿½ï¿½Î»Îªum/s
 
 
 		if((this->m_n_mask_ret_ref_over & (0x01<<phy_axis))
-				&& m_p_axis_config[phy_axis].soft_limit_check_1 == 1){//ÈíÏÞÎ»1ÓÐÐ§
-			int64_t cur_pos = this->m_df_phy_axis_pos_feedback[phy_axis]*1e7;  //µ±Ç°Î»ÖÃ
+				&& m_p_axis_config[phy_axis].soft_limit_check_1 == 1){//ï¿½ï¿½ï¿½ï¿½Î»1ï¿½ï¿½Ð§
+			int64_t cur_pos = this->m_df_phy_axis_pos_feedback[phy_axis]*1e7;  //ï¿½ï¿½Ç°Î»ï¿½ï¿½
 			int64_t limit_pos = 0;
 
-			if(dir == DIR_POSITIVE){//ÕýÏò
+			if(dir == DIR_POSITIVE){//ï¿½ï¿½ï¿½ï¿½
 				limit_pos = m_p_axis_config[phy_axis].soft_limit_max_1*1e7;
 
-				if(limit_pos < cur_pos){//ÒÑ¾­ÔÚÏÞÎ»Íâ£¬¸æ¾¯
+				if(limit_pos < cur_pos){//ï¿½Ñ¾ï¿½ï¿½ï¿½ï¿½ï¿½Î»ï¿½â£¬ï¿½æ¾¯
 					CreateError(ERR_SOFTLIMIT_POS, WARNING_LEVEL, CLEAR_BY_MCP_RESET, 0, CHANNEL_ENGINE_INDEX, phy_axis);
 				//	this->m_error_code = ERR_SOFTLIMIT_POS;
 					return;
-				}else if(limit_pos == cur_pos){  //ÒÑ¾­µ½´ïÕýÏÞÎ»¼«ÏÞÎ»ÖÃ
+				}else if(limit_pos == cur_pos){  //ï¿½Ñ¾ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Î»ï¿½ï¿½ï¿½ï¿½Î»ï¿½ï¿½
 					CreateError(ERR_SOFTLIMIT_POS, WARNING_LEVEL, CLEAR_BY_MCP_RESET, 0, CHANNEL_ENGINE_INDEX, phy_axis);
 					return;
 				}else if(tar_pos > limit_pos){
 					tar_pos = limit_pos;
 
 				}
-			}else if(dir == DIR_NEGATIVE){//¸ºÏò
+			}else if(dir == DIR_NEGATIVE){//ï¿½ï¿½ï¿½ï¿½
 				limit_pos = m_p_axis_config[phy_axis].soft_limit_min_1*1e7;
 
-				if(limit_pos > cur_pos){//ÒÑ¾­ÔÚÏÞÎ»Íâ£¬¸æ¾¯
+				if(limit_pos > cur_pos){//ï¿½Ñ¾ï¿½ï¿½ï¿½ï¿½ï¿½Î»ï¿½â£¬ï¿½æ¾¯
 					CreateError(ERR_SOFTLIMIT_NEG, WARNING_LEVEL, CLEAR_BY_CLEAR_BUTTON, 0, CHANNEL_ENGINE_INDEX, phy_axis);
 				//	this->m_error_code = ERR_SOFTLIMIT_NEG;
 					return;
-				}else if(limit_pos == cur_pos){  //ÒÑ¾­µ½´ï¸ºÏÞÎ»¼«ÏÞÎ»ÖÃ
+				}else if(limit_pos == cur_pos){  //ï¿½Ñ¾ï¿½ï¿½ï¿½ï¿½ï¸ºï¿½ï¿½Î»ï¿½ï¿½ï¿½ï¿½Î»ï¿½ï¿½
 					CreateError(ERR_SOFTLIMIT_NEG, WARNING_LEVEL, CLEAR_BY_CLEAR_BUTTON, 0, CHANNEL_ENGINE_INDEX, phy_axis);
 					return;
 				}else if(tar_pos < limit_pos){
@@ -5187,13 +5185,13 @@ void ChannelEngine::ManualMoveAbs(uint8_t phy_axis, double vel, double pos){
 		}
 
 
-		memcpy(&cmd.data.data[1], &tar_pos, sizeof(tar_pos));  //ÉèÖÃÄ¿±êÎ»ÖÃ
+		memcpy(&cmd.data.data[1], &tar_pos, sizeof(tar_pos));  //ï¿½ï¿½ï¿½ï¿½Ä¿ï¿½ï¿½Î»ï¿½ï¿½
 
-		memcpy(&cmd.data.data[5], &feed, sizeof(feed)); //ÉèÖÃËÙ¶È
+		memcpy(&cmd.data.data[5], &feed, sizeof(feed)); //ï¿½ï¿½ï¿½ï¿½ï¿½Ù¶ï¿½
 
 
 
-		this->m_n_run_axis_mask |= 0x01L<<phy_axis;  //ÉèÖÃµ±Ç°ÔËÐÐÖá
+		this->m_n_run_axis_mask |= 0x01L<<phy_axis;  //ï¿½ï¿½ï¿½Ãµï¿½Ç°ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 
 		this->m_p_mi_comm->SendPmcCmd(cmd);
 
@@ -5203,16 +5201,16 @@ void ChannelEngine::ManualMoveAbs(uint8_t phy_axis, double vel, double pos){
 }
 
 /**
- * @brief ÊÖ¶¯ÒÆ¶¯£¬Ïòdir·½ÏòÒÆ¶¯dis¾àÀë
- * @param chn : Í¨µÀºÅ£¬ ´Ó0¿ªÊ¼
- * @param phy_axis : ÎïÀíÖáºÅ£¬´Ó0¿ªÊ¼
- * @param dir : ÔË¶¯·½Ïò
- * @param vel : ÔË¶¯ËÙ¶È, µ¥Î»£ºmm/min
- * @param inc_dis £º ÔöÁ¿Î»ÖÃ, ²»¹ÜÕý¸º£¬ÔÚº¯ÊýÄÚ²¿¸ù¾Ýdir¾ö¶¨Õý¸º
+ * @brief ï¿½Ö¶ï¿½ï¿½Æ¶ï¿½ï¿½ï¿½ï¿½ï¿½dirï¿½ï¿½ï¿½ï¿½ï¿½Æ¶ï¿½disï¿½ï¿½ï¿½ï¿½
+ * @param chn : Í¨ï¿½ï¿½ï¿½Å£ï¿½ ï¿½ï¿½0ï¿½ï¿½Ê¼
+ * @param phy_axis : ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Å£ï¿½ï¿½ï¿½0ï¿½ï¿½Ê¼
+ * @param dir : ï¿½Ë¶ï¿½ï¿½ï¿½ï¿½ï¿½
+ * @param vel : ï¿½Ë¶ï¿½ï¿½Ù¶ï¿½, ï¿½ï¿½Î»ï¿½ï¿½mm/min
+ * @param inc_dis ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½Î»ï¿½ï¿½, ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Úºï¿½ï¿½ï¿½ï¿½Ú²ï¿½ï¿½ï¿½ï¿½ï¿½dirï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
  */
 void ChannelEngine::ManualMove(uint8_t phy_axis, int8_t dir, double vel, double inc_dis){
-	//¼ì²éÓ²ÏÞÎ»
-	if(CheckAxisHardLimit(phy_axis, dir)){   //Ó²ÏÞÎ»¸æ¾¯£¬Ö±½Ó·µ»Ø
+	//ï¿½ï¿½ï¿½Ó²ï¿½ï¿½Î»
+	if(CheckAxisHardLimit(phy_axis, dir)){   //Ó²ï¿½ï¿½Î»ï¿½æ¾¯ï¿½ï¿½Ö±ï¿½Ó·ï¿½ï¿½ï¿½
 		printf("hard limit active, manual move return 3 \n");
 		return;
 	}
@@ -5221,52 +5219,52 @@ void ChannelEngine::ManualMove(uint8_t phy_axis, int8_t dir, double vel, double 
 	uint8_t chn_axis = 0, chn = 0;
 	chn = this->GetAxisChannel(phy_axis, chn_axis);
 
-	if(m_p_axis_config[phy_axis].axis_pmc == 0 && chn != CHANNEL_ENGINE_INDEX){ //Í¨µÀÖá
+	if(m_p_axis_config[phy_axis].axis_pmc == 0 && chn != CHANNEL_ENGINE_INDEX){ //Í¨ï¿½ï¿½ï¿½ï¿½
 		McCmdFrame cmd;
 		memset(&cmd, 0x00, sizeof(McCmdFrame));
 
 		cmd.data.channel_index = chn;
-		cmd.data.axis_index = chn_axis+1;   //ÖáºÅ´Ó1¿ªÊ¼
+		cmd.data.axis_index = chn_axis+1;   //ï¿½ï¿½Å´ï¿½1ï¿½ï¿½Ê¼
 		cmd.data.cmd = CMD_MC_AXIS_MAUAL_MOVE;
 
-		//ÉèÖÃËÙ¶È
-		uint32_t feed = vel*1000/60;   //×ª»»µ¥Î»Îªum/s
+		//ï¿½ï¿½ï¿½ï¿½ï¿½Ù¶ï¿½
+		uint32_t feed = vel*1000/60;   //×ªï¿½ï¿½ï¿½ï¿½Î»Îªum/s
 
 	//	memcpy(cmd.data.data, &feed, sizeof(feed));
 		cmd.data.data[0] = (feed & 0xFFFF);
 		cmd.data.data[1] = ((feed>>16)&0xFFFF);
 
-		//ÉèÖÃÄ¿±êÎ»ÖÃ
-		int64_t tar_pos = fabs(inc_dis) * 1e7 *dir;   //µ¥Î»×ª»»£ºmm-->0.1nms
+		//ï¿½ï¿½ï¿½ï¿½Ä¿ï¿½ï¿½Î»ï¿½ï¿½
+		int64_t tar_pos = fabs(inc_dis) * 1e7 *dir;   //ï¿½ï¿½Î»×ªï¿½ï¿½ï¿½ï¿½mm-->0.1nms
 
 		if((this->m_n_mask_ret_ref_over & (0x01<<phy_axis))
-				&& m_p_axis_config[phy_axis].soft_limit_check_1 == 1){//ÈíÏÞÎ»1ÓÐÐ§
-			int64_t cur_pos = this->m_df_phy_axis_pos_feedback[phy_axis]*1e7;  //µ±Ç°Î»ÖÃ
+				&& m_p_axis_config[phy_axis].soft_limit_check_1 == 1){//ï¿½ï¿½ï¿½ï¿½Î»1ï¿½ï¿½Ð§
+			int64_t cur_pos = this->m_df_phy_axis_pos_feedback[phy_axis]*1e7;  //ï¿½ï¿½Ç°Î»ï¿½ï¿½
 			int64_t limit_pos = 0;
 		//	int8_t dir = (tar_pos > cur_pos)?DIR_POSITIVE:DIR_NEGATIVE;
-			if(dir == DIR_POSITIVE){//ÕýÏò
+			if(dir == DIR_POSITIVE){//ï¿½ï¿½ï¿½ï¿½
 				limit_pos = m_p_axis_config[phy_axis].soft_limit_max_1*1e7;
 
 
-				if(limit_pos < cur_pos){//ÒÑ¾­ÔÚÏÞÎ»Íâ£¬¸æ¾¯
+				if(limit_pos < cur_pos){//ï¿½Ñ¾ï¿½ï¿½ï¿½ï¿½ï¿½Î»ï¿½â£¬ï¿½æ¾¯
 					CreateError(ERR_SOFTLIMIT_POS, WARNING_LEVEL, CLEAR_BY_MCP_RESET, 0, chn, chn_axis);
 				//	this->m_error_code = ERR_SOFTLIMIT_POS;
 					return;
-				}else if(limit_pos == cur_pos){  //ÒÑ¾­µ½´ïÕýÏÞÎ»¼«ÏÞÎ»ÖÃ
+				}else if(limit_pos == cur_pos){  //ï¿½Ñ¾ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Î»ï¿½ï¿½ï¿½ï¿½Î»ï¿½ï¿½
 					CreateError(ERR_SOFTLIMIT_POS, WARNING_LEVEL, CLEAR_BY_MCP_RESET, 0, chn, chn_axis);
 					return;
 				}else if(tar_pos > (limit_pos-cur_pos)){
 					tar_pos = limit_pos-this->m_p_channel_control[chn].GetAxisCurIntpTarPos(chn_axis, true)*1e7;
 
 				}
-			}else if(dir == DIR_NEGATIVE){//¸ºÏò
+			}else if(dir == DIR_NEGATIVE){//ï¿½ï¿½ï¿½ï¿½
 				limit_pos = m_p_axis_config[phy_axis].soft_limit_min_1*1e7;
 
-				if(limit_pos > cur_pos){//ÒÑ¾­ÔÚÏÞÎ»Íâ£¬¸æ¾¯
+				if(limit_pos > cur_pos){//ï¿½Ñ¾ï¿½ï¿½ï¿½ï¿½ï¿½Î»ï¿½â£¬ï¿½æ¾¯
 					CreateError(ERR_SOFTLIMIT_NEG, WARNING_LEVEL, CLEAR_BY_CLEAR_BUTTON, 0, chn, chn_axis);
 				//	this->m_error_code = ERR_SOFTLIMIT_NEG;
 					return;
-				}else if(limit_pos == cur_pos){  //ÒÑ¾­µ½´ï¸ºÏÞÎ»¼«ÏÞÎ»ÖÃ
+				}else if(limit_pos == cur_pos){  //ï¿½Ñ¾ï¿½ï¿½ï¿½ï¿½ï¸ºï¿½ï¿½Î»ï¿½ï¿½ï¿½ï¿½Î»ï¿½ï¿½
 					CreateError(ERR_SOFTLIMIT_NEG, WARNING_LEVEL, CLEAR_BY_CLEAR_BUTTON, 0, chn, chn_axis);
 					return;
 				}else if(tar_pos < (limit_pos-cur_pos)){
@@ -5280,7 +5278,7 @@ void ChannelEngine::ManualMove(uint8_t phy_axis, int8_t dir, double vel, double 
 		cmd.data.data[4] = ((tar_pos>>32) & 0xFFFF);
 		cmd.data.data[5] = ((tar_pos>>48)&0xFFFF);
 
-		cmd.data.data[6] = 0x02;   //ÔöÁ¿Ä¿±êÎ»ÖÃ
+		cmd.data.data[6] = 0x02;   //ï¿½ï¿½ï¿½ï¿½Ä¿ï¿½ï¿½Î»ï¿½ï¿½
 
 		if(!this->m_mc_run_on_arm[chn])
 			m_p_mc_comm->WriteCmd(cmd);
@@ -5288,47 +5286,47 @@ void ChannelEngine::ManualMove(uint8_t phy_axis, int8_t dir, double vel, double 
 			m_p_mc_arm_comm->WriteCmd(cmd);
 		
 	//	printf("ChannelEngine::ManualMove: axis = %d, tar_pos = %lld\n", phy_axis, tar_pos);
-	}else if(m_p_axis_config[phy_axis].axis_pmc){  //PMCÖá
+	}else if(m_p_axis_config[phy_axis].axis_pmc){  //PMCï¿½ï¿½
 		PmcCmdFrame cmd;
 		memset(&cmd, 0x00, sizeof(PmcCmdFrame));
 
-		cmd.data.axis_index = phy_axis+1;   //ÖáºÅ´Ó1¿ªÊ¼
-		cmd.data.axis_index |= 0xFF00;      //±êÖ¾Í¨µÀÒýÇæ
-		cmd.data.cmd = 0x100;   //ÔöÁ¿Î»ÖÃ
+		cmd.data.axis_index = phy_axis+1;   //ï¿½ï¿½Å´ï¿½1ï¿½ï¿½Ê¼
+		cmd.data.axis_index |= 0xFF00;      //ï¿½ï¿½Ö¾Í¨ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+		cmd.data.cmd = 0x100;   //ï¿½ï¿½ï¿½ï¿½Î»ï¿½ï¿½
 
-		//ÉèÖÃËÙ¶È
-		uint32_t feed = vel*1000/60;   //×ª»»µ¥Î»Îªum/s
+		//ï¿½ï¿½ï¿½ï¿½ï¿½Ù¶ï¿½
+		uint32_t feed = vel*1000/60;   //×ªï¿½ï¿½ï¿½ï¿½Î»Îªum/s
 
-		//ÉèÖÃÄ¿±êÎ»ÖÃ
-		int64_t tar_pos = fabs(inc_dis)*1e7*dir;    //×ª»»µ¥Î»Îª0.1nm
+		//ï¿½ï¿½ï¿½ï¿½Ä¿ï¿½ï¿½Î»ï¿½ï¿½
+		int64_t tar_pos = fabs(inc_dis)*1e7*dir;    //×ªï¿½ï¿½ï¿½ï¿½Î»Îª0.1nm
 
 		if((this->m_n_mask_ret_ref_over & (0x01<<phy_axis))
-				&& m_p_axis_config[phy_axis].soft_limit_check_1 == 1){//ÈíÏÞÎ»1ÓÐÐ§
-			int64_t cur_pos = this->m_df_phy_axis_pos_feedback[phy_axis]*1e7;  //µ±Ç°Î»ÖÃ
+				&& m_p_axis_config[phy_axis].soft_limit_check_1 == 1){//ï¿½ï¿½ï¿½ï¿½Î»1ï¿½ï¿½Ð§
+			int64_t cur_pos = this->m_df_phy_axis_pos_feedback[phy_axis]*1e7;  //ï¿½ï¿½Ç°Î»ï¿½ï¿½
 			int64_t limit_pos = 0;
 			int8_t dir = (tar_pos > cur_pos)?DIR_POSITIVE:DIR_NEGATIVE;
-			if(dir == DIR_POSITIVE){//ÕýÏò
+			if(dir == DIR_POSITIVE){//ï¿½ï¿½ï¿½ï¿½
 				limit_pos = m_p_axis_config[phy_axis].soft_limit_max_1*1e7;
 
-				if(limit_pos < cur_pos){//ÒÑ¾­ÔÚÏÞÎ»Íâ£¬¸æ¾¯
+				if(limit_pos < cur_pos){//ï¿½Ñ¾ï¿½ï¿½ï¿½ï¿½ï¿½Î»ï¿½â£¬ï¿½æ¾¯
 					CreateError(ERR_SOFTLIMIT_POS, WARNING_LEVEL, CLEAR_BY_MCP_RESET, 0, CHANNEL_ENGINE_INDEX, phy_axis);
 				//	this->m_error_code = ERR_SOFTLIMIT_POS;
 					return;
-				}else if(limit_pos == cur_pos){  //ÒÑ¾­µ½´ïÕýÏÞÎ»¼«ÏÞÎ»ÖÃ
+				}else if(limit_pos == cur_pos){  //ï¿½Ñ¾ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Î»ï¿½ï¿½ï¿½ï¿½Î»ï¿½ï¿½
 					CreateError(ERR_SOFTLIMIT_POS, WARNING_LEVEL, CLEAR_BY_MCP_RESET, 0, CHANNEL_ENGINE_INDEX, phy_axis);
 					return;
 				}else if(tar_pos > (limit_pos-cur_pos)){
 					tar_pos = limit_pos-cur_pos;
 
 				}
-			}else if(dir == DIR_NEGATIVE){//¸ºÏò
+			}else if(dir == DIR_NEGATIVE){//ï¿½ï¿½ï¿½ï¿½
 				limit_pos = m_p_axis_config[phy_axis].soft_limit_min_1*1e7;
 
-				if(limit_pos > cur_pos){//ÒÑ¾­ÔÚÏÞÎ»Íâ£¬¸æ¾¯
+				if(limit_pos > cur_pos){//ï¿½Ñ¾ï¿½ï¿½ï¿½ï¿½ï¿½Î»ï¿½â£¬ï¿½æ¾¯
 					CreateError(ERR_SOFTLIMIT_NEG, WARNING_LEVEL, CLEAR_BY_CLEAR_BUTTON, 0, CHANNEL_ENGINE_INDEX, phy_axis);
 				//	this->m_error_code = ERR_SOFTLIMIT_NEG;
 					return;
-				}else if(limit_pos == cur_pos){  //ÒÑ¾­µ½´ï¸ºÏÞÎ»¼«ÏÞÎ»ÖÃ
+				}else if(limit_pos == cur_pos){  //ï¿½Ñ¾ï¿½ï¿½ï¿½ï¿½ï¸ºï¿½ï¿½Î»ï¿½ï¿½ï¿½ï¿½Î»ï¿½ï¿½
 					CreateError(ERR_SOFTLIMIT_NEG, WARNING_LEVEL, CLEAR_BY_CLEAR_BUTTON, 0, CHANNEL_ENGINE_INDEX, phy_axis);
 					return;
 				}else if(tar_pos < (limit_pos-cur_pos)){
@@ -5339,13 +5337,13 @@ void ChannelEngine::ManualMove(uint8_t phy_axis, int8_t dir, double vel, double 
 
 
 
-		memcpy(&cmd.data.data[1], &tar_pos, sizeof(tar_pos));  //ÉèÖÃÄ¿±êÎ»ÖÃ
+		memcpy(&cmd.data.data[1], &tar_pos, sizeof(tar_pos));  //ï¿½ï¿½ï¿½ï¿½Ä¿ï¿½ï¿½Î»ï¿½ï¿½
 
-		memcpy(&cmd.data.data[5], &feed, sizeof(feed)); //ÉèÖÃËÙ¶È
+		memcpy(&cmd.data.data[5], &feed, sizeof(feed)); //ï¿½ï¿½ï¿½ï¿½ï¿½Ù¶ï¿½
 
 
 
-		this->m_n_run_axis_mask |= 0x01L<<phy_axis;  //ÉèÖÃµ±Ç°ÔËÐÐÖá
+		this->m_n_run_axis_mask |= 0x01L<<phy_axis;  //ï¿½ï¿½ï¿½Ãµï¿½Ç°ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 
 		this->m_p_mi_comm->SendPmcCmd(cmd);
 
@@ -5355,14 +5353,14 @@ void ChannelEngine::ManualMove(uint8_t phy_axis, int8_t dir, double vel, double 
 }
 
 /**
- * @brief ÊÖ¶¯Í£Ö¹
- * @param ÎÞ
+ * @brief ï¿½Ö¶ï¿½Í£Ö¹
+ * @param ï¿½ï¿½
  */
 void ChannelEngine::ManualMoveStop(){
-	//Í£Ö¹Í¨µÀÖá
+	//Í£Ö¹Í¨ï¿½ï¿½ï¿½ï¿½
 	m_p_channel_control[m_n_cur_channle_index].ManualMoveStop();
 
-	//Í£Ö¹PMCÖáÒÆ¶¯
+	//Í£Ö¹PMCï¿½ï¿½ï¿½Æ¶ï¿½
 	this->ManualMovePmcStop();
 
 
@@ -5372,7 +5370,7 @@ void ChannelEngine::ManualMoveStop(){
 //
 //		cmd.data.axis_index = 0xFF;
 //		cmd.data.cmd = CMD_MI_PAUSE_PMC_AXIS;
-//		cmd.data.data[0] = 0x20;   //Í£Ö¹µ±Ç°ÖáÔË¶¯£¬²¢Å×Æúµ±Ç°ÔË¶¯Ö¸Áî
+//		cmd.data.data[0] = 0x20;   //Í£Ö¹ï¿½ï¿½Ç°ï¿½ï¿½ï¿½Ë¶ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ç°ï¿½Ë¶ï¿½Ö¸ï¿½ï¿½
 //
 //		m_p_mi_comm->WriteCmd(cmd);
 //
@@ -5384,69 +5382,69 @@ void ChannelEngine::ManualMoveStop(){
 }
 
 /**
- * @brief Ö¸¶¨ÖáÊÖ¶¯ÒÆ¶¯
+ * @brief Ö¸ï¿½ï¿½ï¿½ï¿½ï¿½Ö¶ï¿½ï¿½Æ¶ï¿½
  */
 void ChannelEngine::ManualMovePmc(uint8_t phy_axis, int8_t dir){
-	//¼ì²éÓ²ÏÞÎ»
-	if(CheckAxisHardLimit(phy_axis, dir)){   //Ó²ÏÞÎ»¸æ¾¯£¬Ö±½Ó·µ»Ø
+	//ï¿½ï¿½ï¿½Ó²ï¿½ï¿½Î»
+	if(CheckAxisHardLimit(phy_axis, dir)){   //Ó²ï¿½ï¿½Î»ï¿½æ¾¯ï¿½ï¿½Ö±ï¿½Ó·ï¿½ï¿½ï¿½
 		printf("hard limit active, manual move pmc return \n");
 		return;
 	}
 
-//	m_channel_status.cur_manual_move_dir = dir;   //±£´æ·½Ïò
+//	m_channel_status.cur_manual_move_dir = dir;   //ï¿½ï¿½ï¿½æ·½ï¿½ï¿½
 
 	PmcCmdFrame cmd;
 	memset(&cmd, 0x00, sizeof(PmcCmdFrame));
 
-	cmd.data.axis_index = phy_axis+1;   //ÖáºÅ´Ó1¿ªÊ¼
-	cmd.data.axis_index |= 0xFF00;      //±êÖ¾Í¨µÀÒýÇæ
-	cmd.data.cmd = 0x100;   //ÔöÁ¿Î»ÖÃ
+	cmd.data.axis_index = phy_axis+1;   //ï¿½ï¿½Å´ï¿½1ï¿½ï¿½Ê¼
+	cmd.data.axis_index |= 0xFF00;      //ï¿½ï¿½Ö¾Í¨ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+	cmd.data.cmd = 0x100;   //ï¿½ï¿½ï¿½ï¿½Î»ï¿½ï¿½
 
-	//ÉèÖÃËÙ¶È
-	uint32_t feed = this->m_p_axis_config[phy_axis].manual_speed*1000/60;   //×ª»»µ¥Î»Îªum/s
+	//ï¿½ï¿½ï¿½ï¿½ï¿½Ù¶ï¿½
+	uint32_t feed = this->m_p_axis_config[phy_axis].manual_speed*1000/60;   //×ªï¿½ï¿½ï¿½ï¿½Î»Îªum/s
 	if(this->m_p_channel_control[0].IsRapidManualMove()){
-		feed *= 2;  //ËÙ¶È·­±¶
+		feed *= 2;  //ï¿½Ù¶È·ï¿½ï¿½ï¿½
 		printf("double manual feed\n");
 	}
 
 
-	//ÉèÖÃÄ¿±êÎ»ÖÃ
+	//ï¿½ï¿½ï¿½ï¿½Ä¿ï¿½ï¿½Î»ï¿½ï¿½
 	int64_t tar_pos = 0;
 
-	if(this->m_p_channel_control[0].GetChnWorkMode() == MANUAL_STEP_MODE){ //ÊÖ¶¯µ¥²½
-		tar_pos = this->m_p_channel_control[0].GetCurManualStep()*1e4*dir;		//×ª»»µ¥Î»Îª0.1nm
+	if(this->m_p_channel_control[0].GetChnWorkMode() == MANUAL_STEP_MODE){ //ï¿½Ö¶ï¿½ï¿½ï¿½ï¿½ï¿½
+		tar_pos = this->m_p_channel_control[0].GetCurManualStep()*1e4*dir;		//×ªï¿½ï¿½ï¿½ï¿½Î»Îª0.1nm
 
 	}else{
-		tar_pos = 99999*1e7*dir;    //ÊÖ¶¯Á¬ÐøÄ£Ê½£¬½«Ä¿±êÎ»ÖÃÉèÖÃµÄºÜÔ¶
+		tar_pos = 99999*1e7*dir;    //ï¿½Ö¶ï¿½ï¿½ï¿½ï¿½ï¿½Ä£Ê½ï¿½ï¿½ï¿½ï¿½Ä¿ï¿½ï¿½Î»ï¿½ï¿½ï¿½ï¿½ï¿½ÃµÄºï¿½Ô¶
 	}
 
 	if((this->m_n_mask_ret_ref_over & (0x01<<phy_axis))
-			&& this->m_p_axis_config[phy_axis].soft_limit_check_1 == 1){//ÈíÏÞÎ»1ÓÐÐ§
+			&& this->m_p_axis_config[phy_axis].soft_limit_check_1 == 1){//ï¿½ï¿½ï¿½ï¿½Î»1ï¿½ï¿½Ð§
 		int64_t tar_inc_max = 0;
-		int64_t cur_pos = this->GetPhyAxisMachPosFeedback(phy_axis)*1e7;  //µ±Ç°Î»ÖÃ
-		if(dir == DIR_POSITIVE){//ÕýÏò
+		int64_t cur_pos = this->GetPhyAxisMachPosFeedback(phy_axis)*1e7;  //ï¿½ï¿½Ç°Î»ï¿½ï¿½
+		if(dir == DIR_POSITIVE){//ï¿½ï¿½ï¿½ï¿½
 			tar_inc_max = m_p_axis_config[phy_axis].soft_limit_max_1*1e7 - cur_pos;
 
-			if(tar_inc_max < 0){//ÒÑ¾­ÔÚÏÞÎ»Íâ£¬¸æ¾¯
+			if(tar_inc_max < 0){//ï¿½Ñ¾ï¿½ï¿½ï¿½ï¿½ï¿½Î»ï¿½â£¬ï¿½æ¾¯
 				CreateError(ERR_SOFTLIMIT_POS, WARNING_LEVEL, CLEAR_BY_MCP_RESET, 0, CHANNEL_ENGINE_INDEX, phy_axis);
 				this->m_error_code = ERR_SOFTLIMIT_POS;
 				return;
-			}else if(tar_inc_max == 0){  //ÒÑ¾­µ½´ïÕýÏÞÎ»¼«ÏÞÎ»ÖÃ
+			}else if(tar_inc_max == 0){  //ï¿½Ñ¾ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Î»ï¿½ï¿½ï¿½ï¿½Î»ï¿½ï¿½
 				CreateError(ERR_SOFTLIMIT_POS, WARNING_LEVEL, CLEAR_BY_MCP_RESET, 0, CHANNEL_ENGINE_INDEX, phy_axis);
 				this->m_error_code = ERR_SOFTLIMIT_POS;
 				return;
 			}else if(tar_pos > tar_inc_max){
 				tar_pos = tar_inc_max;
 			}
-		}else if(dir == DIR_NEGATIVE){//¸ºÏò
+		}else if(dir == DIR_NEGATIVE){//ï¿½ï¿½ï¿½ï¿½
 			tar_inc_max = m_p_axis_config[phy_axis].soft_limit_min_1*1e7 - cur_pos;
 
-			if(tar_inc_max > 0){//ÒÑ¾­ÔÚÏÞÎ»Íâ£¬¸æ¾¯
+			if(tar_inc_max > 0){//ï¿½Ñ¾ï¿½ï¿½ï¿½ï¿½ï¿½Î»ï¿½â£¬ï¿½æ¾¯
 				CreateError(ERR_SOFTLIMIT_NEG, WARNING_LEVEL, CLEAR_BY_CLEAR_BUTTON, 0, CHANNEL_ENGINE_INDEX, phy_axis);
 		//		this->m_error_code = ERR_SOFTLIMIT_NEG;
 				printf("manual move out of soft negative limit\n");
 				return;
-			}else if(tar_inc_max == 0){  //ÒÑ¾­µ½´ï¸ºÏÞÎ»¼«ÏÞÎ»ÖÃ
+			}else if(tar_inc_max == 0){  //ï¿½Ñ¾ï¿½ï¿½ï¿½ï¿½ï¸ºï¿½ï¿½Î»ï¿½ï¿½ï¿½ï¿½Î»ï¿½ï¿½
 				CreateError(ERR_SOFTLIMIT_NEG, WARNING_LEVEL, CLEAR_BY_MCP_RESET, 0, CHANNEL_ENGINE_INDEX, phy_axis);
 		//		this->m_error_code = ERR_SOFTLIMIT_NEG;
 				return;
@@ -5456,13 +5454,13 @@ void ChannelEngine::ManualMovePmc(uint8_t phy_axis, int8_t dir){
 		}
 	}
 
-	memcpy(&cmd.data.data[1], &tar_pos, sizeof(tar_pos));  //ÉèÖÃÔöÁ¿Ä¿±êÎ»ÖÃ
+	memcpy(&cmd.data.data[1], &tar_pos, sizeof(tar_pos));  //ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ä¿ï¿½ï¿½Î»ï¿½ï¿½
 
-	memcpy(&cmd.data.data[5], &feed, sizeof(feed)); //ÉèÖÃËÙ¶È
+	memcpy(&cmd.data.data[5], &feed, sizeof(feed)); //ï¿½ï¿½ï¿½ï¿½ï¿½Ù¶ï¿½
 
 
 
-	this->m_n_run_axis_mask = 0x01L<<phy_axis;  //ÉèÖÃµ±Ç°ÔËÐÐÖá
+	this->m_n_run_axis_mask = 0x01L<<phy_axis;  //ï¿½ï¿½ï¿½Ãµï¿½Ç°ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 
 	this->m_p_mi_comm->SendPmcCmd(cmd);
 
@@ -5470,7 +5468,7 @@ void ChannelEngine::ManualMovePmc(uint8_t phy_axis, int8_t dir){
 }
 
 /**
- * @brief ÊÖ¶¯ÒÆ¶¯
+ * @brief ï¿½Ö¶ï¿½ï¿½Æ¶ï¿½
  */
 void ChannelEngine::ManualMovePmc(int8_t dir){
 
@@ -5478,15 +5476,15 @@ void ChannelEngine::ManualMovePmc(int8_t dir){
 }
 
 /**
- * @brief Ö¸¶¨ÖáÒÔÖ¸¶¨ËÙ¶ÈÒÆ¶¯µ½Ö¸¶¨Î»ÖÃ
- * param phy_axis : Ö¸¶¨µÄÎïÀíÖá£¬ ´Ó0¿ªÊ¼
- * param tar_pos : Ä¿±êÎ»ÖÃ£¬µ¥Î»£ºmm
- * param vel : Ä¿±êËÙ¶È£¬ µ¥Î»£ºmm/min
- * param inc : true--ÔöÁ¿Ê½    false--¾ø¶ÔÊ½
+ * @brief Ö¸ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ö¸ï¿½ï¿½ï¿½Ù¶ï¿½ï¿½Æ¶ï¿½ï¿½ï¿½Ö¸ï¿½ï¿½Î»ï¿½ï¿½
+ * param phy_axis : Ö¸ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½á£¬ ï¿½ï¿½0ï¿½ï¿½Ê¼
+ * param tar_pos : Ä¿ï¿½ï¿½Î»ï¿½Ã£ï¿½ï¿½ï¿½Î»ï¿½ï¿½mm
+ * param vel : Ä¿ï¿½ï¿½ï¿½Ù¶È£ï¿½ ï¿½ï¿½Î»ï¿½ï¿½mm/min
+ * param inc : true--ï¿½ï¿½ï¿½ï¿½Ê½    false--ï¿½ï¿½ï¿½ï¿½Ê½
  *
  */
 void ChannelEngine::ManualMovePmc(uint8_t phy_axis, double tar_pos, double vel, bool inc){
-	uint8_t dir = DIR_POSITIVE;  //Ä¬ÈÏÕýÏò
+	uint8_t dir = DIR_POSITIVE;  //Ä¬ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 
 	double cur_pos = this->GetPhyAxisMachPosFeedback(phy_axis);
 	if((!inc && tar_pos - cur_pos < 0) ||
@@ -5494,8 +5492,8 @@ void ChannelEngine::ManualMovePmc(uint8_t phy_axis, double tar_pos, double vel, 
 		dir = DIR_NEGATIVE;
 
 
-	//¼ì²éÓ²ÏÞÎ»
-	if(CheckAxisHardLimit(phy_axis, dir)){   //Ó²ÏÞÎ»¸æ¾¯£¬Ö±½Ó·µ»Ø
+	//ï¿½ï¿½ï¿½Ó²ï¿½ï¿½Î»
+	if(CheckAxisHardLimit(phy_axis, dir)){   //Ó²ï¿½ï¿½Î»ï¿½æ¾¯ï¿½ï¿½Ö±ï¿½Ó·ï¿½ï¿½ï¿½
 		printf("hard limit active, manual move pmc return \n");
 		return;
 	}
@@ -5503,25 +5501,25 @@ void ChannelEngine::ManualMovePmc(uint8_t phy_axis, double tar_pos, double vel, 
 	PmcCmdFrame cmd;
 	memset(&cmd, 0x00, sizeof(PmcCmdFrame));
 
-	cmd.data.axis_index = phy_axis+1;   //ÖáºÅ´Ó1¿ªÊ¼
-	cmd.data.axis_index |= 0xFF00;      //±êÖ¾Í¨µÀÒýÇæ
-	cmd.data.cmd = inc?0x100:0;   //¾ø¶ÔÎ»ÖÃ/ÔöÁ¿Î»ÖÃ
+	cmd.data.axis_index = phy_axis+1;   //ï¿½ï¿½Å´ï¿½1ï¿½ï¿½Ê¼
+	cmd.data.axis_index |= 0xFF00;      //ï¿½ï¿½Ö¾Í¨ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+	cmd.data.cmd = inc?0x100:0;   //ï¿½ï¿½ï¿½ï¿½Î»ï¿½ï¿½/ï¿½ï¿½ï¿½ï¿½Î»ï¿½ï¿½
 
-	//ÉèÖÃËÙ¶È
-	uint32_t feed = vel*1000/60;   //×ª»»µ¥Î»Îªum/s
+	//ï¿½ï¿½ï¿½ï¿½ï¿½Ù¶ï¿½
+	uint32_t feed = vel*1000/60;   //×ªï¿½ï¿½ï¿½ï¿½Î»Îªum/s
 
-	//ÉèÖÃÄ¿±êÎ»ÖÃ
-	int64_t target = tar_pos*1e7;    //×ª»»µ¥Î»Îª0.1nm
+	//ï¿½ï¿½ï¿½ï¿½Ä¿ï¿½ï¿½Î»ï¿½ï¿½
+	int64_t target = tar_pos*1e7;    //×ªï¿½ï¿½ï¿½ï¿½Î»Îª0.1nm
 
 
 	if((this->m_n_mask_ret_ref_over & (0x01<<phy_axis))
-			&& this->m_p_axis_config[phy_axis].soft_limit_check_1 == 1){//ÈíÏÞÎ»1ÓÐÐ§
+			&& this->m_p_axis_config[phy_axis].soft_limit_check_1 == 1){//ï¿½ï¿½ï¿½ï¿½Î»1ï¿½ï¿½Ð§
 		int64_t tar_inc_max = 0;
 
-		if(dir == DIR_POSITIVE){//ÕýÏò
+		if(dir == DIR_POSITIVE){//ï¿½ï¿½ï¿½ï¿½
 			tar_inc_max = m_p_axis_config[phy_axis].soft_limit_max_1*1e7 - cur_pos*1e7;
 
-			if(tar_inc_max <= 0){//ÒÑ¾­ÔÚÏÞÎ»Íâ£¬¸æ¾¯
+			if(tar_inc_max <= 0){//ï¿½Ñ¾ï¿½ï¿½ï¿½ï¿½ï¿½Î»ï¿½â£¬ï¿½æ¾¯
 				CreateError(ERR_SOFTLIMIT_POS, WARNING_LEVEL, CLEAR_BY_CLEAR_BUTTON, 0, CHANNEL_ENGINE_INDEX, phy_axis);
 	//			this->m_error_code = ERR_SOFTLIMIT_POS;
 
@@ -5531,10 +5529,10 @@ void ChannelEngine::ManualMovePmc(uint8_t phy_axis, double tar_pos, double vel, 
 			}else if(!inc && target > m_p_axis_config[phy_axis].soft_limit_max_1*1e7){
 				target = m_p_axis_config[phy_axis].soft_limit_max_1*1e7;
 			}
-		}else if(dir == DIR_NEGATIVE){//¸ºÏò
+		}else if(dir == DIR_NEGATIVE){//ï¿½ï¿½ï¿½ï¿½
 			tar_inc_max = m_p_axis_config[phy_axis].soft_limit_min_1*1e7 - cur_pos*1e7;
 
-			if(tar_inc_max > 0){//ÒÑ¾­ÔÚÏÞÎ»Íâ£¬¸æ¾¯
+			if(tar_inc_max > 0){//ï¿½Ñ¾ï¿½ï¿½ï¿½ï¿½ï¿½Î»ï¿½â£¬ï¿½æ¾¯
 				CreateError(ERR_SOFTLIMIT_NEG, WARNING_LEVEL, CLEAR_BY_CLEAR_BUTTON, 0, CHANNEL_ENGINE_INDEX, phy_axis);
 		//		this->m_error_code = ERR_SOFTLIMIT_NEG;
 
@@ -5547,13 +5545,13 @@ void ChannelEngine::ManualMovePmc(uint8_t phy_axis, double tar_pos, double vel, 
 		}
 	}
 
-	memcpy(&cmd.data.data[1], &target, sizeof(target));  //ÉèÖÃÄ¿±êÎ»ÖÃ
+	memcpy(&cmd.data.data[1], &target, sizeof(target));  //ï¿½ï¿½ï¿½ï¿½Ä¿ï¿½ï¿½Î»ï¿½ï¿½
 
-	memcpy(&cmd.data.data[5], &feed, sizeof(feed)); //ÉèÖÃËÙ¶È
+	memcpy(&cmd.data.data[5], &feed, sizeof(feed)); //ï¿½ï¿½ï¿½ï¿½ï¿½Ù¶ï¿½
 
 
 
-	this->m_n_run_axis_mask = 0x01L<<phy_axis;  //ÉèÖÃµ±Ç°ÔËÐÐÖá
+	this->m_n_run_axis_mask = 0x01L<<phy_axis;  //ï¿½ï¿½ï¿½Ãµï¿½Ç°ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 
 	this->m_p_mi_comm->SendPmcCmd(cmd);
 
@@ -5561,16 +5559,16 @@ void ChannelEngine::ManualMovePmc(uint8_t phy_axis, double tar_pos, double vel, 
 }
 
 /**
- * @brief ÊÖ¶¯Í£Ö¹
+ * @brief ï¿½Ö¶ï¿½Í£Ö¹
  */
 void ChannelEngine::ManualMovePmcStop(){
-	if(this->m_p_channel_control[0].GetChnWorkMode() == MANUAL_STEP_MODE){  //ÊÖ¶¯µ¥²½Ä£Ê½£¬²»×öÏìÓ¦£¬ÍË³ö
+	if(this->m_p_channel_control[0].GetChnWorkMode() == MANUAL_STEP_MODE){  //ï¿½Ö¶ï¿½ï¿½ï¿½ï¿½ï¿½Ä£Ê½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ó¦ï¿½ï¿½ï¿½Ë³ï¿½
 		return;
 	}
 	printf("send manualmove pmc stop to mi \n");
 
 #ifdef USES_PMC_PROCESS
-	//PMC¿ØÖÆ
+	//PMCï¿½ï¿½ï¿½ï¿½
 	this->m_p_pmc_reg->FReg().bits[0].OUT0 = 0;
 	this->m_p_pmc_reg->FReg().bits[0].OUT1 = 0;
 	this->m_p_pmc_reg->FReg().bits[0].OUT2 = 0;
@@ -5580,14 +5578,14 @@ void ChannelEngine::ManualMovePmcStop(){
 	this->m_p_pmc_reg->FReg().bits[0].OUT6 = 0;
 	this->m_p_pmc_reg->FReg().bits[0].OUT7 = 0;
 #else
-	//ÏµÍ³¿ØÖÆ
+	//ÏµÍ³ï¿½ï¿½ï¿½ï¿½
 	MiCmdFrame cmd;
 	memset(&cmd, 0x00, sizeof(MiCmdFrame));
 
 	cmd.data.axis_index = NO_AXIS;
 	cmd.data.reserved = CHANNEL_ENGINE_INDEX;
 	cmd.data.cmd = CMD_MI_PAUSE_PMC_AXIS;
-	cmd.data.data[0] = 0x20;   //Í£Ö¹µ±Ç°ÖáÔË¶¯£¬²¢Å×Æúµ±Ç°ÔË¶¯Ö¸Áî
+	cmd.data.data[0] = 0x20;   //Í£Ö¹ï¿½ï¿½Ç°ï¿½ï¿½ï¿½Ë¶ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ç°ï¿½Ë¶ï¿½Ö¸ï¿½ï¿½
 
 	m_p_mi_comm->WriteCmd(cmd);
 
@@ -5597,9 +5595,9 @@ void ChannelEngine::ManualMovePmcStop(){
 }
 
 /**
- * @brief ÔÝÍ£PMCÖáÒÆ¶¯
- * @param phy_axis : ÎïÀíÖáºÅ, ´Ó0¿ªÊ¼
- * @param flag : true--ÔÝÍ£     false--È¡ÏûÔÝÍ£
+ * @brief ï¿½ï¿½Í£PMCï¿½ï¿½ï¿½Æ¶ï¿½
+ * @param phy_axis : ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½, ï¿½ï¿½0ï¿½ï¿½Ê¼
+ * @param flag : true--ï¿½ï¿½Í£     false--È¡ï¿½ï¿½ï¿½ï¿½Í£
  */
 void ChannelEngine::PausePmcAxis(uint8_t phy_axis, bool flag){
 	MiCmdFrame cmd;
@@ -5607,11 +5605,11 @@ void ChannelEngine::PausePmcAxis(uint8_t phy_axis, bool flag){
 
 	uint16_t data = 0x01;
 	if(!flag)
-		data = 0x10;   //È¡ÏûÔÝÍ£
+		data = 0x10;   //È¡ï¿½ï¿½ï¿½ï¿½Í£
 	cmd.data.axis_index = phy_axis+1;
 	cmd.data.reserved = CHANNEL_ENGINE_INDEX;
 	cmd.data.cmd = CMD_MI_PAUSE_PMC_AXIS;
-	cmd.data.data[0] = data;   //ÔÝÍ£µ±Ç°ÖáÔË¶¯
+	cmd.data.data[0] = data;   //ï¿½ï¿½Í£ï¿½ï¿½Ç°ï¿½ï¿½ï¿½Ë¶ï¿½
 
 	m_p_mi_comm->WriteCmd(cmd);
 
@@ -5619,8 +5617,8 @@ void ChannelEngine::PausePmcAxis(uint8_t phy_axis, bool flag){
 }
 
 /**
- * @brief ÊÖ¶¯Í£Ö¹Ö¸¶¨Öá
- * @param phy_axis £º ÎïÀíÖáºÃ£¬ ´Ó0¿ªÊ¼
+ * @brief ï¿½Ö¶ï¿½Í£Ö¹Ö¸ï¿½ï¿½ï¿½ï¿½
+ * @param phy_axis ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ã£ï¿½ ï¿½ï¿½0ï¿½ï¿½Ê¼
  */
 void ChannelEngine::ManualMoveStop(uint8_t phy_axis){
 
@@ -5628,14 +5626,14 @@ void ChannelEngine::ManualMoveStop(uint8_t phy_axis){
 	chn = this->GetAxisChannel(phy_axis, chn_axis);
 	if(this->m_p_axis_config[phy_axis].axis_pmc == 0 && chn != CHANNEL_ENGINE_INDEX){
 		this->m_p_channel_control[chn].ManualMoveStop(0x01<<chn_axis);
-	}else if(this->m_p_axis_config[phy_axis].axis_pmc){  //PMCÖá
+	}else if(this->m_p_axis_config[phy_axis].axis_pmc){  //PMCï¿½ï¿½
 		MiCmdFrame cmd;
 		memset(&cmd, 0x00, sizeof(MiCmdFrame));
 
 		cmd.data.axis_index = phy_axis+1;
 		cmd.data.reserved = CHANNEL_ENGINE_INDEX;
 		cmd.data.cmd = CMD_MI_PAUSE_PMC_AXIS;
-		cmd.data.data[0] = 0x30;   //Í£Ö¹Ö¸¶¨ÖáÔË¶¯£¬²¢Å×Æúµ±Ç°ÔË¶¯Ö¸Áî
+		cmd.data.data[0] = 0x30;   //Í£Ö¹Ö¸ï¿½ï¿½ï¿½ï¿½ï¿½Ë¶ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ç°ï¿½Ë¶ï¿½Ö¸ï¿½ï¿½
 
 		m_p_mi_comm->WriteCmd(cmd);
 
@@ -5648,19 +5646,19 @@ void ChannelEngine::ManualMoveStop(uint8_t phy_axis){
 }
 
 /**
- * @brief PMCÖáÔËÐÐµ½Î»
- * @param cmd : MI·¢ËÍ¹ýÀ´µÄÃüÁîÖ¡
+ * @brief PMCï¿½ï¿½ï¿½ï¿½ï¿½Ðµï¿½Î»
+ * @param cmd : MIï¿½ï¿½ï¿½Í¹ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ö¡
  */
 void ChannelEngine::PmcAxisRunOver(MiCmdFrame &cmd){
 	printf("PmcAxisRunOver: axis = %hhu\n",cmd.data.axis_index);
 	uint64_t mask = 0;
 	uint8_t chn = cmd.data.reserved-1;
 
-	if((cmd.data.data[0]&0xFF) == 0x01){//G01Ö¸Áî
+	if((cmd.data.data[0]&0xFF) == 0x01){//G01Ö¸ï¿½ï¿½
 
 		memcpy(&mask, &cmd.data.data[1], 4);
 		printf("PmcAxisRunOver1: axis_mask = 0x%llx\n",mask);
-		if((this->m_n_run_axis_mask & mask) == 0){  //²»ÊÇÍ¨µÀÒýÇæ¿ØÖÆµÄPMCÖá
+		if((this->m_n_run_axis_mask & mask) == 0){  //ï¿½ï¿½ï¿½ï¿½Í¨ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Æµï¿½PMCï¿½ï¿½
 			if(chn < this->m_p_general_config->chn_count){
 				if(this->m_p_channel_control[chn].PmcAxisRunOver(cmd))
 					return;
@@ -5668,12 +5666,12 @@ void ChannelEngine::PmcAxisRunOver(MiCmdFrame &cmd){
 			return;
 		}else if(this->m_n_run_axis_mask == 0)
 			return;
-	}else{ //µ¥ÖáÖ¸Áî  G00
-		uint8_t phy_axis = cmd.data.axis_index-1;  //ÎïÀíÖáºÅ£¬´Ó0¿ªÊ¼
+	}else{ //ï¿½ï¿½ï¿½ï¿½Ö¸ï¿½ï¿½  G00
+		uint8_t phy_axis = cmd.data.axis_index-1;  //ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Å£ï¿½ï¿½ï¿½0ï¿½ï¿½Ê¼
 		mask = 0x01L<<phy_axis;
 
 		printf("PmcAxisRunOver2: axis_mask = 0x%llx\n",mask);
-		if((this->m_n_run_axis_mask & mask) == 0){  //²»ÊÇÍ¨µÀÒýÇæ¿ØÖÆµÄPMCÖá
+		if((this->m_n_run_axis_mask & mask) == 0){  //ï¿½ï¿½ï¿½ï¿½Í¨ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Æµï¿½PMCï¿½ï¿½
 			if(chn < this->m_p_general_config->chn_count){
 				if(this->m_p_channel_control[chn].PmcAxisRunOver(cmd))
 					return;
@@ -5684,14 +5682,14 @@ void ChannelEngine::PmcAxisRunOver(MiCmdFrame &cmd){
 
 		if(this->m_p_axis_config[phy_axis].axis_pmc > 0){
 			if(m_pmc_axis_ctrl[m_p_axis_config[phy_axis].axis_pmc-1].GetCmdCount() > 0 &&
-					!m_pmc_axis_ctrl[m_p_axis_config[phy_axis].axis_pmc-1].IsPaused()){   //ÓÐÊý¾Ý£¬·ÇÔÝÍ£×´Ì¬
+					!m_pmc_axis_ctrl[m_p_axis_config[phy_axis].axis_pmc-1].IsPaused()){   //ï¿½ï¿½ï¿½ï¿½ï¿½Ý£ï¿½ï¿½ï¿½ï¿½ï¿½Í£×´Ì¬
 				m_pmc_axis_ctrl[m_p_axis_config[phy_axis].axis_pmc-1].ExecCmdOver(true);
 			}
 		}
 
 		this->m_n_runover_axis_mask |= mask;
 
-		if(this->m_n_run_axis_mask == this->m_n_runover_axis_mask){  //ÔËÐÐ½áÊø
+		if(this->m_n_run_axis_mask == this->m_n_runover_axis_mask){  //ï¿½ï¿½ï¿½Ð½ï¿½ï¿½ï¿½
 			this->m_n_run_axis_mask = 0;
 			this->m_n_runover_axis_mask = 0;
 
@@ -5704,8 +5702,8 @@ void ChannelEngine::PmcAxisRunOver(MiCmdFrame &cmd){
 
 
 /**
- * @brief Ö÷ÖáÊä³ö
- * @param dir : Ö÷ÖáÐý×ª·½Ïò
+ * @brief ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+ * @param dir : ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½×ªï¿½ï¿½ï¿½ï¿½
  */
 void ChannelEngine::SpindleOut(int dir){
 	//printf("channelengine::spindleout : %d, cur_chn=%hhu\n", dir, m_n_cur_channle_index);
@@ -5714,14 +5712,14 @@ void ChannelEngine::SpindleOut(int dir){
 }
 
 /**
- * @brief ¼ì²éÎïÀíÖáÏÞÎ»¸æ¾¯Çé¿ö
- * @param phy_axis : ÎïÀíÖáºÅ£¬ÓÉ0¿ªÊ¼
- * @param dir £º ÏÞÎ»·½Ïò, -1±íÊ¾¸ºÏò£¬ 1±íÊ¾ÕýÏò
- * @return true--´¥·¢ÏÞÎ»   false--Ã»ÓÐ´¥·¢
+ * @brief ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Î»ï¿½æ¾¯ï¿½ï¿½ï¿½
+ * @param phy_axis : ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Å£ï¿½ï¿½ï¿½0ï¿½ï¿½Ê¼
+ * @param dir ï¿½ï¿½ ï¿½ï¿½Î»ï¿½ï¿½ï¿½ï¿½, -1ï¿½ï¿½Ê¾ï¿½ï¿½ï¿½ï¿½ 1ï¿½ï¿½Ê¾ï¿½ï¿½ï¿½ï¿½
+ * @return true--ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Î»   false--Ã»ï¿½Ð´ï¿½ï¿½ï¿½
  */
 bool ChannelEngine::CheckAxisHardLimit(uint8_t phy_axis, int8_t dir){
     printf("cur phy axis: %hhu, dir = %hhu, post_mask = 0x%llx, neg_mask = 0x%llx\n", phy_axis, dir, this->m_hard_limit_postive, m_hard_limit_negative);
-	if(this->m_b_ret_ref || this->m_b_ret_ref_auto)   //»Ø²Î¿¼µãÊ±ÆÁ±ÎÓ²ÏÞÎ»
+	if(this->m_b_ret_ref || this->m_b_ret_ref_auto)   //ï¿½Ø²Î¿ï¿½ï¿½ï¿½Ê±ï¿½ï¿½ï¿½ï¿½Ó²ï¿½ï¿½Î»
 		return false;
 	if(dir == DIR_POSITIVE){
 		if(this->m_hard_limit_postive & (0x01<<phy_axis))
@@ -5737,12 +5735,12 @@ bool ChannelEngine::CheckAxisHardLimit(uint8_t phy_axis, int8_t dir){
 }
 
 /**
- * @brief ÉèÖÃÖ¸¶¨ÖáµÄÈíÏÞÎ»¿ª¹Ø
- * @param axis : Ö¸¶¨ÖáºÅ£¬´Ó0¿ªÊ¼
+ * @brief ï¿½ï¿½ï¿½ï¿½Ö¸ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Î»ï¿½ï¿½ï¿½ï¿½
+ * @param axis : Ö¸ï¿½ï¿½ï¿½ï¿½Å£ï¿½ï¿½ï¿½0ï¿½ï¿½Ê¼
  */
  /*
 void ChannelEngine::SetAxisSoftLimit(uint8_t axis){
-	//·¢ËÍMCÖáÈíÏÞÎ»Êý¾Ý
+	//ï¿½ï¿½ï¿½ï¿½MCï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Î»ï¿½ï¿½ï¿½ï¿½
 	McCmdFrame cmd;
 	memset(&cmd, 0x00, sizeof(McCmdFrame));
 
@@ -5768,13 +5766,13 @@ void ChannelEngine::SetAxisSoftLimit(uint8_t axis){
 }*/
 
 /**
- * @brief ÉèÖÃÖ¸¶¨ÖáµÄÈíÏÞÎ»Öµ
- * @param axis : Ö¸¶¨ÖáºÅ£¬´Ó0¿ªÊ¼
- * @param index : ÈíÏÞÎ»×éºÅ£¬×Ü¹²3×é£¬0-2
+ * @brief ï¿½ï¿½ï¿½ï¿½Ö¸ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Î»Öµ
+ * @param axis : Ö¸ï¿½ï¿½ï¿½ï¿½Å£ï¿½ï¿½ï¿½0ï¿½ï¿½Ê¼
+ * @param index : ï¿½ï¿½ï¿½ï¿½Î»ï¿½ï¿½Å£ï¿½ï¿½Ü¹ï¿½3ï¿½é£¬0-2
  */
  /*
 void ChannelEngine::SetAxisSoftLimitValue(uint8_t axis, uint8_t index){
-	//·¢ËÍMCÖáÈíÏÞÎ»Êý¾Ý
+	//ï¿½ï¿½ï¿½ï¿½MCï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Î»ï¿½ï¿½ï¿½ï¿½
 	McCmdFrame cmd;
 	memset(&cmd, 0x00, sizeof(McCmdFrame));
 	uint16_t tmp = index;
@@ -5799,11 +5797,11 @@ void ChannelEngine::SetAxisSoftLimitValue(uint8_t axis, uint8_t index){
 	cmd.data.data[0] = tmp;
 
 
-	int32_t softlimit = max*1e3;   //µ¥Î»ÓÉmm×ª»»Îª1um
+	int32_t softlimit = max*1e3;   //ï¿½ï¿½Î»ï¿½ï¿½mm×ªï¿½ï¿½Îª1um
 	cmd.data.data[1] = (softlimit & 0xFFFF);
 	cmd.data.data[2] = ((softlimit>>16) & 0xFFFF);
 
-	softlimit = min*1e3;   //µ¥Î»ÓÉmm×ª»»Îª1um
+	softlimit = min*1e3;   //ï¿½ï¿½Î»ï¿½ï¿½mm×ªï¿½ï¿½Îª1um
 	cmd.data.data[3] = (softlimit & 0xFFFF);
 	cmd.data.data[4] = ((softlimit>>16) & 0xFFFF);
 
@@ -5811,10 +5809,10 @@ void ChannelEngine::SetAxisSoftLimitValue(uint8_t axis, uint8_t index){
 }*/
 
 /**
- * @brief ¿ªÊ¼Ä£¿éÉý¼¶²Ù×÷
+ * @brief ï¿½ï¿½Ê¼Ä£ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
  */
 void ChannelEngine::StartUpdateProcess(){
-	//´´½¨Éý¼¶Ïß³Ì
+	//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ß³ï¿½
 	int res = 0;
 	pthread_attr_t attr;
 	struct sched_param param;
@@ -5823,16 +5821,16 @@ void ChannelEngine::StartUpdateProcess(){
 	pthread_attr_setstacksize(&attr, kThreadStackSize);	//
 	param.__sched_priority = 30; //90;
 	pthread_attr_setschedparam(&attr, &param);
-//	res = pthread_attr_setinheritsched(&attr, PTHREAD_EXPLICIT_SCHED); //²»¼Ì³Ð¸¸Ïß³Ìµ÷¶È·½Ê½£¬·ñÔòÒÔÉÏµÄÉèÖÃ²»ÉúÐ§
+//	res = pthread_attr_setinheritsched(&attr, PTHREAD_EXPLICIT_SCHED); //ï¿½ï¿½ï¿½Ì³Ð¸ï¿½ï¿½ß³Ìµï¿½ï¿½È·ï¿½Ê½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ïµï¿½ï¿½ï¿½ï¿½Ã²ï¿½ï¿½ï¿½Ð§
 //	if (res) {
-//		g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "Ä£¿éÉý¼¶´¦ÀíÏß³ÌÉèÖÃÏß³Ì¼Ì³ÐÄ£Ê½Ê§°Ü£¡");
+//		g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "Ä£ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ß³ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ß³Ì¼Ì³ï¿½Ä£Ê½Ê§ï¿½Ü£ï¿½");
 //		m_error_code = ERR_INIT_UPDATE;
 //		goto END;
 //	}
 	res = pthread_create(&m_thread_update, &attr,
-			ChannelEngine::UpdateThread, this);    //¿ªÆôÄ£¿éÉý¼¶ÔËÐÐÏß³Ì
+			ChannelEngine::UpdateThread, this);    //ï¿½ï¿½ï¿½ï¿½Ä£ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ß³ï¿½
 	if (res != 0) {
-		g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "Ä£¿éÉý¼¶´¦ÀíÏß³Ì´´½¨Ê§°Ü!");
+		g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "Ä£ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ß³Ì´ï¿½ï¿½ï¿½Ê§ï¿½ï¿½!");
 		m_error_code = ERR_INIT_UPDATE;
 		CreateError(m_error_code, ERROR_LEVEL, CLEAR_BY_RESET_POWER);
 		goto END;
@@ -5843,20 +5841,20 @@ END:
 }
 
 /**
- * @brief Ä£¿éÉý¼¶Ö´ÐÐÏß³Ìº¯Êý
- * @param void *args: ChannelEngine¶ÔÏóÖ¸Õë
+ * @brief Ä£ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ö´ï¿½ï¿½ï¿½ß³Ìºï¿½ï¿½ï¿½
+ * @param void *args: ChannelEngineï¿½ï¿½ï¿½ï¿½Ö¸ï¿½ï¿½
  */
 void *ChannelEngine::UpdateThread(void *args){
 	printf("start module update thread, threadid = %ld!\n", syscall(SYS_gettid));
 	ChannelEngine *p_chn_engine = static_cast<ChannelEngine *>(args);
 
 	int res = ERR_NONE;
-	res = pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL); //ÉèÖÃÏß³ÌÎª¿ÉÍË³öÄ£Ê½
+	res = pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL); //ï¿½ï¿½ï¿½ï¿½ï¿½ß³ï¿½Îªï¿½ï¿½ï¿½Ë³ï¿½Ä£Ê½
 	if (res != ERR_NONE) {
 		printf("Quit ChannelEngine::UpdateThread with error 1!\n");
 		pthread_exit((void*) EXIT_FAILURE);
 	}
-	res = pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL);  //Ïß³ÌÍË³ö·½Ê½ÎªÒì²½ÍË³ö£¬²»ÓÃµÈµ½cancellation point
+	res = pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL);  //ï¿½ß³ï¿½ï¿½Ë³ï¿½ï¿½ï¿½Ê½Îªï¿½ì²½ï¿½Ë³ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ÃµÈµï¿½cancellation point
 	if (res != ERR_NONE) {
 		printf("Quit ChannelEngine::UpdateThread with error 2!\n");
 		pthread_exit((void*) EXIT_FAILURE);
@@ -5877,50 +5875,50 @@ void *ChannelEngine::UpdateThread(void *args){
 int ChannelEngine::UpdateProcess(){
 	int res = ERR_NONE;
 
-	//Ò»¼üÉý¼¶
+	//Ò»ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 	res = this->UpdateDisk();
 	if(res != ERR_NONE)
 		goto END;
 	
-	//Éý¼¶SC
+	//ï¿½ï¿½ï¿½ï¿½SC
 	res = this->UpdateSC();
 	if(res != ERR_NONE)
 		goto END;
 
 
-	//Éý¼¶MC
+	//ï¿½ï¿½ï¿½ï¿½MC
 	res = this->UpdateMC();
 	if(res != ERR_NONE)
 		goto END;
 
-	//Éý¼¶MI
+	//ï¿½ï¿½ï¿½ï¿½MI
 //	res = this->UpdateMI();
 	res = this->UpdateMI_2();
 	if(res != ERR_NONE)
 		goto END;
 
-	//Éý¼¶PMC
+	//ï¿½ï¿½ï¿½ï¿½PMC
 	res = this->UpdatePMC();
 	if(res != ERR_NONE)
 		goto END;
 
-	//Éý¼¶PL
+	//ï¿½ï¿½ï¿½ï¿½PL
 	res = this->UpdatePL();
 	if(res != ERR_NONE)
 		goto END;
 
-	//Éý¼¶SPARTAN
+	//ï¿½ï¿½ï¿½ï¿½SPARTAN
 	res = this->UpdateSpartan();
 	if(res != ERR_NONE)
 		goto END;
 
-	//Éý¼¶ModbusÄ£¿é
+	//ï¿½ï¿½ï¿½ï¿½ModbusÄ£ï¿½ï¿½
 	res =this->UpdateModbus();
 	if(res != ERR_NONE)
 		goto END;
 
 END:
-	this->SendHmiUpdateStatus(0, 0);//È«²¿Ä£¿éÉý¼¶Íê³É
+	this->SendHmiUpdateStatus(0, 0);//È«ï¿½ï¿½Ä£ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 
 	m_thread_update = 0;
 	if(res != ERR_NONE){
@@ -5931,11 +5929,11 @@ END:
 }
 
 /**
- * @brief Éý¼¶MCÄ£¿é
+ * @brief ï¿½ï¿½ï¿½ï¿½MCÄ£ï¿½ï¿½
  * @return
  */
 int ChannelEngine::UpdateMC(){
-	//Éý¼¶MCÄ£¿é
+	//ï¿½ï¿½ï¿½ï¿½MCÄ£ï¿½ï¿½
 	int res = ERR_NONE;
 //	int retry = 0;
 	uint32_t i = 0;
@@ -5943,81 +5941,81 @@ int ChannelEngine::UpdateMC(){
 	struct stat statbuf;
 	uint32_t file_size = 0;
 	uint32_t send_size = 0, read_size = 0;
-	uint16_t file_crc = 0xffff;  //ÎÄ¼þcrc
-	uint16_t file_frame_count = 0;  //×ÜÖ¡Êý
-	GCodeFrame data_frame;     //Êý¾ÝÖ¡
-	int fp = 0; //ÎÄ¼þ¾ä±ú
+	uint16_t file_crc = 0xffff;  //ï¿½Ä¼ï¿½crc
+	uint16_t file_frame_count = 0;  //ï¿½ï¿½Ö¡ï¿½ï¿½
+	GCodeFrame data_frame;     //ï¿½ï¿½ï¿½ï¿½Ö¡
+	int fp = 0; //ï¿½Ä¼ï¿½ï¿½ï¿½ï¿½
 	uint32_t cc = 0;
 
-	//×éºÏÉý¼¶ÎÄ¼þÃû×Ö
+	//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ä¼ï¿½ï¿½ï¿½ï¿½ï¿½
 	char filepath[kMaxPathLen] = {0};
 	strcpy(filepath, PATH_UPDATE_PATH);
 	strcat(filepath, "module_mc.ldr");
 
-	if(access(filepath, F_OK) == -1)	//Éý¼¶ÎÄ¼þ²»´æÔÚ£¬MCÄ£¿é²»ÐèÒªÉý¼¶
+	if(access(filepath, F_OK) == -1)	//ï¿½ï¿½ï¿½ï¿½ï¿½Ä¼ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ú£ï¿½MCÄ£ï¿½é²»ï¿½ï¿½Òªï¿½ï¿½ï¿½ï¿½
 		return res;
 
 	printf("start to update MC module\n");
 	m_n_update_state = MODULE_UPDATE_MC;
-	m_n_mc_update_status = 0;  //³õÊ¼×´Ì¬ÎªÎÞ´íÎó
+	m_n_mc_update_status = 0;  //ï¿½ï¿½Ê¼×´Ì¬Îªï¿½Þ´ï¿½ï¿½ï¿½
 
 	this->SendHmiUpdateStatus(5, 0);
 
 	if(!this->SendMcUpdateStartCmd()){
-		g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "·¢ËÍMCÄ£¿éÉý¼¶¿ªÊ¼ÃüÁîÊ§°Ü£¡");
+		g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "ï¿½ï¿½ï¿½ï¿½MCÄ£ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ê¼ï¿½ï¿½ï¿½ï¿½Ê§ï¿½Ü£ï¿½");
 		res = ERR_UPDATE_MC;
 		goto END;
 	}
 
 	printf("Succeed to send mc update start cmd\n");
 
-	//TODO Çå³ýÏÂÐÐÔË¿ØÊý¾ÝFIFOÖÐµÄµ±Ç°Êý¾Ý
+	//TODO ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ë¿ï¿½ï¿½ï¿½ï¿½ï¿½FIFOï¿½ÐµÄµï¿½Ç°ï¿½ï¿½ï¿½ï¿½
 
-	//µÈ´ýMC²Á³ý±¸·ÝÇøflash
+	//ï¿½È´ï¿½MCï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½flash
 	printf("wait mc to erase flash!\n");
 	do{
 		if(!QueryMcUpdateStatus()){
-			g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "²éÑ¯MCÄ£¿éÉý¼¶×´Ì¬Ê§°Ü£¡");
+			g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "ï¿½ï¿½Ñ¯MCÄ£ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½×´Ì¬Ê§ï¿½Ü£ï¿½");
 			res = ERR_UPDATE_MC;
 			goto END;
 		}
 		while(!m_b_get_mc_update_status)
-			usleep(100); //µÈ´ý²éÑ¯½á¹û
+			usleep(100); //ï¿½È´ï¿½ï¿½ï¿½Ñ¯ï¿½ï¿½ï¿½
 
 		if(m_n_mc_update_status == 4)
 			break;
 
-		usleep(100000);  //µÈ´ý100ms
+		usleep(100000);  //ï¿½È´ï¿½100ms
 
 	}while(1);
 
-	//´«ÊäÎÄ¼þ´óÐ¡
+	//ï¿½ï¿½ï¿½ï¿½ï¿½Ä¼ï¿½ï¿½ï¿½Ð¡
 	printf("send file size!\n");
 	this->SendHmiUpdateStatus(5, 1);
 	if(stat(filepath, &statbuf) == 0)
-		file_size = statbuf.st_size;  //»ñÈ¡ÎÄ¼þ×Ü´óÐ¡
+		file_size = statbuf.st_size;  //ï¿½ï¿½È¡ï¿½Ä¼ï¿½ï¿½Ü´ï¿½Ð¡
 	else{
-		g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "»ñÈ¡ÎÄ¼þ[%s]´óÐ¡Ê§°Ü£¡", PATH_PMC_DATA);
+		g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "ï¿½ï¿½È¡ï¿½Ä¼ï¿½[%s]ï¿½ï¿½Ð¡Ê§ï¿½Ü£ï¿½", PATH_PMC_DATA);
 		res = ERR_UPDATE_MC;
-		goto END;		//»ñÈ¡ÎÄ¼þ´óÐ¡Ê§°Ü
+		goto END;		//ï¿½ï¿½È¡ï¿½Ä¼ï¿½ï¿½ï¿½Ð¡Ê§ï¿½ï¿½
 	}
 	if(!this->SendMcUpdateFileSize(file_size)){
-		g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "·¢ËÍÉý¼¶ÎÄ¼þ´óÐ¡Ê§°Ü£¡");
+		g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ä¼ï¿½ï¿½ï¿½Ð¡Ê§ï¿½Ü£ï¿½");
 		res = ERR_UPDATE_MC;
 		goto END;
 	}
 
-	//·¢ËÍÎÄ¼þÄÚÈÝ
+	//ï¿½ï¿½ï¿½ï¿½ï¿½Ä¼ï¿½ï¿½ï¿½ï¿½ï¿½
 	printf("send file content!\n");
 	this->SendHmiUpdateStatus(5, 2);
-	fp = open(filepath, O_RDONLY); //Ö»¶Á´ò¿ªÎÄ¼þ
+	fp = open(filepath, O_RDONLY); //Ö»ï¿½ï¿½ï¿½ï¿½ï¿½Ä¼ï¿½
 	if(fp < 0){
-		g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "´ò¿ªÎÄ¼þ[%s]Ê§°Ü£¡", filepath);
+		g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "ï¿½ï¿½ï¿½Ä¼ï¿½[%s]Ê§ï¿½Ü£ï¿½", filepath);
 		res = ERR_UPDATE_MC;
-		goto END;//ÎÄ¼þ´ò¿ªÊ§°Ü
+		goto END;//ï¿½Ä¼ï¿½ï¿½ï¿½Ê§ï¿½ï¿½
 	}
 
-	//¼ÆËãÎÄ¼þ×ÜÖ¡Êý
+	//ï¿½ï¿½ï¿½ï¿½ï¿½Ä¼ï¿½ï¿½ï¿½Ö¡ï¿½ï¿½
 	file_frame_count = file_size/MC_UPDATE_BLOCK_SIZE;
 	if(file_size%MC_UPDATE_BLOCK_SIZE)
 		file_frame_count++;
@@ -6027,26 +6025,26 @@ int ChannelEngine::UpdateMC(){
 		send_size = file_size>MC_UPDATE_BLOCK_SIZE?MC_UPDATE_BLOCK_SIZE:file_size;
 		read_size = read(fp, (void *)&data_frame.data_crc[1], send_size);
 		if(read_size != send_size){
-			g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "¶ÁÈ¡ÎÄ¼þ[%s]Ê§°Ü£¬%u, %u£¡", filepath, send_size, read_size);
+			g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "ï¿½ï¿½È¡ï¿½Ä¼ï¿½[%s]Ê§ï¿½Ü£ï¿½%u, %uï¿½ï¿½", filepath, send_size, read_size);
 			res = ERR_UPDATE_MC;
-			goto END;//ÎÄ¼þ¶ÁÈ¡Ê§°Ü
+			goto END;//ï¿½Ä¼ï¿½ï¿½ï¿½È¡Ê§ï¿½ï¿½
 		}
 
 		cc = send_size/2;
 		if(send_size%2)
 			cc++;
 		for(i = 0; i < cc; i++){
-			file_crc ^= data_frame.data_crc[i+1];  //¼ÆËãCRC
+			file_crc ^= data_frame.data_crc[i+1];  //ï¿½ï¿½ï¿½ï¿½CRC
 		}
 
-		while(!this->m_p_mc_comm->WriteGCodeData(0, data_frame)){  //¹Ì¶¨ÓÃÍ¨µÀ0Êý¾ÝÍ¨µÀ¸üÐÂMC
+		while(!this->m_p_mc_comm->WriteGCodeData(0, data_frame)){  //ï¿½Ì¶ï¿½ï¿½ï¿½Í¨ï¿½ï¿½0ï¿½ï¿½ï¿½ï¿½Í¨ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½MC
 			usleep(100);
 		}
 		file_size -= send_size;
 
 	}
 
-	//µÈ´ýÊý¾Ý´«ÊäÍê³É
+	//ï¿½È´ï¿½ï¿½ï¿½ï¿½Ý´ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 	printf("wait data receive!\n");
 	while(this->m_p_mc_comm->ReadGCodeFifoCount(0) > 0)
 		usleep(10000);
@@ -6055,33 +6053,33 @@ int ChannelEngine::UpdateMC(){
 	this->SendHmiUpdateStatus(5, 3);
 	this->SendMcUpdateFileCrc(file_frame_count, file_crc);
 
-	//²éÑ¯MC×´Ì¬£¬µÈ´ýMCÉý¼¶½ÓÊÕÍê³É
+	//ï¿½ï¿½Ñ¯MC×´Ì¬ï¿½ï¿½ï¿½È´ï¿½MCï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 	printf("wait update result!\n");
 	do{
 		if(!QueryMcUpdateStatus()){
-			g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "²éÑ¯MCÄ£¿éÉý¼¶×´Ì¬Ê§°Ü£¡");
+			g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "ï¿½ï¿½Ñ¯MCÄ£ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½×´Ì¬Ê§ï¿½Ü£ï¿½");
 			res = ERR_UPDATE_MC;
 			goto END;
 		}
 		while(!m_b_get_mc_update_status)
-			usleep(100); //µÈ´ý²éÑ¯½á¹û
+			usleep(100); //ï¿½È´ï¿½ï¿½ï¿½Ñ¯ï¿½ï¿½ï¿½
 
-		if(m_n_mc_update_status == 0x02){ //±¨´í
-			g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "MCÉý¼¶Ê§°Ü£¡");
+		if(m_n_mc_update_status == 0x02){ //ï¿½ï¿½ï¿½ï¿½
+			g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "MCï¿½ï¿½ï¿½ï¿½Ê§ï¿½Ü£ï¿½");
 			res = ERR_UPDATE_MC;
 			goto END;
 		}
-		else if(m_n_mc_update_status == 0x13){ //CRCÐ£Ñé´í
-			g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "MCÉý¼¶CRCÐ£ÑéÊ§°Ü£¡");
+		else if(m_n_mc_update_status == 0x13){ //CRCÐ£ï¿½ï¿½ï¿½
+			g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "MCï¿½ï¿½ï¿½ï¿½CRCÐ£ï¿½ï¿½Ê§ï¿½Ü£ï¿½");
 			res = ERR_UPDATE_MC;
 			goto END;
 		}
-		else if(m_n_mc_update_status == 0x11){//Éý¼¶³É¹¦
+		else if(m_n_mc_update_status == 0x11){//ï¿½ï¿½ï¿½ï¿½ï¿½É¹ï¿½
 			this->SendHmiUpdateStatus(5, 4);
 			printf("Succeed to update the MC module!\n");
 			break;
 		}else
-			usleep(100000);  //µÈ´ý100ms
+			usleep(100000);  //ï¿½È´ï¿½100ms
 
 	}while(1);
 
@@ -6092,8 +6090,8 @@ END:
 	if(fp > 0)
 		close(fp);
 	if(-1 == remove(filepath)){
-		//É¾³ýÉý¼¶ÎÄ¼þÊ§°Ü
-		g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "MCÄ£¿éÉ¾³ýÉý¼¶ÎÄ¼þÊ§°Ü£¡");
+		//É¾ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ä¼ï¿½Ê§ï¿½ï¿½
+		g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "MCÄ£ï¿½ï¿½É¾ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ä¼ï¿½Ê§ï¿½Ü£ï¿½");
 	}
 
 	if(res != ERR_NONE)
@@ -6105,21 +6103,21 @@ END:
 }
 
 /**
- * @brief Éý¼¶MIÄ£¿é
+ * @brief ï¿½ï¿½ï¿½ï¿½MIÄ£ï¿½ï¿½
  * @return
  */
 int ChannelEngine::UpdateMI(){
-	//Éý¼¶MIÄ£¿é
+	//ï¿½ï¿½ï¿½ï¿½MIÄ£ï¿½ï¿½
 	int res = ERR_NONE;
 
 	char cmd_buf[256];
 
-	//×éºÏÉý¼¶ÎÄ¼þÃû×Ö
+	//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ä¼ï¿½ï¿½ï¿½ï¿½ï¿½
 	char filepath[kMaxPathLen] = {0};
 	strcpy(filepath, PATH_UPDATE_PATH);
 	strcat(filepath, "module_mi.bin");
 
-	if(access(filepath, F_OK) == -1)	//Éý¼¶ÎÄ¼þ²»´æÔÚ£¬MIÄ£¿é²»ÐèÒªÉý¼¶
+	if(access(filepath, F_OK) == -1)	//ï¿½ï¿½ï¿½ï¿½ï¿½Ä¼ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ú£ï¿½MIÄ£ï¿½é²»ï¿½ï¿½Òªï¿½ï¿½ï¿½ï¿½
 		return res;
 
 	printf("start to update mi module\n");
@@ -6132,7 +6130,7 @@ int ChannelEngine::UpdateMI(){
 	int ret = system("flash_erase /dev/mtd0 0 1");
 
 	if(ret == -1){
-		g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "MIÉý¼¶²Á³ýFlashÊ§°Ü£¡errno = %d", errno);
+		g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "MIï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½FlashÊ§ï¿½Ü£ï¿½errno = %d", errno);
 		res = ERR_UPDATE_MI;
 		goto END;
 	}
@@ -6148,7 +6146,7 @@ int ChannelEngine::UpdateMI(){
 	ret = system(cmd_buf);
 
 	if(ret == -1){
-		g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "MIÉý¼¶Ð´ÈëÊý¾ÝÊ§°Ü£¡errno = %d", errno);
+		g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "MIï¿½ï¿½ï¿½ï¿½Ð´ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ê§ï¿½Ü£ï¿½errno = %d", errno);
 		res = ERR_UPDATE_MI;
 	}
 	else{
@@ -6162,8 +6160,8 @@ int ChannelEngine::UpdateMI(){
 
 END:
 	if(-1 == remove(filepath)){
-		//É¾³ýÉý¼¶ÎÄ¼þÊ§°Ü
-		g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "MIÄ£¿éÉ¾³ýÉý¼¶ÎÄ¼þÊ§°Ü£¡");
+		//É¾ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ä¼ï¿½Ê§ï¿½ï¿½
+		g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "MIÄ£ï¿½ï¿½É¾ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ä¼ï¿½Ê§ï¿½Ü£ï¿½");
 	}
 	if(res != ERR_NONE)
 		this->SendHmiUpdateStatus(3, 0xFF);
@@ -6173,20 +6171,20 @@ END:
 }
 
 /**
- * @brief Éý¼¶MIÄ£¿é£¬MIÎÄ¼þÓëboot·Ö¿ª¼ÓÔØ
+ * @brief ï¿½ï¿½ï¿½ï¿½MIÄ£ï¿½é£¬MIï¿½Ä¼ï¿½ï¿½ï¿½bootï¿½Ö¿ï¿½ï¿½ï¿½ï¿½ï¿½
  * @return
  */
 int ChannelEngine::UpdateMI_2(){
-	//Éý¼¶MIÄ£¿é
+	//ï¿½ï¿½ï¿½ï¿½MIÄ£ï¿½ï¿½
 	int res = ERR_NONE;
 
-	//×éºÏÉý¼¶ÎÄ¼þÃû×Ö
+	//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ä¼ï¿½ï¿½ï¿½ï¿½ï¿½
 	char filepath[kMaxPathLen] = {0};
 	char filedes[kMaxPathLen] = {0};
 	strcpy(filepath, PATH_UPDATE_PATH);
 	strcat(filepath, "module_mi.bin");
 
-	if(access(filepath, F_OK) == -1)	//Éý¼¶ÎÄ¼þ²»´æÔÚ£¬MIÄ£¿é²»ÐèÒªÉý¼¶
+	if(access(filepath, F_OK) == -1)	//ï¿½ï¿½ï¿½ï¿½ï¿½Ä¼ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ú£ï¿½MIÄ£ï¿½é²»ï¿½ï¿½Òªï¿½ï¿½ï¿½ï¿½
 		return res;
 
 	printf("start to update mi module\n");
@@ -6197,23 +6195,23 @@ int ChannelEngine::UpdateMI_2(){
 	printf("wait copy file for mi module...\n");
 
 
-	//¿½±´MIÉý¼¶ÎÄ¼þ
+	//ï¿½ï¿½ï¿½ï¿½MIï¿½ï¿½ï¿½ï¿½ï¿½Ä¼ï¿½
 	strcpy(filedes, PATH_MI_PROGRAM);
 
 	int nn = CopyFile(filepath, filedes);
 	if(0 != nn){
-		g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "MIÄ£¿é¿½±´ÎÄ¼þÊ§°Ü£¡errno = %d", nn);
+		g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "MIÄ£ï¿½é¿½ï¿½ï¿½ï¿½Ä¼ï¿½Ê§ï¿½Ü£ï¿½errno = %d", nn);
 		res = ERR_UPDATE_MI;
 		goto END;
 	}
 
-	//¿½±´±¸·ÝÎÄ¼þ
+	//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ä¼ï¿½
 	this->SendHmiUpdateStatus(3, 1);
 	bzero(filedes, kMaxPathLen);
 	strcpy(filedes, PATH_MI_PROGRAM_BAK);
 	nn = CopyFile(filepath, filedes);
 	if(0 != nn){
-		g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "MIÄ£¿é¿½±´±¸·ÝÎÄ¼þÊ§°Ü£¡errno = %d", nn);
+		g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "MIÄ£ï¿½é¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ä¼ï¿½Ê§ï¿½Ü£ï¿½errno = %d", nn);
 		res = ERR_UPDATE_MI;
 		goto END;
 	}
@@ -6226,8 +6224,8 @@ int ChannelEngine::UpdateMI_2(){
 
 END:
 	if(-1 == remove(filepath)){
-		//É¾³ýÉý¼¶ÎÄ¼þÊ§°Ü
-		g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "MIÄ£¿éÉ¾³ýÉý¼¶ÎÄ¼þÊ§°Ü£¡");
+		//É¾ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ä¼ï¿½Ê§ï¿½ï¿½
+		g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "MIÄ£ï¿½ï¿½É¾ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ä¼ï¿½Ê§ï¿½Ü£ï¿½");
 	}
 	if(res != ERR_NONE)
 		this->SendHmiUpdateStatus(3, 0xFF);
@@ -6237,20 +6235,20 @@ END:
 }
 
 /**
- * @brief Éý¼¶ModbusÄ£¿é
+ * @brief ï¿½ï¿½ï¿½ï¿½ModbusÄ£ï¿½ï¿½
  * @return
  */
 int ChannelEngine::UpdateModbus(){
-	//Éý¼¶ModbusÄ£¿é
+	//ï¿½ï¿½ï¿½ï¿½ModbusÄ£ï¿½ï¿½
 	int res = ERR_NONE;
 
-	//×éºÏÉý¼¶ÎÄ¼þÃû×Ö
+	//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ä¼ï¿½ï¿½ï¿½ï¿½ï¿½
 	char filepath[kMaxPathLen] = {0};
 	char filedes[kMaxPathLen] = {0};
 	strcpy(filepath, PATH_UPDATE_PATH);
 	strcat(filepath, "module_modbus.elf");
 
-	if(access(filepath, F_OK) == -1)	//Éý¼¶ÎÄ¼þ²»´æÔÚ£¬ModbusÄ£¿é²»ÐèÒªÉý¼¶
+	if(access(filepath, F_OK) == -1)	//ï¿½ï¿½ï¿½ï¿½ï¿½Ä¼ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ú£ï¿½ModbusÄ£ï¿½é²»ï¿½ï¿½Òªï¿½ï¿½ï¿½ï¿½
 		return res;
 
 	printf("start to update Modbus module\n");
@@ -6261,12 +6259,12 @@ int ChannelEngine::UpdateModbus(){
 	printf("wait copy file for Modbus module...\n");
 
 
-	//¿½±´ModbusÉý¼¶ÎÄ¼þ
+	//ï¿½ï¿½ï¿½ï¿½Modbusï¿½ï¿½ï¿½ï¿½ï¿½Ä¼ï¿½
 	strcpy(filedes, PATH_MODBUS_PROGRAM);
 
 	int nn = CopyFile(filepath, filedes);
 	if(0 != nn){
-		g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "ModbusÄ£¿é¿½±´ÎÄ¼þÊ§°Ü£¡errno = %d", nn);
+		g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "ModbusÄ£ï¿½é¿½ï¿½ï¿½ï¿½Ä¼ï¿½Ê§ï¿½Ü£ï¿½errno = %d", nn);
 		res = ERR_UPDATE_MI;
 		goto END;
 	}
@@ -6279,8 +6277,8 @@ int ChannelEngine::UpdateModbus(){
 
 END:
 	if(-1 == remove(filepath)){
-		//É¾³ýÉý¼¶ÎÄ¼þÊ§°Ü
-		g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "MODBUSÄ£¿éÉ¾³ýÉý¼¶ÎÄ¼þÊ§°Ü£¡");
+		//É¾ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ä¼ï¿½Ê§ï¿½ï¿½
+		g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "MODBUSÄ£ï¿½ï¿½É¾ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ä¼ï¿½Ê§ï¿½Ü£ï¿½");
 	}
 	if(res != ERR_NONE)
 		this->SendHmiUpdateStatus(3, 0xFF);
@@ -6290,22 +6288,22 @@ END:
 }
 
 /**
- * @brief Ò»¼üÉý¼¶
+ * @brief Ò»ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
  * @return
  */
 int ChannelEngine::UpdateDisk(){
-	//Éý¼¶ËùÓÐÄ£¿é
+	//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ä£ï¿½ï¿½
 	int res = ERR_NONE;
 	int ret;
 	char cmd_buf[100];
 
-	//×éºÏÉý¼¶ÎÄ¼þÃû×Ö
+	//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ä¼ï¿½ï¿½ï¿½ï¿½ï¿½
 	char filepath[kMaxPathLen] = {0};
 	char filedes[kMaxPathLen] = {0};
 	strcpy(filepath, PATH_UPDATE_PATH);
 	strcat(filepath, "module_disk.zip");
 
-	if(access(filepath, F_OK) == -1)	//Éý¼¶ÎÄ¼þ²»´æÔÚ£¬ModbusÄ£¿é²»ÐèÒªÉý¼¶
+	if(access(filepath, F_OK) == -1)	//ï¿½ï¿½ï¿½ï¿½ï¿½Ä¼ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ú£ï¿½ModbusÄ£ï¿½é²»ï¿½ï¿½Òªï¿½ï¿½ï¿½ï¿½
 		return res;
 
 	printf("start to update Disk module\n");
@@ -6315,24 +6313,24 @@ int ChannelEngine::UpdateDisk(){
 
 	printf("wait copy file for Disk module...\n");
 
-	//´´½¨diskupÄ¿Â¼
+	//ï¿½ï¿½ï¿½ï¿½diskupÄ¿Â¼
 	ret = system("mkdir -p /cnc/diskup");
 	if (ret != 0) {
-		g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "DISKÄ£¿é´´½¨diskupÄ¿Â¼Ê§°Ü£¡");
+		g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "DISKÄ£ï¿½é´´ï¿½ï¿½diskupÄ¿Â¼Ê§ï¿½Ü£ï¿½");
 		printf("mkdir diskup error, return %d\n", ret);
 		res = ERR_UPDATE_DISK;
 		goto END;
 	}
 
-	//Çå¿ÕÔ­À´µÄÎÄ¼þ
+	//ï¿½ï¿½ï¿½Ô­ï¿½ï¿½ï¿½ï¿½ï¿½Ä¼ï¿½
 	system("rm -rf /cnc/diskup/sc/*");
 	system("rm -rf /cnc/diskup/scroot/*");
 
-	//½âÑ¹µ½diskupÄ¿Â¼
+	//ï¿½ï¿½Ñ¹ï¿½ï¿½diskupÄ¿Â¼
 	sprintf(cmd_buf, "unzip %s -o -d /cnc/diskup", filepath);
 	ret = system(cmd_buf);
 	if (ret != 0) {
-		g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "DISKÄ£¿é½âÑ¹Éý¼¶°üÊ§°Ü£¡");
+		g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "DISKÄ£ï¿½ï¿½ï¿½Ñ¹ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ê§ï¿½Ü£ï¿½");
 		printf("unzip %s error, return %d\n", ret);
 		res = ERR_UPDATE_DISK;
 		goto END;
@@ -6340,9 +6338,9 @@ int ChannelEngine::UpdateDisk(){
 
 	this->SendHmiUpdateStatus(3, 1);
 
-	//¼ì²âÉý¼¶½Å±¾ÊÇ·ñ´æÔÚ
+	//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Å±ï¿½ï¿½Ç·ï¿½ï¿½ï¿½ï¿½
 	if(access(PATH_UPDATE_DISK_CMD, F_OK) == -1)	{
-		g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "DISKÄ£¿éÎ´·¢ÏÖÉý¼¶½Å±¾£¡");
+		g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "DISKÄ£ï¿½ï¿½Î´ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Å±ï¿½ï¿½ï¿½");
 		printf("can't update disk module, no scup.sh\n");
 		res = ERR_UPDATE_DISK;
 		goto END;
@@ -6351,11 +6349,11 @@ int ChannelEngine::UpdateDisk(){
 	sprintf(cmd_buf, "chmod a+x %s", PATH_UPDATE_DISK_CMD);
 	system(cmd_buf);
 
-	//ÔËÐÐ½Å±¾
+	//ï¿½ï¿½ï¿½Ð½Å±ï¿½
 	ret = system(PATH_UPDATE_DISK_CMD);
 	if (ret != 0) {
 		printf("scup.sh return low=%d high=%d\n", ret&0xFF, ret>>8);
-		g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "DISKÄ£¿éÔËÐÐÉý¼¶½Å±¾Ê§°Ü£¡");
+		g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "DISKÄ£ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Å±ï¿½Ê§ï¿½Ü£ï¿½");
 		res = ERR_UPDATE_DISK;
 		goto END;
 	}
@@ -6366,8 +6364,8 @@ int ChannelEngine::UpdateDisk(){
 
 END:
 	if(-1 == remove(filepath)){
-		//É¾³ýÉý¼¶ÎÄ¼þÊ§°Ü
-		g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "DISKÄ£¿éÉ¾³ýÉý¼¶ÎÄ¼þÊ§°Ü£¡");
+		//É¾ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ä¼ï¿½Ê§ï¿½ï¿½
+		g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "DISKÄ£ï¿½ï¿½É¾ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ä¼ï¿½Ê§ï¿½Ü£ï¿½");
 	}
 	if(res != ERR_NONE)
 		this->SendHmiUpdateStatus(3, 0xFF);
@@ -6378,22 +6376,22 @@ END:
 }
 
 /**
- * @brief Éý¼¶SCÄ£¿é
+ * @brief ï¿½ï¿½ï¿½ï¿½SCÄ£ï¿½ï¿½
  * @return
  */
 int ChannelEngine::UpdateSC(){
-	//Éý¼¶SCÄ£¿é
+	//ï¿½ï¿½ï¿½ï¿½SCÄ£ï¿½ï¿½
 	int res = ERR_NONE;
 	int ret = 0;
 	char cmd_buf[256];
 
-	//×éºÏÉý¼¶ÎÄ¼þÃû×Ö
+	//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ä¼ï¿½ï¿½ï¿½ï¿½ï¿½
 	char filepath[kMaxPathLen] = {0};
 	char filedes[kMaxPathLen] = {0};
 	strcpy(filepath, PATH_UPDATE_PATH);
 	strcat(filepath, "module_sc.elf");
 
-	if(access(filepath, F_OK) == -1)	//Éý¼¶ÎÄ¼þ²»´æÔÚ£¬SCÄ£¿é²»ÐèÒªÉý¼¶
+	if(access(filepath, F_OK) == -1)	//ï¿½ï¿½ï¿½ï¿½ï¿½Ä¼ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ú£ï¿½SCÄ£ï¿½é²»ï¿½ï¿½Òªï¿½ï¿½ï¿½ï¿½
 		return res;
 
 	printf("start to update sc module\n");
@@ -6401,14 +6399,14 @@ int ChannelEngine::UpdateSC(){
 
 	this->SendHmiUpdateStatus(4, 0);
 
-	//¶ÁÈ¡µ±Ç°ÔËÐÐÐòºÅ
+	//ï¿½ï¿½È¡ï¿½ï¿½Ç°ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 	char c;
 	FILE* fp = fopen(PATH_BOOT_CONFIG_FILE, "rb");
 	if (fp != nullptr) {
 		fread(&c, 1, 1, fp);
 		fclose(fp);
 	}else{
-		g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "SCÄ£¿éÉý¼¶²éÑ¯Æô¶¯ÅäÖÃÎÄ¼þÊ§°Ü£¡errno = %d", errno);
+		g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "SCÄ£ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ñ¯ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ä¼ï¿½Ê§ï¿½Ü£ï¿½errno = %d", errno);
 		res = ERR_UPDATE_SC;
 		goto END;
 	}
@@ -6424,7 +6422,7 @@ int ChannelEngine::UpdateSC(){
 	printf("wait copy file for sc module...\n");
 	this->SendHmiUpdateStatus(4, 1);
 
-	//¿½±´¸´ÖÆÎÄ¼þ
+	//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ä¼ï¿½
 	bzero(cmd_buf, 256);
 	strcpy(cmd_buf, "cp ");
 	strcat(cmd_buf, filepath);
@@ -6434,21 +6432,21 @@ int ChannelEngine::UpdateSC(){
 	ret = system(cmd_buf);
 
 	if(ret == -1){
-		g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "SCÄ£¿éÉý¼¶Ð´ÈëÊý¾ÝÊ§°Ü£¡errno = %d", errno);
+		g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "SCÄ£ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ð´ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ê§ï¿½Ü£ï¿½errno = %d", errno);
 		res = ERR_UPDATE_SC;
 		goto END;
 	}
 
 	printf("waiting for changing the file attributes...\n");
 	this->SendHmiUpdateStatus(4, 2);
-	//ÐÞ¸ÄÎÄ¼þÊôÐÔ
+	//ï¿½Þ¸ï¿½ï¿½Ä¼ï¿½ï¿½ï¿½ï¿½ï¿½
 	bzero(cmd_buf, 256);
 	strcpy(cmd_buf, "chmod a+x ");
 	strcat(cmd_buf, filedes);
 	ret = system(cmd_buf);
 
 	if(ret == -1){
-		g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "SCÄ£¿éÉý¼¶ÐÞ¸ÄÎÄ¼þÊôÐÔÊ§°Ü£¡errno = %d", errno);
+		g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "SCÄ£ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Þ¸ï¿½ï¿½Ä¼ï¿½ï¿½ï¿½ï¿½ï¿½Ê§ï¿½Ü£ï¿½errno = %d", errno);
 		res = ERR_UPDATE_SC;
 		goto END;
 	}
@@ -6456,7 +6454,7 @@ int ChannelEngine::UpdateSC(){
 		sync();
 	}
 
-	//ÐÞ¸ÄÆô¶¯ÐòºÅ
+	//ï¿½Þ¸ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 	fp = fopen(PATH_BOOT_CONFIG_FILE, "wb");
 	if(fp != nullptr) {
 		fwrite(&c, 1, 1, fp);
@@ -6465,15 +6463,15 @@ int ChannelEngine::UpdateSC(){
 		printf("succeed to update sc module\n");
 
 	}else{
-		g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "SCÄ£¿éÉý¼¶ÅäÖÃÆô¶¯ÎÄ¼þÊ§°Ü£¡errno = %d", errno);
+		g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "SCÄ£ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ä¼ï¿½Ê§ï¿½Ü£ï¿½errno = %d", errno);
 		res = ERR_UPDATE_SC;
 	}
 	this->SendHmiUpdateStatus(4, 3);
 
 END:
 	if(-1 == remove(filepath)){
-		//É¾³ýÉý¼¶ÎÄ¼þÊ§°Ü
-		g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "MCÄ£¿éÉ¾³ýÉý¼¶ÎÄ¼þÊ§°Ü£¡");
+		//É¾ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ä¼ï¿½Ê§ï¿½ï¿½
+		g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "MCÄ£ï¿½ï¿½É¾ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ä¼ï¿½Ê§ï¿½Ü£ï¿½");
 	}
 	if(res != ERR_NONE)
 		this->SendHmiUpdateStatus(4, 0xFF);
@@ -6483,21 +6481,21 @@ END:
 }
 
 /**
- * @brief Éý¼¶PLÄ£¿é
+ * @brief ï¿½ï¿½ï¿½ï¿½PLÄ£ï¿½ï¿½
  * @return
  */
 int ChannelEngine::UpdatePL(){
-	//Éý¼¶PLÄ£¿é
+	//ï¿½ï¿½ï¿½ï¿½PLÄ£ï¿½ï¿½
 	int res = ERR_NONE;
 
 	char cmd_buf[256];
 
-	//×éºÏÉý¼¶ÎÄ¼þÃû×Ö
+	//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ä¼ï¿½ï¿½ï¿½ï¿½ï¿½
 	char filepath[kMaxPathLen] = {0};
 	strcpy(filepath, PATH_UPDATE_PATH);
 	strcat(filepath, "module_pl.bin");
 
-	if(access(filepath, F_OK) == -1)	//Éý¼¶ÎÄ¼þ²»´æÔÚ£¬PLÄ£¿é²»ÐèÒªÉý¼¶
+	if(access(filepath, F_OK) == -1)	//ï¿½ï¿½ï¿½ï¿½ï¿½Ä¼ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ú£ï¿½PLÄ£ï¿½é²»ï¿½ï¿½Òªï¿½ï¿½ï¿½ï¿½
 		return res;
 	printf("start to update PL module\n");
 	m_n_update_state = MODULE_UPDATE_PL;
@@ -6509,7 +6507,7 @@ int ChannelEngine::UpdatePL(){
 	int ret = system("flash_erase /dev/mtd0 0 1");
 
 	if(ret == -1){
-		g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "PLÉý¼¶²Á³ýFlashÊ§°Ü£¡errno = %d", errno);
+		g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "PLï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½FlashÊ§ï¿½Ü£ï¿½errno = %d", errno);
 		res = ERR_UPDATE_PL;
 		goto END;
 	}
@@ -6525,7 +6523,7 @@ int ChannelEngine::UpdatePL(){
 	ret = system(cmd_buf);
 
 	if(ret == -1){
-		g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "PLÉý¼¶Ð´ÈëÊý¾ÝÊ§°Ü£¡errno = %d", errno);
+		g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "PLï¿½ï¿½ï¿½ï¿½Ð´ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ê§ï¿½Ü£ï¿½errno = %d", errno);
 		res = ERR_UPDATE_PL;
 	}
 	else{
@@ -6539,8 +6537,8 @@ int ChannelEngine::UpdatePL(){
 
 END:
 	if(-1 == remove(filepath)){
-		//É¾³ýÉý¼¶ÎÄ¼þÊ§°Ü
-		g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "PLÄ£¿éÉ¾³ýÉý¼¶ÎÄ¼þÊ§°Ü£¡");
+		//É¾ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ä¼ï¿½Ê§ï¿½ï¿½
+		g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "PLÄ£ï¿½ï¿½É¾ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ä¼ï¿½Ê§ï¿½Ü£ï¿½");
 	}
 	if(res != ERR_NONE)
 		this->SendHmiUpdateStatus(3, 0xFF);
@@ -6550,21 +6548,21 @@ END:
 }
 
 /**
- * @brief Éý¼¶SPARTANÄ£¿é
+ * @brief ï¿½ï¿½ï¿½ï¿½SPARTANÄ£ï¿½ï¿½
  * @return
  */
 int ChannelEngine::UpdateSpartan(){
-	//Éý¼¶SPARTANÄ£¿é
+	//ï¿½ï¿½ï¿½ï¿½SPARTANÄ£ï¿½ï¿½
 	int res = ERR_NONE;
 
 	char cmd_buf[256];
 
-	//×éºÏÉý¼¶ÎÄ¼þÃû×Ö
+	//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ä¼ï¿½ï¿½ï¿½ï¿½ï¿½
 	char filepath[kMaxPathLen] = {0};
 	strcpy(filepath, PATH_UPDATE_PATH);
 	strcat(filepath, "module_spartan.bin");
 
-	if(access(filepath, F_OK) == -1)	//Éý¼¶ÎÄ¼þ²»´æÔÚ£¬MIÄ£¿é²»ÐèÒªÉý¼¶
+	if(access(filepath, F_OK) == -1)	//ï¿½ï¿½ï¿½ï¿½ï¿½Ä¼ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ú£ï¿½MIÄ£ï¿½é²»ï¿½ï¿½Òªï¿½ï¿½ï¿½ï¿½
 		return res;
 
 	printf("start to update spartan module\n");
@@ -6582,7 +6580,7 @@ int ChannelEngine::UpdateSpartan(){
 	int ret = system(cmd_buf);
 
 	if(ret != 0){
-		g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "SPARTANÉý¼¶Ð´ÈëÊý¾ÝÊ§°Ü£¡errno = %d", errno);
+		g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "SPARTANï¿½ï¿½ï¿½ï¿½Ð´ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ê§ï¿½Ü£ï¿½errno = %d", errno);
 		res = ERR_UPDATE_SPARTAN;
 	}
 	else{
@@ -6595,8 +6593,8 @@ int ChannelEngine::UpdateSpartan(){
 	}
 
 	if(-1 == remove(filepath)){
-		//É¾³ýÉý¼¶ÎÄ¼þÊ§°Ü
-		g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "SPARTANÄ£¿éÉ¾³ýÉý¼¶ÎÄ¼þÊ§°Ü£¡");
+		//É¾ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ä¼ï¿½Ê§ï¿½ï¿½
+		g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "SPARTANÄ£ï¿½ï¿½É¾ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ä¼ï¿½Ê§ï¿½Ü£ï¿½");
 	}
 	if(res != ERR_NONE)
 		this->SendHmiUpdateStatus(3, 0xFF);
@@ -6606,51 +6604,51 @@ int ChannelEngine::UpdateSpartan(){
 }
 
 /**
- * @brief Éý¼¶PMCÄ£¿é
+ * @brief ï¿½ï¿½ï¿½ï¿½PMCÄ£ï¿½ï¿½
  * @return
  */
 int ChannelEngine::UpdatePMC(){
-	//Éý¼¶PMCÄ£¿é
+	//ï¿½ï¿½ï¿½ï¿½PMCÄ£ï¿½ï¿½
 	int res = ERR_NONE;
 
-	//×éºÏÉý¼¶ÎÄ¼þÃû×Ö
+	//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ä¼ï¿½ï¿½ï¿½ï¿½ï¿½
 	char filepath[kMaxPathLen] = {0};
 
 	strcpy(filepath, PATH_UPDATE_PATH);
 	strcat(filepath, "module_pmc.upd");
 
 
-	if(access(filepath, F_OK) == -1)	//Éý¼¶ÎÄ¼þ²»´æÔÚ£¬PMCÄ£¿é²»ÐèÒªÉý¼¶
+	if(access(filepath, F_OK) == -1)	//ï¿½ï¿½ï¿½ï¿½ï¿½Ä¼ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ú£ï¿½PMCÄ£ï¿½é²»ï¿½ï¿½Òªï¿½ï¿½ï¿½ï¿½
 		return res;
 
 	printf("start to update PMC module\n");
 	m_n_update_state = MODULE_UPDATE_PMC;
 
-	this->SendHmiUpdateStatus(3, 0);  //×Ü¹²·ÖÈý²½Öè
+	this->SendHmiUpdateStatus(3, 0);  //ï¿½Ü¹ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 
 	FILE *file_src = fopen(filepath, "r+");
 	if (nullptr == file_src)
 	{
-		g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "PMCÄ£¿éÉý¼¶Ê§°Ü£¬Éý¼¶ÎÄ¼þ´ò¿ªÊ§°Ü[%s]£¡errno = %d", filepath, errno);
+		g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "PMCÄ£ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ê§ï¿½Ü£ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ä¼ï¿½ï¿½ï¿½Ê§ï¿½ï¿½[%s]ï¿½ï¿½errno = %d", filepath, errno);
 		return res;
 	}
 
-	uint64_t file_len = 0;   //ÎÄ¼þ³¤¶È
-	uint64_t total_size = 0;	//Éý¼¶ÎÄ¼þ×Ü³¤¶È
+	uint64_t file_len = 0;   //ï¿½Ä¼ï¿½ï¿½ï¿½ï¿½ï¿½
+	uint64_t total_size = 0;	//ï¿½ï¿½ï¿½ï¿½ï¿½Ä¼ï¿½ï¿½Ü³ï¿½ï¿½ï¿½
 	fseek(file_src, 0L, SEEK_END);
-	total_size = ftell(file_src);   //»ñÈ¡ÎÄ¼þ³¤¶È
+	total_size = ftell(file_src);   //ï¿½ï¿½È¡ï¿½Ä¼ï¿½ï¿½ï¿½ï¿½ï¿½
 
-	fseek(file_src, 0L, SEEK_SET);   //»Øµ½ÎÄ¼þÍ·
+	fseek(file_src, 0L, SEEK_SET);   //ï¿½Øµï¿½ï¿½Ä¼ï¿½Í·
 
 
-	//Éý¼¶ÌÝÐÎÍ¼ÎÄ¼þ
-	char buffer[1024] = {0};   //»º³å
-	int read_cur_real = 0;		//µ¥´ÎÊµ¼Ê¶ÁÈ¡×Ö½ÚÊý
-	int read_cur_plan = 0;		//µ¥´Ê¼Æ»®¶ÁÈ¡×Ö½ÚÊý
+	//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Í¼ï¿½Ä¼ï¿½
+	char buffer[1024] = {0};   //ï¿½ï¿½ï¿½ï¿½
+	int read_cur_real = 0;		//ï¿½ï¿½ï¿½ï¿½Êµï¿½Ê¶ï¿½È¡ï¿½Ö½ï¿½ï¿½ï¿½
+	int read_cur_plan = 0;		//ï¿½ï¿½ï¿½Ê¼Æ»ï¿½ï¿½ï¿½È¡ï¿½Ö½ï¿½ï¿½ï¿½
 	FILE *file_des = fopen(PATH_PMC_LDR, "w+");
 	if (nullptr == file_des)
 	{
-		g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "PMCÌÝÐÎÍ¼ÎÄ¼þ´´½¨Ê§°Ü[%s]£¡errno = %d", PATH_PMC_LDR, errno);
+		g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "PMCï¿½ï¿½ï¿½ï¿½Í¼ï¿½Ä¼ï¿½ï¿½ï¿½ï¿½ï¿½Ê§ï¿½ï¿½[%s]ï¿½ï¿½errno = %d", PATH_PMC_LDR, errno);
 		res = ERR_UPDATE_PMC;
 		goto END;
 	}
@@ -6658,8 +6656,8 @@ int ChannelEngine::UpdatePMC(){
 	fread(&file_len, 8, 1, file_src);
 	file_len = BigLittleSwitch64(file_len);
 
-	if(file_len >= total_size){	//ÎÄ¼þ³¤¶È²»ºÏ·¨
-		g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "Éý¼¶ÎÄ¼þ¿ÉÄÜËð»µ[0x%llx, 0x%llx]£¡", total_size, file_len);
+	if(file_len >= total_size){	//ï¿½Ä¼ï¿½ï¿½ï¿½ï¿½È²ï¿½ï¿½Ï·ï¿½
+		g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "ï¿½ï¿½ï¿½ï¿½ï¿½Ä¼ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½[0x%llx, 0x%llx]ï¿½ï¿½", total_size, file_len);
 		res = ERR_UPDATE_PMC;
 		fclose(file_des);
 		goto END;
@@ -6668,8 +6666,8 @@ int ChannelEngine::UpdatePMC(){
 	{
 		read_cur_plan = file_len>1024?1024:file_len;
 		read_cur_real = fread(buffer, 1, read_cur_plan, file_src);
-		if(read_cur_plan != read_cur_real){	//´íÎó
-			g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "PMCÄ£¿éÉý¼¶£¬¸´ÖÆÌÝÐÎÍ¼ÎÄ¼þ³ö´í1£¡%llu, %d, %d", file_len, read_cur_plan,
+		if(read_cur_plan != read_cur_real){	//ï¿½ï¿½ï¿½ï¿½
+			g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "PMCÄ£ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Í¼ï¿½Ä¼ï¿½ï¿½ï¿½ï¿½ï¿½1ï¿½ï¿½%llu, %d, %d", file_len, read_cur_plan,
 					read_cur_real);
 			res = ERR_UPDATE_PMC;
 			fclose(file_des);
@@ -6683,30 +6681,30 @@ int ChannelEngine::UpdatePMC(){
 	}
 
 	if(file_len != 0){
-		g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "PMCÄ£¿éÉý¼¶£¬¸´ÖÆÌÝÐÎÍ¼ÎÄ¼þ³ö´í2£¡");
+		g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "PMCÄ£ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Í¼ï¿½Ä¼ï¿½ï¿½ï¿½ï¿½ï¿½2ï¿½ï¿½");
 		res = ERR_UPDATE_PMC;
 		fclose(file_des);
 		goto END;
 	}
 
 
-	fclose(file_des); 	//¸³ÖµÌÝÐÎÍ¼ÎÄ¼þ³É¹¦
+	fclose(file_des); 	//ï¿½ï¿½Öµï¿½ï¿½ï¿½ï¿½Í¼ï¿½Ä¼ï¿½ï¿½É¹ï¿½
 	sync();
 	printf("Succeed to copy ldr file!\n");
 
-	this->SendHmiUpdateStatus(3, 1);  //×Ü¹²·ÖÈý²½Öè
+	this->SendHmiUpdateStatus(3, 1);  //ï¿½Ü¹ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 
-	//Éý¼¶PMCÖ´ÐÐÎÄ¼þ
+	//ï¿½ï¿½ï¿½ï¿½PMCÖ´ï¿½ï¿½ï¿½Ä¼ï¿½
 	file_des = fopen(PATH_PMC_DATA, "w+");
 	if (nullptr == file_des)
 	{
-		g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "PMCÖ´ÐÐÎÄ¼þ´´½¨Ê§°Ü[%s]£¡errno = %d", PATH_PMC_DATA, errno);
+		g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "PMCÖ´ï¿½ï¿½ï¿½Ä¼ï¿½ï¿½ï¿½ï¿½ï¿½Ê§ï¿½ï¿½[%s]ï¿½ï¿½errno = %d", PATH_PMC_DATA, errno);
 		res = ERR_UPDATE_PMC;
 		goto END;
 	}
 	fread(buffer, 6, 1, file_src);
 	if(strcmp(buffer, "#DAT@#") != 0){
-		g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "Éý¼¶ÎÄ¼þ·Ç·¨£¬Çë¼ì²é£¡");
+		g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "ï¿½ï¿½ï¿½ï¿½ï¿½Ä¼ï¿½ï¿½Ç·ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½é£¡");
 		fclose(file_des);
 		res = ERR_UPDATE_PMC;
 		goto END;
@@ -6721,8 +6719,8 @@ int ChannelEngine::UpdatePMC(){
 	{
 		read_cur_plan = file_len>1024?1024:file_len;
 		read_cur_real = fread(buffer, 1, read_cur_plan, file_src);
-		if(read_cur_plan != read_cur_real){	//´íÎó
-			g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "PMCÄ£¿éÉý¼¶£¬¸´ÖÆÖ´ÐÐÎÄ¼þ³ö´í1£¡");
+		if(read_cur_plan != read_cur_real){	//ï¿½ï¿½ï¿½ï¿½
+			g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "PMCÄ£ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ö´ï¿½ï¿½ï¿½Ä¼ï¿½ï¿½ï¿½ï¿½ï¿½1ï¿½ï¿½");
 			res = ERR_UPDATE_PMC;
 			fclose(file_des);
 			goto END;
@@ -6735,7 +6733,7 @@ int ChannelEngine::UpdatePMC(){
 	}
 
 	if(file_len != 0){
-		g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "PMCÄ£¿éÉý¼¶£¬¸´ÖÆÖ´ÐÐÎÄ¼þ³ö´í2£¡");
+		g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "PMCÄ£ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ö´ï¿½ï¿½ï¿½Ä¼ï¿½ï¿½ï¿½ï¿½ï¿½2ï¿½ï¿½");
 		res = ERR_UPDATE_PMC;
 		fclose(file_des);
 		goto END;
@@ -6743,14 +6741,14 @@ int ChannelEngine::UpdatePMC(){
 
 	fclose(file_des);
 
-	this->SendHmiUpdateStatus(3, 2);  //×Ü¹²·ÖÈý²½Öè
+	this->SendHmiUpdateStatus(3, 2);  //ï¿½Ü¹ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 
 	printf("Succeed to update pmc module!\n");
 	END:
 	fclose(file_src);
 	if(-1 == remove(filepath)){
-		//É¾³ýÉý¼¶ÎÄ¼þÊ§°Ü
-		g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "PMCÄ£¿éÉ¾³ýÉý¼¶ÎÄ¼þÊ§°Ü£¡");
+		//É¾ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ä¼ï¿½Ê§ï¿½ï¿½
+		g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "PMCÄ£ï¿½ï¿½É¾ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ä¼ï¿½Ê§ï¿½Ü£ï¿½");
 	}
 	sync();
 
@@ -6760,11 +6758,11 @@ int ChannelEngine::UpdatePMC(){
 }
 
 /**
- * @brief ·¢ËÍMCÉý¼¶¿ªÊ¼Ö¸Áî
- * @return true--³É¹¦   false--Ê§°Ü
+ * @brief ï¿½ï¿½ï¿½ï¿½MCï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ê¼Ö¸ï¿½ï¿½
+ * @return true--ï¿½É¹ï¿½   false--Ê§ï¿½ï¿½
  */
 bool ChannelEngine::SendMcUpdateStartCmd(){
-	//·¢ËÍMCÉý¼¶¿ªÊ¼Ö¸Áî
+	//ï¿½ï¿½ï¿½ï¿½MCï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ê¼Ö¸ï¿½ï¿½
 	McCmdFrame cmd;
 	memset(&cmd, 0x00, sizeof(McCmdFrame));
 
@@ -6776,12 +6774,12 @@ bool ChannelEngine::SendMcUpdateStartCmd(){
 }
 
 /**
- * @brief ·¢ËÍMCÉý¼¶ÎÄ¼þ´óÐ¡
- * @param size : Éý¼¶ÎÄ¼þ16bitsË«×Ö½ÚÊýÁ¿
- * @return true--³É¹¦   false--Ê§°Ü
+ * @brief ï¿½ï¿½ï¿½ï¿½MCï¿½ï¿½ï¿½ï¿½ï¿½Ä¼ï¿½ï¿½ï¿½Ð¡
+ * @param size : ï¿½ï¿½ï¿½ï¿½ï¿½Ä¼ï¿½16bitsË«ï¿½Ö½ï¿½ï¿½ï¿½ï¿½ï¿½
+ * @return true--ï¿½É¹ï¿½   false--Ê§ï¿½ï¿½
  */
 bool ChannelEngine::SendMcUpdateFileSize(uint32_t size){
-	//·¢ËÍMCÉý¼¶ÎÄ¼þ´óÐ¡
+	//ï¿½ï¿½ï¿½ï¿½MCï¿½ï¿½ï¿½ï¿½ï¿½Ä¼ï¿½ï¿½ï¿½Ð¡
 	McCmdFrame cmd;
 	memset(&cmd, 0x00, sizeof(McCmdFrame));
 
@@ -6796,13 +6794,13 @@ bool ChannelEngine::SendMcUpdateFileSize(uint32_t size){
 }
 
 /**
- * @brief ·¢ËÍMCÉý¼¶ÎÄ¼þCRC
- * @param frame_count :  ·¢ËÍÖ¡×ÜÊý
- * @param crc : Éý¼¶ÎÄ¼þÕûÌåCRC
- * @return true--³É¹¦   false--Ê§°Ü
+ * @brief ï¿½ï¿½ï¿½ï¿½MCï¿½ï¿½ï¿½ï¿½ï¿½Ä¼ï¿½CRC
+ * @param frame_count :  ï¿½ï¿½ï¿½ï¿½Ö¡ï¿½ï¿½ï¿½ï¿½
+ * @param crc : ï¿½ï¿½ï¿½ï¿½ï¿½Ä¼ï¿½ï¿½ï¿½ï¿½ï¿½CRC
+ * @return true--ï¿½É¹ï¿½   false--Ê§ï¿½ï¿½
  */
 bool ChannelEngine::SendMcUpdateFileCrc(uint16_t frame_count, uint16_t crc){
-	//·¢ËÍMCÉý¼¶ÎÄ¼þCRC
+	//ï¿½ï¿½ï¿½ï¿½MCï¿½ï¿½ï¿½ï¿½ï¿½Ä¼ï¿½CRC
 	McCmdFrame cmd;
 	memset(&cmd, 0x00, sizeof(McCmdFrame));
 
@@ -6817,11 +6815,11 @@ bool ChannelEngine::SendMcUpdateFileCrc(uint16_t frame_count, uint16_t crc){
 }
 
 /**
- * @brief ²éÑ¯MCÉý¼¶×´Ì¬
+ * @brief ï¿½ï¿½Ñ¯MCï¿½ï¿½ï¿½ï¿½×´Ì¬
  * @return
  */
 bool ChannelEngine::QueryMcUpdateStatus(){
-	//²éÑ¯MCÉý¼¶×´Ì¬
+	//ï¿½ï¿½Ñ¯MCï¿½ï¿½ï¿½ï¿½×´Ì¬
 	McCmdFrame cmd;
 	memset(&cmd, 0x00, sizeof(McCmdFrame));
 
@@ -6835,7 +6833,7 @@ bool ChannelEngine::QueryMcUpdateStatus(){
 }
 
 /**
- * @brief »ñÈ¡Êµ¼Ê×ÜÏßÖáÊýÁ¿
+ * @brief ï¿½ï¿½È¡Êµï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
  * @return
  */
 uint16_t ChannelEngine::GetBusAxisCount(){
@@ -6851,94 +6849,94 @@ uint16_t ChannelEngine::GetBusAxisCount(){
 }
 
 /**
- * @brief ³õÊ¼»¯PMCµÄ·ÇÒ×Ê§ÐÔ¼Ä´æÆ÷
+ * @brief ï¿½ï¿½Ê¼ï¿½ï¿½PMCï¿½Ä·ï¿½ï¿½ï¿½Ê§ï¿½Ô¼Ä´ï¿½ï¿½ï¿½
  */
 void ChannelEngine::InitPmcReg(){
 	printf("init pmc register\n");
-//	//´ò¿ªÎÄ¼þ
-//	int fp = open(PATH_PMC_REG, O_RDONLY); //´ò¿ªÎÄ¼þ
+//	//ï¿½ï¿½ï¿½Ä¼ï¿½
+//	int fp = open(PATH_PMC_REG, O_RDONLY); //ï¿½ï¿½ï¿½Ä¼ï¿½
 //
 //	if(fp < 0){
-//		g_ptr_trace->PrintTrace(TRACE_ERROR, PMC_REGISTER, "´ò¿ªpmc¼Ä´æÆ÷±£´æÎÄ¼þÊ§°Ü£¡");
-//		return;//ÎÄ¼þ´ò¿ªÊ§°Ü
+//		g_ptr_trace->PrintTrace(TRACE_ERROR, PMC_REGISTER, "ï¿½ï¿½pmcï¿½Ä´ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ä¼ï¿½Ê§ï¿½Ü£ï¿½");
+//		return;//ï¿½Ä¼ï¿½ï¿½ï¿½Ê§ï¿½ï¿½
 //	}
-//	uint16_t size = 0;   //¼Ä´æÆ÷×Ö½ÚÊý
+//	uint16_t size = 0;   //ï¿½Ä´ï¿½ï¿½ï¿½ï¿½Ö½ï¿½ï¿½ï¿½
 //
-//	//¶ÁÈ¡K¼Ä´æÆ÷
+//	//ï¿½ï¿½È¡Kï¿½Ä´ï¿½ï¿½ï¿½
 //	ssize_t read_size = read(fp, &size, 2);
-//	if(read_size != 2){ //¶ÁÈ¡Ê§°Ü
-//		g_ptr_trace->PrintTrace(TRACE_ERROR, PMC_REGISTER, "¶ÁÈ¡K¼Ä´æÆ÷×Ö½ÚÊýÊ§°Ü£¡");
+//	if(read_size != 2){ //ï¿½ï¿½È¡Ê§ï¿½ï¿½
+//		g_ptr_trace->PrintTrace(TRACE_ERROR, PMC_REGISTER, "ï¿½ï¿½È¡Kï¿½Ä´ï¿½ï¿½ï¿½ï¿½Ö½ï¿½ï¿½ï¿½Ê§ï¿½Ü£ï¿½");
 //		return;
 //	}
 //
 //	if(size != K_REG_COUNT){
-//		g_ptr_trace->PrintTrace(TRACE_ERROR, PMC_REGISTER, "K¼Ä´æÆ÷´óÐ¡Êý²»Æ¥Åä[%hu,%hu]£¡", size, K_REG_COUNT);
+//		g_ptr_trace->PrintTrace(TRACE_ERROR, PMC_REGISTER, "Kï¿½Ä´ï¿½ï¿½ï¿½ï¿½ï¿½Ð¡ï¿½ï¿½ï¿½ï¿½Æ¥ï¿½ï¿½[%hu,%hu]ï¿½ï¿½", size, K_REG_COUNT);
 //		return;
 //	}
 //	read_size = read(fp, this->m_p_pmc_reg->GetRegPtr8(PMC_REG_K), size);
 //	if(read_size != size){
-//		g_ptr_trace->PrintTrace(TRACE_ERROR, PMC_REGISTER, "¶ÁÈ¡K¼Ä´æÆ÷Êý¾ÝÊ§°Ü[%hu,%hu]£¡", read_size, size);
+//		g_ptr_trace->PrintTrace(TRACE_ERROR, PMC_REGISTER, "ï¿½ï¿½È¡Kï¿½Ä´ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ê§ï¿½ï¿½[%hu,%hu]ï¿½ï¿½", read_size, size);
 //		return;
 //	}
 //
-//	//¶ÁÈ¡D¼Ä´æÆ÷
+//	//ï¿½ï¿½È¡Dï¿½Ä´ï¿½ï¿½ï¿½
 //	read_size = read(fp, &size, 2);
-//	if(read_size != 2){ //¶ÁÈ¡Ê§°Ü
-//		g_ptr_trace->PrintTrace(TRACE_ERROR, PMC_REGISTER, "¶ÁÈ¡D¼Ä´æÆ÷×Ö½ÚÊýÊ§°Ü£¡");
+//	if(read_size != 2){ //ï¿½ï¿½È¡Ê§ï¿½ï¿½
+//		g_ptr_trace->PrintTrace(TRACE_ERROR, PMC_REGISTER, "ï¿½ï¿½È¡Dï¿½Ä´ï¿½ï¿½ï¿½ï¿½Ö½ï¿½ï¿½ï¿½Ê§ï¿½Ü£ï¿½");
 //		return;
 //	}
 //
 //	if(size != D_REG_COUNT*2){
-//		g_ptr_trace->PrintTrace(TRACE_ERROR, PMC_REGISTER, "K¼Ä´æÆ÷´óÐ¡Êý²»Æ¥Åä[%hu,%hu]£¡", size, D_REG_COUNT*2);
+//		g_ptr_trace->PrintTrace(TRACE_ERROR, PMC_REGISTER, "Kï¿½Ä´ï¿½ï¿½ï¿½ï¿½ï¿½Ð¡ï¿½ï¿½ï¿½ï¿½Æ¥ï¿½ï¿½[%hu,%hu]ï¿½ï¿½", size, D_REG_COUNT*2);
 //		return;
 //	}
 //	read_size = read(fp, this->m_p_pmc_reg->GetRegPtr16(PMC_REG_D), size);
 //	if(read_size != size){
-//		g_ptr_trace->PrintTrace(TRACE_ERROR, PMC_REGISTER, "¶ÁÈ¡D¼Ä´æÆ÷Êý¾ÝÊ§°Ü[%hu,%hu]£¡", read_size, size);
+//		g_ptr_trace->PrintTrace(TRACE_ERROR, PMC_REGISTER, "ï¿½ï¿½È¡Dï¿½Ä´ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ê§ï¿½ï¿½[%hu,%hu]ï¿½ï¿½", read_size, size);
 //		return;
 //	}
 //
-//	//¶ÁÈ¡DC¼Ä´æÆ÷
+//	//ï¿½ï¿½È¡DCï¿½Ä´ï¿½ï¿½ï¿½
 //	read_size = read(fp, &size, 2);
-//	if(read_size != 2){ //¶ÁÈ¡Ê§°Ü
-//		g_ptr_trace->PrintTrace(TRACE_ERROR, PMC_REGISTER, "¶ÁÈ¡DC¼Ä´æÆ÷×Ö½ÚÊýÊ§°Ü£¡");
+//	if(read_size != 2){ //ï¿½ï¿½È¡Ê§ï¿½ï¿½
+//		g_ptr_trace->PrintTrace(TRACE_ERROR, PMC_REGISTER, "ï¿½ï¿½È¡DCï¿½Ä´ï¿½ï¿½ï¿½ï¿½Ö½ï¿½ï¿½ï¿½Ê§ï¿½Ü£ï¿½");
 //		return;
 //	}
 //
 //	if(size != C_REG_COUNT*2){
-//		g_ptr_trace->PrintTrace(TRACE_ERROR, PMC_REGISTER, "DC¼Ä´æÆ÷´óÐ¡Êý²»Æ¥Åä[%hu,%hu]£¡", size, C_REG_COUNT*2);
+//		g_ptr_trace->PrintTrace(TRACE_ERROR, PMC_REGISTER, "DCï¿½Ä´ï¿½ï¿½ï¿½ï¿½ï¿½Ð¡ï¿½ï¿½ï¿½ï¿½Æ¥ï¿½ï¿½[%hu,%hu]ï¿½ï¿½", size, C_REG_COUNT*2);
 //		return;
 //	}
 //	read_size = read(fp, this->m_p_pmc_reg->GetRegPtr16(PMC_REG_DC), size);
 //	if(read_size != size){
-//		g_ptr_trace->PrintTrace(TRACE_ERROR, PMC_REGISTER, "¶ÁÈ¡DC¼Ä´æÆ÷Êý¾ÝÊ§°Ü[%hu,%hu]£¡", read_size, size);
+//		g_ptr_trace->PrintTrace(TRACE_ERROR, PMC_REGISTER, "ï¿½ï¿½È¡DCï¿½Ä´ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ê§ï¿½ï¿½[%hu,%hu]ï¿½ï¿½", read_size, size);
 //		return;
 //	}
 //
-//	//¶ÁÈ¡DT¼Ä´æÆ÷
+//	//ï¿½ï¿½È¡DTï¿½Ä´ï¿½ï¿½ï¿½
 //	read_size = read(fp, &size, 2);
-//	if(read_size != 2){ //¶ÁÈ¡Ê§°Ü
-//		g_ptr_trace->PrintTrace(TRACE_ERROR, PMC_REGISTER, "¶ÁÈ¡DT¼Ä´æÆ÷×Ö½ÚÊýÊ§°Ü£¡");
+//	if(read_size != 2){ //ï¿½ï¿½È¡Ê§ï¿½ï¿½
+//		g_ptr_trace->PrintTrace(TRACE_ERROR, PMC_REGISTER, "ï¿½ï¿½È¡DTï¿½Ä´ï¿½ï¿½ï¿½ï¿½Ö½ï¿½ï¿½ï¿½Ê§ï¿½Ü£ï¿½");
 //		return;
 //	}
 //
 //	if(size != T_REG_COUNT*2){
-//		g_ptr_trace->PrintTrace(TRACE_ERROR, PMC_REGISTER, "DT¼Ä´æÆ÷´óÐ¡Êý²»Æ¥Åä[%hu,%hu]£¡", size, T_REG_COUNT*2);
+//		g_ptr_trace->PrintTrace(TRACE_ERROR, PMC_REGISTER, "DTï¿½Ä´ï¿½ï¿½ï¿½ï¿½ï¿½Ð¡ï¿½ï¿½ï¿½ï¿½Æ¥ï¿½ï¿½[%hu,%hu]ï¿½ï¿½", size, T_REG_COUNT*2);
 //		return;
 //	}
 //	read_size = read(fp, this->m_p_pmc_reg->GetRegPtr16(PMC_REG_DT), size);
 //	if(read_size != size){
-//		g_ptr_trace->PrintTrace(TRACE_ERROR, PMC_REGISTER, "¶ÁÈ¡DT¼Ä´æÆ÷Êý¾ÝÊ§°Ü[%hu,%hu]£¡", read_size, size);
+//		g_ptr_trace->PrintTrace(TRACE_ERROR, PMC_REGISTER, "ï¿½ï¿½È¡DTï¿½Ä´ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ê§ï¿½ï¿½[%hu,%hu]ï¿½ï¿½", read_size, size);
 //		return;
 //	}
 
 
-	//½«Êý¾Ý·¢ËÍ¸øMI
+	//ï¿½ï¿½ï¿½ï¿½ï¿½Ý·ï¿½ï¿½Í¸ï¿½MI
 	uint16_t i = 0, count = 0;
 	uint8_t *pn8 = nullptr;
 
 
-	//·¢ËÍK¼Ä´æÆ÷
+	//ï¿½ï¿½ï¿½ï¿½Kï¿½Ä´ï¿½ï¿½ï¿½
 	pn8 = this->m_p_pmc_reg->GetRegPtr8(PMC_REG_K);
 	for(i = 0; i < K_REG_COUNT; i++){
 		if(pn8[i] != 0){
@@ -6949,7 +6947,7 @@ void ChannelEngine::InitPmcReg(){
 
 #ifndef USES_PMC_2_0
 	uint16_t *pn16 = nullptr;
-	//·¢ËÍD¼Ä´æÆ÷
+	//ï¿½ï¿½ï¿½ï¿½Dï¿½Ä´ï¿½ï¿½ï¿½
 	pn16 = this->m_p_pmc_reg->GetRegPtr16(PMC_REG_D);
 	for(i = 0; i < D_REG_COUNT; i++){
 		if(pn16[i] != 0){
@@ -6958,7 +6956,7 @@ void ChannelEngine::InitPmcReg(){
 		}
 	}
 
-	//·¢ËÍDC¼Ä´æÆ÷
+	//ï¿½ï¿½ï¿½ï¿½DCï¿½Ä´ï¿½ï¿½ï¿½
 	pn16 = this->m_p_pmc_reg->GetRegPtr16(PMC_REG_DC);
 	for(i = 0; i < C_REG_COUNT; i++){
 		if(pn16[i] != 0){
@@ -6967,7 +6965,7 @@ void ChannelEngine::InitPmcReg(){
 		}
 	}
 
-	//·¢ËÍDT¼Ä´æÆ÷
+	//ï¿½ï¿½ï¿½ï¿½DTï¿½Ä´ï¿½ï¿½ï¿½
 	pn16 = this->m_p_pmc_reg->GetRegPtr16(PMC_REG_DT);
 	for(i = 0; i < T_REG_COUNT; i++){
 		if(pn16[i] != 0){
@@ -6976,7 +6974,7 @@ void ChannelEngine::InitPmcReg(){
 		}
 	}
 
-	//·¢ËÍC¼Ä´æÆ÷
+	//ï¿½ï¿½ï¿½ï¿½Cï¿½Ä´ï¿½ï¿½ï¿½
 	pn16 = this->m_p_pmc_reg->GetRegPtr16(PMC_REG_C);
 	for(i = 0; i < C_REG_COUNT; i++){
 		if(pn16[i] != 0){
@@ -6985,7 +6983,7 @@ void ChannelEngine::InitPmcReg(){
 		}
 	}
 #else
-	//·¢ËÍD¼Ä´æÆ÷
+	//ï¿½ï¿½ï¿½ï¿½Dï¿½Ä´ï¿½ï¿½ï¿½
 	pn8 = this->m_p_pmc_reg->GetRegPtr8(PMC_REG_D);
 	for(i = 0; i < D_REG_COUNT; i++){
 		if(pn8[i] != 0){
@@ -6994,7 +6992,7 @@ void ChannelEngine::InitPmcReg(){
 		}
 	}
 
-	//·¢ËÍC¼Ä´æÆ÷
+	//ï¿½ï¿½ï¿½ï¿½Cï¿½Ä´ï¿½ï¿½ï¿½
 	pn8 = this->m_p_pmc_reg->GetRegPtr8(PMC_REG_C);
 	count = C_REG_COUNT*4;
 	for(i = 0; i < count; i++){
@@ -7004,7 +7002,7 @@ void ChannelEngine::InitPmcReg(){
 		}
 	}
 
-	//·¢ËÍT¼Ä´æÆ÷
+	//ï¿½ï¿½ï¿½ï¿½Tï¿½Ä´ï¿½ï¿½ï¿½
 	pn8 = this->m_p_pmc_reg->GetRegPtr8(PMC_REG_T);
 	count = T_REG_COUNT*2;
 	for(i = 0; i < count; i++){
@@ -7018,11 +7016,11 @@ void ChannelEngine::InitPmcReg(){
 }
 
 /**
- * @brief ·¢ËÍMI²ÎÊý
- * @param axis : ÖáºÅ£¬ MIµÄÖáºÅ´Ó1¿ªÊ¼, 0xFF±íÊ¾ÏµÍ³²ÎÊý
- * @param para_no : ²ÎÊýºÅ
- * @param data £ºÊý¾ÝÖ¸Õë
- * @param size £º²ÎÊýÊý¾ÝËùÕ¼µÄ×Ö½ÚÊý
+ * @brief ï¿½ï¿½ï¿½ï¿½MIï¿½ï¿½ï¿½ï¿½
+ * @param axis : ï¿½ï¿½Å£ï¿½ MIï¿½ï¿½ï¿½ï¿½Å´ï¿½1ï¿½ï¿½Ê¼, 0xFFï¿½ï¿½Ê¾ÏµÍ³ï¿½ï¿½ï¿½ï¿½
+ * @param para_no : ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+ * @param data ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ö¸ï¿½ï¿½
+ * @param size ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Õ¼ï¿½ï¿½ï¿½Ö½ï¿½ï¿½ï¿½
  */
 template<typename T>
 void ChannelEngine::SendMiParam(uint8_t axis, uint32_t para_no, T data){
@@ -7039,23 +7037,23 @@ void ChannelEngine::SendMiParam(uint8_t axis, uint32_t para_no, T data){
 }
 
 /**
- * @brief ¸øMI·¢ËÍ³õÊ¼»¯²ÎÊý
+ * @brief ï¿½ï¿½MIï¿½ï¿½ï¿½Í³ï¿½Ê¼ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
  */
 void ChannelEngine::InitMiParam(){
 
 	printf("start init mi parameters\n");
-//	uint8_t mi_axis_interface[] = {0xFF, 0x10, 0x01};   //ÐéÄâÖá¡¢×ÜÏßÖá¡¢·Ç×ÜÏßÖá
+//	uint8_t mi_axis_interface[] = {0xFF, 0x10, 0x01};   //ï¿½ï¿½ï¿½ï¿½ï¿½á¡¢ï¿½ï¿½ï¿½ï¿½ï¿½á¡¢ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 
-	//³õÊ¼»¯PMC¼Ä´æÆ÷
+	//ï¿½ï¿½Ê¼ï¿½ï¿½PMCï¿½Ä´ï¿½ï¿½ï¿½
 	this->InitPmcReg();
 
-	//³õÊ¼»¯SD-LINK´ÓÕ¾Êý¾Ý
+	//ï¿½ï¿½Ê¼ï¿½ï¿½SD-LINKï¿½ï¿½Õ¾ï¿½ï¿½ï¿½ï¿½
 	SetSlaveInfo();
 
-	//·¢ËÍÊÖÂÖ±àÂë¸ñÊ½
-	this->SendMiParam<uint8_t>(0xFF, 10, this->m_p_general_config->hw_code_type);   //ÊÖÂÖ±àÂëÀàÐÍ
+	//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ö±ï¿½ï¿½ï¿½ï¿½Ê½
+	this->SendMiParam<uint8_t>(0xFF, 10, this->m_p_general_config->hw_code_type);   //ï¿½ï¿½ï¿½Ö±ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 
-	//·¢ËÍIOÖØÓ³ÉäÊý¾Ý
+	//ï¿½ï¿½ï¿½ï¿½IOï¿½ï¿½Ó³ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 	ListNode<IoRemapInfo> *info_node = this->m_p_io_remap->HeadNode();
 	while(info_node != nullptr){
 		this->SendMiIoRemapInfo(info_node->data);
@@ -7063,25 +7061,25 @@ void ChannelEngine::InitMiParam(){
 		info_node = info_node->next;
 	}
 
-	//ËùÓÐÖáÒÀ´Î·¢ËÍ
+	//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Î·ï¿½ï¿½ï¿½
 	SCAxisConfig *axis_config = nullptr;
 	uint8_t index = 0;
-	double tmp = 0.0;    //ÁÙÊ±±äÁ¿
-	uint8_t tmp_8 = 0;   //ÁÙÊ±±äÁ¿
-	uint64_t tmp_64 = 0;   //ÁÙÊ±±äÁ¿
+	double tmp = 0.0;    //ï¿½ï¿½Ê±ï¿½ï¿½ï¿½ï¿½
+	uint8_t tmp_8 = 0;   //ï¿½ï¿½Ê±ï¿½ï¿½ï¿½ï¿½
+	uint64_t tmp_64 = 0;   //ï¿½ï¿½Ê±ï¿½ï¿½ï¿½ï¿½
 	for(int i = 0; i < this->m_p_general_config->axis_count; i++){
 		axis_config = &m_p_axis_config[i];
-		index = i+1;   //MIÖÐµÄÖáºÅ´Ó1¿ªÊ¼
+		index = i+1;   //MIï¿½Ðµï¿½ï¿½ï¿½Å´ï¿½1ï¿½ï¿½Ê¼
 
-		//·¢ËÍ²å²¹ºó¼Ó¼õËÙÏà¹Ø²ÎÊý
-		this->SendMiParam<uint8_t>(index, 1140, axis_config->post_filter_type);   //ÂË²¨Æ÷ÀàÐÍ
-		this->SendMiParam<uint16_t>(index, 1141, axis_config->post_filter_time_1);   //Ò»¼¶ÂË²¨Æ÷Ê±¼ä³£Êý
-		this->SendMiParam<uint16_t>(index, 1142, axis_config->post_filter_time_2);   //¶þ¼¶ÂË²¨Æ÷Ê±¼ä³£Êý
+		//ï¿½ï¿½ï¿½Í²å²¹ï¿½ï¿½Ó¼ï¿½ï¿½ï¿½ï¿½ï¿½Ø²ï¿½ï¿½ï¿½
+		this->SendMiParam<uint8_t>(index, 1140, axis_config->post_filter_type);   //ï¿½Ë²ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+		this->SendMiParam<uint16_t>(index, 1141, axis_config->post_filter_time_1);   //Ò»ï¿½ï¿½ï¿½Ë²ï¿½ï¿½ï¿½Ê±ï¿½ä³£ï¿½ï¿½
+		this->SendMiParam<uint16_t>(index, 1142, axis_config->post_filter_time_2);   //ï¿½ï¿½ï¿½ï¿½ï¿½Ë²ï¿½ï¿½ï¿½Ê±ï¿½ä³£ï¿½ï¿½
 
-		this->SendMiParam<uint8_t>(index, 1002, axis_config->axis_interface);   //Öá½Ó¿ÚÀàÐÍ
-		this->SendMiParam<uint8_t>(index, 1001, axis_config->axis_type);		//ÖáÀàÐÍ
-		this->SendMiParam<uint8_t>(index, 1003, axis_config->axis_port);		//´ÓÕ¾ºÅ»òÕß¶ÔÓ¦Öá¿ÚºÅ
-		this->SendMiParam<uint8_t>(index, 1006, axis_config->axis_pmc);			//ÊÇ·ñPMCÖá
+		this->SendMiParam<uint8_t>(index, 1002, axis_config->axis_interface);   //ï¿½ï¿½Ó¿ï¿½ï¿½ï¿½ï¿½ï¿½
+		this->SendMiParam<uint8_t>(index, 1001, axis_config->axis_type);		//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+		this->SendMiParam<uint8_t>(index, 1003, axis_config->axis_port);		//ï¿½ï¿½Õ¾ï¿½Å»ï¿½ï¿½ß¶ï¿½Ó¦ï¿½ï¿½Úºï¿½
+		this->SendMiParam<uint8_t>(index, 1006, axis_config->axis_pmc);			//ï¿½Ç·ï¿½PMCï¿½ï¿½
 		this->SendMiParam<double>(index, 1100, axis_config->kp1);			//kp1
 		this->SendMiParam<double>(index, 1101, axis_config->kp2);			//kp2
 		this->SendMiParam<double>(index, 1102, axis_config->ki);			//ki
@@ -7091,46 +7089,46 @@ void ChannelEngine::InitMiParam(){
 		this->SendMiParam<double>(index, 1105, tmp);			//kvff
 		tmp = static_cast<double>(axis_config->kaff);
 		this->SendMiParam<double>(index, 1106, tmp);			//kaff
-		tmp_64 = static_cast<uint64_t>(axis_config->track_err_limit) * 1e4;   //×ª»»µ¥Î»£ºum-->0.1nm
-		this->SendMiParam<uint64_t>(index, 1107, tmp_64);	//¸ú×ÙÎó²îÏÞ
-		tmp_64 = static_cast<uint64_t>(axis_config->location_err_limit) * 1e4;   //×ª»»µ¥Î»£ºum-->0.1nm
-		this->SendMiParam<uint64_t>(index, 1108, tmp_64);			//¶¨Î»Îó²îÏÞ
-		this->SendMiParam<uint32_t>(index, 1200, axis_config->motor_count_pr);	//µç»úÃ¿×ª¼ÆÊý
-		this->SendMiParam<uint32_t>(index, 1201, axis_config->motor_speed_max);	//µç»ú×î´ó×ªËÙ
-		tmp_64 = static_cast<uint64_t>(axis_config->move_pr * 1e7);   //×ª»»µ¥Î»£ºmm-->0.1nm
+		tmp_64 = static_cast<uint64_t>(axis_config->track_err_limit) * 1e4;   //×ªï¿½ï¿½ï¿½ï¿½Î»ï¿½ï¿½um-->0.1nm
+		this->SendMiParam<uint64_t>(index, 1107, tmp_64);	//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+		tmp_64 = static_cast<uint64_t>(axis_config->location_err_limit) * 1e4;   //×ªï¿½ï¿½ï¿½ï¿½Î»ï¿½ï¿½um-->0.1nm
+		this->SendMiParam<uint64_t>(index, 1108, tmp_64);			//ï¿½ï¿½Î»ï¿½ï¿½ï¿½ï¿½ï¿½
+		this->SendMiParam<uint32_t>(index, 1200, axis_config->motor_count_pr);	//ï¿½ï¿½ï¿½Ã¿×ªï¿½ï¿½ï¿½ï¿½
+		this->SendMiParam<uint32_t>(index, 1201, axis_config->motor_speed_max);	//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½×ªï¿½ï¿½
+		tmp_64 = static_cast<uint64_t>(axis_config->move_pr * 1e7);   //×ªï¿½ï¿½ï¿½ï¿½Î»ï¿½ï¿½mm-->0.1nm
 // 		printf("write axis param idx = %d, value = %ld\n", index, tmp_64);
-		this->SendMiParam<uint64_t>(index, 1202, tmp_64);	//Ã¿×ªÒÆ¶¯Á¿
-		this->SendMiParam<uint8_t>(index, 1203, axis_config->motor_dir);	//µç»úÐý×ª·½Ïò
+		this->SendMiParam<uint64_t>(index, 1202, tmp_64);	//Ã¿×ªï¿½Æ¶ï¿½ï¿½ï¿½
+		this->SendMiParam<uint8_t>(index, 1203, axis_config->motor_dir);	//ï¿½ï¿½ï¿½ï¿½ï¿½×ªï¿½ï¿½ï¿½ï¿½
 		tmp_8 = axis_config->feedback_mode;
 //		if(axis_config->axis_interface == VIRTUAL_AXIS)
-//			tmp_8 = 0xFF;    //ÐéÄâÖá
+//			tmp_8 = 0xFF;    //ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 //		else if(axis_config->axis_interface == BUS_AXIS)
 //			tmp_8 = 0x10;   //ethercat
-		this->SendMiParam<uint8_t>(index, 1204, tmp_8);	//·´À¡ÀàÐÍ
+		this->SendMiParam<uint8_t>(index, 1204, tmp_8);	//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 //		printf("send axis[%hhu] feedback_mode %hhu #####\n", index, tmp_8);
 
 		tmp_8 = axis_config->ctrl_mode;
 		if(axis_config->axis_interface == VIRTUAL_AXIS)
-			tmp_8 = 0xFF;    //ÐéÄâÖá
+			tmp_8 = 0xFF;    //ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 		else if(axis_config->axis_interface == BUS_AXIS)
 			tmp_8 = 0x10;   //ethercat
-		this->SendMiParam<uint8_t>(index, 1205, tmp_8);	//Öá¿ØÖÆ·½Ê½
-		this->SendMiParam<uint32_t>(index, 1206, axis_config->pulse_count_pr);	//¿ØÖÆÃ¿×ªÊä³öÂö³åÊý
-		this->SendMiParam<uint8_t>(index, 1207, axis_config->encoder_lines);	//µ¥È¦±àÂëÆ÷ÏßÊý
+		this->SendMiParam<uint8_t>(index, 1205, tmp_8);	//ï¿½ï¿½ï¿½ï¿½Æ·ï¿½Ê½
+		this->SendMiParam<uint32_t>(index, 1206, axis_config->pulse_count_pr);	//ï¿½ï¿½ï¿½ï¿½Ã¿×ªï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+		this->SendMiParam<uint8_t>(index, 1207, axis_config->encoder_lines);	//ï¿½ï¿½È¦ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 
-		this->SendMiParam<uint16_t>(index, 1208, axis_config->encoder_max_cycle);   //Ðý×ªÖá±àÂëÆ÷ÕûÈ¦×î´óÖµ
+		this->SendMiParam<uint16_t>(index, 1208, axis_config->encoder_max_cycle);   //ï¿½ï¿½×ªï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½È¦ï¿½ï¿½ï¿½Öµ
 
-//		this->SendMiParam<uint8_t>(index, 1209, axis_config->axis_alarm_level);	//Öá¸æ¾¯µçÆ½
+//		this->SendMiParam<uint8_t>(index, 1209, axis_config->axis_alarm_level);	//ï¿½ï¿½æ¾¯ï¿½ï¿½Æ½
 
 		if(axis_config->axis_interface != VIRTUAL_AXIS &&
 				axis_config->feedback_mode != NO_ENCODER &&
 				axis_config->feedback_mode != INCREMENTAL_ENCODER &&
-				axis_config->ref_encoder != kAxisRefNoDef){ //Ð´Èë²Î¿¼µãÊý¾Ý
+				axis_config->ref_encoder != kAxisRefNoDef){ //Ð´ï¿½ï¿½Î¿ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 			this->m_p_mi_comm->SetAxisRef(index, axis_config->ref_encoder);
 			printf("send mi ref encoder : %lld\n", axis_config->ref_encoder);
 		}
 
-		//ÈíÏÞÎ»
+		//ï¿½ï¿½ï¿½ï¿½Î»
 		this->SendMiParam<double>(index, 1500, axis_config->soft_limit_max_1);
 		this->SendMiParam<double>(index, 1501, axis_config->soft_limit_min_1);
 		this->SendMiParam<uint8_t>(index, 1502, axis_config->soft_limit_check_1);
@@ -7141,39 +7139,39 @@ void ChannelEngine::InitMiParam(){
 		this->SendMiParam<double>(index, 1507, axis_config->soft_limit_min_3);
 		this->SendMiParam<uint8_t>(index, 1508, axis_config->soft_limit_check_3);
 
-		//·¢ËÍÖ÷ÖáÆô¶¯Ê±¼ä¡¢ÖÆ¶¯Ê±¼ä
+		//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ê±ï¿½ä¡¢ï¿½Æ¶ï¿½Ê±ï¿½ï¿½
 		this->SendMiParam<uint16_t>(index, 1605, axis_config->spd_start_time);
 		this->SendMiParam<uint16_t>(index, 1606, axis_config->spd_stop_time);
 
-		//·¢ËÍÍ¬²½ÖáÏà¹Ø²ÎÊý
-		this->SendMiParam<uint8_t>(index, 1650, axis_config->sync_axis);   //ÊÇ·ñÍ¬²½Öá
-		this->SendMiParam<uint8_t>(index, 1651, axis_config->master_axis_no); 	//Ö÷¶¯ÖáºÅ
-		this->SendMiParam<double>(index, 1653, axis_config->benchmark_offset); 	//»ù×¼Æ«²î
-		this->SendMiParam<uint32_t>(index, 1655, axis_config->sync_err_max); 	//ÔÊÐíµÄÍ¬²½×î´óÎó²î
+		//ï¿½ï¿½ï¿½ï¿½Í¬ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ø²ï¿½ï¿½ï¿½
+		this->SendMiParam<uint8_t>(index, 1650, axis_config->sync_axis);   //ï¿½Ç·ï¿½Í¬ï¿½ï¿½ï¿½ï¿½
+		this->SendMiParam<uint8_t>(index, 1651, axis_config->master_axis_no); 	//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+		this->SendMiParam<double>(index, 1653, axis_config->benchmark_offset); 	//ï¿½ï¿½×¼Æ«ï¿½ï¿½
+		this->SendMiParam<uint32_t>(index, 1655, axis_config->sync_err_max); 	//ï¿½ï¿½ï¿½ï¿½ï¿½Í¬ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 
-		//·¢ËÍ·´Ïò¼äÏ¶²ÎÊý
+		//ï¿½ï¿½ï¿½Í·ï¿½ï¿½ï¿½ï¿½Ï¶ï¿½ï¿½ï¿½ï¿½
 		this->SendMiBacklash(i);
 
-		//·¢ËÍÖáÂÝ²¹Êý¾Ý±í
+		//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ý²ï¿½ï¿½ï¿½ï¿½Ý±ï¿½
 		this->SendMiPcData(i);
 
-		//·¢ËÍÖáÂÝ²¹ÉèÖÃ²ÎÊý
+		//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ý²ï¿½ï¿½ï¿½ï¿½Ã²ï¿½ï¿½ï¿½
 		this->SendMiPcParam(i);
 		this->SendMiPcParam2(i);
 
-		//·¢ËÍÖá²Î¿¼µã¶ÔÓ¦µÄ»úÐµ×ø±ê
+		//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Î¿ï¿½ï¿½ï¿½ï¿½Ó¦ï¿½Ä»ï¿½Ðµï¿½ï¿½ï¿½ï¿½
 		this->SendMiRefMachPos(i);
 	}
 
 	for(int i = 0; i < this->m_p_general_config->chn_count; i++){
-		this->m_p_channel_control[i].SendMiChnAxisMap();  //·¢ËÍÍ¨µÀÖáÎïÀíÖáÓ³Éä¹ØÏµÐÅÏ¢
+		this->m_p_channel_control[i].SendMiChnAxisMap();  //ï¿½ï¿½ï¿½ï¿½Í¨ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ó³ï¿½ï¿½ï¿½Ïµï¿½ï¿½Ï¢
 	}
 
 	this->SendMiPhyAxisEncoder();
 
-	this->SetAxisRetRefFlag();   //·¢ËÍ»Ø²Î¿¼µã½áÊø±êÖ¾
+	this->SetAxisRetRefFlag();   //ï¿½ï¿½ï¿½Í»Ø²Î¿ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ö¾
 
-	//·¢ËÍÖá²ÎÊýÉèÖÃÍê³ÉÃüÁî
+	//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 	MiCmdFrame cmd;
 	memset(&cmd, 0x00, sizeof(cmd));
 	cmd.data.cmd = CMD_MI_INIT_COMPLETE;
@@ -7186,8 +7184,8 @@ void ChannelEngine::InitMiParam(){
 }
 
 /**
- * @brief ÏòMI·¢ËÍÂÝ²¹Êý¾Ý±í
- * @param axis : Ö¸¶¨ÎïÀíÖáºÅ£¬´Ó0¿ªÊ¼
+ * @brief ï¿½ï¿½MIï¿½ï¿½ï¿½ï¿½ï¿½Ý²ï¿½ï¿½ï¿½ï¿½Ý±ï¿½
+ * @param axis : Ö¸ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Å£ï¿½ï¿½ï¿½0ï¿½ï¿½Ê¼
  */
 void ChannelEngine::SendMiPcData(uint8_t axis){
 	if(this->m_p_pc_table == nullptr)
@@ -7198,39 +7196,39 @@ void ChannelEngine::SendMiPcData(uint8_t axis){
 
 	cmd.data.axis_index = NO_AXIS;
 
-	//·ÅÖÃÊý¾Ý
+	//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 	uint16_t count = m_p_axis_config[axis].pc_count;
-	uint16_t offset = m_p_axis_config[axis].pc_offset-1;  //ÆðÊ¼±àºÅ£¬0¿ªÊ¼
-	if(this->m_p_axis_config[axis].pc_type == 1){//Ë«ÏòÂÝ²¹
-		count *= 2;   //Êý¾ÝÁ¿·­±¶
+	uint16_t offset = m_p_axis_config[axis].pc_offset-1;  //ï¿½ï¿½Ê¼ï¿½ï¿½Å£ï¿½0ï¿½ï¿½Ê¼
+	if(this->m_p_axis_config[axis].pc_type == 1){//Ë«ï¿½ï¿½ï¿½Ý²ï¿½
+		count *= 2;   //ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 	}
 
 	int32_t value = 0;
-	uint8_t dc = 0;    //Ã¿¸öÊý¾Ý°üµÄÊý¾Ý¸öÊý
+	uint8_t dc = 0;    //Ã¿ï¿½ï¿½ï¿½ï¿½ï¿½Ý°ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ý¸ï¿½ï¿½ï¿½
 
 	for(uint16_t i = 0; i < count; i += 3, offset += 3){
 		memset(cmd.data.data, 0x00, 14);
 		dc = count-i;
 		if(dc > 3)
 			dc = 3;
-		memcpy(&cmd.data.reserved, &dc, 1);   //ÂÝ²¹Êý¾Ý¸öÊý
+		memcpy(&cmd.data.reserved, &dc, 1);   //ï¿½Ý²ï¿½ï¿½ï¿½ï¿½Ý¸ï¿½ï¿½ï¿½
 
-		memcpy(cmd.data.data, &offset, 2);  //ÆðÊ¼±àºÅ
+		memcpy(cmd.data.data, &offset, 2);  //ï¿½ï¿½Ê¼ï¿½ï¿½ï¿½
 
-		//µÚÒ»×éÊý¾Ý
-		value = this->m_p_pc_table->pc_table[axis][i] * 1e7;   //µ¥Î»0.1nm
-		memcpy(&cmd.data.data[1], &value, 4);   //ÆðÊ¼±àºÅ
+		//ï¿½ï¿½Ò»ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+		value = this->m_p_pc_table->pc_table[axis][i] * 1e7;   //ï¿½ï¿½Î»0.1nm
+		memcpy(&cmd.data.data[1], &value, 4);   //ï¿½ï¿½Ê¼ï¿½ï¿½ï¿½
 
-		//µÚ¶þ×éÊý¾Ý
+		//ï¿½Ú¶ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 		if(dc>=2){
-			value = this->m_p_pc_table->pc_table[axis][i+1] * 1e7;   //µ¥Î»0.1nm
-			memcpy(&cmd.data.data[3], &value, 4);   //ÆðÊ¼±àºÅ
+			value = this->m_p_pc_table->pc_table[axis][i+1] * 1e7;   //ï¿½ï¿½Î»0.1nm
+			memcpy(&cmd.data.data[3], &value, 4);   //ï¿½ï¿½Ê¼ï¿½ï¿½ï¿½
 		}
 
-		//µÚÈý×éÊý¾Ý
+		//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 		if(dc == 3){
-			value = this->m_p_pc_table->pc_table[axis][i+2] * 1e7;   //µ¥Î»0.1nm
-			memcpy(&cmd.data.data[5], &value, 4);   //ÆðÊ¼±àºÅ
+			value = this->m_p_pc_table->pc_table[axis][i+2] * 1e7;   //ï¿½ï¿½Î»0.1nm
+			memcpy(&cmd.data.data[5], &value, 4);   //ï¿½ï¿½Ê¼ï¿½ï¿½ï¿½
 		}
 
 		this->m_p_mi_comm->WriteCmd(cmd);
@@ -7238,8 +7236,8 @@ void ChannelEngine::SendMiPcData(uint8_t axis){
 }
 
 /**
- * @brief ÏòMI·¢ËÍÖ¸¶¨ÖáÂÝ²¹²ÎÊýÉèÖÃ
- * @param axis : Ö¸¶¨ÎïÀíÖáºÅ£¬´Ó0¿ªÊ¼
+ * @brief ï¿½ï¿½MIï¿½ï¿½ï¿½ï¿½Ö¸ï¿½ï¿½ï¿½ï¿½ï¿½Ý²ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+ * @param axis : Ö¸ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Å£ï¿½ï¿½ï¿½0ï¿½ï¿½Ê¼
  */
 void ChannelEngine::SendMiPcParam(uint8_t axis){
 	MiCmdFrame cmd;
@@ -7248,27 +7246,27 @@ void ChannelEngine::SendMiPcParam(uint8_t axis){
 
 	cmd.data.axis_index = axis+1;
 
-	//·ÅÖÃÊý¾Ý
+	//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 	uint16_t count = m_p_axis_config[axis].pc_count;
-	uint16_t offset = m_p_axis_config[axis].pc_offset-1;  //ÆðÊ¼±àºÅ£¬0¿ªÊ¼
-	uint32_t inter = m_p_axis_config[axis].pc_inter_dist*1000;   //×ª»»ÎªÎ¢Ã×µ¥Î»
-	uint16_t ref_index = m_p_axis_config[axis].pc_ref_index-1;   //²Î¿¼µã¶ÔÓ¦Î»ÖÃ£¬0¿ªÊ¼
+	uint16_t offset = m_p_axis_config[axis].pc_offset-1;  //ï¿½ï¿½Ê¼ï¿½ï¿½Å£ï¿½0ï¿½ï¿½Ê¼
+	uint32_t inter = m_p_axis_config[axis].pc_inter_dist*1000;   //×ªï¿½ï¿½ÎªÎ¢ï¿½×µï¿½Î»
+	uint16_t ref_index = m_p_axis_config[axis].pc_ref_index-1;   //ï¿½Î¿ï¿½ï¿½ï¿½ï¿½Ó¦Î»ï¿½Ã£ï¿½0ï¿½ï¿½Ê¼
  	uint16_t pc_type = this->m_p_axis_config[axis].pc_type;
  	uint16_t pc_enable = m_p_axis_config[axis].pc_enable;
 
-	memcpy(cmd.data.data, &count, 2);  //²¹³¥Êý¾Ý¸öÊý
-	memcpy(&cmd.data.data[1], &offset, 2);   //ÆðÊ¼±àºÅ
-	memcpy(&cmd.data.data[2], &inter, 4); 	 //²¹³¥¼ä¸ô £¬ umµ¥Î»£¬32Î»ÕûÐÍ
-	memcpy(&cmd.data.data[4], &ref_index, 2);     //²Î¿¼µã¶ÔÓ¦Î»ÖÃ
-	memcpy(&cmd.data.data[5], &pc_type, 1);     //²¹³¥ÀàÐÍ  0--µ¥ÏòÂÝ²¹   1--Ë«ÏòÂÝ²¹
+	memcpy(cmd.data.data, &count, 2);  //ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ý¸ï¿½ï¿½ï¿½
+	memcpy(&cmd.data.data[1], &offset, 2);   //ï¿½ï¿½Ê¼ï¿½ï¿½ï¿½
+	memcpy(&cmd.data.data[2], &inter, 4); 	 //ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ umï¿½ï¿½Î»ï¿½ï¿½32Î»ï¿½ï¿½ï¿½ï¿½
+	memcpy(&cmd.data.data[4], &ref_index, 2);     //ï¿½Î¿ï¿½ï¿½ï¿½ï¿½Ó¦Î»ï¿½ï¿½
+	memcpy(&cmd.data.data[5], &pc_type, 1);     //ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½  0--ï¿½ï¿½ï¿½ï¿½ï¿½Ý²ï¿½   1--Ë«ï¿½ï¿½ï¿½Ý²ï¿½
 	memcpy(&cmd.data.data[6], &pc_enable, 1);
 	this->m_p_mi_comm->WriteCmd(cmd);
 }
 
 
 /**
- * @brief ÏòMI·¢ËÍÖ¸¶¨ÖáµÄ²Î¿¼µãÎ»ÖÃ»úÐµ×ø±ê
- * @param axis_index : ÎïÀíÖáºÅ£¬´Ó0¿ªÊ¼
+ * @brief ï¿½ï¿½MIï¿½ï¿½ï¿½ï¿½Ö¸ï¿½ï¿½ï¿½ï¿½Ä²Î¿ï¿½ï¿½ï¿½Î»ï¿½Ã»ï¿½Ðµï¿½ï¿½ï¿½ï¿½
+ * @param axis_index : ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Å£ï¿½ï¿½ï¿½0ï¿½ï¿½Ê¼
  */
 void ChannelEngine::SendMiRefMachPos(uint8_t axis_index){
 	MiCmdFrame cmd;
@@ -7277,10 +7275,10 @@ void ChannelEngine::SendMiRefMachPos(uint8_t axis_index){
 
 	cmd.data.axis_index = axis_index+1;
 
-	//·ÅÖÃÊý¾Ý
+	//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 	uint32_t pos = 0;
 	for(uint16_t i = 0; i <10; i++){
-		pos = m_p_axis_config[axis_index].axis_home_pos[i]*1000;   //×ª»»ÎªÎ¢Ã×µ¥Î»
+		pos = m_p_axis_config[axis_index].axis_home_pos[i]*1000;   //×ªï¿½ï¿½ÎªÎ¢ï¿½×µï¿½Î»
 		memcpy(cmd.data.data, &pos, 4);  //
 		cmd.data.data[2] = i;
 
@@ -7289,8 +7287,8 @@ void ChannelEngine::SendMiRefMachPos(uint8_t axis_index){
 }
 
 /**
- * @brief ÏòMI·¢ËÍÖ¸¶¨ÖáÂÝ²¹²ÎÊýÉèÖÃ2
- * @param axis : ÎïÀíÖáºÅ£¬´Ó0¿ªÊ¼
+ * @brief ï¿½ï¿½MIï¿½ï¿½ï¿½ï¿½Ö¸ï¿½ï¿½ï¿½ï¿½ï¿½Ý²ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½2
+ * @param axis : ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Å£ï¿½ï¿½ï¿½0ï¿½ï¿½Ê¼
  */
 void ChannelEngine::SendMiPcParam2(uint8_t axis){
 	MiCmdFrame cmd;
@@ -7299,8 +7297,8 @@ void ChannelEngine::SendMiPcParam2(uint8_t axis){
 
 	cmd.data.axis_index = axis+1;
 
-	//·ÅÖÃÊý¾Ý
-	uint32_t pos = m_p_axis_config[axis].axis_home_pos[0]*1000;   //×ª»»ÎªÎ¢Ã×µ¥Î»
+	//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+	uint32_t pos = m_p_axis_config[axis].axis_home_pos[0]*1000;   //×ªï¿½ï¿½ÎªÎ¢ï¿½×µï¿½Î»
 	memcpy(cmd.data.data, &pos, 4);  //
 
 	this->m_p_mi_comm->WriteCmd(cmd);
@@ -7308,7 +7306,7 @@ void ChannelEngine::SendMiPcParam2(uint8_t axis){
 }
 
 /**
- * @brief ÏòMI·¢ËÍÉèÖÃIOÖØ¶¨ÏòµÄÅäÖÃ
+ * @brief ï¿½ï¿½MIï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½IOï¿½Ø¶ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
  * @param info
  */
 void ChannelEngine::SendMiIoRemapInfo(IoRemapInfo &info){
@@ -7318,7 +7316,7 @@ void ChannelEngine::SendMiIoRemapInfo(IoRemapInfo &info){
 
 	cmd.data.axis_index = 0xFF;
 
-	//·ÅÖÃÊý¾Ý
+	//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 	cmd.data.data[0] = info.iotype;
 	cmd.data.data[1] = info.addr;
 	cmd.data.data[2] = info.bit;
@@ -7331,18 +7329,18 @@ void ChannelEngine::SendMiIoRemapInfo(IoRemapInfo &info){
 }
 
 /**
- * @brief ÏòMI·¢ËÍÖ¸¶¨ÖáµÄÂË²¨Æ÷Ïà¹Ø²ÎÊý
- * @param phy_axis : ÎïÀíÖáºÅ£¬´Ó0¿ªÊ¼
+ * @brief ï¿½ï¿½MIï¿½ï¿½ï¿½ï¿½Ö¸ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ë²ï¿½ï¿½ï¿½ï¿½ï¿½Ø²ï¿½ï¿½ï¿½
+ * @param phy_axis : ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Å£ï¿½ï¿½ï¿½0ï¿½ï¿½Ê¼
  */
 void ChannelEngine::SendMiAxisFilterParam(uint8_t phy_axis){
-	this->SendMiParam<uint8_t>(phy_axis+1, 1140, m_p_axis_config[phy_axis].post_filter_type);   //ÂË²¨Æ÷ÀàÐÍ
-	this->SendMiParam<uint16_t>(phy_axis+1, 1141, m_p_axis_config[phy_axis].post_filter_time_1);   //Ò»¼¶ÂË²¨Æ÷Ê±¼ä³£Êý
-	this->SendMiParam<uint16_t>(phy_axis+1, 1142, m_p_axis_config[phy_axis].post_filter_time_2);   //¶þ¼¶ÂË²¨Æ÷Ê±¼ä³£Êý
+	this->SendMiParam<uint8_t>(phy_axis+1, 1140, m_p_axis_config[phy_axis].post_filter_type);   //ï¿½Ë²ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+	this->SendMiParam<uint16_t>(phy_axis+1, 1141, m_p_axis_config[phy_axis].post_filter_time_1);   //Ò»ï¿½ï¿½ï¿½Ë²ï¿½ï¿½ï¿½Ê±ï¿½ä³£ï¿½ï¿½
+	this->SendMiParam<uint16_t>(phy_axis+1, 1142, m_p_axis_config[phy_axis].post_filter_time_2);   //ï¿½ï¿½ï¿½ï¿½ï¿½Ë²ï¿½ï¿½ï¿½Ê±ï¿½ä³£ï¿½ï¿½
 }
 
 /**
- * @brief ÏòMI·¢ËÍÖ¸¶¨ÖáµÄ·´Ïò¼äÏ¶²ÎÊý
- * @param axis : ÎïÀíÖáºÅ£¬´Ó0¿ªÊ¼
+ * @brief ï¿½ï¿½MIï¿½ï¿½ï¿½ï¿½Ö¸ï¿½ï¿½ï¿½ï¿½Ä·ï¿½ï¿½ï¿½ï¿½Ï¶ï¿½ï¿½ï¿½ï¿½
+ * @param axis : ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Å£ï¿½ï¿½ï¿½0ï¿½ï¿½Ê¼
  */
 void ChannelEngine::SendMiBacklash(uint8_t axis){
 	MiCmdFrame cmd;
@@ -7351,7 +7349,7 @@ void ChannelEngine::SendMiBacklash(uint8_t axis){
 
 	cmd.data.axis_index = axis+1;
 
-	//·ÅÖÃÊý¾Ý
+	//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 	if(m_p_axis_config[axis].backlash_enable){
 		uint32_t data = m_p_axis_config[axis].backlash_forward;
 		memcpy(cmd.data.data, &data, 4);  //
@@ -7369,7 +7367,7 @@ void ChannelEngine::SendMiBacklash(uint8_t axis){
 
 
 /**
- * @brief ÏòMIÉèÖÃPMC¼Ä´æÆ÷
+ * @brief ï¿½ï¿½MIï¿½ï¿½ï¿½ï¿½PMCï¿½Ä´ï¿½ï¿½ï¿½
  * @param sec :
  * @param index
  * @param data
@@ -7386,15 +7384,15 @@ void ChannelEngine::SendPmcRegValue(PmcRegSection sec, uint16_t index, uint16_t 
 }
 
 /**
- * @brief ÉÏËÅ·þ
+ * @brief ï¿½ï¿½ï¿½Å·ï¿½
  */
 void ChannelEngine::ServoOn(){
-	//TODO ÏÈ°´ÖáÉÏÊ¹ÄÜ£¬ºóÆÚÐèÒªÓÅ»¯°´Í¨µÀÉÏÊ¹ÄÜ
+	//TODO ï¿½È°ï¿½ï¿½ï¿½ï¿½ï¿½Ê¹ï¿½Ü£ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Òªï¿½Å»ï¿½ï¿½ï¿½Í¨ï¿½ï¿½ï¿½ï¿½Ê¹ï¿½ï¿½
 
 	MiCmdFrame cmd;
 	memset(&cmd, 0x00, sizeof(cmd));
 	cmd.data.cmd = CMD_MI_OPERATE;
-	cmd.data.axis_index = 0xff;	  //¶ÔËùÓÐÖáÉÏÊ¹ÄÜ
+	cmd.data.axis_index = 0xff;	  //ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ê¹ï¿½ï¿½
 	cmd.data.data[0] = AXIS_ON_FLAG;
 	cmd.data.data[1] = 1;
 
@@ -7408,15 +7406,15 @@ void ChannelEngine::ServoOn(){
 }
 
 /**
- * @brief ÏÂËÅ·þ
+ * @brief ï¿½ï¿½ï¿½Å·ï¿½
  */
 void ChannelEngine::ServoOff(){
-	//TODO ÏÈ°´ÖáÉÏÊ¹ÄÜ£¬ºóÆÚÐèÒªÓÅ»¯°´Í¨µÀÏÂÊ¹ÄÜ
+	//TODO ï¿½È°ï¿½ï¿½ï¿½ï¿½ï¿½Ê¹ï¿½Ü£ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Òªï¿½Å»ï¿½ï¿½ï¿½Í¨ï¿½ï¿½ï¿½ï¿½Ê¹ï¿½ï¿½
 
 	MiCmdFrame cmd;
 	memset(&cmd, 0x00, sizeof(cmd));
 	cmd.data.cmd = CMD_MI_OPERATE;
-	cmd.data.axis_index = 0xff;	  //¶ÔËùÓÐÖáÏÂÊ¹ÄÜ
+	cmd.data.axis_index = 0xff;	  //ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ê¹ï¿½ï¿½
 	cmd.data.data[0] = AXIS_ON_FLAG;
 	cmd.data.data[1] = 0;
 
@@ -7431,8 +7429,8 @@ void ChannelEngine::ServoOff(){
 
 #ifdef USES_EMERGENCY_DEC_STOP
 /**
- * @brief ÑÓ³ÙÏÂËÅ·þ
- * @param chn_index : Í¨µÀºÅ£¬0xFF±íÊ¾ËùÓÐÍ¨µÀ
+ * @brief ï¿½Ó³ï¿½ï¿½ï¿½ï¿½Å·ï¿½
+ * @param chn_index : Í¨ï¿½ï¿½ï¿½Å£ï¿½0xFFï¿½ï¿½Ê¾ï¿½ï¿½ï¿½ï¿½Í¨ï¿½ï¿½
  */
 void ChannelEngine::DelayToServoOff(uint8_t chn_index){
 	printf("enter DelayToServoOff:%hhu\n", chn_index);
@@ -7452,8 +7450,8 @@ void ChannelEngine::DelayToServoOff(uint8_t chn_index){
 }
 
 /**
- * @brief ÉèÖÃÍ¨µÀÍ£Ö¹µ½Î»±êÖ¾
- * @param chn_index : Í¨µÀºÅ
+ * @brief ï¿½ï¿½ï¿½ï¿½Í¨ï¿½ï¿½Í£Ö¹ï¿½ï¿½Î»ï¿½ï¿½Ö¾
+ * @param chn_index : Í¨ï¿½ï¿½ï¿½ï¿½
  */
 void ChannelEngine::SetChnStoppedMask(uint8_t chn_index){
 	if(chn_index < this->m_p_general_config->chn_count){
@@ -7465,7 +7463,7 @@ void ChannelEngine::SetChnStoppedMask(uint8_t chn_index){
 #endif
 
 /**
- * @brief ·¢ËÍMI¸´Î»Ö¸Áî
+ * @brief ï¿½ï¿½ï¿½ï¿½MIï¿½ï¿½Î»Ö¸ï¿½ï¿½
  */
 void ChannelEngine::SendMiReset(){
 	MiCmdFrame cmd;
@@ -7478,38 +7476,38 @@ void ChannelEngine::SendMiReset(){
 }
 
 /**
- * @brief ÉèÖÃMCµ¥Í¨µÀ×Ô¶¯Êý¾Ý»º³åÊýÁ¿
- * @param count : »º³åÊýÁ¿
+ * @brief ï¿½ï¿½ï¿½ï¿½MCï¿½ï¿½Í¨ï¿½ï¿½ï¿½Ô¶ï¿½ï¿½ï¿½ï¿½Ý»ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+ * @param count : ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
  */
 void ChannelEngine::SetMcAutoBufMax(uint16_t count){
 //	this->m_n_mc_auto_buf_max = count;
 	for(int i = 0; i < this->m_p_general_config->chn_count; i++){
-		this->m_p_channel_control[i].SetMcAutoBufMax(count-kMaxGCodeFifoCount-10);   //¼õÉÙ2¸ö£¬´ÓÎÈ¶¨ÐÔ¿¼ÂÇ£¬²»·ÅÂú
+		this->m_p_channel_control[i].SetMcAutoBufMax(count-kMaxGCodeFifoCount-10);   //ï¿½ï¿½ï¿½ï¿½2ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½È¶ï¿½ï¿½Ô¿ï¿½ï¿½Ç£ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 	}
 }
 
 /**
- * @brief ÉèÖÃSD-LINK´ÓÕ¾Êý¾Ý
+ * @brief ï¿½ï¿½ï¿½ï¿½SD-LINKï¿½ï¿½Õ¾ï¿½ï¿½ï¿½ï¿½
  */
 void ChannelEngine::SetSlaveInfo(){
 #ifdef USES_PMC_2_0
     MiCmdFrame cmd;
 
-    //ÅäÖÃÀ©Õ¹IO°å¿¨ÐÅÏ¢ÃüÁî
+    //ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Õ¹IOï¿½å¿¨ï¿½ï¿½Ï¢ï¿½ï¿½ï¿½ï¿½
     memset(&cmd, 0x00, sizeof(cmd));
     cmd.data.cmd = CMD_MI_SET_SDLINK_SLAVE;
     cmd.data.axis_index = NO_AXIS;
 
-    int dev_count = 0;          //´ÓÕ¾×ÜÊý
-    int total_in = 0;           //×ÜÊäÈë×Ö½ÚÊý
-    int total_out = 0;          //×ÜÊä³ö×Ö½ÚÊý
-    int handwheel_count = 0;    //ÊÖÂÖ¸öÊý
+    int dev_count = 0;          //ï¿½ï¿½Õ¾ï¿½ï¿½ï¿½ï¿½
+    int total_in = 0;           //ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ö½ï¿½ï¿½ï¿½
+    int total_out = 0;          //ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ö½ï¿½ï¿½ï¿½
+    int handwheel_count = 0;    //ï¿½ï¿½ï¿½Ö¸ï¿½ï¿½ï¿½
 
     if (!m_list_bdio_dev.IsEmpty())
     {
         ListNode<BdioDevInfo> *node = this->m_list_bdio_dev.HeadNode();
         while(node != nullptr){
-            //²ÎÊýÆ´½Ó
+            //ï¿½ï¿½ï¿½ï¿½Æ´ï¿½ï¿½
             char16_t data0 = (node->data.device_type << 8) | (node->data.group_index);
             char16_t data1 = 0;
             char16_t data2 = node->data.in_bytes;
@@ -7532,9 +7530,9 @@ void ChannelEngine::SetSlaveInfo(){
             printf("node data4 %d------------------\n", cmd.data.data[4]);
             printf("node data5 %d------------------\n", cmd.data.data[5]);
             printf("node data6 %d------------------\n", cmd.data.data[6]);
-            printf("\n");
+            printf("\n");            
 
-            //Êý¾Ý·¢ËÍ
+			//ï¿½ï¿½ï¿½Ý·ï¿½ï¿½ï¿½
             this->m_p_mi_comm->WriteCmd(cmd);
             total_in += node->data.in_bytes;
             total_out += node->data.out_bytes;
@@ -7545,7 +7543,7 @@ void ChannelEngine::SetSlaveInfo(){
             node = node->next;
         }
 
-        //À©Õ¹IO°å¿¨ÅäÖÃÍê³ÉÃüÁî
+        //ï¿½ï¿½Õ¹IOï¿½å¿¨ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
         memset(&cmd, 0x00, sizeof(cmd));
         cmd.data.axis_index = NO_AXIS;
         cmd.data.cmd = CMD_MI_SET_SDLINK_COMPLETE;
@@ -7562,9 +7560,8 @@ void ChannelEngine::SetSlaveInfo(){
         printf("node data4 %d------------------\n", cmd.data.data[4]);
         printf("node data5 %d------------------\n", cmd.data.data[5]);
         printf("node data6 %d------------------\n", cmd.data.data[6]);
-        printf("\n");
-
-        this->m_p_mi_comm->WriteCmd(cmd);
+        printf("\n");        
+		this->m_p_mi_comm->WriteCmd(cmd);
     }
 
 #else
@@ -7573,9 +7570,9 @@ void ChannelEngine::SetSlaveInfo(){
 	cmd.data.cmd = CMD_MI_SET_SDLINK_SLAVE;
 	cmd.data.axis_index = NO_AXIS;
 
-	int total_in = 0;  //×ÜÊäÈë×Ö½ÚÊý
-	int total_out = 0;  //×ÜÊä³ö×Ö½ÚÊý
-	int dev_count = 0;  //´ÓÕ¾×ÜÊý
+	int total_in = 0;  //ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ö½ï¿½ï¿½ï¿½
+	int total_out = 0;  //ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ö½ï¿½ï¿½ï¿½
+	int dev_count = 0;  //ï¿½ï¿½Õ¾ï¿½ï¿½ï¿½ï¿½
 
 	ListNode<BdioDevInfo> *node = this->m_list_bdio_dev.HeadNode();
 	while(node != nullptr){
@@ -7605,7 +7602,7 @@ void ChannelEngine::SetSlaveInfo(){
 }
 
 /**
- * @brief ·¢ËÍ»ñÈ¡MI°æ±¾Ö¸Áî
+ * @brief ï¿½ï¿½ï¿½Í»ï¿½È¡MIï¿½æ±¾Ö¸ï¿½ï¿½
  */
 //void ChannelEngine::SendMiGetVerCmd(){
 //	MiCmdFrame cmd;
@@ -7619,15 +7616,15 @@ void ChannelEngine::SetSlaveInfo(){
 
 
 /**
- * @brief Çå³ý¸æ¾¯
+ * @brief ï¿½ï¿½ï¿½ï¿½æ¾¯
  */
 void ChannelEngine::ClearAlarm(){
-	//Çå³ý¸æ¾¯
+	//ï¿½ï¿½ï¿½ï¿½æ¾¯
 	g_ptr_alarm_processor->Clear();
 }
 
 /**
- * @brief Çå¿ÕMIÖÐµÄPMCÖáÒÆ¶¯Êý¾Ý
+ * @brief ï¿½ï¿½ï¿½MIï¿½Ðµï¿½PMCï¿½ï¿½ï¿½Æ¶ï¿½ï¿½ï¿½ï¿½ï¿½
  */
 void ChannelEngine::ClearPmcAxisMoveData(){
 	MiCmdFrame cmd;
@@ -7636,7 +7633,7 @@ void ChannelEngine::ClearPmcAxisMoveData(){
 	cmd.data.axis_index = NO_AXIS;
 	cmd.data.reserved = CHANNEL_ENGINE_INDEX;
 	cmd.data.cmd = CMD_MI_PAUSE_PMC_AXIS;
-	cmd.data.data[0] = 0x20;   //Í£Ö¹µ±Ç°ËùÓÐPMCÖáÔË¶¯£¬²¢Å×Æúµ±Ç°ÔË¶¯Ö¸Áî
+	cmd.data.data[0] = 0x20;   //Í£Ö¹ï¿½ï¿½Ç°ï¿½ï¿½ï¿½ï¿½PMCï¿½ï¿½ï¿½Ë¶ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ç°ï¿½Ë¶ï¿½Ö¸ï¿½ï¿½
 
 	m_p_mi_comm->WriteCmd(cmd);
 	this->m_n_run_axis_mask = 0;
@@ -7644,28 +7641,28 @@ void ChannelEngine::ClearPmcAxisMoveData(){
 }
 
 /**
- * @brief ÏµÍ³¸´Î»
+ * @brief ÏµÍ³ï¿½ï¿½Î»
  */
 void ChannelEngine::SystemReset(){
 
 	printf("system reset aaa\n");
-	//¸÷Í¨µÀ¸´Î»¸´Î»
+	//ï¿½ï¿½Í¨ï¿½ï¿½ï¿½ï¿½Î»ï¿½ï¿½Î»
 	for(int i = 0; i < this->m_p_general_config->chn_count; i++){
 	//	printf("@@@@@@@@@RST=====1\n");
-		this->m_p_pmc_reg->FReg().bits[i].RST = 1;  //¸´Î»ÐÅºÅ
+		this->m_p_pmc_reg->FReg().bits[i].RST = 1;  //ï¿½ï¿½Î»ï¿½Åºï¿½
 		this->m_p_channel_control[i].Reset();
 	}
 
 	printf("system reset bbb\n");
 
-	//Í¨ÖªMCÄ£¿é¸´Î»
-//	SendMcResetCmd();    //ÐÞ¸ÄÎª°´Í¨µÀ¸´Î»
+	//Í¨ÖªMCÄ£ï¿½é¸´Î»
+//	SendMcResetCmd();    //ï¿½Þ¸ï¿½Îªï¿½ï¿½Í¨ï¿½ï¿½ï¿½ï¿½Î»
 
 
-	//Í¨ÖªMIÄ£¿é¸´Î»
+	//Í¨ÖªMIÄ£ï¿½é¸´Î»
 	this->SendMiReset();
 
-	//Í¨ÖªHMIÇå³ý¸æ¾¯£¬¸´Î»
+	//Í¨ÖªHMIï¿½ï¿½ï¿½ï¿½æ¾¯ï¿½ï¿½ï¿½ï¿½Î»
 	HMICmdFrame cmd;
 	cmd.channel_index = CHANNEL_ENGINE_INDEX;
 	cmd.cmd = CMD_SC_RESET;
@@ -7673,15 +7670,15 @@ void ChannelEngine::SystemReset(){
 	cmd.data_len = 0;
 	this->m_p_hmi_comm->SendCmd(cmd);
 
-	//¸´Î»¸æ¾¯Âë
+	//ï¿½ï¿½Î»ï¿½æ¾¯ï¿½ï¿½
 	this->m_error_code = ERR_NONE;
 
 
-	//Çå¿Õ¸æ¾¯¶ÓÁÐ
+	//ï¿½ï¿½Õ¸æ¾¯ï¿½ï¿½ï¿½ï¿½
 	ClearAlarm();
 
 
-	//TODO ¼¤»î²ÎÊý
+	//TODO ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 	printf("reset update param \n");
 	g_ptr_parm_manager->ActiveResetParam();
 	g_ptr_parm_manager->ActiveNewStartParam();
@@ -7693,13 +7690,13 @@ void ChannelEngine::SystemReset(){
 //		this->m_p_channel_control[i].SetMcChnCornerStopParam();
 //	}
 
-	//¸´Î»Í¬²½Öá±êÖ¾
-	if(m_b_emergency){  //¼±Í£ºó²ÅÖØÐÂÍ¬²½
+	//ï¿½ï¿½Î»Í¬ï¿½ï¿½ï¿½ï¿½ï¿½Ö¾
+	if(m_b_emergency){  //ï¿½ï¿½Í£ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Í¬ï¿½ï¿½
 		m_b_send_sync_cmd = false;
 		m_n_sync_over = 0;
 	}
 
-	m_b_emergency = false;  //¸´Î»¼±Í£±êÖ¾
+	m_b_emergency = false;  //ï¿½ï¿½Î»ï¿½ï¿½Í£ï¿½ï¿½Ö¾
 	m_b_power_off = false;
 
 
@@ -7710,11 +7707,11 @@ void ChannelEngine::SystemReset(){
 	this->m_hard_limit_negative = 0;
 	this->m_hard_limit_postive = 0;
 
-	//³õÊ¼»¯»Ø²Î¿¼µã±äÁ¿
+	//ï¿½ï¿½Ê¼ï¿½ï¿½ï¿½Ø²Î¿ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 	if(m_b_ret_ref){
 		for(uint8_t id = 0; id < this->m_p_general_config->axis_count; id++){
 			if(this->m_n_mask_ret_ref & (0x01<<id)){
-				this->SetInRetRefFlag(id, false);   //¸´Î»»ØÁãÖÐ±êÖ¾
+				this->SetInRetRefFlag(id, false);   //ï¿½ï¿½Î»ï¿½ï¿½ï¿½ï¿½ï¿½Ð±ï¿½Ö¾
 			}
 		}
 	}
@@ -7724,13 +7721,13 @@ void ChannelEngine::SystemReset(){
 //	m_n_get_cur_encoder_count = 0;
 	memset(this->m_n_ret_ref_step, 0x00, kMaxAxisNum*sizeof(int));
 
-	this->ClearPmcAxisMoveData();   //Çå¿ÕPMCÖáÔË¶¯Êý¾Ý
+	this->ClearPmcAxisMoveData();   //ï¿½ï¿½ï¿½PMCï¿½ï¿½ï¿½Ë¶ï¿½ï¿½ï¿½ï¿½ï¿½
 
-//	m_n_run_axis_mask = 0x00;  //µ±Ç°ÔËÐÐµÄÖáµÄmask
-//	m_n_runover_axis_mask = 0x00;   //µ±Ç°ÔËÐÐÍê³ÉµÄÖáµÄmask   //ClearPmcAxisMoveData()ÖÐÇå¿Õ
+//	m_n_run_axis_mask = 0x00;  //ï¿½ï¿½Ç°ï¿½ï¿½ï¿½Ðµï¿½ï¿½ï¿½ï¿½mask
+//	m_n_runover_axis_mask = 0x00;   //ï¿½ï¿½Ç°ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Éµï¿½ï¿½ï¿½ï¿½mask   //ClearPmcAxisMoveData()ï¿½ï¿½ï¿½ï¿½ï¿½
 
 
-	//¼ÇÂ¼¸´Î»²Ù×÷½áÊøÊ±¼ä£¬¹©RSTÐÅºÅÑÓÊ±ºó¸´Î»
+	//ï¿½ï¿½Â¼ï¿½ï¿½Î»ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ê±ï¿½ä£¬ï¿½ï¿½RSTï¿½Åºï¿½ï¿½ï¿½Ê±ï¿½ï¿½Î»
 	gettimeofday(&this->m_time_rst_over, NULL);
 	m_b_reset_rst_signal = true;
 
@@ -7738,8 +7735,8 @@ void ChannelEngine::SystemReset(){
 }
 
 /**
- * @brief ¼±Í£´¦Àí
- * @param chn : Í¨µÀºÅ
+ * @brief ï¿½ï¿½Í£ï¿½ï¿½ï¿½ï¿½
+ * @param chn : Í¨ï¿½ï¿½ï¿½ï¿½
  */
 void ChannelEngine::Emergency(uint8_t chn){
 	if(m_b_emergency)
@@ -7748,20 +7745,20 @@ void ChannelEngine::Emergency(uint8_t chn){
 		m_b_emergency = true;
 
 #ifndef USES_WOOD_MACHINE
-	//Í¨ÖªMIÏÂËÅ·þ
+	//Í¨ÖªMIï¿½ï¿½ï¿½Å·ï¿½
 	this->ServoOff();
 #endif
 
-	//¼±Í£´¦Àí
+	//ï¿½ï¿½Í£ï¿½ï¿½ï¿½ï¿½
 	for(int i = 0; i < this->m_p_general_config->chn_count; i++){
 		this->m_p_channel_control[i].EmergencyStop();
 	}
 	
-	//³õÊ¼»¯»Ø²Î¿¼µã±äÁ¿
+	//ï¿½ï¿½Ê¼ï¿½ï¿½ï¿½Ø²Î¿ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 	if(m_b_ret_ref){
 		for(uint8_t id = 0; id < this->m_p_general_config->axis_count; id++){
 			if(this->m_n_mask_ret_ref & (0x01<<id)){
-				this->SetInRetRefFlag(id, false);   //¸´Î»»ØÁãÖÐ±êÖ¾
+				this->SetInRetRefFlag(id, false);   //ï¿½ï¿½Î»ï¿½ï¿½ï¿½ï¿½ï¿½Ð±ï¿½Ö¾
 			}
 		}
 	}
@@ -7771,23 +7768,23 @@ void ChannelEngine::Emergency(uint8_t chn){
 //	m_n_get_cur_encoder_count = 0;
 	memset(this->m_n_ret_ref_step, 0x00, kMaxAxisNum*sizeof(int));
 
-	this->ClearPmcAxisMoveData();   //Çå¿ÕPMCÖáÔË¶¯Êý¾Ý
+	this->ClearPmcAxisMoveData();   //ï¿½ï¿½ï¿½PMCï¿½ï¿½ï¿½Ë¶ï¿½ï¿½ï¿½ï¿½ï¿½
 
 
-	//¼ÇÂ¼¸´Î»²Ù×÷½áÊøÊ±¼ä£¬¹©RSTÐÅºÅÑÓÊ±ºó¸´Î»
+	//ï¿½ï¿½Â¼ï¿½ï¿½Î»ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ê±ï¿½ä£¬ï¿½ï¿½RSTï¿½Åºï¿½ï¿½ï¿½Ê±ï¿½ï¿½Î»
 	gettimeofday(&this->m_time_rst_over, NULL);
 	m_b_reset_rst_signal = true;
 
 
-	//ÖÃÎ»F¼Ä´æÆ÷
+	//ï¿½ï¿½Î»Fï¿½Ä´ï¿½ï¿½ï¿½
 
 
-	//¸´Î»ÔöÁ¿Ê½±àÂëÆ÷ÖáµÄ»Ø²Î¿¼µãÍê³É±êÖ¾
+	//ï¿½ï¿½Î»ï¿½ï¿½ï¿½ï¿½Ê½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ä»Ø²Î¿ï¿½ï¿½ï¿½ï¿½ï¿½É±ï¿½Ö¾
 #ifndef USES_WOOD_MACHINE
 	for(int i = 0; i < this->m_p_general_config->axis_count; i++){
-		if(m_p_axis_config[i].axis_interface != VIRTUAL_AXIS && m_p_axis_config[i].axis_type != AXIS_SPINDLE	//·ÇÖ÷Öá²¢ÇÒ·ÇÐéÄâÖá
+		if(m_p_axis_config[i].axis_interface != VIRTUAL_AXIS && m_p_axis_config[i].axis_type != AXIS_SPINDLE	//ï¿½ï¿½ï¿½ï¿½ï¿½á²¢ï¿½Ò·ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 				&& (m_p_axis_config[i].feedback_mode == INCREMENTAL_ENCODER ||
-						m_p_axis_config[i].feedback_mode == NO_ENCODER)   //ÔöÁ¿±àÂëÆ÷
+						m_p_axis_config[i].feedback_mode == NO_ENCODER)   //ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 				&& m_p_axis_config[i].ret_ref_mode > 0){
 //			m_n_mask_ret_ref_over &= ~(0x01<<i);   //
 			this->SetRetRefFlag(i, false);
@@ -7795,14 +7792,14 @@ void ChannelEngine::Emergency(uint8_t chn){
 	}
 #endif
 
-	//Éú³É¼±Í£´íÎóÐÅÏ¢
+	//ï¿½ï¿½ï¿½É¼ï¿½Í£ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ï¢
 	m_error_code = ERR_EMERGENCY;
 	CreateError(ERR_EMERGENCY, ERROR_LEVEL, CLEAR_BY_MCP_RESET, 0, chn);
 
 }
 
 /**
- * @brief  MI×´Ì¬¸üÐÂÏß³Ìº¯Êý
+ * @brief  MI×´Ì¬ï¿½ï¿½ï¿½ï¿½ï¿½ß³Ìºï¿½ï¿½ï¿½
  * @param args
  */
 void *ChannelEngine::RefreshMiStatusThread(void *args){
@@ -7810,18 +7807,18 @@ void *ChannelEngine::RefreshMiStatusThread(void *args){
 	printf("Start ChannelEnigine::RefreshMiStatusThread!thread id = %ld\n", syscall(SYS_gettid));
 
 	int res = ERR_NONE;
-	res = pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL); //ÉèÖÃÏß³ÌÎª¿ÉÍË³öÄ£Ê½
+	res = pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL); //ï¿½ï¿½ï¿½ï¿½ï¿½ß³ï¿½Îªï¿½ï¿½ï¿½Ë³ï¿½Ä£Ê½
 	if (res != ERR_NONE) {
 		printf("Quit ChannelEnigine::RefreshMiStatusThread!thread!thread with error 1!\n");
 		pthread_exit((void*) EXIT_FAILURE);
 	}
-	res = pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL);  //Ïß³ÌÍË³ö·½Ê½ÎªÒì²½ÍË³ö£¬²»ÓÃµÈµ½cancellation point
+	res = pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL);  //ï¿½ß³ï¿½ï¿½Ë³ï¿½ï¿½ï¿½Ê½Îªï¿½ì²½ï¿½Ë³ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ÃµÈµï¿½cancellation point
 	if (res != ERR_NONE) {
 		printf("Quit ChannelEnigine::RefreshMiStatusThread!thread!thread with error 2!\n");
 		pthread_exit((void*) EXIT_FAILURE);
 	}
 
-	while(!g_sys_state.system_ready){  //µÈ´ýÏµÍ³Æô¶¯
+	while(!g_sys_state.system_ready){  //ï¿½È´ï¿½ÏµÍ³ï¿½ï¿½ï¿½
 //		printf("ChannelEngine::RefreshMiStatusThread wait system ready[0x%hhx]!\n", g_sys_state.module_ready_mask);
 		usleep(10000);
 	}
@@ -7833,11 +7830,11 @@ void *ChannelEngine::RefreshMiStatusThread(void *args){
 }
 
 /**
- * @brief ¸üÐÂMIµÄ×´Ì¬
+ * @brief ï¿½ï¿½ï¿½ï¿½MIï¿½ï¿½×´Ì¬
  * @return
  */
 bool ChannelEngine::RefreshMiStatusFun(){
-	uint64_t count = 0;   //¼ÆÊý
+	uint64_t count = 0;   //ï¿½ï¿½ï¿½ï¿½
 
 	int8_t value8 = 0;
 
@@ -7865,27 +7862,27 @@ bool ChannelEngine::RefreshMiStatusFun(){
 
 	while(!g_sys_state.system_quit){
 
-		if((g_sys_state.module_ready_mask & MI_READY) == 0){  //MIÎ´×¼±¸ºÃÔòµÈ´ý
+		if((g_sys_state.module_ready_mask & MI_READY) == 0){  //MIÎ´×¼ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½È´ï¿½
 			printf("wait MI_READY signal!\n");
 			usleep(8000);
 			continue;
 		}
 
 
-		//¶ÁÈ¡Ç·Ñ¹ÐÅºÅ
+		//ï¿½ï¿½È¡Ç·Ñ¹ï¿½Åºï¿½
 		if(!m_b_power_off && g_sys_state.system_ready && this->m_p_mc_comm->ReadUnderVoltWarn()){
 			printf("OFF\n");
 			m_b_power_off = true;
 
 			SaveDataPoweroff();
-			g_sys_state.system_quit = true;   //³ÌÐòÍË³ö
+			g_sys_state.system_quit = true;   //ï¿½ï¿½ï¿½ï¿½ï¿½Ë³ï¿½
 			printf("OUT\n");
 			return true;
 		}
 
-		//¸üÐÂÐ´ÈëF¼Ä´æÆ÷£¬ ¸üÐÂÖÜÆÚ8ms
+		//ï¿½ï¿½ï¿½ï¿½Ð´ï¿½ï¿½Fï¿½Ä´ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½8ms
 		this->m_p_mi_comm->WritePmcReg(PMC_REG_F, p_f_reg);
-		memcpy(m_g_reg_last.all, p_g_reg, sizeof(m_g_reg_last.all));  //±¸·ÝG¼Ä´æÆ÷
+		memcpy(m_g_reg_last.all, p_g_reg, sizeof(m_g_reg_last.all));  //ï¿½ï¿½ï¿½ï¿½Gï¿½Ä´ï¿½ï¿½ï¿½
 		this->m_p_mi_comm->ReadPmcReg(PMC_REG_G, p_g_reg);
 		this->m_p_mi_comm->ReadPmcReg(PMC_REG_K, p_k_reg);
 
@@ -7903,8 +7900,8 @@ bool ChannelEngine::RefreshMiStatusFun(){
 #endif
 
 
-		//¶ÁÈ¡×îÐÂµÄPMC¼Ä´æÆ÷Öµ
-		if(count % 10 == 0){	//¸üÐÂÖÜÆÚ80ms
+		//ï¿½ï¿½È¡ï¿½ï¿½ï¿½Âµï¿½PMCï¿½Ä´ï¿½ï¿½ï¿½Öµ
+		if(count % 10 == 0){	//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½80ms
 			this->m_p_mi_comm->ReadPmcReg(PMC_REG_X, m_p_pmc_reg->GetRegPtr8(PMC_REG_X));
 			this->m_p_mi_comm->ReadPmcReg(PMC_REG_Y, m_p_pmc_reg->GetRegPtr8(PMC_REG_Y));
 			this->m_p_mi_comm->ReadPmcReg(PMC_REG_R, m_p_pmc_reg->GetRegPtr8(PMC_REG_R));
@@ -7924,15 +7921,15 @@ bool ChannelEngine::RefreshMiStatusFun(){
 		this->CheckAxisSrvOn();
 
 
-		if(!this->m_b_power_off){  //µôµçºó²»´¦Àí
+		if(!this->m_b_power_off){  //ï¿½ï¿½ï¿½ó²»´ï¿½ï¿½ï¿½
 			this->ProcessPmcSignal();
 
-			//Ê×ÏÈ¶ÁÈ¡Öá¸æ¾¯±êÖ¾
+			//ï¿½ï¿½ï¿½È¶ï¿½È¡ï¿½ï¿½æ¾¯ï¿½ï¿½Ö¾
 			this->m_p_mi_comm->ReadAxisWarnFlag(value8);
-			if(value8 != 0x00){//ÓÐ¸æ¾¯£¬ÔÙ¿´¾ßÌå¸æ¾¯Î»
-				if(value8 & 0x01){//ÕýÏÞÎ»¸æ¾¯
+			if(value8 != 0x00){//ï¿½Ð¸æ¾¯ï¿½ï¿½ï¿½Ù¿ï¿½ï¿½ï¿½ï¿½ï¿½æ¾¯Î»
+				if(value8 & 0x01){//ï¿½ï¿½ï¿½ï¿½Î»ï¿½æ¾¯
 					uint64_t hlimtflag = 0;
-					this->m_p_mi_comm->ReadServoHLimitFlag(true, hlimtflag);   //¶ÁÈ¡ÕýÏÞÎ»Êý¾Ý
+					this->m_p_mi_comm->ReadServoHLimitFlag(true, hlimtflag);   //ï¿½ï¿½È¡ï¿½ï¿½ï¿½ï¿½Î»ï¿½ï¿½ï¿½ï¿½
 					if(m_hard_limit_postive == 0){
 						this->m_hard_limit_postive |= hlimtflag;
 						this->ProcessAxisHardLimit(0);
@@ -7940,9 +7937,9 @@ bool ChannelEngine::RefreshMiStatusFun(){
 						this->m_hard_limit_postive |= hlimtflag;
 					}
 				}
-				if(value8 & 0x02){ //¸ºÏÞÎ»¸æ¾¯
+				if(value8 & 0x02){ //ï¿½ï¿½ï¿½ï¿½Î»ï¿½æ¾¯
 					uint64_t hlimtflag = 0;
-					this->m_p_mi_comm->ReadServoHLimitFlag(false, hlimtflag);   //¶ÁÈ¡¸ºÏÞÎ»Êý¾Ý
+					this->m_p_mi_comm->ReadServoHLimitFlag(false, hlimtflag);   //ï¿½ï¿½È¡ï¿½ï¿½ï¿½ï¿½Î»ï¿½ï¿½ï¿½ï¿½
 					if(m_hard_limit_negative == 0){
 						this->m_hard_limit_negative |= hlimtflag;
 						this->ProcessAxisHardLimit(1);
@@ -7950,10 +7947,10 @@ bool ChannelEngine::RefreshMiStatusFun(){
 						this->m_hard_limit_negative |= hlimtflag;
 					}
 				}
-				if(value8 & 0x04){ //±àÂëÆ÷¸æ¾¯
-					this->m_p_mi_comm->ReadEncoderWarn(value64);  //¶ÁÈ¡±àÂëÆ÷¸æ¾¯Êý¾Ý
+				if(value8 & 0x04){ //ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½æ¾¯
+					this->m_p_mi_comm->ReadEncoderWarn(value64);  //ï¿½ï¿½È¡ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½æ¾¯ï¿½ï¿½ï¿½ï¿½
 					if(value64 != 0){
-						//ÓÐ±àÂëÆ÷¸æ¾¯
+						//ï¿½Ð±ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½æ¾¯
 						uint64_t flag = 0x01;
 						for(uint8_t i = 0; i < this->m_p_general_config->axis_count; i++){
 							if(value64 & flag)
@@ -7963,25 +7960,25 @@ bool ChannelEngine::RefreshMiStatusFun(){
 
 					}
 				}
-				if(value8 & 0x08){ //ËÅ·þ¸æ¾¯
-					this->m_p_mi_comm->ReadServoWarn(value64);   //¶ÁÈ¡ËÅ·þ¸æ¾¯
+				if(value8 & 0x08){ //ï¿½Å·ï¿½ï¿½æ¾¯
+					this->m_p_mi_comm->ReadServoWarn(value64);   //ï¿½ï¿½È¡ï¿½Å·ï¿½ï¿½æ¾¯
 					if(value64 != 0){
-						//ÓÐËÅ·þ¸æ¾¯
+						//ï¿½ï¿½ï¿½Å·ï¿½ï¿½æ¾¯
 						uint64_t flag = 0x01;
 						for(uint8_t i = 0; i < this->m_p_general_config->axis_count; i++){
 							if(value64 & flag){
-								this->m_p_mi_comm->ReadServoWarnCode(i, value32);   //¶ÁÈ¡¸æ¾¯Âë
-								//²úÉú¸æ¾¯
+								this->m_p_mi_comm->ReadServoWarnCode(i, value32);   //ï¿½ï¿½È¡ï¿½æ¾¯ï¿½ï¿½
+								//ï¿½ï¿½ï¿½ï¿½ï¿½æ¾¯
 								CreateError(ERR_SERVO, ERROR_LEVEL, CLEAR_BY_MCP_RESET, value32, CHANNEL_ENGINE_INDEX, i);
 							}
 							flag = flag << 1;
 						}
 					}
 				}
-				if(value8 & 0x10){  //¸úËæÎó²î¹ý´ó¸æ¾¯
+				if(value8 & 0x10){  //ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½æ¾¯
 					this->m_p_mi_comm->ReadTrackErr(value64);
 					if(value64 != 0){
-						//ÓÐ¸úËæÎó²î¹ý´ó¸æ¾¯
+						//ï¿½Ð¸ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½æ¾¯
 						uint64_t flag = 0x01;
 						for(uint8_t i = 0; i < this->m_p_general_config->axis_count; i++){
 							if(value64 & flag)
@@ -7991,10 +7988,10 @@ bool ChannelEngine::RefreshMiStatusFun(){
 					}
 
 				}
-				if(value8 & 0x20){  //Í¬²½ÖáÎ»ÖÃÖ¸ÁîÆ«²î¹ý´ó¸æ¾¯
+				if(value8 & 0x20){  //Í¬ï¿½ï¿½ï¿½ï¿½Î»ï¿½ï¿½Ö¸ï¿½ï¿½Æ«ï¿½ï¿½ï¿½ï¿½ï¿½æ¾¯
 					this->m_p_mi_comm->ReadSyncPosErr(value64);
 					if(value64 != 0){
-						//ÓÐÍ¬²½ÖáÎ»ÖÃÖ¸ÁîÆ«²î¹ý´ó¸æ¾¯
+						//ï¿½ï¿½Í¬ï¿½ï¿½ï¿½ï¿½Î»ï¿½ï¿½Ö¸ï¿½ï¿½Æ«ï¿½ï¿½ï¿½ï¿½ï¿½æ¾¯
 						uint64_t flag = 0x01;
 						for(uint8_t i = 0; i < this->m_p_general_config->axis_count; i++){
 							if(value64 & flag)
@@ -8003,10 +8000,10 @@ bool ChannelEngine::RefreshMiStatusFun(){
 						}
 					}
 				}
-				if(value8 & 0x40){  //ÖáÎ»ÖÃÖ¸Áî¹ý´ó¸æ¾¯
+				if(value8 & 0x40){  //ï¿½ï¿½Î»ï¿½ï¿½Ö¸ï¿½ï¿½ï¿½ï¿½ï¿½æ¾¯
 					this->m_p_mi_comm->ReadIntpPosErr(value64);
 					if(value64 != 0){
-						//ÓÐÖáÎ»ÖÃÖ¸Áî¹ý´ó¸æ¾¯
+						//ï¿½ï¿½ï¿½ï¿½Î»ï¿½ï¿½Ö¸ï¿½ï¿½ï¿½ï¿½ï¿½æ¾¯
 						uint64_t flag = 0x01;
 						for(uint8_t i = 0; i < this->m_p_general_config->axis_count; i++){
 							if(value64 & flag)
@@ -8018,53 +8015,53 @@ bool ChannelEngine::RefreshMiStatusFun(){
 			}
 
 
-			//½øÐÐ¹ýÑ¹£¬Ç·Ñ¹¡¢RTCµçÑ¹µÍ¸æ¾¯É¨Ãè
-#ifndef USES_MAIN_BOARD_10MA_OLD    //ÀÏ°åÃ»ÓÐ´Ë¹¦ÄÜ
+			//ï¿½ï¿½ï¿½Ð¹ï¿½Ñ¹ï¿½ï¿½Ç·Ñ¹ï¿½ï¿½RTCï¿½ï¿½Ñ¹ï¿½Í¸æ¾¯É¨ï¿½ï¿½
+#ifndef USES_MAIN_BOARD_10MA_OLD    //ï¿½Ï°ï¿½Ã»ï¿½Ð´Ë¹ï¿½ï¿½ï¿½
 			if(count%1000 == 0){
 				this->CheckBattery();
 			}
 #endif
 
-			if(this->m_b_ret_ref && this->m_p_pmc_reg->FReg().bits[0].SA ==1){//»Ø²Î¿¼µã²Ù×÷
+			if(this->m_b_ret_ref && this->m_p_pmc_reg->FReg().bits[0].SA ==1){//ï¿½Ø²Î¿ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 				this->ReturnRefPoint();
 			}
 		}
 
-		//¸üÐÂÖáÏÞÎ»Êý¾Ý¸øMI
+		//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Î»ï¿½ï¿½ï¿½Ý¸ï¿½MI
 		this->m_p_mi_comm->WriteAxisHLimitFlag(true, m_hard_limit_postive);
 		this->m_p_mi_comm->WriteAxisHLimitFlag(false, m_hard_limit_negative);
 
-		//TODO ¸üÐÂÖáµÄÎ»ÖÃ¼°ËÙ¶ÈÊý¾Ý
+		//TODO ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Î»ï¿½Ã¼ï¿½ï¿½Ù¶ï¿½ï¿½ï¿½ï¿½ï¿½
 		if(count%7 == 0){
-			if(!g_sys_state.hmi_comm_ready){  //Î´Á¬½ÓHMIÊ±ÔÚ´Ë¸üÐÂÖáµ±Ç°·´À¡Î»ÖÃ
+			if(!g_sys_state.hmi_comm_ready){  //Î´ï¿½ï¿½ï¿½ï¿½HMIÊ±ï¿½Ú´Ë¸ï¿½ï¿½ï¿½ï¿½áµ±Ç°ï¿½ï¿½ï¿½ï¿½Î»ï¿½ï¿½
 				this->SendMonitorData(false, false);
 			}
 		}
 
 #ifdef USES_LICENSE_FUNC
-		//Ê±¼äÐ£ÑéÒÔ¼°ÊÚÈ¨Ð£Ñé
+		//Ê±ï¿½ï¿½Ð£ï¿½ï¿½ï¿½Ô¼ï¿½ï¿½ï¿½È¨Ð£ï¿½ï¿½
 		if(count % 450000 == 0){
-			//Ò»Ð¡Ê±¼ì²éÒ»´Î
+			//Ò»Ð¡Ê±ï¿½ï¿½ï¿½Ò»ï¿½ï¿½
 
-			//¼ì²éÏµÍ³Ê±¼ä
-			if(m_ln_local_time < 0){//¶ÁÈ¡±¾µØ¼ÆÊ±ÎÄ¼þÒì³£
+			//ï¿½ï¿½ï¿½ÏµÍ³Ê±ï¿½ï¿½
+			if(m_ln_local_time < 0){//ï¿½ï¿½È¡ï¿½ï¿½ï¿½Ø¼ï¿½Ê±ï¿½Ä¼ï¿½ï¿½ì³£
 				if(m_ln_local_time == -1){
-					g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "±¾µØ¼ÆÊ±ÎÄ¼þ²»´æÔÚ!");
+					g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "ï¿½ï¿½ï¿½Ø¼ï¿½Ê±ï¿½Ä¼ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½!");
 				}else if(m_ln_local_time == -2){
-					g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "±¾µØ¼ÆÊ±ÎÄ¼þÒÑËð»µ!");
+					g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "ï¿½ï¿½ï¿½Ø¼ï¿½Ê±ï¿½Ä¼ï¿½ï¿½ï¿½ï¿½ï¿½!");
 				}else if(m_ln_local_time == -3){
-					g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "·Ç·¨±¾µØ¼ÆÊ±ÎÄ¼þ!");
+					g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "ï¿½Ç·ï¿½ï¿½ï¿½ï¿½Ø¼ï¿½Ê±ï¿½Ä¼ï¿½!");
 				}
 				m_error_code = ERR_SYSTEM_FILE;
 				CreateError(m_error_code, ERROR_LEVEL, CLEAR_BY_MCP_RESET);
 			}else if(-4 == CheckLocalTime(&m_lic_info, m_ln_local_time)){
-				g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "ÏµÍ³Ê±¼äÒì³£!");
+				g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "ÏµÍ³Ê±ï¿½ï¿½ï¿½ì³£!");
 				m_error_code = ERR_SYSTEM_TIME;
 				CreateError(m_error_code, ERROR_LEVEL, CLEAR_BY_MCP_RESET);
 			}
 
 
-			//¼ì²éÊÚÈ¨
+			//ï¿½ï¿½ï¿½ï¿½ï¿½È¨
 			this->CheckLicense();
 
 		}
@@ -8081,7 +8078,7 @@ bool ChannelEngine::RefreshMiStatusFun(){
 		}
 #endif
 
-		usleep(8000);  //8msÖÜÆÚ£¬±ÈPMCÖÜÆÚÏàÍ¬
+		usleep(8000);  //8msï¿½ï¿½ï¿½Ú£ï¿½ï¿½ï¿½PMCï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Í¬
 		count++;
 	}
 
@@ -8091,7 +8088,7 @@ bool ChannelEngine::RefreshMiStatusFun(){
 }
 
 /**
- * @brief µçÑ¹Ïà¹Ø¸æ¾¯¼ì²é
+ * @brief ï¿½ï¿½Ñ¹ï¿½ï¿½Ø¸æ¾¯ï¿½ï¿½ï¿½
  */
 void ChannelEngine::CheckBattery(){
 
@@ -8112,19 +8109,19 @@ void ChannelEngine::CheckBattery(){
 
 	}
 
-	if(value & 0x02){//¹ýÑ¹
+	if(value & 0x02){//ï¿½ï¿½Ñ¹
 		CreateError(ERR_VOLTAGE_UNDER, WARNING_LEVEL, CLEAR_BY_MCP_RESET, 0, CHANNEL_ENGINE_INDEX, NO_AXIS);
 
 	}
-	if(value & 0x04){ //µç³ØµçÑ¹µÍ
+	if(value & 0x04){ //ï¿½ï¿½Øµï¿½Ñ¹ï¿½ï¿½
 		CreateError(ERR_BATTERY_VOL_UNDER, WARNING_LEVEL, CLEAR_BY_MCP_RESET, 0, CHANNEL_ENGINE_INDEX, NO_AXIS);
 
 	}
-	if((value & 0x08) == 0x00){//Öá¹ýÁ÷,µÍÓÐÐ§
+	if((value & 0x08) == 0x00){//ï¿½ï¿½ï¿½ï¿½ï¿½,ï¿½ï¿½ï¿½ï¿½Ð§
 		CreateError(ERR_AXIS_CURRENT_OVER, WARNING_LEVEL, CLEAR_BY_MCP_RESET, 0, CHANNEL_ENGINE_INDEX, NO_AXIS);
 
 	}
-	if((value & 0x10) == 0x00){ //USB¹ýÁ÷,µÍÓÐÐ§
+	if((value & 0x10) == 0x00){ //USBï¿½ï¿½ï¿½ï¿½,ï¿½ï¿½ï¿½ï¿½Ð§
 		CreateError(ERR_USB_CURRENT_OVER, WARNING_LEVEL, CLEAR_BY_MCP_RESET, 0, CHANNEL_ENGINE_INDEX, NO_AXIS);
 	}
 
@@ -8133,10 +8130,9 @@ void ChannelEngine::CheckBattery(){
 }
 
 /**
- * @brief ´¦ÀíPMCµÄÐÅºÅ
+ * @brief ï¿½ï¿½ï¿½ï¿½PMCï¿½ï¿½ï¿½Åºï¿½
  */
 void ChannelEngine::ProcessPmcSignal(){
-
 	const GRegBits *g_reg = nullptr;
 	GRegBits *g_reg_last = nullptr;
 	FRegBits *f_reg = nullptr;
@@ -8147,36 +8143,35 @@ void ChannelEngine::ProcessPmcSignal(){
 		g_reg_last = &m_g_reg_last.bits[i];
 		f_reg = &m_p_pmc_reg->FReg().bits[i];
 #ifdef USES_PHYSICAL_MOP
-		if(g_reg->_ESP == 0 && !m_b_emergency){ //¼±Í£ÓÐÐ§
-//			printf("ChannelEngine::ProcessPmcSignal(), emergency stop!\n");
-
+		if(g_reg->_ESP == 0 && !m_b_emergency){ //ï¿½ï¿½Í£ï¿½ï¿½Ð§
+//            printf("ChannelEngine::ProcessPmcSignal(), emergency stop!\n");
 			this->Emergency();
 		}
 
-		// ´¦ÀíGÐÅºÅ ÇÐ»»µ±Ç°Í¨µÀ
+		// ï¿½ï¿½ï¿½ï¿½Gï¿½Åºï¿½ ï¿½Ð»ï¿½ï¿½ï¿½Ç°Í¨ï¿½ï¿½
 		if(g_reg_last->CHNC != g_reg->CHNC)
 		{
 			printf("pmc siganl change chn : %d\n", g_reg->CHNC);
 			this->SetCurWorkChanl(g_reg->CHNC);
 		}
 
-		if((g_reg->ST && g_reg_last->ST == 0) && g_reg->_SP == 1 && f_reg->STL == 0){ //Ñ­»·Æô¶¯
+		if((g_reg->ST && g_reg_last->ST == 0) && g_reg->_SP == 1 && f_reg->STL == 0){ //Ñ­ï¿½ï¿½ï¿½ï¿½ï¿½
 			this->Start();
 		}
 
-		if(g_reg->_SP == 0 && g_reg_last->_SP == 1 && f_reg->SPL == 0 && f_reg->STL == 1){ //Ñ­»·±£³Ö
+		if(g_reg->_SP == 0 && g_reg_last->_SP == 1 && f_reg->SPL == 0 && f_reg->STL == 1){ //Ñ­ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 			this->Pause();
 		}
 #else
-		if(g_reg->_ESP == 1 && !m_b_emergency){ //¼±Í£ÓÐÐ§
+		if(g_reg->_ESP == 1 && !m_b_emergency){ //ï¿½ï¿½Í£ï¿½ï¿½Ð§
 			this->Emergency();
 		}
 
-		if((g_reg->ST && g_reg_last->ST == 0) && g_reg->_SP == 0){ //Ñ­»·Æô¶¯
+		if((g_reg->ST && g_reg_last->ST == 0) && g_reg->_SP == 0){ //Ñ­ï¿½ï¿½ï¿½ï¿½ï¿½
 			this->Start();
 		}
 
-		if(g_reg->_SP == 1 && g_reg_last->_SP == 0){ //Ñ­»·±£³Ö
+		if(g_reg->_SP == 1 && g_reg_last->_SP == 0){ //Ñ­ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 			//printf("1212\n");
 			this->Pause();
 		}
@@ -8188,42 +8183,42 @@ void ChannelEngine::ProcessPmcSignal(){
 
 
 //#ifdef USES_PHYSICAL_MOP
-		//·½Ê½Ñ¡ÔñÐÅºÅ
+		//ï¿½ï¿½Ê½Ñ¡ï¿½ï¿½ï¿½Åºï¿½
 		if(g_reg->MD != g_reg_last->MD){
 //			printf("PMC SIGNAL -----> %d\n", g_reg->MD);
 			if(g_reg->MD == 0){  //MDA
 				this->SetWorkMode(MDA_MODE);
-			}else if(g_reg->MD == 1){   //×Ô¶¯
+			}else if(g_reg->MD == 1){   //ï¿½Ô¶ï¿½
 				this->SetWorkMode(AUTO_MODE);
-			}else if(g_reg->MD == 2){   //ÊÖÂÖ
+			}else if(g_reg->MD == 2){   //ï¿½ï¿½ï¿½ï¿½
 				this->SetWorkMode(MPG_MODE);
-			}else if(g_reg->MD == 3){   //±à¼­
+			}else if(g_reg->MD == 3){   //ï¿½à¼­
 				this->SetWorkMode(EDIT_MODE);
-			}else if(g_reg->MD == 4){   //²½½ø
+			}else if(g_reg->MD == 4){   //ï¿½ï¿½ï¿½ï¿½
 				this->SetWorkMode(MANUAL_STEP_MODE);
 			}else if(g_reg->MD == 5){   //JOG
 				this->SetWorkMode(MANUAL_MODE);
-			}else if(g_reg->MD == 6){   //Ô­µãÄ£Ê½
+			}else if(g_reg->MD == 6){   //Ô­ï¿½ï¿½Ä£Ê½
 				this->SetWorkMode(REF_MODE);
 			}else{
 				printf("ERROR:Invalid work mode signal:MD=%hhu\n", g_reg->MD);
 			}
 		}
 
-		//Ö÷ÖáÐý×ª´¦Àí
-		if(g_reg->MD == 2 || g_reg->MD == 4 || g_reg->MD == 5){  //ÊÖ¶¯Ä£Ê½
-			if(g_reg->SPOS == 1 && g_reg_last->SPOS == 0 /*&& g_reg->SNEG == 0 && g_reg->_SSTP == 1 */&& f_reg->SPS != 1){ //Ö÷ÖáÕý×ª
+		//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½×ªï¿½ï¿½ï¿½ï¿½
+		if(g_reg->MD == 2 || g_reg->MD == 4 || g_reg->MD == 5){  //ï¿½Ö¶ï¿½Ä£Ê½
+			if(g_reg->SPOS == 1 && g_reg_last->SPOS == 0 /*&& g_reg->SNEG == 0 && g_reg->_SSTP == 1 */&& f_reg->SPS != 1){ //ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½×ª
 				this->SpindleOut(SPD_DIR_POSITIVE);
 			}
-			if(g_reg->SNEG == 1 && g_reg_last->SNEG == 0 /*&& g_reg->SPOS == 0 && g_reg->_SSTP == 1 */&& f_reg->SPS != 2){ //Ö÷Öá·´×ª
+			if(g_reg->SNEG == 1 && g_reg_last->SNEG == 0 /*&& g_reg->SPOS == 0 && g_reg->_SSTP == 1 */&& f_reg->SPS != 2){ //ï¿½ï¿½ï¿½á·´×ª
 				this->SpindleOut(SPD_DIR_NEGATIVE);
 			}
-			if(g_reg->_SSTP == 0 && g_reg_last->_SSTP == 1 /*&& g_reg->SNEG == 0 && g_reg->SPOS == 0 */&& f_reg->SPS != 0){ //Ö÷ÖáÍ£×ª
+			if(g_reg->_SSTP == 0 && g_reg_last->_SSTP == 1 /*&& g_reg->SNEG == 0 && g_reg->SPOS == 0 */&& f_reg->SPS != 0){ //ï¿½ï¿½ï¿½ï¿½Í£×ª
 				this->SpindleOut(SPD_DIR_STOP);
 			}
 		}
 
-		//Ñ¡Í£ÐÅºÅ SBS
+		//Ñ¡Í£ï¿½Åºï¿½ SBS
 		if(g_reg->SBS != g_reg_last->SBS){
 			if(g_reg->SBS)
 				this->SetFuncState(i, FS_OPTIONAL_STOP, 1);
@@ -8232,7 +8227,7 @@ void ChannelEngine::ProcessPmcSignal(){
 		}
 
 
-		//µ¥¶ÎÐÅºÅ  SBK
+		//ï¿½ï¿½ï¿½ï¿½ï¿½Åºï¿½  SBK
 		if(g_reg->SBK != g_reg_last->SBK){
 			if(g_reg->SBK)
 				this->SetFuncState(i, FS_SINGLE_LINE, 1);
@@ -8241,7 +8236,7 @@ void ChannelEngine::ProcessPmcSignal(){
 		}
 
 
-		//Ìø¶ÎÐÅºÅ   BDT1
+		//ï¿½ï¿½ï¿½ï¿½ï¿½Åºï¿½   BDT1
 		if(g_reg->BDT1 != g_reg_last->BDT1){
 			if(g_reg->BDT1)
 				this->SetFuncState(i, FS_BLOCK_SKIP, 1);
@@ -8249,7 +8244,7 @@ void ChannelEngine::ProcessPmcSignal(){
 				this->SetFuncState(i, FS_BLOCK_SKIP, 0);
 		}
 
-		//ÊÖÂÖ¸ú×Ù  HWT
+		//ï¿½ï¿½ï¿½Ö¸ï¿½ï¿½ï¿½  HWT
 		if(g_reg->HWT != g_reg_last->HWT){
 			if(g_reg->HWT)
 				this->SetFuncState(i, FS_HANDWHEEL_CONTOUR, 1);
@@ -8258,12 +8253,12 @@ void ChannelEngine::ProcessPmcSignal(){
 		}
 
 
-		//ÊÖ¶¯²½³¤ÐÅºÅ  MP
+		//ï¿½Ö¶ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Åºï¿½  MP
 		if(g_reg->MP != g_reg_last->MP){
 			this->SetManualStep(i, g_reg->MP);
 		}
 
-		//ÊÖ¶¯¿ìËÙ½ø¸øÑ¡ÔñÐÅºÅ  RT
+		//ï¿½Ö¶ï¿½ï¿½ï¿½ï¿½Ù½ï¿½ï¿½ï¿½Ñ¡ï¿½ï¿½ï¿½Åºï¿½  RT
 		if(g_reg->RT != g_reg_last->RT){
 			if(g_reg->RT)
 				this->SetManualRapidMove(1);
@@ -8271,7 +8266,7 @@ void ChannelEngine::ProcessPmcSignal(){
 				this->SetManualRapidMove(0);
 		}
 
-		//±¶ÂÊÐÅºÅ´¦Àí
+		//ï¿½ï¿½ï¿½ï¿½ï¿½ÅºÅ´ï¿½ï¿½ï¿½
 		if(g_reg->_JV != g_reg_last->_JV){
 			uint16_t ratio= ~g_reg->_JV;
 			if(g_reg->_JV == 0)
@@ -8285,9 +8280,9 @@ void ChannelEngine::ProcessPmcSignal(){
 		if(g_reg->ROV != g_reg_last->ROV)
 			this->SetRapidRatio(i, g_reg->ROV);
 
-		//ÊÖ¶¯Öá½ø¸ø
-		if(g_reg->MD == 4){   //²½½ø
-			//Öá1
+		//ï¿½Ö¶ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+		if(g_reg->MD == 4){   //ï¿½ï¿½ï¿½ï¿½
+			//ï¿½ï¿½1
 			if(g_reg->JP1 && g_reg_last->JP1 == 0){
 				this->SetCurAxis(i, 0);
 				this->ManualMove(DIR_POSITIVE);
@@ -8296,7 +8291,7 @@ void ChannelEngine::ProcessPmcSignal(){
 				this->SetCurAxis(i, 0);
 				this->ManualMove(DIR_NEGATIVE);
 			}
-			//Öá2
+			//ï¿½ï¿½2
 			if(g_reg->JP2 && g_reg_last->JP2 == 0){
 				this->SetCurAxis(i, 1);
 				this->ManualMove(DIR_POSITIVE);
@@ -8305,7 +8300,7 @@ void ChannelEngine::ProcessPmcSignal(){
 				this->SetCurAxis(i, 1);
 				this->ManualMove(DIR_NEGATIVE);
 			}
-			//Öá3
+			//ï¿½ï¿½3
 			if(g_reg->JP3 && g_reg_last->JP3 == 0){
 				this->SetCurAxis(i, 2);
 				this->ManualMove(DIR_POSITIVE);
@@ -8314,7 +8309,7 @@ void ChannelEngine::ProcessPmcSignal(){
 				this->SetCurAxis(i, 2);
 				this->ManualMove(DIR_NEGATIVE);
 			}
-			//Öá4
+			//ï¿½ï¿½4
 			if(g_reg->JP4 && g_reg_last->JP4 == 0){
 				this->SetCurAxis(i, 3);
 				this->ManualMove(DIR_POSITIVE);
@@ -8323,7 +8318,7 @@ void ChannelEngine::ProcessPmcSignal(){
 				this->SetCurAxis(i, 3);
 				this->ManualMove(DIR_NEGATIVE);
 			}
-			//Öá5
+			//ï¿½ï¿½5
 			if(g_reg->JP5 && g_reg_last->JP5 == 0){
 				this->SetCurAxis(i, 4);
 				this->ManualMove(DIR_POSITIVE);
@@ -8332,7 +8327,7 @@ void ChannelEngine::ProcessPmcSignal(){
 				this->SetCurAxis(i, 4);
 				this->ManualMove(DIR_NEGATIVE);
 			}
-			//Öá6
+			//ï¿½ï¿½6
 			if(g_reg->JP6 && g_reg_last->JP6 == 0){
 				this->SetCurAxis(i, 5);
 				this->ManualMove(DIR_POSITIVE);
@@ -8342,7 +8337,7 @@ void ChannelEngine::ProcessPmcSignal(){
 				this->ManualMove(DIR_NEGATIVE);
 			}
 		}else if(g_reg->MD == 5){  //JOG
-			//Öá1
+			//ï¿½ï¿½1
 			if(g_reg->JP1 != g_reg_last->JP1){
 				if(g_reg->JP1){
 					this->SetCurAxis(i, 0);
@@ -8359,7 +8354,7 @@ void ChannelEngine::ProcessPmcSignal(){
 					this->ManualMoveStop();
 				}
 			}
-			//Öá2
+			//ï¿½ï¿½2
 			if(g_reg->JP2 != g_reg_last->JP2){
 				if(g_reg->JP2){
 					this->SetCurAxis(i, 1);
@@ -8376,7 +8371,7 @@ void ChannelEngine::ProcessPmcSignal(){
 					this->ManualMoveStop();
 				}
 			}
-			//Öá3
+			//ï¿½ï¿½3
 			if(g_reg->JP3 != g_reg_last->JP3){
 				if(g_reg->JP3){
 					this->SetCurAxis(i, 2);
@@ -8393,7 +8388,7 @@ void ChannelEngine::ProcessPmcSignal(){
 					this->ManualMoveStop();
 				}
 			}
-			//Öá4
+			//ï¿½ï¿½4
 			if(g_reg->JP4 != g_reg_last->JP4){
 				if(g_reg->JP4){
 					this->SetCurAxis(i, 3);
@@ -8410,7 +8405,7 @@ void ChannelEngine::ProcessPmcSignal(){
 					this->ManualMoveStop();
 				}
 			}
-			//Öá5
+			//ï¿½ï¿½5
 			if(g_reg->JP5 != g_reg_last->JP5){
 				if(g_reg->JP5){
 					this->SetCurAxis(i, 4);
@@ -8427,7 +8422,7 @@ void ChannelEngine::ProcessPmcSignal(){
 					this->ManualMoveStop();
 				}
 			}
-			//Öá6
+			//ï¿½ï¿½6
 			if(g_reg->JP6 != g_reg_last->JP6){
 				if(g_reg->JP6){
 					this->SetCurAxis(i, 5);
@@ -8444,10 +8439,10 @@ void ChannelEngine::ProcessPmcSignal(){
 					this->ManualMoveStop();
 				}
 			}
-		}else if(g_reg->MD == 6){  //Ô­µãÄ£Ê½
+		}else if(g_reg->MD == 6){  //Ô­ï¿½ï¿½Ä£Ê½
 
 			for(int j = 0; j < 16; j++){
-				if((g_reg->REFE & (0x01<<j)) != 0 && (g_reg_last->REFE & (0x01<<j)) == 0){// Æô¶¯Öá»ØÁã
+				if((g_reg->REFE & (0x01<<j)) != 0 && (g_reg_last->REFE & (0x01<<j)) == 0){// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 					this->ProcessPmcRefRet(j+16*i);
 				}
 			}
@@ -8456,7 +8451,7 @@ void ChannelEngine::ProcessPmcSignal(){
 
 //#endif
 
-		//´¦Àí¹¤ÒÕÄ£Ê½ÇÐ»»
+		//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ä£Ê½ï¿½Ð»ï¿½
 #ifdef USES_WOOD_MACHINE
 		if(g_reg_last->BDM == 0 && g_reg->BDM == 1){
 			this->m_p_channel_control[i].SetCurProcParamIndex(0);
@@ -8465,29 +8460,29 @@ void ChannelEngine::ProcessPmcSignal(){
 		}
 #endif
 
-		//Ê¹ÓÃFINÐÅºÅµÄÉÏÉýÑØ£¬¸´Î»SFÐÅºÅ
+		//Ê¹ï¿½ï¿½FINï¿½ÅºÅµï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ø£ï¿½ï¿½ï¿½Î»SFï¿½Åºï¿½
 		if(g_reg_last->FIN == 0 && g_reg->FIN == 1){
 			if(f_reg->SF == 1)
 				f_reg->SF = 0;
 		}
 
-		//´¦ÀíPMCºêµ÷ÓÃ¹¦ÄÜ
-		if(g_reg_last->EMPC == 0 && g_reg->EMPC == 1){  //´¦ÀíPMCºêµ÷ÓÃ
+		//ï¿½ï¿½ï¿½ï¿½PMCï¿½ï¿½ï¿½ï¿½Ã¹ï¿½ï¿½ï¿½
+		if(g_reg_last->EMPC == 0 && g_reg->EMPC == 1){  //ï¿½ï¿½ï¿½ï¿½PMCï¿½ï¿½ï¿½ï¿½ï¿½
 			this->m_p_channel_control[i].CallMacroProgram(g_reg->MPCS);
-			f_reg->MPCO = 1;   //µ÷ÓÃ½áÊø
+			f_reg->MPCO = 1;   //ï¿½ï¿½ï¿½Ã½ï¿½ï¿½ï¿½
 		}else if(g_reg_last->EMPC == 1 && g_reg->EMPC == 0){
-			f_reg->MPCO = 0;   //ÐÅºÅ¸´Î»
+			f_reg->MPCO = 0;   //ï¿½ÅºÅ¸ï¿½Î»
 		}
 
 #ifdef USES_WUXI_BLOOD_CHECK
-		if(g_reg->ret_home){//»ØÁã
+		if(g_reg->ret_home){//ï¿½ï¿½ï¿½ï¿½
 			printf("wuxi, ret home\n");
 			if(!m_p_channel_control[0].IsReturnHome()){
-				m_p_channel_control[0].SetRetHomeFlag();  //ÖÃÎ»±êÖ¾
+				m_p_channel_control[0].SetRetHomeFlag();  //ï¿½ï¿½Î»ï¿½ï¿½Ö¾
 			}
 		}
 
-		if(g_reg->reset){//¸´Î»
+		if(g_reg->reset){//ï¿½ï¿½Î»
 			printf("wuxi, reset\n");
 			for(uint8_t i = 0; i < this->m_p_general_config->chn_count; i++){
 				this->m_p_channel_control[i].Reset();
@@ -8496,14 +8491,14 @@ void ChannelEngine::ProcessPmcSignal(){
 #endif
 	}
 
-	//´¦ÀíÖáµÄÏÞÎ»ÐÅºÅ£¬ËäÈ»64¸öÖáµÄÏÞÎ»ÐÅºÅÆ½¾ù·Ö²¼ÔÚËÄ¸öÍ¨µÀÖÐ£¬µ«ÊÇ´¦ÀíÊ±²»·ÖÍ¨µÀ
-	if(!this->m_b_ret_ref){  //»Ø²Î¿¼µã¹ý³ÌÖÐÆÁ±ÎÏÞÎ»
+	//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Î»ï¿½ÅºÅ£ï¿½ï¿½ï¿½È»64ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Î»ï¿½Åºï¿½Æ½ï¿½ï¿½ï¿½Ö²ï¿½ï¿½ï¿½ï¿½Ä¸ï¿½Í¨ï¿½ï¿½ï¿½Ð£ï¿½ï¿½ï¿½ï¿½Ç´ï¿½ï¿½ï¿½Ê±ï¿½ï¿½ï¿½ï¿½Í¨ï¿½ï¿½
+	if(!this->m_b_ret_ref){  //ï¿½Ø²Î¿ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Î»
 		chn = m_p_general_config->axis_count/16;
 		if(m_p_general_config->axis_count%16)
 			chn++;
 		for(int i = 0; i < chn; i++){
 			g_reg = &m_p_pmc_reg->GReg().bits[i];
-			if(g_reg->axis_limit_postive1 != 0x00 || g_reg->axis_limit_postive2 != 0x00){  //ÕýÏòÓ²ÏÞÎ»´¥·¢
+			if(g_reg->axis_limit_postive1 != 0x00 || g_reg->axis_limit_postive2 != 0x00){  //ï¿½ï¿½ï¿½ï¿½Ó²ï¿½ï¿½Î»ï¿½ï¿½ï¿½ï¿½
 
 				flag = g_reg->axis_limit_postive2;
 				flag <<= 8;
@@ -8521,7 +8516,7 @@ void ChannelEngine::ProcessPmcSignal(){
 
 			}
 
-			if(g_reg->axis_limit_negative1 != 0x00 || g_reg->axis_limit_negative2 != 0x00){  //¸ºÏòÓ²ÏÞÎ»´¥·¢
+			if(g_reg->axis_limit_negative1 != 0x00 || g_reg->axis_limit_negative2 != 0x00){  //ï¿½ï¿½ï¿½ï¿½Ó²ï¿½ï¿½Î»ï¿½ï¿½ï¿½ï¿½
 				flag = g_reg->axis_limit_negative2;
 				flag <<= 8;
 				flag |= g_reg->axis_limit_negative1;
@@ -8540,14 +8535,14 @@ void ChannelEngine::ProcessPmcSignal(){
 		}
 	}
 
-	//¸´Î»RSTÐÅºÅ
+	//ï¿½ï¿½Î»RSTï¿½Åºï¿½
 	if(this->m_b_reset_rst_signal){
 		struct timeval time_now;
 		gettimeofday(&time_now, NULL);
 		unsigned int time_elpase = (time_now.tv_sec-m_time_rst_over.tv_sec)*1000000+time_now.tv_usec-m_time_rst_over.tv_usec;
 		if(time_elpase >= 16000){
 			for(uint8_t i = 0; i < this->m_p_general_config->chn_count; i++){
-				//ÑÓÊ±Ê±¼äµ½£¬¸´Î»RSTÐÅºÅ
+				//ï¿½ï¿½Ê±Ê±ï¿½äµ½ï¿½ï¿½ï¿½ï¿½Î»RSTï¿½Åºï¿½
 				this->m_p_pmc_reg->FReg().bits[i].RST = 0;
 			//	this->m_p_channel_control[i].ResetRSTSignal();
 
@@ -8556,23 +8551,23 @@ void ChannelEngine::ProcessPmcSignal(){
 		}
 	}
 
-	//PMCÖá¿ØÖÆ´¦Àí
+	//PMCï¿½ï¿½ï¿½ï¿½Æ´ï¿½ï¿½ï¿½
 	this->ProcessPmcAxisCtrl();
 
-	//´¦ÀíPMCÊý¾Ý´°¿Ú
+	//ï¿½ï¿½ï¿½ï¿½PMCï¿½ï¿½ï¿½Ý´ï¿½ï¿½ï¿½
 	this->ProcessPmcDataWnd();
 
 
-	//¸ø³öÖáÔÚ²Î¿¼µãÐÅºÅ
+	//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ú²Î¿ï¿½ï¿½ï¿½ï¿½Åºï¿½
 	int byte = 0, bit = 0;
 	FRegBits *freg = nullptr;
-	double prec = 0.1;  //ÔÚÎ»¾«¶È
+	double prec = 0.1;  //ï¿½ï¿½Î»ï¿½ï¿½ï¿½ï¿½
 	for(int i = 0; i < this->m_p_general_config->axis_count; i++){
 		chn = i/16;
 		byte = i%16;
 		bit = byte%8;
 		freg = &m_p_pmc_reg->FReg().bits[chn];
-		if((m_n_mask_ret_ref_over & (0x01<<i)) == 0){//Î´»Ø²Î¿¼µã£¬¶¼¸³Áã
+		if((m_n_mask_ret_ref_over & (0x01<<i)) == 0){//Î´ï¿½Ø²Î¿ï¿½ï¿½ã£¬ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 			if(byte < 8){
 				freg->ZP11 &= ~(0x01<<bit);
 				freg->ZP21 &= ~(0x01<<bit);
@@ -8587,7 +8582,7 @@ void ChannelEngine::ProcessPmcSignal(){
 			}
 			continue;
 		}
-		//µÚÒ»²Î¿¼µã
+		//ï¿½ï¿½Ò»ï¿½Î¿ï¿½ï¿½ï¿½
 		if(fabs(m_df_phy_axis_pos_feedback[i]-m_p_axis_config[i].axis_home_pos[0]) < prec){
 			if(byte < 8)
 				freg->ZP11 |= (0x01<<bit);
@@ -8599,7 +8594,7 @@ void ChannelEngine::ProcessPmcSignal(){
 			else
 				freg->ZP12 &= ~(0x01<<bit);
 		}
-		//µÚ¶þ²Î¿¼µã
+		//ï¿½Ú¶ï¿½ï¿½Î¿ï¿½ï¿½ï¿½
 		if(fabs(m_df_phy_axis_pos_feedback[i]-m_p_axis_config[i].axis_home_pos[1]) < prec){
 			if(byte < 8)
 				freg->ZP21 |= (0x01<<bit);
@@ -8611,7 +8606,7 @@ void ChannelEngine::ProcessPmcSignal(){
 			else
 				freg->ZP22 &= ~(0x01<<bit);
 		}
-		//µÚÈý²Î¿¼µã
+		//ï¿½ï¿½ï¿½ï¿½ï¿½Î¿ï¿½ï¿½ï¿½
 		if(fabs(m_df_phy_axis_pos_feedback[i]-m_p_axis_config[i].axis_home_pos[2]) < prec){
 			if(byte < 8)
 				freg->ZP31 |= (0x01<<bit);
@@ -8623,7 +8618,7 @@ void ChannelEngine::ProcessPmcSignal(){
 			else
 				freg->ZP32 &= ~(0x01<<bit);
 		}
-		//µÚËÄ²Î¿¼µã
+		//ï¿½ï¿½ï¿½Ä²Î¿ï¿½ï¿½ï¿½
 		if(fabs(m_df_phy_axis_pos_feedback[i]-m_p_axis_config[i].axis_home_pos[3]) < prec){
 			if(byte < 8)
 				freg->ZP41 |= (0x01<<bit);
@@ -8637,36 +8632,36 @@ void ChannelEngine::ProcessPmcSignal(){
 		}
 	}
 
-	//´¦ÀíPMCµÄ¸æ¾¯£¬¼´AµØÖ·¼Ä´æÆ÷
+	//ï¿½ï¿½ï¿½ï¿½PMCï¿½Ä¸æ¾¯ï¿½ï¿½ï¿½ï¿½Aï¿½ï¿½Ö·ï¿½Ä´ï¿½ï¿½ï¿½
 	this->ProcessPmcAlarm();
 	
 }
 
 /**
- * @brief ´¦ÀíPMCÊý¾Ý´°¿Ú
+ * @brief ï¿½ï¿½ï¿½ï¿½PMCï¿½ï¿½ï¿½Ý´ï¿½ï¿½ï¿½
  */
 void ChannelEngine::ProcessPmcDataWnd(){
 
 	FRegBits *freg = &m_p_pmc_reg->FReg().bits[0];
 	const GRegBits *greg = &m_p_pmc_reg->GReg().bits[0];
 
-	if(greg->ESTB && (freg->EREND==0)){  //ESTBÐÅºÅÎª1£¬ÇÒERENDÐÅºÅÎª0Ê±£¬Ö´ÐÐÊý¾ÝÐ´Èë
-		uint8_t cmd = greg->ED1;      //ÃüÁîºÅ
-		uint8_t axis = greg->ED2;    //ÎïÀíÖáºÅ
+	if(greg->ESTB && (freg->EREND==0)){  //ESTBï¿½Åºï¿½Îª1ï¿½ï¿½ï¿½ï¿½ERENDï¿½Åºï¿½Îª0Ê±ï¿½ï¿½Ö´ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ð´ï¿½ï¿½
+		uint8_t cmd = greg->ED1;      //ï¿½ï¿½ï¿½ï¿½ï¿½
+		uint8_t axis = greg->ED2;    //ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 
-		if(cmd == 0x01){ //¶ÁÈ¡Öá»úÐµÎ»ÖÃ×ø±ê
-			freg->wnd_data = this->GetPhyAxisMachPosFeedback(axis)*1000;   //µ¥Î»£ºum
+		if(cmd == 0x01){ //ï¿½ï¿½È¡ï¿½ï¿½ï¿½ÐµÎ»ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+			freg->wnd_data = this->GetPhyAxisMachPosFeedback(axis)*1000;   //ï¿½ï¿½Î»ï¿½ï¿½um
 
-			freg->EREND = 1;   //Í¨ÖªPMC¶ÁÈ¡Êý¾Ý
+			freg->EREND = 1;   //Í¨ÖªPMCï¿½ï¿½È¡ï¿½ï¿½ï¿½ï¿½
 
 		}
 	}else if((greg->ESTB == 0) && freg->EREND){
-		freg->EREND = 0;   //¸´Î»PMC¶ÁÈ¡Êý¾ÝÐÅºÅ
+		freg->EREND = 0;   //ï¿½ï¿½Î»PMCï¿½ï¿½È¡ï¿½ï¿½ï¿½ï¿½ï¿½Åºï¿½
 	}
 }
 
 /**
- * @brief ´¦ÀíPMC¸æ¾¯
+ * @brief ï¿½ï¿½ï¿½ï¿½PMCï¿½æ¾¯
  *
  */
 void ChannelEngine::ProcessPmcAlarm(){
@@ -8700,7 +8695,7 @@ void ChannelEngine::ProcessPmcAlarm(){
 					CreateError(errorno, errtype, CLEAR_BY_MCP_RESET, 0, CHANNEL_ENGINE_INDEX);
 				}
 
-				value = value>>1;  //ÓÒÒÆÒ»Î»
+				value = value>>1;  //ï¿½ï¿½ï¿½ï¿½Ò»Î»
 				++bit;
 			}
 		}
@@ -8728,7 +8723,7 @@ void ChannelEngine::ProcessPmcAlarm(){
 					CreateError(errorno, errtype, CLEAR_BY_MCP_RESET, 0, CHANNEL_ENGINE_INDEX);
 				}
 
-				value = value>>1;  //ÓÒÒÆÒ»Î»
+				value = value>>1;  //ï¿½ï¿½ï¿½ï¿½Ò»Î»
 				++bit;
 			}
 		}
@@ -8738,7 +8733,7 @@ void ChannelEngine::ProcessPmcAlarm(){
 }
 
 /**
- * @brief ´¦ÀíPMCÖá¿ØÖÆÐÅºÅ
+ * @brief ï¿½ï¿½ï¿½ï¿½PMCï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Åºï¿½
  */
 void ChannelEngine::ProcessPmcAxisCtrl(){
 //	FRegBits *freg0 = GetChnFRegBits(0);
@@ -8752,7 +8747,7 @@ void ChannelEngine::ProcessPmcAxisCtrl(){
 		greg = &m_p_pmc_reg->GReg().bits[i];
 		freg = &m_p_pmc_reg->FReg().bits[i];
 
-		//´¦ÀíPMCÖáÍ¨µÀ¼¤»î
+		//ï¿½ï¿½ï¿½ï¿½PMCï¿½ï¿½Í¨ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 		bool eax[4] = {greg->EAX1, greg->EAX2, greg->EAX3, greg->EAX4};
 		bool embuf[4] = {greg->EMBUFA, greg->EMBUFB, greg->EMBUFC, greg->EMBUFD};
 		uint8_t ebuf[4] = {greg->EBUFA, greg->EBUFB, greg->EBUFC, greg->EBUFD};
@@ -8764,7 +8759,7 @@ void ChannelEngine::ProcessPmcAxisCtrl(){
 		uint16_t spd[4] = {greg->EIFA, greg->EIFB, greg->EIFC, greg->EIFD};
 		for(uint8_t j = 0; j < 4; j++){
 
-			if(!m_pmc_axis_ctrl[i*4+j].Active(eax[j])){//×ª»»Ê§°Ü£¬¸æ¾¯
+			if(!m_pmc_axis_ctrl[i*4+j].Active(eax[j])){//×ªï¿½ï¿½Ê§ï¿½Ü£ï¿½ï¿½æ¾¯
 				this->m_error_code = ERR_PMC_AXIS_CTRL_CHANGE;
 				CreateError(ERR_PMC_AXIS_CTRL_CHANGE, ERROR_LEVEL, CLEAR_BY_MCP_RESET, i*4+j+1, CHANNEL_ENGINE_INDEX);
 				return;
@@ -8772,15 +8767,15 @@ void ChannelEngine::ProcessPmcAxisCtrl(){
 
 			if(!m_pmc_axis_ctrl[4*i+j].IsActive()){
 
-				continue;  //Î´¼¤»î
+				continue;  //Î´ï¿½ï¿½ï¿½ï¿½
 			}
 
-			//EMBUFg»º³åÎÞÐ§ÐÅºÅ
+			//EMBUFgï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ð§ï¿½Åºï¿½
 			this->m_pmc_axis_ctrl[4*i+j].SetBuffState(!embuf[j]);
 
-			//ESBKg/EMSBKg  ³ÌÐò¶ÎÍ£Ö¹ÐÅºÅ/³ÌÐò¶ÎÍ£Ö¹ÎÞÐ§ÐÅºÅ
+			//ESBKg/EMSBKg  ï¿½ï¿½ï¿½ï¿½ï¿½Í£Ö¹ï¿½Åºï¿½/ï¿½ï¿½ï¿½ï¿½ï¿½Í£Ö¹ï¿½ï¿½Ð§ï¿½Åºï¿½
 
-			//Êý¾Ý¶ÁÈ¡
+			//ï¿½ï¿½ï¿½Ý¶ï¿½È¡
 			if(ebuf[j] != ebsy[j]){
 				pmc_cmd.cmd = cmd[j];
 				pmc_cmd.distance = dis[j];
@@ -8788,12 +8783,12 @@ void ChannelEngine::ProcessPmcAxisCtrl(){
 				this->m_pmc_axis_ctrl[4*i+j].WriteCmd(pmc_cmd);
 			}
 
-			//ECLRg¸´Î»ÐÅºÅ
+			//ECLRgï¿½ï¿½Î»ï¿½Åºï¿½
 			if(eclr[j])
 				this->m_pmc_axis_ctrl[4*i+j].Reset();
 
 
-			//ESTPgÖá¿ØÖÆÔÝÍ£ÐÅºÅ
+			//ESTPgï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Í£ï¿½Åºï¿½
 			this->m_pmc_axis_ctrl[4*i+j].Pause(estp[j]);
 
 		}
@@ -8801,10 +8796,10 @@ void ChannelEngine::ProcessPmcAxisCtrl(){
 }
 
 /**
- * @brief ¼ì²éÖáÔ­µãÐÅºÅ
- * @param phy_axis £º ÎïÀíÖáºÅ£¬0¿ªÊ¼
- * @param dir £º ·½Ïò£¬ 1--ÕýÏò   -1--¸ºÏò
- * @return  true--ÓÐÐÅºÅ    false--ÎÞÐÅºÅ
+ * @brief ï¿½ï¿½ï¿½ï¿½ï¿½Ô­ï¿½ï¿½ï¿½Åºï¿½
+ * @param phy_axis ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Å£ï¿½0ï¿½ï¿½Ê¼
+ * @param dir ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ 1--ï¿½ï¿½ï¿½ï¿½   -1--ï¿½ï¿½ï¿½ï¿½
+ * @return  true--ï¿½ï¿½ï¿½Åºï¿½    false--ï¿½ï¿½ï¿½Åºï¿½
  */
 bool ChannelEngine::CheckAxisRefBaseSignal(uint8_t phy_axis, int8_t dir){
 
@@ -8842,9 +8837,9 @@ bool ChannelEngine::CheckAxisRefBaseSignal(uint8_t phy_axis, int8_t dir){
 }
 
 /**
- * @brief ¼ì²éÖáÔ­µã¾«»ù×¼ÐÅºÅ£¨IOÐÅºÅ£©
- * @param phy_axis : ÎïÀíÖáÐòºÅ£¬0¿ªÊ¼
- * @return  true--ÓÐÐÅºÅ    false--ÎÞÐÅºÅ
+ * @brief ï¿½ï¿½ï¿½ï¿½ï¿½Ô­ï¿½ã¾«ï¿½ï¿½×¼ï¿½ÅºÅ£ï¿½IOï¿½ÅºÅ£ï¿½
+ * @param phy_axis : ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Å£ï¿½0ï¿½ï¿½Ê¼
+ * @return  true--ï¿½ï¿½ï¿½Åºï¿½    false--ï¿½ï¿½ï¿½Åºï¿½
  */
 bool ChannelEngine::CheckAxisRefSignal(uint8_t phy_axis){
 	bool res = false;
@@ -8862,17 +8857,17 @@ bool ChannelEngine::CheckAxisRefSignal(uint8_t phy_axis){
 
 
 /**
- * @brief ´¦ÀíÖáÓ²ÏÞÎ»¸æ¾¯,ËùÓÐÖá¼õËÙÍ£
- * @param dir : Ó²ÏÞÎ»·½Ïò£¬0--ÕýÏò   1--¸ºÏò
+ * @brief ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ó²ï¿½ï¿½Î»ï¿½æ¾¯,ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Í£
+ * @param dir : Ó²ï¿½ï¿½Î»ï¿½ï¿½ï¿½ï¿½0--ï¿½ï¿½ï¿½ï¿½   1--ï¿½ï¿½ï¿½ï¿½
  */
 void ChannelEngine::ProcessAxisHardLimit(uint8_t dir){
 
-	//¼õËÙÍ£´¦Àí
+	//ï¿½ï¿½ï¿½ï¿½Í£ï¿½ï¿½ï¿½ï¿½
 	for(int i = 0; i < this->m_p_general_config->chn_count; i++){
 		this->m_p_channel_control[i].Pause();
 	}
 
-	//Éú³ÉÓ²ÏÞÎ»´íÎóÐÅÏ¢
+	//ï¿½ï¿½ï¿½ï¿½Ó²ï¿½ï¿½Î»ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ï¢
 	uint32_t info = 0x00;
 	if(dir == 0){
 		m_error_code = ERR_HARDLIMIT_POS;
@@ -8887,9 +8882,9 @@ void ChannelEngine::ProcessAxisHardLimit(uint8_t dir){
 }
 
 /**
- * @brief ÉèÖÃPMCÖÐF¼Ä´æÆ÷µÄOUTÊä³öµãÎ»
- * @param index : OUTÊä³öµÄµãÎ»ÐòºÅ£¬´Ó0¿ªÊ¼
- * @param value : 0--¿ª¹ØÊôÐÔ£¬Ã¿´ÎÈ¡·´      1--ÓÐÐÅºÅ      2--ÎÞÐÅºÅ
+ * @brief ï¿½ï¿½ï¿½ï¿½PMCï¿½ï¿½Fï¿½Ä´ï¿½ï¿½ï¿½ï¿½ï¿½OUTï¿½ï¿½ï¿½ï¿½ï¿½Î»
+ * @param index : OUTï¿½ï¿½ï¿½ï¿½Äµï¿½Î»ï¿½ï¿½Å£ï¿½ï¿½ï¿½0ï¿½ï¿½Ê¼
+ * @param value : 0--ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ô£ï¿½Ã¿ï¿½ï¿½È¡ï¿½ï¿½      1--ï¿½ï¿½ï¿½Åºï¿½      2--ï¿½ï¿½ï¿½Åºï¿½
  */
 void ChannelEngine::SetPmcOutSignal(uint8_t index, uint8_t value){
 	if(index >= 32 || this->m_b_emergency)
@@ -8899,7 +8894,7 @@ void ChannelEngine::SetPmcOutSignal(uint8_t index, uint8_t value){
 
 //	uint8_t cur_val = this->m_p_pmc_reg->FReg().all[72+sec];
 //	printf("SetPmcOutSignal: index = %hhu, value=0x%hhx\n", index, cur_val);
-//	cur_val ^= (0x01<<bit);  //È¡·´
+//	cur_val ^= (0x01<<bit);  //È¡ï¿½ï¿½
 
 //	this->m_p_pmc_reg->FReg().all[72+sec] = cur_val;
 //	printf("SetPmcOutSignal new : index = %hhu, value=0x%hhx\n", index, cur_val);
@@ -8910,7 +8905,7 @@ void ChannelEngine::SetPmcOutSignal(uint8_t index, uint8_t value){
 	}else if(value == 0){
 		uint8_t cur_val = this->m_p_pmc_reg->FReg().all[72+sec];
 	//	printf("SetPmcOutSignal: index = %hhu, value=0x%hhx\n", index, cur_val);
-		cur_val ^= (0x01<<bit);  //È¡·´
+		cur_val ^= (0x01<<bit);  //È¡ï¿½ï¿½
 
 		this->m_p_pmc_reg->FReg().all[72+sec] = cur_val;
 
@@ -8919,11 +8914,11 @@ void ChannelEngine::SetPmcOutSignal(uint8_t index, uint8_t value){
 }
 
 /**
- * @brief »ñÈ¡ºê±äÁ¿µÄÖµ
- * @param chn[in] : Í¨µÀºÅ
- * @param index[in]	£º±äÁ¿Ë÷ÒýºÅ
- * @param init[out] : ·µ»Ø±äÁ¿³õÊ¼»¯×´Ì¬£¬0--Î´³õÊ¼»¯   1--ÒÑ³õÊ¼»¯
- * @param value[out] : ·µ»ØµÄ±äÁ¿Öµ
+ * @brief ï¿½ï¿½È¡ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Öµ
+ * @param chn[in] : Í¨ï¿½ï¿½ï¿½ï¿½
+ * @param index[in]	ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+ * @param init[out] : ï¿½ï¿½ï¿½Ø±ï¿½ï¿½ï¿½ï¿½ï¿½Ê¼ï¿½ï¿½×´Ì¬ï¿½ï¿½0--Î´ï¿½ï¿½Ê¼ï¿½ï¿½   1--ï¿½Ñ³ï¿½Ê¼ï¿½ï¿½
+ * @param value[out] : ï¿½ï¿½ï¿½ØµÄ±ï¿½ï¿½ï¿½Öµ
  * @return
  */
 bool ChannelEngine::GetMacroVarValue(uint8_t chn, uint32_t index, bool &init, double &value){
@@ -8939,11 +8934,11 @@ bool ChannelEngine::GetMacroVarValue(uint8_t chn, uint32_t index, bool &init, do
 }
 
 /**
- * @brief ÉèÖÃºê±äÁ¿µÄÖµ
+ * @brief ï¿½ï¿½ï¿½Ãºï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Öµ
  * @param chn
  * @param index
- * @param init : ³õÊ¼»¯×´Ì¬£¬0--Î´³õÊ¼»¯   1--ÒÑ³õÊ¼»¯
- * @param value : ±äÁ¿Öµ
+ * @param init : ï¿½ï¿½Ê¼ï¿½ï¿½×´Ì¬ï¿½ï¿½0--Î´ï¿½ï¿½Ê¼ï¿½ï¿½   1--ï¿½Ñ³ï¿½Ê¼ï¿½ï¿½
+ * @param value : ï¿½ï¿½ï¿½ï¿½Öµ
  * @return
  */
 bool ChannelEngine::SetMacroVarValue(uint8_t chn, uint32_t index, bool init, double value){
@@ -8953,10 +8948,10 @@ bool ChannelEngine::SetMacroVarValue(uint8_t chn, uint32_t index, bool init, dou
 	if((this->m_mask_import_param & (0x01<<CONFIG_MACRO_VAR)) != 0)
 		return false;
 
-	if(init){//ÒÑ³õÊ¼»¯
+	if(init){//ï¿½Ñ³ï¿½Ê¼ï¿½ï¿½
 		if(!m_p_channel_control[chn].GetMacroVar()->SetVarValue(index, value))
 			return false;
-	}else{//Î´³õÊ¼»¯
+	}else{//Î´ï¿½ï¿½Ê¼ï¿½ï¿½
 		if(!m_p_channel_control[chn].GetMacroVar()->ResetVariable(index))
 			return false;
 	}
@@ -8965,11 +8960,11 @@ bool ChannelEngine::SetMacroVarValue(uint8_t chn, uint32_t index, bool init, dou
 }
 
 /**
- * @brief »ñÈ¡PMCµ¥×Ö½Ú¼Ä´æÆ÷µÄÖµ
+ * @brief ï¿½ï¿½È¡PMCï¿½ï¿½ï¿½Ö½Ú¼Ä´ï¿½ï¿½ï¿½ï¿½ï¿½Öµ
  * @param reg_sec
  * @param reg_index
  * @param value
- * @return  true--³É¹¦   false--Ê§°Ü
+ * @return  true--ï¿½É¹ï¿½   false--Ê§ï¿½ï¿½
  */
 bool ChannelEngine::GetPmcRegValue_8(uint16_t reg_sec, uint16_t reg_index, uint8_t &value){
 	bool res = false;
@@ -8980,11 +8975,11 @@ bool ChannelEngine::GetPmcRegValue_8(uint16_t reg_sec, uint16_t reg_index, uint8
 }
 
 /**
- * @brief »ñÈ¡PMCË«×Ö½Ú¼Ä´æÆ÷µÄÖµ
+ * @brief ï¿½ï¿½È¡PMCË«ï¿½Ö½Ú¼Ä´ï¿½ï¿½ï¿½ï¿½ï¿½Öµ
  * @param reg_sec
  * @param reg_index
  * @param value
- * @return true--³É¹¦   false--Ê§°Ü
+ * @return true--ï¿½É¹ï¿½   false--Ê§ï¿½ï¿½
  */
 bool ChannelEngine::GetPmcRegValue_16(uint16_t reg_sec, uint16_t reg_index, uint16_t &value){
 	bool res = false;
@@ -8995,11 +8990,11 @@ bool ChannelEngine::GetPmcRegValue_16(uint16_t reg_sec, uint16_t reg_index, uint
 }
 
 /**
- * @brief ÉèÖÃPMCµ¥×Ö½Ú¼Ä´æÆ÷µÄÖµ
+ * @brief ï¿½ï¿½ï¿½ï¿½PMCï¿½ï¿½ï¿½Ö½Ú¼Ä´ï¿½ï¿½ï¿½ï¿½ï¿½Öµ
  * @param reg_sec
  * @param reg_index
  * @param value
- * @return true--³É¹¦   false--Ê§°Ü
+ * @return true--ï¿½É¹ï¿½   false--Ê§ï¿½ï¿½
  */
 bool ChannelEngine::SetPmcRegValue_8(uint16_t reg_sec, uint16_t reg_index, uint8_t value){
 	bool res = false;
@@ -9010,12 +9005,12 @@ bool ChannelEngine::SetPmcRegValue_8(uint16_t reg_sec, uint16_t reg_index, uint8
 }
 
 /**
- * @brief °´Î»ÉèÖÃ¼Ä´æÆ÷Öµ
+ * @brief ï¿½ï¿½Î»ï¿½ï¿½ï¿½Ã¼Ä´ï¿½ï¿½ï¿½Öµ
  * @param reg_sec
  * @param reg_index
- * @param bit_index : bitÎ»ÐòºÅ£¬0¿ªÊ¼
+ * @param bit_index : bitÎ»ï¿½ï¿½Å£ï¿½0ï¿½ï¿½Ê¼
  * @param value
- * @return true--³É¹¦   false--Ê§°Ü
+ * @return true--ï¿½É¹ï¿½   false--Ê§ï¿½ï¿½
  */
 bool ChannelEngine::SetPmcRegBitValue_8(uint16_t reg_sec, uint16_t reg_index, uint8_t bit_index, bool value){
 	bool res = false;
@@ -9027,12 +9022,12 @@ bool ChannelEngine::SetPmcRegBitValue_8(uint16_t reg_sec, uint16_t reg_index, ui
 	res = this->m_p_pmc_reg->GetRegValue(static_cast<PmcRegSection>(reg_sec), reg_index, data);
 
 	if(!res)
-		return res;  //Ê§°Ü·µ»Ø
+		return res;  //Ê§ï¿½Ü·ï¿½ï¿½ï¿½
 
 	if(value){
-		data |= 0x01<<bit_index;      //ÖÃ1
+		data |= 0x01<<bit_index;      //ï¿½ï¿½1
 	}else{
-		data &= ~(0x01<<bit_index);   //ÖÃ0
+		data &= ~(0x01<<bit_index);   //ï¿½ï¿½0
 	}
 
 	res = this->m_p_pmc_reg->SetRegValue(static_cast<PmcRegSection>(reg_sec), reg_index, data);
@@ -9040,11 +9035,11 @@ bool ChannelEngine::SetPmcRegBitValue_8(uint16_t reg_sec, uint16_t reg_index, ui
 }
 
 /**
- * @brief ÉèÖÃPMCË«×Ö½Ú¼Ä´æÆ÷µÄÖµ
+ * @brief ï¿½ï¿½ï¿½ï¿½PMCË«ï¿½Ö½Ú¼Ä´ï¿½ï¿½ï¿½ï¿½ï¿½Öµ
  * @param reg_sec
  * @param reg_index
  * @param value
- * @return true--³É¹¦   false--Ê§°Ü
+ * @return true--ï¿½É¹ï¿½   false--Ê§ï¿½ï¿½
  */
 bool ChannelEngine::SetPmcRegValue_16(uint16_t reg_sec, uint16_t reg_index, uint16_t value){
 	bool res = false;
@@ -9055,17 +9050,17 @@ bool ChannelEngine::SetPmcRegValue_16(uint16_t reg_sec, uint16_t reg_index, uint
 }
 
 /**
- * @brief ÉèÖÃÍ¨µÀµÄPMCÐÅºÅ
- * @param chn_index : Í¨µÀºÅ
- * @param signal £ºÐÅºÅ¶¨Òå
- * @param flag £º true--ÖÃÒ»    false--ÖÃÁã
+ * @brief ï¿½ï¿½ï¿½ï¿½Í¨ï¿½ï¿½ï¿½ï¿½PMCï¿½Åºï¿½
+ * @param chn_index : Í¨ï¿½ï¿½ï¿½ï¿½
+ * @param signal ï¿½ï¿½ï¿½ÅºÅ¶ï¿½ï¿½ï¿½
+ * @param flag ï¿½ï¿½ true--ï¿½ï¿½Ò»    false--ï¿½ï¿½ï¿½ï¿½
  */
 void ChannelEngine::SetPmcSignal(uint8_t chn_index, int signal, bool flag){
 
 }
 
 /**
- * @brief Ë¢ÐÂncÎÄ¼þfile
+ * @brief Ë¢ï¿½ï¿½ncï¿½Ä¼ï¿½file
  * @param file
  */
 void ChannelEngine::RefreshFile(char *file){
@@ -9074,7 +9069,7 @@ void ChannelEngine::RefreshFile(char *file){
 }
 
 /**
- * @brief ÖØÐÂ¼ÓÔØÎÄ¼þfile
+ * @brief ï¿½ï¿½ï¿½Â¼ï¿½ï¿½ï¿½ï¿½Ä¼ï¿½file
  * @param file
  */
 void ChannelEngine::RemapFile(char *file){
@@ -9083,7 +9078,7 @@ void ChannelEngine::RemapFile(char *file){
 }
 
 /**
- * @brief ¸´Î»OPÐÅºÅ
+ * @brief ï¿½ï¿½Î»OPï¿½Åºï¿½
  * @param chn_index
  */
 void ChannelEngine::ResetOPSignal(uint8_t chn_index){
@@ -9096,7 +9091,7 @@ void ChannelEngine::ResetOPSignal(uint8_t chn_index){
 }
 
 /**
- * @brief ÉèÖÃ¸æ¾¯ÐÅºÅ
+ * @brief ï¿½ï¿½ï¿½Ã¸æ¾¯ï¿½Åºï¿½
  * @param chn_index
  * @param value
  */
@@ -9113,9 +9108,9 @@ void ChannelEngine::SetALSignal(uint8_t chn_index, bool value){
 
 
 /**
- * @brief »ñÈ¡Ö¸¶¨PMCÍ¨µÀµÄPMCÖáÐòºÅ
- * @param pmc_chn : PMCÍ¨µÀºÅ£¬¼´¼Ä´æÆ÷×éÐòºÅ£¬´Ó0¿ªÊ¼
- * @return ³É¹¦·µ»ØÎïÀíÖáºÅ£¬Ê§°ÜÔò·µ»Ø0xFF
+ * @brief ï¿½ï¿½È¡Ö¸ï¿½ï¿½PMCÍ¨ï¿½ï¿½ï¿½ï¿½PMCï¿½ï¿½ï¿½ï¿½ï¿½
+ * @param pmc_chn : PMCÍ¨ï¿½ï¿½ï¿½Å£ï¿½ï¿½ï¿½ï¿½Ä´ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Å£ï¿½ï¿½ï¿½0ï¿½ï¿½Ê¼
+ * @return ï¿½É¹ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Å£ï¿½Ê§ï¿½ï¿½ï¿½ò·µ»ï¿½0xFF
  */
 uint8_t ChannelEngine::GetPmcAxis(uint8_t pmc_chn){
 
@@ -9139,24 +9134,24 @@ uint8_t ChannelEngine::GetPmcAxis(uint8_t pmc_chn){
 }
 
 /**
- * @brief ½ö¸ù¾ÝÔ­µãÐÅºÅÉèÖÃ²Î¿¼µã °üÀ¨²½½øµç»ú¸ù¾ÝÔ­µãÐÅºÅÉèÖÃ²Î¿¼µã
+ * @brief ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ô­ï¿½ï¿½ï¿½Åºï¿½ï¿½ï¿½ï¿½Ã²Î¿ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ô­ï¿½ï¿½ï¿½Åºï¿½ï¿½ï¿½ï¿½Ã²Î¿ï¿½ï¿½ï¿½
  */
 void ChannelEngine::AxisFindRefWithZeroSignal(uint8_t phy_axis){
 
-	int8_t dir = 0, dir_opt;   //»Ø²Î¿¼µã·½Ïò
-//	uint8_t ret_mode = 0;   //»Ø²Î¿¼µã·½Ê½
+	int8_t dir = 0, dir_opt;   //ï¿½Ø²Î¿ï¿½ï¿½ã·½ï¿½ï¿½
+//	uint8_t ret_mode = 0;   //ï¿½Ø²Î¿ï¿½ï¿½ã·½Ê½
 	uint8_t chn = 0, chn_axis = 0;
 
-	dir = this->m_p_axis_config[phy_axis].ret_ref_dir?DIR_POSITIVE:DIR_NEGATIVE;  // »Ø²Î¿¼µãÕÒ´Ö»ù×¼·½Ïò
-	dir_opt = (m_p_axis_config[phy_axis].ret_ref_change_dir==0)?dir*-1:dir;       //»Ø²Î¿¼µãÕÒ¾«»ù×¼·½Ïò
+	dir = this->m_p_axis_config[phy_axis].ret_ref_dir?DIR_POSITIVE:DIR_NEGATIVE;  // ï¿½Ø²Î¿ï¿½ï¿½ï¿½ï¿½Ò´Ö»ï¿½×¼ï¿½ï¿½ï¿½ï¿½
+	dir_opt = (m_p_axis_config[phy_axis].ret_ref_change_dir==0)?dir*-1:dir;       //ï¿½Ø²Î¿ï¿½ï¿½ï¿½ï¿½Ò¾ï¿½ï¿½ï¿½×¼ï¿½ï¿½ï¿½ï¿½
 
 	switch(this->m_n_ret_ref_step[phy_axis]){
-		case 0://¼ì²éÔ­µãÐÅºÅ
+		case 0://ï¿½ï¿½ï¿½Ô­ï¿½ï¿½ï¿½Åºï¿½
 			printf("return ref step 0, dir = %hhd, dir_opt=%hhd\n", dir, dir_opt);
-			this->SetRetRefFlag(phy_axis, false);   //¸´Î»»Ø²Î¿¼µãÍê³É±êÖ¾
+			this->SetRetRefFlag(phy_axis, false);   //ï¿½ï¿½Î»ï¿½Ø²Î¿ï¿½ï¿½ï¿½ï¿½ï¿½É±ï¿½Ö¾
 			this->m_p_pmc_reg->FReg().bits[0].in_ref_point &= ~(0x01<<phy_axis);
 
-			if(this->CheckAxisRefBaseSignal(phy_axis, dir)){  // ÒÑ¾­´¥·¢´Ö»ù×¼ÐÅºÅ£¬Ö±½Ó¿ª¿ªÊ¼»ØÍË 
+			if(this->CheckAxisRefBaseSignal(phy_axis, dir)){  // ï¿½Ñ¾ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ö»ï¿½×¼ï¿½ÅºÅ£ï¿½Ö±ï¿½Ó¿ï¿½ï¿½ï¿½Ê¼ï¿½ï¿½ï¿½ï¿½ 
 			    double move_length = this->m_p_axis_config[phy_axis].move_pr*1.2;
 				if(move_length>10.0) {
 					move_length = 10.0;
@@ -9175,7 +9170,7 @@ void ChannelEngine::AxisFindRefWithZeroSignal(uint8_t phy_axis){
 			}
 
 			break;
-		case 1:{//µÈ´ý»ØÍËµ½Î»£¬²¢ÔÙ´Î¼ì²éÔ­µãÐÅºÅ
+		case 1:{//ï¿½È´ï¿½ï¿½ï¿½ï¿½Ëµï¿½Î»ï¿½ï¿½ï¿½ï¿½ï¿½Ù´Î¼ï¿½ï¿½Ô­ï¿½ï¿½ï¿½Åºï¿½
 			printf("return ref step 1\n");
 			chn = this->GetAxisChannel(phy_axis, chn_axis);
 			bool flag = CheckAxisRefBaseSignal(phy_axis, dir);
@@ -9188,119 +9183,119 @@ void ChannelEngine::AxisFindRefWithZeroSignal(uint8_t phy_axis){
 					}
 				}
 				if(flag == false){
-						m_n_ret_ref_step[phy_axis] = 2;  //Ìø×ªÏÂÒ»²½
+						m_n_ret_ref_step[phy_axis] = 2;  //ï¿½ï¿½×ªï¿½ï¿½Ò»ï¿½ï¿½
 				}
 					
-			}else if(this->m_p_axis_config[phy_axis].axis_pmc){  //PMCÖáµ½Î»
+			}else if(this->m_p_axis_config[phy_axis].axis_pmc){  //PMCï¿½áµ½Î»
 				if(this->m_n_run_axis_mask == 0 || (this->m_n_runover_axis_mask & (0x01L<<phy_axis))){
 					if(true == flag){
 						m_n_ret_ref_step[phy_axis] = 0;
 						break;
 					}else{
-							m_n_ret_ref_step[phy_axis] = 2;  //Ìø×ªÏÂÒ»²½
+							m_n_ret_ref_step[phy_axis] = 2;  //ï¿½ï¿½×ªï¿½ï¿½Ò»ï¿½ï¿½
 					}
 				}
 			}
 			}
 			break;
-		case 2:  //ÒÔ»Ø²Î¿¼µãËÙ¶ÈÏò»Ø²Î¿¼µã·½ÏòÔË¶¯
+		case 2:  //ï¿½Ô»Ø²Î¿ï¿½ï¿½ï¿½ï¿½Ù¶ï¿½ï¿½ï¿½Ø²Î¿ï¿½ï¿½ã·½ï¿½ï¿½ï¿½Ë¶ï¿½
 	//		printf("return ref step 2\n");
 			this->ManualMove(phy_axis, dir, this->m_p_axis_config[phy_axis].ret_ref_speed, 90000.0);
-			m_n_ret_ref_step[phy_axis] = 3;  //Ìø×ªÏÂÒ»²½
+			m_n_ret_ref_step[phy_axis] = 3;  //ï¿½ï¿½×ªï¿½ï¿½Ò»ï¿½ï¿½
 			printf("return ref, goto step 3\n");
 			break;
-		case 3:  //´¥·¢Ô­µãÐÅºÅ£¬Í£Ö¹
+		case 3:  //ï¿½ï¿½ï¿½ï¿½Ô­ï¿½ï¿½ï¿½ÅºÅ£ï¿½Í£Ö¹
 	//		printf("return ref step 3\n");
 			if(this->CheckAxisRefBaseSignal(phy_axis, dir)){
 				this->ManualMoveStop(phy_axis);
-				gettimeofday(&this->m_time_ret_ref[phy_axis], NULL);   //¼ÇÂ¼ÆðÊ¼Ê±¼ä
-				m_n_ret_ref_step[phy_axis] = 4;  //Ìø×ªÏÂÒ»²½
+				gettimeofday(&this->m_time_ret_ref[phy_axis], NULL);   //ï¿½ï¿½Â¼ï¿½ï¿½Ê¼Ê±ï¿½ï¿½
+				m_n_ret_ref_step[phy_axis] = 4;  //ï¿½ï¿½×ªï¿½ï¿½Ò»ï¿½ï¿½
 				printf("return ref, goto step 4: pos = %lf\n", this->GetPhyAxisMachPosFeedback(phy_axis));
 			}
 			else{
 			//	this->ManualMove(phy_axis, dir, this->m_p_axis_config[phy_axis].ret_ref_speed,3.0);
 			}
 			break;
-		case 4:{//µÈ´ýÍ£Ö¹µ½Î»
+		case 4:{//ï¿½È´ï¿½Í£Ö¹ï¿½ï¿½Î»
 			struct timeval time_now;
 			gettimeofday(&time_now, NULL);
 			unsigned int time_elpase = (time_now.tv_sec-m_time_ret_ref[phy_axis].tv_sec)*1000000+time_now.tv_usec-m_time_ret_ref[phy_axis].tv_usec;
-			if(time_elpase >= 500000){ //ÑÓÊ±500ms
-				m_n_ret_ref_step[phy_axis] = 5;  //Ìø×ªÏÂÒ»²½
+			if(time_elpase >= 500000){ //ï¿½ï¿½Ê±500ms
+				m_n_ret_ref_step[phy_axis] = 5;  //ï¿½ï¿½×ªï¿½ï¿½Ò»ï¿½ï¿½
 				printf("return ref, goto step 5: pos = %lf, time=%u\n", this->GetPhyAxisMachPosFeedback(phy_axis), time_elpase);
 			}
 			if(!this->CheckAxisRefBaseSignal(phy_axis, dir)){
-				printf("»Ø²Î¿¼µã¹ý³åÁË£¡£¡£¡£¡£¡£¡£¡\n");
+				printf("ï¿½Ø²Î¿ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ë£ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½\n");
 			}
 		}
 			break;
-		case 5:  //ÓÐ»ù×¼£¬ µÍËÙ»ØÍËÖÁÔ­µãÐÅºÅÏûÊ§,
+		case 5:  //ï¿½Ð»ï¿½×¼ï¿½ï¿½ ï¿½ï¿½ï¿½Ù»ï¿½ï¿½ï¿½ï¿½ï¿½Ô­ï¿½ï¿½ï¿½Åºï¿½ï¿½ï¿½Ê§,
 			printf("return ref step 5\n");
 			this->ManualMove(phy_axis, dir_opt, 60, this->m_p_axis_config[phy_axis].move_pr*2);
-			m_n_ret_ref_step[phy_axis] = 6;  //Ìø×ªÏÂÒ»²½
+			m_n_ret_ref_step[phy_axis] = 6;  //ï¿½ï¿½×ªï¿½ï¿½Ò»ï¿½ï¿½
 			printf("return ref, goto step 6\n");
 
 			break;
-		case 6:  //ÓÐ»ù×¼£¬µÈ´ý´Ö»ù×¼ÐÅºÅÏûÊ§
+		case 6:  //ï¿½Ð»ï¿½×¼ï¿½ï¿½ï¿½È´ï¿½ï¿½Ö»ï¿½×¼ï¿½Åºï¿½ï¿½ï¿½Ê§
 		//	printf("return ref step 6\n");
 			if(!this->CheckAxisRefBaseSignal(phy_axis, dir)){
 				this->ManualMoveStop(phy_axis);
 
-				gettimeofday(&this->m_time_ret_ref[phy_axis], NULL);   //¼ÇÂ¼ÆðÊ¼Ê±¼ä£¬ÑÓÊ±300ms
+				gettimeofday(&this->m_time_ret_ref[phy_axis], NULL);   //ï¿½ï¿½Â¼ï¿½ï¿½Ê¼Ê±ï¿½ä£¬ï¿½ï¿½Ê±300ms
 
-				m_n_ret_ref_step[phy_axis] = 7;  //Ìø×ªÏÂÒ»²½
+				m_n_ret_ref_step[phy_axis] = 7;  //ï¿½ï¿½×ªï¿½ï¿½Ò»ï¿½ï¿½
 			}
 			break;
-		case 7:{ //µÈ´ýÍ£Ö¹µ½Î»
+		case 7:{ //ï¿½È´ï¿½Í£Ö¹ï¿½ï¿½Î»
 			struct timeval time_now;
 			gettimeofday(&time_now, NULL);
 			unsigned int time_elpase = (time_now.tv_sec-m_time_ret_ref[phy_axis].tv_sec)*1000000+time_now.tv_usec-m_time_ret_ref[phy_axis].tv_usec;
-			if(time_elpase >= 500000){ //ÑÓÊ±500ms
-//				m_n_get_cur_encoder_count = 0;  //¸´Î»»ñÈ¡µ±Ç°±àÂëÆ÷´ÎÊý
-				m_n_ret_ref_step[phy_axis] = 8;  //Ìø×ªÏÂÒ»²½
+			if(time_elpase >= 500000){ //ï¿½ï¿½Ê±500ms
+//				m_n_get_cur_encoder_count = 0;  //ï¿½ï¿½Î»ï¿½ï¿½È¡ï¿½ï¿½Ç°ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+				m_n_ret_ref_step[phy_axis] = 8;  //ï¿½ï¿½×ªï¿½ï¿½Ò»ï¿½ï¿½
 				printf("return ref, goto step 8\n");
 			}
 		}
 			break;
 
-		case 8:{ //  ÉèÖÃÔ­µã
+		case 8:{ //  ï¿½ï¿½ï¿½ï¿½Ô­ï¿½ï¿½
 			printf("return ref step 8: send cmd to mi, set ref point\n");
 			MiCmdFrame cmd;
 			memset(&cmd, 0x00, sizeof(cmd));
 			cmd.data.axis_index = phy_axis+1;
 			cmd.data.cmd = CMD_MI_SET_REF_CUR;
 
-			int64_t pos = m_p_axis_config[phy_axis].axis_home_pos[0] * 1e7;   //µ¥Î»×ª»»£¬0.1nm
+			int64_t pos = m_p_axis_config[phy_axis].axis_home_pos[0] * 1e7;   //ï¿½ï¿½Î»×ªï¿½ï¿½ï¿½ï¿½0.1nm
 			memcpy(cmd.data.data, &pos, sizeof(int64_t));
 			this->m_p_mi_comm->WriteCmd(cmd);
-			gettimeofday(&this->m_time_ret_ref[phy_axis], NULL);   //¼ÇÂ¼ÆðÊ¼Ê±¼ä£¬ÑÓÊ±300ms
+			gettimeofday(&this->m_time_ret_ref[phy_axis], NULL);   //ï¿½ï¿½Â¼ï¿½ï¿½Ê¼Ê±ï¿½ä£¬ï¿½ï¿½Ê±300ms
 			
-			m_n_ret_ref_step[phy_axis] = 9;  //Ìø×ªÏÂÒ»²½
+			m_n_ret_ref_step[phy_axis] = 9;  //ï¿½ï¿½×ªï¿½ï¿½Ò»ï¿½ï¿½
 			printf("return ref, goto step 9\n");
 
 		}
 			break;
-		case 9: { //µÈ´ýÉèÖÃ²Î¿¼µãÍê³É£¬ÔÚMiÖ¸ÁîÏìÓ¦´¦Àíº¯ÊýÖÐ´¦Àí
+		case 9: { //ï¿½È´ï¿½ï¿½ï¿½ï¿½Ã²Î¿ï¿½ï¿½ï¿½ï¿½ï¿½É£ï¿½ï¿½ï¿½MiÖ¸ï¿½ï¿½ï¿½ï¿½Ó¦ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ð´ï¿½ï¿½ï¿½
 			struct timeval time_now;
 			gettimeofday(&time_now, NULL);
 			unsigned int time_elpase = (time_now.tv_sec-m_time_ret_ref[phy_axis].tv_sec)*1000000+time_now.tv_usec-m_time_ret_ref[phy_axis].tv_usec;
-			if(time_elpase >= 300000){ //ÑÓÊ±300ms
-				m_n_ret_ref_step[phy_axis] = 10;  //Ìø×ªÏÂÒ»²½
+			if(time_elpase >= 300000){ //ï¿½ï¿½Ê±300ms
+				m_n_ret_ref_step[phy_axis] = 10;  //ï¿½ï¿½×ªï¿½ï¿½Ò»ï¿½ï¿½
 				printf("return ref, goto step 10\n");
 			}
 			}
 			break;
-		case 10:  //»Ø²Î¿¼µãÍê³É
+		case 10:  //ï¿½Ø²Î¿ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 			printf("axis %u return ref over\n", phy_axis);
 			this->SetRetRefFlag(phy_axis, true);
-			this->m_p_pmc_reg->FReg().bits[0].in_ref_point |= (0x01<<phy_axis);   //ÖÃÎ»µ½²Î¿¼µã±êÖ¾
+			this->m_p_pmc_reg->FReg().bits[0].in_ref_point |= (0x01<<phy_axis);   //ï¿½ï¿½Î»ï¿½ï¿½ï¿½Î¿ï¿½ï¿½ï¿½ï¿½Ö¾
 			
 
 			this->m_n_mask_ret_ref &= ~(0x01<<phy_axis);
 			m_n_ret_ref_step[phy_axis] = 0;
 
 			break;
-		case 20: //Ê§°Ü´¦Àí
+		case 20: //Ê§ï¿½Ü´ï¿½ï¿½ï¿½
 			this->m_n_mask_ret_ref &= ~(0x01<<phy_axis);
 			m_n_ret_ref_step[phy_axis] = 0;
 
@@ -9318,8 +9313,8 @@ void ChannelEngine::AxisFindRefWithZeroSignal(uint8_t phy_axis){
 }
 
 /**
- * @brief ÉèÖÃÖáÃû³ÆÀ©Õ¹ÏÂ±êÊ¹ÄÜ
- * @param flag : ÔÊÐíÖáÃû³ÆÏÂ±ê
+ * @brief ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Õ¹ï¿½Â±ï¿½Ê¹ï¿½ï¿½
+ * @param flag : ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Â±ï¿½
  */
 void ChannelEngine::SetAxisNameEx(bool flag){
 	for(uint8_t i = 0; i < this->m_p_general_config->chn_count; i++){
@@ -9328,42 +9323,42 @@ void ChannelEngine::SetAxisNameEx(bool flag){
 }
 
 /**
- * @brief µ±Ç°Î»ÖÃÉèÖÃÎª²Î¿¼µã   ÐéÄâÖá»Ø²Î¿¼µã  ²½½øµç»úÉèÖÃ²Î¿¼µã
+ * @brief ï¿½ï¿½Ç°Î»ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Îªï¿½Î¿ï¿½ï¿½ï¿½   ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ø²Î¿ï¿½ï¿½ï¿½  ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ã²Î¿ï¿½ï¿½ï¿½
  */
 void ChannelEngine::AxisFindRefNoZeroSignal(uint8_t phy_axis){
 
 	switch(this->m_n_ret_ref_step[phy_axis]){
-		case 0: {// ÉèÖÃÔ­µã
+		case 0: {// ï¿½ï¿½ï¿½ï¿½Ô­ï¿½ï¿½
 			printf("return ref step 0: send cmd to mi, set ref point\n");
 			MiCmdFrame cmd;
 			memset(&cmd, 0x00, sizeof(cmd));
 			cmd.data.axis_index = phy_axis+1;
 			cmd.data.cmd = CMD_MI_SET_REF_CUR;
 
-			int64_t pos = m_p_axis_config[phy_axis].axis_home_pos[0] * 1e7;   //µ¥Î»×ª»»£¬0.1nm
+			int64_t pos = m_p_axis_config[phy_axis].axis_home_pos[0] * 1e7;   //ï¿½ï¿½Î»×ªï¿½ï¿½ï¿½ï¿½0.1nm
 			memcpy(cmd.data.data, &pos, sizeof(int64_t));
 			this->m_p_mi_comm->WriteCmd(cmd);
-			gettimeofday(&this->m_time_ret_ref[phy_axis], NULL);   //¼ÇÂ¼ÆðÊ¼Ê±¼ä£¬ÑÓÊ±300ms
+			gettimeofday(&this->m_time_ret_ref[phy_axis], NULL);   //ï¿½ï¿½Â¼ï¿½ï¿½Ê¼Ê±ï¿½ä£¬ï¿½ï¿½Ê±300ms
 			
-			m_n_ret_ref_step[phy_axis] = 1;  //Ìø×ªÏÂÒ»²½
+			m_n_ret_ref_step[phy_axis] = 1;  //ï¿½ï¿½×ªï¿½ï¿½Ò»ï¿½ï¿½
 			printf("return ref, goto step 1\n");
 
 		}
 			break;
-		case 1: { //µÈ´ýÉèÖÃ²Î¿¼µãÍê³É£¬ÔÚMiÖ¸ÁîÏìÓ¦´¦Àíº¯ÊýÖÐ´¦Àí
+		case 1: { //ï¿½È´ï¿½ï¿½ï¿½ï¿½Ã²Î¿ï¿½ï¿½ï¿½ï¿½ï¿½É£ï¿½ï¿½ï¿½MiÖ¸ï¿½ï¿½ï¿½ï¿½Ó¦ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ð´ï¿½ï¿½ï¿½
 			struct timeval time_now;
 			gettimeofday(&time_now, NULL);
 			unsigned int time_elpase = (time_now.tv_sec-m_time_ret_ref[phy_axis].tv_sec)*1000000+time_now.tv_usec-m_time_ret_ref[phy_axis].tv_usec;
-			if(time_elpase >= 300000){ //ÑÓÊ±300ms
-				m_n_ret_ref_step[phy_axis] = 2;  //Ìø×ªÏÂÒ»²½
+			if(time_elpase >= 300000){ //ï¿½ï¿½Ê±300ms
+				m_n_ret_ref_step[phy_axis] = 2;  //ï¿½ï¿½×ªï¿½ï¿½Ò»ï¿½ï¿½
 				printf("return ref, goto step 2\n");
 			}
 			}
 			break;
-		case 2:  //»Ø²Î¿¼µãÍê³É
+		case 2:  //ï¿½Ø²Î¿ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 			printf("axis %u return ref over\n", phy_axis);
 			this->SetRetRefFlag(phy_axis, true);
-			this->m_p_pmc_reg->FReg().bits[0].in_ref_point |= (0x01<<phy_axis);   //ÖÃÎ»µ½²Î¿¼µã±êÖ¾
+			this->m_p_pmc_reg->FReg().bits[0].in_ref_point |= (0x01<<phy_axis);   //ï¿½ï¿½Î»ï¿½ï¿½ï¿½Î¿ï¿½ï¿½ï¿½ï¿½Ö¾
 //			printf("return ref over flag : 0x%llx, 0x%hhx, 0x%hhx, 0x%hhx, 0x%hhx, 0x%hhx, 0x%hhx, 0x%hhx, 0x%hhx\n", this->m_p_pmc_reg->FReg().bits[0].in_ref_point,
 //					m_p_pmc_reg->FReg().all[200], m_p_pmc_reg->FReg().all[201], m_p_pmc_reg->FReg().all[202], m_p_pmc_reg->FReg().all[203],
 //					m_p_pmc_reg->FReg().all[204], m_p_pmc_reg->FReg().all[205], m_p_pmc_reg->FReg().all[206], m_p_pmc_reg->FReg().all[207]);
@@ -9372,7 +9367,7 @@ void ChannelEngine::AxisFindRefNoZeroSignal(uint8_t phy_axis){
 
 
 			break;
-		case 20: //Ê§°Ü´¦Àí
+		case 20: //Ê§ï¿½Ü´ï¿½ï¿½ï¿½
 			this->m_n_mask_ret_ref &= ~(0x01<<phy_axis);
 			m_n_ret_ref_step[phy_axis] = 0;
 
@@ -9390,27 +9385,27 @@ void ChannelEngine::AxisFindRefNoZeroSignal(uint8_t phy_axis){
 }
 
 /**
- * @brief Âö³åÊä³öÓÐ»ù×¼Öá»Ø²Î¿¼µã
+ * @brief ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ð»ï¿½×¼ï¿½ï¿½Ø²Î¿ï¿½ï¿½ï¿½
  */
 void ChannelEngine::PulseAxisFindRefWithZeroSignal(uint8_t phy_axis){
 
-	int8_t dir = 0, dir_opt;   //»Ø²Î¿¼µã·½Ïò
-//	uint8_t ret_mode = 0;   //»Ø²Î¿¼µã·½Ê½
+	int8_t dir = 0, dir_opt;   //ï¿½Ø²Î¿ï¿½ï¿½ã·½ï¿½ï¿½
+//	uint8_t ret_mode = 0;   //ï¿½Ø²Î¿ï¿½ï¿½ã·½Ê½
 	uint8_t chn = 0, chn_axis = 0;
-	double dis = 0;      //ÒÆ¶¯¾àÀë
+	double dis = 0;      //ï¿½Æ¶ï¿½ï¿½ï¿½ï¿½ï¿½
 	static double ret_ref_record_pos[kMaxAxisNum];
 
 //	ret_mode = m_p_axis_config[phy_axis].ret_ref_mode;
-	dir = this->m_p_axis_config[phy_axis].ret_ref_dir?DIR_POSITIVE:DIR_NEGATIVE;  // »Ø²Î¿¼µãÕÒ´Ö»ù×¼·½Ïò
-	dir_opt = (m_p_axis_config[phy_axis].ret_ref_change_dir==0)?dir*-1:dir;       //»Ø²Î¿¼µãÕÒ¾«»ù×¼·½Ïò
+	dir = this->m_p_axis_config[phy_axis].ret_ref_dir?DIR_POSITIVE:DIR_NEGATIVE;  // ï¿½Ø²Î¿ï¿½ï¿½ï¿½ï¿½Ò´Ö»ï¿½×¼ï¿½ï¿½ï¿½ï¿½
+	dir_opt = (m_p_axis_config[phy_axis].ret_ref_change_dir==0)?dir*-1:dir;       //ï¿½Ø²Î¿ï¿½ï¿½ï¿½ï¿½Ò¾ï¿½ï¿½ï¿½×¼ï¿½ï¿½ï¿½ï¿½
 
 	switch(this->m_n_ret_ref_step[phy_axis]){
-		case 0://¼ì²éÔ­µãÐÅºÅ
+		case 0://ï¿½ï¿½ï¿½Ô­ï¿½ï¿½ï¿½Åºï¿½
 			printf("return ref step 0, dir = %hhd, dir_opt=%hhd\n", dir, dir_opt);
-			this->SetRetRefFlag(phy_axis, false);   //¸´Î»»Ø²Î¿¼µãÍê³É±êÖ¾
+			this->SetRetRefFlag(phy_axis, false);   //ï¿½ï¿½Î»ï¿½Ø²Î¿ï¿½ï¿½ï¿½ï¿½ï¿½É±ï¿½Ö¾
 			this->m_p_pmc_reg->FReg().bits[0].in_ref_point &= ~(0x01<<phy_axis);
 
-			if(this->CheckAxisRefBaseSignal(phy_axis, dir)){  // ÒÑ¾­´¥·¢´Ö»ù×¼ÐÅºÅ£¬Ö±½Ó¿ª¿ªÊ¼»ØÍË 
+			if(this->CheckAxisRefBaseSignal(phy_axis, dir)){  // ï¿½Ñ¾ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ö»ï¿½×¼ï¿½ÅºÅ£ï¿½Ö±ï¿½Ó¿ï¿½ï¿½ï¿½Ê¼ï¿½ï¿½ï¿½ï¿½ 
 			    double move_length = this->m_p_axis_config[phy_axis].move_pr*1.2;
 				if(move_length>5.0) {
 					move_length = 5.0;
@@ -9429,7 +9424,7 @@ void ChannelEngine::PulseAxisFindRefWithZeroSignal(uint8_t phy_axis){
 			}
 
 			break;
-		case 1:{//µÈ´ý»ØÍËµ½Î»£¬²¢ÔÙ´Î¼ì²éÔ­µãÐÅºÅ
+		case 1:{//ï¿½È´ï¿½ï¿½ï¿½ï¿½Ëµï¿½Î»ï¿½ï¿½ï¿½ï¿½ï¿½Ù´Î¼ï¿½ï¿½Ô­ï¿½ï¿½ï¿½Åºï¿½
 			printf("return ref step 1\n");
 			chn = this->GetAxisChannel(phy_axis, chn_axis);
 			bool flag = CheckAxisRefBaseSignal(phy_axis, dir);
@@ -9441,79 +9436,79 @@ void ChannelEngine::PulseAxisFindRefWithZeroSignal(uint8_t phy_axis){
 						break;
 					}
 					else{
-						m_n_ret_ref_step[phy_axis] = 2;  //Ìø×ªÏÂÒ»²½
+						m_n_ret_ref_step[phy_axis] = 2;  //ï¿½ï¿½×ªï¿½ï¿½Ò»ï¿½ï¿½
 					}
 				}
 					
-			}else if(this->m_p_axis_config[phy_axis].axis_pmc){  //PMCÖáµ½Î»
+			}else if(this->m_p_axis_config[phy_axis].axis_pmc){  //PMCï¿½áµ½Î»
 				if(this->m_n_run_axis_mask == 0 || (this->m_n_runover_axis_mask & (0x01L<<phy_axis))){
 					if(true == flag){
 						m_n_ret_ref_step[phy_axis] = 0;
 						break;
 					}else{
-							m_n_ret_ref_step[phy_axis] = 2;  //Ìø×ªÏÂÒ»²½
+							m_n_ret_ref_step[phy_axis] = 2;  //ï¿½ï¿½×ªï¿½ï¿½Ò»ï¿½ï¿½
 					}
 				}
 			}
 			}
 			break;
-		case 2:  //ÒÔ»Ø²Î¿¼µãËÙ¶ÈÏò»Ø²Î¿¼µã·½ÏòÔË¶¯
+		case 2:  //ï¿½Ô»Ø²Î¿ï¿½ï¿½ï¿½ï¿½Ù¶ï¿½ï¿½ï¿½Ø²Î¿ï¿½ï¿½ã·½ï¿½ï¿½ï¿½Ë¶ï¿½
 	//		printf("return ref step 2\n");
 			this->ManualMove(phy_axis, dir, this->m_p_axis_config[phy_axis].ret_ref_speed, 900.0);
-			m_n_ret_ref_step[phy_axis] = 3;  //Ìø×ªÏÂÒ»²½
+			m_n_ret_ref_step[phy_axis] = 3;  //ï¿½ï¿½×ªï¿½ï¿½Ò»ï¿½ï¿½
 			printf("return ref, goto step 3\n");
 			break;
-		case 3:  //´¥·¢´Ö»ù×¼ÐÅºÅ£¬Í£Ö¹
+		case 3:  //ï¿½ï¿½ï¿½ï¿½ï¿½Ö»ï¿½×¼ï¿½ÅºÅ£ï¿½Í£Ö¹
 	//		printf("return ref step 3\n");
 			if(this->CheckAxisRefBaseSignal(phy_axis, dir)){
 				this->ManualMoveStop(phy_axis);
-				gettimeofday(&this->m_time_ret_ref[phy_axis], NULL);   //¼ÇÂ¼ÆðÊ¼Ê±¼ä
-				m_n_ret_ref_step[phy_axis] = 4;  //Ìø×ªÏÂÒ»²½
+				gettimeofday(&this->m_time_ret_ref[phy_axis], NULL);   //ï¿½ï¿½Â¼ï¿½ï¿½Ê¼Ê±ï¿½ï¿½
+				m_n_ret_ref_step[phy_axis] = 4;  //ï¿½ï¿½×ªï¿½ï¿½Ò»ï¿½ï¿½
 				printf("return ref, goto step 4\n");
 			}
 			else{
 				this->ManualMove(phy_axis, dir, this->m_p_axis_config[phy_axis].ret_ref_speed,3.0);
 			}
 			break;
-		case 4:{//µÈ´ýÍ£Ö¹µ½Î»
+		case 4:{//ï¿½È´ï¿½Í£Ö¹ï¿½ï¿½Î»
 			struct timeval time_now;
 			gettimeofday(&time_now, NULL);
 			unsigned int time_elpase = (time_now.tv_sec-m_time_ret_ref[phy_axis].tv_sec)*1000000+time_now.tv_usec-m_time_ret_ref[phy_axis].tv_usec;
-			if(time_elpase >= 300000){ //ÑÓÊ±300ms
-				m_n_ret_ref_step[phy_axis] = 5;  //Ìø×ªÏÂÒ»²½
+			if(time_elpase >= 300000){ //ï¿½ï¿½Ê±300ms
+				m_n_ret_ref_step[phy_axis] = 5;  //ï¿½ï¿½×ªï¿½ï¿½Ò»ï¿½ï¿½
 				printf("return ref, goto step 5\n");
 			}
 		}
 			break;
-		case 5:  //ÓÐ»ù×¼£¬ µÍËÙ»ØÍËÖÁ´Ö»ù×¼ÐÅºÅÏûÊ§,
+		case 5:  //ï¿½Ð»ï¿½×¼ï¿½ï¿½ ï¿½ï¿½ï¿½Ù»ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ö»ï¿½×¼ï¿½Åºï¿½ï¿½ï¿½Ê§,
 			printf("return ref step 5\n");
-			this->ManualMove(phy_axis, dir_opt, 100, this->m_p_axis_config[phy_axis].move_pr*2); //ÓÐ»ù×¼£¬ µÍËÙ»ØÍËÖÁ´Ö»ù×¼ÐÅºÅÏûÊ§, ËÙ¶È£º100mm/min
-			m_n_ret_ref_step[phy_axis] = 6;  //Ìø×ªÏÂÒ»²½
+			this->ManualMove(phy_axis, dir_opt, 100, this->m_p_axis_config[phy_axis].move_pr*2); //ï¿½Ð»ï¿½×¼ï¿½ï¿½ ï¿½ï¿½ï¿½Ù»ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ö»ï¿½×¼ï¿½Åºï¿½ï¿½ï¿½Ê§, ï¿½Ù¶È£ï¿½100mm/min
+			m_n_ret_ref_step[phy_axis] = 6;  //ï¿½ï¿½×ªï¿½ï¿½Ò»ï¿½ï¿½
 			printf("return ref, goto step 6\n");
 
 			break;
-		case 6:  //ÓÐ»ù×¼£¬µÈ´ý´Ö»ù×¼ÐÅºÅÏûÊ§
+		case 6:  //ï¿½Ð»ï¿½×¼ï¿½ï¿½ï¿½È´ï¿½ï¿½Ö»ï¿½×¼ï¿½Åºï¿½ï¿½ï¿½Ê§
 		//	printf("return ref step 6\n");
 			if(!this->CheckAxisRefBaseSignal(phy_axis, dir)){
 				this->ManualMoveStop(phy_axis);
 
-				gettimeofday(&this->m_time_ret_ref[phy_axis], NULL);   //¼ÇÂ¼ÆðÊ¼Ê±¼ä£¬ÑÓÊ±300ms
+				gettimeofday(&this->m_time_ret_ref[phy_axis], NULL);   //ï¿½ï¿½Â¼ï¿½ï¿½Ê¼Ê±ï¿½ä£¬ï¿½ï¿½Ê±300ms
 
-				m_n_ret_ref_step[phy_axis] = 7;  //Ìø×ªÏÂÒ»²½
+				m_n_ret_ref_step[phy_axis] = 7;  //ï¿½ï¿½×ªï¿½ï¿½Ò»ï¿½ï¿½
 			}
 			break;
-		case 7:{ //µÈ´ýÍ£Ö¹µ½Î»
+		case 7:{ //ï¿½È´ï¿½Í£Ö¹ï¿½ï¿½Î»
 			struct timeval time_now;
 			gettimeofday(&time_now, NULL);
 			unsigned int time_elpase = (time_now.tv_sec-m_time_ret_ref[phy_axis].tv_sec)*1000000+time_now.tv_usec-m_time_ret_ref[phy_axis].tv_usec;
-			if(time_elpase >= 200000){ //ÑÓÊ±500ms
-//				m_n_get_cur_encoder_count = 0;  //¸´Î»»ñÈ¡µ±Ç°±àÂëÆ÷´ÎÊý
-				m_n_ret_ref_step[phy_axis] = 8;  //Ìø×ªÏÂÒ»²½
+			if(time_elpase >= 200000){ //ï¿½ï¿½Ê±500ms
+//				m_n_get_cur_encoder_count = 0;  //ï¿½ï¿½Î»ï¿½ï¿½È¡ï¿½ï¿½Ç°ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+				m_n_ret_ref_step[phy_axis] = 8;  //ï¿½ï¿½×ªï¿½ï¿½Ò»ï¿½ï¿½
 				printf("return ref, goto step 8\n");
 			}
 		}
 			break;
-		case 8:{ //  ·¢ËÍ¿ªÊ¼²¶»ñ¾«»ù×¼ÐÅºÅµÄÃüÁî
+		case 8:{ //  ï¿½ï¿½ï¿½Í¿ï¿½Ê¼ï¿½ï¿½ï¿½ñ¾«»ï¿½×¼ï¿½ÅºÅµï¿½ï¿½ï¿½ï¿½ï¿½
 			printf("return ref step 8: send cmd to mi, set ref point\n");
 
 			MiCmdFrame cmd;
@@ -9522,13 +9517,13 @@ void ChannelEngine::PulseAxisFindRefWithZeroSignal(uint8_t phy_axis){
 			cmd.data.cmd = CMD_MI_ACTIVE_Z_CAPT;
 			this->m_p_mi_comm->WriteCmd(cmd);			
 			
-			m_n_ret_ref_step[phy_axis] = 9;  //Ìø×ªÏÂÒ»²½
+			m_n_ret_ref_step[phy_axis] = 9;  //ï¿½ï¿½×ªï¿½ï¿½Ò»ï¿½ï¿½
 			printf("return ref, goto step 9\n");
 
 		}
 			break;
 			
-		case 9:{ //  »ºÂýÒÆ¶¯£¬²¢¼ì²â¾«»ù×¼
+		case 9:{ //  ï¿½ï¿½ï¿½ï¿½ï¿½Æ¶ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½â¾«ï¿½ï¿½×¼
 			printf("return ref step 9: move to index pos\n");
 
 			double move_length = this->m_p_axis_config[phy_axis].move_pr*1.2;
@@ -9536,7 +9531,7 @@ void ChannelEngine::PulseAxisFindRefWithZeroSignal(uint8_t phy_axis){
 			this->ManualMove(phy_axis, dir_opt,
 						this->m_p_axis_config[phy_axis].ret_ref_speed, move_length);
 			
-			m_n_ret_ref_step[phy_axis] = 10;  //Ìø×ªÏÂÒ»²½
+			m_n_ret_ref_step[phy_axis] = 10;  //ï¿½ï¿½×ªï¿½ï¿½Ò»ï¿½ï¿½
 			printf("return ref, goto step 10\n");
 
 		}
@@ -9545,7 +9540,7 @@ void ChannelEngine::PulseAxisFindRefWithZeroSignal(uint8_t phy_axis){
 		case 10:{
 			printf("return ref step 1\n");
 			chn = this->GetAxisChannel(phy_axis, chn_axis);
-			bool flag = CheckAxisRefBaseSignal(phy_axis, dir);  // ²éÑ¯ÊÇ·ñÒÑ¾­²¶»ñµ½¾«»ù×¼    ?????????????????????????
+			bool flag = CheckAxisRefBaseSignal(phy_axis, dir);  // ï¿½ï¿½Ñ¯ï¿½Ç·ï¿½ï¿½Ñ¾ï¿½ï¿½ï¿½ï¿½ñµ½¾ï¿½ï¿½ï¿½×¼    ?????????????????????????
 			
 			if(chn != CHANNEL_ENGINE_INDEX){
 				if(fabs(this->GetPhyAxisMachPosFeedback(phy_axis) - ret_ref_record_pos[phy_axis]) <= 0.010){
@@ -9560,7 +9555,7 @@ void ChannelEngine::PulseAxisFindRefWithZeroSignal(uint8_t phy_axis){
                     m_n_ret_ref_step[phy_axis] = 11;
 				}
 					
-			}else if(this->m_p_axis_config[phy_axis].axis_pmc){  //PMCÖáµ½Î»
+			}else if(this->m_p_axis_config[phy_axis].axis_pmc){  //PMCï¿½áµ½Î»
 				if(this->m_n_run_axis_mask == 0 || (this->m_n_runover_axis_mask & (0x01L<<phy_axis))){
 					if(false == flag){
 						m_n_ret_ref_step[phy_axis] = 20;
@@ -9568,7 +9563,7 @@ void ChannelEngine::PulseAxisFindRefWithZeroSignal(uint8_t phy_axis){
 					}else{
 						this->ManualMoveStop(phy_axis);
 						gettimeofday(&this->m_time_ret_ref[phy_axis], NULL);
-						m_n_ret_ref_step[phy_axis] = 11;  //Ìø×ªÏÂÒ»²½
+						m_n_ret_ref_step[phy_axis] = 11;  //ï¿½ï¿½×ªï¿½ï¿½Ò»ï¿½ï¿½
 					}
 				}
 			}
@@ -9576,25 +9571,25 @@ void ChannelEngine::PulseAxisFindRefWithZeroSignal(uint8_t phy_axis){
 			break;
 
 			
-		case 11: { //µÈ´ýÉèÖÃ²Î¿¼µãÍê³É£¬ÔÚMiÖ¸ÁîÏìÓ¦´¦Àíº¯ÊýÖÐ´¦Àí
+		case 11: { //ï¿½È´ï¿½ï¿½ï¿½ï¿½Ã²Î¿ï¿½ï¿½ï¿½ï¿½ï¿½É£ï¿½ï¿½ï¿½MiÖ¸ï¿½ï¿½ï¿½ï¿½Ó¦ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ð´ï¿½ï¿½ï¿½
 			struct timeval time_now;
 			gettimeofday(&time_now, NULL);
 			unsigned int time_elpase = (time_now.tv_sec-m_time_ret_ref[phy_axis].tv_sec)*1000000+time_now.tv_usec-m_time_ret_ref[phy_axis].tv_usec;
-			if(time_elpase >= 200000){ //ÑÓÊ±200ms			    
-				m_n_ret_ref_step[phy_axis] = 12;  //Ìø×ªÏÂÒ»²½
+			if(time_elpase >= 200000){ //ï¿½ï¿½Ê±200ms			    
+				m_n_ret_ref_step[phy_axis] = 12;  //ï¿½ï¿½×ªï¿½ï¿½Ò»ï¿½ï¿½
 				printf("return ref, goto step 12\n");
 			}
 			}
 			break;
 
-		case 12:       // ÉèÖÃ»ù×¼
+		case 12:       // ï¿½ï¿½ï¿½Ã»ï¿½×¼
 			MiCmdFrame cmd;
 			memset(&cmd, 0x00, sizeof(cmd));
 			cmd.data.axis_index = phy_axis+1;
 			cmd.data.cmd = CMD_MI_SET_REF;
 			this->m_p_mi_comm->WriteCmd(cmd);
 			gettimeofday(&this->m_time_ret_ref[phy_axis], NULL);
-			m_n_ret_ref_step[phy_axis] = 13;  //Ìø×ªÏÂÒ»²½
+			m_n_ret_ref_step[phy_axis] = 13;  //ï¿½ï¿½×ªï¿½ï¿½Ò»ï¿½ï¿½
 		    
 			break;
 			
@@ -9602,38 +9597,38 @@ void ChannelEngine::PulseAxisFindRefWithZeroSignal(uint8_t phy_axis){
 			struct timeval time_now;
 			gettimeofday(&time_now, NULL);
 			unsigned int time_elpase = (time_now.tv_sec-m_time_ret_ref[phy_axis].tv_sec)*1000000+time_now.tv_usec-m_time_ret_ref[phy_axis].tv_usec;
-			if(time_elpase >= 100000){ //ÑÓÊ±100ms			    
-				m_n_ret_ref_step[phy_axis] = 14;  //Ìø×ªÏÂÒ»²½
+			if(time_elpase >= 100000){ //ï¿½ï¿½Ê±100ms			    
+				m_n_ret_ref_step[phy_axis] = 14;  //ï¿½ï¿½×ªï¿½ï¿½Ò»ï¿½ï¿½
 				printf("return ref, goto step 14\n");
 			}
 			}
 			
 			break;			
-		case 14: //µÈ´ýÉèÖÃÍê³É£¬ÒÆ¶¯µ½Öá²Î¿¼µã1
+		case 14: //ï¿½È´ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½É£ï¿½ï¿½Æ¶ï¿½ï¿½ï¿½ï¿½ï¿½Î¿ï¿½ï¿½ï¿½1
 #ifdef USES_RET_REF_TO_MACH_ZERO
-			dis = 0;   //»úÐµÁã
+			dis = 0;   //ï¿½ï¿½Ðµï¿½ï¿½
 #else
-			dis = this->m_p_axis_config[phy_axis].axis_home_pos[0];   // Ô­µã×ø±ê
+			dis = this->m_p_axis_config[phy_axis].axis_home_pos[0];   // Ô­ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 #endif
 			this->ManualMove(phy_axis, dis, m_p_axis_config[phy_axis].ret_ref_speed, 0);
-			m_n_ret_ref_step[phy_axis] = 15;  //Ìø×ªÏÂÒ»²½
+			m_n_ret_ref_step[phy_axis] = 15;  //ï¿½ï¿½×ªï¿½ï¿½Ò»ï¿½ï¿½
 			printf("return ref, goto step 15\n");
 			break;
 			
-		case 15:  //µÈ´ýÖáÒÆ¶¯µ½Î»,Íê³É£¡
+		case 15:  //ï¿½È´ï¿½ï¿½ï¿½ï¿½Æ¶ï¿½ï¿½ï¿½Î»,ï¿½ï¿½É£ï¿½
 #ifdef USES_RET_REF_TO_MACH_ZERO
 			dis = 0;
 #else
 			dis = m_p_axis_config[phy_axis].axis_home_pos[0];
 #endif
-			if(fabs(this->GetPhyAxisMachPosFeedback(phy_axis)- dis) <= 0.010){  //µ½Î»
-				m_n_ret_ref_step[phy_axis] = 16;  //Ìø×ªÏÂÒ»²½
+			if(fabs(this->GetPhyAxisMachPosFeedback(phy_axis)- dis) <= 0.010){  //ï¿½ï¿½Î»
+				m_n_ret_ref_step[phy_axis] = 16;  //ï¿½ï¿½×ªï¿½ï¿½Ò»ï¿½ï¿½
 			}
 			break;
-		case 16:  //»Ø²Î¿¼µãÍê³É
+		case 16:  //ï¿½Ø²Î¿ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 			printf("axis %u return ref over\n", phy_axis);
 			this->SetRetRefFlag(phy_axis, true);
-			this->m_p_pmc_reg->FReg().bits[0].in_ref_point |= (0x01<<phy_axis);   //ÖÃÎ»µ½²Î¿¼µã±êÖ¾
+			this->m_p_pmc_reg->FReg().bits[0].in_ref_point |= (0x01<<phy_axis);   //ï¿½ï¿½Î»ï¿½ï¿½ï¿½Î¿ï¿½ï¿½ï¿½ï¿½Ö¾
 //			printf("return ref over flag : 0x%llx, 0x%hhx, 0x%hhx, 0x%hhx, 0x%hhx, 0x%hhx, 0x%hhx, 0x%hhx, 0x%hhx\n", this->m_p_pmc_reg->FReg().bits[0].in_ref_point,
 //					m_p_pmc_reg->FReg().all[200], m_p_pmc_reg->FReg().all[201], m_p_pmc_reg->FReg().all[202], m_p_pmc_reg->FReg().all[203],
 //					m_p_pmc_reg->FReg().all[204], m_p_pmc_reg->FReg().all[205], m_p_pmc_reg->FReg().all[206], m_p_pmc_reg->FReg().all[207]);
@@ -9641,7 +9636,7 @@ void ChannelEngine::PulseAxisFindRefWithZeroSignal(uint8_t phy_axis){
 			m_n_ret_ref_step[phy_axis] = 0;
 			break;
 			
-		case 20: //Ê§°Ü´¦Àí
+		case 20: //Ê§ï¿½Ü´ï¿½ï¿½ï¿½
 			this->m_n_mask_ret_ref &= ~(0x01<<phy_axis);
 			m_n_ret_ref_step[phy_axis] = 0;
 
@@ -9660,24 +9655,24 @@ void ChannelEngine::PulseAxisFindRefWithZeroSignal(uint8_t phy_axis){
 
 
 /**
- * @brief Âö³åÊä³öÎÞ»ù×¼Öá»Ø²Î¿¼µã
+ * @brief ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Þ»ï¿½×¼ï¿½ï¿½Ø²Î¿ï¿½ï¿½ï¿½
  */
 void ChannelEngine::PulseAxisFindRefNoZeroSignal(uint8_t phy_axis){
 
-	int8_t dir = 0, dir_opt;   //»Ø²Î¿¼µã·½Ïò
-//	uint8_t ret_mode = 0;   //»Ø²Î¿¼µã·½Ê½
+	int8_t dir = 0, dir_opt;   //ï¿½Ø²Î¿ï¿½ï¿½ã·½ï¿½ï¿½
+//	uint8_t ret_mode = 0;   //ï¿½Ø²Î¿ï¿½ï¿½ã·½Ê½
 	uint8_t chn = 0, chn_axis = 0;
-	double dis = 0;      //ÒÆ¶¯¾àÀë
+	double dis = 0;      //ï¿½Æ¶ï¿½ï¿½ï¿½ï¿½ï¿½
 	static double ret_ref_record_pos[kMaxAxisNum];
 
 //	ret_mode = m_p_axis_config[phy_axis].ret_ref_mode;
-	dir = this->m_p_axis_config[phy_axis].ret_ref_dir?DIR_POSITIVE:DIR_NEGATIVE;  // »Ø²Î¿¼µãÕÒ´Ö»ù×¼·½Ïò
-	dir_opt = (m_p_axis_config[phy_axis].ret_ref_change_dir==0)?dir*-1:dir;       //»Ø²Î¿¼µãÕÒ¾«»ù×¼·½Ïò
+	dir = this->m_p_axis_config[phy_axis].ret_ref_dir?DIR_POSITIVE:DIR_NEGATIVE;  // ï¿½Ø²Î¿ï¿½ï¿½ï¿½ï¿½Ò´Ö»ï¿½×¼ï¿½ï¿½ï¿½ï¿½
+	dir_opt = (m_p_axis_config[phy_axis].ret_ref_change_dir==0)?dir*-1:dir;       //ï¿½Ø²Î¿ï¿½ï¿½ï¿½ï¿½Ò¾ï¿½ï¿½ï¿½×¼ï¿½ï¿½ï¿½ï¿½
 
 	switch(this->m_n_ret_ref_step[phy_axis]){
-		case 0: {//Ïò¾«»ù×¼¿ªÊ¼ÒÆ¶¯
+		case 0: {//ï¿½ò¾«»ï¿½×¼ï¿½ï¿½Ê¼ï¿½Æ¶ï¿½
 			printf("return ref step 0, dir = %hhd, dir_opt=%hhd\n", dir, dir_opt);
-			this->SetRetRefFlag(phy_axis, false);   //¸´Î»»Ø²Î¿¼µãÍê³É±êÖ¾
+			this->SetRetRefFlag(phy_axis, false);   //ï¿½ï¿½Î»ï¿½Ø²Î¿ï¿½ï¿½ï¿½ï¿½ï¿½É±ï¿½Ö¾
 			this->m_p_pmc_reg->FReg().bits[0].in_ref_point &= ~(0x01<<phy_axis);
 
 			double move_length = this->m_p_axis_config[phy_axis].move_pr*1.2;
@@ -9688,7 +9683,7 @@ void ChannelEngine::PulseAxisFindRefNoZeroSignal(uint8_t phy_axis){
 			m_n_ret_ref_step[phy_axis] = 2;
 			}
 			break;
-		case 2:{ //  ·¢ËÍ¿ªÊ¼²¶»ñ¾«»ù×¼ÐÅºÅµÄÃüÁî
+		case 2:{ //  ï¿½ï¿½ï¿½Í¿ï¿½Ê¼ï¿½ï¿½ï¿½ñ¾«»ï¿½×¼ï¿½ÅºÅµï¿½ï¿½ï¿½ï¿½ï¿½
 			printf("return ref step 2: send cmd to mi, set ref point\n");
 
 			MiCmdFrame cmd;
@@ -9697,15 +9692,15 @@ void ChannelEngine::PulseAxisFindRefNoZeroSignal(uint8_t phy_axis){
 			cmd.data.cmd = CMD_MI_ACTIVE_Z_CAPT;
 			this->m_p_mi_comm->WriteCmd(cmd);
 			
-			gettimeofday(&this->m_time_ret_ref[phy_axis], NULL);   //¼ÇÂ¼ÆðÊ¼Ê±¼ä£¬ÑÓÊ±300ms
+			gettimeofday(&this->m_time_ret_ref[phy_axis], NULL);   //ï¿½ï¿½Â¼ï¿½ï¿½Ê¼Ê±ï¿½ä£¬ï¿½ï¿½Ê±300ms
 			
-			m_n_ret_ref_step[phy_axis] = 3;  //Ìø×ªÏÂÒ»²½
+			m_n_ret_ref_step[phy_axis] = 3;  //ï¿½ï¿½×ªï¿½ï¿½Ò»ï¿½ï¿½
 			printf("return ref, goto step 3\n");
 
 		}
 			break;
 			
-		case 3:{ //  »ºÂýÒÆ¶¯£¬²¢¼ì²â¾«»ù×¼
+		case 3:{ //  ï¿½ï¿½ï¿½ï¿½ï¿½Æ¶ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½â¾«ï¿½ï¿½×¼
 			printf("return ref step 3: move to index pos\n");
 
 			double move_length = this->m_p_axis_config[phy_axis].move_pr*1.2;
@@ -9713,7 +9708,7 @@ void ChannelEngine::PulseAxisFindRefNoZeroSignal(uint8_t phy_axis){
 			this->ManualMove(phy_axis, dir_opt,
 						this->m_p_axis_config[phy_axis].ret_ref_speed, move_length);						
 			
-			m_n_ret_ref_step[phy_axis] = 4;  //Ìø×ªÏÂÒ»²½
+			m_n_ret_ref_step[phy_axis] = 4;  //ï¿½ï¿½×ªï¿½ï¿½Ò»ï¿½ï¿½
 			printf("return ref, goto step 4\n");
 
 		}
@@ -9722,7 +9717,7 @@ void ChannelEngine::PulseAxisFindRefNoZeroSignal(uint8_t phy_axis){
 		case 4:{
 			printf("return ref step 4\n");
 			chn = this->GetAxisChannel(phy_axis, chn_axis);
-			bool flag = CheckAxisRefBaseSignal(phy_axis, dir);  // ²éÑ¯ÊÇ·ñÒÑ¾­²¶»ñµ½¾«»ù×¼    ?????????????????????????
+			bool flag = CheckAxisRefBaseSignal(phy_axis, dir);  // ï¿½ï¿½Ñ¯ï¿½Ç·ï¿½ï¿½Ñ¾ï¿½ï¿½ï¿½ï¿½ñµ½¾ï¿½ï¿½ï¿½×¼    ?????????????????????????
 			
 			if(chn != CHANNEL_ENGINE_INDEX){
 				if(fabs(this->GetPhyAxisMachPosFeedback(phy_axis) - ret_ref_record_pos[phy_axis]) <= 0.010){
@@ -9737,7 +9732,7 @@ void ChannelEngine::PulseAxisFindRefNoZeroSignal(uint8_t phy_axis){
                     m_n_ret_ref_step[phy_axis] = 5;
 				}
 					
-			}else if(this->m_p_axis_config[phy_axis].axis_pmc){  //PMCÖáµ½Î»
+			}else if(this->m_p_axis_config[phy_axis].axis_pmc){  //PMCï¿½áµ½Î»
 				if(this->m_n_run_axis_mask == 0 || (this->m_n_runover_axis_mask & (0x01L<<phy_axis))){
 					if(false == flag){
 						m_n_ret_ref_step[phy_axis] = 20;
@@ -9745,7 +9740,7 @@ void ChannelEngine::PulseAxisFindRefNoZeroSignal(uint8_t phy_axis){
 					}else{
 				            this->ManualMoveStop(phy_axis);
 							gettimeofday(&this->m_time_ret_ref[phy_axis], NULL);
-							m_n_ret_ref_step[phy_axis] = 5;  //Ìø×ªÏÂÒ»²½
+							m_n_ret_ref_step[phy_axis] = 5;  //ï¿½ï¿½×ªï¿½ï¿½Ò»ï¿½ï¿½
 					}
 				}
 			}
@@ -9753,25 +9748,25 @@ void ChannelEngine::PulseAxisFindRefNoZeroSignal(uint8_t phy_axis){
 			break;
 
 			
-		case 5: { //µÈ´ýÉèÖÃ²Î¿¼µãÍê³É£¬ÔÚMiÖ¸ÁîÏìÓ¦´¦Àíº¯ÊýÖÐ´¦Àí
+		case 5: { //ï¿½È´ï¿½ï¿½ï¿½ï¿½Ã²Î¿ï¿½ï¿½ï¿½ï¿½ï¿½É£ï¿½ï¿½ï¿½MiÖ¸ï¿½ï¿½ï¿½ï¿½Ó¦ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ð´ï¿½ï¿½ï¿½
 			struct timeval time_now;
 			gettimeofday(&time_now, NULL);
 			unsigned int time_elpase = (time_now.tv_sec-m_time_ret_ref[phy_axis].tv_sec)*1000000+time_now.tv_usec-m_time_ret_ref[phy_axis].tv_usec;
-			if(time_elpase >= 200000){ //ÑÓÊ±200ms			    
-				m_n_ret_ref_step[phy_axis] = 6;  //Ìø×ªÏÂÒ»²½
+			if(time_elpase >= 200000){ //ï¿½ï¿½Ê±200ms			    
+				m_n_ret_ref_step[phy_axis] = 6;  //ï¿½ï¿½×ªï¿½ï¿½Ò»ï¿½ï¿½
 				printf("return ref, goto step 6\n");
 			}
 			}
 			break;
 
-		case 6:       // ÉèÖÃ»ù×¼
+		case 6:       // ï¿½ï¿½ï¿½Ã»ï¿½×¼
 			MiCmdFrame cmd;
 			memset(&cmd, 0x00, sizeof(cmd));
 			cmd.data.axis_index = phy_axis+1;
 			cmd.data.cmd = CMD_MI_SET_REF;
 			this->m_p_mi_comm->WriteCmd(cmd);
 			gettimeofday(&this->m_time_ret_ref[phy_axis], NULL);
-			m_n_ret_ref_step[phy_axis] = 7;  //Ìø×ªÏÂÒ»²½
+			m_n_ret_ref_step[phy_axis] = 7;  //ï¿½ï¿½×ªï¿½ï¿½Ò»ï¿½ï¿½
 		    
 			break;
 			
@@ -9779,38 +9774,38 @@ void ChannelEngine::PulseAxisFindRefNoZeroSignal(uint8_t phy_axis){
 			struct timeval time_now;
 			gettimeofday(&time_now, NULL);
 			unsigned int time_elpase = (time_now.tv_sec-m_time_ret_ref[phy_axis].tv_sec)*1000000+time_now.tv_usec-m_time_ret_ref[phy_axis].tv_usec;
-			if(time_elpase >= 100000){ //ÑÓÊ±100ms			    
-				m_n_ret_ref_step[phy_axis] = 8;  //Ìø×ªÏÂÒ»²½
+			if(time_elpase >= 100000){ //ï¿½ï¿½Ê±100ms			    
+				m_n_ret_ref_step[phy_axis] = 8;  //ï¿½ï¿½×ªï¿½ï¿½Ò»ï¿½ï¿½
 				printf("return ref, goto step 8\n");
 			}
 			}			
 			break;		
 			
-		case 8: //µÈ´ýÉèÖÃÍê³É£¬ÒÆ¶¯µ½Öá²Î¿¼µã1
+		case 8: //ï¿½È´ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½É£ï¿½ï¿½Æ¶ï¿½ï¿½ï¿½ï¿½ï¿½Î¿ï¿½ï¿½ï¿½1
 #ifdef USES_RET_REF_TO_MACH_ZERO
-			dis = 0;    //»úÐµÁã
+			dis = 0;    //ï¿½ï¿½Ðµï¿½ï¿½
 #else
-			dis = this->m_p_axis_config[phy_axis].axis_home_pos[0];   // Ô­µã×ø±ê
+			dis = this->m_p_axis_config[phy_axis].axis_home_pos[0];   // Ô­ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 #endif
 			this->ManualMove(phy_axis, dis, m_p_axis_config[phy_axis].ret_ref_speed, 0);
-			m_n_ret_ref_step[phy_axis] = 9;  //Ìø×ªÏÂÒ»²½
+			m_n_ret_ref_step[phy_axis] = 9;  //ï¿½ï¿½×ªï¿½ï¿½Ò»ï¿½ï¿½
 			printf("return ref, goto step 9\n");
 			break;
 			
-		case 9:  //µÈ´ýÖáÒÆ¶¯µ½Î»,Íê³É£¡
+		case 9:  //ï¿½È´ï¿½ï¿½ï¿½ï¿½Æ¶ï¿½ï¿½ï¿½Î»,ï¿½ï¿½É£ï¿½
 #ifdef USES_RET_REF_TO_MACH_ZERO
-			dis = 0;    //»úÐµÁã
+			dis = 0;    //ï¿½ï¿½Ðµï¿½ï¿½
 #else
-			dis = this->m_p_axis_config[phy_axis].axis_home_pos[0];   // Ô­µã×ø±ê
+			dis = this->m_p_axis_config[phy_axis].axis_home_pos[0];   // Ô­ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 #endif
-			if(fabs(this->GetPhyAxisMachPosFeedback(phy_axis)- dis) <= 0.010){  //µ½Î»
-				m_n_ret_ref_step[phy_axis] = 10;  //Ìø×ªÏÂÒ»²½
+			if(fabs(this->GetPhyAxisMachPosFeedback(phy_axis)- dis) <= 0.010){  //ï¿½ï¿½Î»
+				m_n_ret_ref_step[phy_axis] = 10;  //ï¿½ï¿½×ªï¿½ï¿½Ò»ï¿½ï¿½
 			}
 			break;
-		case 11:  //»Ø²Î¿¼µãÍê³É
+		case 11:  //ï¿½Ø²Î¿ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 			printf("axis %u return ref over\n", phy_axis);
 			this->SetRetRefFlag(phy_axis, true);
-			this->m_p_pmc_reg->FReg().bits[0].in_ref_point |= (0x01<<phy_axis);   //ÖÃÎ»µ½²Î¿¼µã±êÖ¾
+			this->m_p_pmc_reg->FReg().bits[0].in_ref_point |= (0x01<<phy_axis);   //ï¿½ï¿½Î»ï¿½ï¿½ï¿½Î¿ï¿½ï¿½ï¿½ï¿½Ö¾
 //			printf("return ref over flag : 0x%llx, 0x%hhx, 0x%hhx, 0x%hhx, 0x%hhx, 0x%hhx, 0x%hhx, 0x%hhx, 0x%hhx\n", this->m_p_pmc_reg->FReg().bits[0].in_ref_point,
 //					m_p_pmc_reg->FReg().all[200], m_p_pmc_reg->FReg().all[201], m_p_pmc_reg->FReg().all[202], m_p_pmc_reg->FReg().all[203],
 //					m_p_pmc_reg->FReg().all[204], m_p_pmc_reg->FReg().all[205], m_p_pmc_reg->FReg().all[206], m_p_pmc_reg->FReg().all[207]);
@@ -9818,7 +9813,7 @@ void ChannelEngine::PulseAxisFindRefNoZeroSignal(uint8_t phy_axis){
 			m_n_ret_ref_step[phy_axis] = 0;
 			break;
 			
-		case 20: //Ê§°Ü´¦Àí
+		case 20: //Ê§ï¿½Ü´ï¿½ï¿½ï¿½
 			this->m_n_mask_ret_ref &= ~(0x01<<phy_axis);
 			m_n_ret_ref_step[phy_axis] = 0;
 
@@ -9837,27 +9832,27 @@ void ChannelEngine::PulseAxisFindRefNoZeroSignal(uint8_t phy_axis){
 
 
 /**
- * @brief  ethcatÖáÓÐ»ù×¼Öá»Ø²Î¿¼µã
+ * @brief  ethcatï¿½ï¿½ï¿½Ð»ï¿½×¼ï¿½ï¿½Ø²Î¿ï¿½ï¿½ï¿½
  */
 void ChannelEngine::EcatAxisFindRefWithZeroSignal(uint8_t phy_axis){
 
-	int8_t dir = 0, dir_opt;   //»Ø²Î¿¼µã·½Ïò
-//	uint8_t ret_mode = 0;   //»Ø²Î¿¼µã·½Ê½
+	int8_t dir = 0, dir_opt;   //ï¿½Ø²Î¿ï¿½ï¿½ã·½ï¿½ï¿½
+//	uint8_t ret_mode = 0;   //ï¿½Ø²Î¿ï¿½ï¿½ã·½Ê½
 	uint8_t chn = 0, chn_axis = 0;
-	double dis = 0;      //ÒÆ¶¯¾àÀë
+	double dis = 0;      //ï¿½Æ¶ï¿½ï¿½ï¿½ï¿½ï¿½
 //	static double ret_ref_start_pos[kMaxAxisNum];
 
 //	ret_mode = m_p_axis_config[phy_axis].ret_ref_mode;
-	dir = this->m_p_axis_config[phy_axis].ret_ref_dir?DIR_POSITIVE:DIR_NEGATIVE;  // »Ø²Î¿¼µãÕÒ´Ö»ù×¼·½Ïò
-	dir_opt = (m_p_axis_config[phy_axis].ret_ref_change_dir==0)?dir*-1:dir;       //»Ø²Î¿¼µãÕÒ¾«»ù×¼·½Ïò
+	dir = this->m_p_axis_config[phy_axis].ret_ref_dir?DIR_POSITIVE:DIR_NEGATIVE;  // ï¿½Ø²Î¿ï¿½ï¿½ï¿½ï¿½Ò´Ö»ï¿½×¼ï¿½ï¿½ï¿½ï¿½
+	dir_opt = (m_p_axis_config[phy_axis].ret_ref_change_dir==0)?dir*-1:dir;       //ï¿½Ø²Î¿ï¿½ï¿½ï¿½ï¿½Ò¾ï¿½ï¿½ï¿½×¼ï¿½ï¿½ï¿½ï¿½
 
 	switch(this->m_n_ret_ref_step[phy_axis]){
-		case 0://¼ì²éÔ­µãÐÅºÅ
+		case 0://ï¿½ï¿½ï¿½Ô­ï¿½ï¿½ï¿½Åºï¿½
 			printf("return ref step 0, dir = %hhd, dir_opt=%hhd\n", dir, dir_opt);
-			this->SetRetRefFlag(phy_axis, false);   //¸´Î»»Ø²Î¿¼µãÍê³É±êÖ¾
+			this->SetRetRefFlag(phy_axis, false);   //ï¿½ï¿½Î»ï¿½Ø²Î¿ï¿½ï¿½ï¿½ï¿½ï¿½É±ï¿½Ö¾
 			this->m_p_pmc_reg->FReg().bits[0].in_ref_point &= ~(0x01<<phy_axis);
 
-			if(this->CheckAxisRefBaseSignal(phy_axis, dir)){  // ÒÑ¾­´¥·¢´Ö»ù×¼ÐÅºÅ£¬Ö±½Ó¿ª¿ªÊ¼»ØÍË 
+			if(this->CheckAxisRefBaseSignal(phy_axis, dir)){  // ï¿½Ñ¾ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ö»ï¿½×¼ï¿½ÅºÅ£ï¿½Ö±ï¿½Ó¿ï¿½ï¿½ï¿½Ê¼ï¿½ï¿½ï¿½ï¿½ 
 			    double move_length = this->m_p_axis_config[phy_axis].move_pr*1.2;
 				if(move_length>10.0) {
 					move_length = 10.0;
@@ -9876,46 +9871,46 @@ void ChannelEngine::EcatAxisFindRefWithZeroSignal(uint8_t phy_axis){
 			}
 
 			break;
-		case 1:{//µÈ´ý»ØÍËµ½Î»£¬²¢ÔÙ´Î¼ì²éÔ­µãÐÅºÅ
+		case 1:{//ï¿½È´ï¿½ï¿½ï¿½ï¿½Ëµï¿½Î»ï¿½ï¿½ï¿½ï¿½ï¿½Ù´Î¼ï¿½ï¿½Ô­ï¿½ï¿½ï¿½Åºï¿½
 		//	printf("return ref step 1\n");
 			chn = this->GetAxisChannel(phy_axis, chn_axis);
 			bool flag = CheckAxisRefBaseSignal(phy_axis, dir);
 			
 			if(chn != CHANNEL_ENGINE_INDEX){
 				if(fabs(this->GetPhyAxisMachPosFeedback(phy_axis) - m_df_ret_ref_tar_pos[phy_axis]) <= 0.010){
-					if(true == flag){   //»Øµ½step0£¬¼ÌÐø»ØÍË
+					if(true == flag){   //ï¿½Øµï¿½step0ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 						m_n_ret_ref_step[phy_axis] = 0;
 						break;
 					}
 				}
 				if(flag == false){
-						m_n_ret_ref_step[phy_axis] = 2;  //Ìø×ªÏÂÒ»²½
+						m_n_ret_ref_step[phy_axis] = 2;  //ï¿½ï¿½×ªï¿½ï¿½Ò»ï¿½ï¿½
 				}
 					
-			}else if(this->m_p_axis_config[phy_axis].axis_pmc){  //PMCÖáµ½Î»
+			}else if(this->m_p_axis_config[phy_axis].axis_pmc){  //PMCï¿½áµ½Î»
 				if(this->m_n_run_axis_mask == 0 || (this->m_n_runover_axis_mask & (0x01L<<phy_axis))){
 					if(true == flag){
 						m_n_ret_ref_step[phy_axis] = 0;
 						break;
 					}else{
-							m_n_ret_ref_step[phy_axis] = 2;  //Ìø×ªÏÂÒ»²½
+							m_n_ret_ref_step[phy_axis] = 2;  //ï¿½ï¿½×ªï¿½ï¿½Ò»ï¿½ï¿½
 					}
 				}
 			}
 			}
 			break;
-		case 2:  //ÒÔ»Ø²Î¿¼µãËÙ¶ÈÏò»Ø²Î¿¼µã·½ÏòÔË¶¯
+		case 2:  //ï¿½Ô»Ø²Î¿ï¿½ï¿½ï¿½ï¿½Ù¶ï¿½ï¿½ï¿½Ø²Î¿ï¿½ï¿½ã·½ï¿½ï¿½ï¿½Ë¶ï¿½
 	//		printf("return ref step 2\n");
 			this->ManualMove(phy_axis, dir, this->m_p_axis_config[phy_axis].ret_ref_speed, 90000.0);
-			m_n_ret_ref_step[phy_axis] = 3;  //Ìø×ªÏÂÒ»²½
+			m_n_ret_ref_step[phy_axis] = 3;  //ï¿½ï¿½×ªï¿½ï¿½Ò»ï¿½ï¿½
 			printf("return ref, goto step 3\n");
 			break;
-		case 3:  //´¥·¢´Ö»ù×¼ÐÅºÅ£¬Í£Ö¹
+		case 3:  //ï¿½ï¿½ï¿½ï¿½ï¿½Ö»ï¿½×¼ï¿½ÅºÅ£ï¿½Í£Ö¹
 	//		printf("return ref step 3\n");
 			if(this->CheckAxisRefBaseSignal(phy_axis, dir)){
 				this->ManualMoveStop(phy_axis);
-				gettimeofday(&this->m_time_ret_ref[phy_axis], NULL);   //¼ÇÂ¼ÆðÊ¼Ê±¼ä
-				m_n_ret_ref_step[phy_axis] = 4;  //Ìø×ªÏÂÒ»²½
+				gettimeofday(&this->m_time_ret_ref[phy_axis], NULL);   //ï¿½ï¿½Â¼ï¿½ï¿½Ê¼Ê±ï¿½ï¿½
+				m_n_ret_ref_step[phy_axis] = 4;  //ï¿½ï¿½×ªï¿½ï¿½Ò»ï¿½ï¿½
 				this->SendMonitorData(false, false);
 				printf("return ref, goto step 4, curpos=%lf\n", this->GetPhyAxisMachPosIntp(phy_axis));
 			}
@@ -9923,18 +9918,18 @@ void ChannelEngine::EcatAxisFindRefWithZeroSignal(uint8_t phy_axis){
 			//	this->ManualMove(phy_axis, dir, this->m_p_axis_config[phy_axis].ret_ref_speed,1.0);
 			}
 			break;
-		case 4:{//µÈ´ýÍ£Ö¹µ½Î»
+		case 4:{//ï¿½È´ï¿½Í£Ö¹ï¿½ï¿½Î»
 			struct timeval time_now;
 			gettimeofday(&time_now, NULL);
 			unsigned int time_elpase = (time_now.tv_sec-m_time_ret_ref[phy_axis].tv_sec)*1000000+time_now.tv_usec-m_time_ret_ref[phy_axis].tv_usec;
-			if(time_elpase >= 1000000){ //ÑÓÊ±1000ms
-				m_n_ret_ref_step[phy_axis] = 5;  //Ìø×ªÏÂÒ»²½
+			if(time_elpase >= 1000000){ //ï¿½ï¿½Ê±1000ms
+				m_n_ret_ref_step[phy_axis] = 5;  //ï¿½ï¿½×ªï¿½ï¿½Ò»ï¿½ï¿½
 				this->SendMonitorData(false, false);
 				printf("return ref, goto step 5, curpos = %lf, time=%u\n", this->GetPhyAxisMachPosIntp(phy_axis), time_elpase);
 			}
 		}
 			break;
-		case 5:{  //ÓÐ»ù×¼£¬ µÍËÙ»ØÍËÖÁ´Ö»ù×¼ÐÅºÅÏûÊ§,
+		case 5:{  //ï¿½Ð»ï¿½×¼ï¿½ï¿½ ï¿½ï¿½ï¿½Ù»ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ö»ï¿½×¼ï¿½Åºï¿½ï¿½ï¿½Ê§,
 		//	printf("return ref step 5\n");
 			double move_length = this->m_p_axis_config[phy_axis].move_pr*2;
 			if(move_length>10.0) {
@@ -9943,42 +9938,42 @@ void ChannelEngine::EcatAxisFindRefWithZeroSignal(uint8_t phy_axis){
 				move_length = 1.0;
 			}
 			m_df_ret_ref_tar_pos[phy_axis] = this->GetPhyAxisMachPosFeedback(phy_axis)+move_length* dir_opt;
-			this->ManualMove(phy_axis, dir_opt, 60, move_length); //ÓÐ»ù×¼£¬ µÍËÙ»ØÍËÖÁ´Ö»ù×¼ÐÅºÅÏûÊ§, ËÙ¶È£º60mm/min
-			m_n_ret_ref_step[phy_axis] = 6;  //Ìø×ªÏÂÒ»²½
+			this->ManualMove(phy_axis, dir_opt, 60, move_length); //ï¿½Ð»ï¿½×¼ï¿½ï¿½ ï¿½ï¿½ï¿½Ù»ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ö»ï¿½×¼ï¿½Åºï¿½ï¿½ï¿½Ê§, ï¿½Ù¶È£ï¿½60mm/min
+			m_n_ret_ref_step[phy_axis] = 6;  //ï¿½ï¿½×ªï¿½ï¿½Ò»ï¿½ï¿½
 			printf("return ref, goto step 6\n");
 
 			break;
 		}
-		case 6:  //ÓÐ»ù×¼£¬µÈ´ý´Ö»ù×¼ÐÅºÅÏûÊ§
+		case 6:  //ï¿½Ð»ï¿½×¼ï¿½ï¿½ï¿½È´ï¿½ï¿½Ö»ï¿½×¼ï¿½Åºï¿½ï¿½ï¿½Ê§
 		//	printf("return ref step 6\n");
 			if(!this->CheckAxisRefBaseSignal(phy_axis, dir)){
 				this->ManualMoveStop(phy_axis);
 
-				gettimeofday(&this->m_time_ret_ref[phy_axis], NULL);   //¼ÇÂ¼ÆðÊ¼Ê±¼ä£¬ÑÓÊ±600ms
+				gettimeofday(&this->m_time_ret_ref[phy_axis], NULL);   //ï¿½ï¿½Â¼ï¿½ï¿½Ê¼Ê±ï¿½ä£¬ï¿½ï¿½Ê±600ms
 
-				m_n_ret_ref_step[phy_axis] = 7;  //Ìø×ªÏÂÒ»²½
-			}else if(fabs(this->GetPhyAxisMachPosFeedback(phy_axis) - m_df_ret_ref_tar_pos[phy_axis]) <= 0.010){  //½Ó½üÄ¿±êÎ»ÖÃ£¬´Ö»ù×¼ÐÅºÅ»¹ÔÚ£¬Ôò¼ÌÐø»ØÍË
-				m_n_ret_ref_step[phy_axis] = 5;  //Ìø×ªµÚ5²½
+				m_n_ret_ref_step[phy_axis] = 7;  //ï¿½ï¿½×ªï¿½ï¿½Ò»ï¿½ï¿½
+			}else if(fabs(this->GetPhyAxisMachPosFeedback(phy_axis) - m_df_ret_ref_tar_pos[phy_axis]) <= 0.010){  //ï¿½Ó½ï¿½Ä¿ï¿½ï¿½Î»ï¿½Ã£ï¿½ï¿½Ö»ï¿½×¼ï¿½ÅºÅ»ï¿½ï¿½Ú£ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+				m_n_ret_ref_step[phy_axis] = 5;  //ï¿½ï¿½×ªï¿½ï¿½5ï¿½ï¿½
 			}
 			break;
-		case 7:{ //µÈ´ýÍ£Ö¹µ½Î»
+		case 7:{ //ï¿½È´ï¿½Í£Ö¹ï¿½ï¿½Î»
 			struct timeval time_now;
 			gettimeofday(&time_now, NULL);
 			unsigned int time_elpase = (time_now.tv_sec-m_time_ret_ref[phy_axis].tv_sec)*1000000+time_now.tv_usec-m_time_ret_ref[phy_axis].tv_usec;
-			if(time_elpase >= 600000){ //ÑÓÊ±600ms
-//				m_n_get_cur_encoder_count = 0;  //¸´Î»»ñÈ¡µ±Ç°±àÂëÆ÷´ÎÊý
+			if(time_elpase >= 600000){ //ï¿½ï¿½Ê±600ms
+//				m_n_get_cur_encoder_count = 0;  //ï¿½ï¿½Î»ï¿½ï¿½È¡ï¿½ï¿½Ç°ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 				if(!this->CheckAxisRefBaseSignal(phy_axis, dir)){
-					m_n_ret_ref_step[phy_axis] = 8;  //Ìø×ªÏÂÒ»²½
+					m_n_ret_ref_step[phy_axis] = 8;  //ï¿½ï¿½×ªï¿½ï¿½Ò»ï¿½ï¿½
 					printf("return ref, goto step 8\n");
-				}else{      //Èç¹ûÓÖ·¢ÏÖ´Ö»ù×¼ÓÐÐÅºÅ£¬Ôò¼ÌÐø»ØÍË
-					m_n_ret_ref_step[phy_axis] = 5;  //»ØÌøÖÁµÚ5²½
+				}else{      //ï¿½ï¿½ï¿½ï¿½Ö·ï¿½ï¿½Ö´Ö»ï¿½×¼ï¿½ï¿½ï¿½ÅºÅ£ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+					m_n_ret_ref_step[phy_axis] = 5;  //ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½5ï¿½ï¿½
 					printf("return ref, goto step 5\n");
 				}
 
 			}
 		}
 			break;
-		case 8:{ // ÉèÖÃÔ­µã
+		case 8:{ // ï¿½ï¿½ï¿½ï¿½Ô­ï¿½ï¿½
 	//		printf("return ref step 8: send cmd to mi, set ref point\n");
 			MiCmdFrame cmd;
 			memset(&cmd, 0x00, sizeof(cmd));
@@ -9986,42 +9981,42 @@ void ChannelEngine::EcatAxisFindRefWithZeroSignal(uint8_t phy_axis){
 			cmd.data.cmd = CMD_MI_SET_REF_POINT;
 
 
-			uint16_t err = m_p_axis_config[phy_axis].ref_mark_err * 1e3;     //µ¥Î»×ª»»£¬ mm->um
-			cmd.data.data[0] = err;    //²Î¿¼µã»ù×¼Îó²î
-			int64_t pos = m_p_axis_config[phy_axis].axis_home_pos[0]*1e7;   //µ¥Î»×ª»»,0.1nm
+			uint16_t err = m_p_axis_config[phy_axis].ref_mark_err * 1e3;     //ï¿½ï¿½Î»×ªï¿½ï¿½ï¿½ï¿½ mm->um
+			cmd.data.data[0] = err;    //ï¿½Î¿ï¿½ï¿½ï¿½ï¿½×¼ï¿½ï¿½ï¿½
+			int64_t pos = m_p_axis_config[phy_axis].axis_home_pos[0]*1e7;   //ï¿½ï¿½Î»×ªï¿½ï¿½,0.1nm
 			memcpy(&cmd.data.data[1], &pos, sizeof(int64_t));
 			cmd.data.data[5] = this->m_p_axis_config[phy_axis].ref_signal;
 			cmd.data.data[6] = this->m_p_axis_config[phy_axis].ret_ref_dir;
 
 			this->m_p_mi_comm->WriteCmd(cmd);
-//			gettimeofday(&this->m_time_ret_ref[phy_axis], nullptr);   //¼ÇÂ¼ÆðÊ¼Ê±¼ä£¬ÑÓÊ±300ms
+//			gettimeofday(&this->m_time_ret_ref[phy_axis], nullptr);   //ï¿½ï¿½Â¼ï¿½ï¿½Ê¼Ê±ï¿½ä£¬ï¿½ï¿½Ê±300ms
 			
-			m_n_ret_ref_step[phy_axis] = 9;  //Ìø×ªÏÂÒ»²½
+			m_n_ret_ref_step[phy_axis] = 9;  //ï¿½ï¿½×ªï¿½ï¿½Ò»ï¿½ï¿½
 			printf("return ref, goto step 9\n");
 
 		}
 			break;
-		case 9: //µÈ´ýÉèÖÃ²Î¿¼µãÍê³É£¬ÔÚMiÖ¸ÁîÏìÓ¦´¦Àíº¯ÊýÖÐ´¦Àí
+		case 9: //ï¿½È´ï¿½ï¿½ï¿½ï¿½Ã²Î¿ï¿½ï¿½ï¿½ï¿½ï¿½É£ï¿½ï¿½ï¿½MiÖ¸ï¿½ï¿½ï¿½ï¿½Ó¦ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ð´ï¿½ï¿½ï¿½
 
 			break;
-		case 10: //µÈ´ýÖáÒÆ¶¯µ½Î»,Íê³É
+		case 10: //ï¿½È´ï¿½ï¿½ï¿½ï¿½Æ¶ï¿½ï¿½ï¿½Î»,ï¿½ï¿½ï¿½
 #ifdef USES_RET_REF_TO_MACH_ZERO
-			dis = 0;    //»úÐµÁã
+			dis = 0;    //ï¿½ï¿½Ðµï¿½ï¿½
 #else
-			dis = this->m_p_axis_config[phy_axis].axis_home_pos[0];   // Ô­µã×ø±ê
+			dis = this->m_p_axis_config[phy_axis].axis_home_pos[0];   // Ô­ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 #endif
-			this->SendMonitorData(false, false);  //ÔÙ´Î¶ÁÈ¡ÊµÊ±Î»ÖÃ
+			this->SendMonitorData(false, false);  //ï¿½Ù´Î¶ï¿½È¡ÊµÊ±Î»ï¿½ï¿½
 
-			if(fabs(this->GetPhyAxisMachPosFeedback(phy_axis)- dis) <= 0.010){  //µ½Î»
-				m_n_ret_ref_step[phy_axis] = 11;  //Ìø×ªÏÂÒ»²½
+			if(fabs(this->GetPhyAxisMachPosFeedback(phy_axis)- dis) <= 0.010){  //ï¿½ï¿½Î»
+				m_n_ret_ref_step[phy_axis] = 11;  //ï¿½ï¿½×ªï¿½ï¿½Ò»ï¿½ï¿½
 			}
 		//	printf("return ref, goto step 11\n");
 			break;
-		case 11:  //»Ø²Î¿¼µãÍê³É
+		case 11:  //ï¿½Ø²Î¿ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 			printf("axis %u return ref over\n", phy_axis);
 			if(this->m_p_axis_config[phy_axis].feedback_mode == ABSOLUTE_ENCODER_YASAKAWA ||
 				this->m_p_axis_config[phy_axis].feedback_mode == ABSOLUTE_ENCODER_PANASONIC ||
-				this->m_p_axis_config[phy_axis].feedback_mode == LINEAR_ENCODER){  //¾ø¶ÔÖµÐè»ñÈ¡»úÐµÁãµãµÄ±àÂëÆ÷Öµ²¢±£´æ£¬·½±ã¶Ïµãºó»Ö¸´×ø±ê
+				this->m_p_axis_config[phy_axis].feedback_mode == LINEAR_ENCODER){  //ï¿½ï¿½ï¿½ï¿½Öµï¿½ï¿½ï¿½È¡ï¿½ï¿½Ðµï¿½ï¿½ï¿½Ä±ï¿½ï¿½ï¿½ï¿½ï¿½Öµï¿½ï¿½ï¿½ï¿½ï¿½æ£¬ï¿½ï¿½ï¿½ï¿½Ïµï¿½ï¿½Ö¸ï¿½ï¿½ï¿½ï¿½ï¿½
 				MiCmdFrame mi_cmd;
 				memset(&mi_cmd, 0x00, sizeof(mi_cmd));
 				mi_cmd.data.cmd = CMD_MI_GET_ZERO_ENCODER;
@@ -10030,7 +10025,7 @@ void ChannelEngine::EcatAxisFindRefWithZeroSignal(uint8_t phy_axis){
 				this->m_p_mi_comm->WriteCmd(mi_cmd);
 			}
 			this->SetRetRefFlag(phy_axis, true);
-			this->m_p_pmc_reg->FReg().bits[0].in_ref_point |= (0x01<<phy_axis);   //ÖÃÎ»µ½²Î¿¼µã±êÖ¾
+			this->m_p_pmc_reg->FReg().bits[0].in_ref_point |= (0x01<<phy_axis);   //ï¿½ï¿½Î»ï¿½ï¿½ï¿½Î¿ï¿½ï¿½ï¿½ï¿½Ö¾
 
 //			printf("return ref over flag : 0x%llx, 0x%hhx, 0x%hhx, 0x%hhx, 0x%hhx, 0x%hhx, 0x%hhx, 0x%hhx, 0x%hhx\n", this->m_p_pmc_reg->FReg().bits[0].in_ref_point,
 //					m_p_pmc_reg->FReg().all[200], m_p_pmc_reg->FReg().all[201], m_p_pmc_reg->FReg().all[202], m_p_pmc_reg->FReg().all[203],
@@ -10044,7 +10039,7 @@ void ChannelEngine::EcatAxisFindRefWithZeroSignal(uint8_t phy_axis){
 				m_n_ret_ref_auto_cur = 0;
 			}
 			break;
-		case 20: //Ê§°Ü´¦Àí
+		case 20: //Ê§ï¿½Ü´ï¿½ï¿½ï¿½
 			this->m_n_mask_ret_ref &= ~(0x01<<phy_axis);
 			m_n_ret_ref_step[phy_axis] = 0;
 
@@ -10062,27 +10057,27 @@ void ChannelEngine::EcatAxisFindRefWithZeroSignal(uint8_t phy_axis){
 }
 
 /**
- * @brief ethcatÖáÓÐ»ù×¼»Ø²Î¿¼µã£¬´Ö»ù×¼Óë¾«»ù×¼¾ùÎªIOÐÅºÅ£¬Ö±Ïßµç»ú
+ * @brief ethcatï¿½ï¿½ï¿½Ð»ï¿½×¼ï¿½Ø²Î¿ï¿½ï¿½ã£¬ï¿½Ö»ï¿½×¼ï¿½ë¾«ï¿½ï¿½×¼ï¿½ï¿½ÎªIOï¿½ÅºÅ£ï¿½Ö±ï¿½ßµï¿½ï¿½
  * @param phy_axis
  */
 void ChannelEngine::EcatAxisFindRefWithZeroSignal2(uint8_t phy_axis){
-	int8_t dir = 0, dir_opt;   //»Ø²Î¿¼µã·½Ïò
-//	uint8_t ret_mode = 0;   //»Ø²Î¿¼µã·½Ê½
+	int8_t dir = 0, dir_opt;   //ï¿½Ø²Î¿ï¿½ï¿½ã·½ï¿½ï¿½
+//	uint8_t ret_mode = 0;   //ï¿½Ø²Î¿ï¿½ï¿½ã·½Ê½
 	uint8_t chn = 0, chn_axis = 0;
-//	double dis = 0;      //ÒÆ¶¯¾àÀë
+//	double dis = 0;      //ï¿½Æ¶ï¿½ï¿½ï¿½ï¿½ï¿½
 //	static double ret_ref_start_pos[kMaxAxisNum];
 
 //	ret_mode = m_p_axis_config[phy_axis].ret_ref_mode;
-	dir = this->m_p_axis_config[phy_axis].ret_ref_dir?DIR_POSITIVE:DIR_NEGATIVE;  // »Ø²Î¿¼µãÕÒ´Ö»ù×¼·½Ïò
-	dir_opt = (m_p_axis_config[phy_axis].ret_ref_change_dir==0)?dir*-1:dir;       //»Ø²Î¿¼µãÕÒ¾«»ù×¼·½Ïò
+	dir = this->m_p_axis_config[phy_axis].ret_ref_dir?DIR_POSITIVE:DIR_NEGATIVE;  // ï¿½Ø²Î¿ï¿½ï¿½ï¿½ï¿½Ò´Ö»ï¿½×¼ï¿½ï¿½ï¿½ï¿½
+	dir_opt = (m_p_axis_config[phy_axis].ret_ref_change_dir==0)?dir*-1:dir;       //ï¿½Ø²Î¿ï¿½ï¿½ï¿½ï¿½Ò¾ï¿½ï¿½ï¿½×¼ï¿½ï¿½ï¿½ï¿½
 
 	switch(this->m_n_ret_ref_step[phy_axis]){
-		case 0://¼ì²éÔ­µãÐÅºÅ
+		case 0://ï¿½ï¿½ï¿½Ô­ï¿½ï¿½ï¿½Åºï¿½
 			printf("return ref step 0, dir = %hhd, dir_opt=%hhd\n", dir, dir_opt);
-			this->SetRetRefFlag(phy_axis, false);   //¸´Î»»Ø²Î¿¼µãÍê³É±êÖ¾
+			this->SetRetRefFlag(phy_axis, false);   //ï¿½ï¿½Î»ï¿½Ø²Î¿ï¿½ï¿½ï¿½ï¿½ï¿½É±ï¿½Ö¾
 			this->m_p_pmc_reg->FReg().bits[0].in_ref_point &= ~(0x01<<phy_axis);
 
-			if(this->CheckAxisRefBaseSignal(phy_axis, dir)){  // ÒÑ¾­´¥·¢´Ö»ù×¼ÐÅºÅ£¬Ö±½Ó¿ªÊ¼»ØÍË
+			if(this->CheckAxisRefBaseSignal(phy_axis, dir)){  // ï¿½Ñ¾ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ö»ï¿½×¼ï¿½ÅºÅ£ï¿½Ö±ï¿½Ó¿ï¿½Ê¼ï¿½ï¿½ï¿½ï¿½
 			    double move_length = this->m_p_axis_config[phy_axis].move_pr*1.2;
 				if(move_length>10.0){
 					move_length = 10.0;
@@ -10100,7 +10095,7 @@ void ChannelEngine::EcatAxisFindRefWithZeroSignal2(uint8_t phy_axis){
 			}
 
 			break;
-		case 1:{//µÈ´ý»ØÍËµ½Î»£¬²¢ÔÙ´Î¼ì²éÔ­µãÐÅºÅ
+		case 1:{//ï¿½È´ï¿½ï¿½ï¿½ï¿½Ëµï¿½Î»ï¿½ï¿½ï¿½ï¿½ï¿½Ù´Î¼ï¿½ï¿½Ô­ï¿½ï¿½ï¿½Åºï¿½
 			printf("return ref step 1\n");
 			chn = this->GetAxisChannel(phy_axis, chn_axis);
 			bool flag = CheckAxisRefBaseSignal(phy_axis, dir);
@@ -10113,114 +10108,114 @@ void ChannelEngine::EcatAxisFindRefWithZeroSignal2(uint8_t phy_axis){
 					}
 				}
 				if(flag == false){
-					m_n_ret_ref_step[phy_axis] = 2;  //Ìø×ªÏÂÒ»²½
+					m_n_ret_ref_step[phy_axis] = 2;  //ï¿½ï¿½×ªï¿½ï¿½Ò»ï¿½ï¿½
 				}
 
-			}else if(this->m_p_axis_config[phy_axis].axis_pmc){  //PMCÖáµ½Î»
+			}else if(this->m_p_axis_config[phy_axis].axis_pmc){  //PMCï¿½áµ½Î»
 				if(this->m_n_run_axis_mask == 0 || (this->m_n_runover_axis_mask & (0x01L<<phy_axis))){
 					if(true == flag){
 						m_n_ret_ref_step[phy_axis] = 0;
 						break;
 					}else{
-						m_n_ret_ref_step[phy_axis] = 2;  //Ìø×ªÏÂÒ»²½
+						m_n_ret_ref_step[phy_axis] = 2;  //ï¿½ï¿½×ªï¿½ï¿½Ò»ï¿½ï¿½
 					}
 				}
 			}
 			}
 			break;
-		case 2:  //ÒÔ»Ø²Î¿¼µãËÙ¶ÈÏò»Ø²Î¿¼µã·½ÏòÔË¶¯
+		case 2:  //ï¿½Ô»Ø²Î¿ï¿½ï¿½ï¿½ï¿½Ù¶ï¿½ï¿½ï¿½Ø²Î¿ï¿½ï¿½ã·½ï¿½ï¿½ï¿½Ë¶ï¿½
 	//		printf("return ref step 2\n");
 			this->ManualMove(phy_axis, dir, this->m_p_axis_config[phy_axis].ret_ref_speed, 90000.0);
-			m_n_ret_ref_step[phy_axis] = 3;  //Ìø×ªÏÂÒ»²½
+			m_n_ret_ref_step[phy_axis] = 3;  //ï¿½ï¿½×ªï¿½ï¿½Ò»ï¿½ï¿½
 			printf("return ref, goto step 3\n");
 			break;
-		case 3:  //´¥·¢´Ö»ù×¼ÐÅºÅ£¬Í£Ö¹
+		case 3:  //ï¿½ï¿½ï¿½ï¿½ï¿½Ö»ï¿½×¼ï¿½ÅºÅ£ï¿½Í£Ö¹
 	//		printf("return ref step 3\n");
-			if(this->CheckAxisRefBaseSignal(phy_axis, dir)){  //´¥·¢´Ö»ù×¼
-				if(m_p_axis_config[phy_axis].ret_ref_change_dir){  //·´ÏòÑ°ÕÒ¾«»ù×¼£¬ÔòÏÈÍ£Ö¹µ½Î»
+			if(this->CheckAxisRefBaseSignal(phy_axis, dir)){  //ï¿½ï¿½ï¿½ï¿½ï¿½Ö»ï¿½×¼
+				if(m_p_axis_config[phy_axis].ret_ref_change_dir){  //ï¿½ï¿½ï¿½ï¿½Ñ°ï¿½Ò¾ï¿½ï¿½ï¿½×¼ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Í£Ö¹ï¿½ï¿½Î»
 					this->ManualMoveStop(phy_axis);
-					gettimeofday(&this->m_time_ret_ref[phy_axis], NULL);   //¼ÇÂ¼ÆðÊ¼Ê±¼ä
-					m_n_ret_ref_step[phy_axis] = 4;  //Ìø×ªÏÂÒ»²½
+					gettimeofday(&this->m_time_ret_ref[phy_axis], NULL);   //ï¿½ï¿½Â¼ï¿½ï¿½Ê¼Ê±ï¿½ï¿½
+					m_n_ret_ref_step[phy_axis] = 4;  //ï¿½ï¿½×ªï¿½ï¿½Ò»ï¿½ï¿½
 					printf("return ref, goto step 4\n");
-				}else{  //Í¬Ïò¼õËÙÑ°ÕÒ¾«»ù×¼
+				}else{  //Í¬ï¿½ï¿½ï¿½ï¿½ï¿½Ñ°ï¿½Ò¾ï¿½ï¿½ï¿½×¼
 					this->ManualMove(phy_axis, dir_opt, 20,3.0);
-					m_n_ret_ref_step[phy_axis] = 5;  //Ìø×ªÏÂÒ»²½
+					m_n_ret_ref_step[phy_axis] = 5;  //ï¿½ï¿½×ªï¿½ï¿½Ò»ï¿½ï¿½
 				}
 			}
 			else{
 			//	this->ManualMove(phy_axis, dir, this->m_p_axis_config[phy_axis].ret_ref_speed,3.0);
 			}
 			break;
-		case 4:{//µÈ´ýÍ£Ö¹µ½Î»
+		case 4:{//ï¿½È´ï¿½Í£Ö¹ï¿½ï¿½Î»
 			struct timeval time_now;
 			gettimeofday(&time_now, NULL);
 			unsigned int time_elpase = (time_now.tv_sec-m_time_ret_ref[phy_axis].tv_sec)*1000000+time_now.tv_usec-m_time_ret_ref[phy_axis].tv_usec;
-			if(time_elpase >= 300000){ //ÑÓÊ±300ms
-				m_n_ret_ref_step[phy_axis] = 5;  //Ìø×ªÏÂÒ»²½
+			if(time_elpase >= 300000){ //ï¿½ï¿½Ê±300ms
+				m_n_ret_ref_step[phy_axis] = 5;  //ï¿½ï¿½×ªï¿½ï¿½Ò»ï¿½ï¿½
 				printf("return ref, goto step 5\n");
 			}
 		}
 			break;
-		case 5:  //µÍËÙÑ°ÕÒ¾«»ù×¼ÔË¶¯
+		case 5:  //ï¿½ï¿½ï¿½ï¿½Ñ°ï¿½Ò¾ï¿½ï¿½ï¿½×¼ï¿½Ë¶ï¿½
 			printf("return ref step 5\n");
-			this->ManualMove(phy_axis, dir_opt, 20, 3); //µÍËÙÑ°ÕÒ¾«»ù×¼
-			m_n_ret_ref_step[phy_axis] = 6;  //Ìø×ªÏÂÒ»²½
+			this->ManualMove(phy_axis, dir_opt, 20, 3); //ï¿½ï¿½ï¿½ï¿½Ñ°ï¿½Ò¾ï¿½ï¿½ï¿½×¼
+			m_n_ret_ref_step[phy_axis] = 6;  //ï¿½ï¿½×ªï¿½ï¿½Ò»ï¿½ï¿½
 			printf("return ref, goto step 6\n");
 
 			break;
-		case 6:  //µÈ´ý¾«»ù×¼ÐÅºÅ
+		case 6:  //ï¿½È´ï¿½ï¿½ï¿½ï¿½ï¿½×¼ï¿½Åºï¿½
 		//	printf("return ref step 6\n");
 			if(this->CheckAxisRefSignal(phy_axis)){
 				this->ManualMoveStop(phy_axis);
-				gettimeofday(&this->m_time_ret_ref[phy_axis], NULL);   //¼ÇÂ¼ÆðÊ¼Ê±¼ä£¬ÑÓÊ±300ms
-				m_n_ret_ref_step[phy_axis] = 7;  //Ìø×ªÏÂÒ»²½
+				gettimeofday(&this->m_time_ret_ref[phy_axis], NULL);   //ï¿½ï¿½Â¼ï¿½ï¿½Ê¼Ê±ï¿½ä£¬ï¿½ï¿½Ê±300ms
+				m_n_ret_ref_step[phy_axis] = 7;  //ï¿½ï¿½×ªï¿½ï¿½Ò»ï¿½ï¿½
 			}else{
-				this->ManualMove(phy_axis, dir_opt, 20, 3); //µÍËÙÑ°ÕÒ¾«»ù×¼
+				this->ManualMove(phy_axis, dir_opt, 20, 3); //ï¿½ï¿½ï¿½ï¿½Ñ°ï¿½Ò¾ï¿½ï¿½ï¿½×¼
 			}
 			break;
-		case 7:{ //µÈ´ýÍ£Ö¹µ½Î»
+		case 7:{ //ï¿½È´ï¿½Í£Ö¹ï¿½ï¿½Î»
 			struct timeval time_now;
 			gettimeofday(&time_now, NULL);
 			unsigned int time_elpase = (time_now.tv_sec-m_time_ret_ref[phy_axis].tv_sec)*1000000+time_now.tv_usec-m_time_ret_ref[phy_axis].tv_usec;
-			if(time_elpase >= 200000){ //ÑÓÊ±200ms
-//				m_n_get_cur_encoder_count = 0;  //¸´Î»»ñÈ¡µ±Ç°±àÂëÆ÷´ÎÊý
-				m_n_ret_ref_step[phy_axis] = 8;  //Ìø×ªÏÂÒ»²½
+			if(time_elpase >= 200000){ //ï¿½ï¿½Ê±200ms
+//				m_n_get_cur_encoder_count = 0;  //ï¿½ï¿½Î»ï¿½ï¿½È¡ï¿½ï¿½Ç°ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+				m_n_ret_ref_step[phy_axis] = 8;  //ï¿½ï¿½×ªï¿½ï¿½Ò»ï¿½ï¿½
 				printf("return ref, goto step 8\n");
 			}
 		}
 			break;
-		case 8:{ // ÉèÖÃµ±Ç°Î»ÖÃÎª²Î¿¼µã
+		case 8:{ // ï¿½ï¿½ï¿½Ãµï¿½Ç°Î»ï¿½ï¿½Îªï¿½Î¿ï¿½ï¿½ï¿½
 			printf("return ref step 8: send cmd to mi, set ref point\n");
 			MiCmdFrame cmd;
 			memset(&cmd, 0x00, sizeof(cmd));
 			cmd.data.axis_index = phy_axis+1;
 			cmd.data.cmd = CMD_MI_SET_REF_CUR;
 
-			int64_t pos = m_p_axis_config[phy_axis].axis_home_pos[0] * 1e7;   //µ¥Î»×ª»»£¬0.1nm
+			int64_t pos = m_p_axis_config[phy_axis].axis_home_pos[0] * 1e7;   //ï¿½ï¿½Î»×ªï¿½ï¿½ï¿½ï¿½0.1nm
 			memcpy(cmd.data.data, &pos, sizeof(int64_t));
 			this->m_p_mi_comm->WriteCmd(cmd);
-			gettimeofday(&this->m_time_ret_ref[phy_axis], NULL);   //¼ÇÂ¼ÆðÊ¼Ê±¼ä£¬ÑÓÊ±300ms
+			gettimeofday(&this->m_time_ret_ref[phy_axis], NULL);   //ï¿½ï¿½Â¼ï¿½ï¿½Ê¼Ê±ï¿½ä£¬ï¿½ï¿½Ê±300ms
 
-			m_n_ret_ref_step[phy_axis] = 9;  //Ìø×ªÏÂÒ»²½
+			m_n_ret_ref_step[phy_axis] = 9;  //ï¿½ï¿½×ªï¿½ï¿½Ò»ï¿½ï¿½
 			printf("return ref, goto step 9\n");
 
 		}
 			break;
-		case 9: { //µÈ´ýÉèÖÃ²Î¿¼µãÍê³É£¬ÔÚMiÖ¸ÁîÏìÓ¦´¦Àíº¯ÊýÖÐ´¦Àí
+		case 9: { //ï¿½È´ï¿½ï¿½ï¿½ï¿½Ã²Î¿ï¿½ï¿½ï¿½ï¿½ï¿½É£ï¿½ï¿½ï¿½MiÖ¸ï¿½ï¿½ï¿½ï¿½Ó¦ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ð´ï¿½ï¿½ï¿½
 			struct timeval time_now;
 			gettimeofday(&time_now, NULL);
 			unsigned int time_elpase = (time_now.tv_sec-m_time_ret_ref[phy_axis].tv_sec)*1000000+time_now.tv_usec-m_time_ret_ref[phy_axis].tv_usec;
-			if(time_elpase >= 200000){ //ÑÓÊ±200ms
-				m_n_ret_ref_step[phy_axis] = 10;  //Ìø×ªÏÂÒ»²½
+			if(time_elpase >= 200000){ //ï¿½ï¿½Ê±200ms
+				m_n_ret_ref_step[phy_axis] = 10;  //ï¿½ï¿½×ªï¿½ï¿½Ò»ï¿½ï¿½
 				printf("return ref, goto step 8\n");
 			}
 			}
 			break;
-		case 10:  //»Ø²Î¿¼µãÍê³É
+		case 10:  //ï¿½Ø²Î¿ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 			printf("axis %u return ref over\n", phy_axis);
 
 			this->SetRetRefFlag(phy_axis, true);
-			this->m_p_pmc_reg->FReg().bits[0].in_ref_point |= (0x01<<phy_axis);   //ÖÃÎ»µ½²Î¿¼µã±êÖ¾
+			this->m_p_pmc_reg->FReg().bits[0].in_ref_point |= (0x01<<phy_axis);   //ï¿½ï¿½Î»ï¿½ï¿½ï¿½Î¿ï¿½ï¿½ï¿½ï¿½Ö¾
 
 			this->m_n_mask_ret_ref &= ~(0x01<<phy_axis);
 			m_n_ret_ref_step[phy_axis] = 0;
@@ -10231,7 +10226,7 @@ void ChannelEngine::EcatAxisFindRefWithZeroSignal2(uint8_t phy_axis){
 				m_n_ret_ref_auto_cur = 0;
 			}
 			break;
-		case 20: //Ê§°Ü´¦Àí
+		case 20: //Ê§ï¿½Ü´ï¿½ï¿½ï¿½
 			this->m_n_mask_ret_ref &= ~(0x01<<phy_axis);
 			m_n_ret_ref_step[phy_axis] = 0;
 
@@ -10250,19 +10245,19 @@ void ChannelEngine::EcatAxisFindRefWithZeroSignal2(uint8_t phy_axis){
 
 
 /**
- * @brief ethcatÖáÎÞ»ù×¼Öá»Ø²Î¿¼µã
+ * @brief ethcatï¿½ï¿½ï¿½Þ»ï¿½×¼ï¿½ï¿½Ø²Î¿ï¿½ï¿½ï¿½
  */
 void ChannelEngine::EcatAxisFindRefNoZeroSignal(uint8_t phy_axis){
 	switch(this->m_n_ret_ref_step[phy_axis]){
-		case 0: {// ¼ÆËãÔ­µãÆ«ÒÆ£¬ÉèÖÃÔ­µã
+		case 0: {// ï¿½ï¿½ï¿½ï¿½Ô­ï¿½ï¿½Æ«ï¿½Æ£ï¿½ï¿½ï¿½ï¿½ï¿½Ô­ï¿½ï¿½
 			printf("return ref step 0: send cmd to mi, set ref point\n");
 			MiCmdFrame cmd;
 			memset(&cmd, 0x00, sizeof(cmd));
 			cmd.data.axis_index = phy_axis+1;
 			cmd.data.cmd = CMD_MI_SET_REF_POINT;
 
-			cmd.data.data[0] = 0x01;    //µ±Ç°¾«»ù×¼
-			int64_t pos = m_p_axis_config[phy_axis].axis_home_pos[0]*1e7;   //µ¥Î»×ª»»,0.1nm
+			cmd.data.data[0] = 0x01;    //ï¿½ï¿½Ç°ï¿½ï¿½ï¿½ï¿½×¼
+			int64_t pos = m_p_axis_config[phy_axis].axis_home_pos[0]*1e7;   //ï¿½ï¿½Î»×ªï¿½ï¿½,0.1nm
 			memcpy(&cmd.data.data[1], &pos, sizeof(int64_t));
 			cmd.data.data[5] = this->m_p_axis_config[phy_axis].ref_signal;
 			cmd.data.data[6] = this->m_p_axis_config[phy_axis].ret_ref_dir;
@@ -10270,33 +10265,33 @@ void ChannelEngine::EcatAxisFindRefNoZeroSignal(uint8_t phy_axis){
 			this->m_p_mi_comm->WriteCmd(cmd);
 
 			
-			m_n_ret_ref_step[phy_axis] = 1;  //Ìø×ªÏÂÒ»²½
+			m_n_ret_ref_step[phy_axis] = 1;  //ï¿½ï¿½×ªï¿½ï¿½Ò»ï¿½ï¿½
 			printf("return ref, goto step 1\n");
 
 		}
 			break;
-		case 1:  //µÈ´ýÉèÖÃ²Î¿¼µãÍê³É£¬ÔÚMiÖ¸ÁîÏìÓ¦´¦Àíº¯ÊýÖÐ´¦Àí
+		case 1:  //ï¿½È´ï¿½ï¿½ï¿½ï¿½Ã²Î¿ï¿½ï¿½ï¿½ï¿½ï¿½É£ï¿½ï¿½ï¿½MiÖ¸ï¿½ï¿½ï¿½ï¿½Ó¦ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ð´ï¿½ï¿½ï¿½
 
 			break;
 
-		case 10:{  //µÈ´ýÖáÒÆ¶¯µ½Î»,Íê³É£¡
+		case 10:{  //ï¿½È´ï¿½ï¿½ï¿½ï¿½Æ¶ï¿½ï¿½ï¿½Î»,ï¿½ï¿½É£ï¿½
 #ifdef USES_RET_REF_TO_MACH_ZERO
-			double dis = 0;    //»úÐµÁã
+			double dis = 0;    //ï¿½ï¿½Ðµï¿½ï¿½
 #else
-			double dis = this->m_p_axis_config[phy_axis].axis_home_pos[0];   // Ô­µã×ø±ê
+			double dis = this->m_p_axis_config[phy_axis].axis_home_pos[0];   // Ô­ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 #endif
-			this->SendMonitorData(false, false);  //ÔÙ´Î¶ÁÈ¡ÊµÊ±Î»ÖÃ
-			if(fabs(this->GetPhyAxisMachPosFeedback(phy_axis)- dis) <= 0.010){  //µ½Î»
-				m_n_ret_ref_step[phy_axis] = 11;  //Ìø×ªÏÂÒ»²½
+			this->SendMonitorData(false, false);  //ï¿½Ù´Î¶ï¿½È¡ÊµÊ±Î»ï¿½ï¿½
+			if(fabs(this->GetPhyAxisMachPosFeedback(phy_axis)- dis) <= 0.010){  //ï¿½ï¿½Î»
+				m_n_ret_ref_step[phy_axis] = 11;  //ï¿½ï¿½×ªï¿½ï¿½Ò»ï¿½ï¿½
 				printf("return ref[%hhu, %lf, %lf], goto step 11\n", phy_axis, this->GetPhyAxisMachPosFeedback(phy_axis), dis);
 			}
 			break;
 		}
-		case 11:  //»Ø²Î¿¼µãÍê³É
+		case 11:  //ï¿½Ø²Î¿ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 			printf("axis %u return ref over\n", phy_axis);
 			if(this->m_p_axis_config[phy_axis].feedback_mode == ABSOLUTE_ENCODER_YASAKAWA ||
 				this->m_p_axis_config[phy_axis].feedback_mode == ABSOLUTE_ENCODER_PANASONIC ||
-				this->m_p_axis_config[phy_axis].feedback_mode == LINEAR_ENCODER){  //¾ø¶ÔÖµÐèÒª·¢ËÍÉèÖÃ²Î¿¼µãÖ¸Áî
+				this->m_p_axis_config[phy_axis].feedback_mode == LINEAR_ENCODER){  //ï¿½ï¿½ï¿½ï¿½Öµï¿½ï¿½Òªï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ã²Î¿ï¿½ï¿½ï¿½Ö¸ï¿½ï¿½
 				MiCmdFrame mi_cmd;
 				memset(&mi_cmd, 0x00, sizeof(mi_cmd));
 				mi_cmd.data.cmd = CMD_MI_GET_ZERO_ENCODER;
@@ -10305,7 +10300,7 @@ void ChannelEngine::EcatAxisFindRefNoZeroSignal(uint8_t phy_axis){
 				this->m_p_mi_comm->WriteCmd(mi_cmd);
 			}
 			this->SetRetRefFlag(phy_axis, true);
-			this->m_p_pmc_reg->FReg().bits[0].in_ref_point |= (0x01<<phy_axis);   //ÖÃÎ»µ½²Î¿¼µã±êÖ¾
+			this->m_p_pmc_reg->FReg().bits[0].in_ref_point |= (0x01<<phy_axis);   //ï¿½ï¿½Î»ï¿½ï¿½ï¿½Î¿ï¿½ï¿½ï¿½ï¿½Ö¾
 
 			this->m_n_mask_ret_ref &= ~(0x01<<phy_axis);
 			m_n_ret_ref_step[phy_axis] = 0;
@@ -10316,7 +10311,7 @@ void ChannelEngine::EcatAxisFindRefNoZeroSignal(uint8_t phy_axis){
 				m_n_ret_ref_auto_cur = 0;
 			}
 			break;
-		case 20: //Ê§°Ü´¦Àí
+		case 20: //Ê§ï¿½Ü´ï¿½ï¿½ï¿½
 			this->m_n_mask_ret_ref &= ~(0x01<<phy_axis);
 			m_n_ret_ref_step[phy_axis] = 0;
 
@@ -10335,20 +10330,20 @@ void ChannelEngine::EcatAxisFindRefNoZeroSignal(uint8_t phy_axis){
 
 
 /**
- * @brief »Ø²Î¿¼µãÖ´ÐÐº¯Êý
+ * @brief ï¿½Ø²Î¿ï¿½ï¿½ï¿½Ö´ï¿½Ðºï¿½ï¿½ï¿½
  */
 void ChannelEngine::ReturnRefPoint(){
 
-//	int8_t dir = 0, dir_opt;   //»Ø²Î¿¼µã·½Ïò
-//	uint8_t ret_mode = 0;   //»Ø²Î¿¼µã·½Ê½
+//	int8_t dir = 0, dir_opt;   //ï¿½Ø²Î¿ï¿½ï¿½ã·½ï¿½ï¿½
+//	uint8_t ret_mode = 0;   //ï¿½Ø²Î¿ï¿½ï¿½ã·½Ê½
 //	uint8_t chn = 0, chn_axis = 0;
-//	double dis = 0;      //ÒÆ¶¯¾àÀë
+//	double dis = 0;      //ï¿½Æ¶ï¿½ï¿½ï¿½ï¿½ï¿½
 //	static double ret_ref_start_pos[kMaxAxisNum];
-//	static uint8_t ret_ref_auto_cur = 0;    //×Ô¶¯»Ø²Î¿¼µãÊ±£¬µ±Ç°Ë³ÐòºÅ
+//	static uint8_t ret_ref_auto_cur = 0;    //ï¿½Ô¶ï¿½ï¿½Ø²Î¿ï¿½ï¿½ï¿½Ê±ï¿½ï¿½ï¿½ï¿½Ç°Ë³ï¿½ï¿½ï¿½
 	int count = 0;
 	for(uint i = 0; i < this->m_p_general_config->axis_count; i++){
 		if((m_n_mask_ret_ref & (0x01<<i)) == 0 ||
-				(m_p_axis_config[i].ret_ref_mode == 0 && m_p_axis_config[i].feedback_mode == INCREMENTAL_ENCODER)){  //½ûÖ¹»Ø²Î¿¼µã
+				(m_p_axis_config[i].ret_ref_mode == 0 && m_p_axis_config[i].feedback_mode == INCREMENTAL_ENCODER)){  //ï¿½ï¿½Ö¹ï¿½Ø²Î¿ï¿½ï¿½ï¿½
 			continue;
 		}
 		if(this->m_b_ret_ref_auto){
@@ -10357,61 +10352,61 @@ void ChannelEngine::ReturnRefPoint(){
 			count++;
 		}
 
-		if(this->m_p_axis_config[i].axis_interface == VIRTUAL_AXIS){// ÐéÄâÖá
-			this->AxisFindRefNoZeroSignal(i);   // Ö±½ÓÉèÖÃÁãµã
+		if(this->m_p_axis_config[i].axis_interface == VIRTUAL_AXIS){// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+			this->AxisFindRefNoZeroSignal(i);   // Ö±ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 
-		}else if(this->m_p_axis_config[i].axis_interface == BUS_AXIS){     // ×ÜÏßÖá
-       	    //ÉèÖÃ»ØÁã±êÖ¾
+		}else if(this->m_p_axis_config[i].axis_interface == BUS_AXIS){     // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+       	    //ï¿½ï¿½ï¿½Ã»ï¿½ï¿½ï¿½ï¿½Ö¾
 			this->SetInRetRefFlag(i, true);
 			
-			if(this->m_p_axis_config[i].feedback_mode == NO_ENCODER){   // ²½½øµç»ú£¬ÎÞ·´À¡
+			if(this->m_p_axis_config[i].feedback_mode == NO_ENCODER){   // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Þ·ï¿½ï¿½ï¿½
 			    if(this->m_p_axis_config[i].ret_ref_mode == 1){
-			         this->AxisFindRefWithZeroSignal(i); // ¸ù¾ÝÁãµãÐÅºÅÉèÖÃÁãµã
+			         this->AxisFindRefWithZeroSignal(i); // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Åºï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 				}else{
-			    	this->AxisFindRefNoZeroSignal(i);  // Ö±½ÓÉèÖÃÁãµã
+			    	this->AxisFindRefNoZeroSignal(i);  // Ö±ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 				}
        	    }else if(this->m_p_axis_config[i].ret_ref_mode == 1){
-			    this->EcatAxisFindRefWithZeroSignal(i);    //  ×ÜÏßÓÐ»ù×¼»ØÁã
+			    this->EcatAxisFindRefWithZeroSignal(i);    //  ï¿½ï¿½ï¿½ï¿½ï¿½Ð»ï¿½×¼ï¿½ï¿½ï¿½ï¿½
 	   		}else if(this->m_p_axis_config[i].ret_ref_mode == 2){
-				this->EcatAxisFindRefNoZeroSignal(i);    //  ×ÜÏßÎÞ»ù×¼»ØÁã
-			}else if(this->m_p_axis_config[i].ret_ref_mode == 4){  //×ÜÏßË«»ù×¼»ØÁã£¬´Ö¡¢¾«»ù×¼¶¼ÊÇIOÊäÈëÐÅºÅ
+				this->EcatAxisFindRefNoZeroSignal(i);    //  ï¿½ï¿½ï¿½ï¿½ï¿½Þ»ï¿½×¼ï¿½ï¿½ï¿½ï¿½
+			}else if(this->m_p_axis_config[i].ret_ref_mode == 4){  //ï¿½ï¿½ï¿½ï¿½Ë«ï¿½ï¿½×¼ï¿½ï¿½ï¿½ã£¬ï¿½Ö¡ï¿½ï¿½ï¿½ï¿½ï¿½×¼ï¿½ï¿½ï¿½ï¿½IOï¿½ï¿½ï¿½ï¿½ï¿½Åºï¿½
 				this->EcatAxisFindRefWithZeroSignal2(i);
 			}else if(this->m_p_axis_config[i].ret_ref_mode == 0 &&
-					(this->m_p_axis_config[i].feedback_mode == ABSOLUTE_ENCODER_YASAKAWA || this->m_p_axis_config[i].feedback_mode == ABSOLUTE_ENCODER_PANASONIC)){  //¾ø¶ÔÖµ±àÂëÆ÷²¢ÇÒ½ûÖ¹»ØÁã
-				this->AxisFindRefNoZeroSignal(i);   // Ö±½ÓÉèÖÃÁãµã
+					(this->m_p_axis_config[i].feedback_mode == ABSOLUTE_ENCODER_YASAKAWA || this->m_p_axis_config[i].feedback_mode == ABSOLUTE_ENCODER_PANASONIC)){  //ï¿½ï¿½ï¿½ï¿½Öµï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ò½ï¿½Ö¹ï¿½ï¿½ï¿½ï¿½
+				this->AxisFindRefNoZeroSignal(i);   // Ö±ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 			}
-       	}else if(this->m_p_axis_config[i].axis_interface == ANALOG_AXIS){   // ·Ç×ÜÏßÖá
-       	    //ÉèÖÃ»ØÁã±êÖ¾
+       	}else if(this->m_p_axis_config[i].axis_interface == ANALOG_AXIS){   // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+       	    //ï¿½ï¿½ï¿½Ã»ï¿½ï¿½ï¿½ï¿½Ö¾
 			this->SetInRetRefFlag(i, true);
 			
-			if(this->m_p_axis_config[i].feedback_mode == NO_ENCODER){   // ²½½øµç»ú£¬ÎÞ·´À¡
+			if(this->m_p_axis_config[i].feedback_mode == NO_ENCODER){   // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Þ·ï¿½ï¿½ï¿½
 			    if(this->m_p_axis_config[i].ret_ref_mode == 1){
-			         this->AxisFindRefWithZeroSignal(i); // ¸ù¾ÝÁãµãÐÅºÅÉèÖÃÁãµã
+			         this->AxisFindRefWithZeroSignal(i); // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Åºï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 				}
 			    else{
-			         this->AxisFindRefNoZeroSignal(i);  // Ö±½ÓÉèÖÃÁãµã
+			         this->AxisFindRefNoZeroSignal(i);  // Ö±ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 				}
        	    }
 			else if(this->m_p_axis_config[i].ret_ref_mode == 1){
-			    this->PulseAxisFindRefWithZeroSignal(i);    //  Âö³åÄ£ÄâÁ¿ÐÍÓÐ»ù×¼»ØÁã
+			    this->PulseAxisFindRefWithZeroSignal(i);    //  ï¿½ï¿½ï¿½ï¿½Ä£ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ð»ï¿½×¼ï¿½ï¿½ï¿½ï¿½
 	   		}
 			else if(this->m_p_axis_config[i].ret_ref_mode == 2){
-			    this->PulseAxisFindRefNoZeroSignal(i);    // Âö³åÄ£ÄâÁ¿ÐÍÎÞ»ù×¼»ØÁã
+			    this->PulseAxisFindRefNoZeroSignal(i);    // ï¿½ï¿½ï¿½ï¿½Ä£ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Þ»ï¿½×¼ï¿½ï¿½ï¿½ï¿½
 			}
        	}
 
 /*
 		ret_mode = m_p_axis_config[i].ret_ref_mode;
 		dir = this->m_p_axis_config[i].ret_ref_dir?DIR_POSITIVE:DIR_NEGATIVE;
-		dir_opt = (m_p_axis_config[i].ret_ref_change_dir==0)?dir*-1:dir;  //»Ø²Î¿¼µã·½ÏòÏà·´µÄ·½Ïò
+		dir_opt = (m_p_axis_config[i].ret_ref_change_dir==0)?dir*-1:dir;  //ï¿½Ø²Î¿ï¿½ï¿½ã·½ï¿½ï¿½ï¿½à·´ï¿½Ä·ï¿½ï¿½ï¿½
 
 		switch(this->m_n_ret_ref_step[i]){
-		case 0://¼ì²éÔ­µãÐÅºÅ
+		case 0://ï¿½ï¿½ï¿½Ô­ï¿½ï¿½ï¿½Åºï¿½
 			printf("return ref step 0, dir = %hhd, dir_opt=%hhd\n", dir, dir_opt);
-			this->SetRetRefFlag(i, false);   //¸´Î»»Ø²Î¿¼µãÍê³É±êÖ¾
+			this->SetRetRefFlag(i, false);   //ï¿½ï¿½Î»ï¿½Ø²Î¿ï¿½ï¿½ï¿½ï¿½ï¿½É±ï¿½Ö¾
 			this->m_p_pmc_reg->FReg().bits[0].in_ref_point &= ~(0x01<<i);
 
-			if(this->CheckAxisRefBaseSignal(i, dir)){  //»ØÍË1.2¸öÂÝ¾à
+			if(this->CheckAxisRefBaseSignal(i, dir)){  //ï¿½ï¿½ï¿½ï¿½1.2ï¿½ï¿½ï¿½Ý¾ï¿½
 				ret_ref_start_pos[i] = this->GetPhyAxisMachPosFeedback(i)+this->m_p_axis_config[i].move_pr*1.2;
 				this->ManualMove(i, dir*-1,
 						this->m_p_axis_config[i].ret_ref_speed, this->m_p_axis_config[i].move_pr*1.2);
@@ -10423,7 +10418,7 @@ void ChannelEngine::ReturnRefPoint(){
 			}
 
 			break;
-		case 1://µÈ´ý»ØÍËµ½Î»£¬²¢ÔÙ´Î¼ì²éÔ­µãÐÅºÅ
+		case 1://ï¿½È´ï¿½ï¿½ï¿½ï¿½Ëµï¿½Î»ï¿½ï¿½ï¿½ï¿½ï¿½Ù´Î¼ï¿½ï¿½Ô­ï¿½ï¿½ï¿½Åºï¿½
 			printf("return ref step 1\n");
 			chn = this->GetAxisChannel(i, chn_axis);
 			if(chn != CHANNEL_ENGINE_INDEX){
@@ -10432,27 +10427,27 @@ void ChannelEngine::ReturnRefPoint(){
 						m_n_ret_ref_step[i] = 0;
 						break;
 					}else{
-						if(ret_mode == 2)  //ÎÞ»ù×¼
-							m_n_ret_ref_step[i] = 5;  //Ìø×ªÏÂÒ»²½
-						else if(ret_mode == 1)   //ÓÐ»ù×¼
-							m_n_ret_ref_step[i] = 2;  //Ìø×ªÏÂÒ»²½
+						if(ret_mode == 2)  //ï¿½Þ»ï¿½×¼
+							m_n_ret_ref_step[i] = 5;  //ï¿½ï¿½×ªï¿½ï¿½Ò»ï¿½ï¿½
+						else if(ret_mode == 1)   //ï¿½Ð»ï¿½×¼
+							m_n_ret_ref_step[i] = 2;  //ï¿½ï¿½×ªï¿½ï¿½Ò»ï¿½ï¿½
 					}
 				}
-			}else if(this->m_p_axis_config[i].axis_pmc){  //PMCÖáµ½Î»
+			}else if(this->m_p_axis_config[i].axis_pmc){  //PMCï¿½áµ½Î»
 				if(this->m_n_run_axis_mask == 0 || (this->m_n_runover_axis_mask & (0x01L<<i))){
 					if(CheckAxisRefBaseSignal(i, dir)){
 						m_n_ret_ref_step[i] = 0;
 						break;
 					}else{
-						if(ret_mode == 2)  //ÎÞ»ù×¼
-							m_n_ret_ref_step[i] = 5;  //Ìø×ªÏÂÒ»²½
-						else if(ret_mode == 1)   //ÓÐ»ù×¼
-							m_n_ret_ref_step[i] = 2;  //Ìø×ªÏÂÒ»²½
+						if(ret_mode == 2)  //ï¿½Þ»ï¿½×¼
+							m_n_ret_ref_step[i] = 5;  //ï¿½ï¿½×ªï¿½ï¿½Ò»ï¿½ï¿½
+						else if(ret_mode == 1)   //ï¿½Ð»ï¿½×¼
+							m_n_ret_ref_step[i] = 2;  //ï¿½ï¿½×ªï¿½ï¿½Ò»ï¿½ï¿½
 					}
 				}
 			}
 			break;
-		case 2:{   //ÏòMI·¢ËÍ¿ªÊ¼»Ø²Î¿¼µãÃüÁî
+		case 2:{   //ï¿½ï¿½MIï¿½ï¿½ï¿½Í¿ï¿½Ê¼ï¿½Ø²Î¿ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 	//		printf("return ref step 2\n");
 			MiCmdFrame cmd;
 			memset(&cmd, 0x00, sizeof(cmd));
@@ -10461,101 +10456,101 @@ void ChannelEngine::ReturnRefPoint(){
 			cmd.data.axis_index = i+1;
 
 			this->m_p_mi_comm->WriteCmd(cmd);
-			m_n_ret_ref_step[i] = 3;  //Ìø×ªÏÂÒ»²½
+			m_n_ret_ref_step[i] = 3;  //ï¿½ï¿½×ªï¿½ï¿½Ò»ï¿½ï¿½
 			printf("return ref, goto step 3\n");
 		}
 			break;
-		case 3:  //ÒÔ»Ø²Î¿¼µãËÙ¶ÈÏò»Ø²Î¿¼µã·½ÏòÔË¶¯
+		case 3:  //ï¿½Ô»Ø²Î¿ï¿½ï¿½ï¿½ï¿½Ù¶ï¿½ï¿½ï¿½Ø²Î¿ï¿½ï¿½ã·½ï¿½ï¿½ï¿½Ë¶ï¿½
 	//		printf("return ref step 3\n");
 			this->ManualMove(i, dir, this->m_p_axis_config[i].ret_ref_speed, 90000.);
-			m_n_ret_ref_step[i] = 4;  //Ìø×ªÏÂÒ»²½
+			m_n_ret_ref_step[i] = 4;  //ï¿½ï¿½×ªï¿½ï¿½Ò»ï¿½ï¿½
 			printf("return ref, goto step 4\n");
 			break;
-		case 4:  //´¥·¢´Ö»ù×¼ÐÅºÅ£¬Í£Ö¹
+		case 4:  //ï¿½ï¿½ï¿½ï¿½ï¿½Ö»ï¿½×¼ï¿½ÅºÅ£ï¿½Í£Ö¹
 	//		printf("return ref step 4\n");
 			if(this->CheckAxisRefBaseSignal(i, dir)){
 				this->ManualMoveStop(i);
-				gettimeofday(&this->m_time_ret_ref[phy_axis], NULL);   //¼ÇÂ¼ÆðÊ¼Ê±¼ä£¬ÑÓÊ±200ms
-				m_n_ret_ref_step[i] = 50;  //Ìø×ªÏÂÒ»²½
+				gettimeofday(&this->m_time_ret_ref[phy_axis], NULL);   //ï¿½ï¿½Â¼ï¿½ï¿½Ê¼Ê±ï¿½ä£¬ï¿½ï¿½Ê±200ms
+				m_n_ret_ref_step[i] = 50;  //ï¿½ï¿½×ªï¿½ï¿½Ò»ï¿½ï¿½
 				printf("return ref, goto step 50\n");
 			}
 			break;
-		case 50:{//µÈ´ýÍ£Ö¹µ½Î»
+		case 50:{//ï¿½È´ï¿½Í£Ö¹ï¿½ï¿½Î»
 			struct timeval time_now;
 			gettimeofday(&time_now, NULL);
 			unsigned int time_elpase = (time_now.tv_sec-m_time_ret_ref[phy_axis].tv_sec)*1000000+time_now.tv_usec-m_time_ret_ref[phy_axis].tv_usec;
-			if(time_elpase >= 300000){ //ÑÓÊ±300ms
-				m_n_ret_ref_step[i] = 5;  //Ìø×ªÏÂÒ»²½
+			if(time_elpase >= 300000){ //ï¿½ï¿½Ê±300ms
+				m_n_ret_ref_step[i] = 5;  //ï¿½ï¿½×ªï¿½ï¿½Ò»ï¿½ï¿½
 				printf("return ref, goto step 5\n");
 			}
 		}
 			break;
 		case 5:
 			printf("return ref step 5\n");
-			if(ret_mode == 1)//ÓÐ»ù×¼£¬ µÍËÙ»ØÍËÖÁ´Ö»ù×¼ÐÅºÅÏûÊ§, ËÙ¶È£º100mm/min
+			if(ret_mode == 1)//ï¿½Ð»ï¿½×¼ï¿½ï¿½ ï¿½ï¿½ï¿½Ù»ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ö»ï¿½×¼ï¿½Åºï¿½ï¿½ï¿½Ê§, ï¿½Ù¶È£ï¿½100mm/min
 				this->ManualMove(i, dir_opt, 100, this->m_p_axis_config[i].move_pr*2);
-			else if(ret_mode ==2){ //ÎÞ»ù×¼£¬»Ø²Î¿¼µã·½ÏòÒÆ¶¯1.1¸öÂÝ¾à
+			else if(ret_mode ==2){ //ï¿½Þ»ï¿½×¼ï¿½ï¿½ï¿½Ø²Î¿ï¿½ï¿½ã·½ï¿½ï¿½ï¿½Æ¶ï¿½1.1ï¿½ï¿½ï¿½Ý¾ï¿½
 				ret_ref_start_pos[i] = this->GetPhyAxisMachPosFeedback(i)+this->m_p_axis_config[i].move_pr*1.1;
 				this->ManualMove(i, dir, m_p_axis_config[i].ret_ref_speed, this->m_p_axis_config[i].move_pr*1.1);
 			}
-			m_n_ret_ref_step[i] = 6;  //Ìø×ªÏÂÒ»²½
+			m_n_ret_ref_step[i] = 6;  //ï¿½ï¿½×ªï¿½ï¿½Ò»ï¿½ï¿½
 			printf("return ref, goto step 6\n");
 
 			break;
 		case 6:
 		//	printf("return ref step 6\n");
-			if(ret_mode == 1){//ÓÐ»ù×¼£¬µÈ´ý´Ö»ù×¼ÐÅºÅÏûÊ§
+			if(ret_mode == 1){//ï¿½Ð»ï¿½×¼ï¿½ï¿½ï¿½È´ï¿½ï¿½Ö»ï¿½×¼ï¿½Åºï¿½ï¿½ï¿½Ê§
 				if(!this->CheckAxisRefBaseSignal(i, dir)){
 					this->ManualMoveStop(i);
 
-					gettimeofday(&this->m_time_ret_ref[phy_axis], NULL);   //¼ÇÂ¼ÆðÊ¼Ê±¼ä£¬ÑÓÊ±300ms
+					gettimeofday(&this->m_time_ret_ref[phy_axis], NULL);   //ï¿½ï¿½Â¼ï¿½ï¿½Ê¼Ê±ï¿½ä£¬ï¿½ï¿½Ê±300ms
 
-					m_n_ret_ref_step[i] = 70;  //Ìø×ªÏÂÒ»²½
+					m_n_ret_ref_step[i] = 70;  //ï¿½ï¿½×ªï¿½ï¿½Ò»ï¿½ï¿½
 				}
-			}else if(ret_mode == 2){  //ÎÞ»ù×¼£¬ Î»ÖÃµ½Î»
+			}else if(ret_mode == 2){  //ï¿½Þ»ï¿½×¼ï¿½ï¿½ Î»ï¿½Ãµï¿½Î»
 				if(fabs(this->GetPhyAxisMachPosFeedback(i) - ret_ref_start_pos[i]) <= 0.001){
-					m_n_ret_ref_step[i] = 7;  //Ìø×ªÏÂÒ»²½
+					m_n_ret_ref_step[i] = 7;  //ï¿½ï¿½×ªï¿½ï¿½Ò»ï¿½ï¿½
 				}
 			}
 			break;
-		case 70:{ //µÈ´ýÍ£Ö¹µ½Î»
+		case 70:{ //ï¿½È´ï¿½Í£Ö¹ï¿½ï¿½Î»
 			struct timeval time_now;
 			gettimeofday(&time_now, NULL);
 			unsigned int time_elpase = (time_now.tv_sec-m_time_ret_ref[phy_axis].tv_sec)*1000000+time_now.tv_usec-m_time_ret_ref[phy_axis].tv_usec;
-			if(time_elpase >= 800000){ //ÑÓÊ±800ms
-				m_n_get_cur_encoder_count = 0;  //¸´Î»»ñÈ¡µ±Ç°±àÂëÆ÷´ÎÊý
-				m_n_ret_ref_step[i] = 7;  //Ìø×ªÏÂÒ»²½
+			if(time_elpase >= 800000){ //ï¿½ï¿½Ê±800ms
+				m_n_get_cur_encoder_count = 0;  //ï¿½ï¿½Î»ï¿½ï¿½È¡ï¿½ï¿½Ç°ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+				m_n_ret_ref_step[i] = 7;  //ï¿½ï¿½×ªï¿½ï¿½Ò»ï¿½ï¿½
 				printf("return ref, goto step 7\n");
 			}
 		}
 			break;
-		case 7:{ //¶ÁÈ¡µ±Ç°±àÂëÆ÷Öµ
+		case 7:{ //ï¿½ï¿½È¡ï¿½ï¿½Ç°ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Öµ
 			printf("return ref step 7: get_encoder_count = %hhu\n",
 					this->m_n_get_cur_encoder_count);
 			MiCmdFrame cmd;
 			memset(&cmd, 0x00, sizeof(cmd));
 			cmd.data.axis_index = i+1;
 
-			if(m_p_axis_config[i].feedback_mode == NO_ENCODER){   //ÎÞ·´À¡Ôò½«µ±Ç°Î»ÖÃÉèÖÃÎªÁãµã
+			if(m_p_axis_config[i].feedback_mode == NO_ENCODER){   //ï¿½Þ·ï¿½ï¿½ï¿½ï¿½ò½«µï¿½Ç°Î»ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Îªï¿½ï¿½ï¿½
 				cmd.data.cmd = CMD_MI_SET_REF_POINT;
 			}else{
-				cmd.data.cmd = CMD_MI_GET_CUR_ENCODER;   //ÆäËüÀàÐÍÔò¶ÁÈ¡µ±Ç°µ¥È¦¾ø¶ÔÖµ
+				cmd.data.cmd = CMD_MI_GET_CUR_ENCODER;   //ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½È¡ï¿½ï¿½Ç°ï¿½ï¿½È¦ï¿½ï¿½ï¿½ï¿½Öµ
 			}
 
 
 			this->m_p_mi_comm->WriteCmd(cmd);
-			m_n_ret_ref_step[i] = 8;  //Ìø×ªÏÂÒ»²½
+			m_n_ret_ref_step[i] = 8;  //ï¿½ï¿½×ªï¿½ï¿½Ò»ï¿½ï¿½
 			printf("return ref, goto step 8\n");
 
 		}
 			break;
-		case 8: //µÈ´ýÉèÖÃ²Î¿¼µãÍê³É£¬ÔÚMiÖ¸ÁîÏìÓ¦´¦Àíº¯ÊýÖÐ´¦Àí
+		case 8: //ï¿½È´ï¿½ï¿½ï¿½ï¿½Ã²Î¿ï¿½ï¿½ï¿½ï¿½ï¿½É£ï¿½ï¿½ï¿½MiÖ¸ï¿½ï¿½ï¿½ï¿½Ó¦ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ð´ï¿½ï¿½ï¿½
 
 
 			break;
-		case 9: //µÈ´ýÉèÖÃÍê³É£¬ÒÆ¶¯µ½Öá²Î¿¼µã1
+		case 9: //ï¿½È´ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½É£ï¿½ï¿½Æ¶ï¿½ï¿½ï¿½ï¿½ï¿½Î¿ï¿½ï¿½ï¿½1
 
-			dis = this->m_p_axis_config[i].axis_home_pos[0]-this->GetPhyAxisMachPosFeedback(i);   //ÒÆ¶¯¾àÀë
+			dis = this->m_p_axis_config[i].axis_home_pos[0]-this->GetPhyAxisMachPosFeedback(i);   //ï¿½Æ¶ï¿½ï¿½ï¿½ï¿½ï¿½
 			if(dis >= 0)
 				dir = DIR_POSITIVE;
 			else
@@ -10564,31 +10559,31 @@ void ChannelEngine::ReturnRefPoint(){
 			printf("axis %u dir = %hhd, dis = %lf, curpos = %lf\n", i, dir, dis, GetPhyAxisMachPosFeedback(i));
 
 			this->ManualMove(i, dir, m_p_axis_config[i].ret_ref_speed, dis);
-			m_n_ret_ref_step[i] = 10;  //Ìø×ªÏÂÒ»²½
+			m_n_ret_ref_step[i] = 10;  //ï¿½ï¿½×ªï¿½ï¿½Ò»ï¿½ï¿½
 			printf("return ref, goto step 10\n");
 			break;
-		case 10:  //µÈ´ýÖáÒÆ¶¯µ½Î»,Íê³É£¡
+		case 10:  //ï¿½È´ï¿½ï¿½ï¿½ï¿½Æ¶ï¿½ï¿½ï¿½Î»,ï¿½ï¿½É£ï¿½
 
-			if(fabs(this->GetPhyAxisMachPosFeedback(i)- m_p_axis_config[i].axis_home_pos[0]) <= 0.005){  //µ½Î»
-				m_n_ret_ref_step[i] = 11;  //Ìø×ªÏÂÒ»²½
+			if(fabs(this->GetPhyAxisMachPosFeedback(i)- m_p_axis_config[i].axis_home_pos[0]) <= 0.005){  //ï¿½ï¿½Î»
+				m_n_ret_ref_step[i] = 11;  //ï¿½ï¿½×ªï¿½ï¿½Ò»ï¿½ï¿½
 			}
 			break;
-		case 11:  //»Ø²Î¿¼µãÍê³É
+		case 11:  //ï¿½Ø²Î¿ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 			printf("axis %u return ref over\n", i);
 			if(this->m_p_axis_config[i].feedback_mode == ABSOLUTE_ENCODER_YASAKAWA ||
 				this->m_p_axis_config[i].feedback_mode == ABSOLUTE_ENCODER_PANASONIC ||
-				this->m_p_axis_config[i].feedback_mode == LINEAR_ENCODER){  //¾ø¶ÔÖµÐèÒª·¢ËÍÉèÖÃ²Î¿¼µãÖ¸Áî
+				this->m_p_axis_config[i].feedback_mode == LINEAR_ENCODER){  //ï¿½ï¿½ï¿½ï¿½Öµï¿½ï¿½Òªï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ã²Î¿ï¿½ï¿½ï¿½Ö¸ï¿½ï¿½
 				MiCmdFrame mi_cmd;
 				memset(&mi_cmd, 0x00, sizeof(mi_cmd));
 				mi_cmd.data.cmd = CMD_MI_SET_REF_CUR;
 				mi_cmd.data.axis_index = i+1;
-				int64_t pos = m_p_axis_config[i].axis_home_pos[0] * 1e7;   //µ¥Î»×ª»»£¬0.1nm
+				int64_t pos = m_p_axis_config[i].axis_home_pos[0] * 1e7;   //ï¿½ï¿½Î»×ªï¿½ï¿½ï¿½ï¿½0.1nm
 			    memcpy(cmd.data.data, &pos, sizeof(int64_t));
 
 				this->m_p_mi_comm->WriteCmd(mi_cmd);
 			}else{
 				this->SetRetRefFlag(i, true);
-				this->m_p_pmc_reg->FReg().bits[0].in_ref_point |= (0x01<<i);   //ÖÃÎ»µ½²Î¿¼µã±êÖ¾
+				this->m_p_pmc_reg->FReg().bits[0].in_ref_point |= (0x01<<i);   //ï¿½ï¿½Î»ï¿½ï¿½ï¿½Î¿ï¿½ï¿½ï¿½ï¿½Ö¾
 			}
 //			printf("return ref over flag : 0x%llx, 0x%hhx, 0x%hhx, 0x%hhx, 0x%hhx, 0x%hhx, 0x%hhx, 0x%hhx, 0x%hhx\n", this->m_p_pmc_reg->FReg().bits[0].in_ref_point,
 //					m_p_pmc_reg->FReg().all[200], m_p_pmc_reg->FReg().all[201], m_p_pmc_reg->FReg().all[202], m_p_pmc_reg->FReg().all[203],
@@ -10599,7 +10594,7 @@ void ChannelEngine::ReturnRefPoint(){
 
 
 //#ifdef USES_PMC_PROCESS
-			//PMCÖáÖ¸Áî»Ø²Î¿¼µã½áÊø´¦Àí
+			//PMCï¿½ï¿½Ö¸ï¿½ï¿½Ø²Î¿ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 			if(this->m_p_axis_config[i].axis_pmc > 0 &&
 					this->m_pmc_axis_ctrl[m_p_axis_config[i].axis_pmc-1].GetCmdCount() > 0 &&
 					!this->m_pmc_axis_ctrl[m_p_axis_config[i].axis_pmc-1].IsPaused()){
@@ -10607,13 +10602,13 @@ void ChannelEngine::ReturnRefPoint(){
 			}
 
 			if(i == 5)
-				this->m_p_pmc_reg->FReg().bits[0].OUT8 = 0;  //pmc XÖá»ØÁã¸´Î»
+				this->m_p_pmc_reg->FReg().bits[0].OUT8 = 0;  //pmc Xï¿½ï¿½ï¿½ï¿½ã¸´Î»
 			else if(i == 6)
-				this->m_p_pmc_reg->FReg().bits[0].OUT9 = 0;  //pmc YÖá»ØÁã¸´Î»
+				this->m_p_pmc_reg->FReg().bits[0].OUT9 = 0;  //pmc Yï¿½ï¿½ï¿½ï¿½ã¸´Î»
 			else if(i == 7)
-				this->m_p_pmc_reg->FReg().bits[0].OUT10 = 0;  //pmc ×óZÖá»ØÁã¸´Î»
+				this->m_p_pmc_reg->FReg().bits[0].OUT10 = 0;  //pmc ï¿½ï¿½Zï¿½ï¿½ï¿½ï¿½ã¸´Î»
 			else if(i == 8)
-				this->m_p_pmc_reg->FReg().bits[0].OUT11 = 0;  //pmc ÓÒZÖá»ØÁã¸´Î»
+				this->m_p_pmc_reg->FReg().bits[0].OUT11 = 0;  //pmc ï¿½ï¿½Zï¿½ï¿½ï¿½ï¿½ã¸´Î»
 //#endif
 
 			if(m_n_mask_ret_ref == 0){
@@ -10622,11 +10617,11 @@ void ChannelEngine::ReturnRefPoint(){
 				m_n_ret_ref_auto_cur = 0;
 			}
 			break;
-		case 20: //Ê§°Ü´¦Àí
+		case 20: //Ê§ï¿½Ü´ï¿½ï¿½ï¿½
 			this->m_n_mask_ret_ref &= ~(0x01<<i);
 			m_n_ret_ref_step[i] = 0;
 //#ifdef USES_PMC_PROCESS
-			//PMCÖáÖ¸Áî»Ø²Î¿¼µã½áÊø´¦Àí
+			//PMCï¿½ï¿½Ö¸ï¿½ï¿½Ø²Î¿ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 			if(this->m_p_axis_config[i].axis_pmc > 0 &&
 					this->m_pmc_axis_ctrl[m_p_axis_config[i].axis_pmc-1].GetCmdCount() > 0 &&
 					!this->m_pmc_axis_ctrl[m_p_axis_config[i].axis_pmc-1].IsPaused()){
@@ -10634,13 +10629,13 @@ void ChannelEngine::ReturnRefPoint(){
 			}
 
 			if(i == 5)
-				this->m_p_pmc_reg->FReg().bits[0].OUT8 = 0;  //pmc XÖá»ØÁã¸´Î»
+				this->m_p_pmc_reg->FReg().bits[0].OUT8 = 0;  //pmc Xï¿½ï¿½ï¿½ï¿½ã¸´Î»
 			else if(i == 6)
-				this->m_p_pmc_reg->FReg().bits[0].OUT9 = 0;  //pmc YÖá»ØÁã¸´Î»
+				this->m_p_pmc_reg->FReg().bits[0].OUT9 = 0;  //pmc Yï¿½ï¿½ï¿½ï¿½ã¸´Î»
 			else if(i == 7)
-				this->m_p_pmc_reg->FReg().bits[0].OUT10 = 0;  //pmc ×óZÖá»ØÁã¸´Î»
+				this->m_p_pmc_reg->FReg().bits[0].OUT10 = 0;  //pmc ï¿½ï¿½Zï¿½ï¿½ï¿½ï¿½ã¸´Î»
 			else if(i == 8)
-				this->m_p_pmc_reg->FReg().bits[0].OUT11 = 0;  //pmc ÓÒZÖá»ØÁã¸´Î»
+				this->m_p_pmc_reg->FReg().bits[0].OUT11 = 0;  //pmc ï¿½ï¿½Zï¿½ï¿½ï¿½ï¿½ã¸´Î»
 //#endif
 			if(m_n_mask_ret_ref == 0){
 				this->m_b_ret_ref = false;
@@ -10668,15 +10663,15 @@ void ChannelEngine::ReturnRefPoint(){
 			this->m_b_ret_ref = false;
 			this->m_b_ret_ref_auto = false;
 			m_n_ret_ref_auto_cur = 0;
-			printf("×Ô¶¯»ØÁãÒì³££¡\n");
+			printf("ï¿½Ô¶ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ì³£ï¿½ï¿½\n");
 		}
 	}
 }
 
 /**
- * @brief ÉèÖÃÖá»Ø²Î¿¼µãÍê³É±êÖ¾
- * @param phy_axis : ÎïÀíÖáºÅ£¬´Ó0¿ªÊ¼
- * @param flag £º true--ÉèÖÃÍê³É±êÖ¾    false--È¡ÏûÍê³É±êÖ¾
+ * @brief ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ø²Î¿ï¿½ï¿½ï¿½ï¿½ï¿½É±ï¿½Ö¾
+ * @param phy_axis : ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Å£ï¿½ï¿½ï¿½0ï¿½ï¿½Ê¼
+ * @param flag ï¿½ï¿½ true--ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½É±ï¿½Ö¾    false--È¡ï¿½ï¿½ï¿½ï¿½É±ï¿½Ö¾
  */
 void ChannelEngine::SetRetRefFlag(uint8_t phy_axis, bool flag){
 //	printf("SetRetRefFlag: axis=%hhu, flag =%hhu\n", phy_axis, flag);
@@ -10694,11 +10689,11 @@ void ChannelEngine::SetRetRefFlag(uint8_t phy_axis, bool flag){
 			m_p_pmc_reg->FReg().bits[chn].ZRF2 |= (0x01<<bit);
 
 	}else{
-		if(m_p_axis_config[phy_axis].axis_interface == VIRTUAL_AXIS || m_p_axis_config[phy_axis].axis_type == AXIS_SPINDLE	//Ö÷ÖáºÍÐéÄâÖá²»ÓÃ»Ø²Î¿¼µã
-			|| (m_p_axis_config[phy_axis].feedback_mode == NO_ENCODER && m_p_axis_config[phy_axis].ret_ref_mode == 0)    //ÎÞ·´À¡£¬²¢ÇÒ½ûÖ¹»Ø²Î¿¼µã
-			|| (m_p_axis_config[phy_axis].feedback_mode != INCREMENTAL_ENCODER && m_p_axis_config[phy_axis].feedback_mode != NO_ENCODER && m_p_axis_config[phy_axis].ref_encoder != kAxisRefNoDef)    //¾ø¶ÔÖµ±àÂëÆ÷£¬ÒÑÉè¶¨²Î¿¼µã
-			|| (m_p_axis_config[phy_axis].feedback_mode == INCREMENTAL_ENCODER && m_p_axis_config[phy_axis].ret_ref_mode == 0)){  //ÔöÁ¿±àÂëÆ÷£¬½ûÖ¹»Ø²Î¿¼µã
-			return;   //²»ÓÃ»Ø²Î¿¼µãµÄÖá½ûÖ¹½«»ØÁã±êÖ¾¸´Î»
+		if(m_p_axis_config[phy_axis].axis_interface == VIRTUAL_AXIS || m_p_axis_config[phy_axis].axis_type == AXIS_SPINDLE	//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½á²»ï¿½Ã»Ø²Î¿ï¿½ï¿½ï¿½
+			|| (m_p_axis_config[phy_axis].feedback_mode == NO_ENCODER && m_p_axis_config[phy_axis].ret_ref_mode == 0)    //ï¿½Þ·ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ò½ï¿½Ö¹ï¿½Ø²Î¿ï¿½ï¿½ï¿½
+			|| (m_p_axis_config[phy_axis].feedback_mode != INCREMENTAL_ENCODER && m_p_axis_config[phy_axis].feedback_mode != NO_ENCODER && m_p_axis_config[phy_axis].ref_encoder != kAxisRefNoDef)    //ï¿½ï¿½ï¿½ï¿½Öµï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½è¶¨ï¿½Î¿ï¿½ï¿½ï¿½
+			|| (m_p_axis_config[phy_axis].feedback_mode == INCREMENTAL_ENCODER && m_p_axis_config[phy_axis].ret_ref_mode == 0)){  //ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ö¹ï¿½Ø²Î¿ï¿½ï¿½ï¿½
+			return;   //ï¿½ï¿½ï¿½Ã»Ø²Î¿ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ö¹ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ö¾ï¿½ï¿½Î»
 		}
 		this->m_n_mask_ret_ref_over &= ~(0x01<<phy_axis);
 
@@ -10708,7 +10703,7 @@ void ChannelEngine::SetRetRefFlag(uint8_t phy_axis, bool flag){
 			m_p_pmc_reg->FReg().bits[chn].ZRF2 &= ~(0x01<<bit);
 	}
 
-//	if(this->m_p_axis_config[phy_axis].axis_pmc == 0){//·ÇPMCÖá    //PMCÖáÒ²ÄÜ¼ÓÔØµ½Í¨µÀ
+//	if(this->m_p_axis_config[phy_axis].axis_pmc == 0){//ï¿½ï¿½PMCï¿½ï¿½    //PMCï¿½ï¿½Ò²ï¿½Ü¼ï¿½ï¿½Øµï¿½Í¨ï¿½ï¿½
 		uint8_t chn_axis = 0;
 		chn = this->GetAxisChannel(phy_axis, chn_axis);
 		if(chn != CHANNEL_ENGINE_INDEX){
@@ -10721,10 +10716,10 @@ void ChannelEngine::SetRetRefFlag(uint8_t phy_axis, bool flag){
 }
 
 /**
- * @brief »ñÈ¡ÎïÀíÖáËùÊôÍ¨µÀ¼°Í¨µÀÖá±àºÅ
- * @param phy_axis : ÎïÀíÖáºÅ£¬´Ó0¿ªÊ¼
- * @param chn_axis[out] £º  Í¨µÀÖáºÅ£¬´Ó0¿ªÊ¼
- * @return ·µ»ØËùÊôÍ¨µÀºÅ£¬´Ó0¿ªÊ¼,0xFF±íÊ¾Ã»ÓÐËùÊôÍ¨µÀ
+ * @brief ï¿½ï¿½È¡ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Í¨ï¿½ï¿½ï¿½ï¿½Í¨ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+ * @param phy_axis : ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Å£ï¿½ï¿½ï¿½0ï¿½ï¿½Ê¼
+ * @param chn_axis[out] ï¿½ï¿½  Í¨ï¿½ï¿½ï¿½ï¿½Å£ï¿½ï¿½ï¿½0ï¿½ï¿½Ê¼
+ * @return ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Í¨ï¿½ï¿½ï¿½Å£ï¿½ï¿½ï¿½0ï¿½ï¿½Ê¼,0xFFï¿½ï¿½Ê¾Ã»ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Í¨ï¿½ï¿½
  */
 uint8_t ChannelEngine::GetAxisChannel(uint8_t phy_axis, uint8_t &chn_axis){
 	uint8_t chn = this->m_map_phy_axis_chn[phy_axis];
@@ -10742,16 +10737,16 @@ uint8_t ChannelEngine::GetAxisChannel(uint8_t phy_axis, uint8_t &chn_axis){
 }
 
 /**
- * @brief ²âÊÔtmpÄ¿Â¼ÊÇ·ñ´æÔÚ£¬²»´æÔÚÔò´´½¨
+ * @brief ï¿½ï¿½ï¿½ï¿½tmpÄ¿Â¼ï¿½Ç·ï¿½ï¿½ï¿½Ú£ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ò´´½ï¿½
  */
 void ChannelEngine::CheckTmpDir(){
-	DIR *dir = opendir("/cnc/tmp/");   //´ò¿ªÁÙÊ±Ä¿Â¼
+	DIR *dir = opendir("/cnc/tmp/");   //ï¿½ï¿½ï¿½ï¿½Ê±Ä¿Â¼
 	if(dir == nullptr){
-		//´´½¨Ä¿Â¼
-		if(mkdir("/cnc/tmp/", 0755) == -1){//´´½¨Ä¿Â¼Ê§°Ü
-			g_ptr_trace->PrintTrace(TRACE_ERROR, HMI_COMMUNICATION, "´´½¨Ä¿Â¼Ê§°Ü£¡[/cnc/tmp/]");
+		//ï¿½ï¿½ï¿½ï¿½Ä¿Â¼
+		if(mkdir("/cnc/tmp/", 0755) == -1){//ï¿½ï¿½ï¿½ï¿½Ä¿Â¼Ê§ï¿½ï¿½
+			g_ptr_trace->PrintTrace(TRACE_ERROR, HMI_COMMUNICATION, "ï¿½ï¿½ï¿½ï¿½Ä¿Â¼Ê§ï¿½Ü£ï¿½[/cnc/tmp/]");
 		}else{
-			g_ptr_trace->PrintTrace(TRACE_INFO, HMI_COMMUNICATION, "´ò¿ªÄ¿Â¼[/cnc/tmp/]Ê§°Ü£¡×Ô¶¯´´½¨¸ÄÄ¿Â¼£¡");
+			g_ptr_trace->PrintTrace(TRACE_INFO, HMI_COMMUNICATION, "ï¿½ï¿½Ä¿Â¼[/cnc/tmp/]Ê§ï¿½Ü£ï¿½ï¿½Ô¶ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ä¿Â¼ï¿½ï¿½");
 		}
 	}else{
 		closedir(dir);
@@ -10760,7 +10755,7 @@ void ChannelEngine::CheckTmpDir(){
 
 
 /**
- * @brief Êä³öµ÷ÊÔÊý¾Ý
+ * @brief ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
  */
 void ChannelEngine::PrintDebugInfo(){
 	printf("CHN ENGINE DEBUG INFO: module_ready_mask=0x%hhu\n", g_sys_state.module_ready_mask);

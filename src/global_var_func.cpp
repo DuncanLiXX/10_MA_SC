@@ -52,8 +52,9 @@ ADCommunication *g_ptr_ad_comm = nullptr;     //辅助设备通讯接口
  * @param axis_index ：轴号
  */
 void CreateError(uint16_t error_code, uint8_t error_level,
-		uint8_t clear_type, int32_t error_info, uint8_t channel_index, uint8_t axis_index) {
-	if(g_ptr_alarm_processor->HasErrorInfo(error_code, error_level, clear_type, error_info, channel_index, axis_index)){
+    uint8_t clear_type, int32_t error_info, uint8_t channel_index, uint8_t axis_index) {
+    std::cout << "------------error_code: " << error_code << "error_info: " << error_info << std::endl;
+    if(g_ptr_alarm_processor->HasErrorInfo(error_code, error_level, clear_type, error_info, channel_index, axis_index)){
 
 		return;  //重复告警
 	}

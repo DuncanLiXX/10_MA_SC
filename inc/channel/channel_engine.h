@@ -586,7 +586,7 @@ private:  //私有成员变量
 	uint8_t m_mask_delay_svo_off_over;   //已经停止到位的通道的mask
 #endif
 
-    const int m_HANDWHEEL_BYTES = 3;
+    const int HANDWHEEL_BYTES = 3;
     const static map<int, SDLINK_SPEC> m_SDLINK_MAP;
 
 };

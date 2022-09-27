@@ -2597,7 +2597,8 @@ void HMICommunication::ProcessHmiVirtualMOPCmd(HMICmdFrame &cmd){
 	case MOP_KEY_SPD_REVERSE:			//主轴反转
 		m_p_channel_engine->SpindleOut(SPD_DIR_NEGATIVE);
 		break;
-	case MOP_KEY_EMERGENCY:				//急停
+    case MOP_KEY_EMERGENCY:				//急停
+        std::cout << "mop energency" << std::endl;
 		this->m_p_channel_engine->Emergency();
 		break;
 	case MOP_KEY_CLEAR_ALARM:			//清除告警

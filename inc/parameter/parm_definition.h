@@ -405,9 +405,8 @@ struct HandWheelMapInfo {
     char devName[16] = { };
     HandWheelMapInfo() = default;
     HandWheelMapInfo(int dNum, int wId, int cMap, std::string dName):
-        devNum(dNum), wheelID(wId), channelMap(cMap)
+        devNum(dNum), wheelID(wId), channelMap(cMap), reserve(0)
     {
-        reserve = 0;
         size_t len = sizeof(devName);
         memset(devName, 0, len);
         int sizeCpy = dName.size();
@@ -420,8 +419,6 @@ struct HandWheelMapInfo {
         return (devNum == lhs.devNum) && (wheelID == lhs.wheelID) && (std::string(devName) == std::string(lhs.devName));
     }
 };
-
-
 typedef std::vector<HandWheelMapInfo> HandWheelMapInfoVec;
 
 //工艺相关通道参数组

@@ -8134,7 +8134,6 @@ void ChannelEngine::ProcessPmcSignal(){
 					this->m_hard_limit_negative |= flag;
 			//		printf("negative limit222 : 0x%llx\n", m_hard_limit_negative);
 				}
-
 			}
 		}
 	}

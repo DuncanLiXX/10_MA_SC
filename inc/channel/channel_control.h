@@ -607,6 +607,8 @@ private://私有成员变量
 	SCAxisConfig *m_p_axis_config;        //轴配置
 	SCCoordConfig *m_p_chn_coord_config;  //工件坐标系配置
 	SCCoordConfig *m_p_chn_ex_coord_config; //扩展工件坐标系配置
+	SCCoordConfig *m_p_chn_g92_offset;    //@add zk G92 全局坐标系偏移
+
 	SCToolOffsetConfig *m_p_chn_tool_config;		//刀具偏置配置
 	SCToolPotConfig *m_p_chn_tool_info;     //刀具信息，包括刀具类型、刀套号、寿命等
 

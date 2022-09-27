@@ -831,16 +831,12 @@ bool MCArmCommunication::ProcessCmdFun(){
 				continue;
 		}
 
-
 		//×ª¸øChannelEngineÖ´ÐÐ
 		this->m_p_channel_engine->ProcessMcCmdRsp(cmd_frame);
 	}
 
-
 	return true;
 }
-
-
 
 
 /**

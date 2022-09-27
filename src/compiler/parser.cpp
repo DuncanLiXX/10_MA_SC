@@ -569,7 +569,7 @@ bool Parser::AnalyzeGCode(LexerGCode *gcode){
 			if(!CreateTimeWaitMsg()){
 				return false;
 			}
-		}else if(m_mode_code[0] == G28_CMD){
+		}else if(m_mode_code[0] == G28_CMD or m_mode_code[0] == G30_CMD){
 			if(!CreateRefReturnMsg(m_mode_code[0]))
 				return false;
 			else

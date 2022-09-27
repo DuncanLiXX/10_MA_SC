@@ -265,6 +265,8 @@ bool ChannelControl::Initialize(uint8_t chn_index, ChannelEngine *engine, HMICom
 	m_p_axis_config = parm->GetAxisConfig();
 	this->m_p_chn_coord_config = parm->GetCoordConfig(chn_index);
 	this->m_p_chn_ex_coord_config = parm->GetExCoordConfig(chn_index);
+	this->m_p_chn_g92_offset = new SCCoordConfig();
+	memset(m_p_chn_g92_offset, 0, sizeof(SCCoordConfig));
 	this->m_p_chn_tool_config = parm->GetToolConfig(chn_index);
 	this->m_p_chn_tool_info = parm->GetToolPotConfig(chn_index);
 
@@ -7045,6 +7047,18 @@ bool ChannelControl::ExecuteCoordMsg(RecordMsg *msg){
 	bool flag = this->m_n_hw_trace_state==REVERSE_TRACE?true:false;    //是否反向引导
 	//更新模态
 	int gcode = flag?coordmsg->GetLastGCode():coordmsg->GetGCode();
+
+	// @add zk
+	if(gcode == G92_CMD){ //设定工件坐标系
+		//TODO  待完善
+		DPointChn point = coordmsg->GetTargetPos();
+		for(int i=0; i<kMaxAxisChn; i++){
+			double offset = GetAxisCurMachPos(i) - point.GetAxisValue(i);
+			m_p_chn_g92_offset->offset[i] = offset;
+		}
+	}
+	// @add zk
+
 	if(gcode == G52_CMD){//局部坐标系
 		//TODO  待完善
 
@@ -7104,11 +7118,7 @@ bool ChannelControl::ExecuteCoordMsg(RecordMsg *msg){
 		if(this->m_simulate_mode != SIM_NONE)  //保存仿真当前位置
 			this->m_pos_simulate_cur_work = coordmsg->GetTargetPos();
 
-	}else if(gcode == G92_CMD){ //设定工件坐标系
-		//TODO  待完善
-		printf("G92 CMD\n");
 	}else if(m_simulate_mode == SIM_NONE || m_simulate_mode == SIM_MACHINING){  //非仿真模式或者加工仿真模式
-
 		uint16_t coord_mc = 0;
 		switch(coordmsg->GetExecStep()){
 		case 0:
@@ -9315,6 +9325,8 @@ bool ChannelControl::ExecuteRefReturnMsg(RecordMsg *msg){
 			printf("ref return msg execute error!\n");
 			break;
 		}
+	}else if(gcode == G30_CMD){
+		printf("G30 CMD ... \n");
 	}
 
 
@@ -11396,6 +11408,8 @@ void ChannelControl::SetMcCoord(bool flag){
 			}else if(coord_index <= G5499_CMD){
 				origin_pos += m_p_chn_ex_coord_config[coord_index/10-5401].offset[i] * 1e7;    //单位由mm转换为0.1nm
 			}
+
+			origin_pos += m_p_chn_g92_offset->offset[i] * 1e7;
 
 			this->SetMcAxisOrigin(i, origin_pos);
 		}

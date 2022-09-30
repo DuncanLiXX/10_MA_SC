@@ -66,7 +66,7 @@
 
 
 //版本信息
-#define ADX_SC_VERSION "P0.3.01" //SC模块软件版本号
+#define ADX_SC_VERSION "P0.3.02" //SC模块软件版本号
 
 //文件目录定义
 #define PATH_NC_FILE "/cnc/nc_files/"    //NC加工文件目录0
@@ -120,6 +120,7 @@
 #ifdef USES_GRIND_MACHINE
 #define GRIND_CONFIG_FILE "/cnc/config/grind_config.ini"   //磨削专用参数配置文件
 #endif
+#define HANDWHEEL_CONFIG_FILE "/cnc/config/handwheel_map.ini"
 
 
 #define BOARD_TEMPATURE "/sys/bus/i2c/devices/1-0048/hwmon/hwmon0/temp1_input"   //主板温度保存文件

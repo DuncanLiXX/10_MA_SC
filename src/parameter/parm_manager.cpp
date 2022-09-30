@@ -60,6 +60,7 @@ ParmManager::ParmManager(){
 
 	m_ini_proc_chn = new IniFile();     //工艺相关通道参数文件
 	m_ini_proc_axis = new IniFile();    //工艺相关轴参数文件
+    m_ini_handwheel_map = new IniFile;  //手轮通道映射关系
 
 	this->m_list_new_start = new UpdateParamList();
 	this->m_list_reset = new UpdateParamList();
@@ -242,7 +243,10 @@ ParmManager::~ParmManager(){
 		m_ini_grind = nullptr;
 	}
 #endif
-
+    if (m_ini_handwheel_map != nullptr) {
+        delete m_ini_handwheel_map;
+        m_ini_handwheel_map = nullptr;
+    }
 }
 
 /**
@@ -299,6 +303,9 @@ void ParmManager::InitParm(){
 
 	//初始化IO重映射数据
 	this->ReadParm(IO_REMAP_DATA);
+
+    //初始化手轮通道映射
+    this->ReadParm(HANDWHEEL_MAP);
 }
 
 
@@ -351,6 +358,9 @@ bool ParmManager::ReadParm(ParmType type){
 		res = this->ReadGrindConfig();
 		break;
 #endif
+    case HANDWHEEL_MAP:
+        res = this->ReadHandWheelParam();
+        break;
 	default:
 		res = false;
 		break;
@@ -1169,7 +1179,47 @@ bool ParmManager::ReadAxisProcParam(){
 		return false;
 	}
 
-	return true;
+    return true;
+}
+
+/**
+ * @brief 读取手轮通道映射参数
+ * @return  true--成功   false--失败
+ */
+bool ParmManager::ReadHandWheelParam()
+{
+    if (m_ini_handwheel_map == nullptr){
+        return false;
+    }
+    if(m_ini_handwheel_map->Load(HANDWHEEL_CONFIG_FILE) == 0){//读取配置成功
+        vector<string> sections;
+        m_ini_handwheel_map->GetSections(&sections);
+        for(auto itr = sections.begin() + 1; itr != sections.end(); ++itr)
+        {
+            HandWheelMapInfo info;
+            info.devNum = m_ini_handwheel_map->GetIntValueOrDefault(*itr, "devNum", -1);
+            info.wheelID = m_ini_handwheel_map->GetIntValueOrDefault(*itr, "wheelId", -1);
+            info.channelMap = m_ini_handwheel_map->GetIntValueOrDefault(*itr, "channelMap", -1);
+            std::string strValue;
+            m_ini_handwheel_map->GetStringValueOrDefault(*itr, "devName", &strValue, "null");
+
+            size_t len = strValue.length();
+            if(len >= sizeof(info.devName))
+                len = sizeof(info.devName)-1;
+            strValue.copy(info.devName, len, 0);
+            //info.devName = strValue;
+
+            m_p_handwheel_param.push_back(info);
+        }
+    }
+    else
+    {
+        if(m_ini_handwheel_map->CreateFile(HANDWHEEL_CONFIG_FILE)){
+            return false;
+        }
+
+    }
+    return true;
 }
 
 /**
@@ -3315,7 +3365,50 @@ bool ParmManager::UpdateIoRemapInfo(IoRemapInfo &info){
 	}
 
 	this->m_ini_io_remap->Save();
-	return true;
+    return true;
+}
+
+/**
+ * @brief 更新手轮通道映射
+ * @param HandWheelMapInfoVec : 手轮通道映射关系
+ * @param bRestart : 是否重启生效
+ * @return true--成功    false--失败
+ */
+bool ParmManager::SyncHandWheelInfo(const HandWheelMapInfoVec &infoVec, bool bRestart)
+{
+    char sectionName[30];
+    if (m_p_handwheel_param == infoVec)
+    {//梯图配置结构没有改变，可以直接更新参数
+        for(unsigned int i = 0; i < infoVec.size(); ++i)
+        {
+            memset(sectionName, 0x00, sizeof(sectionName));
+            sprintf(sectionName, "handwheel%d", infoVec[i].devNum);
+            if (!bRestart)
+                m_p_handwheel_param[i].channelMap = infoVec[i].channelMap;
+            m_ini_handwheel_map->SetIntValue(sectionName, "channelMap", infoVec[i].channelMap);
+        }
+        m_ini_handwheel_map->Save();
+    }
+    else
+    {//梯图配置结构改变，需要重新写入ini
+        remove(HANDWHEEL_CONFIG_FILE);
+        sync();
+        m_ini_handwheel_map->Load(HANDWHEEL_CONFIG_FILE);
+        for(unsigned int i = 0; i < infoVec.size(); ++i)
+        {
+            memset(sectionName, 0x00, sizeof(sectionName));
+            sprintf(sectionName, "handwheel%d", i+1);
+
+            m_ini_handwheel_map->SetIntValue(sectionName, "devNum", infoVec[i].devNum);
+            m_ini_handwheel_map->SetIntValue(sectionName, "wheelId", infoVec[i].wheelID);
+            m_ini_handwheel_map->SetIntValue(sectionName, "channelMap", infoVec[i].channelMap);
+            m_ini_handwheel_map->SetStringValue(sectionName, "devName", infoVec[i].devName);
+        }
+        if (!bRestart)
+            m_p_handwheel_param = infoVec;
+        m_ini_handwheel_map->Save();
+    }
+    return true;
 }
 
 /**
@@ -5672,7 +5765,85 @@ uint32_t ParmManager::GetCurWorkPiece(uint8_t chn_index){
 	uint32_t value, def_value = 0;
 	value = m_ini_chn_scene->GetIntValueOrDefault(sname, kname, def_value);
 
-	return value;
+    return value;
+}
+
+/**
+ * @brief 获取指定通道的总共件数
+ * @param chn_index : 通道号
+ * @return piece : 工件计数
+ */
+uint32_t ParmManager::GetTotalWorkPiece(uint8_t chn_index)
+{
+    char sname[32];
+    char kname[64];
+
+    memset(sname, 0x00, sizeof(sname));
+    sprintf(sname, "channel_%hhu", chn_index);
+    memset(kname, 0x00, sizeof(kname));
+    sprintf(kname, "cur_total_piece");
+    uint32_t value, def_value = 0;
+    value = m_ini_chn_scene->GetIntValueOrDefault(sname, kname, def_value);
+
+    return value;
+}
+
+/**
+ * @brief 设置指定通道的总共工件
+ * @param chn_index : 通道号
+ * @param piece : 总共件数
+ */
+void ParmManager::SetTotalWorkPiece(uint8_t chn_index, uint32_t piece)
+{
+    char sname[32];
+    char kname[64];
+
+    memset(sname, 0x00, sizeof(sname));
+    sprintf(sname, "channel_%hhu", chn_index);
+    memset(kname, 0x00, sizeof(kname));
+    sprintf(kname, "cur_total_piece");
+    this->m_ini_chn_scene->SetIntValue(sname, kname, piece);
+
+    this->m_ini_chn_scene->Save();
+}
+
+/**
+ * @brief 设置指定通道的累计加工时间
+ * @param chn_index : 通道号
+ * @param piece : 累计加工时间
+ */
+void ParmManager::SetCurTotalMachiningTime(uint8_t chn_index, uint32_t totalTime)
+{
+    char sname[32];
+    char kname[64];
+
+    memset(sname, 0x00, sizeof(sname));
+    sprintf(sname, "channel_%hhu", chn_index);
+    memset(kname, 0x00, sizeof(kname));
+    sprintf(kname, "cur_total_machinetime");
+    this->m_ini_chn_scene->SetIntValue(sname, kname, totalTime);
+
+    this->m_ini_chn_scene->Save();
+}
+
+/**
+ * @brief 获取指定通道的累计加工时间
+ * @param chn_index ： 通道号
+ * @return 返回累计加工时间
+ */
+uint32_t ParmManager::GetCurTotalMachingTime(uint8_t chn_index)
+{
+    char sname[32];
+    char kname[64];
+
+    memset(sname, 0x00, sizeof(sname));
+    sprintf(sname, "channel_%hhu", chn_index);
+    memset(kname, 0x00, sizeof(kname));
+    sprintf(kname, "cur_total_machinetime");
+    uint32_t value, def_value = 0;
+    value = m_ini_chn_scene->GetIntValueOrDefault(sname, kname, def_value);
+
+    return value;
 }
 
 /**

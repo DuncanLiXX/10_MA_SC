@@ -1,93 +1,113 @@
-cmake_minimum_required(VERSION 3.16)
-project(SC_Module)
+CMAKE_MINIMUM_REQUIRED(VERSION 3.10)
 
-set(CMAKE_CXX_STANDARD 14)
+# CMAKE_MODULE_PATH, 设置 Module 文件查找路径 
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake/")
 
-include_directories(inc)
-include_directories(inc/alarm_processor)
-include_directories(inc/Algorithm)
-include_directories(inc/channel)
-include_directories(inc/communication)
-include_directories(inc/compiler)
-include_directories(inc/parameter)
-include_directories(inc/pmc)
-include_directories(inc/tool_compensate)
-include_directories(lib)
-include_directories(lib/inc)
-include_directories(src)
+# arm_linux_setup 为自定义的 Module 文件
+# 用于 Arm v7 的交叉编译
+include(arm_linux_setup)
 
-add_executable(SC_Module
-        .idea/inspectionProfiles/Project_Default.xml
-        .idea/.gitignore
-        .idea/encodings.xml
-        .idea/misc.xml
-        .idea/modules.xml
-        .idea/SC_Module.iml
-        .idea/vcs.xml
-        .idea/workspace.xml
-        inc/alarm_processor/alarm_processor.h
-        inc/Algorithm/coord_processor.h
-        inc/channel/channel_control.h
-        inc/channel/channel_data.h
-        inc/channel/channel_engine.h
-        inc/channel/channel_mode_group.h
-        inc/communication/ad_communication.h
-        inc/communication/comm_data_definition.h
-        inc/communication/hmi_communication.h
-        inc/communication/mc_communication.h
-        inc/communication/mc_communication_arm.h
-        inc/communication/mi_communication.h
-        inc/compiler/compile_message.h
-        inc/compiler/compiler.h
-        inc/compiler/compiler_data.h
-        inc/compiler/lexer.h
-        inc/compiler/parser.h
-        inc/parameter/parm_definition.h
-        inc/parameter/parm_manager.h
-        inc/pmc/pmc_axis_ctrl.h
-        inc/pmc/pmc_register.h
-        inc/tool_compensate/tool_comp_data.h
-        inc/tool_compensate/tool_compensate.h
-        inc/tool_compensate/tools_comp.h
-        inc/circular_buffer.h
-        inc/data_stack.h
-        inc/geometry_data.h
-        inc/global_definition.h
-        inc/global_include.h
-        inc/global_structure.h
-        inc/hmi_shared_data.h
-        inc/inifile.h
-        inc/list_buffer.h
-        inc/trace.h
-        inc/variable.h
-        lib/inc/license_interface.h
-        src/alarm_processor/alarm_processor.cpp
-        src/Algorithm/coord_processor.cpp
-        src/channel/channel_control.cpp
-        src/channel/channel_engine.cpp
-        src/channel/channel_mode_group.cpp
-        src/communication/ad_communication.cpp
-        src/communication/hmi_communication.cpp
-        src/communication/mc_communication.cpp
-        src/communication/mc_communication_arm.cpp
-        src/communication/mi_communication.cpp
-        src/compiler/compile_message.cpp
-        src/compiler/compiler.cpp
-        src/compiler/compiler_data.cpp
-        src/compiler/lexer.cpp
-        src/compiler/parser.cpp
-        src/parameter/parm_manager.cpp
-        src/pmc/pmc_axis_ctrl.cpp
-        src/pmc/pmc_register.cpp
-        src/tool_compensate/tool_comp_data.cpp
-        src/tool_compensate/tool_compensate.cpp
-        src/tool_compensate/tool_math.cpp
-        src/tool_compensate/tools_comp.cpp
-        src/geometry_data.cpp
-        src/global_structure.cpp
-        src/global_var_func.cpp
-        src/inifile.cpp
-        src/license_interface.h
-        src/main.cpp
-        src/trace.cpp
-        src/variable.cpp)
+# 设置项目名称
+project(10MA_SC)
+
+# 设置生成的目标文件的名称
+set(TARGET_NAME 10MA_SC_Module.elf)
+
+# 设置项目相关源码文件
+set(SC_SRC 
+        src/geometry_data.cpp;
+        src/global_structure.cpp;
+        src/global_var_func.cpp;
+        src/inifile.cpp;
+        src/main.cpp;
+        src/trace.cpp;
+        src/variable.cpp;
+        src/alarm_processor/alarm_processor.cpp;
+        src/Algorithm/coord_processor.cpp;
+)
+
+set(CHANNEL_SRC
+        src/channel/channel_control.cpp;
+        src/channel/channel_engine.cpp;
+        src/channel/channel_mode_group.cpp;
+)
+
+set(COMMUNICATION_SRC
+        src/communication/ad_communication.cpp;
+        src/communication/hmi_communication.cpp;
+        src/communication/mc_communication.cpp;
+        src/communication/mc_communication_arm.cpp;
+        src/communication/mi_communication.cpp;
+)
+
+set(COMPILER_SRC
+        src/compiler/compile_message.cpp;
+        src/compiler/compiler.cpp;
+        src/compiler/compiler_data.cpp;
+        src/compiler/lexer.cpp;
+        src/compiler/parser.cpp;
+)
+
+set(PARAMETER_SRC
+        src/parameter/parm_manager.cpp;
+)
+
+set(PMC_SRC
+        src/pmc/pmc_axis_ctrl.cpp;
+        src/pmc/pmc_register.cpp;
+)
+
+set(TOOL_COMPENSATE_SRC
+        src/tool_compensate/tool_comp_data.cpp;
+        src/tool_compensate/tool_compensate.cpp;
+        src/tool_compensate/tool_math.cpp;
+        src/tool_compensate/tools_comp.cpp;
+)
+
+set (SC_SRC ${SC_SRC} ${COMMUNICATION_SRC} ${COMPILER_SRC} ${CHANNEL_SRC}
+			${PARAMETER_SRC} ${PMC_SRC} ${TOOL_COMPENSATE_SRC})
+
+# 生成名称为 ${TARGET_NAME} 的可执行文件
+add_executable(${TARGET_NAME} ${SC_SRC})
+
+# 设置头文件的查找路径
+target_include_directories(${TARGET_NAME} PRIVATE inc)
+target_include_directories(${TARGET_NAME} PRIVATE inc/alarm_processor)
+target_include_directories(${TARGET_NAME} PRIVATE inc/Algorithm)
+target_include_directories(${TARGET_NAME} PRIVATE inc/channel)
+target_include_directories(${TARGET_NAME} PRIVATE inc/communication)
+target_include_directories(${TARGET_NAME} PRIVATE inc/compiler)
+target_include_directories(${TARGET_NAME} PRIVATE inc/parameter)
+target_include_directories(${TARGET_NAME} PRIVATE inc/pmc)
+target_include_directories(${TARGET_NAME} PRIVATE inc/tool_compensate)
+target_include_directories(${TARGET_NAME} PRIVATE lib/inc)
+
+# 设置库文件的查找路径
+link_directories(${CMAKE_SOURCE_DIR}/lib/release)
+
+# 导入静态链接库
+add_library(LibLicense STATIC IMPORTED)
+set_property(TARGET LibLicense PROPERTY IMPORTED_LOCATION ${CMAKE_SOURCE_DIR}/lib/release/libLitronucLicense.a)
+add_library(LibMosquitpp STATIC IMPORTED)
+set_property(TARGET LibMosquitpp PROPERTY IMPORTED_LOCATION ${CMAKE_SOURCE_DIR}/lib/release/libmosquittopp_static.a)
+
+# 链接库文件
+target_link_libraries(${TARGET_NAME} PRIVATE pthread LibLicense LibMosquitpp)
+
+# 设置编译选项
+target_compile_options(${TARGET_NAME} PRIVATE
+                            -Wall
+                            -O2
+                            -Wl,-Map,project.map
+                            -fmessage-length=0
+                            -MT"$@")
+
+
+
+
+
+
+
+
+
+

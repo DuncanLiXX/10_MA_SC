@@ -32,6 +32,7 @@ enum ParmType{
 
 	PITCH_COMP_DATA = 13,    //螺补数据
 	IO_REMAP_DATA = 14,      //IO重映射数据
+    HANDWHEEL_MAP = 15,      //手轮通道映射
 
 
 	CHN_STATE_SCENE = 100		//通道当前状态
@@ -394,6 +395,31 @@ struct IoRemapInfo{
 	uint8_t  valtype;	//值类型： 0：原值，1：反相 2：常高 3：常低
 };
 
+//手轮通道映射
+struct HandWheelMapInfo {
+    uint8_t devNum = 0;
+    uint8_t wheelID = 0;
+    uint8_t channelMap = 0;
+    uint8_t reserve = 0;
+    //std::string devName = "";
+    char devName[16] = { };
+    HandWheelMapInfo() = default;
+    HandWheelMapInfo(int dNum, int wId, int cMap, std::string dName):
+        devNum(dNum), wheelID(wId), channelMap(cMap), reserve(0)
+    {
+        size_t len = sizeof(devName);
+        memset(devName, 0, len);
+        int sizeCpy = dName.size();
+        if (dName.length() >= len)
+            sizeCpy = len - 1;
+        memcpy(devName, dName.c_str(), sizeCpy);
+    }
+
+    bool operator ==(const HandWheelMapInfo &lhs) const{
+        return (devNum == lhs.devNum) && (wheelID == lhs.wheelID) && (std::string(devName) == std::string(lhs.devName));
+    }
+};
+typedef std::vector<HandWheelMapInfo> HandWheelMapInfoVec;
 
 //工艺相关通道参数组
 struct ChnProcParamGroup{

@@ -335,6 +335,8 @@ public:
 	
 	void SetHmiGraphMode(bool flag){this->m_b_hmi_graph = flag;}   //设置HMI图形显示模式
 
+    void ClearMachineTimeTotal();
+
 #ifdef USES_ADDITIONAL_PROGRAM
 	bool CallAdditionalProgram(AddProgType type);  //调用附加程序（前置/后置）
 #endif
@@ -413,6 +415,7 @@ private:
 	void ProcessHmiGetMacroVarCmd(HMICmdFrame &cmd);	//处理获取宏变量命令
 	void ProcessHmiSetMacroVarCmd(HMICmdFrame &cmd);	//处理设置宏变量命令
 	void ProcessHmiClearWorkPieceCmd(HMICmdFrame &cmd);  //处理加工计数清零命令
+    void ProcessHmiClearTotalPieceCmd(HMICmdFrame &cmd); //处理总共件数清零命令
 	void ProcessHmiRestartCmd(HMICmdFrame &cmd);    //处理加工复位命令
 
 	void ProcessHmiSetCurMachPosCmd(HMICmdFrame &cmd);      //处理HMI设置轴当前位置的机械坐标命令
@@ -436,7 +439,7 @@ private:
 	bool SendModeChangToHmi(uint16_t mode_type);			//向HMI发送非G模态状态改变命令，包含T/D/H/F/S
 	bool SendMdaDataReqToHmi();			//向HMI发送MDA数据请求
 	bool SendMessageToHmi(uint16_t msg_type, uint32_t msg_id, uint32_t msg_param = 0);		//向HMI发送提示信息
-	bool SendWorkCountToHmi(uint32_t count);   //向HMI更新加工计数
+    bool SendWorkCountToHmi(uint32_t count, uint32_t totalCount);   //向HMI更新加工计数
 	bool SendMachOverToHmi();    //通知HMI加工完成
 
 	bool SendManualToolMeasureResToHmi(bool res);  //发送手动对刀结果给HMI
@@ -737,6 +740,7 @@ private://私有成员变量
 	struct timeval m_time_m_start[kMaxMCodeInLine];     //M指令执行的开始时间
 	struct timeval m_time_t_start[kMaxTCodeInLine];     //T指令执行的开始时间
 	struct timeval m_time_start_maching;     //开始自动加工的时间，用于加工计时
+    int32_t        m_time_remain;            //剩余加工时间
 
 	uint64_t m_n_mask_clear_pos;		//位置清整数圈轴标志
 

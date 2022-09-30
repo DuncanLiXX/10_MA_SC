@@ -15,8 +15,10 @@
 #include <stdint.h>
 #include <cstddef>
 #include <sys/mman.h>
+#include <string>
 #include "hmi_shared_data.h"
 #include "list_buffer.h"
+#include "global_definition.h"
 //#include "global_include.h"
 
 
@@ -152,6 +154,37 @@ union MiCtrlReg{
 	MiCtrlBits bits;
 };
 
+#ifdef USES_PMC_2_0
+/**
+ * @brief SD-LINK从站设备信息结构
+ */
+struct BdioDevInfo{
+    int8_t group_index;   //设备号
+    int8_t device_type;   //设备类型号 1.SA1(DI/DO 9/4), 3.SC1(DI/DO 16/16), 4.SD1(DI/DO 12/8), 5.SE1(DI/DO 7/8)
+    int8_t base_index;    //基板号(预留)
+    int8_t slot_index;    //槽位号(预留)
+    int16_t in_bytes;     //输入字节数
+    int16_t out_bytes;    //输出字节数
+    int8_t input_start;   //输入起始点
+    int8_t output_start;  //输出起始点
+    int8_t handwheel_map; //手轮映射
+    int8_t handwheel_num; //设备所支持的手轮个数（@temp暂时确定只有一个）
+    std::string info_name;//设备名称
+};
+
+/**
+ * @brief SD_LINK扩展板卡规格
+ */
+struct SDLINK_SPEC {
+    int8_t  inBytes;
+    int8_t  outBytes;
+    std::string info_name;
+    bool    withHandWheel;
+    SDLINK_SPEC(std::string name, int in, int out, bool handWheel) :
+        inBytes(in), outBytes(out), info_name(name), withHandWheel(handWheel) {}
+};
+
+#else
 /**
  * @brief SD-LINK从站设备信息结构
  */
@@ -161,6 +194,7 @@ struct BdioDevInfo{
 	int in_bytes;		//输入字节
 	int out_bytes;
 };
+#endif
 typedef ListBuffer<BdioDevInfo> BdioDevList;   //SD-LINK从站队列
 
 #ifdef USES_GRIND_MACHINE

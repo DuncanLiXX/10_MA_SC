@@ -15,6 +15,9 @@
 //#include "global_include.h"
 #include <pthread.h>
 #include <string.h>
+#include <string>
+#include "mosquittopp.h"
+//#include <mqtt_protocol.h>
 #include "hmi_shared_data.h"
 
 //TraceLevel数据结构用于设置调试信息打印级别
@@ -106,7 +109,15 @@ public:
 	 * @return 无
 	 */
 	void PrintTrace(TraceLevel trace_level, TraceModule trace_module,
-			const char* trace_message, ...);
+            const char* trace_message, ...);
+
+    /*
+     * @brief 输出调试信息,按主题进行分类
+     * @param topic 当前调试信息主题
+     * @param trace_message 调试信息内容
+     * @return 无
+     */
+    void PrintTopic(const std::string &topic, const char * trace_message, ...);
 
 	/*
 	 * @brief 输出告警信息
@@ -209,6 +220,10 @@ private:
 	int32_t m_log_handler;	//操作日志文件句柄
 	int32_t m_trace_handler;	//跟踪信息文件句柄
 	int32_t m_alarm_handler;	//告警信息文件句柄
+
+    std::string m_topic_dest = "localhost";
+    mosqpp::mosquittopp m_topic_mosq;
+
 };
 
 

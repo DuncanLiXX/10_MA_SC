@@ -63,7 +63,9 @@ void SetMcArmComm(MCArmCommunication *comm){this->m_p_mc_arm_comm = comm;}   //É
 	void InitBdioDev();   //³õÊ¼»¯SD-LINK´ÓÕ¾Éè±¸ÅäÖÃ
 
 #ifdef USES_PMC_2_0
-	void ReadIoDev_pmc2();   //PMC2.0°æ±¾£¬¶ÁÈ¡SD_LINK´ÓÕ¾Éè±¸ÅäÖÃ
+    void ReadIoDev_pmc2();                               //PMC2.0°æ±¾£¬¶ÁÈ¡SD_LINK´ÓÕ¾Éè±¸ÅäÖÃ
+    bool CheckIoDev_pmc2(const BdioDevInfo &info);       //¼ì²âSD_LINK²ÎÊıÊÇ·ñºÏÀí
+    bool SelectHandleWheel(int indexId, int channelId);  //ÅäÖÃÊÖÂÖÍ¨µÀÓ³Éä
 #else
 	void ReadIoDev_pmc1();     //PMC1.0°æ±¾£¬¶ÁÈ¡SD_LINK´ÓÕ¾Éè±¸ÅäÖÃ
 #endif
@@ -363,8 +365,10 @@ private:	//Ë½ÓĞ³ÉÔ±º¯Êı
 	void ProcessHmiCheckSyncCmd(HMICmdFrame &cmd);      //´¦ÀíHMI²éÑ¯Í¬²½ÖáÊ¹ÄÜÃüÁî
 
 	void ProcessHmiNotifyGraphCmd(HMICmdFrame &cmd);    //´¦ÀíHMIÍ¨ÖªÍ¼ĞÎÄ£Ê½ÃüÁî
+    void ProcessHmiHandWheelCmd(HMICmdFrame &cmd);
 
 	void SendHmiUpdateStatus(uint8_t total_step, uint8_t cur_step);  //¸øHMI·¢ËÍÉı¼¶×´Ì¬
+
 
 
 	void ProcessPmcSignal();		//´¦ÀíPMCµÄG±äÁ¿
@@ -581,6 +585,9 @@ private:  //Ë½ÓĞ³ÉÔ±±äÁ¿
 	uint8_t m_mask_delay_svo_off;   //´ıÑÓ³ÙÏÂËÅ·şµÄÍ¨µÀmask
 	uint8_t m_mask_delay_svo_off_over;   //ÒÑ¾­Í£Ö¹µ½Î»µÄÍ¨µÀµÄmask
 #endif
+
+    const int HANDWHEEL_BYTES = 3;
+    const static map<int, SDLINK_SPEC> m_SDLINK_MAP;
 
 };
 

@@ -199,7 +199,6 @@ ChannelControl::~ChannelControl() {
 //		m_p_output_buffer = nullptr;
 //	}
 
-
 	//释放编译器对象
 	if(m_p_compiler != nullptr){
 		delete m_p_compiler;
@@ -6596,7 +6595,7 @@ bool ChannelControl::ExecuteAuxMsg(RecordMsg *msg){
 
 		default:   //其它M代码
 		    if(mcode >= 4000 && mcode <= 4099){   // MI临时调试  M代码
-				this->MiDebugFunc(mcode);
+		    	this->MiDebugFunc(mcode);
 				tmp->SetExecStep(m_index, 0xFF);    //置位结束状态
 				break;
 		    }
@@ -6983,10 +6982,6 @@ bool ChannelControl::ExecuteArcMsg(RecordMsg *msg, bool flag_block){
  */
 bool ChannelControl::ExecuteCoordMsg(RecordMsg *msg){
 	//首先将缓冲中的所有待发送指令发送给MC
-//	if(!OutputLastBlockItem()){
-//		//PL中的FIFO已满，发送失败
-//		return false;
-//	}
 
 	CoordMsg *coordmsg = (CoordMsg *)msg;
 
@@ -9216,7 +9211,13 @@ bool ChannelControl::ExecuteRefReturnMsg(RecordMsg *msg){
 	uint8_t phy_axis = 0;
 	uint8_t i = 0;
 	bool flag = true;
-	if(gcode == G28_CMD){
+	int ref_id = refmsg->ref_id;
+	if(ref_id < 0 or ref_id > 10){
+		//  参考点序号超出范围
+		CreateError(ERR_NO_CUR_RUN_DATA, ERROR_LEVEL, CLEAR_BY_MCP_RESET, gcode, m_n_channel_index);
+		return false;
+	}
+	if(gcode == G28_CMD || gcode == G30_CMD){
 		switch(refmsg->GetExecStep()){
 		case 0:
 			printf("ret ref:step0\n");
@@ -9257,31 +9258,46 @@ bool ChannelControl::ExecuteRefReturnMsg(RecordMsg *msg){
 		case 2:
 			printf("ret ref, step 2\n");
 			//第三步：控制对应的轴走到机械零点
-			for(i = 0; i < m_p_channel_config->chn_axis_count; i++){
-				if(axis_mask & (0x01<<i)){
-					phy_axis = this->GetPhyAxis(i);
-					if(phy_axis != 0xff){
+			if(gcode == G28_CMD){
+				for(i = 0; i < m_p_channel_config->chn_axis_count; i++){
+					if(axis_mask & (0x01<<i)){
+						phy_axis = this->GetPhyAxis(i);
+						if(phy_axis != 0xff){
 #ifdef USES_RET_REF_TO_MACH_ZERO
-						this->ManualMove(i, 0, m_p_axis_config[phy_axis].rapid_speed);  //机械坐标系
-						printf("manual move machpos axis=%hhu, target=0, speed=%lf\n", i,	m_p_axis_config[phy_axis].rapid_speed);
+							this->ManualMove(i, 0, m_p_axis_config[phy_axis].rapid_speed);  //机械坐标系
+							printf("manual move machpos axis=%hhu, target=0, speed=%lf\n", i,	m_p_axis_config[phy_axis].rapid_speed);
 #else
-						this->ManualMove(i, m_p_axis_config[phy_axis].axis_home_pos[0], m_p_axis_config[phy_axis].rapid_speed);  //机械坐标系
-						printf("manual move machpos axis=%hhu, target=%lf, speed=%lf\n", i, m_p_axis_config[phy_axis].axis_home_pos[0],
-								m_p_axis_config[phy_axis].rapid_speed);
+							this->ManualMove(i, m_p_axis_config[phy_axis].axis_home_pos[0], m_p_axis_config[phy_axis].rapid_speed);  //机械坐标系
+							printf("manual move machpos axis=%hhu, target=%lf, speed=%lf\n", i, m_p_axis_config[phy_axis].axis_home_pos[0],
+									m_p_axis_config[phy_axis].rapid_speed);
 #endif
+						}
 					}
 				}
+				refmsg->SetExecStep(3);  //跳转下一步
+				return false;
+
+			}else{
+				printf("--------> G30 %lf\n", refmsg->ref_id);
+				for(i = 0; i < m_p_channel_config->chn_axis_count; i++){
+					if(axis_mask & (0x01<<i)){
+						phy_axis = this->GetPhyAxis(i);
+						if(phy_axis != 0xff){
+							this->ManualMove(i, m_p_axis_config[phy_axis].axis_home_pos[ref_id], m_p_axis_config[phy_axis].rapid_speed);  //机械坐标系
+						}
+					}
+				}
+				refmsg->SetExecStep(3);  //跳转下一步
+				return false;
 			}
 
-			refmsg->SetExecStep(3);  //跳转下一步
-//			printf("ret ref, jump to step 3\n");
-			return false;
 		case 3:{
 			//第四步：等待对应的轴到位
 #ifdef USES_RET_REF_TO_MACH_ZERO
 			double target_pos = 0;
 #else
 			double target_pos =  m_p_axis_config[phy_axis].axis_home_pos[0];
+			if(gcode == G30_CMD) target_pos = m_p_axis_config[phy_axis].axis_home_pos[ref_id];
 #endif
 			for(i = 0; i < m_p_channel_config->chn_axis_count; i++){
 				if(axis_mask & (0x01<<i)){
@@ -9325,11 +9341,7 @@ bool ChannelControl::ExecuteRefReturnMsg(RecordMsg *msg){
 			printf("ref return msg execute error!\n");
 			break;
 		}
-	}else if(gcode == G30_CMD){
-		printf("G30 CMD ... \n");
 	}
-
-
 
 	m_n_run_thread_state = RUN;
 
@@ -9473,7 +9485,6 @@ bool ChannelControl::ExecuteSkipMsg(RecordMsg *msg){
 
 				printf("skip cmd catch no signal!\n");
 
-
 				skipmsg->SetExecStep(4);   //跳转第四步
 				return false;
 			}
@@ -9513,8 +9524,6 @@ bool ChannelControl::ExecuteSkipMsg(RecordMsg *msg){
 			printf("skip msg execute error!\n");
 			break;
 		}
-
-
 
 	m_n_run_thread_state = RUN;
 	printf("execute skip msg over\n");
@@ -18910,9 +18919,9 @@ void ChannelControl::test(){
 	AuxMsg *msg = new AuxMsg(29);
 	ExecMCode(msg , 0);
 	// G84.3
-	this->SendMcRigidTapFlag(true);
-	this->SendMiTapStateCmd(true);
-	this->m_n_G843_flag = 1;
+	//this->SendMcRigidTapFlag(true);
+	//this->SendMiTapStateCmd(true);
+	//this->m_n_G843_flag = 1;
 	// G84
 	//1. 发送主轴和Z轴的对应物理轴号
 	uint16_t spd_phy = this->m_spd_axis_phy[0];

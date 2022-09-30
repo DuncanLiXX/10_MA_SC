@@ -2712,23 +2712,29 @@ bool Parser::CreateRefReturnMsg(const int gcode){
 	uint32_t mask = 0;
 	DPointChn middle;
 
-
 	this->GetTargetPos(middle, mask);
 
-
-	RecordMsg *new_msg = new RefReturnMsg(gcode, mask, middle);
+	RefReturnMsg *new_msg = new RefReturnMsg(gcode, mask, middle);
 	if(new_msg == nullptr){
 		//TODO 内存分配失败，告警
 		CreateError(ERR_MEMORY_NEW, FATAL_LEVEL, CLEAR_BY_RESET_POWER);
 		return false;
 	}
 	new_msg->SetLineNo(this->m_p_lexer_result->line_no);  //设置当前行号
+
+	double data;
+
+	if(GetCodeData(P_DATA, data)){
+		new_msg->ref_id = (int)data;
+		printf("-----> G30 P data %lf\n", new_msg->ref_id);
+	}
+
 	if(this->m_p_compiler_status->jump_flag)
 		new_msg->SetFlag(FLAG_JUMP, true);
 
-	m_p_parser_result->Append(new_msg);
+	m_p_parser_result->Append((RecordMsg *)new_msg);
 
-	ProcessLastBlockRec(new_msg);
+	ProcessLastBlockRec((RecordMsg *)new_msg);
 
 	this->m_p_compiler_status->mode.gmode[0] = gcode;
 

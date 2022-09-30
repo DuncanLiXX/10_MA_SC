@@ -219,7 +219,6 @@ bool MICommunication::InitSharedMemory(){
 		g_ptr_trace->PrintLog(LOG_ALARM, "MICommunication::InitSharedMemory() failed to map memory! errno = %d", errno);
 		return false;
 	}
-
 	//初始化上下行命令通道
 	InitCmdChannel();
 

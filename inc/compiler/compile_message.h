@@ -382,9 +382,11 @@ public:
 	void SetExecStep(uint8_t step){m_n_exec_step = step;} //设置执行步骤
 	uint32_t GetAxisMask(){return m_n_axis_mask;} 	//返回轴mask
 	DPointChn &GetMiddlePos(){return m_pos_middle;}     //返回中间点坐标
-
 	RefReturnMsg &operator=(const RefReturnMsg &msg);   //赋值运算符
 	friend bool operator ==( const RefReturnMsg &one, RefReturnMsg &two);  //判断运算符
+
+	double ref_id;      // 回第几个参考点  给 G30 PX 用
+
 private:
 	uint32_t m_n_axis_mask;   //标记回参考点的轴，通道轴
 	DPointChn m_pos_middle;  //中间点位置

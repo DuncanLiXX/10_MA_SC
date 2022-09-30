@@ -9,8 +9,6 @@
  *@version
  */
 
-
-
 #include "global_include.h"
 #include "channel_engine.h"
 #include "parm_manager.h"

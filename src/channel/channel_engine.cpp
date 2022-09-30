@@ -8528,7 +8528,6 @@ void ChannelEngine::ProcessPmcSignal(){
                 flag <<= 16*i;
                 if( m_hard_limit_negative == 0){
 
-<<<<<<< HEAD
 					this->m_hard_limit_negative |= flag;
 					this->ProcessAxisHardLimit(1);
 			//		printf("negative limit : 0x%llx\n", m_hard_limit_negative);
@@ -8539,19 +8538,7 @@ void ChannelEngine::ProcessPmcSignal(){
 			}
 		}
 	}
-=======
-                    this->m_hard_limit_negative |= flag;
-                    this->ProcessAxisHardLimit(1);
-            //		printf("negative limit : 0x%llx\n", m_hard_limit_negative);
-                }else{
-                    this->m_hard_limit_negative |= flag;
-            //		printf("negative limit222 : 0x%llx\n", m_hard_limit_negative);
-                }
 
-            }
-        }
-    }
->>>>>>> 079780604e7ec77fc82f943509786dafc9ea2d05
 
     //¸´Î»RSTÐÅºÅ
     if(this->m_b_reset_rst_signal){

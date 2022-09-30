@@ -104,9 +104,9 @@ TraceInfo::TraceInfo() :
 	}
 
     // topic 形式的数据监控
-    mosquitto_lib_init();
-    m_topic_mosq.connect(m_topic_dest.c_str());
-	m_topic_mosq.loop_start();
+    //mosquitto_lib_init();
+    //m_topic_mosq.connect(m_topic_dest.c_str());
+	//m_topic_mosq.loop_start();
 }
 
 //由于m_instance为静态变量，所以系统会自动析构
@@ -130,7 +130,7 @@ TraceInfo::~TraceInfo() {
 	}
 
     // topic 形式的数据监控
-    mosquitto_lib_cleanup();
+    //mosquitto_lib_cleanup();
 }
 
 //GetInstance是获得此类实例的唯一全局访问点
@@ -218,7 +218,7 @@ void TraceInfo::PrintTrace(TraceLevel trace_level, TraceModule trace_module,
     }
 }
 
-void TraceInfo::PrintTopic(const std::string &topic, const char *trace_message, ...)
+/*void TraceInfo::PrintTopic(const std::string &topic, const char *trace_message, ...)
 {
     if (m_topic_mosq.isConnected())
     {
@@ -234,7 +234,7 @@ void TraceInfo::PrintTopic(const std::string &topic, const char *trace_message, 
         m_topic_mosq.publish(nullptr, topic.c_str(), strlen(trace_message_buf), trace_message_buf);
     }
     return;
-}
+}*/
 
 //调试信息输出函数
 void TraceInfo::TraceOutput(const char* trace_message) {

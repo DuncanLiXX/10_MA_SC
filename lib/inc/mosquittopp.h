@@ -28,7 +28,6 @@ Contributors:
 #endif
 
 #include <cstdlib>
-#include <mosquitto.h>
 #include <time.h>
 #include <pthread.h>
 

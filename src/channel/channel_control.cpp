@@ -13226,7 +13226,7 @@ int ChannelControl::GetCurToolLife(){
 #ifdef USES_GRIND_MACHINE
 /**
  * @brief 设置G12.2磨削动态参数
- * @param intp_type : 特殊插补类型，0-	关闭（G13.1）   122—G12.2 123--G12.3 121 –G12.1   71-G7.1
+ * @param intp_type : 特殊插补类型，0-	关闭（G13.1）   122?G12.2 123--G12.3 121 ?G12.1   71-G7.1
  * @param data_idx : 数据序号，0-3
  * @param data1 ： 数据1
  * @param data2 ： 数据2

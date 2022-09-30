@@ -6,430 +6,430 @@
  *@file alarm_processor.cpp
  *@author gonghao
  *@date 2020/05/15
- *@brief ï¿½ï¿½Í·ï¿½Ä¼ï¿½Îªï¿½æ¾¯ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Êµï¿½ï¿½
+ *@brief ±¾Í·ÎÄ¼þÎª¸æ¾¯´¦ÀíÀàµÄÊµÏÖ
  *@version
  */
 #include "alarm_processor.h"
 #include "hmi_communication.h"
 #include "channel_engine.h"
 
-const int kMaxAlarmCount = 200;   //ï¿½æ¾¯ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Öµ
+const int kMaxAlarmCount = 200;   //¸æ¾¯»º³åÇø×î´óÖµ
 
-//m_instanceï¿½ï¿½Ê¼ï¿½ï¿½Îªnullptr
+//m_instance³õÊ¼»¯Îªnullptr
 AlarmProcessor* AlarmProcessor::m_instance = nullptr;
 
-//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½à¹¹ï¿½ìº¯ï¿½ï¿½
+//´íÎó´¦ÀíÀà¹¹Ôìº¯Êý
 AlarmProcessor::AlarmProcessor(){
-	try{
-		m_error_info_input_list = new CircularBuffer<ErrorInfo>(
-				kMaxAlarmCount);
-	} catch (std::bad_alloc& e) {
-		g_ptr_trace->PrintTrace(TRACE_ERROR, ERROR_PROCESS_SC,
-				"failed to malloc buffer");
-	}
-	m_latest_error.error_code = ERR_NONE;
+    try{
+        m_error_info_input_list = new CircularBuffer<ErrorInfo>(
+                kMaxAlarmCount);
+    } catch (std::bad_alloc& e) {
+        g_ptr_trace->PrintTrace(TRACE_ERROR, ERROR_PROCESS_SC,
+                "failed to malloc buffer");
+    }
+    m_latest_error.error_code = ERR_NONE;
 //	m_p_hmi_comm = nullptr;
 //	m_p_chn_engine = nullptr;
-	pthread_mutex_init(&m_mutex, NULL);
+    pthread_mutex_init(&m_mutex, NULL);
 }
 
 /*
- * @brief ï¿½æ¾¯ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
- * @param ï¿½ï¿½
- * @return ï¿½ï¿½
+ * @brief ¸æ¾¯´¦ÀíÀàÎö¹¹º¯Êý
+ * @param ÎÞ
+ * @return ÎÞ
  */
 AlarmProcessor::~AlarmProcessor() {
-	if (m_error_info_input_list != nullptr) {
-		delete m_error_info_input_list;
-		m_error_info_input_list = nullptr;
-	}
+    if (m_error_info_input_list != nullptr) {
+        delete m_error_info_input_list;
+        m_error_info_input_list = nullptr;
+    }
 
 
-	pthread_mutex_destroy(&m_mutex);
+    pthread_mutex_destroy(&m_mutex);
 }
 
 /*
- * @brief Ð´ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ï¢
- * @param error_info ï¿½ï¿½ÒªÐ´ï¿½ï¿½Ú´ï¿½ï¿½ï¿½ï¿½ï¿½Ï¢Ö¸ï¿½ï¿½
- * @return ï¿½ï¿½
+ * @brief Ð´Èë´íÎóÐÅÏ¢
+ * @param error_info ÐèÒªÐ´ÈëµÚ´íÎóÐÅÏ¢Ö¸Õë
+ * @return ÎÞ
  */
 void AlarmProcessor::SetErrorInfo(ErrorInfo* error_info) {
 //	printf("enter AlarmProcessor::SetErrorInfo()\n");
-	assert(error_info != NULL);
+    assert(error_info != NULL);
 
-	pthread_mutex_lock(&m_mutex);
+    pthread_mutex_lock(&m_mutex);
 
-	if (m_error_info_input_list->EmptyBufLen() == 0) {
-		ErrorInfo err;
-		m_error_info_input_list->ReadData(&err, 1);
-	}
+    if (m_error_info_input_list->EmptyBufLen() == 0) {
+        ErrorInfo err;
+        m_error_info_input_list->ReadData(&err, 1);
+    }
 
-	SendToHmi(error_info);
-	if(error_info->error_level < INFO_LEVEL){  //ï¿½ï¿½Ê¾ï¿½ï¿½Ï¢ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
-		ProcessAlarm(error_info);
-		m_error_info_input_list->WriteData(error_info, 1);
+    SendToHmi(error_info);
+    if(error_info->error_level < INFO_LEVEL){  //ÌáÊ¾ÐÅÏ¢²»Èë¶ÓÁÐ
+        ProcessAlarm(error_info);
+        m_error_info_input_list->WriteData(error_info, 1);
         g_ptr_trace->PrintLog(LOG_ALARM, "ALARM:%d, %d, %d, %d",
-				error_info->error_code, error_info->channel_index, error_info->axis_index, error_info->error_info);
-		g_ptr_trace->PrintAlarm(error_info);
-	}
-	pthread_mutex_unlock(&m_mutex);
+                error_info->error_code, error_info->channel_index, error_info->axis_index, error_info->error_info);
+        g_ptr_trace->PrintAlarm(error_info);
+    }
+    pthread_mutex_unlock(&m_mutex);
 //	printf("exit AlarmProcessor::SetErrorInfo()\n");
-	return;
+    return;
 }
 
 /*
- * @brief ï¿½ï¿½È¡ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ï¢
- * @param error_info ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ï¢ï¿½ï¿½ï¿½Ý½á¹¹Ö¸ï¿½ë£¬ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Å¶ï¿½È¡ï¿½Ú´ï¿½ï¿½ï¿½ï¿½ï¿½Ï¢
- * @return ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ï¢ï¿½ï¿½ï¿½ï¿½
+ * @brief ¶ÁÈ¡´íÎóÐÅÏ¢
+ * @param error_info ´íÎóÐÅÏ¢Êý¾Ý½á¹¹Ö¸Õë£¬ÓÃÀ´´æ·Å¶ÁÈ¡µÚ´íÎóÐÅÏ¢
+ * @return ´íÎóÐÅÏ¢¸öÊý
  */
 int AlarmProcessor::GetErrorInfo(ErrorInfo* error_info) {
-	assert(error_info != NULL);
+    assert(error_info != NULL);
 
-	pthread_mutex_lock(&m_mutex);
+    pthread_mutex_lock(&m_mutex);
 
-	int err_num = m_error_info_input_list->BufLen();
+    int err_num = m_error_info_input_list->BufLen();
 
-	if (err_num) {
-		m_error_info_input_list->ReadData(error_info, err_num);
-		memcpy(&m_latest_error, error_info + err_num - 1, sizeof(ErrorInfo)); //ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ÂµÄ´ï¿½ï¿½ï¿½ï¿½ï¿½Ï¢
-	}
+    if (err_num) {
+        m_error_info_input_list->ReadData(error_info, err_num);
+        memcpy(&m_latest_error, error_info + err_num - 1, sizeof(ErrorInfo)); //±£´æ×îÐÂµÄ´íÎóÐÅÏ¢
+    }
 
-	pthread_mutex_unlock(&m_mutex);
-	return err_num;
+    pthread_mutex_unlock(&m_mutex);
+    return err_num;
 }
 
 /**
- * @brief ï¿½Ð¶ï¿½ï¿½Ç·ï¿½ï¿½Ð³ï¿½ï¿½ï¿½ï¿½ï¿½Ï¢
- * @param ï¿½ï¿½
- * @return ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½,true-ï¿½ï¿½Î´ï¿½ï¿½ï¿½ï¿½Ä³ï¿½ï¿½ï¿½ï¿½ï¿½Ï¢;false-ï¿½ï¿½Î´ï¿½ï¿½ï¿½ï¿½Ä³ï¿½ï¿½ï¿½ï¿½ï¿½Ï¢
+ * @brief ÅÐ¶ÏÊÇ·ñÓÐ³ö´íÐÅÏ¢
+ * @param ÎÞ
+ * @return ´¦Àí½á¹û,true-ÓÐÎ´´¦ÀíµÄ³ö´íÐÅÏ¢;false-ÎÞÎ´´¦ÀíµÄ³ö´íÐÅÏ¢
  */
 bool AlarmProcessor::HasErrorInfo(int level) {
-	pthread_mutex_lock(&m_mutex);
-	bool res = false;
+    pthread_mutex_lock(&m_mutex);
+    bool res = false;
 
-	ErrorInfo *err = nullptr;
-	int count = m_error_info_input_list->BufLen();
+    ErrorInfo *err = nullptr;
+    int count = m_error_info_input_list->BufLen();
 
-	if (count > 0) {
-		for(int i = 0; i < count; i++){
-			err = m_error_info_input_list->ReadDataPtr(i);
-			if(err != nullptr){
+    if (count > 0) {
+        for(int i = 0; i < count; i++){
+            err = m_error_info_input_list->ReadDataPtr(i);
+            if(err != nullptr){
 
-				if(err->error_level <= level){ //ï¿½ï¿½ï¿½ó¼¶±ï¿½
-					res = true;
-					break;
-				}
+                if(err->error_level <= level){ //´íÎó¼¶±ð
+                    res = true;
+                    break;
+                }
+            }
+        }
+    } else {
+        res = false;
+    }
 
-			}
-		}
-	} else {
-		res = false;
-	}
-
-	pthread_mutex_unlock(&m_mutex);
-	return res;
+    pthread_mutex_unlock(&m_mutex);
+    return res;
 }
 
 /**
- * @brief ï¿½Ð¶ï¿½ï¿½Ç·ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ö¸ï¿½ï¿½Í¨ï¿½ï¿½ï¿½Ä¸æ¾¯ï¿½ï¿½Í¨ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ä¸æ¾¯ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Í¨ï¿½ï¿½
- * @param chn_index ï¿½ï¿½ Ö¸ï¿½ï¿½Í¨ï¿½ï¿½
- * @return ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½,true-ï¿½ï¿½Î´ï¿½ï¿½ï¿½ï¿½Ä³ï¿½ï¿½ï¿½ï¿½ï¿½Ï¢;false-ï¿½ï¿½Î´ï¿½ï¿½ï¿½ï¿½Ä³ï¿½ï¿½ï¿½ï¿½ï¿½Ï¢
+ * @brief ÅÐ¶ÏÊÇ·ñÓÐÊôÓÚÖ¸¶¨Í¨µÀµÄ¸æ¾¯£¬Í¨µÀÒýÇæµÄ¸æ¾¯ÊôÓÚÈÎÒâÍ¨µÀ
+ * @param chn_index £º Ö¸¶¨Í¨µÀ
+ * @return ´¦Àí½á¹û,true-ÓÐÎ´´¦ÀíµÄ³ö´íÐÅÏ¢;false-ÎÞÎ´´¦ÀíµÄ³ö´íÐÅÏ¢
  */
 bool AlarmProcessor::HasErrorInfo(uint8_t chn_index){
-	pthread_mutex_lock(&m_mutex);
-	bool res = false;
+    pthread_mutex_lock(&m_mutex);
+    bool res = false;
 
-	ErrorInfo *err = nullptr;
-	int count = m_error_info_input_list->BufLen();
+    ErrorInfo *err = nullptr;
+    int count = m_error_info_input_list->BufLen();
 
-	if(count == 0){
-		res = false;
-	}else{
-		for(int i = 0; i < count; i++){
-			err = m_error_info_input_list->ReadDataPtr(i);
-			if(err != nullptr){
-				if(err->channel_index == chn_index || err->channel_index == CHANNEL_ENGINE_INDEX){
-					if(err->error_level <= ERROR_LEVEL){ //ï¿½ï¿½ï¿½ó¼¶±ï¿½
-						res = true;
-						break;
-					}
-				}
-			}
-		}
-	}
+    if(count == 0){
+        res = false;
+    }else{
+        for(int i = 0; i < count; i++){
+            err = m_error_info_input_list->ReadDataPtr(i);
+            if(err != nullptr){
+                if(err->channel_index == chn_index || err->channel_index == CHANNEL_ENGINE_INDEX){
+                    if(err->error_level <= ERROR_LEVEL){ //´íÎó¼¶±ð
+                        res = true;
+                        break;
+                    }
+                }
+            }
+        }
+    }
 
-	pthread_mutex_unlock(&m_mutex);
-	return res;
+    pthread_mutex_unlock(&m_mutex);
+    return res;
 }
 
 /**
- * @brief ï¿½Ð¶ï¿½ï¿½Ç·ï¿½ï¿½ï¿½ï¿½Ø¸ï¿½ï¿½æ¾¯
- * @param error_code : ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
- * @param error_level ï¿½ï¿½ï¿½ï¿½ï¿½ó¼¶±ï¿½
- * @param clear_type ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
- * @param error_info ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ï¢
- * @param channel_index ï¿½ï¿½ Í¨ï¿½ï¿½ï¿½ï¿½
- * @param axis_index ï¿½ï¿½ï¿½ï¿½ï¿½
+ * @brief ÅÐ¶ÏÊÇ·ñÓÐÖØ¸´¸æ¾¯
+ * @param error_code : ´íÎóÂë
+ * @param error_level £º´íÎó¼¶±ð
+ * @param clear_type £º Çå³ý·½·¨
+ * @param error_info £º¸½´øÐÅÏ¢
+ * @param channel_index £º Í¨µÀºÅ
+ * @param axis_index £ºÖáºÅ
  * @return
  */
 bool AlarmProcessor::HasErrorInfo(uint16_t error_code, uint8_t error_level,
-		uint8_t clear_type, int32_t error_info, uint8_t channel_index, uint8_t axis_index)
+        uint8_t clear_type, int32_t error_info, uint8_t channel_index, uint8_t axis_index)
 {
-	bool res = false;
-	pthread_mutex_lock(&m_mutex);
+    bool res = false;
+    pthread_mutex_lock(&m_mutex);
 
-	ErrorInfo *info;
-	int count = m_error_info_input_list->BufLen();
-	if(axis_index != 0xffff) {
-		axis_index++;	//0,1,2,3,4 --> 1,2,3,4,5
-	}
-	for(int i = 0; i < count; i++){
-		info = m_error_info_input_list->ReadDataPtr(i);
-		if(info == nullptr)
-			continue;
-//        printf("error[%hhu, %hhu, %hhu, %hu, %hhu, %u], info[%hhu, %hhu, %hhu, %hu, %hhu, %u]\n", axis_index, channel_index, clear_type, error_code,
-//                error_level, error_info, info->axis_index, info->channel_index, info->clear_type, info->error_code, info->error_level,info->error_info);
-		if(info->axis_index == axis_index &&
-			info->channel_index == channel_index &&
-			info->clear_type == clear_type &&
-			info->error_code == error_code &&
-			info->error_level == error_level &&
-			info->error_info == error_info){
-			res = true;
-			break;
-		}
-	}
+    ErrorInfo *info;
+    int count = m_error_info_input_list->BufLen();
+    if(axis_index != 0xffff) {
+        axis_index++;	//0,1,2,3,4 --> 1,2,3,4,5
+    }
+    for(int i = 0; i < count; i++){
+        info = m_error_info_input_list->ReadDataPtr(i);
+        if(info == nullptr)
+            continue;
+//		printf("error[%hhu, %hhu, %hhu, %hu, %hhu, %u], info[%hhu, %hhu, %hhu, %hu, %hhu, %u]\n", axis_index, channel_index, clear_type, error_code,
+//				error_level, error_info, info->axis_index, info->channel_index, info->clear_type, info->error_code, info->error_level,info->error_info);
+        if(info->axis_index == axis_index &&
+            info->channel_index == channel_index &&
+            info->clear_type == clear_type &&
+            info->error_code == error_code &&
+            info->error_level == error_level &&
+            info->error_info == error_info){
+            res = true;
+            break;
+        }
+    }
 
-	pthread_mutex_unlock(&m_mutex);
+    pthread_mutex_unlock(&m_mutex);
 //	printf("AlarmProcessor::HasErrorInfo, return %hhu\n", (uint8_t)res);
-	return res;
+    return res;
 }
 /**
- * @brief ï¿½ï¿½È¡ï¿½ï¿½ï¿½ÂµÄ´ï¿½ï¿½ï¿½ï¿½ï¿½Ï¢
- * @param error_info ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ï¢ï¿½ï¿½ï¿½Ý½á¹¹Ö¸ï¿½ë£¬ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Å¶ï¿½È¡ï¿½Ú´ï¿½ï¿½ï¿½ï¿½ï¿½Ï¢
- * @return ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½,0--ï¿½ï¿½ï¿½ï¿½É¹ï¿½;ï¿½ï¿½0--ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+ * @brief ¶ÁÈ¡×îÐÂµÄ´íÎóÐÅÏ¢
+ * @param error_info ´íÎóÐÅÏ¢Êý¾Ý½á¹¹Ö¸Õë£¬ÓÃÀ´´æ·Å¶ÁÈ¡µÚ´íÎóÐÅÏ¢
+ * @return ´¦Àí½á¹û,0--´¦Àí³É¹¦;·Ç0--´íÎóÂë
  */
 int AlarmProcessor::GetLatestErrorInfo(ErrorInfo* error_info) {
-	pthread_mutex_lock(&m_mutex);
-	int res = ERR_NONE;
+    pthread_mutex_lock(&m_mutex);
+    int res = ERR_NONE;
 
-	assert(error_info != NULL);
-	memcpy(error_info, &m_latest_error, sizeof(ErrorInfo));
+    assert(error_info != NULL);
+    memcpy(error_info, &m_latest_error, sizeof(ErrorInfo));
 
-	pthread_mutex_unlock(&m_mutex);
-	return res;
+    pthread_mutex_unlock(&m_mutex);
+    return res;
 }
 
 /**
- * @brief ï¿½ï¿½È¡ï¿½ï¿½ï¿½ï¿½Ä´ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
- * @return ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+ * @brief »ñÈ¡×î½üµÄ´íÎó´úÂë
+ * @return ´íÎó´úÂë
  */
 uint16_t AlarmProcessor::GetLatestErrorCode(){
-	return m_latest_error.error_code;
+    return m_latest_error.error_code;
 }
 
 /**
- * @brief ï¿½ï¿½Ó¡ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ð´ï¿½ï¿½ï¿½ï¿½ï¿½Ï¢
+ * @brief ´òÓ¡Êä³öËùÓÐ´íÎóÐÅÏ¢
  */
 void AlarmProcessor::PrintError(){
-	pthread_mutex_lock(&m_mutex);
+    pthread_mutex_lock(&m_mutex);
 
-	ErrorInfo *info;
-	int count = m_error_info_input_list->BufLen();
-	for(int i = 0; i < count; i++){
-		info = m_error_info_input_list->ReadDataPtr(i);
-		if(info == nullptr)
-			continue;
-		printf("error info[%d]: chn=%hhu, axis=%hhu, err_code=%hu, err_info=0x%x\n", i,
-				info->channel_index, info->axis_index, info->error_code, info->error_info);
-	}
+    ErrorInfo *info;
+    int count = m_error_info_input_list->BufLen();
+    for(int i = 0; i < count; i++){
+        info = m_error_info_input_list->ReadDataPtr(i);
+        if(info == nullptr)
+            continue;
+        printf("error info[%d]: chn=%hhu, axis=%hhu, err_code=%hu, err_info=0x%x\n", i,
+                info->channel_index, info->axis_index, info->error_code, info->error_info);
+    }
 
-	pthread_mutex_unlock(&m_mutex);
+    pthread_mutex_unlock(&m_mutex);
 }
 
 /**
- * @brief  ï¿½ï¿½Õ¸æ¾¯ï¿½ï¿½ï¿½ï¿½
+ * @brief  Çå¿Õ¸æ¾¯¶ÓÁÐ
  */
 void AlarmProcessor::Clear(){
-	this->m_error_info_input_list->ClearBuf();
+    this->m_error_info_input_list->ClearBuf();
 
 }
 
 /**
- * @brief ï¿½ï¿½Õ¸æ¾¯ï¿½ï¿½ï¿½ï¿½ï¿½ÂµÈ¼ï¿½ï¿½ï¿½ï¿½ï¿½Ï¢
- * @param chn : Í¨ï¿½ï¿½ï¿½ï¿½
+ * @brief Çå¿Õ¸æ¾¯¼´ÒÔÏÂµÈ¼¶µÄÏûÏ¢
+ * @param chn : Í¨µÀºÅ
  */
 void AlarmProcessor::ClearWarning(uint8_t chn){
-	ErrorInfo *info;
-	int count = m_error_info_input_list->BufLen();
-	int del_count = 0;
-	for(int i = 0; i < count; i++){
-		info = m_error_info_input_list->ReadDataPtr(i);
-		if(info == nullptr)
-			continue;
-		if((chn == info->channel_index || chn == 0xFF) && info->error_level >= WARNING_LEVEL){
-			m_error_info_input_list->RemoveData(i);
-			count--;
-			i--;
-			del_count++;
-		}
-	}
+    ErrorInfo *info;
+    int count = m_error_info_input_list->BufLen();
+    int del_count = 0;
+    for(int i = 0; i < count; i++){
+        info = m_error_info_input_list->ReadDataPtr(i);
+        if(info == nullptr)
+            continue;
+        if((chn == info->channel_index || chn == 0xFF) && info->error_level >= WARNING_LEVEL){
+            m_error_info_input_list->RemoveData(i);
+            count--;
+            i--;
+            del_count++;
+        }
+    }
 //	printf("clear warning:%d\n", del_count);
 }
 
 /**
- * @brief ï¿½ï¿½ï¿½Ö¸ï¿½ï¿½ï¿½æ¾¯
+ * @brief Çå¿ÕÖ¸¶¨¸æ¾¯
  * @param chn
  * @param error_code
  */
 void AlarmProcessor::RemoveWarning(uint8_t chn, uint16_t error_code){
-	ErrorInfo *info;
-	int count = m_error_info_input_list->BufLen();
-	int del_count = 0;
-	for(int i = 0; i < count; i++){
-		info = m_error_info_input_list->ReadDataPtr(i);
-		if(info == nullptr)
-			continue;
-		if((chn == info->channel_index || chn == 0xFF) && info->error_code == error_code){
-			m_error_info_input_list->RemoveData(i);
-			count--;
-			i--;
-			del_count++;
-		}
-	}
+    ErrorInfo *info;
+    int count = m_error_info_input_list->BufLen();
+    int del_count = 0;
+    for(int i = 0; i < count; i++){
+        info = m_error_info_input_list->ReadDataPtr(i);
+        if(info == nullptr)
+            continue;
+        if((chn == info->channel_index || chn == 0xFF) && info->error_code == error_code){
+            m_error_info_input_list->RemoveData(i);
+            count--;
+            i--;
+            del_count++;
+        }
+    }
 //	printf("remove warning:%d\n", del_count);
 }
 
 
 /**
- * @brief ï¿½ï¿½ï¿½Ã½Ó¿ï¿½
- * @param pHmiComm ï¿½ï¿½ HMIÍ¨Ñ¶ï¿½Ó¿ï¿½
- * @param pEngine : Í¨ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ó¿ï¿½
+ * @brief ÉèÖÃ½Ó¿Ú
+ * @param pHmiComm £º HMIÍ¨Ñ¶½Ó¿Ú
+ * @param pEngine : Í¨µÀÒýÇæ½Ó¿Ú
  */
 void AlarmProcessor::SetInterfaces(){
-	this->m_p_hmi_comm = HMICommunication::GetInstance();
-	this->m_p_chn_engine = ChannelEngine::GetInstance();
+    this->m_p_hmi_comm = HMICommunication::GetInstance();
+    this->m_p_chn_engine = ChannelEngine::GetInstance();
 }
 
 /**
- * @brief ï¿½ï¿½ï¿½æ¾¯ï¿½ï¿½Ï¢ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½HMI
+ * @brief ½«¸æ¾¯ÐÅÏ¢·¢ËÍÖÁHMI
  * @param err
  * @return
  */
 bool AlarmProcessor::SendToHmi(ErrorInfo *err){
-	assert(err != nullptr);
-	HMICmdFrame hmi_cmd;
+    assert(err != nullptr);
+    HMICmdFrame hmi_cmd;
 
-	hmi_cmd.channel_index = err->channel_index;
-	hmi_cmd.cmd = CMD_SC_NEW_ALARM;
-	hmi_cmd.cmd_extension = 0;
-	hmi_cmd.data_len = sizeof(ErrorInfo);
-	memcpy(hmi_cmd.data, err, hmi_cmd.data_len);
+    hmi_cmd.channel_index = err->channel_index;
+    hmi_cmd.cmd = CMD_SC_NEW_ALARM;
+    hmi_cmd.cmd_extension = 0;
+    hmi_cmd.data_len = sizeof(ErrorInfo);
+    memcpy(hmi_cmd.data, err, hmi_cmd.data_len);
 
-	m_p_hmi_comm->SendCmd(hmi_cmd);
+    m_p_hmi_comm->SendCmd(hmi_cmd);
 
-//    printf("ALARM %d\n", err->error_code);
-	return true;
+//	printf("ALARM %d\n", err->error_code);
+    return true;
 }
 
 /**
- * @brief ï¿½ï¿½ï¿½ï¿½Ç°ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½HMI
+ * @brief ½«µ±Ç°´íÎó¶¼Êä³öµ½HMI
  * @return
  */
 void AlarmProcessor::SendToHmi(){
 
-	pthread_mutex_lock(&m_mutex);
+    pthread_mutex_lock(&m_mutex);
 
-	ErrorInfo *info;
-	int count = m_error_info_input_list->BufLen();
-	for(int i = 0; i < count; i++){
-		info = m_error_info_input_list->ReadDataPtr(i);
-		if(info == nullptr)
-			continue;
-		this->SendToHmi(info);
-	}
+    ErrorInfo *info;
+    int count = m_error_info_input_list->BufLen();
+    for(int i = 0; i < count; i++){
+        info = m_error_info_input_list->ReadDataPtr(i);
+        if(info == nullptr)
+            continue;
 
-	pthread_mutex_unlock(&m_mutex);
+        this->SendToHmi(info);
+    }
+
+    pthread_mutex_unlock(&m_mutex);
 }
 
 /**
- * @brief ï¿½æ¾¯ï¿½ï¿½Í³Ò»ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
- * @param err : ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ï¢ï¿½á¹¹Ö¸ï¿½ï¿½
+ * @brief ¸æ¾¯µÄÍ³Ò»´¦Àíº¯Êý
+ * @param err : ´íÎóÐÅÏ¢½á¹¹Ö¸Õë
  */
 void AlarmProcessor::ProcessAlarm(ErrorInfo *err){
-	assert(err != nullptr);
+    assert(err != nullptr);
 
-	if(err->error_level <= ERROR_LEVEL){
-		m_p_chn_engine->ResetOPSignal(err->channel_index);
-		m_p_chn_engine->SetALSignal(err->channel_index, true);
-	}
+    if(err->error_level <= ERROR_LEVEL){
+        m_p_chn_engine->ResetOPSignal(err->channel_index);
+        m_p_chn_engine->SetALSignal(err->channel_index, true);
+    }
 
-	switch(err->error_code){
-	case ERR_HEARTBEAT_HMI_LOST: //HMIï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ê§
-	case ERR_HMI_MONITOR_DISCON: //HMIï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ð¶ï¿½
+    switch(err->error_code){
+    case ERR_HEARTBEAT_HMI_LOST: //HMIÐÄÌø¶ªÊ§
+    case ERR_HMI_MONITOR_DISCON: //HMI¼à¿ØÁ¬½ÓÖÐ¶Ï
 
-		m_p_hmi_comm->DisconnectToHmi();  //ï¿½Ø±ï¿½HMIï¿½ï¿½ï¿½ï¿½
-		break;
-	case ERR_FILE_TRANS:	//ï¿½Ä¼ï¿½ï¿½ï¿½ï¿½ï¿½Ê§ï¿½ï¿½
-		m_p_hmi_comm->ProcessFileTransError();   //ï¿½ï¿½ï¿½ï¿½ï¿½Ä¼ï¿½ï¿½ï¿½ï¿½ï¿½Ê§ï¿½ï¿½
-		break;
-	case ERR_ENCODER:    //ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
-	case ERR_SERVO:     //ï¿½Å·ï¿½ï¿½æ¾¯
+        m_p_hmi_comm->DisconnectToHmi();  //¹Ø±ÕHMIÁ¬½Ó
+        break;
+    case ERR_FILE_TRANS:	//ÎÄ¼þ´«ÊäÊ§°Ü
+        m_p_hmi_comm->ProcessFileTransError();   //´¦ÀíÎÄ¼þ´«ÊäÊ§°Ü
+        break;
+    case ERR_ENCODER:    //±àÂëÆ÷´íÎó
+    case ERR_SERVO:     //ËÅ·þ¸æ¾¯
 #ifndef USES_EMERGENCY_DEC_STOP
-		this->m_p_chn_engine->ServoOff();
+        this->m_p_chn_engine->ServoOff();
 #endif
-	case ERR_SOFT_LIMIT_NEG:     //ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Î»ï¿½æ¾¯
-	case ERR_SOFT_LIMIT_POS: 			//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Î»ï¿½æ¾¯
-	case ERR_POS_ERR:					//Î»ï¿½ï¿½Ö¸ï¿½ï¿½ï¿½ï¿½ï¿½æ¾¯
-	case ERR_ARC_DATA:					//Ô²ï¿½ï¿½ï¿½ï¿½ï¿½Ý´ï¿½ï¿½ï¿½æ¾¯
-	case ERR_CMD_CRC:					//Ö¸ï¿½ï¿½Ð£ï¿½ï¿½ï¿½
-	case ERR_DATA_CRC:					//ï¿½ï¿½ï¿½ï¿½Ð£ï¿½ï¿½ï¿½
-	case ERR_OPEN_FILE:                //ï¿½ï¿½ï¿½Ä¼ï¿½Ê§ï¿½ï¿½
+    case ERR_SOFT_LIMIT_NEG:     //¸ºÏòÈíÏÞÎ»¸æ¾¯
+    case ERR_SOFT_LIMIT_POS: 			//ÕýÏòÈíÏÞÎ»¸æ¾¯
+    case ERR_POS_ERR:					//Î»ÖÃÖ¸Áî¹ý´ó¸æ¾¯
+    case ERR_ARC_DATA:					//Ô²»¡Êý¾Ý´íÎó¸æ¾¯
+    case ERR_CMD_CRC:					//Ö¸ÁîÐ£Ñé´í
+    case ERR_DATA_CRC:					//Êý¾ÝÐ£Ñé´í
+    case ERR_OPEN_FILE:                //´ò¿ªÎÄ¼þÊ§°Ü
 
-		this->m_p_chn_engine->Stop(false);
-		break;
-	case ERR_AXIS_CTRL_MODE_SWITCH:    //ï¿½ï¿½ï¿½ï¿½ï¿½Ä£Ê½ï¿½Ð»ï¿½ï¿½ï¿½Ê±
-		this->m_p_chn_engine->Stop(err->channel_index, false);
-		break;
+        this->m_p_chn_engine->Stop(false);
+        break;
+    case ERR_AXIS_CTRL_MODE_SWITCH:    //Öá¿ØÖÆÄ£Ê½ÇÐ»»³¬Ê±
+        this->m_p_chn_engine->Stop(err->channel_index, false);
+        break;
 #ifdef USES_EMERGENCY_DEC_STOP
-	case ERR_EMERGENCY:  //Ä¾ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Í£Ê±ï¿½È¼ï¿½ï¿½ï¿½Í£ï¿½ï¿½ï¿½Ù¶ï¿½ï¿½Å·ï¿½
-		printf("process emergency error!\n");
-		this->m_p_chn_engine->Stop(false);
-		this->m_p_chn_engine->DelayToServoOff(CHANNEL_ENGINE_INDEX);
-		break;
+    case ERR_EMERGENCY:  //Ä¾¹¤»ú¼±Í£Ê±ÏÈ¼õËÙÍ££¬ÔÙ¶ÏËÅ·þ
+        printf("process emergency error!\n");
+        this->m_p_chn_engine->Stop(false);
+        this->m_p_chn_engine->DelayToServoOff(CHANNEL_ENGINE_INDEX);
+        break;
 #endif
 #ifdef USES_GRIND_MACHINE
-	case ERR_WORK_VAC_OPEN:			//ï¿½ï¿½Î»ï¿½ï¿½ï¿½ï¿½Õ³ï¿½Ê±
-	case ERR_WORK_VAC_CLOSE:		//ï¿½ï¿½Î»ï¿½ï¿½ï¿½ï¿½Õ³ï¿½Ê±
-	case ERR_WORK_CYLINDER_UP:		//ï¿½ï¿½Î»ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ê±
-	case ERR_WORK_CYLINDER_DOWN:   //ï¿½ï¿½Î»ï¿½ï¿½ï¿½ï¿½ï¿½Â½ï¿½ï¿½ï¿½Ê±
-		this->m_p_chn_engine->Stop(err->channel_index, false);
-		break;
+    case ERR_WORK_VAC_OPEN:			//¹¤Î»ÎüÕæ¿Õ³¬Ê±
+    case ERR_WORK_VAC_CLOSE:		//¹¤Î»ÆÆÕæ¿Õ³¬Ê±
+    case ERR_WORK_CYLINDER_UP:		//¹¤Î»Æø¸×ÉÏÉý³¬Ê±
+    case ERR_WORK_CYLINDER_DOWN:   //¹¤Î»Æø¸×ÏÂ½µ³¬Ê±
+        this->m_p_chn_engine->Stop(err->channel_index, false);
+        break;
 #endif
-	default:
-		if(err->error_code >=20000 && err->error_code < 20143){ //PMCï¿½ï¿½Aï¿½ï¿½Ö·ï¿½ï¿½Ê¾ï¿½ï¿½Ï¢ A0~A29
+    default:
+        if(err->error_code >=20000 && err->error_code < 20143){ //PMCµÄAµØÖ·ÌáÊ¾ÐÅÏ¢ A0~A29
 
-		}else if(err->error_code >= 20143 && err->error_code < 20400){
-			this->m_p_chn_engine->Stop(false);   //ï¿½ï¿½Ö¹ï¿½Ó¹ï¿½
-		}else if(err->error_code >=20240 && err->error_code < 20400){ //PMCï¿½ï¿½Aï¿½ï¿½Ö·ï¿½æ¾¯ï¿½ï¿½Ï¢ A30~A49
+        }else if(err->error_code >= 20143 && err->error_code < 20400){
+            this->m_p_chn_engine->Stop(false);   //ÖÕÖ¹¼Ó¹¤
+        }else if(err->error_code >=20240 && err->error_code < 20400){ //PMCµÄAµØÖ·¸æ¾¯ÐÅÏ¢ A30~A49
 
-		}else if(err->error_code >=20400 && err->error_code < 20480){ //PMCï¿½ï¿½Aï¿½ï¿½Ö·ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ï¢ A50~A59
-			this->m_p_chn_engine->Stop(false);   //ï¿½ï¿½Ö¹ï¿½Ó¹ï¿½
+        }else if(err->error_code >=20400 && err->error_code < 20480){ //PMCµÄAµØÖ·´íÎóÐÅÏ¢ A50~A59
+            this->m_p_chn_engine->Stop(false);   //ÖÕÖ¹¼Ó¹¤
 
-		}else if(err->error_code >=20480 && err->error_code < 20512){ //PMCï¿½ï¿½Aï¿½ï¿½Ö·ï¿½ï¿½ï¿½Ø´ï¿½ï¿½ï¿½ï¿½ï¿½Ï¢ A60~A63
-			//Í¨ÖªMIï¿½ï¿½ï¿½Å·ï¿½
+        }else if(err->error_code >=20480 && err->error_code < 20512){ //PMCµÄAµØÖ·ÑÏÖØ´íÎóÐÅÏ¢ A60~A63
+            //Í¨ÖªMIÏÂËÅ·þ
 #ifdef USES_EMERGENCY_DEC_STOP
-			this->m_p_chn_engine->Stop(false);  //ï¿½ï¿½Í£ï¿½ï¿½ï¿½ï¿½
-			this->m_p_chn_engine->DelayToServoOff(CHANNEL_ENGINE_INDEX);
+            this->m_p_chn_engine->Stop(false);  //¼±Í£´¦Àí
+            this->m_p_chn_engine->DelayToServoOff(CHANNEL_ENGINE_INDEX);
 #else
-			this->m_p_chn_engine->ServoOff();
-			this->m_p_chn_engine->Stop(false);  //ï¿½ï¿½Í£ï¿½ï¿½ï¿½ï¿½
+            this->m_p_chn_engine->ServoOff();
+            this->m_p_chn_engine->Stop(false);  //¼±Í£´¦Àí
 #endif
 
-		}else if(err->error_code >= 30000 && err->error_code < 40000){//ï¿½ï¿½ï¿½ï¿½Í¨Ñ¶ï¿½æ¾¯
-			this->m_p_chn_engine->Stop(false);
-		}
-		break;
-	}
+        }else if(err->error_code >= 30000 && err->error_code < 40000){//×ÜÏßÍ¨Ñ¶¸æ¾¯
+            this->m_p_chn_engine->Stop(false);
+        }
+        break;
+    }
 }
 

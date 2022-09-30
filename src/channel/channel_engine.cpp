@@ -5,7 +5,7 @@
  *@file ChannelEngine.cpp
  *@author gonghao
  *@date 2020/03/19
- *@brief æœ¬æ–‡ä»¶ä¸ºé€šé“å¼•æ“ç±»çš„å®ç°
+ *@brief ±¾ÎÄ¼şÎªÍ¨µÀÒıÇæÀàµÄÊµÏÖ
  *@version
  */
 
@@ -25,11 +25,11 @@
 //#include <unistd.h>
 //#include <stropts.h>
 
-ChannelEngine* ChannelEngine::m_p_instance = nullptr;  //åˆå§‹åŒ–å•ä¾‹å¯¹è±¡æŒ‡æ­£ä¸ºç©º
+ChannelEngine* ChannelEngine::m_p_instance = nullptr;  //³õÊ¼»¯µ¥Àı¶ÔÏóÖ¸ÕıÎª¿Õ
 const map<int, SDLINK_SPEC> ChannelEngine::m_SDLINK_MAP =
 {
     //id.SA1, 3.SC1, 4.SD1, 5.SE1
-    //å¯¹äºæœ‰æ‰‹è½®æ‰©å±•çš„æ¿å¡ï¼Œæ¢¯å›¾é»˜è®¤åˆ†é…äº†æ‰‹è½®ç©ºé—´ï¼Œéœ€è¦å»æ‰ï¼Œè¦ä½¿ç”¨æ‰‹è½®æ—¶ï¼Œå†ç”±SCåˆ†é…
+    //¶ÔÓÚÓĞÊÖÂÖÀ©Õ¹µÄ°å¿¨£¬ÌİÍ¼Ä¬ÈÏ·ÖÅäÁËÊÖÂÖ¿Õ¼ä£¬ĞèÒªÈ¥µô£¬ÒªÊ¹ÓÃÊÖÂÖÊ±£¬ÔÙÓÉSC·ÖÅä
     //id    name    inbytes outBytes withHandWheel
     {1,     {"SA1",  9-3,    4,      true}},
     {3,     {"SC1",  16,     16,     false}},
@@ -37,10 +37,10 @@ const map<int, SDLINK_SPEC> ChannelEngine::m_SDLINK_MAP =
     {5,     {"SE1",  7-3,    8,      true}}
 };
 
-const uint32_t MC_UPDATE_BLOCK_SIZE = 100;		//MCå‡çº§æ–‡ä»¶å¸§ï¼Œæ¯å¸§åŒ…å«100å­—èŠ‚æ•°æ®,50ä¸ªuint16
+const uint32_t MC_UPDATE_BLOCK_SIZE = 100;		//MCÉı¼¶ÎÄ¼şÖ¡£¬Ã¿Ö¡°üº¬100×Ö½ÚÊı¾İ,50¸öuint16
 
 /**
- * @brief æ„é€ å‡½æ•°
+ * @brief ¹¹Ôìº¯Êı
  */
 ChannelEngine::ChannelEngine() {
     // TODO Auto-generated constructor stub
@@ -65,8 +65,8 @@ ChannelEngine::ChannelEngine() {
     m_p_pmc_reg = nullptr;
 
     memset(this->m_device_sn, 0x00, SN_COUNT+1);
-    strcpy(this->m_device_sn, "LIT0123456789");   //é»˜è®¤åºåˆ—å·"LIT0123456789"
-    this->m_lic_info.InitData();     //åˆå§‹åŒ–æ•°æ®
+    strcpy(this->m_device_sn, "LIT0123456789");   //Ä¬ÈÏĞòÁĞºÅ"LIT0123456789"
+    this->m_lic_info.InitData();     //³õÊ¼»¯Êı¾İ
 
 
     m_thread_update = 0;
@@ -85,27 +85,27 @@ ChannelEngine::ChannelEngine() {
     this->m_b_delay_servo_off = false;
 #endif
 
-    this->m_n_cur_pmc_axis = 0xFF;   //é»˜è®¤æ²¡æœ‰å½“å‰è½´
+    this->m_n_cur_pmc_axis = 0xFF;   //Ä¬ÈÏÃ»ÓĞµ±Ç°Öá
 
     this->m_hard_limit_negative = 0;
     this->m_hard_limit_postive = 0;
 
     this->m_n_pmc_axis_count = 0;
-    m_n_run_axis_mask = 0x00;  //å½“å‰è¿è¡Œçš„è½´çš„mask
-    m_n_runover_axis_mask = 0x00;   //å½“å‰è¿è¡Œå®Œæˆçš„è½´çš„mask
+    m_n_run_axis_mask = 0x00;  //µ±Ç°ÔËĞĞµÄÖáµÄmask
+    m_n_runover_axis_mask = 0x00;   //µ±Ç°ÔËĞĞÍê³ÉµÄÖáµÄmask
 
-    m_mask_import_param = 0;    //åˆå§‹åŒ–å¯¼å…¥å‚æ•°æ ‡å¿—
+    m_mask_import_param = 0;    //³õÊ¼»¯µ¼Èë²ÎÊı±êÖ¾
 
-//	m_n_mc_auto_buf_max = 200;   //é»˜è®¤200
+//	m_n_mc_auto_buf_max = 200;   //Ä¬ÈÏ200
 
-    //åˆå§‹åŒ–å›å‚è€ƒç‚¹å˜é‡
+    //³õÊ¼»¯»Ø²Î¿¼µã±äÁ¿
     this->m_b_ret_ref = false;
     this->m_b_ret_ref_auto = false;
     m_n_mask_ret_ref_over = 0;
     this->m_n_mask_ret_ref = 0;
     memset(this->m_n_ret_ref_step, 0x00, kMaxAxisNum*sizeof(int));
 
-    //åˆå§‹åŒ–mcé€šé“è¿è¡Œæ ‡å¿—
+    //³õÊ¼»¯mcÍ¨µÀÔËĞĞ±êÖ¾
     m_mc_run_on_arm[0] = false;
     for(uint16_t i=1; i<kMaxChnCount; i++)
         m_mc_run_on_arm[i] = false;
@@ -119,7 +119,7 @@ ChannelEngine::ChannelEngine() {
 }
 
 /**
- * @brief ææ„å‡½æ•°
+ * @brief Îö¹¹º¯Êı
  */
 ChannelEngine::~ChannelEngine(){
     // TODO Auto-generated destructor stub
@@ -127,7 +127,7 @@ ChannelEngine::~ChannelEngine(){
     void* thread_result;
     int res = ERR_NONE;
 
-    //é€€å‡ºç¼–è¯‘è¿è¡Œçº¿ç¨‹
+    //ÍË³ö±àÒëÔËĞĞÏß³Ì
     if(this->m_thread_update != 0){
         res = pthread_cancel(m_thread_update);
         if (res != ERR_NONE) {
@@ -135,20 +135,20 @@ ChannelEngine::~ChannelEngine(){
         }
 
         //	usleep(1000);
-        res = pthread_join(m_thread_update, &thread_result);//ç­‰å¾…ç¼–è¯‘å™¨çº¿ç¨‹é€€å‡ºå®Œæˆ
+        res = pthread_join(m_thread_update, &thread_result);//µÈ´ı±àÒëÆ÷Ïß³ÌÍË³öÍê³É
         if (res != ERR_NONE) {
             printf("Update thread join failed\n");
         }
         m_thread_update = 0;
     }
 
-    //é”€æ¯æ–¹å¼ç»„å¯¹è±¡
+    //Ïú»Ù·½Ê½×é¶ÔÏó
     if(this->m_p_channel_mode_group){
         delete []m_p_channel_mode_group;
         this->m_p_channel_mode_group = nullptr;
     }
 
-    //é”€æ¯é€šé“æ§åˆ¶å¯¹è±¡
+    //Ïú»ÙÍ¨µÀ¿ØÖÆ¶ÔÏó
     if(m_p_channel_control != nullptr){
         delete []m_p_channel_control;
         m_p_channel_control = nullptr;
@@ -186,7 +186,7 @@ ChannelEngine::~ChannelEngine(){
     }
 #endif
 
-    //é‡Šæ”¾PMCå¯„å­˜å™¨å¯¹è±¡
+    //ÊÍ·ÅPMC¼Ä´æÆ÷¶ÔÏó
     if(this->m_p_pmc_reg){
         delete m_p_pmc_reg;
         m_p_pmc_reg = nullptr;
@@ -194,7 +194,7 @@ ChannelEngine::~ChannelEngine(){
 }
 
 /**
- * @brief è·å–ç±»å®ä¾‹çš„å”¯ä¸€è®¿é—®æ¥å£å‡½æ•°ï¼Œå•ä¾‹æ¨¡å¼
+ * @brief »ñÈ¡ÀàÊµÀıµÄÎ¨Ò»·ÃÎÊ½Ó¿Úº¯Êı£¬µ¥ÀıÄ£Ê½
  */
 ChannelEngine* ChannelEngine::GetInstance(){
     if(nullptr == m_p_instance){
@@ -204,7 +204,7 @@ ChannelEngine* ChannelEngine::GetInstance(){
 }
 
 /**
- * @brief åˆå§‹åŒ–ç‰©ç†è½´ä¸é€šé“çš„æ˜ å°„
+ * @brief ³õÊ¼»¯ÎïÀíÖáÓëÍ¨µÀµÄÓ³Éä
  */
 void ChannelEngine::InitPhyAxisChn(){
     memset(m_map_phy_axis_chn, 0xFF, kMaxAxisNum);
@@ -218,7 +218,7 @@ void ChannelEngine::InitPhyAxisChn(){
 }
 
 /**
- * @brief åˆå§‹åŒ–åŒæ­¥è½´ç›¸å…³å˜é‡
+ * @brief ³õÊ¼»¯Í¬²½ÖáÏà¹Ø±äÁ¿
  */
 void ChannelEngine::InitSyncAxis(){
     this->m_n_sync_axis_mask = 0;
@@ -232,22 +232,22 @@ void ChannelEngine::InitSyncAxis(){
         }
     }
 
-    this->m_n_sync_axis_enable_mask = this->m_n_sync_axis_mask;  //é»˜è®¤åŒæ­¥è½´éƒ½ä¸Šä½¿èƒ½
+    this->m_n_sync_axis_enable_mask = this->m_n_sync_axis_mask;  //Ä¬ÈÏÍ¬²½Öá¶¼ÉÏÊ¹ÄÜ
 
     g_ptr_trace->PrintTrace(TRACE_INFO, CHANNEL_ENGINE_SC, "Init syn axis mask :0x%llx\n", m_n_sync_axis_mask);
 }
 
 /**
- * @brief åŒæ­¥è½´æ‰§è¡ŒåŒæ­¥
+ * @brief Í¬²½ÖáÖ´ĞĞÍ¬²½
  */
 void ChannelEngine::DoSyncAxis(){
     if(this->m_b_send_sync_cmd)
         return;
-    int64_t mask = ((m_n_sync_axis_mask & m_n_sync_axis_enable_mask) ^ this->m_n_sync_over);  //å¼‚æˆ–è®¡ç®—å‡ºæœªåŒæ­¥å®Œæˆè½´
+    int64_t mask = ((m_n_sync_axis_mask & m_n_sync_axis_enable_mask) ^ this->m_n_sync_over);  //Òì»ò¼ÆËã³öÎ´Í¬²½Íê³ÉÖá
     if(mask == 0)
         return;
 
-    if((mask & this->m_n_phy_axis_svo_on) != mask)  //ç­‰å¾…ä¸Šä¼ºæœå®Œæˆ
+    if((mask & this->m_n_phy_axis_svo_on) != mask)  //µÈ´ıÉÏËÅ·şÍê³É
         return;
 
     MiCmdFrame cmd;
@@ -268,7 +268,7 @@ void ChannelEngine::DoSyncAxis(){
 
 #ifdef USES_PMC_2_0
 /**
- * @brief PMC2.0ç‰ˆæœ¬ï¼Œè¯»å–SD_LINKä»ç«™è®¾å¤‡é…ç½®
+ * @brief PMC2.0°æ±¾£¬¶ÁÈ¡SD_LINK´ÓÕ¾Éè±¸ÅäÖÃ
  */
 void ChannelEngine::ReadIoDev_pmc2(){
     this->m_list_bdio_dev.Clear();
@@ -278,7 +278,7 @@ void ChannelEngine::ReadIoDev_pmc2(){
 
     if (ifs.is_open())
     {
-        //#SDLINKIO@# ä»æ¢¯å›¾æ–‡ä»¶ä¸­æ‰¾åˆ°SD-LINKé…ç½®
+        //#SDLINKIO@# ´ÓÌİÍ¼ÎÄ¼şÖĞÕÒµ½SD-LINKÅäÖÃ
         char readChar[11] = {0};
         while(!ifs.eof())
         {
@@ -293,7 +293,7 @@ void ChannelEngine::ReadIoDev_pmc2(){
 
         if (!ifs.eof())
         {
-            auto ReadSequenceValue = [&]()->int {//ä»æ¢¯å›¾ä¸­è¯»å–æ•°æ®
+            auto ReadSequenceValue = [&]()->int {//´ÓÌİÍ¼ÖĞ¶ÁÈ¡Êı¾İ
                 int val = 0;
                 ifs.read(reinterpret_cast<char *>(&val), sizeof(val));
                 val = BigLittleSwitch32(val);
@@ -319,7 +319,7 @@ void ChannelEngine::ReadIoDev_pmc2(){
                     devInfo.output_start = ReadSequenceValue();
 
                     SDLINK_SPEC sdlink_spec = m_SDLINK_MAP.at(devInfo.device_type);
-                    if (devInfo.in_bytes && sdlink_spec.withHandWheel)//æ¢¯å›¾é»˜è®¤åˆ†é…äº†æ‰‹è½®ç©ºé—´ï¼Œéœ€è¦å»æ‰ï¼Œé€‰æ‹©æ‰‹è½®æ—¶ï¼Œå†ç”±SCåˆ†é…
+                    if (devInfo.in_bytes && sdlink_spec.withHandWheel)//ÌİÍ¼Ä¬ÈÏ·ÖÅäÁËÊÖÂÖ¿Õ¼ä£¬ĞèÒªÈ¥µô£¬Ñ¡ÔñÊÖÂÖÊ±£¬ÔÙÓÉSC·ÖÅä
                     {
                         devInfo.in_bytes -= HANDWHEEL_BYTES;
                         ++devInfo.handwheel_num;
@@ -331,7 +331,7 @@ void ChannelEngine::ReadIoDev_pmc2(){
                     devInfo.handwheel_map = 0;
                     devInfo.info_name = sdlink_spec.info_name + "_" + std::to_string(devInfo.group_index);
 
-                    // åºå·æ£€æŸ¥,åºå·å¿…é¡»è¿ç»­
+                    // ĞòºÅ¼ì²é,ĞòºÅ±ØĞëÁ¬Ğø
                     if (devInfo.group_index != m_list_bdio_dev.GetLength() + 1)
                     {
                         m_list_bdio_dev.Clear();
@@ -350,7 +350,7 @@ void ChannelEngine::ReadIoDev_pmc2(){
 
                 m_list_bdio_dev.Append(devInfo);
                 if (!selectedHandWheel && SelectHandleWheel(devInfo.group_index, 1))
-                {//é»˜è®¤ä½¿ç”¨ç¬¬ä¸€ä¸ªæ‰¾åˆ°çš„æ‰‹è½®
+                {//Ä¬ÈÏÊ¹ÓÃµÚÒ»¸öÕÒµ½µÄÊÖÂÖ
                     selectedHandWheel = true;
                     devInfo.handwheel_map = 1;
                 }
@@ -360,14 +360,14 @@ void ChannelEngine::ReadIoDev_pmc2(){
 
             HandWheelMapInfoVec configInfo = g_ptr_parm_manager->GetHandWheelVec();
             if (configInfo == infoVec)
-            {//æ¢¯å›¾æ²¡æœ‰æ”¹å˜iniç»“æ„ï¼ˆæ‰©å±•æ¿å¡ä¸ªæ•°æˆ–è€…åŸºæœ¬é…ç½®æ²¡æœ‰å‘ç”Ÿå˜åŒ–ï¼‰ï¼Œç›´æ¥å¤åˆ¶å³å¯
+            {//ÌİÍ¼Ã»ÓĞ¸Ä±äini½á¹¹£¨À©Õ¹°å¿¨¸öÊı»òÕß»ù±¾ÅäÖÃÃ»ÓĞ·¢Éú±ä»¯£©£¬Ö±½Ó¸´ÖÆ¼´¿É
                 for (auto itr = configInfo.begin(); itr != configInfo.end(); ++itr)
                 {
                     SelectHandleWheel(itr->devNum, itr->channelMap);
                 }
             }
             else
-            {//æ¢¯å›¾æ”¹å˜äº†iniç»“æ„ï¼ˆæ‰©å±•æ¿å¡ä¸ªæ•°æˆ–è€…åŸºæœ¬é…ç½®å‘ç”Ÿå˜åŒ–ï¼‰ï¼Œéœ€è¦é‡å†™iniæ–‡ä»¶
+            {//ÌİÍ¼¸Ä±äÁËini½á¹¹£¨À©Õ¹°å¿¨¸öÊı»òÕß»ù±¾ÅäÖÃ·¢Éú±ä»¯£©£¬ĞèÒªÖØĞ´iniÎÄ¼ş
                 g_ptr_parm_manager->SyncHandWheelInfo(infoVec);
             }
         }
@@ -395,19 +395,19 @@ void ChannelEngine::ReadIoDev_pmc2(){
     }
     else
     {
-        printf("åˆå§‹åŒ–SD-LINKè®¾å¤‡å¤±è´¥ï¼Œæ— æ³•æ‰“å¼€æ¢¯å›¾æ–‡ä»¶\n");
+        printf("³õÊ¼»¯SD-LINKÉè±¸Ê§°Ü£¬ÎŞ·¨´ò¿ªÌİÍ¼ÎÄ¼ş\n");
     }
     return;
 
 }
 
 /**
- * @brief PMC2.0ç‰ˆæœ¬ï¼Œæ£€æµ‹SD_LINKå‚æ•°æ˜¯å¦åˆç†
- * @return true--åˆæ³•     false--éæ³•
+ * @brief PMC2.0°æ±¾£¬¼ì²âSD_LINK²ÎÊıÊÇ·ñºÏÀí
+ * @return true--ºÏ·¨     false--·Ç·¨
  */
 bool ChannelEngine::CheckIoDev_pmc2(const BdioDevInfo &info)
 {
-    // è®¾å¤‡ç±»å‹æ£€æŸ¥
+    // Éè±¸ÀàĞÍ¼ì²é
     if (m_SDLINK_MAP.find(info.device_type) == m_SDLINK_MAP.end())
     {
        std::cout << info.group_index << " config error, device_type: " << static_cast<int>(info.device_type) << std::endl;
@@ -415,7 +415,7 @@ bool ChannelEngine::CheckIoDev_pmc2(const BdioDevInfo &info)
     }
 
     SDLINK_SPEC sdLink_spec = m_SDLINK_MAP.at(info.device_type);
-    // è¾“å…¥ç‚¹æ£€æŸ¥
+    // ÊäÈëµã¼ì²é
     int standard_InBytes = sdLink_spec.inBytes;
     if (info.handwheel_map != 0)
     {
@@ -424,13 +424,13 @@ bool ChannelEngine::CheckIoDev_pmc2(const BdioDevInfo &info)
             standard_InBytes += HANDWHEEL_BYTES;
         }
         else
-        {   // ä¸æ”¯æŒæ‰‹è½®çš„æ¿å¡
+        {   // ²»Ö§³ÖÊÖÂÖµÄ°å¿¨
             std::cout << info.group_index << " device_type " << static_cast<int>(info.device_type)
                       << " handwheel_map " << static_cast<int>(info.handwheel_map) << std::endl;
             return false;
         }
 
-        if (info.handwheel_map != 1)//æ‰‹è½®æ˜ å°„æš‚æ—¶åªæ”¯æŒé€šé“1
+        if (info.handwheel_map != 1)//ÊÖÂÖÓ³ÉäÔİÊ±Ö»Ö§³ÖÍ¨µÀ1
         {
             std::cout << "handwheel_map " << static_cast<int>(info.handwheel_map) << std::endl;
             return false;
@@ -458,7 +458,7 @@ bool ChannelEngine::CheckIoDev_pmc2(const BdioDevInfo &info)
         return false;
     }
 
-    // è¾“å‡ºç‚¹æ£€æŸ¥
+    // Êä³öµã¼ì²é
     int stanard_OutBytes = sdLink_spec.outBytes;
     int real_OutBytes = info.out_bytes;
     if (real_OutBytes)
@@ -485,14 +485,14 @@ bool ChannelEngine::CheckIoDev_pmc2(const BdioDevInfo &info)
 }
 
 /**
- * @brief PMC2.0ç‰ˆæœ¬ï¼Œé…ç½®æ‰‹è½®é€šé“æ˜ å°„
- * @param indexId   : æ‰‹è½®æ‰€åœ¨çš„æ‰©å±•æ¿å·
- * @param channelId : é€šé“å· 1,2,3,4
- * @return true -- æˆåŠŸ   false -- å¤±è´¥
+ * @brief PMC2.0°æ±¾£¬ÅäÖÃÊÖÂÖÍ¨µÀÓ³Éä
+ * @param indexId   : ÊÖÂÖËùÔÚµÄÀ©Õ¹°åºÅ
+ * @param channelId : Í¨µÀºÅ 1,2,3,4
+ * @return true -- ³É¹¦   false -- Ê§°Ü
  */
 bool ChannelEngine::SelectHandleWheel(int indexId, int channelId)
 {
-    if (channelId - 1 != 0)//æš‚æ—¶åªæ”¯æŒå•é€šé“
+    if (channelId - 1 != 0)//ÔİÊ±Ö»Ö§³Öµ¥Í¨µÀ
         return false;
 
     ListNode<BdioDevInfo> *node = this->m_list_bdio_dev.HeadNode();
@@ -521,7 +521,7 @@ bool ChannelEngine::SelectHandleWheel(int indexId, int channelId)
                 node->data.handwheel_map = channelId;
                 node->data.in_bytes = m_SDLINK_MAP.at(node->data.device_type).inBytes + HANDWHEEL_BYTES;
             }
-            else if (node->data.handwheel_map == channelId) // ä¸€ä¸ªé€šé“æš‚æ—¶åªæ”¯æŒä¸€ä¸ªæ‰‹è½®
+            else if (node->data.handwheel_map == channelId) // Ò»¸öÍ¨µÀÔİÊ±Ö»Ö§³ÖÒ»¸öÊÖÂÖ
             {
                 node->data.handwheel_map = 0;
                 node->data.in_bytes -= HANDWHEEL_BYTES;
@@ -537,129 +537,129 @@ bool ChannelEngine::SelectHandleWheel(int indexId, int channelId)
 }
 #else
 /**
- * @breif PMC1.0ç‰ˆæœ¬ï¼Œè¯»å–SD_LINKä»ç«™è®¾å¤‡é…ç½®
+ * @breif PMC1.0°æ±¾£¬¶ÁÈ¡SD_LINK´ÓÕ¾Éè±¸ÅäÖÃ
  */
 void ChannelEngine::ReadIoDev_pmc1(){
     this->m_list_bdio_dev.Clear();
 
-    //æ‰“å¼€æ¢¯å›¾æ–‡ä»¶
+    //´ò¿ªÌİÍ¼ÎÄ¼ş
     int fd = open(PATH_PMC_LDR, O_RDONLY);
     if(fd == -1){
-        printf("åˆå§‹åŒ–SD-LINKè®¾å¤‡å¤±è´¥ï¼Œæ— æ³•æ‰“å¼€æ¢¯å›¾æ–‡ä»¶\n");
+        printf("³õÊ¼»¯SD-LINKÉè±¸Ê§°Ü£¬ÎŞ·¨´ò¿ªÌİÍ¼ÎÄ¼ş\n");
         return;
     }
 
-//	//é¦–å…ˆè¯»å–æ–‡ä»¶å¤§å°
+//	//Ê×ÏÈ¶ÁÈ¡ÎÄ¼ş´óĞ¡
 //	uint64_t file_size = lseek(fd, 0, SEEK_END);
 //
-//	lseek(fd, 0, SEEK_SET);  //è·³å›æ–‡ä»¶å¤´
+//	lseek(fd, 0, SEEK_SET);  //Ìø»ØÎÄ¼şÍ·
 
-    int doc_ver;  //æ–‡æ¡£ç‰ˆæœ¬
-    char uuid[17];  //16å­—èŠ‚é•¿åº¦çš„UUID
-    int machine_type;   //è®¾å¤‡ç±»å‹
-    BdioDevInfo dev_info;    //ä»ç«™è®¾å¤‡
-    int dev_count = 0;   //bdioè®¾å¤‡æ•°é‡
+    int doc_ver;  //ÎÄµµ°æ±¾
+    char uuid[17];  //16×Ö½Ú³¤¶ÈµÄUUID
+    int machine_type;   //Éè±¸ÀàĞÍ
+    BdioDevInfo dev_info;    //´ÓÕ¾Éè±¸
+    int dev_count = 0;   //bdioÉè±¸ÊıÁ¿
     int sub_index = 0, dev_type = 0, in_count = 0, out_count = 0;
     int i = 0;
     int tt = 0;
 
-    //è¯»å–æ–‡æ¡£ç‰ˆæœ¬
+    //¶ÁÈ¡ÎÄµµ°æ±¾
     int count = read(fd, &doc_ver, sizeof(int));
     if(count != sizeof(int)){
-        printf("è¯»å–æ–‡æ¡£ç‰ˆæœ¬å¤±è´¥[%d, %d]\n", count, sizeof(int));
+        printf("¶ÁÈ¡ÎÄµµ°æ±¾Ê§°Ü[%d, %d]\n", count, sizeof(int));
         goto END;
     }
     doc_ver = BigLittleSwitch32(doc_ver);
 
     printf("read ldr file ver: %d\n", doc_ver);
 
-    //è¯»å–UUID
+    //¶ÁÈ¡UUID
     memset(uuid, 0x00, 17);
     count = read(fd, uuid, 16);
     if(count != 16){
-        printf("è¯»å–æ¢¯å›¾UUIDå¤±è´¥[%d, 16]\n", count);
+        printf("¶ÁÈ¡ÌİÍ¼UUIDÊ§°Ü[%d, 16]\n", count);
         goto END;
     }
 
-    //è¯»å–è®¾å¤‡ç±»å‹
+    //¶ÁÈ¡Éè±¸ÀàĞÍ
     count = read(fd, &machine_type, sizeof(int));
     if(count != sizeof(int)){
-        printf("è¯»å–è®¾å¤‡ç±»å‹å¤±è´¥[%d, %d]\n", count, sizeof(int));
+        printf("¶ÁÈ¡Éè±¸ÀàĞÍÊ§°Ü[%d, %d]\n", count, sizeof(int));
         goto END;
     }
     machine_type = BigLittleSwitch32(machine_type);
     printf("machine type = %d\n", machine_type);
 
-    //è¯»å–BDIOè®¾å¤‡
+    //¶ÁÈ¡BDIOÉè±¸
     count = read(fd, &dev_count, sizeof(int));
     if(count != sizeof(int)){
-        printf("è¯»å–BDIOè®¾å¤‡æ•°å¤±è´¥[%d, %d]\n", count, sizeof(int));
+        printf("¶ÁÈ¡BDIOÉè±¸ÊıÊ§°Ü[%d, %d]\n", count, sizeof(int));
         goto END;
     }
     dev_count = BigLittleSwitch32(dev_count);
     printf("slave count = %d\n", dev_count);
 
-    //è¯»å–å…·ä½“ä»ç«™æ•°æ®
+    //¶ÁÈ¡¾ßÌå´ÓÕ¾Êı¾İ
     for(i = 0; i < dev_count; i++){
-        //ä»ç«™å·
+        //´ÓÕ¾ºÅ
         count = read(fd, &sub_index, sizeof(int));
         if(count != sizeof(int)){
-            printf("è¯»å–BDIOè®¾å¤‡ä»ç«™å·å¤±è´¥[%d]\n", count);
+            printf("¶ÁÈ¡BDIOÉè±¸´ÓÕ¾ºÅÊ§°Ü[%d]\n", count);
             goto END;
         }
         sub_index = BigLittleSwitch32(sub_index);
 
-        //ä»ç«™ç±»å‹
+        //´ÓÕ¾ÀàĞÍ
         count = read(fd, &dev_type, sizeof(int));
         if(count != sizeof(int)){
-            printf("è¯»å–BDIOè®¾å¤‡ç±»å‹å¤±è´¥[%d]\n", count);
+            printf("¶ÁÈ¡BDIOÉè±¸ÀàĞÍÊ§°Ü[%d]\n", count);
             goto END;
         }
         dev_type = BigLittleSwitch32(dev_type);
 
-        //è¾“å…¥å­—èŠ‚æ•°
+        //ÊäÈë×Ö½ÚÊı
         count = read(fd, &in_count, sizeof(int));
         if(count != sizeof(int)){
-            printf("è¯»å–BDIOè®¾å¤‡è¾“å…¥å­—èŠ‚å¤±è´¥[%d]\n", count);
+            printf("¶ÁÈ¡BDIOÉè±¸ÊäÈë×Ö½ÚÊ§°Ü[%d]\n", count);
             goto END;
         }
         in_count = BigLittleSwitch32(in_count);
 
-        //è¾“å‡ºå­—èŠ‚æ•°
+        //Êä³ö×Ö½ÚÊı
         count = read(fd, &out_count, sizeof(int));
         if(count != sizeof(int)){
-            printf("è¯»å–BDIOè®¾å¤‡è¾“å‡ºå­—èŠ‚å¤±è´¥[%d]\n", count);
+            printf("¶ÁÈ¡BDIOÉè±¸Êä³ö×Ö½ÚÊ§°Ü[%d]\n", count);
             goto END;
         }
         out_count = BigLittleSwitch32(out_count);
 
-        //è·³è¿‡è¾“å…¥åœ°å€ï¼Œè¾“å‡ºåœ°å€
+        //Ìø¹ıÊäÈëµØÖ·£¬Êä³öµØÖ·
         if(-1 == lseek(fd, 2*sizeof(int), SEEK_CUR)){
-            printf("è·³è¿‡è¾“å…¥è¾“å‡ºåœ°å€å¤±è´¥\n");
+            printf("Ìø¹ıÊäÈëÊä³öµØÖ·Ê§°Ü\n");
             goto END;
         }
 
-        //è·³è¿‡è®¾å¤‡åç§°
+        //Ìø¹ıÉè±¸Ãû³Æ
         count = read(fd, &tt, sizeof(int));
         if(count != sizeof(int)){
-            printf("è¯»å–è®¾å¤‡åç§°é•¿åº¦å¤±è´¥[%d]\n", count);
+            printf("¶ÁÈ¡Éè±¸Ãû³Æ³¤¶ÈÊ§°Ü[%d]\n", count);
             goto END;
         }
         tt = BigLittleSwitch32(tt);
         if(-1 == lseek(fd, tt, SEEK_CUR)){
-            printf("è·³è¿‡è®¾å¤‡åç§°å¤±è´¥\n");
+            printf("Ìø¹ıÉè±¸Ãû³ÆÊ§°Ü\n");
             goto END;
         }
 
-        //è·³è¿‡åœ°å€å­—ç¬¦ä¸²
+        //Ìø¹ıµØÖ·×Ö·û´®
         count = read(fd, &tt, sizeof(int));
         if(count != sizeof(int)){
-            printf("è¯»å–åœ°å€å­—ç¬¦ä¸²é•¿åº¦å¤±è´¥[%d]\n", count);
+            printf("¶ÁÈ¡µØÖ·×Ö·û´®³¤¶ÈÊ§°Ü[%d]\n", count);
             goto END;
         }
         tt = BigLittleSwitch32(tt);
         if(-1 == lseek(fd, tt, SEEK_CUR)){
-            printf("è·³è¿‡åœ°å€å­—ç¬¦ä¸²å¤±è´¥\n");
+            printf("Ìø¹ıµØÖ·×Ö·û´®Ê§°Ü\n");
             goto END;
         }
 
@@ -673,12 +673,12 @@ void ChannelEngine::ReadIoDev_pmc1(){
     }
 
     END:
-    close(fd);   //å…³é—­æ–‡ä»¶
+    close(fd);   //¹Ø±ÕÎÄ¼ş
 }
 #endif
 
 /**
- * @brief åˆå§‹åŒ–SD-LINKä»ç«™è®¾å¤‡é…ç½®
+ * @brief ³õÊ¼»¯SD-LINK´ÓÕ¾Éè±¸ÅäÖÃ
  */
 void ChannelEngine::InitBdioDev(){
 
@@ -691,7 +691,7 @@ void ChannelEngine::InitBdioDev(){
 }
 
 /**
- * @brief æ£€æŸ¥è½´ä¸Šä¼ºæœä¿¡å·
+ * @brief ¼ì²éÖáÉÏËÅ·şĞÅºÅ
  */
 void ChannelEngine::CheckAxisSrvOn(){
     for(uint8_t i = 0; i < this->m_p_general_config->chn_count; i++){
@@ -700,7 +700,7 @@ void ChannelEngine::CheckAxisSrvOn(){
 }
 
 /**
- * @brief å‘MIå‘é€å„è½´å›å‚è€ƒç‚¹æ ‡å¿—
+ * @brief ÏòMI·¢ËÍ¸÷Öá»Ø²Î¿¼µã±êÖ¾
  */
 void ChannelEngine::SetAxisRetRefFlag(){
     MiCmdFrame cmd;
@@ -715,14 +715,14 @@ void ChannelEngine::SetAxisRetRefFlag(){
 }
 
 /**
- * @brief å‘MIå‘é€ç‰©ç†è½´çš„åé¦ˆ
+ * @brief ÏòMI·¢ËÍÎïÀíÖáµÄ·´À¡
  */
 void ChannelEngine::SendMiPhyAxisEncoder(){
-    FILE *fp = fopen(PATH_PHY_AXIS_ENCODER, "rb");//æ‰“å¼€æ–‡ä»¶
+    FILE *fp = fopen(PATH_PHY_AXIS_ENCODER, "rb");//´ò¿ªÎÄ¼ş
 
     if(fp == nullptr){
-        g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "æ‰“å¼€ç‰©ç†è½´å½“å‰åé¦ˆæ•°æ®å¤±è´¥ï¼");
-        return;//æ–‡ä»¶æ‰“å¼€å¤±è´¥
+        g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "´ò¿ªÎïÀíÖáµ±Ç°·´À¡Êı¾İÊ§°Ü£¡");
+        return;//ÎÄ¼ş´ò¿ªÊ§°Ü
     }
 
     int64_t data[m_p_general_config->axis_count];
@@ -747,8 +747,8 @@ void ChannelEngine::SendMiPhyAxisEncoder(){
 }
 
 /**
- * @brief è®¾ç½®MIæ¨¡å—å·¥ä½œæ¨¡å¼
- * @param value : å·¥ä½œæ¨¡å¼è¡¨ç¤ºï¼Œ 0x00--è‡ªåŠ¨æ¨¡å¼    0x10--è¿›å…¥æ‰‹è½®æ¨¡å¼     0x20--æ‰‹åŠ¨æ¨¡å¼
+ * @brief ÉèÖÃMIÄ£¿é¹¤×÷Ä£Ê½
+ * @param value : ¹¤×÷Ä£Ê½±íÊ¾£¬ 0x00--×Ô¶¯Ä£Ê½    0x10--½øÈëÊÖÂÖÄ£Ê½     0x20--ÊÖ¶¯Ä£Ê½
  */
 void ChannelEngine::SetMiWorkMode(uint8_t value){
 //	printf("SetMiWorkMode: %hhu\n", value);
@@ -761,7 +761,7 @@ void ChannelEngine::SetMiWorkMode(uint8_t value){
     uint8_t chn_count = this->m_p_channel_mode_group[this->m_n_cur_chn_group_index].GetChannelCount();
     for(uint i = 0; i < chn_count; i++){
         cmd.data.axis_index = NO_AXIS;
-        cmd.data.reserved = this->m_p_channel_mode_group[this->m_n_cur_chn_group_index].GetChannel(i);  //é€šé“å·ï¼Œä»0å¼€å§‹
+        cmd.data.reserved = this->m_p_channel_mode_group[this->m_n_cur_chn_group_index].GetChannel(i);  //Í¨µÀºÅ£¬´Ó0¿ªÊ¼
 
         if(cmd.data.reserved == 0xFF)
             continue;
@@ -772,21 +772,21 @@ void ChannelEngine::SetMiWorkMode(uint8_t value){
 }
 
 /**
- * @brief è®¾ç½®MIæ¨¡å—æ‰‹è½®è·Ÿè¸ªæ¨¡å¼
- * @param flag : true -- æ‰“å¼€æ‰‹è½®è·Ÿè¸ª  false--å…³é—­æ‰‹è½®è·Ÿè¸ª
- * @param chn : é€šé“å·ï¼Œä»0å¼€å§‹
+ * @brief ÉèÖÃMIÄ£¿éÊÖÂÖ¸ú×ÙÄ£Ê½
+ * @param flag : true -- ´ò¿ªÊÖÂÖ¸ú×Ù  false--¹Ø±ÕÊÖÂÖ¸ú×Ù
+ * @param chn : Í¨µÀºÅ£¬´Ó0¿ªÊ¼
  */
 void ChannelEngine::SetMiHandwheelTrace(bool flag, uint8_t chn){
-    g_ptr_trace->PrintTrace(TRACE_INFO, CHANNEL_ENGINE_SC, "SetMiHandwheelTrace: %hhuï¼Œ curgroup=%hhu\n", flag, m_n_cur_chn_group_index);
+    g_ptr_trace->PrintTrace(TRACE_INFO, CHANNEL_ENGINE_SC, "SetMiHandwheelTrace: %hhu£¬ curgroup=%hhu\n", flag, m_n_cur_chn_group_index);
     MiCmdFrame cmd;
     memset(&cmd, 0x00, sizeof(cmd));
     cmd.data.cmd = CMD_MI_SET_HANDWHEEL_TRACE;
 
     cmd.data.data[0] = flag?0x10:0x00;
-    cmd.data.data[1] = this->m_p_general_config->hw_rev_trace;   //æ‰‹è½®åå‘å¼•å¯¼ä½¿èƒ½
+    cmd.data.data[1] = this->m_p_general_config->hw_rev_trace;   //ÊÖÂÖ·´ÏòÒıµ¼Ê¹ÄÜ
 
     cmd.data.axis_index = NO_AXIS;
-    cmd.data.reserved = chn;   //é€šé“ï¼Œä»0å¼€å§‹
+    cmd.data.reserved = chn;   //Í¨µÀ£¬´Ó0¿ªÊ¼
 
 
     this->m_p_mi_comm->WriteCmd(cmd);
@@ -794,7 +794,7 @@ void ChannelEngine::SetMiHandwheelTrace(bool flag, uint8_t chn){
 //	uint8_t chn_count = this->m_p_channel_mode_group[this->m_n_cur_chn_group_index].GetChannelCount();
 //	for(uint i = 0; i < chn_count; i++){
 //		cmd.data.axis_index = NO_AXIS;
-//		cmd.data.reserved = this->m_p_channel_mode_group[this->m_n_cur_chn_group_index].GetChannel(i);    //é€šé“ï¼Œä»0å¼€å§‹
+//		cmd.data.reserved = this->m_p_channel_mode_group[this->m_n_cur_chn_group_index].GetChannel(i);    //Í¨µÀ£¬´Ó0¿ªÊ¼
 //
 //		if(cmd.data.reserved == 0xFF)
 //			continue;
@@ -806,7 +806,7 @@ void ChannelEngine::SetMiHandwheelTrace(bool flag, uint8_t chn){
 }
 
 /**
- * @brief è®¾ç½®MIå½“å‰é€šé“å·
+ * @brief ÉèÖÃMIµ±Ç°Í¨µÀºÅ
  */
 void ChannelEngine::SetMiCurChannel(){
     MiCmdFrame cmd;
@@ -823,9 +823,9 @@ void ChannelEngine::SetMiCurChannel(){
 
 
 /**
- * @brief åˆå§‹åŒ–è®¾ç½®å¤–éƒ¨æ¥å£ä»¥åŠåˆ›å»ºé€šé“æ§åˆ¶å¯¹è±¡
- * @param hmi_comm ï¼šä¸HMIçš„é€šè®¯æ¥å£ç±»æŒ‡é’ˆ
- * @param parm ï¼šå‚æ•°è®¿é—®æ¥å£
+ * @brief ³õÊ¼»¯ÉèÖÃÍâ²¿½Ó¿ÚÒÔ¼°´´½¨Í¨µÀ¿ØÖÆ¶ÔÏó
+ * @param hmi_comm £ºÓëHMIµÄÍ¨Ñ¶½Ó¿ÚÀàÖ¸Õë
+ * @param parm £º²ÎÊı·ÃÎÊ½Ó¿Ú
  */
 void ChannelEngine::Initialize(HMICommunication *hmi_comm, MICommunication *mi_comm,
         MCCommunication *mc_comm, ParmManager *parm){
@@ -834,11 +834,11 @@ void ChannelEngine::Initialize(HMICommunication *hmi_comm, MICommunication *mi_c
             mi_comm == nullptr ||
             mc_comm == nullptr ||
             parm == nullptr){
-        m_error_code = ERR_SC_INIT;  //åˆå§‹åŒ–å¤±è´¥ï¼Œå‘Šè­¦
+        m_error_code = ERR_SC_INIT;  //³õÊ¼»¯Ê§°Ü£¬¸æ¾¯
         return;
     }
 
-    this->m_n_update_state = MODULE_UPDATE_NONE;  //é»˜è®¤éå‡çº§çŠ¶æ€
+    this->m_n_update_state = MODULE_UPDATE_NONE;  //Ä¬ÈÏ·ÇÉı¼¶×´Ì¬
 
     this->m_p_hmi_comm = hmi_comm;
     this->m_p_mi_comm = mi_comm;
@@ -853,11 +853,11 @@ void ChannelEngine::Initialize(HMICommunication *hmi_comm, MICommunication *mi_c
 
     this->m_n_pmc_axis_count = parm->GetPmcAxisCount();
 
-    //åˆ›å»ºPMCå¯„å­˜å™¨ç±»å¯¹è±¡
+    //´´½¨PMC¼Ä´æÆ÷Àà¶ÔÏó
     this->m_p_pmc_reg = new PmcRegister();
     if(m_p_pmc_reg == nullptr){
-        g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "é€šé“å¼•æ“åˆ›å»ºPMCå¯„å­˜å™¨å¯¹è±¡å¤±è´¥!");
-        m_error_code = ERR_MEMORY_NEW;  //åˆå§‹åŒ–å¤±è´¥
+        g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "Í¨µÀÒıÇæ´´½¨PMC¼Ä´æÆ÷¶ÔÏóÊ§°Ü!");
+        m_error_code = ERR_MEMORY_NEW;  //³õÊ¼»¯Ê§°Ü
         return;
     }
     memset(m_g_reg_last.all, 0x00, sizeof(m_g_reg_last.all));
@@ -872,35 +872,35 @@ void ChannelEngine::Initialize(HMICommunication *hmi_comm, MICommunication *mi_c
 
     this->InitPcAllocList();
 
-    InitSyncAxis();  //åˆå§‹åŒ–åŒæ­¥è½´
+    InitSyncAxis();  //³õÊ¼»¯Í¬²½Öá
 
     this->m_n_da_prec = pow(2, this->m_p_general_config->da_prec-1);
 
-    this->m_df_phy_axis_pos_feedback = new double[m_p_general_config->axis_count];  //åˆ†é…ç‰©ç†è½´å½“å‰åé¦ˆæœºæ¢°åæ ‡å­˜å‚¨åŒº
+    this->m_df_phy_axis_pos_feedback = new double[m_p_general_config->axis_count];  //·ÖÅäÎïÀíÖáµ±Ç°·´À¡»úĞµ×ø±ê´æ´¢Çø
     memset(m_df_phy_axis_pos_feedback, 0, sizeof(double)*m_p_general_config->axis_count);
 
-    this->m_df_phy_axis_pos_intp = new double[m_p_general_config->axis_count];  //åˆ†é…ç‰©ç†è½´å½“å‰æ’è¡¥æœºæ¢°åæ ‡å­˜å‚¨åŒº
+    this->m_df_phy_axis_pos_intp = new double[m_p_general_config->axis_count];  //·ÖÅäÎïÀíÖáµ±Ç°²å²¹»úĞµ×ø±ê´æ´¢Çø
     memset(m_df_phy_axis_pos_intp, 0, sizeof(double)*m_p_general_config->axis_count);
 
-    this->m_df_phy_axis_pos_intp_after = new double[m_p_general_config->axis_count];  //åˆ†é…ç‰©ç†è½´å½“å‰æ’è¡¥åè¾“å‡ºçš„æœºæ¢°åæ ‡å­˜å‚¨åŒº
+    this->m_df_phy_axis_pos_intp_after = new double[m_p_general_config->axis_count];  //·ÖÅäÎïÀíÖáµ±Ç°²å²¹ºóÊä³öµÄ»úĞµ×ø±ê´æ´¢Çø
     memset(m_df_phy_axis_pos_intp_after, 0, sizeof(double)*m_p_general_config->axis_count);
 
-    this->m_df_pmc_axis_remain = new double[m_p_general_config->axis_count];  //åˆ†é…PMCè½´å½“å‰ä½™ç§»åŠ¨é‡å­˜å‚¨åŒº
+    this->m_df_pmc_axis_remain = new double[m_p_general_config->axis_count];  //·ÖÅäPMCÖáµ±Ç°ÓàÒÆ¶¯Á¿´æ´¢Çø
     memset(m_df_pmc_axis_remain, 0, sizeof(double)*m_p_general_config->axis_count);
 
 #ifdef USES_SPEED_TORQUE_CTRL
-    this->m_df_phy_axis_speed_feedback = new double[m_p_general_config->axis_count];  //åˆ†é…ç‰©ç†è½´å½“å‰åé¦ˆæœºæ¢°åæ ‡å­˜å‚¨åŒº
+    this->m_df_phy_axis_speed_feedback = new double[m_p_general_config->axis_count];  //·ÖÅäÎïÀíÖáµ±Ç°·´À¡»úĞµ×ø±ê´æ´¢Çø
     memset(m_df_phy_axis_speed_feedback, 0, sizeof(double)*m_p_general_config->axis_count);
 
-    this->m_df_phy_axis_torque_feedback = new double[m_p_general_config->axis_count];  //åˆ†é…ç‰©ç†è½´å½“å‰åé¦ˆæœºæ¢°åæ ‡å­˜å‚¨åŒº
+    this->m_df_phy_axis_torque_feedback = new double[m_p_general_config->axis_count];  //·ÖÅäÎïÀíÖáµ±Ç°·´À¡»úĞµ×ø±ê´æ´¢Çø
     memset(m_df_phy_axis_torque_feedback, 0, sizeof(double)*m_p_general_config->axis_count);
 #endif
 
-    //åˆ›å»ºé€šé“å¯¹è±¡
+    //´´½¨Í¨µÀ¶ÔÏó
     this->m_p_channel_control = new ChannelControl[m_p_general_config->chn_count];
     if(m_p_channel_control == nullptr){
-        //å†…å­˜åˆ†é…å¤±è´¥ï¼Œå‘Šè­¦
-        g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "é€šé“å¼•æ“åˆ›å»ºé€šé“æ§åˆ¶å¯¹è±¡å¤±è´¥!");
+        //ÄÚ´æ·ÖÅäÊ§°Ü£¬¸æ¾¯
+        g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "Í¨µÀÒıÇæ´´½¨Í¨µÀ¿ØÖÆ¶ÔÏóÊ§°Ü!");
         m_error_code = ERR_MEMORY_NEW;
         return;
     }
@@ -917,24 +917,24 @@ void ChannelEngine::Initialize(HMICommunication *hmi_comm, MICommunication *mi_c
     }
 
     printf("init pmc axis ctrl \n");
-    //åˆå§‹è®¾ç½®PMCé€šé“æ§åˆ¶å¯¹è±¡
+    //³õÊ¼ÉèÖÃPMCÍ¨µÀ¿ØÖÆ¶ÔÏó
     for(uint8_t i = 0; i < kMaxPmcAxisCtrlGroup; i++)
         this->m_pmc_axis_ctrl[i].SetGroupIndex(i);
     printf("succeed to init pmc axis ctrl\n");
 
-    //åˆå§‹åŒ–æ–¹å¼ç»„é…ç½®
+    //³õÊ¼»¯·½Ê½×éÅäÖÃ
     this->InitChnModeGroup();
 
-    //åˆå§‹åŒ–å½“å‰é€šé“ä¸ºç¬¬ä¸€é€šé“
+    //³õÊ¼»¯µ±Ç°Í¨µÀÎªµÚÒ»Í¨µÀ
     this->SetCurWorkChanl(0);
 
-    //åˆå§‹åŒ–å›å‚è€ƒç‚¹æ ‡å¿—
+    //³õÊ¼»¯»Ø²Î¿¼µã±êÖ¾
     this->m_n_mask_ret_ref_over = 0;
     for(int i = 0; i < this->m_p_general_config->axis_count; i++){
-        if(m_p_axis_config[i].axis_interface == VIRTUAL_AXIS || m_p_axis_config[i].axis_type == AXIS_SPINDLE	//ä¸»è½´å’Œè™šæ‹Ÿè½´ä¸ç”¨å›å‚è€ƒç‚¹
-            || (m_p_axis_config[i].feedback_mode == NO_ENCODER && m_p_axis_config[i].ret_ref_mode == 0)    //æ— åé¦ˆï¼Œå¹¶ä¸”ç¦æ­¢å›å‚è€ƒç‚¹
-            || (m_p_axis_config[i].feedback_mode != INCREMENTAL_ENCODER && m_p_axis_config[i].feedback_mode != NO_ENCODER && m_p_axis_config[i].ref_encoder != kAxisRefNoDef)    //ç»å¯¹å€¼ç¼–ç å™¨ï¼Œå·²è®¾å®šå‚è€ƒç‚¹
-            || (m_p_axis_config[i].feedback_mode == INCREMENTAL_ENCODER && m_p_axis_config[i].ret_ref_mode == 0)){  //å¢é‡ç¼–ç å™¨ï¼Œç¦æ­¢å›å‚è€ƒç‚¹
+        if(m_p_axis_config[i].axis_interface == VIRTUAL_AXIS || m_p_axis_config[i].axis_type == AXIS_SPINDLE	//Ö÷ÖáºÍĞéÄâÖá²»ÓÃ»Ø²Î¿¼µã
+            || (m_p_axis_config[i].feedback_mode == NO_ENCODER && m_p_axis_config[i].ret_ref_mode == 0)    //ÎŞ·´À¡£¬²¢ÇÒ½ûÖ¹»Ø²Î¿¼µã
+            || (m_p_axis_config[i].feedback_mode != INCREMENTAL_ENCODER && m_p_axis_config[i].feedback_mode != NO_ENCODER && m_p_axis_config[i].ref_encoder != kAxisRefNoDef)    //¾ø¶ÔÖµ±àÂëÆ÷£¬ÒÑÉè¶¨²Î¿¼µã
+            || (m_p_axis_config[i].feedback_mode == INCREMENTAL_ENCODER && m_p_axis_config[i].ret_ref_mode == 0)){  //ÔöÁ¿±àÂëÆ÷£¬½ûÖ¹»Ø²Î¿¼µã
 //			m_n_mask_ret_ref_over |= (0x01<<i);
             this->SetRetRefFlag(i, true);
         }
@@ -945,37 +945,37 @@ void ChannelEngine::Initialize(HMICommunication *hmi_comm, MICommunication *mi_c
     struct sched_param param;
     int res = 0;
 
-    //åˆå§‹åŒ–æˆæƒç›¸å…³
-    if(!ReadDevSn(m_device_sn)){  //è¯»å–è®¾å¤‡åºåˆ—å·å¤±è´¥
+    //³õÊ¼»¯ÊÚÈ¨Ïà¹Ø
+    if(!ReadDevSn(m_device_sn)){  //¶ÁÈ¡Éè±¸ĞòÁĞºÅÊ§°Ü
         printf("Failed to read device sn\n");
     }else{
         printf("device SN: %s\n",m_device_sn);
     }
 #ifdef USES_LICENSE_FUNC
-    m_ln_local_time = ReadLocalTime(m_device_sn);//è¯»å–æœ¬åœ°è®¡æ—¶æ–‡ä»¶
-    if(m_ln_local_time < 0){//è¯»å–æœ¬åœ°è®¡æ—¶æ–‡ä»¶å¼‚å¸¸
+    m_ln_local_time = ReadLocalTime(m_device_sn);//¶ÁÈ¡±¾µØ¼ÆÊ±ÎÄ¼ş
+    if(m_ln_local_time < 0){//¶ÁÈ¡±¾µØ¼ÆÊ±ÎÄ¼şÒì³£
         if(m_ln_local_time == -1){
-            g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "æœ¬åœ°è®¡æ—¶æ–‡ä»¶ä¸å­˜åœ¨!");
+            g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "±¾µØ¼ÆÊ±ÎÄ¼ş²»´æÔÚ!");
         }else if(m_ln_local_time == -2){
-            g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "æœ¬åœ°è®¡æ—¶æ–‡ä»¶å·²æŸå!");
+            g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "±¾µØ¼ÆÊ±ÎÄ¼şÒÑËğ»µ!");
         }else if(m_ln_local_time == -3){
-            g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "éæ³•æœ¬åœ°è®¡æ—¶æ–‡ä»¶!");
+            g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "·Ç·¨±¾µØ¼ÆÊ±ÎÄ¼ş!");
         }
         m_error_code = ERR_SYSTEM_FILE;
         CreateError(m_error_code, ERROR_LEVEL, CLEAR_BY_MCP_RESET);
     }
-    if(!ReadLicense(this->m_device_sn, &this->m_lic_info)){    //è¯»å–æˆæƒä¿¡æ¯
-        g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "è¯»å–æˆæƒæ–‡ä»¶å¤±è´¥!");
+    if(!ReadLicense(this->m_device_sn, &this->m_lic_info)){    //¶ÁÈ¡ÊÚÈ¨ĞÅÏ¢
+        g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "¶ÁÈ¡ÊÚÈ¨ÎÄ¼şÊ§°Ü!");
     }
 
     if(-4 == CheckLocalTime(&m_lic_info, m_ln_local_time)){
-        g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "ç³»ç»Ÿæ—¶é—´å¼‚å¸¸!");
+        g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "ÏµÍ³Ê±¼äÒì³£!");
         m_error_code = ERR_SYSTEM_TIME;
         CreateError(m_error_code, ERROR_LEVEL, CLEAR_BY_MCP_RESET);
     }
 
     if(1 == this->CheckLicense(true)){
-        g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "ç³»ç»Ÿæˆæƒéæ³•!");
+        g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "ÏµÍ³ÊÚÈ¨·Ç·¨!");
     }
 
     printf("license info: flag = %c, deadline=%04d-%02d-%02d\n", this->m_lic_info.licflag, this->m_lic_info.dead_line.year,
@@ -983,21 +983,21 @@ void ChannelEngine::Initialize(HMICommunication *hmi_comm, MICommunication *mi_c
 #endif
 
 
-    //åˆ›å»ºçŠ¶æ€åˆ·æ–°åˆ·æ–°çº¿ç¨‹
+    //´´½¨×´Ì¬Ë¢ĞÂË¢ĞÂÏß³Ì
     pthread_attr_init(&attr);
     pthread_attr_setschedpolicy(&attr, SCHED_RR);
     pthread_attr_setstacksize(&attr, kThreadStackSize);	//
     param.__sched_priority = 36; //96;
     pthread_attr_setschedparam(&attr, &param);
-    res = pthread_attr_setinheritsched(&attr, PTHREAD_EXPLICIT_SCHED); //ä¸ç»§æ‰¿çˆ¶çº¿ç¨‹è°ƒåº¦æ–¹å¼ï¼Œå¦åˆ™ä»¥ä¸Šçš„è®¾ç½®ä¸ç”Ÿæ•ˆ
+    res = pthread_attr_setinheritsched(&attr, PTHREAD_EXPLICIT_SCHED); //²»¼Ì³Ğ¸¸Ïß³Ìµ÷¶È·½Ê½£¬·ñÔòÒÔÉÏµÄÉèÖÃ²»ÉúĞ§
     if (res) {
         printf("pthread setinheritsched failed\n");
     }
 
     res = pthread_create(&m_thread_refresh_mi_status, &attr,
-            ChannelEngine::RefreshMiStatusThread, this);    //å¼€å¯é€šé“çŠ¶æ€åˆ·æ–°çº¿ç¨‹
+            ChannelEngine::RefreshMiStatusThread, this);    //¿ªÆôÍ¨µÀ×´Ì¬Ë¢ĞÂÏß³Ì
     if (res != 0) {
-        g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "é€šé“å¼•æ“åˆ›å»ºMIçŠ¶æ€åˆ·æ–°çº¿ç¨‹å¤±è´¥ï¼");
+        g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "Í¨µÀÒıÇæ´´½¨MI×´Ì¬Ë¢ĞÂÏß³ÌÊ§°Ü£¡");
         m_error_code = ERR_SC_INIT;
         return;
     }
@@ -1008,13 +1008,13 @@ void ChannelEngine::Initialize(HMICommunication *hmi_comm, MICommunication *mi_c
 }
 
 /**
- * @brief åˆå§‹åŒ–æ–¹å¼ç»„æ•°æ®ï¼Œå¿…é¡»åœ¨è¯»å–é€šé“é…ç½®ä¹‹åè°ƒç”¨
+ * @brief ³õÊ¼»¯·½Ê½×éÊı¾İ£¬±ØĞëÔÚ¶ÁÈ¡Í¨µÀÅäÖÃÖ®ºóµ÷ÓÃ
  */
 void ChannelEngine::InitChnModeGroup(){
     if(this->m_p_channel_config == nullptr)
         return;
 
-    this->m_p_channel_mode_group = new ChannelModeGroup[this->m_p_general_config->chn_count];    //æ–¹å¼ç»„æœ€å¤§æ•°é‡ç­‰äºé€šé“æ•°é‡
+    this->m_p_channel_mode_group = new ChannelModeGroup[this->m_p_general_config->chn_count];    //·½Ê½×é×î´óÊıÁ¿µÈÓÚÍ¨µÀÊıÁ¿
 
     if(this->m_p_channel_mode_group == nullptr){
         CreateError(ERR_SC_INIT, ERROR_LEVEL, CLEAR_BY_RESET_POWER);
@@ -1032,22 +1032,22 @@ void ChannelEngine::InitChnModeGroup(){
 }
 
 /**
- * @brief åˆå§‹åŒ–èºè¡¥æ•°æ®åˆ†å¸ƒè¡¨
+ * @brief ³õÊ¼»¯Âİ²¹Êı¾İ·Ö²¼±í
  */
 void ChannelEngine::InitPcAllocList(){
     this->m_list_pc_alloc.Clear();
 
     AxisPcDataAlloc pc_alloc;
     for(int i = 0; i < m_p_general_config->axis_count; i++){
-        uint16_t flag = this->m_p_axis_config[i].pc_type; // 0 å•å‘èºè¡¥  1 åŒå‘èºè¡¥
+        uint16_t flag = this->m_p_axis_config[i].pc_type; // 0 µ¥ÏòÂİ²¹  1 Ë«ÏòÂİ²¹
         if(this->m_p_axis_config[i].pc_count == 0)
             continue;
         pc_alloc.axis_index = i;
 
         if(flag == 1){
-            pc_alloc.pc_count = m_p_axis_config[i].pc_count*2;  // åŒå‘èºè¡¥
+            pc_alloc.pc_count = m_p_axis_config[i].pc_count*2;  // Ë«ÏòÂİ²¹
         }else{
-            pc_alloc.pc_count = m_p_axis_config[i].pc_count;  // å•å‘èºè¡¥
+            pc_alloc.pc_count = m_p_axis_config[i].pc_count;  // µ¥ÏòÂİ²¹
         }
 
         pc_alloc.start_index = m_p_axis_config[i].pc_offset>0?m_p_axis_config[i].pc_offset-1:0;
@@ -1056,7 +1056,7 @@ void ChannelEngine::InitPcAllocList(){
 
         printf("axis %d -- start_index %d  -- end_index %d\n", i, pc_alloc.start_index, pc_alloc.end_index);
 
-        //æŒ‰èµ·å§‹åç§»ä»å°åˆ°å¤§çš„é¡ºåºæ’å…¥list
+        //°´ÆğÊ¼Æ«ÒÆ´ÓĞ¡µ½´óµÄË³Ğò²åÈëlist
         ListNode<AxisPcDataAlloc> *node = this->m_list_pc_alloc.HeadNode();
 
         while(node != nullptr){
@@ -1073,10 +1073,10 @@ void ChannelEngine::InitPcAllocList(){
 }
 
 /**
- * @brief æ”¹å˜æŒ‡å®šé€šé“çš„æ‰€å±æ–¹å¼ç»„
- * @param chn : é€šé“å·ï¼Œä»0å¼€å§‹
- * @param group_old ï¼šåŸæ‰€å±æ–¹å¼ç»„å·ï¼Œä»0å¼€å§‹
- * @param group_new ï¼šæ–°æ‰€å±æ–¹å¼ç»„å·ï¼Œä»0å¼€å§‹
+ * @brief ¸Ä±äÖ¸¶¨Í¨µÀµÄËùÊô·½Ê½×é
+ * @param chn : Í¨µÀºÅ£¬´Ó0¿ªÊ¼
+ * @param group_old £ºÔ­ËùÊô·½Ê½×éºÅ£¬´Ó0¿ªÊ¼
+ * @param group_new £ºĞÂËùÊô·½Ê½×éºÅ£¬´Ó0¿ªÊ¼
  */
 void ChannelEngine::ChangeChnGroupIndex(uint8_t chn, uint8_t group_old, uint8_t group_new){
     if(chn >= m_p_general_config->chn_count ||
@@ -1087,12 +1087,12 @@ void ChannelEngine::ChangeChnGroupIndex(uint8_t chn, uint8_t group_old, uint8_t 
     if(group_old == group_new)
         return;
 
-    this->m_p_channel_mode_group[group_old].RemoveChannel(chn);    //ä»åŸæ–¹å¼ç»„ä¸­ç§»é™¤é€šé“chn
+    this->m_p_channel_mode_group[group_old].RemoveChannel(chn);    //´ÓÔ­·½Ê½×éÖĞÒÆ³ıÍ¨µÀchn
     this->m_p_channel_mode_group[group_new].AddChannel(chn);       //
 }
 
 /**
- * @brief è·å–æŒ‡å®šé€šé“çš„Få¯„å­˜å™¨æŒ‡é’ˆ
+ * @brief »ñÈ¡Ö¸¶¨Í¨µÀµÄF¼Ä´æÆ÷Ö¸Õë
  * @param chn_index
  * @return
  */
@@ -1103,7 +1103,7 @@ FRegBits *ChannelEngine::GetChnFRegBits(uint8_t chn_index){
 }
 
 /**
- * @brief è·å–æŒ‡å®šé€šé“çš„Gå¯„å­˜å™¨æŒ‡é’ˆ
+ * @brief »ñÈ¡Ö¸¶¨Í¨µÀµÄG¼Ä´æÆ÷Ö¸Õë
  * @param chn_index
  * @return
  */
@@ -1121,13 +1121,13 @@ const GRegBits *ChannelEngine::GetChnGRegBits(uint8_t chn_index){
 //}
 
 /**
- * @brief ç©ºé—²å¤„ç†å‡½æ•°
+ * @brief ¿ÕÏĞ´¦Àíº¯Êı
  */
 void ChannelEngine::DoIdle(){
     uint8_t i = 0;
     this->m_n_idle_count++;
 //
-//	//ç©ºé—²æ—¶ä¿å­˜PMCå¯„å­˜å™¨æ•°æ®
+//	//¿ÕÏĞÊ±±£´æPMC¼Ä´æÆ÷Êı¾İ
 //	if(m_n_idle_count%100 == 0){
 //		bool idle = true;
 //		for(i = 0; i < this->m_p_general_config->chn_count; i++){
@@ -1136,20 +1136,20 @@ void ChannelEngine::DoIdle(){
 //				break;
 //			}
 //		}
-//		if(idle && this->m_p_pmc_reg->IsKeepRegChanged()){//ä¿å­˜å¯„å­˜å™¨æ•°æ®
+//		if(idle && this->m_p_pmc_reg->IsKeepRegChanged()){//±£´æ¼Ä´æÆ÷Êı¾İ
 //			this->m_p_pmc_reg->SaveRegData();
 //		}
 //	}
 //
 //
-    //è°ƒç”¨é€šé“çš„ç©ºé—²å‡½æ•°
+    //µ÷ÓÃÍ¨µÀµÄ¿ÕÏĞº¯Êı
     for(i = 0; i < this->m_p_general_config->chn_count; i++){
         this->m_p_channel_control[i].DoIdle(m_n_idle_count);
     }
 }
 
 /**
- * @brief åˆå§‹å…³è”æ‰ç”µä¿¡å·å’Œæ‰ç”µå¤„ç†å‡½æ•°
+ * @brief ³õÊ¼¹ØÁªµôµçĞÅºÅºÍµôµç´¦Àíº¯Êı
  */
 void ChannelEngine::InitPoweroffHandler(){
     struct sigaction sa;
@@ -1168,8 +1168,8 @@ void ChannelEngine::InitPoweroffHandler(){
         return;
     }
 
-    ioctl(fd, SET_NOTIFY_PID, getpid()); //è®¾ç½®é€šçŸ¥pidä¸ºè‡ªå·±
-    ioctl(fd, SET_NOTIFY_INTERVAL, 0);	//è®¾ç½®é—´éš”ä¸º0
+    ioctl(fd, SET_NOTIFY_PID, getpid()); //ÉèÖÃÍ¨ÖªpidÎª×Ô¼º
+    ioctl(fd, SET_NOTIFY_INTERVAL, 0);	//ÉèÖÃ¼ä¸ôÎª0
 
     close(fd);
 
@@ -1177,7 +1177,7 @@ void ChannelEngine::InitPoweroffHandler(){
 }
 
 /**
- * @brief æ‰ç”µå¤„ç†å‡½æ•°
+ * @brief µôµç´¦Àíº¯Êı
  * @param signo
  * @param info
  * @param context
@@ -1203,26 +1203,26 @@ void ChannelEngine::PoweroffHandler(int signo, siginfo_t *info, void *context){
 }
 
 /**
- * @brief æ‰ç”µæ—¶ä¿å­˜æ•°æ®
+ * @brief µôµçÊ±±£´æÊı¾İ
  */
 void ChannelEngine::SaveDataPoweroff(){
 
-    //ä¿å­˜PMCå¯„å­˜å™¨æ•°æ®
+    //±£´æPMC¼Ä´æÆ÷Êı¾İ
     if((this->m_mask_import_param & (0x01<<CONFIG_PMC_REG)) == 0)
         this->m_p_pmc_reg->SaveRegData();
 
-    //ä¿å­˜éæ˜“å¤±æ€§å®å˜é‡
+    //±£´æ·ÇÒ×Ê§ĞÔºê±äÁ¿
     if((this->m_mask_import_param & (0x01<<CONFIG_MACRO_VAR)) == 0)
         this->SaveKeepMacroVar();
 
 
-    //ä¿å­˜å„é€šé“å½“å‰éœ€ä¿å­˜çš„çŠ¶æ€
-//	g_ptr_parm_manager->SaveParm(CHN_STATE_SCENE);    //æ³¨é‡ŠåŸå› ï¼šæ­¤ä¸ºä½é¢‘æ“ä½œï¼Œæ”¹ä¸ºåœ¨é€šé“çŠ¶æ€ä¿®æ”¹æ—¶å³æ—¶ä¿å­˜ï¼Œä¸å†æ‰ç”µæ—¶å¢åŠ è€—æ—¶
+    //±£´æ¸÷Í¨µÀµ±Ç°Ğè±£´æµÄ×´Ì¬
+//	g_ptr_parm_manager->SaveParm(CHN_STATE_SCENE);    //×¢ÊÍÔ­Òò£º´ËÎªµÍÆµ²Ù×÷£¬¸ÄÎªÔÚÍ¨µÀ×´Ì¬ĞŞ¸ÄÊ±¼´Ê±±£´æ£¬²»ÔÙµôµçÊ±Ôö¼ÓºÄÊ±
 
-    //ä¿å­˜å„è½´å½“å‰ä½ç½®
+    //±£´æ¸÷Öáµ±Ç°Î»ÖÃ
     this->SaveCurPhyAxisEncoder();
 
-    //ä¿å­˜åˆ€å…·å¯¿å‘½ä¿¡æ¯
+    //±£´æµ¶¾ßÊÙÃüĞÅÏ¢
 #ifdef USES_WOOD_MACHINE
     this->SaveToolInfo();
 #endif
@@ -1234,7 +1234,7 @@ void ChannelEngine::SaveDataPoweroff(){
 }
 
 /**
- * @brief æ‰ç”µä¿å­˜éæ˜“å¤±æ€§å®å˜é‡
+ * @brief µôµç±£´æ·ÇÒ×Ê§ĞÔºê±äÁ¿
  */
 void ChannelEngine::SaveKeepMacroVar(){
 
@@ -1245,10 +1245,10 @@ void ChannelEngine::SaveKeepMacroVar(){
 }
 
 /**
- * @brief åŒæ­¥ä¿å­˜æ–‡ä»¶
+ * @brief Í¬²½±£´æÎÄ¼ş
  */
 void ChannelEngine::SyncKeepVar(){
-    //ä¿å­˜PMCå¯„å­˜å™¨æ•°æ®
+    //±£´æPMC¼Ä´æÆ÷Êı¾İ
     this->m_p_pmc_reg->SaveRegData();
 
     for(uint8_t i = 0; i < this->m_p_general_config->chn_count; i++){
@@ -1259,8 +1259,8 @@ void ChannelEngine::SyncKeepVar(){
 }
 
 /**
- * @brief è®¾ç½®å‚æ•°å¯¼å…¥æ ‡å¿—
- * @param param_type : å‚æ•°ç±»å‹
+ * @brief ÉèÖÃ²ÎÊıµ¼Èë±êÖ¾
+ * @param param_type : ²ÎÊıÀàĞÍ
  */
 void ChannelEngine::SetParamImportMask(int param_type){
     if(param_type >= CONFIG_TYPE_COUNT)
@@ -1271,15 +1271,15 @@ void ChannelEngine::SetParamImportMask(int param_type){
 
 
 /**
- * @brief æ‰ç”µä¿å­˜å½“å‰æ‰€æœ‰ç‰©ç†è½´çš„ç¼–ç å™¨åé¦ˆ
+ * @brief µôµç±£´æµ±Ç°ËùÓĞÎïÀíÖáµÄ±àÂëÆ÷·´À¡
  */
 void ChannelEngine::SaveCurPhyAxisEncoder(){
 
-    FILE *fp = fopen(PATH_PHY_AXIS_ENCODER, "wb");//æ‰“å¼€æ–‡ä»¶
+    FILE *fp = fopen(PATH_PHY_AXIS_ENCODER, "wb");//´ò¿ªÎÄ¼ş
 
     if(fp == nullptr){
-        g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "æ‰“å¼€ç‰©ç†è½´å½“å‰åé¦ˆæ•°æ®å¤±è´¥ï¼");
-        return;//æ–‡ä»¶æ‰“å¼€å¤±è´¥
+        g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "´ò¿ªÎïÀíÖáµ±Ç°·´À¡Êı¾İÊ§°Ü£¡");
+        return;//ÎÄ¼ş´ò¿ªÊ§°Ü
     }
 
     int64_t data[m_p_general_config->axis_count];
@@ -1297,7 +1297,7 @@ void ChannelEngine::SaveCurPhyAxisEncoder(){
 
 
 /**
- * @brief å‘MCæ¨¡å—å‘é€æ¡æ‰‹å‘½ä»¤
+ * @brief ÏòMCÄ£¿é·¢ËÍÎÕÊÖÃüÁî
  */
 void ChannelEngine::ShakeHandWithMc(){
     McCmdFrame cmd;
@@ -1315,7 +1315,7 @@ void ChannelEngine::ShakeHandWithMc(){
 }
 
 /**
- * @brief å‘MIæ¨¡å—å‘é€æ¡æ‰‹å‘½ä»¤
+ * @brief ÏòMIÄ£¿é·¢ËÍÎÕÊÖÃüÁî
  */
 void ChannelEngine::ShakeHandWithMi(){
     MiCmdFrame cmd;
@@ -1330,7 +1330,7 @@ void ChannelEngine::ShakeHandWithMi(){
 }
 
 /**
- * @brief å‘MCå‘é€æ’è¡¥å‘¨æœŸå‚æ•°
+ * @brief ÏòMC·¢ËÍ²å²¹ÖÜÆÚ²ÎÊı
  */
 void ChannelEngine::SendIntepolateCycle(){
     McCmdFrame cmd;
@@ -1339,9 +1339,9 @@ void ChannelEngine::SendIntepolateCycle(){
     cmd.data.channel_index = CHANNEL_ENGINE_INDEX;
 
     cmd.data.cmd = CMD_MC_SET_INIT_PARAM;
-//	cmd.data.data[0] = 0x0001;   	//250uså‘¨æœŸ
-    cmd.data.data[0] = this->m_p_general_config->bus_cycle; // this->m_p_channel_config[0].intep_cycle;   //æ’è¡¥å‘¨æœŸ
-//	cmd.data.data[1] = 0x0002;		//-Tæ¨¡å¼
+//	cmd.data.data[0] = 0x0001;   	//250usÖÜÆÚ
+    cmd.data.data[0] = this->m_p_general_config->bus_cycle; // this->m_p_channel_config[0].intep_cycle;   //²å²¹ÖÜÆÚ
+//	cmd.data.data[1] = 0x0002;		//-TÄ£Ê½
 
 
     if(true == this->m_mc_run_dsp_flag)
@@ -1354,7 +1354,7 @@ void ChannelEngine::SendIntepolateCycle(){
 }
 
 /**
- * @brief å‘é€MCå¤ä½æŒ‡ä»¤
+ * @brief ·¢ËÍMC¸´Î»Ö¸Áî
  * @return
  */
 void ChannelEngine::SendMcResetCmd(){
@@ -1369,11 +1369,11 @@ void ChannelEngine::SendMcResetCmd(){
         m_p_mc_comm->WriteCmd(cmd);
 
     if(true == this->m_mc_run_mi_flag)
-        m_p_mc_arm_comm->WriteCmd(cmd);   // ??????????????????????????????????????????????  äºŒé€‰ä¸€  æ˜¯å¦åŠ ä¸€ä¸ªå®
+        m_p_mc_arm_comm->WriteCmd(cmd);   // ??????????????????????????????????????????????  ¶şÑ¡Ò»  ÊÇ·ñ¼ÓÒ»¸öºê
 }
 
 /**
- * @brief å‘é€MCæ¸…é™¤å‘Šè­¦æŒ‡ä»¤
+ * @brief ·¢ËÍMCÇå³ı¸æ¾¯Ö¸Áî
  * @return
  */
 void ChannelEngine::ClearMcAlarm(){
@@ -1388,11 +1388,11 @@ void ChannelEngine::ClearMcAlarm(){
         m_p_mc_comm->WriteCmd(cmd);
 
     if(true == this->m_mc_run_mi_flag)
-        m_p_mc_arm_comm->WriteCmd(cmd);  // ??????????????????????????????????????????????  äºŒé€‰ä¸€  æ˜¯å¦åŠ ä¸€ä¸ªå®
+        m_p_mc_arm_comm->WriteCmd(cmd);  // ??????????????????????????????????????????????  ¶şÑ¡Ò»  ÊÇ·ñ¼ÓÒ»¸öºê
 }
 
 /**
- * @brief åˆå§‹åŒ–MCçš„æ•°æ®ç¼“å†²åŒºï¼Œè®¾ç½®é»˜è®¤éå•æ®µæ¨¡å¼
+ * @brief ³õÊ¼»¯MCµÄÊı¾İ»º³åÇø£¬ÉèÖÃÄ¬ÈÏ·Çµ¥¶ÎÄ£Ê½
  */
 void ChannelEngine::InitMcDataBuffer(){
     for(int i = 0; i < this->m_p_general_config->chn_count; i++){
@@ -1403,7 +1403,7 @@ void ChannelEngine::InitMcDataBuffer(){
 }
 
 /**
- * @brief åˆå§‹åŒ–è®¾ç½®MCå·¥ä»¶åæ ‡ç³»
+ * @brief ³õÊ¼»¯ÉèÖÃMC¹¤¼ş×ø±êÏµ
  */
 void ChannelEngine::InitMcCoord(){
     for(int i = 0; i < this->m_p_general_config->chn_count; i++){
@@ -1412,12 +1412,12 @@ void ChannelEngine::InitMcCoord(){
 }
 
 /**
- * @brief è®¾ç½®MCçš„ç›¸å…³å‚æ•°
+ * @brief ÉèÖÃMCµÄÏà¹Ø²ÎÊı
  */
 void ChannelEngine::InitMcParam(){
-    SendIntepolateCycle();  //å‘é€æ’è¡¥å‘¨æœŸ
+    SendIntepolateCycle();  //·¢ËÍ²å²¹ÖÜÆÚ
 
-    for(int i = 0; i < this->m_p_general_config->chn_count; i++){ //åˆå§‹åŒ–é€šé“å‚æ•°
+    for(int i = 0; i < this->m_p_general_config->chn_count; i++){ //³õÊ¼»¯Í¨µÀ²ÎÊı
         this->m_p_channel_control[i].InitMcIntpAutoBuf();
         this->m_p_channel_control[i].InitMcIntpMdaBuf();
         this->m_p_channel_control[i].SetMcStepMode(false);
@@ -1427,14 +1427,14 @@ void ChannelEngine::InitMcParam(){
         this->m_p_channel_control[i].SetMcChnCornerStopParam();
         this->m_p_channel_control[i].SetChnAxisName();
 
-        this->m_p_channel_control[i].SetMcCoord(true);  //åˆå§‹åŒ–å·¥ä»¶åæ ‡ç³»åç§»
+        this->m_p_channel_control[i].SetMcCoord(true);  //³õÊ¼»¯¹¤¼ş×ø±êÏµÆ«ÒÆ
 
-        this->m_p_channel_control[i].SetChnAllAxisParam(); //åˆå§‹åŒ–è½´å‚æ•°
+        this->m_p_channel_control[i].SetChnAllAxisParam(); //³õÊ¼»¯Öá²ÎÊı
 #ifdef USES_FIVE_AXIS_FUNC
-        this->m_p_channel_control[i].SetMcChnFiveAxisParam();  //åˆå§‹åŒ–äº”è½´å‚æ•°
+        this->m_p_channel_control[i].SetMcChnFiveAxisParam();  //³õÊ¼»¯ÎåÖá²ÎÊı
 #endif
 #ifdef USES_WOOD_MACHINE
-        this->m_p_channel_control[i].SetMcFlipCompParam();  //å‘é€æŒ‘è§’è¡¥å¿
+        this->m_p_channel_control[i].SetMcFlipCompParam();  //·¢ËÍÌô½Ç²¹³¥
         this->m_p_channel_control[i].SetMcDebugParam(0);
         this->m_p_channel_control[i].SetMcDebugParam(1);
         this->m_p_channel_control[i].SetMcDebugParam(2);
@@ -1446,7 +1446,7 @@ void ChannelEngine::InitMcParam(){
 }
 
 /**
- * @brief è·å–MCæ¨¡å—çš„ç‰ˆæœ¬ä¿¡æ¯
+ * @brief »ñÈ¡MCÄ£¿éµÄ°æ±¾ĞÅÏ¢
  */
 void ChannelEngine::SendGetMcVersionCmd(){
     McCmdFrame cmd;
@@ -1460,15 +1460,15 @@ void ChannelEngine::SendGetMcVersionCmd(){
     if(true == this->m_mc_run_dsp_flag)
         m_p_mc_comm->WriteCmd(cmd);
     if(true == this->m_mc_run_mi_flag)
-        m_p_mc_arm_comm->WriteCmd(cmd);  // ??????????????????????????????????????????????  äºŒé€‰ä¸€  æ˜¯å¦åŠ ä¸€ä¸ªå®
+        m_p_mc_arm_comm->WriteCmd(cmd);  // ??????????????????????????????????????????????  ¶şÑ¡Ò»  ÊÇ·ñ¼ÓÒ»¸öºê
 }
 
 #ifdef USES_TIANJIN_PROJ
 /**
- * @brief PMCè½´æœºæ¢°åæ ‡ç³»åˆ°å·¥ä»¶åæ ‡ç³»çš„è½¬æ¢
- * @param pos ï¼šæœºæ¢°åæ ‡
- * @param pmc_axis_index ï¼š PMCè½´åºå·
- * @return å·¥ä»¶åæ ‡
+ * @brief PMCÖá»úĞµ×ø±êÏµµ½¹¤¼ş×ø±êÏµµÄ×ª»»
+ * @param pos £º»úĞµ×ø±ê
+ * @param pmc_axis_index £º PMCÖáĞòºÅ
+ * @return ¹¤¼ş×ø±ê
  */
 double ChannelEngine::TransMachToWorkCoord(double &pos, uint8_t pmc_axis_index){
     double work_pos = 0;
@@ -1479,10 +1479,10 @@ double ChannelEngine::TransMachToWorkCoord(double &pos, uint8_t pmc_axis_index){
 }
 
 /**
- * @brief PMCè½´å·¥ä»¶åæ ‡ç³»åˆ°æœºæ¢°åæ ‡ç³»çš„è½¬æ¢
- * @param pos ï¼š å·¥ä»¶åæ ‡
- * @param pmc_axis_index ï¼š PMCè½´åºå·
- * @return ï¼š æœºæ¢°åæ ‡
+ * @brief PMCÖá¹¤¼ş×ø±êÏµµ½»úĞµ×ø±êÏµµÄ×ª»»
+ * @param pos £º ¹¤¼ş×ø±ê
+ * @param pmc_axis_index £º PMCÖáĞòºÅ
+ * @return £º »úĞµ×ø±ê
  */
 double ChannelEngine::TransWorkToMachCoord(double &pos, uint8_t pmc_axis_index){
     double mach_pos = 0;
@@ -1493,7 +1493,7 @@ double ChannelEngine::TransWorkToMachCoord(double &pos, uint8_t pmc_axis_index){
 #endif
 
 /**
- * @brief å‘é€PMCè½´ä½ç½®ç»™HMI
+ * @brief ·¢ËÍPMCÖáÎ»ÖÃ¸øHMI
  */
 void ChannelEngine::SendPmcAxisToHmi(){
     if(this->m_n_pmc_axis_count == 0)
@@ -1515,12 +1515,12 @@ void ChannelEngine::SendPmcAxisToHmi(){
     for(uint8_t i = 0; i < this->m_p_general_config->axis_count; i++){
         if(this->m_p_axis_config[i].axis_pmc == 0)
             continue;
-        axis.axis_no = i;  //ä»0å¼€å§‹ç¼–å·
+        axis.axis_no = i;  //´Ó0¿ªÊ¼±àºÅ
         axis.mach_pos = this->m_df_phy_axis_pos_feedback[i];
         axis.remain_dis = this->m_df_pmc_axis_remain[i];
 
 #ifdef USES_TIANJIN_PROJ
-        //æœºæ¢°åæ ‡è½¬æ¢ä¸ºå·¥ä»¶åæ ‡
+        //»úĞµ×ø±ê×ª»»Îª¹¤¼ş×ø±ê
         axis.work_pos = this->TransMachToWorkCoord(axis.mach_pos, count);
 #endif
 
@@ -1535,12 +1535,12 @@ void ChannelEngine::SendPmcAxisToHmi(){
 
 
 /**
- * @brief å‘é€ç›‘æ§æ•°æ®
- * @param bAxis : æ˜¯å¦å‘é€åæ ‡è½´å®æ—¶ä½ç½®
- * @param btime : æ˜¯å¦æ›´æ–°åŠ å·¥æ—¶é—´
+ * @brief ·¢ËÍ¼à¿ØÊı¾İ
+ * @param bAxis : ÊÇ·ñ·¢ËÍ×ø±êÖáÊµÊ±Î»ÖÃ
+ * @param btime : ÊÇ·ñ¸üĞÂ¼Ó¹¤Ê±¼ä
  */
 void ChannelEngine::SendMonitorData(bool bAxis, bool btime){
-    //ä»MIè¯»å–æ‰€æœ‰è½´çš„ä½ç½®
+    //´ÓMI¶ÁÈ¡ËùÓĞÖáµÄÎ»ÖÃ
     this->m_p_mi_comm->ReadPhyAxisCurFedBckPos(m_df_phy_axis_pos_feedback, m_df_phy_axis_pos_intp,m_df_phy_axis_speed_feedback,
             m_df_phy_axis_torque_feedback, m_p_general_config->axis_count);
 
@@ -1549,18 +1549,18 @@ void ChannelEngine::SendMonitorData(bool bAxis, bool btime){
 //#endif
 
     if(m_n_pmc_axis_count > 0)
-        this->m_p_mi_comm->ReadPmcAxisRemainDis(m_df_pmc_axis_remain, m_n_pmc_axis_count);   // è¯»å–ä½™ç§»åŠ¨é‡
+        this->m_p_mi_comm->ReadPmcAxisRemainDis(m_df_pmc_axis_remain, m_n_pmc_axis_count);   // ¶ÁÈ¡ÓàÒÆ¶¯Á¿
 
     for(int i = 0; i < this->m_p_general_config->chn_count; i++){
         this->m_p_channel_control[i].SendMonitorData(bAxis, btime);
     }
 
-    this->SendPmcAxisToHmi();   //å‘é€PMCè½´æ•°æ®
+    this->SendPmcAxisToHmi();   //·¢ËÍPMCÖáÊı¾İ
 //	printf("send monitor data\n");
 }
 
 /**
- * @brief å¤„ç†MCæ¨¡å—çš„æŒ‡ä»¤å›å¤
+ * @brief ´¦ÀíMCÄ£¿éµÄÖ¸Áî»Ø¸´
  * @param rsp
  */
 void ChannelEngine::ProcessMcCmdRsp(McCmdFrame &rsp){
@@ -1568,31 +1568,31 @@ void ChannelEngine::ProcessMcCmdRsp(McCmdFrame &rsp){
     switch(rsp.data.cmd){
     case CMD_MC_SHAKEHANDS:
         if(rsp.data.data[0] == 0x1234 && rsp.data.data[1] == 0x5678){
-            //æ¡æ‰‹æˆåŠŸ
-            g_sys_state.module_ready_mask |= MC_READY;  //MCæ¨¡å—å°±ç»ª
+            //ÎÕÊÖ³É¹¦
+            g_sys_state.module_ready_mask |= MC_READY;  //MCÄ£¿é¾ÍĞ÷
 
 
-            this->SetMcAutoBufMax(rsp.data.data[2]);   //è®¾ç½®MCè‡ªåŠ¨è¿åŠ¨æ•°æ®ç¼“å†²å¤§å°
+            this->SetMcAutoBufMax(rsp.data.data[2]);   //ÉèÖÃMC×Ô¶¯ÔË¶¯Êı¾İ»º³å´óĞ¡
 
 //			SendIntepolateCycle();
 //
-//			//åˆå§‹åŒ–è‡ªåŠ¨ä¸MDAçš„æ•°æ®ç¼“å†²
+//			//³õÊ¼»¯×Ô¶¯ÓëMDAµÄÊı¾İ»º³å
 //			InitMcDataBuffer();
 //
-//			//åˆå§‹åŒ–å·¥ä»¶åæ ‡ç³»
+//			//³õÊ¼»¯¹¤¼ş×ø±êÏµ
 //			InitMcCoord();
 //
-//			//åˆå§‹åŒ–è½¯é™ä½
+//			//³õÊ¼»¯ÈíÏŞÎ»
 //			for(uint8_t i = 0; i < this->m_p_general_config->axis_count; i++)
 //				this->SetAxisSoftLimit(i, 0);
             InitMcParam();
 
-            this->SendGetMcVersionCmd();//å‘é€è·å–ç‰ˆæœ¬æŒ‡ä»¤
+            this->SendGetMcVersionCmd();//·¢ËÍ»ñÈ¡°æ±¾Ö¸Áî
             if(m_p_mc_comm->ReadPlVer()){
-                g_sys_state.module_ready_mask |= PL_READY;  //PLæ¨¡å—å°±ç»ª
+                g_sys_state.module_ready_mask |= PL_READY;  //PLÄ£¿é¾ÍĞ÷
             }
             if(m_p_mc_comm->ReadSp6Ver()){
-                g_sys_state.module_ready_mask |= SPANTAN_READY;  //SP6æ¨¡å—å°±ç»ª
+                g_sys_state.module_ready_mask |= SPANTAN_READY;  //SP6Ä£¿é¾ÍĞ÷
             }
 
             if((g_sys_state.module_ready_mask & NC_READY) == NC_READY)
@@ -1602,15 +1602,15 @@ void ChannelEngine::ProcessMcCmdRsp(McCmdFrame &rsp){
 
 
         }
-        else{//æ¡æ‰‹å¤±è´¥
-            g_sys_state.module_ready_mask &= (~MC_READY);  //MCæ¨¡å—å¯åŠ¨å¤±è´¥
+        else{//ÎÕÊÖÊ§°Ü
+            g_sys_state.module_ready_mask &= (~MC_READY);  //MCÄ£¿éÆô¶¯Ê§°Ü
             m_error_code = ERR_MC_INIT;
             CreateError(ERR_MC_INIT, FATAL_LEVEL, CLEAR_BY_RESET_POWER);
 
         }
         break;
     case CMD_MC_GET_UPDATE_STATE:
-//		this->m_n_mc_update_status = rsp.data_crc[1]&0x00FF;	//è€ç‰ˆæœ¬è¿”å›å€¼æ”¾åœ¨axis_indexä¸Š
+//		this->m_n_mc_update_status = rsp.data_crc[1]&0x00FF;	//ÀÏ°æ±¾·µ»ØÖµ·ÅÔÚaxis_indexÉÏ
         this->m_n_mc_update_status = rsp.data.data[0]&0x00FF;
         this->m_b_get_mc_update_status = true;
         printf("get CMD_MC_GET_UPDATE_STATE rsp, %hu\n", m_n_mc_update_status);
@@ -1625,10 +1625,10 @@ void ChannelEngine::ProcessMcCmdRsp(McCmdFrame &rsp){
 
 
 /**
- * @brief å¤„ç†MCæ¨¡å—è¿”å›çš„ç‰ˆæœ¬ä¿¡æ¯
+ * @brief ´¦ÀíMCÄ£¿é·µ»ØµÄ°æ±¾ĞÅÏ¢
  */
 void ChannelEngine::ProcessMcVersionCmd(McCmdFrame &cmd){
-    //å¤„ç†MCæ¨¡å—è¿”å›çš„ç‰ˆæœ¬ä¿¡æ¯
+    //´¦ÀíMCÄ£¿é·µ»ØµÄ°æ±¾ĞÅÏ¢
     uint16_t data1 = cmd.data.data[0], data2 = cmd.data.data[1], data3 = cmd.data.data[2], data4 = cmd.data.data[3];
     uint8_t v_a = (data2>>8)&0xFF;
     uint8_t v_b = (data2)&0xFF;
@@ -1639,7 +1639,7 @@ void ChannelEngine::ProcessMcVersionCmd(McCmdFrame &cmd){
 }
 
 /**
- * @brief å¤„ç†MIæ¨¡å—è¿”å›çš„ç‰ˆæœ¬ä¿¡æ¯
+ * @brief ´¦ÀíMIÄ£¿é·µ»ØµÄ°æ±¾ĞÅÏ¢
  * @param cmd
  */
 void ChannelEngine::ProcessMiVersionCmd(MiCmdFrame &cmd){
@@ -1655,13 +1655,13 @@ void ChannelEngine::ProcessMiVersionCmd(MiCmdFrame &cmd){
 }
 
 /**
- * @brief å¤„ç†MIæ¨¡å—çš„æŒ‡ä»¤
+ * @brief ´¦ÀíMIÄ£¿éµÄÖ¸Áî
  * @param cmd
  */
 void ChannelEngine::ProcessMiCmd(MiCmdFrame &cmd){
     uint16_t cmd_no = cmd.data.cmd;
 
-//	bool rsp = (cmd_no & 0x8000) == 0 ? false:true;  //æ˜¯å¦å“åº”åŒ…
+//	bool rsp = (cmd_no & 0x8000) == 0 ? false:true;  //ÊÇ·ñÏìÓ¦°ü
 
     cmd_no &= 0x7FFF;
 
@@ -1679,7 +1679,7 @@ void ChannelEngine::ProcessMiCmd(MiCmdFrame &cmd){
     case CMD_MI_GET_ESB:
         this->ProcessMiGetESBCmd(cmd);
         break;
-    case CMD_MI_READY:	//MIå‡†å¤‡å¥½
+    case CMD_MI_READY:	//MI×¼±¸ºÃ
         printf("get CMD_MI_READY, module_mask=0x%hhu\n", g_sys_state.module_ready_mask);
         g_sys_state.module_ready_mask |= MI_READY;
         if((g_sys_state.module_ready_mask & NC_READY) == NC_READY){
@@ -1691,13 +1691,13 @@ void ChannelEngine::ProcessMiCmd(MiCmdFrame &cmd){
         this->SetMiCurChannel();
 
         break;
-    case CMD_MI_ALARM:	//MIå‘Šè­¦
+    case CMD_MI_ALARM:	//MI¸æ¾¯
         this->ProcessMiAlarm(cmd);
         break;
-    case CMD_MI_BUS_ALARM:		//æ€»çº¿å‘Šè­¦
+    case CMD_MI_BUS_ALARM:		//×ÜÏß¸æ¾¯
         ProcessMiBusError(cmd);
         break;
-    case CMD_MI_HEARTBEAT:	//MIå¿ƒè·³
+    case CMD_MI_HEARTBEAT:	//MIĞÄÌø
         cmd.data.cmd |= 0x8000;
         this->m_p_mi_comm->WriteCmd(cmd);
         if(!m_b_recv_mi_heartbeat){
@@ -1705,39 +1705,39 @@ void ChannelEngine::ProcessMiCmd(MiCmdFrame &cmd){
             this->InitMiParam();
         }
         break;
-    case CMD_MI_SET_REF_CUR:	//è¿”å›äº†ç¼–ç å™¨å€¼
+    case CMD_MI_SET_REF_CUR:	//·µ»ØÁË±àÂëÆ÷Öµ
         this->ProcessMiSetRefCurRsp(cmd);
         break;
-    case CMD_MI_CLEAR_ROT_AXIS_POS:		//å¤„ç†ä½ç½®æ¸…æ•´æ•°åœˆæŒ‡ä»¤å›å¤
+    case CMD_MI_CLEAR_ROT_AXIS_POS:		//´¦ÀíÎ»ÖÃÇåÕûÊıÈ¦Ö¸Áî»Ø¸´
         this->ProcessMiClearPosRsp(cmd);
         break;
-    case CMD_MI_DO_SYNC_AXIS:		//å¤„ç†åŒæ­¥è½´åŒæ­¥ç»“æœæ¶ˆæ¯
+    case CMD_MI_DO_SYNC_AXIS:		//´¦ÀíÍ¬²½ÖáÍ¬²½½á¹ûÏûÏ¢
         this->ProcessMiSyncAxis(cmd);
         break;
-    case CMD_MI_PMC_AXIS_RUNOVER:   //PMCè½´è¿è¡Œåˆ°ä½
+    case CMD_MI_PMC_AXIS_RUNOVER:   //PMCÖáÔËĞĞµ½Î»
         this->PmcAxisRunOver(cmd);
         break;
-    case CMD_MI_REFRESH_AXIS_ZERO:  //åˆ·æ–°æŒ‡å®šè½´çš„æœºæ¢°é›¶ç‚¹ç¼–ç å™¨å€¼
+    case CMD_MI_REFRESH_AXIS_ZERO:  //Ë¢ĞÂÖ¸¶¨ÖáµÄ»úĞµÁãµã±àÂëÆ÷Öµ
         this->ProcessRefreshAxisZeroEncoder(cmd);
         break;
-    case CMD_MI_GET_CUR_ENCODER:   //è·å–å½“å‰ç¼–ç å™¨åé¦ˆå•åœˆç»å¯¹å€¼çš„åé¦ˆ
+    case CMD_MI_GET_CUR_ENCODER:   //»ñÈ¡µ±Ç°±àÂëÆ÷·´À¡µ¥È¦¾ø¶ÔÖµµÄ·´À¡
         this->ProcessGetCurAxisEncodeRsp(cmd);
         break;
-    case CMD_MI_SET_REF_POINT:   //è®¾ç½®å‚è€ƒç‚¹å‘½ä»¤ï¼Œå›å¤
+    case CMD_MI_SET_REF_POINT:   //ÉèÖÃ²Î¿¼µãÃüÁî£¬»Ø¸´
         this->ProcessSetAxisRefRsp(cmd);
         break;
-    case CMD_MI_GET_ZERO_ENCODER:  //è·å–æŒ‡å®šè½´æœºæ¢°é›¶ç‚¹å¯¹åº”çš„ç¼–ç å™¨å€¼
+    case CMD_MI_GET_ZERO_ENCODER:  //»ñÈ¡Ö¸¶¨Öá»úĞµÁãµã¶ÔÓ¦µÄ±àÂëÆ÷Öµ
         this->ProcessGetAxisZeroEncoderRsp(cmd);
         break;
-    case CMD_MI_ACTIVE_SKIP:    //G31è·³è½¬
+    case CMD_MI_ACTIVE_SKIP:    //G31Ìø×ª
         this->ProcessSkipCmdRsp(cmd);
         break;
-    case CMD_MI_HW_TRACE_STATE_CHANGED:  //æ‰‹è½®è·Ÿè¸ªçŠ¶æ€åˆ‡æ¢
+    case CMD_MI_HW_TRACE_STATE_CHANGED:  //ÊÖÂÖ¸ú×Ù×´Ì¬ÇĞ»»
         this->ProcessMiHWTraceStateChanged(cmd);
         break;
-    case CMD_MI_SET_AXIS_MACH_POS:   //è®¾ç½®è½´å½“å‰æœºæ¢°åæ ‡
+    case CMD_MI_SET_AXIS_MACH_POS:   //ÉèÖÃÖáµ±Ç°»úĞµ×ø±ê
         this->ProcessSetAxisCurMachPosRsp(cmd);
-    case CMD_MI_EN_SYNC_AXIS:    //ä½¿èƒ½åŒæ­¥è½´
+    case CMD_MI_EN_SYNC_AXIS:    //Ê¹ÄÜÍ¬²½Öá
         this->ProcessMiEnSyncAxisRsp(cmd);
         break;
     default:
@@ -1747,48 +1747,48 @@ void ChannelEngine::ProcessMiCmd(MiCmdFrame &cmd){
 }
 
 /**
- * @brief å¤„ç†MIè¿”å›çš„å½“å‰ç¼–ç å™¨å•åœˆç»å¯¹å€¼ï¼Œå›å‚è€ƒç‚¹æ—¶ä½¿ç”¨
- * @param cmd : miæŒ‡ä»¤åŒ…
+ * @brief ´¦ÀíMI·µ»ØµÄµ±Ç°±àÂëÆ÷µ¥È¦¾ø¶ÔÖµ£¬»Ø²Î¿¼µãÊ±Ê¹ÓÃ
+ * @param cmd : miÖ¸Áî°ü
  */
 void ChannelEngine::ProcessGetCurAxisEncodeRsp(MiCmdFrame &cmd){
     g_ptr_trace->PrintTrace(TRACE_INFO, CHANNEL_ENGINE_SC, "ChannelEngine::ProcessGetCurAxisEncodeRsp: axis = %hhu\n", cmd.data.axis_index-1);
     uint8_t phy_axis = cmd.data.axis_index-1;
     uint64_t encoder = 0;
     memcpy(&encoder, cmd.data.data, sizeof(encoder));
-    uint16_t ref_flag = 0x01;    //å½“å‰ç²¾åŸºå‡†ä¿¡å·ä½ç½®
+    uint16_t ref_flag = 0x01;    //µ±Ç°¾«»ù×¼ĞÅºÅÎ»ÖÃ
     uint16_t ret_dir = this->m_p_axis_config[phy_axis].ret_ref_dir;
 
     printf("get cur encoder : %llu\n", encoder);
 
 //	if(encoder < this->m_p_axis_config[phy_axis].motor_count_pr)
-//		ref_flag = 0x10;    //å–ä¸Šä¸€ä¸ªç²¾åŸºå‡†ä¿¡å·ä½ç½®
+//		ref_flag = 0x10;    //È¡ÉÏÒ»¸ö¾«»ù×¼ĞÅºÅÎ»ÖÃ
 
 //	printf("ref_flag = 0x%hx\n", ref_flag);
 
 //	m_n_get_cur_encoder_count++;
-//	if(m_n_get_cur_encoder_count == 1){//ç¬¬ä¸€æ¬¡è·å–
+//	if(m_n_get_cur_encoder_count == 1){//µÚÒ»´Î»ñÈ¡
 //		this->m_n_ret_ref_encoder = encoder;
 //
-//		m_n_ret_ref_step[phy_axis] = 7;   //å†è·å–ä¸€æ¬¡
+//		m_n_ret_ref_step[phy_axis] = 7;   //ÔÙ»ñÈ¡Ò»´Î
 //		return;
-//	}else if(m_n_get_cur_encoder_count == 2){ //ç¬¬äºŒæ¬¡è·å–ï¼Œä¸ç¬¬ä¸€æ¬¡æ¯”è¾ƒï¼Œç›¸åŒåˆ™è¿›è¡Œä¸‹ä¸€æ­¥ï¼Œä¸åŒåˆ™è·å–ç¬¬ä¸‰æ¬¡
+//	}else if(m_n_get_cur_encoder_count == 2){ //µÚ¶ş´Î»ñÈ¡£¬ÓëµÚÒ»´Î±È½Ï£¬ÏàÍ¬Ôò½øĞĞÏÂÒ»²½£¬²»Í¬Ôò»ñÈ¡µÚÈı´Î
 //		if(encoder != m_n_ret_ref_encoder){
 //			printf("###cur encoder not match: 1st=%llu, 2nd=%llu\n", m_n_ret_ref_encoder,
 //					encoder);
-//			m_n_ret_ref_step[phy_axis] = 7;   //å†è·å–ä¸€æ¬¡
+//			m_n_ret_ref_step[phy_axis] = 7;   //ÔÙ»ñÈ¡Ò»´Î
 //			return;
 //		}
 //	}else if(m_n_get_cur_encoder_count >= 3){
 //		printf("get 3rd encoder : %llu\n", encoder);
 //	}
 
-    //å‘é€è®¾ç½®å‚è€ƒç‚¹å‘½ä»¤
+    //·¢ËÍÉèÖÃ²Î¿¼µãÃüÁî
     MiCmdFrame send;
     memset(&send, 0x00, sizeof(send));
     send.data.cmd = CMD_MI_SET_REF_POINT;
     send.data.axis_index = phy_axis+1;
     send.data.data[0] = ref_flag;
-    int64_t pos = m_p_axis_config[phy_axis].axis_home_pos[0]*1e7;   //å•ä½è½¬æ¢,0.1nm
+    int64_t pos = m_p_axis_config[phy_axis].axis_home_pos[0]*1e7;   //µ¥Î»×ª»»,0.1nm
     memcpy(&send.data.data[1], &pos, sizeof(int64_t));
     send.data.data[5] = this->m_p_axis_config[phy_axis].ref_signal;
     send.data.data[6] = ret_dir;
@@ -1799,42 +1799,42 @@ void ChannelEngine::ProcessGetCurAxisEncodeRsp(MiCmdFrame &cmd){
 }
 
 /**
- * @brief å¤„ç†MIè¿”å›çš„è®¾ç½®è½´å‚è€ƒç‚¹å›å¤æŒ‡ä»¤ï¼Œå›å‚è€ƒç‚¹æ—¶ä½¿ç”¨
- * @param cmd : miæŒ‡ä»¤åŒ…
+ * @brief ´¦ÀíMI·µ»ØµÄÉèÖÃÖá²Î¿¼µã»Ø¸´Ö¸Áî£¬»Ø²Î¿¼µãÊ±Ê¹ÓÃ
+ * @param cmd : miÖ¸Áî°ü
  */
 void ChannelEngine::ProcessSetAxisRefRsp(MiCmdFrame &cmd){
     uint8_t axis = cmd.data.axis_index-1;
     printf("ChannelEngine::ProcessSetAxisRefRsp, axis = 0x%hu\n", axis);
     if(cmd.data.data[0] == FAILED){
         printf("axis [%hhu] set ref point failed!\n", cmd.data.axis_index);
-        this->m_n_ret_ref_step[axis] = 20;   //è·³è½¬åˆ°å¤±è´¥å¤„ç†
+        this->m_n_ret_ref_step[axis] = 20;   //Ìø×ªµ½Ê§°Ü´¦Àí
     }else{
-        if(this->m_p_axis_config[axis].feedback_mode == NO_ENCODER){  //æ— åé¦ˆè½´ï¼Œç›´æ¥ç»“æŸ
-            m_n_ret_ref_step[axis] = 11;   //è·³è½¬åˆ°æˆåŠŸç»“æŸ
-        }else{//å…¶å®ƒç±»å‹éƒ½ç§»åŠ¨åˆ°ç¬¬ä¸€å‚è€ƒç‚¹ä½ç½®
-            //è®©è½´è¿åŠ¨åˆ°ç¬¬ä¸€å‚è€ƒç‚¹ä½ç½®
+        if(this->m_p_axis_config[axis].feedback_mode == NO_ENCODER){  //ÎŞ·´À¡Öá£¬Ö±½Ó½áÊø
+            m_n_ret_ref_step[axis] = 11;   //Ìø×ªµ½³É¹¦½áÊø
+        }else{//ÆäËüÀàĞÍ¶¼ÒÆ¶¯µ½µÚÒ»²Î¿¼µãÎ»ÖÃ
+            //ÈÃÖáÔË¶¯µ½µÚÒ»²Î¿¼µãÎ»ÖÃ
         //	int64_t pos = 0;
         //	int8_t dir = DIR_POSITIVE;
         //	memcpy(&pos, &cmd.data.data[1], 8);
-    //		this->m_df_phy_axis_pos_feedback[axis] = (double)pos*1e-7;   //å•ä½è½¬æ¢ï¼š0.1nm --> mm
-    //		double dis = this->m_p_axis_config[axis].axis_home_pos[0]-(double)pos*1e-7;   //ç§»åŠ¨è·ç¦»
+    //		this->m_df_phy_axis_pos_feedback[axis] = (double)pos*1e-7;   //µ¥Î»×ª»»£º0.1nm --> mm
+    //		double dis = this->m_p_axis_config[axis].axis_home_pos[0]-(double)pos*1e-7;   //ÒÆ¶¯¾àÀë
     //		if(dis < 0)
     //			dir = DIR_NEGATIVE;
 
     //		printf("axis %hhu dir = %hhd, dis = %lf, curpos = %lld\n", axis, dir, dis, pos);
 
-            //è®¡ç®—ç²—ç²¾åŸºå‡†åå·®
+            //¼ÆËã´Ö¾«»ù×¼Æ«²î
             if(this->m_p_axis_config[axis].ref_base_diff_check){
                 int64_t pos = 0;
                 double df_pos = 0;
                 memcpy(&pos, &cmd.data.data[1], 8);
                 df_pos = pos;
-                df_pos *= 1e-7;   //å•ä½è½¬æ¢ï¼š0.1nm-->mm
-                this->m_p_axis_config[axis].ref_base_diff = df_pos;    //ç²—ç²¾åŸºå‡†è¯¯å·®
+                df_pos *= 1e-7;   //µ¥Î»×ª»»£º0.1nm-->mm
+                this->m_p_axis_config[axis].ref_base_diff = df_pos;    //´Ö¾«»ù×¼Îó²î
                 ParamValue value;
                 value.value_double = df_pos;
                 g_ptr_parm_manager->UpdateAxisParam(axis, 1312, value);
-                this->NotifyHmiAxisRefBaseDiffChanged(axis, df_pos);   //é€šçŸ¥HMIè½´å‚æ•°æ”¹å˜
+                this->NotifyHmiAxisRefBaseDiffChanged(axis, df_pos);   //Í¨ÖªHMIÖá²ÎÊı¸Ä±ä
                 printf("axis %hhu ref base diff:%lf, %llu\n", axis, df_pos, pos);
             }
 
@@ -1845,14 +1845,14 @@ void ChannelEngine::ProcessSetAxisRefRsp(MiCmdFrame &cmd){
 #else
             this->ManualMoveAbs(axis, m_p_axis_config[axis].ret_ref_speed, m_p_axis_config[axis].axis_home_pos[0]);
 #endif
-            m_n_ret_ref_step[axis] = 10;   // è·³è½¬ä¸‹ä¸€æ­¥
+            m_n_ret_ref_step[axis] = 10;   // Ìø×ªÏÂÒ»²½
         }
     }
 }
 
 /**
- * @brief å¤„ç†MIè¿”å›çš„è·å–æœºæ¢°é›¶ç‚¹ç¼–ç å™¨å€¼æŒ‡ä»¤ï¼Œå›å‚è€ƒç‚¹æ—¶ä½¿ç”¨
- * @param cmd : MIæŒ‡ä»¤åŒ…
+ * @brief ´¦ÀíMI·µ»ØµÄ»ñÈ¡»úĞµÁãµã±àÂëÆ÷ÖµÖ¸Áî£¬»Ø²Î¿¼µãÊ±Ê¹ÓÃ
+ * @param cmd : MIÖ¸Áî°ü
  */
 void ChannelEngine::ProcessGetAxisZeroEncoderRsp(MiCmdFrame &cmd){
     uint8_t axis = cmd.data.axis_index-1;
@@ -1862,65 +1862,65 @@ void ChannelEngine::ProcessGetAxisZeroEncoderRsp(MiCmdFrame &cmd){
         printf("axis [%hhu] get zero encoder failed!\n", cmd.data.axis_index);
 
     }else{
-        //è¯»å–ç¼–ç å™¨å€¼å¹¶ä¿å­˜
+        //¶ÁÈ¡±àÂëÆ÷Öµ²¢±£´æ
         memcpy(&encoder_value, &cmd.data.data[1], sizeof(int64_t));
         this->m_p_axis_config[axis].ref_encoder = encoder_value;
-        g_ptr_parm_manager->UpdateAxisRef(axis, encoder_value); //å†™å…¥æ–‡ä»¶
-        this->NotifyHmiAxisRefChanged(axis);  //é€šçŸ¥HMI
+        g_ptr_parm_manager->UpdateAxisRef(axis, encoder_value); //Ğ´ÈëÎÄ¼ş
+        this->NotifyHmiAxisRefChanged(axis);  //Í¨ÖªHMI
     }
 }
 
 /**
- * @brief å¤„ç†MIåˆ·æ–°è½´é›¶ç‚¹ç¼–ç å™¨å€¼å‘½ä»¤
- * @param cmd : MIæŒ‡ä»¤åŒ…
+ * @brief ´¦ÀíMIË¢ĞÂÖáÁãµã±àÂëÆ÷ÖµÃüÁî
+ * @param cmd : MIÖ¸Áî°ü
  */
 void ChannelEngine::ProcessRefreshAxisZeroEncoder(MiCmdFrame &cmd){
     uint8_t axis = cmd.data.axis_index-1;
     int64_t encoder_value = 0;
     printf("ChannelEngine::ProcessRefreshAxisZeroEncoder, axis = 0x%hu\n", axis);
 
-    //è¯»å–ç¼–ç å™¨å€¼å¹¶ä¿å­˜
+    //¶ÁÈ¡±àÂëÆ÷Öµ²¢±£´æ
     memcpy(&encoder_value, &cmd.data.data[0], sizeof(int64_t));
     this->m_p_axis_config[axis].ref_encoder = encoder_value;
-    g_ptr_parm_manager->UpdateAxisRef(axis, encoder_value); //å†™å…¥æ–‡ä»¶
+    g_ptr_parm_manager->UpdateAxisRef(axis, encoder_value); //Ğ´ÈëÎÄ¼ş
     this->NotifyHmiAxisRefChanged(axis);
 }
 
 /**
- * @brief å¤„ç†MIè¿”å›çš„è·³è½¬å‘½ä»¤å“åº”
- * @param cmd : MIå“åº”å‘½ä»¤åŒ…
+ * @brief ´¦ÀíMI·µ»ØµÄÌø×ªÃüÁîÏìÓ¦
+ * @param cmd : MIÏìÓ¦ÃüÁî°ü
  */
 void ChannelEngine::ProcessSkipCmdRsp(MiCmdFrame &cmd){
-    uint8_t chn = cmd.data.data[4]-1;   //é€šé“å·ä»1å¼€å§‹
+    uint8_t chn = cmd.data.data[4]-1;   //Í¨µÀºÅ´Ó1¿ªÊ¼
     if(chn < this->m_p_general_config->chn_count){
         this->m_p_channel_control[chn].ProcessSkipCmdRsp(cmd);
     }
 }
 
 /**
- * @brief å¤„ç†MIä½¿èƒ½åŒæ­¥è½´æŒ‡ä»¤çš„å“åº”
- * @param cmd : MIå“åº”å‘½ä»¤åŒ…
+ * @brief ´¦ÀíMIÊ¹ÄÜÍ¬²½ÖáÖ¸ÁîµÄÏìÓ¦
+ * @param cmd : MIÏìÓ¦ÃüÁî°ü
  */
 void ChannelEngine::ProcessMiEnSyncAxisRsp(MiCmdFrame &cmd){
     printf("ProcessMiEnSyncAxisRsp, axis=%hhu, enable=%hhu, res=%hhu\n", cmd.data.axis_index, cmd.data.data[1], cmd.data.data[2]);
-    if(cmd.data.data[2] == FAILED){  //å¤±è´¥
-        if(cmd.data.data[1] == 0){  //è§£é™¤åŒæ­¥
+    if(cmd.data.data[2] == FAILED){  //Ê§°Ü
+        if(cmd.data.data[1] == 0){  //½â³ıÍ¬²½
             this->m_error_code = ERR_DIS_SYNC_AXIS;
             CreateError(m_error_code, ERROR_LEVEL, CLEAR_BY_MCP_RESET, cmd.data.data[0], CHANNEL_ENGINE_INDEX, cmd.data.axis_index);
-        }else if(cmd.data.data[1] == 1){ //å»ºç«‹åŒæ­¥
+        }else if(cmd.data.data[1] == 1){ //½¨Á¢Í¬²½
             this->m_error_code = ERR_EN_SYNC_AXIS;
             CreateError(m_error_code, ERROR_LEVEL, CLEAR_BY_MCP_RESET, cmd.data.data[0], CHANNEL_ENGINE_INDEX, cmd.data.axis_index);
         }
         return;
-    }else if(cmd.data.data[2] == SUCCEED){  //æˆåŠŸ
-        uint8_t phy_axis = cmd.data.axis_index-1;   //ä»åŠ¨è½´å·ï¼ŒMIè¿”å›çš„å€¼ä»1å¼€å§‹ï¼Œå› æ­¤éœ€è¦å‡ä¸€
+    }else if(cmd.data.data[2] == SUCCEED){  //³É¹¦
+        uint8_t phy_axis = cmd.data.axis_index-1;   //´Ó¶¯ÖáºÅ£¬MI·µ»ØµÄÖµ´Ó1¿ªÊ¼£¬Òò´ËĞèÒª¼õÒ»
 
         int64_t mask = 1;
-        if(cmd.data.data[1] == 0){  //è§£é™¤åŒæ­¥
+        if(cmd.data.data[1] == 0){  //½â³ıÍ¬²½
             this->m_n_sync_axis_enable_mask &= ~(mask<<phy_axis);
             this->m_n_sync_over &= ~(mask<<phy_axis);
 
-        }else if(cmd.data.data[1] == 1){ //å»ºç«‹åŒæ­¥
+        }else if(cmd.data.data[1] == 1){ //½¨Á¢Í¬²½
             this->m_n_sync_axis_enable_mask |= (mask<<phy_axis);
             this->m_n_sync_over |= (mask<<phy_axis);
         }
@@ -1928,26 +1928,26 @@ void ChannelEngine::ProcessMiEnSyncAxisRsp(MiCmdFrame &cmd){
 }
 
 /**
- * @brief å¤„ç†MIå¯¹è®¾ç½®è½´å½“å‰ä½ç½®æœºæ¢°åæ ‡å‘½ä»¤çš„å“åº”
- * @param cmd : MIå“åº”å‘½ä»¤åŒ…
+ * @brief ´¦ÀíMI¶ÔÉèÖÃÖáµ±Ç°Î»ÖÃ»úĞµ×ø±êÃüÁîµÄÏìÓ¦
+ * @param cmd : MIÏìÓ¦ÃüÁî°ü
  */
 void ChannelEngine::ProcessSetAxisCurMachPosRsp(MiCmdFrame &cmd){
-    uint8_t phy_axis = cmd.data.axis_index-1;   //é€šé“å·ä»1å¼€å§‹
+    uint8_t phy_axis = cmd.data.axis_index-1;   //Í¨µÀºÅ´Ó1¿ªÊ¼
     int64_t encoder_value = 0;
     printf("ChannelEngine::ProcessSetAxisCurMachPosRsp, phy_axis = 0x%hhu, res = %hu\n", phy_axis, cmd.data.data[0]);
 
-    //è¯»å–ç¼–ç å™¨å€¼å¹¶ä¿å­˜
+    //¶ÁÈ¡±àÂëÆ÷Öµ²¢±£´æ
     memcpy(&encoder_value, &cmd.data.data[1], sizeof(int64_t));
     this->m_p_axis_config[phy_axis].ref_encoder = encoder_value;
-    g_ptr_parm_manager->UpdateAxisRef(phy_axis, encoder_value); //å†™å…¥æ–‡ä»¶
+    g_ptr_parm_manager->UpdateAxisRef(phy_axis, encoder_value); //Ğ´ÈëÎÄ¼ş
     this->NotifyHmiAxisRefChanged(phy_axis);
 }
 
 /**
- * @brief é€šçŸ¥HMIè½´å‚æ•°å‚è€ƒç‚¹ç²—ç²¾åŸºå‡†ä½ç½®åå·®å‘ç”Ÿå˜æ›´
- * @param axis ï¼š ç‰©ç†è½´å·ï¼Œä»0å¼€å§‹
- * @param diff ï¼š ç²—ç²¾åŸºå‡†ä½ç½®åå·®
- * @return true--æˆåŠŸ    false--å¤±è´¥
+ * @brief Í¨ÖªHMIÖá²ÎÊı²Î¿¼µã´Ö¾«»ù×¼Î»ÖÃÆ«²î·¢Éú±ä¸ü
+ * @param axis £º ÎïÀíÖáºÅ£¬´Ó0¿ªÊ¼
+ * @param diff £º ´Ö¾«»ù×¼Î»ÖÃÆ«²î
+ * @return true--³É¹¦    false--Ê§°Ü
  */
 bool ChannelEngine::NotifyHmiAxisRefBaseDiffChanged(uint8_t axis, double diff){
     HMICmdFrame cmd;
@@ -1959,16 +1959,16 @@ bool ChannelEngine::NotifyHmiAxisRefBaseDiffChanged(uint8_t axis, double diff){
     cmd.data[0] = axis;
     uint32_t param_no = 1312;
     memcpy(&cmd.data[1], &param_no, sizeof(uint32_t));
-    cmd.data[5] = 8;    //å€¼ç±»å‹ï¼Œdouble
+    cmd.data[5] = 8;    //ÖµÀàĞÍ£¬double
     memcpy(&cmd.data[6], &diff, sizeof(double));
 
     return this->m_p_hmi_comm->SendCmd(cmd);
 }
 
 /**
- * @brief é€šçŸ¥HMIè½´å‚è€ƒç‚¹å¯¹åº”çš„ç¼–ç å™¨å€¼å˜æ›´
- * @param phy_axis ï¼š ç‰©ç†è½´å·ï¼Œä»0å¼€å§‹
- * @return true--æˆåŠŸ    false--å¤±è´¥
+ * @brief Í¨ÖªHMIÖá²Î¿¼µã¶ÔÓ¦µÄ±àÂëÆ÷Öµ±ä¸ü
+ * @param phy_axis £º ÎïÀíÖáºÅ£¬´Ó0¿ªÊ¼
+ * @return true--³É¹¦    false--Ê§°Ü
  */
 bool ChannelEngine::NotifyHmiAxisRefChanged(uint8_t phy_axis){
     HMICmdFrame cmd;
@@ -1980,7 +1980,7 @@ bool ChannelEngine::NotifyHmiAxisRefChanged(uint8_t phy_axis){
     cmd.data[0] = phy_axis;
     uint32_t param_no = 1314;
     memcpy(&cmd.data[1], &param_no, sizeof(uint32_t));
-    cmd.data[5] = 7;    //å€¼ç±»å‹ï¼Œint64
+    cmd.data[5] = 7;    //ÖµÀàĞÍ£¬int64
     memcpy(&cmd.data[6], &this->m_p_axis_config[phy_axis].ref_encoder, sizeof(int64_t));
 
     return this->m_p_hmi_comm->SendCmd(cmd);
@@ -1988,8 +1988,8 @@ bool ChannelEngine::NotifyHmiAxisRefChanged(uint8_t phy_axis){
 
 
 /**
- * @brief é€šçŸ¥HMIèºè¡¥æ•°æ®æ›´æ”¹
- * @return true--æˆåŠŸ    false--å¤±è´¥
+ * @brief Í¨ÖªHMIÂİ²¹Êı¾İ¸ü¸Ä
+ * @return true--³É¹¦    false--Ê§°Ü
  */
 bool ChannelEngine::NotifyHmiPitchCompDataChanged(){
     HMICmdFrame cmd;
@@ -2004,9 +2004,9 @@ bool ChannelEngine::NotifyHmiPitchCompDataChanged(){
 }
 
 /**
- * @brief æˆæƒæ ¡éªŒ
- * @param force ï¼š å¼ºåˆ¶æ ¡éªŒ
- * @return 0--åˆæ³•æˆæƒ   1--éæ³•æˆæƒ
+ * @brief ÊÚÈ¨Ğ£Ñé
+ * @param force £º Ç¿ÖÆĞ£Ñé
+ * @return 0--ºÏ·¨ÊÚÈ¨   1--·Ç·¨ÊÚÈ¨
  */
 int ChannelEngine::CheckLicense(bool force){
 
@@ -2025,7 +2025,7 @@ int ChannelEngine::CheckLicense(bool force){
         lpLicInfo->licflag = 'v';
 
         CreateError(ERR_LICENSE_INVALID, ERROR_LEVEL, CLEAR_BY_MCP_RESET);
-        return 1;   //éæ³•æˆæƒ
+        return 1;   //·Ç·¨ÊÚÈ¨
     }
 
     ////////////////////////////////////////////////////
@@ -2038,7 +2038,7 @@ int ChannelEngine::CheckLicense(bool force){
             CreateError(ERR_LIC_OVERTIME, ERROR_LEVEL, CLEAR_BY_MCP_RESET);
         else
             CreateError(ERR_NO_LIC, ERROR_LEVEL, CLEAR_BY_MCP_RESET);
-        return 1; //éæ³•æˆæƒ
+        return 1; //·Ç·¨ÊÚÈ¨
     }
 
     if(!force && lpLicInfo->licflag == 'f')
@@ -2053,40 +2053,40 @@ int ChannelEngine::CheckLicense(bool force){
 
 
 
-    time_t now = time(nullptr);  //è·å–å½“å‰æ—¥æœŸ
+    time_t now = time(nullptr);  //»ñÈ¡µ±Ç°ÈÕÆÚ
     struct tm nowday;
     localtime_r(&now, &nowday);
     long curdaycount = (nowday.tm_year+1900) * 365L + nowday.tm_mon * 30 + nowday.tm_mday;
     long deaddaycount = lpLicInfo->dead_line.year * 365L + (lpLicInfo->dead_line.month - 1) * 30
                         + lpLicInfo->dead_line.day;
 
-    curdaycount = (curdaycount - 1) * 24 + nowday.tm_hour;   //å°æ—¶æ•°
+    curdaycount = (curdaycount - 1) * 24 + nowday.tm_hour;   //Ğ¡Ê±Êı
     deaddaycount = (deaddaycount - 1) * 24 + 12;
 
     long leave = deaddaycount - curdaycount;
 
     if(deaddaycount < curdaycount)
     {
-        //è®¸å¯è¿‡æœŸ
+        //Ğí¿É¹ıÆÚ
         lpLicInfo->licflag = 'o';
         CreateError(ERR_LIC_OVERTIME, ERROR_LEVEL, CLEAR_BY_MCP_RESET);
         return 1;
     }
     else if(leave <= 48)
     {
-        //è®¸å¯å³å°†è¿‡æœŸ
+        //Ğí¿É¼´½«¹ıÆÚ
         lpLicInfo->licflag = 'm';
 
         if(leave != lpLicInfo->nWarn){
             lpLicInfo->nInfo = 1;
-            lpLicInfo->nWarn = leave;   //å‰©ä½™å°æ—¶æ•°
+            lpLicInfo->nWarn = leave;   //Ê£ÓàĞ¡Ê±Êı
 
             CreateError(ERR_LIC_DUE_SOON, INFO_LEVEL, CLEAR_BY_CLEAR_BUTTON, leave);
         }
     }
     else if((deaddaycount - curdaycount) > 48)
     {
-        //è®¸å¯æœŸå†…
+        //Ğí¿ÉÆÚÄÚ
         lpLicInfo->licflag = 'p';
         lpLicInfo->nInfo = 0;
         lpLicInfo->nWarn = 0;
@@ -2097,11 +2097,11 @@ int ChannelEngine::CheckLicense(bool force){
 }
 
 /**
- * @brief å‘HMIå‘é€æç¤ºä¿¡æ¯
- * @param msg_type : æ¶ˆæ¯ç±»å‹
- * @param msg_id ï¼š æ¶ˆæ¯ID
- * @param msg_param : æ¶ˆæ¯å‚æ•°
- * @return true--å‘é€æˆåŠŸ  false--å‘é€å¤±è´¥
+ * @brief ÏòHMI·¢ËÍÌáÊ¾ĞÅÏ¢
+ * @param msg_type : ÏûÏ¢ÀàĞÍ
+ * @param msg_id £º ÏûÏ¢ID
+ * @param msg_param : ÏûÏ¢²ÎÊı
+ * @return true--·¢ËÍ³É¹¦  false--·¢ËÍÊ§°Ü
  */
 bool ChannelEngine::SendMessageToHmi(uint16_t msg_type, uint32_t msg_id, uint32_t msg_param){
     HMICmdFrame cmd;
@@ -2117,21 +2117,21 @@ bool ChannelEngine::SendMessageToHmi(uint16_t msg_type, uint32_t msg_id, uint32_
 }
 
 /**
- * @brief å¤„ç†MIæ¡æ‰‹æŒ‡ä»¤
+ * @brief ´¦ÀíMIÎÕÊÖÖ¸Áî
  * @param cmd
  */
 void ChannelEngine::ProcessMiShakehand(MiCmdFrame &cmd){
-//	bool rsp = (cmd.data.cmd & 0x8000) == 0 ? false:true;  //æ˜¯å¦å“åº”åŒ…
+//	bool rsp = (cmd.data.cmd & 0x8000) == 0 ? false:true;  //ÊÇ·ñÏìÓ¦°ü
 
     if(cmd.data.data[0] == 0x9696){
         g_ptr_trace->PrintTrace(TRACE_INFO, CHANNEL_ENGINE_SC, "@#@#Get MI Shakehand cmd, module=0x%hhx\n", g_sys_state.module_ready_mask);
-        this->ProcessMiVersionCmd(cmd);   //è·å–MIç‰ˆæœ¬å·
+        this->ProcessMiVersionCmd(cmd);   //»ñÈ¡MI°æ±¾ºÅ
         cmd.data.cmd |= 0x8000;
         if(g_sys_state.module_ready_mask & SC_READY){
             cmd.data.data[0] = 0x8888;
-            cmd.data.data[1] = this->m_p_general_config->bus_cycle+1;  //MIçš„å‚æ•°ä»1å¼€å§‹,1è¡¨ç¤º125usï¼Œ2è¡¨ç¤º250us
-            cmd.data.data[2] = (this->m_p_general_config->chn_count << 8) + this->m_p_general_config->axis_count;   //å®é™…ç‰©ç†è½´æ•°é‡         å®é™…é€šé“æ•°é‡
-//			cmd.data.data[2] = this->m_p_general_config->axis_count;   //å®é™…ç‰©ç†è½´æ•°é‡  // ??????????????????????????????????????????????  äºŒé€‰ä¸€  æ˜¯å¦åŠ ä¸€ä¸ªå®
+            cmd.data.data[1] = this->m_p_general_config->bus_cycle+1;  //MIµÄ²ÎÊı´Ó1¿ªÊ¼,1±íÊ¾125us£¬2±íÊ¾250us
+            cmd.data.data[2] = (this->m_p_general_config->chn_count << 8) + this->m_p_general_config->axis_count;   //Êµ¼ÊÎïÀíÖáÊıÁ¿         Êµ¼ÊÍ¨µÀÊıÁ¿
+//			cmd.data.data[2] = this->m_p_general_config->axis_count;   //Êµ¼ÊÎïÀíÖáÊıÁ¿  // ??????????????????????????????????????????????  ¶şÑ¡Ò»  ÊÇ·ñ¼ÓÒ»¸öºê
 
             cmd.data.data[3] = this->GetBusAxisCount();
 
@@ -2147,14 +2147,14 @@ void ChannelEngine::ProcessMiShakehand(MiCmdFrame &cmd){
 }
 
 /**
- * @brief å¤„ç†PMCæ¢¯å½¢å›¾è¯·æ±‚å‘½ä»¤
- * @param cmd : å¾…å¤„ç†MIå‘½ä»¤
+ * @brief ´¦ÀíPMCÌİĞÎÍ¼ÇëÇóÃüÁî
+ * @param cmd : ´ı´¦ÀíMIÃüÁî
  */
 void ChannelEngine::ProcessMiPmcLadderReq(MiCmdFrame &cmd){
 
     uint16_t index = cmd.data.data[0];
 
-    uint32_t res = LoadPmcLadderData(index, cmd.data.data[3]); //åŠ è½½æ¢¯å½¢å›¾æ•°æ®
+    uint32_t res = LoadPmcLadderData(index, cmd.data.data[3]); //¼ÓÔØÌİĞÎÍ¼Êı¾İ
     memcpy(cmd.data.data, &res, sizeof(uint32_t));
     cmd.data.data[2] = index;
 
@@ -2164,13 +2164,13 @@ void ChannelEngine::ProcessMiPmcLadderReq(MiCmdFrame &cmd){
 }
 
 /**
- * @brief å¤„ç†MIè·å–ä¼ºæœæè¿°æ–‡ä»¶å‘½ä»¤
- * @param cmd : å¾…å¤„ç†MIå‘½ä»¤
+ * @brief ´¦ÀíMI»ñÈ¡ËÅ·şÃèÊöÎÄ¼şÃüÁî
+ * @param cmd : ´ı´¦ÀíMIÃüÁî
  */
 void ChannelEngine::ProcessMiGetESBCmd(MiCmdFrame &cmd){
     uint16_t index = cmd.data.data[0];
 
-    uint32_t res = LoadEsbData(index, cmd.data.data[3]); //åŠ è½½ESBæ–‡ä»¶æ•°æ®
+    uint32_t res = LoadEsbData(index, cmd.data.data[3]); //¼ÓÔØESBÎÄ¼şÊı¾İ
     memcpy(cmd.data.data, &res, sizeof(uint32_t));
     cmd.data.data[2] = index;
 
@@ -2179,7 +2179,7 @@ void ChannelEngine::ProcessMiGetESBCmd(MiCmdFrame &cmd){
 }
 
 /**
- * @brief å¤„ç†MIå‘Šè­¦ä¿¡æ¯
+ * @brief ´¦ÀíMI¸æ¾¯ĞÅÏ¢
  * @param cmd
  */
 void ChannelEngine::ProcessMiAlarm(MiCmdFrame &cmd){
@@ -2187,9 +2187,9 @@ void ChannelEngine::ProcessMiAlarm(MiCmdFrame &cmd){
     uint16_t alarm_level = INFO_LEVEL;
     uint8_t clear_type = CLEAR_BY_MCP_RESET;
 
-    alarm_id = cmd.data.data[1]; //é«˜16ä½
+    alarm_id = cmd.data.data[1]; //¸ß16Î»
     alarm_id = alarm_id<<16;
-    alarm_id += cmd.data.data[0];   //ä½16ä½
+    alarm_id += cmd.data.data[0];   //µÍ16Î»
     alarm_level = cmd.data.data[2];
 
     if(alarm_level >= WARNING_LEVEL)
@@ -2201,24 +2201,24 @@ void ChannelEngine::ProcessMiAlarm(MiCmdFrame &cmd){
 }
 
 /**
- * @brief å¤„ç†MIè¿”å›çš„ç¼–ç å™¨å€¼
+ * @brief ´¦ÀíMI·µ»ØµÄ±àÂëÆ÷Öµ
  * @param cmd
  */
 void ChannelEngine::ProcessMiSetRefCurRsp(MiCmdFrame &cmd){
     int64_t encoder_value = 0;
-    uint8_t axis = cmd.data.axis_index-1;  //MIçš„è½´å·ä»1å¼€å§‹ï¼ŒMCä¸­ä»0å¼€å§‹
+    uint8_t axis = cmd.data.axis_index-1;  //MIµÄÖáºÅ´Ó1¿ªÊ¼£¬MCÖĞ´Ó0¿ªÊ¼
 
     if(axis >= this->m_p_general_config->axis_count){
-        printf("ChannelEngine::ProcessMiSetRefCurRsp(),éæ³•è½´å·ï¼š%hhu\n", axis);
+        printf("ChannelEngine::ProcessMiSetRefCurRsp(),·Ç·¨ÖáºÅ£º%hhu\n", axis);
         return;
     }
 
     this->SetRetRefFlag(axis, true);
-    this->m_p_pmc_reg->FReg().bits[0].in_ref_point |= (0x01<<axis);   //ç½®ä½åˆ°å‚è€ƒç‚¹æ ‡å¿—
+    this->m_p_pmc_reg->FReg().bits[0].in_ref_point |= (0x01<<axis);   //ÖÃÎ»µ½²Î¿¼µã±êÖ¾
 
     memcpy(&encoder_value, cmd.data.data, sizeof(int64_t));
     this->m_p_axis_config[axis].ref_encoder = encoder_value;
-    g_ptr_parm_manager->UpdateAxisRef(axis, encoder_value); //å†™å…¥æ–‡ä»¶
+    g_ptr_parm_manager->UpdateAxisRef(axis, encoder_value); //Ğ´ÈëÎÄ¼ş
 
     this->NotifyHmiAxisRefChanged(axis);
 
@@ -2227,18 +2227,18 @@ void ChannelEngine::ProcessMiSetRefCurRsp(MiCmdFrame &cmd){
 }
 
 /**
- * @brief å¤„ç†MIè¿”å›çš„æ¸…æ•´æ•°åœˆä½ç½®æŒ‡ä»¤å›å¤
+ * @brief ´¦ÀíMI·µ»ØµÄÇåÕûÊıÈ¦Î»ÖÃÖ¸Áî»Ø¸´
  * @param cmd
  */
 void ChannelEngine::ProcessMiClearPosRsp(MiCmdFrame &cmd){
     int64_t encoder_value = 0;
-    uint8_t axis = cmd.data.axis_index-1;  //MIçš„è½´å·ä»1å¼€å§‹ï¼ŒMCä¸­ä»0å¼€å§‹
+    uint8_t axis = cmd.data.axis_index-1;  //MIµÄÖáºÅ´Ó1¿ªÊ¼£¬MCÖĞ´Ó0¿ªÊ¼
 
     printf("ProcessMiClearPosRsp , axis = %hhu\n", axis);
 
     memcpy(&encoder_value, cmd.data.data, sizeof(int64_t));
     this->m_p_axis_config[axis].ref_encoder = encoder_value;
-    g_ptr_parm_manager->UpdateAxisRef(axis, encoder_value); //å†™å…¥æ–‡ä»¶
+    g_ptr_parm_manager->UpdateAxisRef(axis, encoder_value); //Ğ´ÈëÎÄ¼ş
 
     this->NotifyHmiAxisRefChanged(axis);
 
@@ -2248,7 +2248,7 @@ void ChannelEngine::ProcessMiClearPosRsp(MiCmdFrame &cmd){
 }
 
 /**
- * @brief å¤„ç†MIè¿”å›çš„åŒæ­¥è½´åŒæ­¥ç»“æœ
+ * @brief ´¦ÀíMI·µ»ØµÄÍ¬²½ÖáÍ¬²½½á¹û
  * @param cmd
  */
 void ChannelEngine::ProcessMiSyncAxis(MiCmdFrame &cmd){
@@ -2258,7 +2258,7 @@ void ChannelEngine::ProcessMiSyncAxis(MiCmdFrame &cmd){
 
     this->m_n_sync_over = mask;
     if((this->m_n_sync_axis_mask & this->m_n_sync_axis_enable_mask) != mask){
-        mask = (this->m_n_sync_axis_mask & this->m_n_sync_axis_enable_mask)^mask;  //ä¸ºå®ŒæˆåŒæ­¥çš„è½´
+        mask = (this->m_n_sync_axis_mask & this->m_n_sync_axis_enable_mask)^mask;  //ÎªÍê³ÉÍ¬²½µÄÖá
         this->m_error_code = ERR_INIT_SYNC_AXIS;
         CreateError(m_error_code, ERROR_LEVEL, CLEAR_BY_MCP_RESET, mask);
         return;
@@ -2268,23 +2268,23 @@ void ChannelEngine::ProcessMiSyncAxis(MiCmdFrame &cmd){
 }
 
 /**
- * @brief å¤„ç†MIå‘é€çš„æ‰‹è½®è·Ÿè¸ªçŠ¶æ€åˆ‡æ¢æŒ‡ä»¤
- * @param cmd : MIçš„å‘½ä»¤
+ * @brief ´¦ÀíMI·¢ËÍµÄÊÖÂÖ¸ú×Ù×´Ì¬ÇĞ»»Ö¸Áî
+ * @param cmd : MIµÄÃüÁî
  */
 void ChannelEngine::ProcessMiHWTraceStateChanged(MiCmdFrame &cmd){
-    uint8_t chn_idx = cmd.data.reserved;   //é€šé“å·
+    uint8_t chn_idx = cmd.data.reserved;   //Í¨µÀºÅ
     this->m_p_channel_control[chn_idx].ProcessMiHWTraceStateChanged(cmd);
 }
 
 /**
- * @brief å¤„ç†MIè¿”å›çš„æ€»çº¿é”™è¯¯
- * @param cmd : MIå‘½ä»¤åŒ…
+ * @brief ´¦ÀíMI·µ»ØµÄ×ÜÏß´íÎó
+ * @param cmd : MIÃüÁî°ü
  */
 void ChannelEngine::ProcessMiBusError(MiCmdFrame &cmd){
-    uint8_t slave_no = 0;	//å‡ºé”™ä»ç«™å·
-    uint8_t err_sub_index = 0;	//å­ç´¢å¼•
-    uint16_t err_index = 0;	//ç´¢å¼•
-    uint16_t err_code = 0; //é”™è¯¯ç 
+    uint8_t slave_no = 0;	//³ö´í´ÓÕ¾ºÅ
+    uint8_t err_sub_index = 0;	//×ÓË÷Òı
+    uint16_t err_index = 0;	//Ë÷Òı
+    uint16_t err_code = 0; //´íÎóÂë
 
     slave_no = (cmd.data.data[0] & 0xFF);
     err_sub_index = ((cmd.data.data[0]>>8)&0xFF);
@@ -2305,33 +2305,33 @@ void ChannelEngine::ProcessMiBusError(MiCmdFrame &cmd){
 }
 
 /**
- * @brief åŠ è½½PMCæ¢¯å½¢å›¾è‡³å…±äº«åŒº
- * @param index : æ¢¯å½¢å›¾æ•°æ®å¸§å·ï¼Œä¸€å¸§æ•°æ®æœ€å¤§128KB
- * @param flag[out] : æ˜¯å¦è¿˜æœ‰åç»­æ•°æ®ï¼Œ 1--è¿˜æœ‰åç»­å¸§    0--æ²¡æœ‰åç»­å¸§
- * @return è¿”å›åŠ è½½çš„æ•°æ®å­—èŠ‚æ•°
+ * @brief ¼ÓÔØPMCÌİĞÎÍ¼ÖÁ¹²ÏíÇø
+ * @param index : ÌİĞÎÍ¼Êı¾İÖ¡ºÅ£¬Ò»Ö¡Êı¾İ×î´ó128KB
+ * @param flag[out] : ÊÇ·ñ»¹ÓĞºóĞøÊı¾İ£¬ 1--»¹ÓĞºóĞøÖ¡    0--Ã»ÓĞºóĞøÖ¡
+ * @return ·µ»Ø¼ÓÔØµÄÊı¾İ×Ö½ÚÊı
  */
 int32_t ChannelEngine::LoadPmcLadderData(uint16_t index, uint16_t &flag){
     int32_t res = 0;
 
-    //æ‰“å¼€æ¢¯å½¢å›¾æ–‡ä»¶
+    //´ò¿ªÌİĞÎÍ¼ÎÄ¼ş
     struct stat statbuf;
     int file_size = 0;
     if(stat(PATH_PMC_DATA, &statbuf) == 0)
-        file_size = statbuf.st_size;  //è·å–æ–‡ä»¶æ€»å¤§å°
+        file_size = statbuf.st_size;  //»ñÈ¡ÎÄ¼ş×Ü´óĞ¡
     else{
-        g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "è·å–æ–‡ä»¶[%s]å¤§å°å¤±è´¥ï¼", PATH_PMC_DATA);
-        return res;			//è·å–æ–‡ä»¶å¤§å°å¤±è´¥
+        g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "»ñÈ¡ÎÄ¼ş[%s]´óĞ¡Ê§°Ü£¡", PATH_PMC_DATA);
+        return res;			//»ñÈ¡ÎÄ¼ş´óĞ¡Ê§°Ü
     }
 
     printf("read pmc file size : %d\n", file_size);
 
-    int fp = open(PATH_PMC_DATA, O_RDONLY); //åªè¯»æ‰“å¼€æ–‡ä»¶
+    int fp = open(PATH_PMC_DATA, O_RDONLY); //Ö»¶Á´ò¿ªÎÄ¼ş
     if(fp < 0){
-        g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "æ‰“å¼€æ–‡ä»¶[%s]å¤±è´¥ï¼", PATH_PMC_DATA);
-        return res;//æ–‡ä»¶æ‰“å¼€å¤±è´¥
+        g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "´ò¿ªÎÄ¼ş[%s]Ê§°Ü£¡", PATH_PMC_DATA);
+        return res;//ÎÄ¼ş´ò¿ªÊ§°Ü
     }
 
-    //è®¡ç®—æ–‡ä»¶æ€»å¸§æ•°
+    //¼ÆËãÎÄ¼ş×ÜÖ¡Êı
     int block_total = file_size/MI_PMC_DATA_SIZE;
     if(file_size%MI_PMC_DATA_SIZE)
         block_total++;
@@ -2339,7 +2339,7 @@ int32_t ChannelEngine::LoadPmcLadderData(uint16_t index, uint16_t &flag){
     if(index >= block_total){
         close(fp);
         printf("invalid parameter, index = %d, block_total = %d!\n", index, block_total);
-        return res;  	//indexä¸åˆæ³•
+        return res;  	//index²»ºÏ·¨
     }
 
     uint64_t offset = MI_PMC_DATA_SIZE*index;
@@ -2352,7 +2352,7 @@ int32_t ChannelEngine::LoadPmcLadderData(uint16_t index, uint16_t &flag){
 
 
 
-    //è¯»å–æ•°æ®
+    //¶ÁÈ¡Êı¾İ
     int32_t read_size = file_size - offset;
     if(read_size > MI_PMC_DATA_SIZE)
         read_size = MI_PMC_DATA_SIZE;
@@ -2360,7 +2360,7 @@ int32_t ChannelEngine::LoadPmcLadderData(uint16_t index, uint16_t &flag){
     res = read(fp, ptr_data, read_size);
 
 
-    if(res == -1 || res != read_size){  //readå¤±è´¥
+    if(res == -1 || res != read_size){  //readÊ§°Ü
         printf("read pmc file failed, errno = %d, block = %d\n", errno, block_total);
         close(fp);
         return 0;
@@ -2378,16 +2378,16 @@ int32_t ChannelEngine::LoadPmcLadderData(uint16_t index, uint16_t &flag){
 }
 
 /**
- * @brief åŠ è½½ESBæ–‡ä»¶æ•°æ®ï¼Œä¼ºæœæè¿°æ–‡ä»¶
- * @param index : æ–‡ä»¶é¡ºåºå·ï¼Œä»0å¼€å§‹
- * @param flag ï¼šæ˜¯å¦è¿˜æœ‰åç»­æ–‡ä»¶æ ‡å¿—ï¼Œ0è¡¨ç¤ºæ— åç»­æ–‡ä»¶ï¼Œ1è¡¨ç¤ºæœ‰åç»­æ–‡ä»¶
- * @return è¿”å›è¯»å–æ–‡ä»¶å­—èŠ‚æ•°
+ * @brief ¼ÓÔØESBÎÄ¼şÊı¾İ£¬ËÅ·şÃèÊöÎÄ¼ş
+ * @param index : ÎÄ¼şË³ĞòºÅ£¬´Ó0¿ªÊ¼
+ * @param flag £ºÊÇ·ñ»¹ÓĞºóĞøÎÄ¼ş±êÖ¾£¬0±íÊ¾ÎŞºóĞøÎÄ¼ş£¬1±íÊ¾ÓĞºóĞøÎÄ¼ş
+ * @return ·µ»Ø¶ÁÈ¡ÎÄ¼ş×Ö½ÚÊı
  */
 int32_t ChannelEngine::LoadEsbData(uint16_t index, uint16_t &flag){
     g_ptr_trace->PrintTrace(TRACE_INFO, CHANNEL_ENGINE_SC, "Enter ChannelEngine::LoadEsbData(), index=%hu", index);
     int32_t res = 0;
 
-    flag = 0;  //é»˜è®¤åç»­æ— æ–‡ä»¶
+    flag = 0;  //Ä¬ÈÏºóĞøÎŞÎÄ¼ş
 
 
     DIR *pdir = nullptr;
@@ -2396,41 +2396,41 @@ int32_t ChannelEngine::LoadEsbData(uint16_t index, uint16_t &flag){
     int idx = 0;
     int len = 0;
     char *pt = nullptr;
-    bool bfind = false;   //æ‰¾åˆ°å¯¹åº”æ–‡ä»¶
+    bool bfind = false;   //ÕÒµ½¶ÔÓ¦ÎÄ¼ş
 
 
     pdir  = opendir(PATH_ESB_FILE);
-    if(pdir == nullptr){//è·¯å¾„æ‰“å¼€å¤±è´¥
-        //åˆ›å»ºç›®å½•
-        if(mkdir(PATH_ESB_FILE, 0755) == -1){//åˆ›å»ºç›®å½•å¤±è´¥
-            g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "åˆ›å»ºç›®å½•å¤±è´¥ï¼[%s]", PATH_ESB_FILE);
+    if(pdir == nullptr){//Â·¾¶´ò¿ªÊ§°Ü
+        //´´½¨Ä¿Â¼
+        if(mkdir(PATH_ESB_FILE, 0755) == -1){//´´½¨Ä¿Â¼Ê§°Ü
+            g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "´´½¨Ä¿Â¼Ê§°Ü£¡[%s]", PATH_ESB_FILE);
         }else{
-            g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "æ‰“å¼€ç›®å½•[%s]å¤±è´¥ï¼è‡ªåŠ¨åˆ›å»ºæ”¹ç›®å½•ï¼", PATH_ESB_FILE);
+            g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "´ò¿ªÄ¿Â¼[%s]Ê§°Ü£¡×Ô¶¯´´½¨¸ÄÄ¿Â¼£¡", PATH_ESB_FILE);
         }
 
-        //è¿”å›è¯»å–å¤±è´¥
+        //·µ»Ø¶ÁÈ¡Ê§°Ü
         return res;
     }
 
-    //éå†ESBæ–‡ä»¶ç›®å½•
+    //±éÀúESBÎÄ¼şÄ¿Â¼
     while((ent = readdir(pdir)) != nullptr){
-        if(ent->d_type &DT_DIR){//ç›®å½•
+        if(ent->d_type &DT_DIR){//Ä¿Â¼
             continue;
-        }else if(ent->d_type & DT_REG){//æ™®é€šæ–‡ä»¶
-            //æ ¡éªŒæ–‡ä»¶åç¼€æ˜¯ä¸æ˜¯.esb
+        }else if(ent->d_type & DT_REG){//ÆÕÍ¨ÎÄ¼ş
+            //Ğ£ÑéÎÄ¼şºó×ºÊÇ²»ÊÇ.esb
             len = strlen(ent->d_name);
             if(len > 4){
                 pt = strrchr(ent->d_name, '.');
-                if(pt && strcasecmp(pt, "esb")){  //åç¼€åŒ¹é…
-                    if(idx >= index){//é¡ºåºå·åŒ¹é…
-                        //ç”Ÿæˆå½“å‰åŠ è½½æ–‡ä»¶è·¯å¾„
+                if(pt && strcasecmp(pt, "esb")){  //ºó×ºÆ¥Åä
+                    if(idx >= index){//Ë³ĞòºÅÆ¥Åä
+                        //Éú³Éµ±Ç°¼ÓÔØÎÄ¼şÂ·¾¶
                         if(!bfind){
                             bfind = true;
                             strcpy(file_path, PATH_ESB_FILE);
                             strcat(file_path, ent->d_name);
                             printf("open esb file:%s\n", file_path);
                         }else{
-                            flag = 1;   //åç»­è¿˜æœ‰æ–‡ä»¶
+                            flag = 1;   //ºóĞø»¹ÓĞÎÄ¼ş
                             break;
                         }
 
@@ -2441,40 +2441,40 @@ int32_t ChannelEngine::LoadEsbData(uint16_t index, uint16_t &flag){
         }
     }
 
-    //åŠ è½½å½“å‰æŒ‡å®šé¡ºåºå·çš„æ–‡ä»¶
+    //¼ÓÔØµ±Ç°Ö¸¶¨Ë³ĞòºÅµÄÎÄ¼ş
     struct stat statbuf;
     int file_size = 0;
     if(stat(file_path, &statbuf) == 0)
-        file_size = statbuf.st_size;  //è·å–æ–‡ä»¶æ€»å¤§å°
+        file_size = statbuf.st_size;  //»ñÈ¡ÎÄ¼ş×Ü´óĞ¡
     else{
-        g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "è·å–æ–‡ä»¶[%s]å¤§å°å¤±è´¥ï¼", file_path);
+        g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "»ñÈ¡ÎÄ¼ş[%s]´óĞ¡Ê§°Ü£¡", file_path);
         closedir(pdir);
-        return res;			//è·å–æ–‡ä»¶å¤§å°å¤±è´¥
+        return res;			//»ñÈ¡ÎÄ¼ş´óĞ¡Ê§°Ü
     }
 
     if(file_size < kEsbDataSize){
-        g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "ESBæ–‡ä»¶[%s]å¤§å°ä¸åŒ¹é…[size=%d]ï¼", file_path, file_size);
+        g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "ESBÎÄ¼ş[%s]´óĞ¡²»Æ¥Åä[size=%d]£¡", file_path, file_size);
         closedir(pdir);
-        return res;   //æ–‡ä»¶å¤§å°ä¸åŒ¹é…
+        return res;   //ÎÄ¼ş´óĞ¡²»Æ¥Åä
     }
 
     printf("read esb file size : %d\n", file_size);
 
-    int fp = open(file_path, O_RDONLY); //åªè¯»æ‰“å¼€æ–‡ä»¶
+    int fp = open(file_path, O_RDONLY); //Ö»¶Á´ò¿ªÎÄ¼ş
     if(fp < 0){
-        g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "æ‰“å¼€æ–‡ä»¶[%s]å¤±è´¥ï¼", file_path);
+        g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "´ò¿ªÎÄ¼ş[%s]Ê§°Ü£¡", file_path);
         closedir(pdir);
-        return res;//æ–‡ä»¶æ‰“å¼€å¤±è´¥
+        return res;//ÎÄ¼ş´ò¿ªÊ§°Ü
     }
 
-    //è¯»å–æ•°æ®
+    //¶ÁÈ¡Êı¾İ
     int32_t read_size = kEsbDataSize;
-    char *ptr_data = this->m_p_mi_comm->GetPmcDataAddr();   //å¤ç”¨PMCæ¢¯å›¾çš„ä¼ è¾“åŒºåŸŸ
+    char *ptr_data = this->m_p_mi_comm->GetPmcDataAddr();   //¸´ÓÃPMCÌİÍ¼µÄ´«ÊäÇøÓò
     res = read(fp, ptr_data, read_size);
 
 
-    if(res == -1 || res != read_size){  //readå¤±è´¥
-        g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "è¯»å–æ–‡ä»¶[%s]å¤±è´¥ï¼å®é™…è¯»å–å¤§å°[%d]å­—èŠ‚", file_path, res);
+    if(res == -1 || res != read_size){  //readÊ§°Ü
+        g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "¶ÁÈ¡ÎÄ¼ş[%s]Ê§°Ü£¡Êµ¼Ê¶ÁÈ¡´óĞ¡[%d]×Ö½Ú", file_path, res);
         close(fp);
         closedir(pdir);
         return 0;
@@ -2487,7 +2487,7 @@ int32_t ChannelEngine::LoadEsbData(uint16_t index, uint16_t &flag){
 }
 
 /**
- * @brief å¤„ç†HMIçš„IOè¯·æ±‚
+ * @brief ´¦ÀíHMIµÄIOÇëÇó
  * @param cmd
  */
 void ChannelEngine::ProcessHmiIOCmd(HMICmdFrame &cmd){
@@ -2500,24 +2500,24 @@ void ChannelEngine::ProcessHmiIOCmd(HMICmdFrame &cmd){
 }
 
 /**
- * @brief å¤„ç†HMIæ¨¡å—å‘é€çš„å‘½ä»¤
- * @param cmd ï¼šå¾…å¤„ç†çš„HMIå‘½ä»¤åŒ…
+ * @brief ´¦ÀíHMIÄ£¿é·¢ËÍµÄÃüÁî
+ * @param cmd £º´ı´¦ÀíµÄHMIÃüÁî°ü
  */
 void ChannelEngine::ProcessHmiCmd(HMICmdFrame &cmd){
 
     int i = 0;
     switch(cmd.cmd){
-    case CMD_HMI_GET_CHN_STATE:   //HMIè·å–é€šé“å½“å‰çŠ¶æ€
+    case CMD_HMI_GET_CHN_STATE:   //HMI»ñÈ¡Í¨µÀµ±Ç°×´Ì¬
         if(cmd.channel_index >= this->m_p_general_config->chn_count){
             cmd.cmd_extension = FAILED;
             cmd.frame_number |= 0x8000;
             this->m_p_hmi_comm->SendCmd(cmd);
-            g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "å‘½ä»¤[%d]é€šé“å·éæ³•ï¼%d", cmd.cmd, cmd.channel_index);
+            g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "ÃüÁî[%d]Í¨µÀºÅ·Ç·¨£¡%d", cmd.cmd, cmd.channel_index);
         }else
             this->m_p_channel_control[cmd.channel_index].ProcessHmiCmd(cmd);
         break;
-    case CMD_HMI_RESTART:               //åŠ å·¥å¤ä½ 11
-    case CMD_HMI_SIMULATE:				//ä»¿çœŸ 12
+    case CMD_HMI_RESTART:               //¼Ó¹¤¸´Î» 11
+    case CMD_HMI_SIMULATE:				//·ÂÕæ 12
         if(cmd.channel_index == CHANNEL_ENGINE_INDEX){
             for(i = 0; i < m_p_general_config->chn_count; i++){
                 m_p_channel_control[i].ProcessHmiCmd(cmd);
@@ -2528,13 +2528,13 @@ void ChannelEngine::ProcessHmiCmd(HMICmdFrame &cmd){
             cmd.data_len = 1;
             cmd.data[0] = FAILED;
             this->m_p_hmi_comm->SendCmd(cmd);
-            g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "å‘½ä»¤[%d]é€šé“å·éæ³•ï¼%d", cmd.cmd, cmd.channel_index);
+            g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "ÃüÁî[%d]Í¨µÀºÅ·Ç·¨£¡%d", cmd.cmd, cmd.channel_index);
         }
         else{
             m_p_channel_control[cmd.channel_index].ProcessHmiCmd(cmd);
         }
         break;
-    case CMD_HMI_SET_NC_FILE:	    //è®¾ç½®å½“å‰åŠ å·¥æ–‡ä»¶ 13
+    case CMD_HMI_SET_NC_FILE:	    //ÉèÖÃµ±Ç°¼Ó¹¤ÎÄ¼ş 13
         if(cmd.channel_index == CHANNEL_ENGINE_INDEX){
             for(i = 0; i < m_p_general_config->chn_count; i++){
                 m_p_channel_control[i].ProcessHmiCmd(cmd);
@@ -2544,16 +2544,16 @@ void ChannelEngine::ProcessHmiCmd(HMICmdFrame &cmd){
             cmd.frame_number |= 0x8000;
             cmd.cmd_extension = FAILED;
             this->m_p_hmi_comm->SendCmd(cmd);
-            g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "å‘½ä»¤[%d]é€šé“å·éæ³•ï¼%d", cmd.cmd, cmd.channel_index);
+            g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "ÃüÁî[%d]Í¨µÀºÅ·Ç·¨£¡%d", cmd.cmd, cmd.channel_index);
         }
         else{
             m_p_channel_control[cmd.channel_index].ProcessHmiCmd(cmd);
         }
         break;
-    case CMD_HMI_FIND_REF_POINT:		//ç¡®å®šå‚è€ƒç‚¹ 14
+    case CMD_HMI_FIND_REF_POINT:		//È·¶¨²Î¿¼µã 14
         this->ProcessHmiFindRefCmd(cmd);
         break;
-    case CMD_HMI_SET_REF_POINT:			//è®¾ç½®è½´åŸç‚¹ï¼Œé’ˆå¯¹ç»å¯¹å€¼ç¼–ç å™¨
+    case CMD_HMI_SET_REF_POINT:			//ÉèÖÃÖáÔ­µã£¬Õë¶Ô¾ø¶ÔÖµ±àÂëÆ÷
         if(this->m_n_cur_pmc_axis != 0xFF){
             this->ProcessHmiSetRefCmd(cmd);
         }else{
@@ -2561,18 +2561,18 @@ void ChannelEngine::ProcessHmiCmd(HMICmdFrame &cmd){
         }
 
         break;
-    case CMD_SC_MDA_DATA_REQ:			//MDAä»£ç è¯·æ±‚ 115
-    case CMD_HMI_GET_MACRO_VAR:			//HMIå‘SCè¯·æ±‚å®å˜é‡çš„å€¼   30
-    case CMD_HMI_SET_MACRO_VAR:        //HMIå‘SCè®¾ç½®å®å˜é‡å¯„å­˜å™¨çš„å€¼   31
-    case CMD_HMI_SET_CALIBRATION:      //HMIå‘SCå‘å‡ºè°ƒé«˜å™¨æ ‡å®šæŒ‡ä»¤ 32
-    case CMD_HMI_MANUAL_TOOL_MEASURE:     //HMIå‘SCå‘èµ·æ‰‹åŠ¨å¯¹åˆ€æ“ä½œ  0x29
+    case CMD_SC_MDA_DATA_REQ:			//MDA´úÂëÇëÇó 115
+    case CMD_HMI_GET_MACRO_VAR:			//HMIÏòSCÇëÇóºê±äÁ¿µÄÖµ   30
+    case CMD_HMI_SET_MACRO_VAR:        //HMIÏòSCÉèÖÃºê±äÁ¿¼Ä´æÆ÷µÄÖµ   31
+    case CMD_HMI_SET_CALIBRATION:      //HMIÏòSC·¢³öµ÷¸ßÆ÷±ê¶¨Ö¸Áî 32
+    case CMD_HMI_MANUAL_TOOL_MEASURE:     //HMIÏòSC·¢ÆğÊÖ¶¯¶Ôµ¶²Ù×÷  0x29
         if(cmd.channel_index < this->m_p_general_config->chn_count)
             m_p_channel_control[cmd.channel_index].ProcessHmiCmd(cmd);
         else
-            g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "å‘½ä»¤[%d]é€šé“å·éæ³•ï¼%d", cmd.cmd, cmd.channel_index);
+            g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "ÃüÁî[%d]Í¨µÀºÅ·Ç·¨£¡%d", cmd.cmd, cmd.channel_index);
         break;
-    case CMD_HMI_CLEAR_WORKPIECE:      //HMIè¯·æ±‚SCå°†åŠ å·¥è®¡æ•°æ¸…é›¶,ä¸´æ—¶è®¡æ•°(åŒºåˆ†ç™½å¤œç­)
-    case CMD_HMI_CLEAR_TOTAL_PIECE:    //æ€»å…±è®¡æ•°æ¸…é›¶
+    case CMD_HMI_CLEAR_WORKPIECE:      //HMIÇëÇóSC½«¼Ó¹¤¼ÆÊıÇåÁã,ÁÙÊ±¼ÆÊı(Çø·Ö°×Ò¹°à)
+    case CMD_HMI_CLEAR_TOTAL_PIECE:    //×Ü¹²¼ÆÊıÇåÁã
         if(cmd.channel_index < this->m_p_general_config->chn_count)
             m_p_channel_control[cmd.channel_index].ProcessHmiCmd(cmd);
         else if(cmd.channel_index == CHANNEL_ENGINE_INDEX){
@@ -2580,70 +2580,70 @@ void ChannelEngine::ProcessHmiCmd(HMICmdFrame &cmd){
                 this->m_p_channel_control[i].ProcessHmiCmd(cmd);
             }
         }else
-            g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "å‘½ä»¤[%d]é€šé“å·éæ³•ï¼%d", cmd.cmd, cmd.channel_index);
+            g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "ÃüÁî[%d]Í¨µÀºÅ·Ç·¨£¡%d", cmd.cmd, cmd.channel_index);
         break;
-    case CMD_HMI_SET_PARA:		//è®¾ç½®å‚æ•°
+    case CMD_HMI_SET_PARA:		//ÉèÖÃ²ÎÊı
         this->ProcessHmiSetParam(cmd);
         break;
-    case CMD_HMI_GET_PARA:		//è·å–å‚æ•°
+    case CMD_HMI_GET_PARA:		//»ñÈ¡²ÎÊı
         this->ProcessHmiGetParam(cmd);
         break;
-    case CMD_HMI_UPDATE:		//HMIé€šçŸ¥SCè¯·æ±‚è¿›è¡Œå‡çº§æ–‡ä»¶ä¼ é€
+    case CMD_HMI_UPDATE:		//HMIÍ¨ÖªSCÇëÇó½øĞĞÉı¼¶ÎÄ¼ş´«ËÍ
         this->ProcessHmiUpdateReq(cmd);
         break;
-    case CMD_HMI_GET_PMC_REG:			//è·å–PMCå¯„å­˜å™¨
+    case CMD_HMI_GET_PMC_REG:			//»ñÈ¡PMC¼Ä´æÆ÷
         this->ProcessHmiGetPmcReg(cmd);
         break;
-    case CMD_HMI_SET_PMC_REG:			//è®¾ç½®PMCå¯„å­˜å™¨
+    case CMD_HMI_SET_PMC_REG:			//ÉèÖÃPMC¼Ä´æÆ÷
         this->ProcessHmiSetPmcReg(cmd);
         break;
     case CMD_HMI_GET_PMC_UUID:
-        this->ProcessHmiGetPmcUuid(cmd);	//è·å–pmcçš„uuid
+        this->ProcessHmiGetPmcUuid(cmd);	//»ñÈ¡pmcµÄuuid
         break;
-    case CMD_HMI_AXIS_MANUAL_MOVE:     //HMIæŒ‡ä»¤è½´ç§»åŠ¨
+    case CMD_HMI_AXIS_MANUAL_MOVE:     //HMIÖ¸ÁîÖáÒÆ¶¯
         this->ProcessHmiAxisMoveCmd(cmd);
         break;
-    case CMD_HMI_GET_LIC_INFO:            //HMIå‘SCè¯·æ±‚æˆæƒä¿¡æ¯   0x27
+    case CMD_HMI_GET_LIC_INFO:            //HMIÏòSCÇëÇóÊÚÈ¨ĞÅÏ¢   0x27
         this->ProcessHmiGetLicInfoCmd(cmd);
         break;
-    case CMD_HMI_SEND_LICENSE:            //HMIå‘SCå‘é€æˆæƒç      0x28
+    case CMD_HMI_SEND_LICENSE:            //HMIÏòSC·¢ËÍÊÚÈ¨Âë     0x28
         this->ProcessHmiRegLicCmd(cmd);
         break;
-    case CMD_HMI_GET_ESB_INFO:            //HMIå‘SCè·å–ESBæ–‡ä»¶æ•°æ®   0x2A
+    case CMD_HMI_GET_ESB_INFO:            //HMIÏòSC»ñÈ¡ESBÎÄ¼şÊı¾İ   0x2A
 
         break;
-    case CMD_HMI_ESB_OPERATE:            //HMIé€šçŸ¥SCå¯¹æŒ‡å®šESBæ–‡ä»¶è¿›è¡Œæ“ä½œ  0x2B
+    case CMD_HMI_ESB_OPERATE:            //HMIÍ¨ÖªSC¶ÔÖ¸¶¨ESBÎÄ¼ş½øĞĞ²Ù×÷  0x2B
 
         break;
-    case CMD_HMI_GET_IO_REMAP:			//HMIå‘SCè·å–IOé‡å®šå‘æ•°æ®  0x2C
+    case CMD_HMI_GET_IO_REMAP:			//HMIÏòSC»ñÈ¡IOÖØ¶¨ÏòÊı¾İ  0x2C
         this->ProcessHmiGetIoRemapInfoCmd(cmd);
         break;
-    case CMD_HMI_SET_IO_REMAP:         //HMIå‘SCè®¾ç½®IOé‡å®šå‘æ•°æ®  0x2D
+    case CMD_HMI_SET_IO_REMAP:         //HMIÏòSCÉèÖÃIOÖØ¶¨ÏòÊı¾İ  0x2D
         this->ProcessHmiSetIoRemapInfoCmd(cmd);
         break;
-    case CMD_HMI_SET_PROC_PARAM:      //HMIå‘SCè®¾ç½®å·¥è‰ºç›¸å…³å‚æ•°  0x2E
+    case CMD_HMI_SET_PROC_PARAM:      //HMIÏòSCÉèÖÃ¹¤ÒÕÏà¹Ø²ÎÊı  0x2E
         this->ProcessHmiSetProcParamCmd(cmd);
         break;
-    case CMD_HMI_GET_PROC_PARAM:          //HMIå‘SCè·å–å·¥è‰ºç›¸å…³å‚æ•°  0x2F
+    case CMD_HMI_GET_PROC_PARAM:          //HMIÏòSC»ñÈ¡¹¤ÒÕÏà¹Ø²ÎÊı  0x2F
         this->ProcessHmiGetProcParamCmd(cmd);
         break;
-    case CMD_HMI_SET_PROC_GROUP:          //HMIå‘SCè®¾ç½®å½“å‰å·¥è‰ºå‚æ•°ç»„å·  0x30
+    case CMD_HMI_SET_PROC_GROUP:          //HMIÏòSCÉèÖÃµ±Ç°¹¤ÒÕ²ÎÊı×éºÅ  0x30
         this->ProcessHmiSetCurProcIndex(cmd);
         break;
-    case CMD_HMI_GET_PROC_GROUP:          //HMIå‘SCè·å–å½“å‰å·¥è‰ºå‚æ•°ç»„å·  0x31
+    case CMD_HMI_GET_PROC_GROUP:          //HMIÏòSC»ñÈ¡µ±Ç°¹¤ÒÕ²ÎÊı×éºÅ  0x31
         this->ProcessHmiGetCurProcIndex(cmd);
         break;
-    case CMD_HMI_SET_CUR_MACH_POS:        //HMIå‘SCé‡è®¾æŒ‡å®šè½´çš„æœºæ¢°åæ ‡  0x32
+    case CMD_HMI_SET_CUR_MACH_POS:        //HMIÏòSCÖØÉèÖ¸¶¨ÖáµÄ»úĞµ×ø±ê  0x32
         if(cmd.channel_index >= this->m_p_general_config->chn_count){
             cmd.frame_number |= 0x8000;
             cmd.data[9] = FAILED;
             cmd.data_len = 10;
             this->m_p_hmi_comm->SendCmd(cmd);
-            g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "å‘½ä»¤[%d]é€šé“å·éæ³•ï¼%d", cmd.cmd, cmd.channel_index);
+            g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "ÃüÁî[%d]Í¨µÀºÅ·Ç·¨£¡%d", cmd.cmd, cmd.channel_index);
         }else
             this->m_p_channel_control[cmd.channel_index].ProcessHmiCmd(cmd);
         break;
-    case CMD_HMI_CLEAR_MSG:               //HMIé€šçŸ¥SCæ¸…é™¤æ¶ˆæ¯  0x33
+    case CMD_HMI_CLEAR_MSG:               //HMIÍ¨ÖªSCÇå³ıÏûÏ¢  0x33
         printf("process CMD_HMI_CLEAR_MSG:%hhu, cmd_ex=%hhu \n", cmd.channel_index, cmd.cmd_extension);
 //		if(cmd.channel_index == CHANNEL_ENGINE_INDEX){
 //			this->ProcessHmiClearMsgCmd(cmd);
@@ -2654,16 +2654,16 @@ void ChannelEngine::ProcessHmiCmd(HMICmdFrame &cmd){
 //			cmd.cmd_extension = FAILED;
 //			cmd.data_len = 0;
 //			this->m_p_hmi_comm->SendCmd(cmd);
-//			g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "å‘½ä»¤[%d]é€šé“å·éæ³•ï¼%d", cmd.cmd, cmd.channel_index);
+//			g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "ÃüÁî[%d]Í¨µÀºÅ·Ç·¨£¡%d", cmd.cmd, cmd.channel_index);
 //		}
         break;
-    case CMD_HMI_SYNC_AXIS_OPT:           //HMIé€šçŸ¥HMIè¿›è¡ŒåŒæ­¥è½´ä½¿èƒ½æ“ä½œ 0x34
+    case CMD_HMI_SYNC_AXIS_OPT:           //HMIÍ¨ÖªHMI½øĞĞÍ¬²½ÖáÊ¹ÄÜ²Ù×÷ 0x34
         this->ProcessHmiEnableSyncAxisCmd(cmd);
         break;
-    case CMD_HMI_NOTIFY_GRAPH:            //HMIé€šçŸ¥SCè¿›å…¥å›¾å½¢æ¨¡å¼    0x35
+    case CMD_HMI_NOTIFY_GRAPH:            //HMIÍ¨ÖªSC½øÈëÍ¼ĞÎÄ£Ê½    0x35
         this->ProcessHmiNotifyGraphCmd(cmd);
         break;
-    case CMD_HMI_CHECK_SYNC_EN:           //HMIå‘SCæŸ¥è¯¢åŒæ­¥è½´çŠ¶æ€ 0x37
+    case CMD_HMI_CHECK_SYNC_EN:           //HMIÏòSC²éÑ¯Í¬²½Öá×´Ì¬ 0x37
         this->ProcessHmiCheckSyncCmd(cmd);
         break;
     case CMD_HMI_GET_SYS_INFO:
@@ -2693,10 +2693,10 @@ void ChannelEngine::ProcessHmiCmd(HMICmdFrame &cmd){
             }
         }
         break;
-    case CMD_HMI_GET_HANDWHEEL_INFO:           // hmiå‘scæŸ¥è¯¢æ‰‹è½®æ˜ å°„å…³ç³»
+    case CMD_HMI_GET_HANDWHEEL_INFO:           // hmiÏòsc²éÑ¯ÊÖÂÖÓ³Éä¹ØÏµ
         ProcessHmiHandWheelCmd(cmd);
         break;
-    case CMD_HMI_SET_HANDWHEEL_INFO:           // hmiå‘scè®¾ç½®æ‰‹è½®ä¿¡æ¯
+    case CMD_HMI_SET_HANDWHEEL_INFO:           // hmiÏòscÉèÖÃÊÖÂÖĞÅÏ¢
     {
         HandWheelMapInfoVec configInfo = g_ptr_parm_manager->GetHandWheelVec();
         std::cout << cmd.cmd_extension << " " << configInfo.size() << std::endl;
@@ -2716,28 +2716,28 @@ void ChannelEngine::ProcessHmiCmd(HMICmdFrame &cmd){
     }
         break;
     default:
-        g_ptr_trace->PrintTrace(TRACE_WARNING, CHANNEL_ENGINE_SC, "ä¸æ”¯æŒçš„HMIæŒ‡ä»¤[%d]", cmd.cmd);
+        g_ptr_trace->PrintTrace(TRACE_WARNING, CHANNEL_ENGINE_SC, "²»Ö§³ÖµÄHMIÖ¸Áî[%d]", cmd.cmd);
         break;
 
     }
 }
 
 /**
- * @brief å¤„ç†HMIè·å–æˆæƒä¿¡æ¯æŒ‡ä»¤
- * @param cmd : HMIæŒ‡ä»¤åŒ…
+ * @brief ´¦ÀíHMI»ñÈ¡ÊÚÈ¨ĞÅÏ¢Ö¸Áî
+ * @param cmd : HMIÖ¸Áî°ü
  */
 void ChannelEngine::ProcessHmiGetLicInfoCmd(HMICmdFrame &cmd){
-    cmd.frame_number |= 0x8000;  //è®¾ç½®å›å¤æ ‡å¿—
+    cmd.frame_number |= 0x8000;  //ÉèÖÃ»Ø¸´±êÖ¾
     cmd.cmd_extension = SUCCEED;
     cmd.data_len = 24;
 
-    memcpy(cmd.data, this->m_device_sn, SN_COUNT);  //13å­—èŠ‚é•¿åº¦çš„è®¾å¤‡SNå·
-    cmd.data[SN_COUNT] = this->m_lic_info.licflag;    //æˆæƒçŠ¶æ€
+    memcpy(cmd.data, this->m_device_sn, SN_COUNT);  //13×Ö½Ú³¤¶ÈµÄÉè±¸SNºÅ
+    cmd.data[SN_COUNT] = this->m_lic_info.licflag;    //ÊÚÈ¨×´Ì¬
     if(this->m_lic_info.licflag == 'f'){
-        sprintf(cmd.data+SN_COUNT+1, "%s", "æ°¸ä¹…");    //æˆæƒåˆ°æœŸæ—¶é—´,10å­—èŠ‚é•¿åº¦å­—ç¬¦ä¸²ï¼Œæ ¼å¼å¦‚â€œ2021-12-21â€
+        sprintf(cmd.data+SN_COUNT+1, "%s", "ÓÀ¾Ã");    //ÊÚÈ¨µ½ÆÚÊ±¼ä,10×Ö½Ú³¤¶È×Ö·û´®£¬¸ñÊ½Èç¡°2021-12-21¡±
     }else{
         sprintf(cmd.data+SN_COUNT+1, "%d-%02d-%02d", this->m_lic_info.dead_line.year, this->m_lic_info.dead_line.month,
-                this->m_lic_info.dead_line.day);    //æˆæƒåˆ°æœŸæ—¶é—´,10å­—èŠ‚é•¿åº¦å­—ç¬¦ä¸²ï¼Œæ ¼å¼å¦‚â€œ2021-12-21â€
+                this->m_lic_info.dead_line.day);    //ÊÚÈ¨µ½ÆÚÊ±¼ä,10×Ö½Ú³¤¶È×Ö·û´®£¬¸ñÊ½Èç¡°2021-12-21¡±
     }
 
 
@@ -2746,39 +2746,39 @@ void ChannelEngine::ProcessHmiGetLicInfoCmd(HMICmdFrame &cmd){
 }
 
 /**
- * @brief å¤„ç†HMIæ³¨å†ŒæˆæƒæŒ‡ä»¤
- * @param cmd : HMIæŒ‡ä»¤åŒ…
+ * @brief ´¦ÀíHMI×¢²áÊÚÈ¨Ö¸Áî
+ * @param cmd : HMIÖ¸Áî°ü
  */
 void ChannelEngine::ProcessHmiRegLicCmd(HMICmdFrame &cmd){
-    cmd.frame_number |= 0x8000;  //è®¾ç½®å›å¤æ ‡å¿—
+    cmd.frame_number |= 0x8000;  //ÉèÖÃ»Ø¸´±êÖ¾
 
-    if(cmd.data_len != LICCODECOUNT){//æˆæƒç é•¿åº¦é”™è¯¯ï¼Œè¿”å›å¤±è´¥
+    if(cmd.data_len != LICCODECOUNT){//ÊÚÈ¨Âë³¤¶È´íÎó£¬·µ»ØÊ§°Ü
         cmd.cmd_extension = FAILED;
         cmd.data_len = 24;
 
-        memcpy(cmd.data, this->m_device_sn, SN_COUNT);  //13å­—èŠ‚é•¿åº¦çš„è®¾å¤‡SNå·
-        cmd.data[SN_COUNT] = this->m_lic_info.licflag;    //æˆæƒçŠ¶æ€
+        memcpy(cmd.data, this->m_device_sn, SN_COUNT);  //13×Ö½Ú³¤¶ÈµÄÉè±¸SNºÅ
+        cmd.data[SN_COUNT] = this->m_lic_info.licflag;    //ÊÚÈ¨×´Ì¬
         sprintf(cmd.data+SN_COUNT+1, "%d-%02d-%02d", this->m_lic_info.dead_line.year, this->m_lic_info.dead_line.month,
-                this->m_lic_info.dead_line.day);    //æˆæƒåˆ°æœŸæ—¶é—´,10å­—èŠ‚é•¿åº¦å­—ç¬¦ä¸²ï¼Œæ ¼å¼å¦‚â€œ2021-12-21â€
+                this->m_lic_info.dead_line.day);    //ÊÚÈ¨µ½ÆÚÊ±¼ä,10×Ö½Ú³¤¶È×Ö·û´®£¬¸ñÊ½Èç¡°2021-12-21¡±
         this->m_p_hmi_comm->SendCmd(cmd);
         printf("register failed 1\n");
         return;
     }
 
-    char lic_code[LICCODECOUNT+1];   //æˆæƒç 
+    char lic_code[LICCODECOUNT+1];   //ÊÚÈ¨Âë
     memset(lic_code, 0x00, LICCODECOUNT+1);
-    memcpy(lic_code, cmd.data, LICCODECOUNT);  //24å­—èŠ‚é•¿åº¦çš„è®¾å¤‡æˆæƒç 
+    memcpy(lic_code, cmd.data, LICCODECOUNT);  //24×Ö½Ú³¤¶ÈµÄÉè±¸ÊÚÈ¨Âë
     printf("Get lic code:%s\n", lic_code);
 
-    //æ³¨å†Œæˆæƒç 
+    //×¢²áÊÚÈ¨Âë
     if(RegisterLicWithCode(this->m_device_sn, lic_code, &this->m_lic_info)){
         cmd.cmd_extension = FAILED;
         cmd.data_len = 24;
 
-        memcpy(cmd.data, m_device_sn, SN_COUNT);  //13å­—èŠ‚é•¿åº¦çš„è®¾å¤‡SNå·
-        cmd.data[SN_COUNT] = this->m_lic_info.licflag;    //æˆæƒçŠ¶æ€
+        memcpy(cmd.data, m_device_sn, SN_COUNT);  //13×Ö½Ú³¤¶ÈµÄÉè±¸SNºÅ
+        cmd.data[SN_COUNT] = this->m_lic_info.licflag;    //ÊÚÈ¨×´Ì¬
         sprintf(cmd.data+SN_COUNT+1, "%d-%02d-%02d", this->m_lic_info.dead_line.year, this->m_lic_info.dead_line.month,
-                this->m_lic_info.dead_line.day);    //æˆæƒåˆ°æœŸæ—¶é—´,10å­—èŠ‚é•¿åº¦å­—ç¬¦ä¸²ï¼Œæ ¼å¼å¦‚â€œ2021-12-21â€
+                this->m_lic_info.dead_line.day);    //ÊÚÈ¨µ½ÆÚÊ±¼ä,10×Ö½Ú³¤¶È×Ö·û´®£¬¸ñÊ½Èç¡°2021-12-21¡±
         this->m_p_hmi_comm->SendCmd(cmd);
         printf("register failed 2\n");
         return;
@@ -2788,35 +2788,35 @@ void ChannelEngine::ProcessHmiRegLicCmd(HMICmdFrame &cmd){
 
     cmd.data_len = 24;
 
-    memcpy(cmd.data, m_device_sn, SN_COUNT);  //13å­—èŠ‚é•¿åº¦çš„è®¾å¤‡SNå·
-    cmd.data[SN_COUNT] = this->m_lic_info.licflag;    //æˆæƒçŠ¶æ€
+    memcpy(cmd.data, m_device_sn, SN_COUNT);  //13×Ö½Ú³¤¶ÈµÄÉè±¸SNºÅ
+    cmd.data[SN_COUNT] = this->m_lic_info.licflag;    //ÊÚÈ¨×´Ì¬
     if(this->m_lic_info.licflag == 'f'){
-        sprintf(cmd.data+SN_COUNT+1, "%s", "æ°¸ä¹…");    //æˆæƒåˆ°æœŸæ—¶é—´,10å­—èŠ‚é•¿åº¦å­—ç¬¦ä¸²ï¼Œæ ¼å¼å¦‚â€œ2021-12-21â€
+        sprintf(cmd.data+SN_COUNT+1, "%s", "ÓÀ¾Ã");    //ÊÚÈ¨µ½ÆÚÊ±¼ä,10×Ö½Ú³¤¶È×Ö·û´®£¬¸ñÊ½Èç¡°2021-12-21¡±
 
     }else{
         sprintf(cmd.data+SN_COUNT+1, "%d-%02d-%02d", this->m_lic_info.dead_line.year, this->m_lic_info.dead_line.month,
-                this->m_lic_info.dead_line.day);    //æˆæƒåˆ°æœŸæ—¶é—´,10å­—èŠ‚é•¿åº¦å­—ç¬¦ä¸²ï¼Œæ ¼å¼å¦‚â€œ2021-12-21â€
+                this->m_lic_info.dead_line.day);    //ÊÚÈ¨µ½ÆÚÊ±¼ä,10×Ö½Ú³¤¶È×Ö·û´®£¬¸ñÊ½Èç¡°2021-12-21¡±
     }
 
     printf("register lic result: %s\n", cmd.data);
 
-    //å‘é€å›å¤
+    //·¢ËÍ»Ø¸´
     cmd.cmd_extension = SUCCEED;
     this->m_p_hmi_comm->SendCmd(cmd);
 }
 
 /**
- * @brief å¤„ç†HMIè·å–IOé‡æ˜ å°„ä¿¡æ¯å‘½ä»¤
- * @param cmd : HMIæŒ‡ä»¤åŒ…
+ * @brief ´¦ÀíHMI»ñÈ¡IOÖØÓ³ÉäĞÅÏ¢ÃüÁî
+ * @param cmd : HMIÖ¸Áî°ü
  */
 void ChannelEngine::ProcessHmiGetIoRemapInfoCmd(HMICmdFrame &cmd){
     int count = this->m_p_io_remap->GetLength();
 
-    int count_per = count;   //å•æ¬¡å‘é€æ•°æ®é‡
+    int count_per = count;   //µ¥´Î·¢ËÍÊı¾İÁ¿
     int i = 0;
     ListNode<IoRemapInfo> *info_node = this->m_p_io_remap->HeadNode();
 
-    cmd.frame_number |= 0x8000;  //è®¾ç½®å›å¤æ ‡å¿—
+    cmd.frame_number |= 0x8000;  //ÉèÖÃ»Ø¸´±êÖ¾
     if(count == 0){
         cmd.cmd_extension = 0x00;
         cmd.data_len = 0;
@@ -2855,11 +2855,11 @@ void ChannelEngine::ProcessHmiGetIoRemapInfoCmd(HMICmdFrame &cmd){
 }
 
 /**
- * @brief å¤„ç†HMIè®¾ç½®IOé‡æ˜ å°„ä¿¡æ¯å‘½ä»¤
- * @param cmd : HMIæŒ‡ä»¤åŒ…
+ * @brief ´¦ÀíHMIÉèÖÃIOÖØÓ³ÉäĞÅÏ¢ÃüÁî
+ * @param cmd : HMIÖ¸Áî°ü
  */
 void ChannelEngine::ProcessHmiSetIoRemapInfoCmd(HMICmdFrame &cmd){
-    cmd.frame_number |= 0x8000;  //è®¾ç½®å›å¤æ ‡å¿—
+    cmd.frame_number |= 0x8000;  //ÉèÖÃ»Ø¸´±êÖ¾
 
     IoRemapInfo info;
     info.iotype = cmd.data[0];
@@ -2883,31 +2883,31 @@ void ChannelEngine::ProcessHmiSetIoRemapInfoCmd(HMICmdFrame &cmd){
         info_node = info_node->next;
     }
 
-    if(!flag){  //æ–°å¢
+    if(!flag){  //ĞÂÔö
         this->m_p_io_remap->Append(info);
     }
 
     if(!g_ptr_parm_manager->UpdateIoRemapInfo(info)){
-        cmd.cmd_extension = 0x01;  //æ›´æ–°å¤±è´¥
+        cmd.cmd_extension = 0x01;  //¸üĞÂÊ§°Ü
     }
 
-    this->SendMiIoRemapInfo(info);   //æ›´æ–°MIæ•°æ®
+    this->SendMiIoRemapInfo(info);   //¸üĞÂMIÊı¾İ
 
     this->m_p_hmi_comm->SendCmd(cmd);
 }
 
 /**
- * @brief å¤„ç†HMIè®¾ç½®å·¥è‰ºç›¸å…³å‚æ•°çš„å‘½ä»¤
- * @param cmd : HMIæŒ‡ä»¤åŒ…
+ * @brief ´¦ÀíHMIÉèÖÃ¹¤ÒÕÏà¹Ø²ÎÊıµÄÃüÁî
+ * @param cmd : HMIÖ¸Áî°ü
  */
 void ChannelEngine::ProcessHmiSetProcParamCmd(HMICmdFrame &cmd){
 //	printf("enter ProcessHmiSetProcParamCmd\n");
-    cmd.frame_number |= 0x8000;  //è®¾ç½®å›å¤æ ‡å¿—
+    cmd.frame_number |= 0x8000;  //ÉèÖÃ»Ø¸´±êÖ¾
 
-    uint8_t active_type = ACTIVE_BY_POWEROFF;	//æ¿€æ´»ç±»å‹
+    uint8_t active_type = ACTIVE_BY_POWEROFF;	//¼¤»îÀàĞÍ
     ProcParamUpdate update;
-    update.param_data.param_type = cmd.cmd_extension;  //å‚æ•°ç±»å‹ï¼Œ2--é€šé“å‚æ•°  3--è½´å‚æ•°
-    update.group_index = cmd.data[0];       //å·¥è‰ºå‚æ•°ç»„å·
+    update.param_data.param_type = cmd.cmd_extension;  //²ÎÊıÀàĞÍ£¬2--Í¨µÀ²ÎÊı  3--Öá²ÎÊı
+    update.group_index = cmd.data[0];       //¹¤ÒÕ²ÎÊı×éºÅ
 
     switch(cmd.cmd_extension){
     case CHN_CONFIG:
@@ -2945,8 +2945,8 @@ void ChannelEngine::ProcessHmiSetProcParamCmd(HMICmdFrame &cmd){
 }
 
 /**
- * @brief å¤„ç†HMIè·å–å·¥è‰ºç›¸å…³å‚æ•°çš„å‘½ä»¤
- * @param cmd : HMIæŒ‡ä»¤åŒ…
+ * @brief ´¦ÀíHMI»ñÈ¡¹¤ÒÕÏà¹Ø²ÎÊıµÄÃüÁî
+ * @param cmd : HMIÖ¸Áî°ü
  */
 void ChannelEngine::ProcessHmiGetProcParamCmd(HMICmdFrame &cmd){
 //	printf("enter ProcessHmiGetProcParamCmd\n");
@@ -2954,28 +2954,28 @@ void ChannelEngine::ProcessHmiGetProcParamCmd(HMICmdFrame &cmd){
     uint8_t axis = 0;
     switch(cmd.cmd_extension){
     case CHN_CONFIG:
-        index = cmd.data[0];    //å·¥è‰ºå‚æ•°ç»„å·
+        index = cmd.data[0];    //¹¤ÒÕ²ÎÊı×éºÅ
 //		printf("get chn proc config :chn = %hhu, proc_idx=%hhu\n", cmd.channel_index, index);
-        if(cmd.channel_index >= m_p_general_config->max_chn_count || index >= kMaxProcParamCount)//é€šé“ç´¢å¼•è¶…èŒƒå›´
+        if(cmd.channel_index >= m_p_general_config->max_chn_count || index >= kMaxProcParamCount)//Í¨µÀË÷Òı³¬·¶Î§
             cmd.data_len = 0;
         else{
             cmd.data_len = sizeof(ProcessParamChn);
             memcpy(&cmd.data[1], &this->m_p_chn_proc_param[cmd.channel_index].chn_param[index], cmd.data_len);
-            cmd.data_len += 1;  //æ•°æ®é•¿åº¦åŠ ä¸€ï¼ŒåŠ ä¸Šç»„å·
+            cmd.data_len += 1;  //Êı¾İ³¤¶È¼ÓÒ»£¬¼ÓÉÏ×éºÅ
         }
         break;
     case AXIS_CONFIG:
         index = cmd.data[0];
         axis = cmd.data[1];
 //		printf("get axis proc config: axis =  %hhu, idx = %hhu\n", axis, index);
-        if(axis >= m_p_general_config->max_axis_count || index >= kMaxProcParamCount){//è½´å·è¶…èŒƒå›´ï¼Œæ”¯æŒå‚æ•°ä¿®æ”¹åä¸€æ¬¡é‡å¯
+        if(axis >= m_p_general_config->max_axis_count || index >= kMaxProcParamCount){//ÖáºÅ³¬·¶Î§£¬Ö§³Ö²ÎÊıĞŞ¸ÄºóÒ»´ÎÖØÆô
             printf("get axis proc config failed, index=%hhu, axis_count:%hhu\n", axis, m_p_general_config->max_axis_count);
             cmd.data_len = 0;
         }
         else{
             cmd.data_len = sizeof(ProcessParamAxis);
             memcpy(cmd.data+2, &this->m_p_axis_proc_param[axis].axis_param[index], cmd.data_len);
-            cmd.data_len += 2;   // æ•°æ®é•¿åº¦åŠ ä¸Šç»„å·å’Œè½´å·
+            cmd.data_len += 2;   // Êı¾İ³¤¶È¼ÓÉÏ×éºÅºÍÖáºÅ
     //		printf("get axis config succeed, data_len:%hu\n", cmd.data_len);
         }
 
@@ -2985,14 +2985,14 @@ void ChannelEngine::ProcessHmiGetProcParamCmd(HMICmdFrame &cmd){
         break;
     }
     cmd.frame_number |= 0x8000;
-    this->m_p_hmi_comm->SendCmd(cmd);	//å‘é€å“åº”
+    this->m_p_hmi_comm->SendCmd(cmd);	//·¢ËÍÏìÓ¦
 
 //	printf("exit ProcessHmiGetProcParamCmd\n");
 }
 
 /**
- * @brief å¤„ç†HMIè®¾ç½®é€šé“å½“å‰å·¥è‰ºç»„å·çš„å‘½ä»¤
- * @param cmd : HMIæŒ‡ä»¤åŒ…
+ * @brief ´¦ÀíHMIÉèÖÃÍ¨µÀµ±Ç°¹¤ÒÕ×éºÅµÄÃüÁî
+ * @param cmd : HMIÖ¸Áî°ü
  */
 void ChannelEngine::ProcessHmiSetCurProcIndex(HMICmdFrame &cmd){
 //	printf("enter ProcessHmiSetCurProcIndex\n");
@@ -3014,7 +3014,7 @@ void ChannelEngine::ProcessHmiSetCurProcIndex(HMICmdFrame &cmd){
     else if(cmd.channel_index >= this->m_p_general_config->chn_count){
         cmd.cmd_extension = FAILED;
 
-        g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "å‘½ä»¤[%d]é€šé“å·éæ³•ï¼%d", cmd.cmd, cmd.channel_index);
+        g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "ÃüÁî[%d]Í¨µÀºÅ·Ç·¨£¡%d", cmd.cmd, cmd.channel_index);
     }
     else{
         if(m_p_channel_control[cmd.channel_index].SetCurProcParamIndex(cmd.data[0]))
@@ -3027,8 +3027,8 @@ void ChannelEngine::ProcessHmiSetCurProcIndex(HMICmdFrame &cmd){
 }
 
 /**
- * @brief å¤„ç†HMIè·å–å·¥è‰ºå‚æ•°ç»„å·çš„å‘½ä»¤
- * @param cmd : HMIæŒ‡ä»¤åŒ…
+ * @brief ´¦ÀíHMI»ñÈ¡¹¤ÒÕ²ÎÊı×éºÅµÄÃüÁî
+ * @param cmd : HMIÖ¸Áî°ü
  */
 void ChannelEngine::ProcessHmiGetCurProcIndex(HMICmdFrame &cmd){
 //	printf("enter ProcessHmiGetCurProcIndex\n");
@@ -3042,15 +3042,15 @@ void ChannelEngine::ProcessHmiGetCurProcIndex(HMICmdFrame &cmd){
     else{
         cmd.data_len = 0;
 
-        g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "å‘½ä»¤[%d]é€šé“å·éæ³•ï¼%d", cmd.cmd, cmd.channel_index);
+        g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "ÃüÁî[%d]Í¨µÀºÅ·Ç·¨£¡%d", cmd.cmd, cmd.channel_index);
     }
     this->m_p_hmi_comm->SendCmd(cmd);
 //	printf("exit ProcessHmiGetCurProcIndex\n");
 }
 
 /**
- * @brief å¤„ç†HMIæ¸…é™¤æ¶ˆæ¯å‘½ä»¤
- * @param cmd : HMIæŒ‡ä»¤åŒ…
+ * @brief ´¦ÀíHMIÇå³ıÏûÏ¢ÃüÁî
+ * @param cmd : HMIÖ¸Áî°ü
  */
 void ChannelEngine::ProcessHmiClearMsgCmd(HMICmdFrame &cmd){
     cmd.frame_number |= 0x8000;
@@ -3058,10 +3058,10 @@ void ChannelEngine::ProcessHmiClearMsgCmd(HMICmdFrame &cmd){
 
 
 
-    if(cmd.cmd_extension == 0xFF){  //æ¸…ç©ºå‘Šè­¦é˜Ÿåˆ—
+    if(cmd.cmd_extension == 0xFF){  //Çå¿Õ¸æ¾¯¶ÓÁĞ
         g_ptr_alarm_processor->Clear();
         cmd.cmd_extension = SUCCEED;
-    }else if(cmd.cmd_extension == 0xEE){  //æ¸…é™¤è­¦å‘ŠåŠæç¤ºä¿¡æ¯
+    }else if(cmd.cmd_extension == 0xEE){  //Çå³ı¾¯¸æ¼°ÌáÊ¾ĞÅÏ¢
         g_ptr_alarm_processor->ClearWarning(CHANNEL_ENGINE_INDEX);
         cmd.cmd_extension = SUCCEED;
     }else{
@@ -3072,8 +3072,8 @@ void ChannelEngine::ProcessHmiClearMsgCmd(HMICmdFrame &cmd){
 }
 
 /**
- * @brief å¤„ç†HMIä½¿èƒ½åŒæ­¥è½´å‘½ä»¤
- * @param cmd  : HMIæŒ‡ä»¤åŒ…
+ * @brief ´¦ÀíHMIÊ¹ÄÜÍ¬²½ÖáÃüÁî
+ * @param cmd  : HMIÖ¸Áî°ü
  */
 void ChannelEngine::ProcessHmiEnableSyncAxisCmd(HMICmdFrame &cmd){
     cmd.frame_number |= 0x8000;
@@ -3083,18 +3083,18 @@ void ChannelEngine::ProcessHmiEnableSyncAxisCmd(HMICmdFrame &cmd){
     mi_cmd.data.cmd = CMD_MI_EN_SYNC_AXIS;
 
 //
-    if(cmd.cmd_extension == 0x00){  //è§£é™¤åŒæ­¥å…³ç³»
-        mi_cmd.data.axis_index = cmd.data[0]+1;   //ä»åŠ¨è½´å·ï¼Œä»1å¼€å§‹
-        mi_cmd.data.data[0] = cmd.data[1]+1;      //ä¸»åŠ¨è½´å·ï¼Œä»1å¼€å§‹
+    if(cmd.cmd_extension == 0x00){  //½â³ıÍ¬²½¹ØÏµ
+        mi_cmd.data.axis_index = cmd.data[0]+1;   //´Ó¶¯ÖáºÅ£¬´Ó1¿ªÊ¼
+        mi_cmd.data.data[0] = cmd.data[1]+1;      //Ö÷¶¯ÖáºÅ£¬´Ó1¿ªÊ¼
         mi_cmd.data.data[1] = 0;
 
         this->m_p_mi_comm->WriteCmd(mi_cmd);
 
         cmd.data[cmd.data_len] = SUCCEED;
         cmd.data_len++;
-    }else if(cmd.cmd_extension == 0x01){  //å»ºç«‹åŒæ­¥å…³ç³»
-        mi_cmd.data.axis_index = cmd.data[0]+1;   //ä»åŠ¨è½´å·ï¼Œä»1å¼€å§‹
-        mi_cmd.data.data[0] = cmd.data[1]+1;      //ä¸»åŠ¨è½´å·ï¼Œä»1å¼€å§‹
+    }else if(cmd.cmd_extension == 0x01){  //½¨Á¢Í¬²½¹ØÏµ
+        mi_cmd.data.axis_index = cmd.data[0]+1;   //´Ó¶¯ÖáºÅ£¬´Ó1¿ªÊ¼
+        mi_cmd.data.data[0] = cmd.data[1]+1;      //Ö÷¶¯ÖáºÅ£¬´Ó1¿ªÊ¼
         mi_cmd.data.data[1] = 1;
 
         this->m_p_mi_comm->WriteCmd(mi_cmd);
@@ -3109,8 +3109,8 @@ void ChannelEngine::ProcessHmiEnableSyncAxisCmd(HMICmdFrame &cmd){
 }
 
 /**
- * @brief å¤„ç†HMIæŸ¥è¯¢åŒæ­¥è½´ä½¿èƒ½å‘½ä»¤
- * @param cmd : HMIæŒ‡ä»¤åŒ…
+ * @brief ´¦ÀíHMI²éÑ¯Í¬²½ÖáÊ¹ÄÜÃüÁî
+ * @param cmd : HMIÖ¸Áî°ü
  */
 void ChannelEngine::ProcessHmiCheckSyncCmd(HMICmdFrame &cmd){
     cmd.frame_number |= 0x8000;
@@ -3128,8 +3128,8 @@ void ChannelEngine::ProcessHmiCheckSyncCmd(HMICmdFrame &cmd){
 
 
 /**
- * @brief å¤„ç†HMIé€šçŸ¥å›¾å½¢æ¨¡å¼å‘½ä»¤
- * @param cmd : HMIæŒ‡ä»¤åŒ…
+ * @brief ´¦ÀíHMIÍ¨ÖªÍ¼ĞÎÄ£Ê½ÃüÁî
+ * @param cmd : HMIÖ¸Áî°ü
  */
 void ChannelEngine::ProcessHmiNotifyGraphCmd(HMICmdFrame &cmd){
     cmd.frame_number |= 0x8000;
@@ -3168,23 +3168,23 @@ void ChannelEngine::ProcessHmiHandWheelCmd(HMICmdFrame &cmd)
 
 
 /**
- * @brief å¤„ç†HMIè½´ç§»åŠ¨æŒ‡ä»¤
- * @param cmd : HMIæŒ‡ä»¤åŒ…
+ * @brief ´¦ÀíHMIÖáÒÆ¶¯Ö¸Áî
+ * @param cmd : HMIÖ¸Áî°ü
  */
 void ChannelEngine::ProcessHmiAxisMoveCmd(HMICmdFrame &cmd){
-    cmd.frame_number |= 0x8000;  //è®¾ç½®å›å¤æ ‡å¿—
+    cmd.frame_number |= 0x8000;  //ÉèÖÃ»Ø¸´±êÖ¾
     uint8_t axis = 0;
     uint32_t speed = 0;
     int8_t dir = 0;
     double tar_pos = 0;
 
-    if(cmd.data_len == 6){ //æœªæŒ‡å®šç›®æ ‡ä½ç½®
+    if(cmd.data_len == 6){ //Î´Ö¸¶¨Ä¿±êÎ»ÖÃ
         axis = cmd.data[0];
         memcpy(&speed, &cmd.data[1], 4);
         dir = cmd.data[5];
         double vel = speed;
 
-        if(this->m_p_axis_config[axis].axis_pmc){ //PMCè½´
+        if(this->m_p_axis_config[axis].axis_pmc){ //PMCÖá
             if(speed > 0)
                 this->ManualMovePmc(axis, 99999, vel, true);
             else
@@ -3200,23 +3200,23 @@ void ChannelEngine::ProcessHmiAxisMoveCmd(HMICmdFrame &cmd){
 
         cmd.cmd_extension = SUCCEED;
 
-    }else if(cmd.data_len == 14){//æŒ‡å®šç›®æ ‡ä½ç½®
+    }else if(cmd.data_len == 14){//Ö¸¶¨Ä¿±êÎ»ÖÃ
         axis = cmd.data[0];
         memcpy(&speed, &cmd.data[1], 4);
         dir = cmd.data[5];
-        memcpy(&tar_pos, &cmd.data[6], sizeof(double));  //ç»å¯¹ç›®æ ‡ä½ç½®
+        memcpy(&tar_pos, &cmd.data[6], sizeof(double));  //¾ø¶ÔÄ¿±êÎ»ÖÃ
         double vel = speed;
         if(speed == 0)
-            vel = this->m_p_axis_config[axis].rapid_speed;  //é€Ÿåº¦ç»™0åˆ™ä½¿ç”¨è½´å‚æ•°ä¸­çš„å®šä½é€Ÿåº¦
+            vel = this->m_p_axis_config[axis].rapid_speed;  //ËÙ¶È¸ø0ÔòÊ¹ÓÃÖá²ÎÊıÖĞµÄ¶¨Î»ËÙ¶È
 
-        if(this->m_p_axis_config[axis].axis_pmc){ //PMCè½´
+        if(this->m_p_axis_config[axis].axis_pmc){ //PMCÖá
             this->ManualMovePmc(axis, tar_pos, vel, false);
         }else{
             this->ManualMove(axis, dir, vel, tar_pos-this->GetPhyAxisMachPosFeedback(axis));
         }
         printf("ChannelEngine::ProcessHmiAxisMoveCmd:axis=%hhu, vel=%lf, tar=%lf\n", axis, vel, tar_pos);
         cmd.cmd_extension = SUCCEED;
-    }else{//å‘½ä»¤åŒ…æ ¼å¼é”™è¯¯
+    }else{//ÃüÁî°ü¸ñÊ½´íÎó
         cmd.cmd_extension = FAILED;
     }
 
@@ -3225,9 +3225,9 @@ void ChannelEngine::ProcessHmiAxisMoveCmd(HMICmdFrame &cmd){
 
 
 /**
- * @brief ä»å‘½ä»¤åŒ…ä¸­è·å–å‚æ•°æ•°æ®
- * @param data : å‚æ•°å‡çº§ç»“æ„
- * @param src : æ•°æ®æº
+ * @brief ´ÓÃüÁî°üÖĞ»ñÈ¡²ÎÊıÊı¾İ
+ * @param data : ²ÎÊıÉı¼¶½á¹¹
+ * @param src : Êı¾İÔ´
  */
 void ChannelEngine::GetParamValueFromCmd(ParamUpdate *data, char *src){
 
@@ -3266,19 +3266,19 @@ void ChannelEngine::GetParamValueFromCmd(ParamUpdate *data, char *src){
 //		printf("get param set double value:%f, %f\n", data->value.value_double, ff);
         break;
     default:
-        g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "å‚æ•°è®¾ç½®æŒ‡ä»¤ï¼Œå‚æ•°å€¼ç±»å‹éæ³•ï¼š%hhu", data->value_type);
+        g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "²ÎÊıÉèÖÃÖ¸Áî£¬²ÎÊıÖµÀàĞÍ·Ç·¨£º%hhu", data->value_type);
         break;
     }
 }
 
 /**
- * @brief å¤„ç†HMIè®¾ç½®å‚æ•°æŒ‡ä»¤
- * @param cmd : æŒ‡ä»¤
+ * @brief ´¦ÀíHMIÉèÖÃ²ÎÊıÖ¸Áî
+ * @param cmd : Ö¸Áî
  */
 void ChannelEngine::ProcessHmiSetParam(HMICmdFrame &cmd){
-//	uint32_t param_no = 0;	//å‚æ•°å·
-    uint8_t active_type = ACTIVE_BY_POWEROFF;	//æ¿€æ´»ç±»å‹
-//	uint8_t value_type = VALUE_UINT8;		//å€¼ç±»å‹
+//	uint32_t param_no = 0;	//²ÎÊıºÅ
+    uint8_t active_type = ACTIVE_BY_POWEROFF;	//¼¤»îÀàĞÍ
+//	uint8_t value_type = VALUE_UINT8;		//ÖµÀàĞÍ
     ParamUpdate data;
     data.param_type = cmd.cmd_extension;
     data.chn_index = cmd.channel_index;
@@ -3309,8 +3309,8 @@ void ChannelEngine::ProcessHmiSetParam(HMICmdFrame &cmd){
             cmd.data[1] = FAILED;
     //	printf("update axis param, axis = %d\n", data.axis_index);
         break;
-    case TOOL_OFFSET_CONFIG:	//åˆ€å…·åç½®
-        if(cmd.channel_index >= m_p_general_config->chn_count ||     //é€šé“ç´¢å¼•è¶…èŒƒå›´
+    case TOOL_OFFSET_CONFIG:	//µ¶¾ßÆ«ÖÃ
+        if(cmd.channel_index >= m_p_general_config->chn_count ||     //Í¨µÀË÷Òı³¬·¶Î§
                 (uint8_t)cmd.data[0] >= kMaxToolCount){
             cmd.data[0] = FAILED;
         }
@@ -3321,8 +3321,8 @@ void ChannelEngine::ProcessHmiSetParam(HMICmdFrame &cmd){
             cmd.data[0] = SUCCEED;
         }
         break;
-    case TOOL_POT_CONFIG:		//åˆ€å…·ä½ç½®    ç«‹å³ç”Ÿæ•ˆ
-        if(cmd.channel_index >= m_p_general_config->chn_count){//é€šé“ç´¢å¼•è¶…èŒƒå›´
+    case TOOL_POT_CONFIG:		//µ¶¾ßÎ»ÖÃ    Á¢¼´ÉúĞ§
+        if(cmd.channel_index >= m_p_general_config->chn_count){//Í¨µÀË÷Òı³¬·¶Î§
             cmd.data[0] = FAILED;
         }
         else{
@@ -3330,9 +3330,9 @@ void ChannelEngine::ProcessHmiSetParam(HMICmdFrame &cmd){
             cmd.data[0] = SUCCEED;
         }
         break;
-    case COORD_CONFIG:			//å·¥ä»¶åæ ‡ç³»
-        if(cmd.channel_index >= m_p_general_config->chn_count ||        //é€šé“ç´¢å¼•è¶…èŒƒå›´
-                (uint8_t)cmd.data[0] >= kWorkCoordCount){						//åæ ‡ç´¢å¼•è¶…èŒƒå›´
+    case COORD_CONFIG:			//¹¤¼ş×ø±êÏµ
+        if(cmd.channel_index >= m_p_general_config->chn_count ||        //Í¨µÀË÷Òı³¬·¶Î§
+                (uint8_t)cmd.data[0] >= kWorkCoordCount){						//×ø±êË÷Òı³¬·¶Î§
             cmd.data[0] = FAILED;
             printf("update coord failed! chn = %hhu, coord=%hhu\n", cmd.channel_index, (uint8_t)cmd.data[0]);
         }
@@ -3348,9 +3348,9 @@ void ChannelEngine::ProcessHmiSetParam(HMICmdFrame &cmd){
 
         }
         break;
-    case EX_COORD_CONFIG:		//æ‰©å±•å·¥ä»¶åæ ‡ç³»
-        if(cmd.channel_index >= m_p_general_config->chn_count ||			//é€šé“ç´¢å¼•è¶…èŒƒå›´
-                (uint8_t)cmd.data[0] >= m_p_channel_config[cmd.channel_index].ex_coord_count){	//åæ ‡ç´¢å¼•è¶…èŒƒå›´
+    case EX_COORD_CONFIG:		//À©Õ¹¹¤¼ş×ø±êÏµ
+        if(cmd.channel_index >= m_p_general_config->chn_count ||			//Í¨µÀË÷Òı³¬·¶Î§
+                (uint8_t)cmd.data[0] >= m_p_channel_config[cmd.channel_index].ex_coord_count){	//×ø±êË÷Òı³¬·¶Î§
             cmd.data[0] = FAILED;
         }
         else{
@@ -3364,7 +3364,7 @@ void ChannelEngine::ProcessHmiSetParam(HMICmdFrame &cmd){
 
         }
         break;
-    case PITCH_COMP_DATA:   //èºè¡¥æ•°æ®
+    case PITCH_COMP_DATA:   //Âİ²¹Êı¾İ
         if(this->UpdateHmiPitchCompData(cmd))
             cmd.data[0] = SUCCEED;
         else
@@ -3391,12 +3391,12 @@ void ChannelEngine::ProcessHmiSetParam(HMICmdFrame &cmd){
 
     cmd.data_len = 1;
     cmd.frame_number |= 0x8000;
-    this->m_p_hmi_comm->SendCmd(cmd);	//å‘é€å“åº”
+    this->m_p_hmi_comm->SendCmd(cmd);	//·¢ËÍÏìÓ¦
 }
 
 /**
- * @brief å¤„ç†HMIè·å–å‚æ•°æŒ‡ä»¤
- * @param cmd : æŒ‡ä»¤
+ * @brief ´¦ÀíHMI»ñÈ¡²ÎÊıÖ¸Áî
+ * @param cmd : Ö¸Áî
  */
 void ChannelEngine::ProcessHmiGetParam(HMICmdFrame &cmd){
     uint8_t index = 0;
@@ -3407,7 +3407,7 @@ void ChannelEngine::ProcessHmiGetParam(HMICmdFrame &cmd){
         memcpy(cmd.data, m_p_general_config, cmd.data_len);
         break;
     case CHN_CONFIG:
-        if(cmd.channel_index >= m_p_general_config->max_chn_count)//é€šé“ç´¢å¼•è¶…èŒƒå›´, æ”¯æŒå‚æ•°ä¿®æ”¹åä¸€æ¬¡é‡å¯
+        if(cmd.channel_index >= m_p_general_config->max_chn_count)//Í¨µÀË÷Òı³¬·¶Î§, Ö§³Ö²ÎÊıĞŞ¸ÄºóÒ»´ÎÖØÆô
             cmd.data_len = 0;
         else{
             cmd.data_len = sizeof(HmiChnConfig);
@@ -3417,7 +3417,7 @@ void ChannelEngine::ProcessHmiGetParam(HMICmdFrame &cmd){
     case AXIS_CONFIG:
         index = cmd.data[0];
 //		printf("get axis config %hhu, frameindex=%hu\n", index, cmd.frame_number);
-        if(index >= this->m_p_general_config->max_axis_count){//è½´å·è¶…èŒƒå›´, æ”¯æŒå‚æ•°ä¿®æ”¹åä¸€æ¬¡é‡å¯
+        if(index >= this->m_p_general_config->max_axis_count){//ÖáºÅ³¬·¶Î§, Ö§³Ö²ÎÊıĞŞ¸ÄºóÒ»´ÎÖØÆô
             printf("get axis config failed, index=%hhu, axis_count:%hhu\n", index, m_p_general_config->max_axis_count);
             cmd.data_len = 0;
         }
@@ -3436,7 +3436,7 @@ void ChannelEngine::ProcessHmiGetParam(HMICmdFrame &cmd){
 #ifdef USES_INDEPEND_BASE_TOOL_OFFSET
         if((index != 0xFF && index >= kMaxToolCount) || cmd.channel_index >= m_p_general_config->chn_count){
             cmd.data_len = 0;
-        }else if(index == 0xFF){   //è¯»å–åŸºå‡†åˆ€æ•°æ®
+        }else if(index == 0xFF){   //¶ÁÈ¡»ù×¼µ¶Êı¾İ
             cmd.data_len = sizeof(HmiToolOffsetConfig);
             HmiToolOffsetConfig cfg;
             SCToolOffsetConfig *pp = g_ptr_parm_manager->GetToolConfig(cmd.channel_index);
@@ -3471,7 +3471,7 @@ void ChannelEngine::ProcessHmiGetParam(HMICmdFrame &cmd){
         break;
     }
     case TOOL_POT_CONFIG:
-        if(cmd.channel_index >= m_p_general_config->chn_count)//é€šé“ç´¢å¼•è¶…èŒƒå›´
+        if(cmd.channel_index >= m_p_general_config->chn_count)//Í¨µÀË÷Òı³¬·¶Î§
             cmd.data_len = 0;
         else{
             cmd.data_len = sizeof(HmiToolPotConfig);
@@ -3481,7 +3481,7 @@ void ChannelEngine::ProcessHmiGetParam(HMICmdFrame &cmd){
     case COORD_CONFIG:
         index = cmd.data[0];
         if(cmd.channel_index >= m_p_general_config->chn_count ||
-                index >= kWorkCoordCount)//é€šé“ç´¢å¼•è¶…èŒƒå›´
+                index >= kWorkCoordCount)//Í¨µÀË÷Òı³¬·¶Î§
             cmd.data_len = 0;
         else{
             cmd.data_len = sizeof(HmiCoordConfig);
@@ -3492,7 +3492,7 @@ void ChannelEngine::ProcessHmiGetParam(HMICmdFrame &cmd){
     case EX_COORD_CONFIG:
         index = cmd.data[0];
         if(cmd.channel_index >= m_p_general_config->chn_count ||
-                index >= m_p_channel_config[cmd.channel_index].ex_coord_count)//é€šé“ç´¢å¼•è¶…èŒƒå›´
+                index >= m_p_channel_config[cmd.channel_index].ex_coord_count)//Í¨µÀË÷Òı³¬·¶Î§
             cmd.data_len = 0;
         else{
             cmd.data_len = sizeof(HmiCoordConfig);
@@ -3501,12 +3501,12 @@ void ChannelEngine::ProcessHmiGetParam(HMICmdFrame &cmd){
         }
         break;
 
-    case PITCH_COMP_DATA:  //èºè¡¥æ•°æ®
+    case PITCH_COMP_DATA:  //Âİ²¹Êı¾İ
         this->ProcessHmiGetPcDataCmd(cmd);
         break;
 #ifdef USES_FIVE_AXIS_FUNC
     case FIVE_AXIS_CONFIG:
-        if(cmd.channel_index >= m_p_general_config->max_chn_count)//é€šé“ç´¢å¼•è¶…èŒƒå›´
+        if(cmd.channel_index >= m_p_general_config->max_chn_count)//Í¨µÀË÷Òı³¬·¶Î§
             cmd.data_len = 0;
         else{
             cmd.data_len = sizeof(FiveAxisConfig);
@@ -3516,21 +3516,21 @@ void ChannelEngine::ProcessHmiGetParam(HMICmdFrame &cmd){
 #endif
     default:
         cmd.data_len = 0;
-        g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "æ”¶åˆ°HMIå‚æ•°è·å–æŒ‡ä»¤ï¼Œå‚æ•°ç±»å‹éæ³•[%d]", cmd.cmd_extension);
+        g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "ÊÕµ½HMI²ÎÊı»ñÈ¡Ö¸Áî£¬²ÎÊıÀàĞÍ·Ç·¨[%d]", cmd.cmd_extension);
         break;
     }
 
     cmd.frame_number |= 0x8000;
-    this->m_p_hmi_comm->SendCmd(cmd);	//å‘é€å“åº”
+    this->m_p_hmi_comm->SendCmd(cmd);	//·¢ËÍÏìÓ¦
 }
 
 
 /**
- * @brief å¤„ç†HMIè·å–èºè¡¥æ•°æ®æŒ‡ä»¤
- * @param cmd : HMIå‘é€çš„æŒ‡ä»¤
+ * @brief ´¦ÀíHMI»ñÈ¡Âİ²¹Êı¾İÖ¸Áî
+ * @param cmd : HMI·¢ËÍµÄÖ¸Áî
  */
 void ChannelEngine::ProcessHmiGetPcDataCmd(HMICmdFrame &cmd){
-    if(cmd.data_len != 6){  //æ ¼å¼ä¸åŒ¹é…ï¼Œè¿”å›å¤±è´¥
+    if(cmd.data_len != 6){  //¸ñÊ½²»Æ¥Åä£¬·µ»ØÊ§°Ü
         printf("ProcessHmiGetPcDataCmd return, data_len=%hu\n", cmd.data_len);
         cmd.data_len = 0;
         return;
@@ -3543,12 +3543,12 @@ void ChannelEngine::ProcessHmiGetPcDataCmd(HMICmdFrame &cmd){
 
 //	printf("ProcessHmiGetPcDataCmd, axis_index=%hhu, dir=%hhu, offset=%hu, count=%hu\n", axis_index, dir, offset, count);
 
-    if(axis_index == 0xFF){//ä¸æŒ‰è½´é¡ºåºè·å–
+    if(axis_index == 0xFF){//²»°´ÖáË³Ğò»ñÈ¡
         uint16_t tmp_count = count, tmp_start = offset-1;
         uint16_t tmp_end = tmp_start + count -1;
-        uint16_t tc = 0;  //å•æ¬¡æ‹·è´æ•°é‡
-        uint16_t tmp_copy = 0;  //å·²æ‹·è´æ•°é‡
-        int dc = sizeof(double);   //doubleç±»å‹å­—èŠ‚å¤§å°
+        uint16_t tc = 0;  //µ¥´Î¿½±´ÊıÁ¿
+        uint16_t tmp_copy = 0;  //ÒÑ¿½±´ÊıÁ¿
+        int dc = sizeof(double);   //doubleÀàĞÍ×Ö½Ú´óĞ¡
 
         double *pp = nullptr;
         ListNode<AxisPcDataAlloc> *node = this->m_list_pc_alloc.HeadNode();
@@ -3566,7 +3566,7 @@ void ChannelEngine::ProcessHmiGetPcDataCmd(HMICmdFrame &cmd){
                 tmp_copy += tc;
                 tmp_start += tc;
 
-                if(tmp_count > 0){//è¿˜éœ€è¦æ‹·è´æ•°æ®
+                if(tmp_count > 0){//»¹ĞèÒª¿½±´Êı¾İ
                     if(tmp_end <= node->data.end_index){
                         tc = tmp_count;
                     }else{
@@ -3598,19 +3598,19 @@ void ChannelEngine::ProcessHmiGetPcDataCmd(HMICmdFrame &cmd){
         }
 
     }else{
-        if(axis_index >= this->m_p_general_config->axis_count ||              //è½´åºå·ä¸å¯¹
-            offset+count-1 > m_p_axis_config[axis_index].pc_count){  //è·å–çš„æ•°é‡ä¸å¯¹
+        if(axis_index >= this->m_p_general_config->axis_count ||              //ÖáĞòºÅ²»¶Ô
+            offset+count-1 > m_p_axis_config[axis_index].pc_count){  //»ñÈ¡µÄÊıÁ¿²»¶Ô
             cmd.data_len = 0;
             printf("ProcessHmiGetPcDataCmd return, axis_index=%hhu, offset=%hu, count=%hu\n", axis_index, offset, count);
             return;
         }
 
         double *pp = m_p_pc_table->pc_table[axis_index];
-        if(dir)  //æ­£å‘èºè¡¥
+        if(dir)  //ÕıÏòÂİ²¹
             memcpy(&cmd.data[6], &pp[offset-1], sizeof(double)*count);
-        else if(this->m_p_axis_config[axis_index].pc_type == 1)  //è´Ÿå‘èºè¡¥
+        else if(this->m_p_axis_config[axis_index].pc_type == 1)  //¸ºÏòÂİ²¹
             memcpy(&cmd.data[6], &pp[m_p_axis_config[axis_index].pc_count+offset-1], sizeof(double)*count);
-        else{ //å•å‘èºè¡¥æ¨¡å¼ï¼Œè·å–è´Ÿå‘èºè¡¥å¤±è´¥
+        else{ //µ¥ÏòÂİ²¹Ä£Ê½£¬»ñÈ¡¸ºÏòÂİ²¹Ê§°Ü
             cmd.data_len = 0;
             printf("ProcessHmiGetPcDataCmd return, dir=%hhu\n", dir);
             return;
@@ -3625,33 +3625,33 @@ void ChannelEngine::ProcessHmiGetPcDataCmd(HMICmdFrame &cmd){
 }
 
 /**
- * @brief å¤„ç†èºè¡¥å¯¼å…¥æ•°æ®
- * @return true--æˆåŠŸ   false--å¤±è´¥
+ * @brief ´¦ÀíÂİ²¹µ¼ÈëÊı¾İ
+ * @return true--³É¹¦   false--Ê§°Ü
  */
 bool ChannelEngine::ProcessPcDataImport(){
     bool res = true;
 
-    int fd = -1;                    //æ–‡ä»¶å¥æŸ„
+    int fd = -1;                    //ÎÄ¼ş¾ä±ú
 
     struct stat statbuf;
     int file_size = 0;
-    uint8_t phy_axis = 0;   //ç‰©ç†è½´å·
-    uint8_t pc_type = 0;    //èºè¡¥ç±»å‹
-    uint16_t point_count = 0;  //èºè¡¥ç‚¹æ•°
-    double inter_dis = 0;   //èºè¡¥é—´éš”  å•ä½ï¼šmm
+    uint8_t phy_axis = 0;   //ÎïÀíÖáºÅ
+    uint8_t pc_type = 0;    //Âİ²¹ÀàĞÍ
+    uint16_t point_count = 0;  //Âİ²¹µãÊı
+    double inter_dis = 0;   //Âİ²¹¼ä¸ô  µ¥Î»£ºmm
     double *data = nullptr;
 
     if(stat(PATH_PC_DATA_TMP, &statbuf) == 0)
-        file_size = statbuf.st_size;  //è·å–æ–‡ä»¶æ€»å¤§å°
+        file_size = statbuf.st_size;  //»ñÈ¡ÎÄ¼ş×Ü´óĞ¡
     else{
-        g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "è·å–æ–‡ä»¶[%s]å¤§å°å¤±è´¥ï¼", PATH_PC_DATA_TMP);
-        CreateError(ERR_IMPORT_PC_DATA, ERROR_LEVEL, CLEAR_BY_MCP_RESET, 1);   //è·å–æ–‡ä»¶å¤§å°å¤±è´¥
+        g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "»ñÈ¡ÎÄ¼ş[%s]´óĞ¡Ê§°Ü£¡", PATH_PC_DATA_TMP);
+        CreateError(ERR_IMPORT_PC_DATA, ERROR_LEVEL, CLEAR_BY_MCP_RESET, 1);   //»ñÈ¡ÎÄ¼ş´óĞ¡Ê§°Ü
         return false;
     }
 
-    if(file_size < 12){ //èºè¡¥å¯¼å…¥æ–‡ä»¶å¤´æœ‰12å­—èŠ‚å›ºå®šæ•°æ®
-        g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "æ–‡ä»¶[%s]å¤§å°[%då­—èŠ‚]ä¸åŒ¹é…ï¼", PATH_PC_DATA_TMP, file_size);
-        CreateError(ERR_IMPORT_PC_DATA, ERROR_LEVEL, CLEAR_BY_MCP_RESET, 2);   //è·å–æ–‡ä»¶å¤§å°å¤±è´¥
+    if(file_size < 12){ //Âİ²¹µ¼ÈëÎÄ¼şÍ·ÓĞ12×Ö½Ú¹Ì¶¨Êı¾İ
+        g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "ÎÄ¼ş[%s]´óĞ¡[%d×Ö½Ú]²»Æ¥Åä£¡", PATH_PC_DATA_TMP, file_size);
+        CreateError(ERR_IMPORT_PC_DATA, ERROR_LEVEL, CLEAR_BY_MCP_RESET, 2);   //»ñÈ¡ÎÄ¼ş´óĞ¡Ê§°Ü
         return false;
     }
 
@@ -3659,77 +3659,77 @@ bool ChannelEngine::ProcessPcDataImport(){
     fd = open(PATH_PC_DATA_TMP, O_RDONLY);
 
     if(fd == -1){
-        g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "æ‰“å¼€æ–‡ä»¶å¤±è´¥[%s]", PATH_PC_DATA_TMP);
-        CreateError(ERR_IMPORT_PC_DATA, ERROR_LEVEL, CLEAR_BY_MCP_RESET, 3);   //æ‰“å¼€æ–‡ä»¶å¤±è´¥
+        g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "´ò¿ªÎÄ¼şÊ§°Ü[%s]", PATH_PC_DATA_TMP);
+        CreateError(ERR_IMPORT_PC_DATA, ERROR_LEVEL, CLEAR_BY_MCP_RESET, 3);   //´ò¿ªÎÄ¼şÊ§°Ü
         return false;
     }
 
 
-    read(fd, &phy_axis, 1);   //è¯»å–ç‰©ç†è½´ç¼–å·
-    read(fd, &pc_type, 1);    //è¯»å–èºè¡¥ç±»å‹ï¼Œ0--å•å‘  1--åŒå‘  èºè¡¥æ–‡ä»¶è¯»å‡º
-    read(fd, &point_count, 2);  //è¯»å–èºè¡¥ç‚¹æ•°
-    read(fd, &inter_dis, 8);    //è¯»å–è¡¥å¿é—´éš”
+    read(fd, &phy_axis, 1);   //¶ÁÈ¡ÎïÀíÖá±àºÅ
+    read(fd, &pc_type, 1);    //¶ÁÈ¡Âİ²¹ÀàĞÍ£¬0--µ¥Ïò  1--Ë«Ïò  Âİ²¹ÎÄ¼ş¶Á³ö
+    read(fd, &point_count, 2);  //¶ÁÈ¡Âİ²¹µãÊı
+    read(fd, &inter_dis, 8);    //¶ÁÈ¡²¹³¥¼ä¸ô
 /***********************************************************************/
     if(this->m_p_axis_config[phy_axis].pc_type != pc_type){
-        g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "èºè¡¥ç±»å‹ä¸è®¾ç½®ä¸ç¬¦[%hhu : %hhu]ï¼", m_p_axis_config[phy_axis].pc_type, pc_type);
-        CreateError(ERR_IMPORT_PC_DATA, ERROR_LEVEL, CLEAR_BY_MCP_RESET, 4);   //èºè¡¥ç±»å‹ä¸åŒ¹é…
+        g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "Âİ²¹ÀàĞÍÓëÉèÖÃ²»·û[%hhu : %hhu]£¡", m_p_axis_config[phy_axis].pc_type, pc_type);
+        CreateError(ERR_IMPORT_PC_DATA, ERROR_LEVEL, CLEAR_BY_MCP_RESET, 4);   //Âİ²¹ÀàĞÍ²»Æ¥Åä
         close(fd);
         return false;
     }
 
     if(fabs(m_p_axis_config[phy_axis].pc_inter_dist) != fabs(inter_dis)){
-        g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "èºè¡¥æµ‹é‡é—´éš”ä¸è®¾ç½®ä¸ç¬¦[%lf : %lf]ï¼", fabs(m_p_axis_config[phy_axis].pc_inter_dist), fabs(inter_dis));
-        CreateError(ERR_IMPORT_PC_DATA, ERROR_LEVEL, CLEAR_BY_MCP_RESET, 5);   //èºè¡¥é—´éš”ä¸åŒ¹é…
+        g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "Âİ²¹²âÁ¿¼ä¸ôÓëÉèÖÃ²»·û[%lf : %lf]£¡", fabs(m_p_axis_config[phy_axis].pc_inter_dist), fabs(inter_dis));
+        CreateError(ERR_IMPORT_PC_DATA, ERROR_LEVEL, CLEAR_BY_MCP_RESET, 5);   //Âİ²¹¼ä¸ô²»Æ¥Åä
         close(fd);
         return false;
     }
 
     if(this->m_p_axis_config[phy_axis].pc_count != point_count){
-        g_ptr_trace->PrintTrace(TRACE_WARNING, CHANNEL_ENGINE_SC, "èºè¡¥ç‚¹æ•°ä¸è®¾ç½®ä¸ç¬¦[%hu : %hu]ï¼", m_p_axis_config[phy_axis].pc_count, point_count);
-        CreateError(ERR_IMPORT_PC_DATA, ERROR_LEVEL, CLEAR_BY_MCP_RESET, 6);   //èºè¡¥é—´éš”ä¸åŒ¹é…
+        g_ptr_trace->PrintTrace(TRACE_WARNING, CHANNEL_ENGINE_SC, "Âİ²¹µãÊıÓëÉèÖÃ²»·û[%hu : %hu]£¡", m_p_axis_config[phy_axis].pc_count, point_count);
+        CreateError(ERR_IMPORT_PC_DATA, ERROR_LEVEL, CLEAR_BY_MCP_RESET, 6);   //Âİ²¹¼ä¸ô²»Æ¥Åä
         close(fd);
         return false;
     }
 
 
-    if(pc_type == 1){//åŒå‘èºè¡¥
-        point_count *= 2;   //åŒå‘èºè¡¥åˆ™æ•°æ®é‡ä¸ºç‚¹æ•°ä¹˜2
+    if(pc_type == 1){//Ë«ÏòÂİ²¹
+        point_count *= 2;   //Ë«ÏòÂİ²¹ÔòÊı¾İÁ¿ÎªµãÊı³Ë2
     }
 
     if((file_size-12) != (int)(point_count*sizeof(double))){
-        g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "èºè¡¥æ•°æ®å¤§å°[%då­—èŠ‚]ä¸è¡¥å¿ç‚¹æ•°[%hhu]ä¸åŒ¹é…ï¼", file_size-12, point_count);
-        CreateError(ERR_IMPORT_PC_DATA, ERROR_LEVEL, CLEAR_BY_MCP_RESET, 7);   //è·å–æ–‡ä»¶å¤§å°å¤±è´¥
+        g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "Âİ²¹Êı¾İ´óĞ¡[%d×Ö½Ú]Óë²¹³¥µãÊı[%hhu]²»Æ¥Åä£¡", file_size-12, point_count);
+        CreateError(ERR_IMPORT_PC_DATA, ERROR_LEVEL, CLEAR_BY_MCP_RESET, 7);   //»ñÈ¡ÎÄ¼ş´óĞ¡Ê§°Ü
         close(fd);
         return false;
     }
 
-    bool dir_pos = true;  //åˆå§‹èºè¡¥æ–¹å‘ä¸ºæ­£å‘ï¼Œé»˜è®¤æ­£å‘
+    bool dir_pos = true;  //³õÊ¼Âİ²¹·½ÏòÎªÕıÏò£¬Ä¬ÈÏÕıÏò
     if(pc_type == 1 && inter_dis < 0)
         dir_pos = false;
 
     data = new double[point_count];
     if(data == nullptr){
-        g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "èºè¡¥æ•°æ®å¯¼å…¥ï¼Œåˆ†é…ç¼“å†²å¤±è´¥ï¼");
-        CreateError(ERR_IMPORT_PC_DATA, ERROR_LEVEL, CLEAR_BY_MCP_RESET, 8);   //åˆ†é…ç¼“å†²å¤±è´¥
+        g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "Âİ²¹Êı¾İµ¼Èë£¬·ÖÅä»º³åÊ§°Ü£¡");
+        CreateError(ERR_IMPORT_PC_DATA, ERROR_LEVEL, CLEAR_BY_MCP_RESET, 8);   //·ÖÅä»º³åÊ§°Ü
         close(fd);
         return false;
     }
 
-    //è¯»å–æ•°æ®
+    //¶ÁÈ¡Êı¾İ
     read(fd, data, sizeof(double)*point_count);
 
     close(fd);
 
-    //å†™å…¥æ•°æ®
-    if(pc_type == 0){  //å•å‘èºè¡¥
+    //Ğ´ÈëÊı¾İ
+    if(pc_type == 0){  //µ¥ÏòÂİ²¹
         res = g_ptr_parm_manager->UpdatePcData(phy_axis, dir_pos, 1, point_count, data);
-    }else if(pc_type == 1){  //åŒå‘èºè¡¥
+    }else if(pc_type == 1){  //Ë«ÏòÂİ²¹
         int pcs = point_count/2;
         res = g_ptr_parm_manager->UpdatePcData(phy_axis, dir_pos, 1, pcs, data);
         if(res){
             int pcs_half = pcs/2;
             double tb = 0;
-            for(int i =0; i < pcs_half; i++){  //è°ƒæ¢é¡ºåº
+            for(int i =0; i < pcs_half; i++){  //µ÷»»Ë³Ğò
                 tb = data[point_count-1-i];
                 data[point_count-1-i] = data[pcs+i];
                 data[pcs+i] = tb;
@@ -3738,38 +3738,38 @@ bool ChannelEngine::ProcessPcDataImport(){
         }
     }
 
-    delete []data;  //é‡Šæ”¾ç¼“å†²
+    delete []data;  //ÊÍ·Å»º³å
 
     if(!res){
-        g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "èºè¡¥æ•°æ®å¯¼å…¥ï¼Œåˆ†é…ç¼“å†²å¤±è´¥ï¼");
-        CreateError(ERR_IMPORT_PC_DATA, ERROR_LEVEL, CLEAR_BY_MCP_RESET, 8);   //åˆ†é…ç¼“å†²å¤±è´¥
+        g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "Âİ²¹Êı¾İµ¼Èë£¬·ÖÅä»º³åÊ§°Ü£¡");
+        CreateError(ERR_IMPORT_PC_DATA, ERROR_LEVEL, CLEAR_BY_MCP_RESET, 8);   //·ÖÅä»º³åÊ§°Ü
         close(fd);
         return false;
     }
 
-//	if(res == -1 || res != read_size){  //readå¤±è´¥
+//	if(res == -1 || res != read_size){  //readÊ§°Ü
 //		printf("read pmc file failed, errno = %d, block = %d\n", errno, block_total);
 //		close(fp);
 //		return 0;
 //	}
 
-    this->NotifyHmiPitchCompDataChanged();  //é€šçŸ¥HMIé‡æ–°è·å–èºè¡¥æ•°æ®
+    this->NotifyHmiPitchCompDataChanged();  //Í¨ÖªHMIÖØĞÂ»ñÈ¡Âİ²¹Êı¾İ
 
-    //æ›´æ–°æ•°æ®ç»™MC
-    //å‘é€è½´èºè¡¥æ•°æ®è¡¨
+    //¸üĞÂÊı¾İ¸øMC
+    //·¢ËÍÖáÂİ²¹Êı¾İ±í
     this->SendMiPcData(phy_axis);
 
-    //å‘é€è½´èºè¡¥è®¾ç½®å‚æ•°
+    //·¢ËÍÖáÂİ²¹ÉèÖÃ²ÎÊı
     this->SendMiPcParam(phy_axis);
     this->SendMiPcParam2(phy_axis);
 
-    g_ptr_trace->PrintLog(LOG_CONFIG_MODIFY, "ç¬¬%hhuè½´èºè¡¥æ•°æ®å¯¼å…¥æˆåŠŸï¼", phy_axis+1);
+    g_ptr_trace->PrintLog(LOG_CONFIG_MODIFY, "µÚ%hhuÖáÂİ²¹Êı¾İµ¼Èë³É¹¦£¡", phy_axis+1);
     return true;
 }
 
 #ifdef USES_WOOD_MACHINE
 /**
- * @brief ä¿å­˜åˆ€å…·ä¿¡æ¯æ•°æ®
+ * @brief ±£´æµ¶¾ßĞÅÏ¢Êı¾İ
  */
 void ChannelEngine::SaveToolInfo(){
     bool flag = false;
@@ -3786,15 +3786,15 @@ void ChannelEngine::SaveToolInfo(){
 
 
 /**
- * @brief å¤„ç†HMIæ›´æ–°èºè¡¥æ•°æ®
- * @param cmd : HMIå‘é€çš„æ•°æ®æ›´æ–°åŒ…
- * @return true--æ‰§è¡ŒæˆåŠŸ   false--æ‰§è¡Œå¤±è´¥
+ * @brief ´¦ÀíHMI¸üĞÂÂİ²¹Êı¾İ
+ * @param cmd : HMI·¢ËÍµÄÊı¾İ¸üĞÂ°ü
+ * @return true--Ö´ĞĞ³É¹¦   false--Ö´ĞĞÊ§°Ü
  */
 bool ChannelEngine::UpdateHmiPitchCompData(HMICmdFrame &cmd){
 
 
     uint8_t axis_index = cmd.data[0];
-    bool dir = (cmd.data[1]==0)?true:false;   //æ­£å‘èºè¡¥æ ‡å¿—
+    bool dir = (cmd.data[1]==0)?true:false;   //ÕıÏòÂİ²¹±êÖ¾
     uint16_t offset, count;
     memcpy(&offset, &cmd.data[2], 2);
     memcpy(&count, &cmd.data[4], 2);
@@ -3808,7 +3808,7 @@ bool ChannelEngine::UpdateHmiPitchCompData(HMICmdFrame &cmd){
 
     double *data = (double *)&cmd.data[6];
 
-    if(axis_index == 0xFF){//ä¸æŒ‰è½´é¡ºåºè®¾ç½®
+    if(axis_index == 0xFF){//²»°´ÖáË³ĞòÉèÖÃ
         uint16_t tmp_start = offset-1;
 
         ListNode<AxisPcDataAlloc> *node = this->m_list_pc_alloc.HeadNode();
@@ -3842,18 +3842,18 @@ bool ChannelEngine::UpdateHmiPitchCompData(HMICmdFrame &cmd){
         }
         axis_index = node->data.axis_index;
 
-    }else{//è½´é¡ºåºè®¾ç½®
+    }else{//ÖáË³ĞòÉèÖÃ
         if(!g_ptr_parm_manager->UpdatePcData(axis_index, dir, offset, count, data)){
             printf("UpdateHmiPitchCompData: failed to update pc data2\n");
             return false;
         }
     }
 
-    //æ›´æ–°æ•°æ®ç»™MC
-    //å‘é€è½´èºè¡¥æ•°æ®è¡¨
+    //¸üĞÂÊı¾İ¸øMC
+    //·¢ËÍÖáÂİ²¹Êı¾İ±í
     this->SendMiPcData(axis_index);
 
-    //å‘é€è½´èºè¡¥è®¾ç½®å‚æ•°
+    //·¢ËÍÖáÂİ²¹ÉèÖÃ²ÎÊı
     this->SendMiPcParam(axis_index);
     this->SendMiPcParam2(axis_index);
 
@@ -3862,7 +3862,7 @@ bool ChannelEngine::UpdateHmiPitchCompData(HMICmdFrame &cmd){
 }
 
 /**
- * @brief å¤„ç†HMIè·å–PMCå¯„å­˜å™¨å€¼å¾—æŒ‡ä»¤
+ * @brief ´¦ÀíHMI»ñÈ¡PMC¼Ä´æÆ÷ÖµµÃÖ¸Áî
  * @param cmd
  */
 void ChannelEngine::ProcessHmiGetPmcReg(HMICmdFrame &cmd){
@@ -3872,12 +3872,12 @@ void ChannelEngine::ProcessHmiGetPmcReg(HMICmdFrame &cmd){
     uint8_t *reg_value8 = nullptr;
 
 
-    memcpy(&reg_sec, cmd.data, 2);   //å¯„å­˜å™¨æ®µ
-    memcpy(&reg_index, &cmd.data[2], 2);   	//å¯„å­˜å™¨æ®µå†…ç´¢å¼•å·
+    memcpy(&reg_sec, cmd.data, 2);   //¼Ä´æÆ÷¶Î
+    memcpy(&reg_index, &cmd.data[2], 2);   	//¼Ä´æÆ÷¶ÎÄÚË÷ÒıºÅ
     if(cmd.data_len == 6)
-        memcpy(&reg_count, &cmd.data[4], 2);   //å¯„å­˜å™¨åœ°å€ä¸ªæ•°
+        memcpy(&reg_count, &cmd.data[4], 2);   //¼Ä´æÆ÷µØÖ·¸öÊı
     else
-        reg_count = 1;   //å…¼å®¹è€ç‰ˆæœ¬åè®®
+        reg_count = 1;   //¼æÈİÀÏ°æ±¾Ğ­Òé
 
 //	printf("read pmc reg, sec = %hu, index= %hu, count = %hu\n", reg_sec, reg_index, reg_count);
     cmd.cmd_extension = SUCCEED;
@@ -3938,7 +3938,7 @@ void ChannelEngine::ProcessHmiGetPmcReg(HMICmdFrame &cmd){
 #endif
 
     default:
-        cmd.cmd_extension = FAILED;  //å¤±è´¥
+        cmd.cmd_extension = FAILED;  //Ê§°Ü
         break;
     }
 
@@ -3952,7 +3952,7 @@ void ChannelEngine::ProcessHmiGetPmcReg(HMICmdFrame &cmd){
 }
 
 /**
- * @brief å¤„ç†HMIè¯·æ±‚PMCçš„UUIDæŒ‡ä»¤
+ * @brief ´¦ÀíHMIÇëÇóPMCµÄUUIDÖ¸Áî
  * @param cmd
  */
 void ChannelEngine::ProcessHmiGetPmcUuid(HMICmdFrame &cmd){
@@ -3961,7 +3961,7 @@ void ChannelEngine::ProcessHmiGetPmcUuid(HMICmdFrame &cmd){
     strcpy(path, PATH_PMC_DATA);
     memset(uuid, 0x00, 20);
 
-    if(access(path, F_OK) == -1){	//æ–‡ä»¶ä¸å­˜åœ¨
+    if(access(path, F_OK) == -1){	//ÎÄ¼ş²»´æÔÚ
         cmd.cmd_extension = FAILED;
         printf("#####ProcessHmiGetPmcUuid:failed!\n");
     }else{
@@ -3971,12 +3971,12 @@ void ChannelEngine::ProcessHmiGetPmcUuid(HMICmdFrame &cmd){
         if (nullptr == file_src)
         {
             cmd.cmd_extension = FAILED;
-            g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "PMCæ‰§è¡Œæ–‡ä»¶æ‰“å¼€å¤±è´¥ï¼errno = %d", errno);
+            g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "PMCÖ´ĞĞÎÄ¼ş´ò¿ªÊ§°Ü£¡errno = %d", errno);
         }else{
             int read = fread(uuid, 1, 16, file_src);
             if(read != 16){
                 cmd.cmd_extension = FAILED;
-                g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "PMCæ‰§è¡Œæ–‡ä»¶è¯»å–UUIDå¤±è´¥ï¼errno = %d", errno);
+                g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "PMCÖ´ĞĞÎÄ¼ş¶ÁÈ¡UUIDÊ§°Ü£¡errno = %d", errno);
             }else{
                 memcpy(cmd.data, uuid, 16);
                 cmd.data_len = 16;
@@ -3994,7 +3994,7 @@ void ChannelEngine::ProcessHmiGetPmcUuid(HMICmdFrame &cmd){
 }
 
 /**
- * @brief å¤„ç†HMIè®¾ç½®PMCå¯„å­˜å™¨å€¼å¾—æŒ‡ä»¤
+ * @brief ´¦ÀíHMIÉèÖÃPMC¼Ä´æÆ÷ÖµµÃÖ¸Áî
  * @param cmd
  */
 void ChannelEngine::ProcessHmiSetPmcReg(HMICmdFrame &cmd){
@@ -4004,14 +4004,14 @@ void ChannelEngine::ProcessHmiSetPmcReg(HMICmdFrame &cmd){
     uint8_t bit_index = 0;
     uint8_t bit_count = 0;
     uint32_t bit_value32 = 0;
-    bool bit_opt = cmd.cmd_extension==1?true:false;  //æ˜¯å¦ä½æ“ä½œ
+    bool bit_opt = cmd.cmd_extension==1?true:false;  //ÊÇ·ñÎ»²Ù×÷
 
 #ifndef USES_PMC_2_0
     uint16_t reg_value16 = 0;
 #endif
 
-    memcpy(&reg_sec, cmd.data, 2);   		//å¯„å­˜å™¨æ®µ
-    memcpy(&reg_index, &cmd.data[2], 2);   	//å¯„å­˜å™¨æ®µå†…ç´¢å¼•å·
+    memcpy(&reg_sec, cmd.data, 2);   		//¼Ä´æÆ÷¶Î
+    memcpy(&reg_index, &cmd.data[2], 2);   	//¼Ä´æÆ÷¶ÎÄÚË÷ÒıºÅ
 
     cmd.cmd_extension = SUCCEED;
     switch(reg_sec){
@@ -4048,7 +4048,7 @@ void ChannelEngine::ProcessHmiSetPmcReg(HMICmdFrame &cmd){
 
             // @test zk
             if(reg_sec == 2 and reg_index == 82 and bit_index == 1 and bit_value32 == 1){
-                printf("å†·å´ï¼ï¼ï¼\n");
+                printf("ÀäÈ´£¡£¡£¡\n");
                 this->m_p_channel_control[0].test();
             }
             // @test zk
@@ -4082,7 +4082,7 @@ void ChannelEngine::ProcessHmiSetPmcReg(HMICmdFrame &cmd){
         break;
 #endif
     default:
-        cmd.cmd_extension = FAILED;  //å¤±è´¥
+        cmd.cmd_extension = FAILED;  //Ê§°Ü
         break;
     }
 
@@ -4092,16 +4092,16 @@ void ChannelEngine::ProcessHmiSetPmcReg(HMICmdFrame &cmd){
 }
 
 /**
- * @brief å¤„ç†HMIå‡çº§è¯·æ±‚
- * @param cmd :  å‘½ä»¤æ•°æ®åŒ…
+ * @brief ´¦ÀíHMIÉı¼¶ÇëÇó
+ * @param cmd :  ÃüÁîÊı¾İ°ü
  */
 void ChannelEngine::ProcessHmiUpdateReq(HMICmdFrame &cmd){
-    bool flag = true;//èƒ½å¦å‡çº§
+    bool flag = true;//ÄÜ·ñÉı¼¶
 
     if(this->m_n_update_state == MODULE_UPDATE_NONE){
         HmiChannelStatus chn_status;
 
-        //è½®è¯¢å„é€šé“å½“å‰åŠ å·¥çŠ¶æ€
+        //ÂÖÑ¯¸÷Í¨µÀµ±Ç°¼Ó¹¤×´Ì¬
         for(int i = 0; i < this->m_p_general_config->chn_count; i++){
             this->m_p_channel_control[i].GetChnStatus(chn_status);
             if(chn_status.machining_state != MS_READY &&
@@ -4113,44 +4113,44 @@ void ChannelEngine::ProcessHmiUpdateReq(HMICmdFrame &cmd){
         }
     }
 
-    //æ¸…ç©ºupdateç›®å½•ä¸‹çš„æ–‡ä»¶
-    //ç»„åˆå‡çº§æ–‡ä»¶åå­—
+    //Çå¿ÕupdateÄ¿Â¼ÏÂµÄÎÄ¼ş
+    //×éºÏÉı¼¶ÎÄ¼şÃû×Ö
     char filepath[kMaxPathLen] = {0};
     strcpy(filepath, PATH_UPDATE_PATH);
     strcat(filepath, "*.*");
     if( 0 != remove(filepath)){
-        //æ¸…ç©ºæ‰€æœ‰æ–‡ä»¶å¤±è´¥
-        g_ptr_trace->PrintTrace(TRACE_WARNING, CHANNEL_ENGINE_SC, "æ¨¡å—å‡çº§å‰æ¸…ç©ºå‡çº§æ–‡ä»¶å¤¹å¤±è´¥ï¼errno = %d", errno);
+        //Çå¿ÕËùÓĞÎÄ¼şÊ§°Ü
+        g_ptr_trace->PrintTrace(TRACE_WARNING, CHANNEL_ENGINE_SC, "Ä£¿éÉı¼¶Ç°Çå¿ÕÉı¼¶ÎÄ¼ş¼ĞÊ§°Ü£¡errno = %d", errno);
     }
 
     cmd.frame_number |= 0x8000;
     cmd.data_len = 1;
     cmd.data[0] = flag?APPROVE:REFUSE;
-    this->m_p_hmi_comm->SendCmd(cmd);	//å‘é€å“åº”
+    this->m_p_hmi_comm->SendCmd(cmd);	//·¢ËÍÏìÓ¦
 }
 
 /**
- * @brief å¤„ç†PMCè½´ç¡®è®¤å‚è€ƒç‚¹æŒ‡ä»¤
- * @param phy_axis : ç‰©ç†è½´å·ï¼Œä»0å¼€å§‹
+ * @brief ´¦ÀíPMCÖáÈ·ÈÏ²Î¿¼µãÖ¸Áî
+ * @param phy_axis : ÎïÀíÖáºÅ£¬´Ó0¿ªÊ¼
  */
 void ChannelEngine::ProcessPmcAxisFindRef(uint8_t phy_axis){
-    if(m_p_axis_config[phy_axis].axis_interface != VIRTUAL_AXIS		//éè™šæ‹Ÿè½´
-        && m_p_axis_config[phy_axis].axis_type != AXIS_SPINDLE				//éä¸»è½´
+    if(m_p_axis_config[phy_axis].axis_interface != VIRTUAL_AXIS		//·ÇĞéÄâÖá
+        && m_p_axis_config[phy_axis].axis_type != AXIS_SPINDLE				//·ÇÖ÷Öá
         && /*(m_p_axis_config[phy_axis].feedback_mode == INCREMENTAL_ENCODER ||
-                m_p_axis_config[phy_axis].feedback_mode == NO_ENCODER)   //å¢é‡å¼ç¼–ç å™¨æˆ–è€…æ— åé¦ˆ
-        && */m_p_axis_config[phy_axis].ret_ref_mode > 0){	//éç¦æ­¢å›å‚è€ƒç‚¹
+                m_p_axis_config[phy_axis].feedback_mode == NO_ENCODER)   //ÔöÁ¿Ê½±àÂëÆ÷»òÕßÎŞ·´À¡
+        && */m_p_axis_config[phy_axis].ret_ref_mode > 0){	//·Ç½ûÖ¹»Ø²Î¿¼µã
 
 #ifdef USES_PMC_PROCESS
         if(phy_axis == 5)
-            this->m_p_pmc_reg->FReg().bits[0].OUT8 = 1;  //pmc Xè½´å›é›¶
+            this->m_p_pmc_reg->FReg().bits[0].OUT8 = 1;  //pmc XÖá»ØÁã
         else if(phy_axis == 6)
-            this->m_p_pmc_reg->FReg().bits[0].OUT9 = 1;  //pmc Yè½´å›é›¶
+            this->m_p_pmc_reg->FReg().bits[0].OUT9 = 1;  //pmc YÖá»ØÁã
         else if(phy_axis == 7)
-            this->m_p_pmc_reg->FReg().bits[0].OUT10 = 1;  //pmc å·¦Zè½´å›é›¶
+            this->m_p_pmc_reg->FReg().bits[0].OUT10 = 1;  //pmc ×óZÖá»ØÁã
         else if(phy_axis == 8)
-            this->m_p_pmc_reg->FReg().bits[0].OUT11 = 1;  //pmc å³Zè½´å›é›¶
+            this->m_p_pmc_reg->FReg().bits[0].OUT11 = 1;  //pmc ÓÒZÖá»ØÁã
 #else
-        //ç³»ç»Ÿå¤„ç†
+        //ÏµÍ³´¦Àí
         this->m_n_mask_ret_ref |= (0x01<<phy_axis);
         this->m_b_ret_ref = true;
         this->m_b_ret_ref_auto = false;
@@ -4163,19 +4163,19 @@ void ChannelEngine::ProcessPmcAxisFindRef(uint8_t phy_axis){
 }
 
 /**
- * @brief å¤„ç†HMIå›å‚è€ƒç‚¹æŒ‡ä»¤ï¼Œé€‚ç”¨äºå¢é‡å¼ç¼–ç å™¨
- * @param cmd ï¼š HMIæŒ‡ä»¤
+ * @brief ´¦ÀíHMI»Ø²Î¿¼µãÖ¸Áî£¬ÊÊÓÃÓÚÔöÁ¿Ê½±àÂëÆ÷
+ * @param cmd £º HMIÖ¸Áî
  */
 void ChannelEngine::ProcessHmiFindRefCmd(HMICmdFrame &cmd){
     printf("ChannelEngine::ProcessHmiFindRefCmd, ext = 0x%hx, chn=0x%hx\n", cmd.cmd_extension, cmd.channel_index);
-    if(this->m_b_ret_ref){ //å·²ç»åœ¨å›å‚è€ƒç‚¹
-        printf("å·²å¤„äºå›å‚è€ƒç‚¹æµç¨‹ä¸­,æ‹’ç»ï¼ret_ref_mask = 0x%llx\n", this->m_n_mask_ret_ref);
+    if(this->m_b_ret_ref){ //ÒÑ¾­ÔÚ»Ø²Î¿¼µã
+        printf("ÒÑ´¦ÓÚ»Ø²Î¿¼µãÁ÷³ÌÖĞ,¾Ü¾ø£¡ret_ref_mask = 0x%llx\n", this->m_n_mask_ret_ref);
         cmd.data[0] = FAILED;
 
-    }else if(g_ptr_alarm_processor->HasErrorInfo()){ //æœ‰å‘Šè­¦ï¼Œæ‹’ç»å›é›¶
-        printf("æœ‰å‘Šè­¦ï¼Œæ‹’ç»å›é›¶ï¼\n");
+    }else if(g_ptr_alarm_processor->HasErrorInfo()){ //ÓĞ¸æ¾¯£¬¾Ü¾ø»ØÁã
+        printf("ÓĞ¸æ¾¯£¬¾Ü¾ø»ØÁã£¡\n");
         cmd.data[0] = FAILED;
-    }else if(cmd.cmd_extension == 0x00){//å½“å‰è½´å›é›¶
+    }else if(cmd.cmd_extension == 0x00){//µ±Ç°Öá»ØÁã
         if(this->m_n_cur_pmc_axis != 0xFF){
             this->ProcessPmcAxisFindRef(m_n_cur_pmc_axis);
         }else{
@@ -4185,18 +4185,18 @@ void ChannelEngine::ProcessHmiFindRefCmd(HMICmdFrame &cmd){
         }
 
 
-    }else if(cmd.cmd_extension == 0x10){ //é€šé“è½´å›é›¶
+    }else if(cmd.cmd_extension == 0x10){ //Í¨µÀÖá»ØÁã
         this->m_p_channel_control[cmd.channel_index].ProcessHmiReturnRefCmd(true);
         this->m_b_ret_ref = true;
         this->m_b_ret_ref_auto = true;
 
-    }else if(cmd.cmd_extension == 0xFF){  //æ‰€æœ‰è½´å›é›¶
+    }else if(cmd.cmd_extension == 0xFF){  //ËùÓĞÖá»ØÁã
         for(int i = 0; i < this->m_p_general_config->axis_count; i++){
-            if(m_p_axis_config[i].axis_interface != VIRTUAL_AXIS		//éè™šæ‹Ÿè½´
-                && m_p_axis_config[i].axis_type != AXIS_SPINDLE				//éä¸»è½´
+            if(m_p_axis_config[i].axis_interface != VIRTUAL_AXIS		//·ÇĞéÄâÖá
+                && m_p_axis_config[i].axis_type != AXIS_SPINDLE				//·ÇÖ÷Öá
                 && /*(m_p_axis_config[i].feedback_mode == INCREMENTAL_ENCODER ||
-                    m_p_axis_config[i].feedback_mode == NO_ENCODER)//å¢é‡å¼ç¼–ç å™¨æˆ–è€…æ— åé¦ˆ
-                && */m_p_axis_config[i].ret_ref_mode > 0){	 //å›å‚è€ƒç‚¹æ–¹å¼éç¦æ­¢
+                    m_p_axis_config[i].feedback_mode == NO_ENCODER)//ÔöÁ¿Ê½±àÂëÆ÷»òÕßÎŞ·´À¡
+                && */m_p_axis_config[i].ret_ref_mode > 0){	 //»Ø²Î¿¼µã·½Ê½·Ç½ûÖ¹
 
                 this->m_n_mask_ret_ref |= (0x01<<i);
             }
@@ -4204,8 +4204,8 @@ void ChannelEngine::ProcessHmiFindRefCmd(HMICmdFrame &cmd){
         m_n_ret_ref_auto_cur = 0;
         this->m_b_ret_ref = true;
         this->m_b_ret_ref_auto = true;
-    }else{//éæ³•
-        printf("éæ³•çš„cmd_ext=%hu, æ‹’ç»ï¼\n", cmd.cmd_extension);
+    }else{//·Ç·¨
+        printf("·Ç·¨µÄcmd_ext=%hu, ¾Ü¾ø£¡\n", cmd.cmd_extension);
         cmd.data[0] = FAILED;
     }
 
@@ -4216,8 +4216,8 @@ void ChannelEngine::ProcessHmiFindRefCmd(HMICmdFrame &cmd){
 }
 
 /**
- * @brief å¤„ç†PMCæŒ‡ä»¤çš„ç‰©ç†è½´å›é›¶
- * @param phy_axis : ç‰©ç†è½´åºå·ï¼Œä»0å¼€å§‹
+ * @brief ´¦ÀíPMCÖ¸ÁîµÄÎïÀíÖá»ØÁã
+ * @param phy_axis : ÎïÀíÖáĞòºÅ£¬´Ó0¿ªÊ¼
  */
 void ChannelEngine::ProcessPmcRefRet(uint8_t phy_axis){
     printf("ChannelEngine::ProcessPmcRefRet, phy_axis=0x%hhx\n", phy_axis);
@@ -4228,55 +4228,55 @@ void ChannelEngine::ProcessPmcRefRet(uint8_t phy_axis){
 
     if(m_b_ret_ref || this->IsRefReturnning(phy_axis)){
         printf("axis %hhu is returnning ref, return\n", phy_axis);
-        return;   //å·²åœ¨å›å‚è€ƒç‚¹è¿‡ç¨‹ä¸­ï¼Œè¿”å›
+        return;   //ÒÑÔÚ»Ø²Î¿¼µã¹ı³ÌÖĞ£¬·µ»Ø
     }
 
     HmiChannelStatus chn_status;
     this->GetChnStatus(this->m_n_cur_channle_index, chn_status);
-    if(chn_status.machining_state != MS_READY){   //éå‡†å¤‡å¥½æ¨¡å¼ä¸æ‰§è¡Œå›é›¶
+    if(chn_status.machining_state != MS_READY){   //·Ç×¼±¸ºÃÄ£Ê½²»Ö´ĞĞ»ØÁã
         printf("machine state is not ready:%hhu, return \n", chn_status.machining_state);
         return;
     }
-    if(g_ptr_alarm_processor->HasErrorInfo()){ //æœ‰å‘Šè­¦ï¼Œæ‹’ç»å›é›¶
+    if(g_ptr_alarm_processor->HasErrorInfo()){ //ÓĞ¸æ¾¯£¬¾Ü¾ø»ØÁã
         CreateError(ERR_RET_REF_FAILED, WARNING_LEVEL, CLEAR_BY_MCP_RESET, 0, CHANNEL_ENGINE_INDEX, 0);
         return;
     }
 
-    if(m_p_axis_config[phy_axis].axis_interface == VIRTUAL_AXIS || m_p_axis_config[phy_axis].axis_type == AXIS_SPINDLE	//ä¸»è½´å’Œè™šæ‹Ÿè½´ä¸ç”¨å›å‚è€ƒç‚¹
-        || (m_p_axis_config[phy_axis].feedback_mode == NO_ENCODER && m_p_axis_config[phy_axis].ret_ref_mode == 0)    //æ— åé¦ˆï¼Œå¹¶ä¸”ç¦æ­¢å›å‚è€ƒç‚¹
-        || (m_p_axis_config[phy_axis].feedback_mode == INCREMENTAL_ENCODER && m_p_axis_config[phy_axis].ret_ref_mode == 0)){  //å¢é‡ç¼–ç å™¨ï¼Œç¦æ­¢å›å‚è€ƒç‚¹
+    if(m_p_axis_config[phy_axis].axis_interface == VIRTUAL_AXIS || m_p_axis_config[phy_axis].axis_type == AXIS_SPINDLE	//Ö÷ÖáºÍĞéÄâÖá²»ÓÃ»Ø²Î¿¼µã
+        || (m_p_axis_config[phy_axis].feedback_mode == NO_ENCODER && m_p_axis_config[phy_axis].ret_ref_mode == 0)    //ÎŞ·´À¡£¬²¢ÇÒ½ûÖ¹»Ø²Î¿¼µã
+        || (m_p_axis_config[phy_axis].feedback_mode == INCREMENTAL_ENCODER && m_p_axis_config[phy_axis].ret_ref_mode == 0)){  //ÔöÁ¿±àÂëÆ÷£¬½ûÖ¹»Ø²Î¿¼µã
         printf("no ret ref, return\n");
-        return;   //ä¸ç”¨å›å‚è€ƒç‚¹çš„è½´ç¦æ­¢å°†å›é›¶æ ‡å¿—å¤ä½
+        return;   //²»ÓÃ»Ø²Î¿¼µãµÄÖá½ûÖ¹½«»ØÁã±êÖ¾¸´Î»
     }
 
     this->SetRetRefMask(phy_axis);
-    this->SetRetRefFlag(phy_axis, false);   //å¤ä½å›å‚è€ƒç‚¹å®Œæˆæ ‡å¿—
+    this->SetRetRefFlag(phy_axis, false);   //¸´Î»»Ø²Î¿¼µãÍê³É±êÖ¾
 
     this->m_b_ret_ref = true;
     this->m_b_ret_ref_auto = false;
 }
 
 /**
- * @brief è®¾ç½®å›å‚è€ƒç‚¹è½´mask
- * @param phy_axis : ç‰©ç†è½´åºå·ï¼Œ0å¼€å§‹
+ * @brief ÉèÖÃ»Ø²Î¿¼µãÖámask
+ * @param phy_axis : ÎïÀíÖáĞòºÅ£¬0¿ªÊ¼
  */
 void ChannelEngine::SetRetRefMask(uint8_t phy_axis){
-    if(m_p_axis_config[phy_axis].axis_interface != VIRTUAL_AXIS		//éè™šæ‹Ÿè½´
-        && m_p_axis_config[phy_axis].axis_type != AXIS_SPINDLE				//éä¸»è½´
+    if(m_p_axis_config[phy_axis].axis_interface != VIRTUAL_AXIS		//·ÇĞéÄâÖá
+        && m_p_axis_config[phy_axis].axis_type != AXIS_SPINDLE				//·ÇÖ÷Öá
     /*	&& (m_p_axis_config[phy_axis].feedback_mode == INCREMENTAL_ENCODER ||
-                m_p_axis_config[phy_axis].feedback_mode == NO_ENCODER)*/){	//æ‰€æœ‰åé¦ˆç±»å‹éƒ½æ”¯æŒå›å‚è€ƒç‚¹
+                m_p_axis_config[phy_axis].feedback_mode == NO_ENCODER)*/){	//ËùÓĞ·´À¡ÀàĞÍ¶¼Ö§³Ö»Ø²Î¿¼µã
         this->m_n_mask_ret_ref |= (0x01<<phy_axis);
     }
 }
 
 /**
- * @brief è®¾ç½®è½´å›é›¶ä¸­ä¿¡å·
- * @param phy_axis : ç‰©ç†è½´åºå·ï¼Œ0å¼€å§‹
- * @param flag : true--ç½®1  flase--ç½®0
+ * @brief ÉèÖÃÖá»ØÁãÖĞĞÅºÅ
+ * @param phy_axis : ÎïÀíÖáĞòºÅ£¬0¿ªÊ¼
+ * @param flag : true--ÖÃ1  flase--ÖÃ0
  */
 void ChannelEngine::SetInRetRefFlag(uint8_t phy_axis, bool flag){
     if(phy_axis >= this->m_p_general_config->axis_count){
-        g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "ChannelEngine::SetInRetRefFlag() return, ç‰©ç†è½´å·[%hhu: %hhu]éæ³•!", phy_axis, m_p_general_config->axis_count);
+        g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "ChannelEngine::SetInRetRefFlag() return, ÎïÀíÖáºÅ[%hhu: %hhu]·Ç·¨!", phy_axis, m_p_general_config->axis_count);
         return;
     }
     uint8_t chn = phy_axis/16;
@@ -4289,9 +4289,9 @@ void ChannelEngine::SetInRetRefFlag(uint8_t phy_axis, bool flag){
 }
 
 /**
- * @brief æŒ‡å®šè½´æ˜¯å¦æ­£åœ¨å›é›¶ä¸­
- * @param phy_axis  : ç‰©ç†è½´åºå·ï¼Œ0å¼€å§‹
- * @return true--æŒ‡å®šè½´phy_axisæ­£åœ¨å›é›¶ä¸­    false--æœªåœ¨å›é›¶è¿‡ç¨‹ä¸­
+ * @brief Ö¸¶¨ÖáÊÇ·ñÕıÔÚ»ØÁãÖĞ
+ * @param phy_axis  : ÎïÀíÖáĞòºÅ£¬0¿ªÊ¼
+ * @return true--Ö¸¶¨Öáphy_axisÕıÔÚ»ØÁãÖĞ    false--Î´ÔÚ»ØÁã¹ı³ÌÖĞ
  */
 bool ChannelEngine::IsRefReturnning(uint8_t phy_axis){
     if(phy_axis >= this->m_p_general_config->axis_count)
@@ -4305,8 +4305,8 @@ bool ChannelEngine::IsRefReturnning(uint8_t phy_axis){
 }
 
 /**
- * @brief å¤„ç†HMIè®¾ç½®å‚è€ƒç‚¹æŒ‡ä»¤ï¼Œé€‚ç”¨äºç»å¯¹å€¼ç¼–ç å™¨
- * @param cmd ï¼š HMIæŒ‡ä»¤
+ * @brief ´¦ÀíHMIÉèÖÃ²Î¿¼µãÖ¸Áî£¬ÊÊÓÃÓÚ¾ø¶ÔÖµ±àÂëÆ÷
+ * @param cmd £º HMIÖ¸Áî
  */
 void ChannelEngine::ProcessHmiSetRefCmd(HMICmdFrame &cmd){
 
@@ -4318,7 +4318,7 @@ void ChannelEngine::ProcessHmiSetRefCmd(HMICmdFrame &cmd){
         memset(&mi_cmd, 0x00, sizeof(mi_cmd));
         mi_cmd.data.cmd = CMD_MI_SET_REF_CUR;
         mi_cmd.data.axis_index = m_n_cur_pmc_axis+1;
-        int64_t pos = m_p_axis_config[m_n_cur_pmc_axis].axis_home_pos[0] * 1e7;   //å•ä½è½¬æ¢ï¼Œ0.1nm
+        int64_t pos = m_p_axis_config[m_n_cur_pmc_axis].axis_home_pos[0] * 1e7;   //µ¥Î»×ª»»£¬0.1nm
         memcpy(mi_cmd.data.data, &pos, sizeof(int64_t));
 
         this->m_p_mi_comm->WriteCmd(mi_cmd);
@@ -4334,12 +4334,12 @@ void ChannelEngine::ProcessHmiSetRefCmd(HMICmdFrame &cmd){
 
 
 /**
- * @brief ç»™HMIå‘é€å‡çº§çŠ¶æ€
- * @param total_step : æ€»æ­¥æ•°
- * @param cur_step ï¼šå½“å‰çŠ¶æ€
+ * @brief ¸øHMI·¢ËÍÉı¼¶×´Ì¬
+ * @param total_step : ×Ü²½Êı
+ * @param cur_step £ºµ±Ç°×´Ì¬
  */
 void ChannelEngine::SendHmiUpdateStatus(uint8_t total_step, uint8_t cur_step){
-    //ç»™HMIå‘é€å‡çº§çŠ¶æ€
+    //¸øHMI·¢ËÍÉı¼¶×´Ì¬
     HMICmdFrame cmd;
     cmd.channel_index = CHANNEL_ENGINE_INDEX;
     cmd.cmd = CMD_SC_UPDATE_MODULE_STATUS;
@@ -4353,7 +4353,7 @@ void ChannelEngine::SendHmiUpdateStatus(uint8_t total_step, uint8_t cur_step){
 }
 
 /**
- * @brief è·å–æŒ‡å®šçš„é€šé“æ§åˆ¶å¯¹è±¡æŒ‡é’ˆ
+ * @brief »ñÈ¡Ö¸¶¨µÄÍ¨µÀ¿ØÖÆ¶ÔÏóÖ¸Õë
  * @param index
  * @return
  */
@@ -4362,14 +4362,14 @@ ChannelControl *ChannelEngine::GetChnControl(uint8_t index){
 }
 
 /**
- * @brief è·å–é€šé“çŠ¶æ€
- * @param chn_index[in] : é€šé“ç´¢å¼•
- * @param status[out] ï¼šè¾“å‡ºçš„é€šé“çŠ¶æ€
- * @return true--æˆåŠŸ  false--å¤±è´¥
+ * @brief »ñÈ¡Í¨µÀ×´Ì¬
+ * @param chn_index[in] : Í¨µÀË÷Òı
+ * @param status[out] £ºÊä³öµÄÍ¨µÀ×´Ì¬
+ * @return true--³É¹¦  false--Ê§°Ü
  */
 bool ChannelEngine::GetChnStatus(uint8_t chn_index, HmiChannelStatus &status){
     if(chn_index >= this->m_p_general_config->chn_count){
-        g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "é€šé“ç´¢å¼•å·[%d]éæ³•ï¼", chn_index);
+        g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "Í¨µÀË÷ÒıºÅ[%d]·Ç·¨£¡", chn_index);
         return false;
     }
 
@@ -4378,14 +4378,14 @@ bool ChannelEngine::GetChnStatus(uint8_t chn_index, HmiChannelStatus &status){
 }
 
 /**
- * @brief è·å–æŒ‡å®šé€šé“å†…è½´æ‰€å¯¹åº”çš„ç‰©ç†è½´å·
- * @param chn_index[in] : é€šé“ç´¢å¼•
- * @param chn_axis[in] ï¼šé€šé“è½´å·
- * @return è¿”å›ç‰©ç†è½´å·,ä¸æˆåŠŸè¿”å›0xffï¼ŒæˆåŠŸè¿”å›0å¼€å§‹çš„ç‰©ç†è½´ç´¢å¼•å·
+ * @brief »ñÈ¡Ö¸¶¨Í¨µÀÄÚÖáËù¶ÔÓ¦µÄÎïÀíÖáºÅ
+ * @param chn_index[in] : Í¨µÀË÷Òı
+ * @param chn_axis[in] £ºÍ¨µÀÖáºÅ
+ * @return ·µ»ØÎïÀíÖáºÅ,²»³É¹¦·µ»Ø0xff£¬³É¹¦·µ»Ø0¿ªÊ¼µÄÎïÀíÖáË÷ÒıºÅ
  */
 uint8_t ChannelEngine::GetChnAxistoPhyAixs(uint8_t chn_index, uint8_t chn_axis){
     if(chn_index >= this->m_p_general_config->chn_count){
-        g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "é€šé“ç´¢å¼•å·[%d]éæ³•ï¼", chn_index);
+        g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "Í¨µÀË÷ÒıºÅ[%d]·Ç·¨£¡", chn_index);
         return 0xff;
     }
 
@@ -4394,47 +4394,47 @@ uint8_t ChannelEngine::GetChnAxistoPhyAixs(uint8_t chn_index, uint8_t chn_axis){
 }
 
 /**
- * @brief å¯åŠ¨ç¨‹åºï¼Œç”¨äºå“åº”å¾ªç¯å¯åŠ¨
- * @return true--æˆåŠŸ   false--å¤±è´¥
+ * @brief Æô¶¯³ÌĞò£¬ÓÃÓÚÏìÓ¦Ñ­»·Æô¶¯
+ * @return true--³É¹¦   false--Ê§°Ü
  */
 bool ChannelEngine::Start(){
     if(this->m_b_emergency)
         return false;
 
 #ifdef USES_LICENSE_FUNC
-    //æ£€æŸ¥ç³»ç»Ÿæ—¶é—´
-    if(m_ln_local_time < 0){//è¯»å–æœ¬åœ°è®¡æ—¶æ–‡ä»¶å¼‚å¸¸
+    //¼ì²éÏµÍ³Ê±¼ä
+    if(m_ln_local_time < 0){//¶ÁÈ¡±¾µØ¼ÆÊ±ÎÄ¼şÒì³£
         if(m_ln_local_time == -1){
-            g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "æœ¬åœ°è®¡æ—¶æ–‡ä»¶ä¸å­˜åœ¨!");
+            g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "±¾µØ¼ÆÊ±ÎÄ¼ş²»´æÔÚ!");
         }else if(m_ln_local_time == -2){
-            g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "æœ¬åœ°è®¡æ—¶æ–‡ä»¶å·²æŸå!");
+            g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "±¾µØ¼ÆÊ±ÎÄ¼şÒÑËğ»µ!");
         }else if(m_ln_local_time == -3){
-            g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "éæ³•æœ¬åœ°è®¡æ—¶æ–‡ä»¶!");
+            g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "·Ç·¨±¾µØ¼ÆÊ±ÎÄ¼ş!");
         }
         m_error_code = ERR_SYSTEM_FILE;
         CreateError(m_error_code, ERROR_LEVEL, CLEAR_BY_MCP_RESET);
         return false;
     }else if(-4 == CheckLocalTime(&m_lic_info, m_ln_local_time)){
-        g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "ç³»ç»Ÿæ—¶é—´å¼‚å¸¸!");
+        g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "ÏµÍ³Ê±¼äÒì³£!");
         m_error_code = ERR_SYSTEM_TIME;
         CreateError(m_error_code, ERROR_LEVEL, CLEAR_BY_MCP_RESET);
         return false;
     }
 
 
-    //æ£€æŸ¥æˆæƒ
-    if(1 == this->CheckLicense()){  //éæ³•æˆæƒ
+    //¼ì²éÊÚÈ¨
+    if(1 == this->CheckLicense()){  //·Ç·¨ÊÚÈ¨
         return false;
     }
 #endif
 
-    //æ£€æŸ¥åŒæ­¥è½´çŠ¶æ€
+    //¼ì²éÍ¬²½Öá×´Ì¬
     if((m_n_sync_axis_mask & m_n_sync_axis_enable_mask) != this->m_n_sync_over){
         CreateError(ERR_SYNC_AXIS, ERROR_LEVEL, CLEAR_BY_MCP_RESET);
         return false;
     }
 
-    //æ£€æŸ¥æ˜¯å¦å¯¼å…¥è¿‡é…ç½®æ•°æ®ï¼Œæç¤ºé‡å¯
+    //¼ì²éÊÇ·ñµ¼Èë¹ıÅäÖÃÊı¾İ£¬ÌáÊ¾ÖØÆô
     if(this->m_mask_import_param != 0){
         CreateError(ERR_IMPORT_CONFIG, WARNING_LEVEL, CLEAR_BY_MCP_RESET);
         return false;
@@ -4452,7 +4452,7 @@ bool ChannelEngine::Start(){
         uint8_t chn = 0;
         for(uint8_t i = 0; i < m_p_channel_mode_group[m_n_cur_chn_group_index].GetChannelCount(); i++){
             chn = m_p_channel_mode_group[m_n_cur_chn_group_index].GetChannel(i);
-            if(m_p_channel_control[chn].CheckFuncState(FS_HANDWHEEL_CONTOUR))   //å†æ¬¡å‘é€æ‰‹è½®è·Ÿè¸ªçŠ¶æ€ç»™MIï¼Œé˜²æ­¢MCå¤ä½æ—¶æ¸…é™¤çŠ¶æ€
+            if(m_p_channel_control[chn].CheckFuncState(FS_HANDWHEEL_CONTOUR))   //ÔÙ´Î·¢ËÍÊÖÂÖ¸ú×Ù×´Ì¬¸øMI£¬·ÀÖ¹MC¸´Î»Ê±Çå³ı×´Ì¬
                 this->SetMiHandwheelTrace(true, chn);
             else
                 this->SetMiHandwheelTrace(false, chn);
@@ -4468,8 +4468,8 @@ bool ChannelEngine::Start(){
 }
 
 /**
- * @brief æš‚åœç¨‹åºï¼Œç”¨äºå“åº”è¿›ç»™ä¿æŒ
- * @return true--æˆåŠŸ   false--å¤±è´¥
+ * @brief ÔİÍ£³ÌĞò£¬ÓÃÓÚÏìÓ¦½ø¸ø±£³Ö
+ * @return true--³É¹¦   false--Ê§°Ü
  */
 bool ChannelEngine::Pause(){
     ChnWorkMode work_mode = (ChnWorkMode)m_p_channel_control[m_n_cur_channle_index].GetChnWorkMode();
@@ -4492,9 +4492,9 @@ bool ChannelEngine::Pause(){
 }
 
 /**
- * @brief åœæ­¢ç¨‹åºæ‰§è¡Œï¼Œç”¨äºå¤„ç†ç³»ç»Ÿå‘Šè­¦ä¸‹çš„ç¨‹åºåœæ­¢
- * @param reset : æ˜¯å¦å¤ä½æ•°æ®å’Œè¡Œå·ï¼Œ true--å¤ä½   false--ä¸å¤ä½
- * @return true--æˆåŠŸ   false--å¤±è´¥
+ * @brief Í£Ö¹³ÌĞòÖ´ĞĞ£¬ÓÃÓÚ´¦ÀíÏµÍ³¸æ¾¯ÏÂµÄ³ÌĞòÍ£Ö¹
+ * @param reset : ÊÇ·ñ¸´Î»Êı¾İºÍĞĞºÅ£¬ true--¸´Î»   false--²»¸´Î»
+ * @return true--³É¹¦   false--Ê§°Ü
  */
 bool ChannelEngine::Stop(bool reset){
     for(int i = 0; i < this->m_p_general_config->chn_count; i++){
@@ -4504,10 +4504,10 @@ bool ChannelEngine::Stop(bool reset){
 }
 
 /**
- * @brief åœæ­¢ç¨‹åºæ‰§è¡Œï¼Œç”¨äºå¤„ç†ç³»ç»Ÿå‘Šè­¦ä¸‹çš„ç¨‹åºåœæ­¢
- * @param chn : é€šé“å·,ä»0å¼€å§‹
- * @param reset : æ˜¯å¦å¤ä½æ•°æ®å’Œè¡Œå·ï¼Œ true--å¤ä½   false--ä¸å¤ä½
- * @return true--æˆåŠŸ   false--å¤±è´¥
+ * @brief Í£Ö¹³ÌĞòÖ´ĞĞ£¬ÓÃÓÚ´¦ÀíÏµÍ³¸æ¾¯ÏÂµÄ³ÌĞòÍ£Ö¹
+ * @param chn : Í¨µÀºÅ,´Ó0¿ªÊ¼
+ * @param reset : ÊÇ·ñ¸´Î»Êı¾İºÍĞĞºÅ£¬ true--¸´Î»   false--²»¸´Î»
+ * @return true--³É¹¦   false--Ê§°Ü
  */
 bool ChannelEngine::Stop(uint8_t chn, bool reset){
     if(chn < this->m_p_general_config->chn_count){
@@ -4520,7 +4520,7 @@ bool ChannelEngine::Stop(uint8_t chn, bool reset){
     return true;
 }
 /**
- * @brief è®¾ç½®å½“å‰é€šé“å·
+ * @brief ÉèÖÃµ±Ç°Í¨µÀºÅ
  * @param work_chan
  * @return
  */
@@ -4535,7 +4535,7 @@ bool ChannelEngine::SetCurWorkChanl(uint8_t work_chan){
 
     m_n_cur_channle_index = work_chan;
 
-    // é€šé“å˜åŒ–æ—¶ å°†F219 å‰4ä½èµ‹å€¼
+    // Í¨µÀ±ä»¯Ê± ½«F219 Ç°4Î»¸³Öµ
     for(int i = 0; i < this->m_p_general_config->chn_count; i++){
         m_p_pmc_reg->FReg().bits[i].CHNC = work_chan;
     }
@@ -4547,7 +4547,7 @@ bool ChannelEngine::SetCurWorkChanl(uint8_t work_chan){
 }
 
 /**
- * @brief è®¾ç½®å·¥ä½œæ¨¡å¼, è‡ªåŠ¨ã€MDAã€æ‰‹åŠ¨ã€æ‰‹è½®
+ * @brief ÉèÖÃ¹¤×÷Ä£Ê½, ×Ô¶¯¡¢MDA¡¢ÊÖ¶¯¡¢ÊÖÂÖ
  * @param work_mode
  * @return
  */
@@ -4574,27 +4574,27 @@ bool ChannelEngine::SetWorkMode(uint8_t work_mode){
         this->SetMiWorkMode(0x10);
     else if(work_mode == AUTO_MODE || work_mode == MDA_MODE)
         this->SetMiWorkMode(0x00);
-    else if(work_mode == MANUAL_STEP_MODE || work_mode == MANUAL_MODE || work_mode == REF_MODE)   //å‚è€ƒç‚¹æ¨¡å¼å¯¹MIç­‰æ•ˆäºæ‰‹åŠ¨æ¨¡å¼
+    else if(work_mode == MANUAL_STEP_MODE || work_mode == MANUAL_MODE || work_mode == REF_MODE)   //²Î¿¼µãÄ£Ê½¶ÔMIµÈĞ§ÓÚÊÖ¶¯Ä£Ê½
         this->SetMiWorkMode(0x20);
 
     return true;
 }
 
 /**
- * @brief è®¾ç½®åŠŸèƒ½çŠ¶æ€ï¼Œä¾‹å¦‚ï¼šå•æ®µï¼Œé€‰åœç­‰ç­‰
- * @param chn ï¼š é€šé“å·ï¼Œ ä»0å¼€å§‹, 0xFFè¡¨ç¤ºå¯¹æ‰€æœ‰é€šé“
- * @param state : è®¾ç½®çš„çŠ¶æ€
- * @param mode : çŠ¶æ€çš„å¼€å…³   0--å…³é—­   1--æ‰“å¼€    10--ç‚¹åŠ¨ï¼ˆå³æ ¹æ®å½“å‰çŠ¶æ€å–åï¼‰
+ * @brief ÉèÖÃ¹¦ÄÜ×´Ì¬£¬ÀıÈç£ºµ¥¶Î£¬Ñ¡Í£µÈµÈ
+ * @param chn £º Í¨µÀºÅ£¬ ´Ó0¿ªÊ¼, 0xFF±íÊ¾¶ÔËùÓĞÍ¨µÀ
+ * @param state : ÉèÖÃµÄ×´Ì¬
+ * @param mode : ×´Ì¬µÄ¿ª¹Ø   0--¹Ø±Õ   1--´ò¿ª    10--µã¶¯£¨¼´¸ù¾İµ±Ç°×´Ì¬È¡·´£©
  */
 void ChannelEngine::SetFuncState(uint8_t chn, int state, uint8_t mode){
 
     if(chn >= this->m_p_general_config->chn_count && chn != CHANNEL_ENGINE_INDEX)
-        return;  //é€šé“å·éæ³•
+        return;  //Í¨µÀºÅ·Ç·¨
 
     if(chn < m_p_general_config->chn_count){
         this->m_p_channel_control[chn].SetFuncState(state, mode);
 
-        if(state == FS_HANDWHEEL_CONTOUR){ //æ‰‹è½®è·Ÿè¸ªï¼Œé€šçŸ¥MIåˆ‡æ¢çŠ¶æ€
+        if(state == FS_HANDWHEEL_CONTOUR){ //ÊÖÂÖ¸ú×Ù£¬Í¨ÖªMIÇĞ»»×´Ì¬
             if(m_p_channel_control[chn].CheckFuncState(FS_HANDWHEEL_CONTOUR))
                 this->SetMiHandwheelTrace(true, chn);
             else
@@ -4603,7 +4603,7 @@ void ChannelEngine::SetFuncState(uint8_t chn, int state, uint8_t mode){
     }else{
         for(uint8_t i = 0; i < m_p_general_config->chn_count; i++){
             this->m_p_channel_control[i].SetFuncState(state, mode);
-            if(state == FS_HANDWHEEL_CONTOUR){ //æ‰‹è½®è·Ÿè¸ªï¼Œé€šçŸ¥MIåˆ‡æ¢çŠ¶æ€
+            if(state == FS_HANDWHEEL_CONTOUR){ //ÊÖÂÖ¸ú×Ù£¬Í¨ÖªMIÇĞ»»×´Ì¬
                 if(m_p_channel_control[i].CheckFuncState(FS_HANDWHEEL_CONTOUR))
                     this->SetMiHandwheelTrace(true, i);
                 else
@@ -4615,7 +4615,7 @@ void ChannelEngine::SetFuncState(uint8_t chn, int state, uint8_t mode){
 }
 
 /**
- * @brief å‘MIæ›´æ–°æ‰‹è½®åå‘è·Ÿè¸ªä½¿èƒ½
+ * @brief ÏòMI¸üĞÂÊÖÂÖ·´Ïò¸ú×ÙÊ¹ÄÜ
  */
 void ChannelEngine::EnableHWTraceToMi(){
     uint8_t chn_count = m_p_channel_mode_group[m_n_cur_chn_group_index].GetChannelCount();
@@ -4628,7 +4628,7 @@ void ChannelEngine::EnableHWTraceToMi(){
 }
 
 /**
- * @brief è®¾ç½®è‡ªåŠ¨å€ç‡
+ * @brief ÉèÖÃ×Ô¶¯±¶ÂÊ
  * @param ratio
  */
 void ChannelEngine::SetAutoRatio(uint8_t ratio){
@@ -4645,9 +4645,9 @@ void ChannelEngine::SetAutoRatio(uint8_t ratio){
 }
 
 /**
- * @brief è®¾ç½®è‡ªåŠ¨å€ç‡
- * @param chn : é€šé“å·ï¼Œä»0å¼€å§‹
- * @param ratio ï¼š å€ç‡å€¼
+ * @brief ÉèÖÃ×Ô¶¯±¶ÂÊ
+ * @param chn : Í¨µÀºÅ£¬´Ó0¿ªÊ¼
+ * @param ratio £º ±¶ÂÊÖµ
  */
 void ChannelEngine::SetAutoRatio(uint8_t chn, uint8_t ratio){
     if(this->m_p_channel_control[chn].GetAutoRatio() == ratio)
@@ -4656,7 +4656,7 @@ void ChannelEngine::SetAutoRatio(uint8_t chn, uint8_t ratio){
 }
 
 /**
- * @brief è®¾ç½®æ‰‹åŠ¨å€ç‡
+ * @brief ÉèÖÃÊÖ¶¯±¶ÂÊ
  * @param ratio
  */
 void ChannelEngine::SetManualRatio(uint8_t ratio){
@@ -4674,9 +4674,9 @@ void ChannelEngine::SetManualRatio(uint8_t ratio){
 }
 
 /**
- * @brief è®¾ç½®æ‰‹åŠ¨å€ç‡
- * @param chn : é€šé“å·ï¼Œä»0å¼€å§‹
- * @param ratio : å€ç‡å€¼
+ * @brief ÉèÖÃÊÖ¶¯±¶ÂÊ
+ * @param chn : Í¨µÀºÅ£¬´Ó0¿ªÊ¼
+ * @param ratio : ±¶ÂÊÖµ
  */
 void ChannelEngine::SetManualRatio(uint8_t chn, uint8_t ratio){
     printf("ChannelEngine::SetManualRatio, old = %hhu, new = %hhu\n", this->m_p_channel_control[chn].GetManualRatio(), ratio);
@@ -4686,7 +4686,7 @@ void ChannelEngine::SetManualRatio(uint8_t chn, uint8_t ratio){
 }
 
 /**
- * @brief è®¾ç½®å¿«é€Ÿè¿›ç»™å€ç‡
+ * @brief ÉèÖÃ¿ìËÙ½ø¸ø±¶ÂÊ
  * @param ratio
  */
 void ChannelEngine::SetRapidRatio(uint8_t ratio){
@@ -4705,12 +4705,12 @@ void ChannelEngine::SetRapidRatio(uint8_t ratio){
 }
 
 /**
- * @brief è®¾ç½®å¿«é€Ÿè¿›ç»™å€ç‡
- * @param chn : é€šé“å·ï¼Œä»0å¼€å§‹
- * @param ratio : å€ç‡å€¼
+ * @brief ÉèÖÃ¿ìËÙ½ø¸ø±¶ÂÊ
+ * @param chn : Í¨µÀºÅ£¬´Ó0¿ªÊ¼
+ * @param ratio : ±¶ÂÊÖµ
  */
 void ChannelEngine::SetRapidRatio(uint8_t chn, uint8_t ratio){
-    //å€ç‡å€¼æ˜ å°„
+    //±¶ÂÊÖµÓ³Éä
 //	switch(ratio){
 //	case 0:
 //		ratio = 100;
@@ -4731,7 +4731,7 @@ void ChannelEngine::SetRapidRatio(uint8_t chn, uint8_t ratio){
 }
 
 /**
- * @brief è®¾ç½®ä¸»è½´å€ç‡
+ * @brief ÉèÖÃÖ÷Öá±¶ÂÊ
  * @param ratio
  */
 void ChannelEngine::SetSpindleRatio(uint8_t ratio){
@@ -4748,9 +4748,9 @@ void ChannelEngine::SetSpindleRatio(uint8_t ratio){
 }
 
 /**
- * @brief è®¾ç½®ä¸»è½´å€ç‡
- * @param chn : é€šé“å·ï¼Œä»0å¼€å§‹
- * @param ratio : å€ç‡å€¼
+ * @brief ÉèÖÃÖ÷Öá±¶ÂÊ
+ * @param chn : Í¨µÀºÅ£¬´Ó0¿ªÊ¼
+ * @param ratio : ±¶ÂÊÖµ
  */
 void ChannelEngine::SetSpindleRatio(uint8_t chn, uint8_t ratio){
     if(this->m_p_channel_control[chn].GetSpindleRatio() == ratio)
@@ -4759,7 +4759,7 @@ void ChannelEngine::SetSpindleRatio(uint8_t chn, uint8_t ratio){
 }
 
 /**
- * @brief è®¾ç½®æ‰‹åŠ¨æ­¥é•¿
+ * @brief ÉèÖÃÊÖ¶¯²½³¤
  * @param step
  */
 void ChannelEngine::SetManualStep(uint16_t step){
@@ -4793,9 +4793,9 @@ void ChannelEngine::SetManualStep(uint16_t step){
 }
 
 /**
- * @brief è®¾ç½®æ‰‹åŠ¨æ­¥é•¿
- * @param chn : é€šé“å·ï¼Œä»0å¼€å§‹
- * @param step : æ­¥é•¿ä»£ç 
+ * @brief ÉèÖÃÊÖ¶¯²½³¤
+ * @param chn : Í¨µÀºÅ£¬´Ó0¿ªÊ¼
+ * @param step : ²½³¤´úÂë
  */
 void ChannelEngine::SetManualStep(uint8_t chn, uint8_t step){
     switch(step){
@@ -4817,8 +4817,8 @@ void ChannelEngine::SetManualStep(uint8_t chn, uint8_t step){
 }
 
 /**
- * @brief è®¾ç½®æ‰‹åŠ¨å¿«é€Ÿç§»åŠ¨çŠ¶æ€
- * @param mode : çŠ¶æ€çš„å¼€å…³   0--å…³é—­   1--æ‰“å¼€    10--ç‚¹åŠ¨ï¼ˆå³æ ¹æ®å½“å‰çŠ¶æ€å–åï¼‰
+ * @brief ÉèÖÃÊÖ¶¯¿ìËÙÒÆ¶¯×´Ì¬
+ * @param mode : ×´Ì¬µÄ¿ª¹Ø   0--¹Ø±Õ   1--´ò¿ª    10--µã¶¯£¨¼´¸ù¾İµ±Ç°×´Ì¬È¡·´£©
  */
 void ChannelEngine::SetManualRapidMove(uint8_t mode){
 //	this->m_p_channel_control[m_n_cur_channle_index].SetManualRapidMove();
@@ -4828,19 +4828,19 @@ void ChannelEngine::SetManualRapidMove(uint8_t mode){
         this->m_p_channel_control[i].SetManualRapidMove();
     }*/
 
-    uint8_t chn_count = m_p_channel_mode_group[m_n_cur_chn_group_index].GetChannelCount();   //å½“å‰æ–¹å¼ç»„é€šé“æ•°é‡
+    uint8_t chn_count = m_p_channel_mode_group[m_n_cur_chn_group_index].GetChannelCount();   //µ±Ç°·½Ê½×éÍ¨µÀÊıÁ¿
     for(uint8_t i = 0; i < chn_count; i++)
         this->m_p_channel_control[m_p_channel_mode_group[m_n_cur_chn_group_index].GetChannel(i)].SetManualRapidMove(mode);
 }
 
 /**
- * @brief è®¾ç½®å½“å‰è½´
- * @param axis : å½“å‰é€šé“è½´å·
+ * @brief ÉèÖÃµ±Ç°Öá
+ * @param axis : µ±Ç°Í¨µÀÖáºÅ
  */
 void ChannelEngine::SetCurAxis(uint8_t axis){
 //	int chn_count = this->m_p_general_config->chn_count;
 
-    this->m_n_cur_pmc_axis = 0xFF;  //å–æ¶ˆå½“å‰PMCè½´
+    this->m_n_cur_pmc_axis = 0xFF;  //È¡Ïûµ±Ç°PMCÖá
 //	this->m_p_channel_control[m_n_cur_channle_index].SetCurAxis(axis);
     /*
     for(int i = 0; i < chn_count; i++){
@@ -4853,18 +4853,18 @@ void ChannelEngine::SetCurAxis(uint8_t axis){
 }
 
 /**
- * @brief è®¾ç½®å½“å‰è½´
- * @param chn : é€šé“å·ï¼Œä»0å¼€å§‹
- * @param axis ï¼š é€šé“è½´å·ï¼Œ ä»0å¼€å§‹
+ * @brief ÉèÖÃµ±Ç°Öá
+ * @param chn : Í¨µÀºÅ£¬´Ó0¿ªÊ¼
+ * @param axis £º Í¨µÀÖáºÅ£¬ ´Ó0¿ªÊ¼
  */
 void ChannelEngine::SetCurAxis(uint8_t chn, uint8_t axis){
-    this->m_n_cur_pmc_axis = 0xFF;  //å–æ¶ˆå½“å‰PMCè½´
+    this->m_n_cur_pmc_axis = 0xFF;  //È¡Ïûµ±Ç°PMCÖá
     this->m_p_channel_control[chn].SetCurAxis(axis);
 }
 
 /**
- * @brief è®¾ç½®å½“å‰PMCè½´
- * @param axis : ç‰©ç†è½´å·ï¼Œä»0å¼€å§‹
+ * @brief ÉèÖÃµ±Ç°PMCÖá
+ * @param axis : ÎïÀíÖáºÅ£¬´Ó0¿ªÊ¼
  */
 void ChannelEngine::SetCurPmcAxis(uint8_t axis){
     if(this->m_p_axis_config[axis].axis_pmc > 0)
@@ -4874,9 +4874,9 @@ void ChannelEngine::SetCurPmcAxis(uint8_t axis){
 }
 
 /**
- * @brief è®¾ç½®é€šé“åŠ å·¥çŠ¶æ€
- * @param chn : é€šé“ç´¢å¼•å·ï¼Œ0å¼€å§‹ï¼Œ0xFFè¡¨ç¤ºé€šé“å¼•æ“
- * @param mach_state : åŠ å·¥çŠ¶æ€
+ * @brief ÉèÖÃÍ¨µÀ¼Ó¹¤×´Ì¬
+ * @param chn : Í¨µÀË÷ÒıºÅ£¬0¿ªÊ¼£¬0xFF±íÊ¾Í¨µÀÒıÇæ
+ * @param mach_state : ¼Ó¹¤×´Ì¬
  */
 void ChannelEngine::SetChnMachineState(uint8_t chn, uint8_t mach_state){
     if(chn < m_p_general_config->chn_count){
@@ -4889,8 +4889,8 @@ void ChannelEngine::SetChnMachineState(uint8_t chn, uint8_t mach_state){
 }
 
 /**
- * @brief è®¾ç½®è½´ä½¿èƒ½ï¼Œä»¥åŠæ’è¡¥æ¨¡å¼ï¼ˆ1--NCè½´æ’è¡¥   2--PMCè½´æ’è¡¥ï¼‰
- * @param index : è½´å·ç´¢å¼•ï¼Œä»0å¼€å§‹
+ * @brief ÉèÖÃÖáÊ¹ÄÜ£¬ÒÔ¼°²å²¹Ä£Ê½£¨1--NCÖá²å²¹   2--PMCÖá²å²¹£©
+ * @param index : ÖáºÅË÷Òı£¬´Ó0¿ªÊ¼
  */
  /*
 void ChannelEngine::SetAxisOn(uint8_t index){
@@ -4900,7 +4900,7 @@ void ChannelEngine::SetAxisOn(uint8_t index){
 
     cmd.data.cmd = CMD_MC_SET_AXIS_ON;
 
-    //è½´ä½¿èƒ½  0--ç¦æ­¢è¯¥è½´   1--ä½¿èƒ½è¯¥è½´
+    //ÖáÊ¹ÄÜ  0--½ûÖ¹¸ÃÖá   1--Ê¹ÄÜ¸ÃÖá
     SCAxisConfig &axis_config = this->m_p_axis_config[index];
     if(axis_config.axis_type != AXIS_SPINDLE)
         cmd.data.data[0] = 1;
@@ -4908,15 +4908,15 @@ void ChannelEngine::SetAxisOn(uint8_t index){
         cmd.data.data[0] = 0;
 
 
-    //è½´æ’è¡¥ç±»å‹   1--NCè½´æ’è¡¥ï¼ˆè‡ªåŠ¨ã€æ‰‹åŠ¨ã€MDIï¼‰  2--PMCè½´æ’è¡¥   å…¶å®ƒå€¼æ— æ•ˆ  ï¼ˆæ³¨æ„10MCçš„DSPæš‚ä¸æ”¯æŒ çº¯ç²¹PMCè½´ï¼‰
+    //Öá²å²¹ÀàĞÍ   1--NCÖá²å²¹£¨×Ô¶¯¡¢ÊÖ¶¯¡¢MDI£©  2--PMCÖá²å²¹   ÆäËüÖµÎŞĞ§  £¨×¢Òâ10MCµÄDSPÔİ²»Ö§³Ö ´¿´âPMCÖá£©
     cmd.data.data[1] = 1;
 
     m_p_mc_comm->WriteCmd(cmd);
 }*/
 
 /**
- * @brief è®¾ç½®æŒ‡å®šè½´çš„èºè·åŠæœ€å¤§é€Ÿåº¦ç­‰åŸºæœ¬ä¿¡æ¯
- * @param index : è½´ç´¢å¼•å·, ä»0å¼€å§‹
+ * @brief ÉèÖÃÖ¸¶¨ÖáµÄÂİ¾à¼°×î´óËÙ¶ÈµÈ»ù±¾ĞÅÏ¢
+ * @param index : ÖáË÷ÒıºÅ, ´Ó0¿ªÊ¼
  */
  /*
 void ChannelEngine::SetAxisBaseParam(uint8_t index){
@@ -4927,15 +4927,15 @@ void ChannelEngine::SetAxisBaseParam(uint8_t index){
     cmd.data.cmd = CMD_MC_SET_AXIS_BASE_INFO;
 
     SCAxisConfig &axis_config = this->m_p_axis_config[index];
-    //è½´ç±»å‹   1--ç›´çº¿è½´   2--æ—‹è½¬è½´   3--ä¸»è½´
+    //ÖáÀàĞÍ   1--Ö±ÏßÖá   2--Ğı×ªÖá   3--Ö÷Öá
     cmd.data.data[0] = axis_config.axis_type+1;
 
-    //èºè·ï¼Œå•ä½ï¼š1um
+    //Âİ¾à£¬µ¥Î»£º1um
     uint32_t data = axis_config.move_pr * 1e3;  //mm->1um
     cmd.data.data[1] = (data&0xFFFF);
     cmd.data.data[2] = ((data>>16)&0xFFFF);
 
-    //æœ€å¤§é€Ÿåº¦é™åˆ¶ï¼Œ å•ä½ï¼šum/s
+    //×î´óËÙ¶ÈÏŞÖÆ£¬ µ¥Î»£ºum/s
     data = axis_config.move_pr * axis_config.motor_speed_max * 1000 /60;   //mm/min -> um/s
     cmd.data.data[3] = (data&0xFFFF);
     cmd.data.data[4] = ((data>>16)&0xFFFF);
@@ -4945,8 +4945,8 @@ void ChannelEngine::SetAxisBaseParam(uint8_t index){
 }*/
 
 /**
- * @brief è®¾ç½®æŒ‡å®šè½´çš„é€Ÿåº¦ç›¸å…³ä¿¡æ¯
- * @param index : è½´ç´¢å¼•å·, ä»0å¼€å§‹
+ * @brief ÉèÖÃÖ¸¶¨ÖáµÄËÙ¶ÈÏà¹ØĞÅÏ¢
+ * @param index : ÖáË÷ÒıºÅ, ´Ó0¿ªÊ¼
  */
  /*
 void ChannelEngine::SetAxisSpeedParam(uint8_t index){
@@ -4957,19 +4957,19 @@ void ChannelEngine::SetAxisSpeedParam(uint8_t index){
     cmd.data.cmd = CMD_MC_SET_AXIS_SPEED_LIMIT;
 
     SCAxisConfig &axis_config = this->m_p_axis_config[index];
-    //G00é€Ÿåº¦ï¼Œå•ä½ï¼šum/s
+    //G00ËÙ¶È£¬µ¥Î»£ºum/s
     uint32_t data = axis_config.rapid_speed * 1000 / 60;  //mm/min -> um/s
 //	printf("set axis %hhu g00 speed: %u\n", index, data);
     cmd.data.data[0] = (data&0xFFFF);
     cmd.data.data[1] = ((data>>16)&0xFFFF);
 //	printf("set axis %hhu g00 speed: 0x%hx,  0x%hx\n", index, cmd.data.data[0], cmd.data.data[1]);
 
-    //è½¬è§’é€Ÿåº¦å·®é™åˆ¶ï¼Œ å•ä½ï¼šum/s
+    //×ª½ÇËÙ¶È²îÏŞÖÆ£¬ µ¥Î»£ºum/s
     data = axis_config.corner_acc_limit * 1000 /60;   //mm/min -> um/s
     cmd.data.data[2] = (data&0xFFFF);
     cmd.data.data[3] = ((data>>16)&0xFFFF);
 
-    //æ‰‹åŠ¨è¿‡æ¸¡é€Ÿåº¦ï¼Œå•ä½ï¼šum/s  //TODO æ­¤å‚æ•°åç»­å°†å¯ç”¨ï¼Œæ­¤å¤„ä¼ è¾“ä¸€ä¸ªå›ºå®šå€¼100mm/min
+    //ÊÖ¶¯¹ı¶ÉËÙ¶È£¬µ¥Î»£ºum/s  //TODO ´Ë²ÎÊıºóĞø½«ÆôÓÃ£¬´Ë´¦´«ÊäÒ»¸ö¹Ì¶¨Öµ100mm/min
     data = 100 * 1000 / 60;    //mm/min -> um/s
     cmd.data.data[4] = (data&0xFFFF);
     cmd.data.data[5] = ((data>>16)&0xFFFF);
@@ -4978,8 +4978,8 @@ void ChannelEngine::SetAxisSpeedParam(uint8_t index){
 }*/
 
 /**
- * @brief è®¾ç½®æŒ‡å®šè½´åŠ é€Ÿåº¦ç›¸å…³ä¿¡æ¯
- * @param index : è½´ç´¢å¼•å·, ä»0å¼€å§‹
+ * @brief ÉèÖÃÖ¸¶¨Öá¼ÓËÙ¶ÈÏà¹ØĞÅÏ¢
+ * @param index : ÖáË÷ÒıºÅ, ´Ó0¿ªÊ¼
  */
  /*
 void ChannelEngine::SetAxisAccParam(uint8_t index){
@@ -4991,40 +4991,40 @@ void ChannelEngine::SetAxisAccParam(uint8_t index){
 //	printf("set axis[%hhu] acc:rap = %lf, start = %lf\n", index, m_p_axis_config[index].rapid_acc,
 //			m_p_axis_config[index].start_acc);
 
-    //G00åŠ é€Ÿåº¦ï¼Œå•ä½ï¼š10mm/s^2
+    //G00¼ÓËÙ¶È£¬µ¥Î»£º10mm/s^2
     uint16_t data = m_p_axis_config[index].rapid_acc / 10;
     cmd.data.data[0] = data;
 
-    //æ‰‹åŠ¨åŠ é€Ÿåº¦ï¼Œ å•ä½ï¼š10mm/s^2
+    //ÊÖ¶¯¼ÓËÙ¶È£¬ µ¥Î»£º10mm/s^2
     data = m_p_axis_config[index].manual_acc /10;
     cmd.data.data[1] = data;
 
-    //æ‰‹åŠ¨è¿‡æ¸¡åŠ é€Ÿåº¦ï¼Œå•ä½ï¼š10mm/s^2
+    //ÊÖ¶¯¹ı¶É¼ÓËÙ¶È£¬µ¥Î»£º10mm/s^2
     data = m_p_axis_config[index].start_acc /10;
     cmd.data.data[2] = data;
 
-    //G00 Så‹æ—¶é—´å¸¸æ•°
+    //G00 SĞÍÊ±¼ä³£Êı
     cmd.data.data[3] = m_p_axis_config[index].rapid_s_plan_filter_time;
 
     m_p_mc_comm->WriteCmd(cmd);
 }*/
 
 /**
- * @brief å‘é€PMCè½´è¿åŠ¨æŒ‡ä»¤
- * @param cmd : PMCè½´è¿åŠ¨æŒ‡ä»¤
+ * @brief ·¢ËÍPMCÖáÔË¶¯Ö¸Áî
+ * @param cmd : PMCÖáÔË¶¯Ö¸Áî
  */
 void ChannelEngine::SendPmcAxisCmd(PmcCmdFrame &cmd){
     uint8_t phy_axis = cmd.data.axis_index-1;
 
-    this->m_n_run_axis_mask |= 0x01L<<phy_axis;  //è®¾ç½®å½“å‰è¿è¡Œè½´
+    this->m_n_run_axis_mask |= 0x01L<<phy_axis;  //ÉèÖÃµ±Ç°ÔËĞĞÖá
 
     this->m_p_mi_comm->SendPmcCmd(cmd);
 }
 
 /**
- * @brief è·å–pmcè½´çš„è®¾å®šå®šä½é€Ÿåº¦
- * @param axis : ç‰©ç†è½´å·ï¼Œ ä»0å¼€å§‹
- * @return è¿”å›æ­¤è½´å‚æ•°ä¸­è®¾ç½®çš„å®šä½é€Ÿåº¦
+ * @brief »ñÈ¡pmcÖáµÄÉè¶¨¶¨Î»ËÙ¶È
+ * @param axis : ÎïÀíÖáºÅ£¬ ´Ó0¿ªÊ¼
+ * @return ·µ»Ø´ËÖá²ÎÊıÖĞÉèÖÃµÄ¶¨Î»ËÙ¶È
  */
 uint32_t ChannelEngine::GetPmcAxisRapidSpeed(uint8_t axis){
     if(axis >= this->m_p_general_config->axis_count)
@@ -5033,32 +5033,32 @@ uint32_t ChannelEngine::GetPmcAxisRapidSpeed(uint8_t axis){
 }
 
 /**
- * @brief æ‰‹åŠ¨ç§»åŠ¨
- * @param dir : è¿åŠ¨æ–¹å‘
+ * @brief ÊÖ¶¯ÒÆ¶¯
+ * @param dir : ÔË¶¯·½Ïò
  */
 void ChannelEngine::ManualMove(int8_t dir){
     if(this->m_b_emergency)
         return;
-    if(this->m_n_cur_pmc_axis != 0xFF){  //ç§»åŠ¨PMCè½´
+    if(this->m_n_cur_pmc_axis != 0xFF){  //ÒÆ¶¯PMCÖá
         this->ManualMovePmc(dir);
     }else
         m_p_channel_control[m_n_cur_channle_index].ManualMove(dir);
 }
 
 /**
- * @brief æ‰‹åŠ¨ä»¥ç›®æ ‡é€Ÿåº¦velç§»åŠ¨è‡³ç»å¯¹ç›®æ ‡ä½ç½®
- * @param phy_axis : ç‰©ç†è½´å·ï¼Œä»0å¼€å§‹
- * @param vel : è¿åŠ¨é€Ÿåº¦, å•ä½ï¼šmm/min
- * @param pos : ç»å¯¹ä½ç½®
+ * @brief ÊÖ¶¯ÒÔÄ¿±êËÙ¶ÈvelÒÆ¶¯ÖÁ¾ø¶ÔÄ¿±êÎ»ÖÃ
+ * @param phy_axis : ÎïÀíÖáºÅ£¬´Ó0¿ªÊ¼
+ * @param vel : ÔË¶¯ËÙ¶È, µ¥Î»£ºmm/min
+ * @param pos : ¾ø¶ÔÎ»ÖÃ
  */
 void ChannelEngine::ManualMoveAbs(uint8_t phy_axis, double vel, double pos){
-    int64_t cur_pos = this->m_df_phy_axis_pos_feedback[phy_axis]*1e7;  //å½“å‰ä½ç½®
-    //è®¾ç½®ç›®æ ‡ä½ç½®
-    int64_t tar_pos = pos * 1e7;   //å•ä½è½¬æ¢ï¼šmm-->0.1nms
-    int8_t dir = (tar_pos > cur_pos)?DIR_POSITIVE:DIR_NEGATIVE;  //ç§»åŠ¨æ–¹å‘
+    int64_t cur_pos = this->m_df_phy_axis_pos_feedback[phy_axis]*1e7;  //µ±Ç°Î»ÖÃ
+    //ÉèÖÃÄ¿±êÎ»ÖÃ
+    int64_t tar_pos = pos * 1e7;   //µ¥Î»×ª»»£ºmm-->0.1nms
+    int8_t dir = (tar_pos > cur_pos)?DIR_POSITIVE:DIR_NEGATIVE;  //ÒÆ¶¯·½Ïò
 
-    //æ£€æŸ¥ç¡¬é™ä½
-    if(CheckAxisHardLimit(phy_axis, dir)){   //ç¡¬é™ä½å‘Šè­¦ï¼Œç›´æ¥è¿”å›
+    //¼ì²éÓ²ÏŞÎ»
+    if(CheckAxisHardLimit(phy_axis, dir)){   //Ó²ÏŞÎ»¸æ¾¯£¬Ö±½Ó·µ»Ø
         printf("hard limit active, manual move abs return \n");
         return;
     }
@@ -5067,16 +5067,16 @@ void ChannelEngine::ManualMoveAbs(uint8_t phy_axis, double vel, double pos){
     uint8_t chn_axis = 0, chn = 0;
     chn = this->GetAxisChannel(phy_axis, chn_axis);
 
-    if(m_p_axis_config[phy_axis].axis_pmc == 0 && chn != CHANNEL_ENGINE_INDEX){ //é€šé“è½´
+    if(m_p_axis_config[phy_axis].axis_pmc == 0 && chn != CHANNEL_ENGINE_INDEX){ //Í¨µÀÖá
         McCmdFrame cmd;
         memset(&cmd, 0x00, sizeof(McCmdFrame));
 
         cmd.data.channel_index = chn;
-        cmd.data.axis_index = chn_axis+1;   //è½´å·ä»1å¼€å§‹
+        cmd.data.axis_index = chn_axis+1;   //ÖáºÅ´Ó1¿ªÊ¼
         cmd.data.cmd = CMD_MC_AXIS_MAUAL_MOVE;
 
-        //è®¾ç½®é€Ÿåº¦
-        uint32_t feed = vel*1000/60;   //è½¬æ¢å•ä½ä¸ºum/s
+        //ÉèÖÃËÙ¶È
+        uint32_t feed = vel*1000/60;   //×ª»»µ¥Î»Îªum/s
 
     //	memcpy(cmd.data.data, &feed, sizeof(feed));
         cmd.data.data[0] = (feed & 0xFFFF);
@@ -5084,33 +5084,33 @@ void ChannelEngine::ManualMoveAbs(uint8_t phy_axis, double vel, double pos){
 
 
         if((this->m_n_mask_ret_ref_over & (0x01<<phy_axis))
-                && m_p_axis_config[phy_axis].soft_limit_check_1 == 1){//è½¯é™ä½1æœ‰æ•ˆ
+                && m_p_axis_config[phy_axis].soft_limit_check_1 == 1){//ÈíÏŞÎ»1ÓĞĞ§
 
             int64_t limit_pos = 0;
 
-            if(dir == DIR_POSITIVE){//æ­£å‘
+            if(dir == DIR_POSITIVE){//ÕıÏò
                 limit_pos = m_p_axis_config[phy_axis].soft_limit_max_1*1e7;
 
 
-                if(limit_pos < cur_pos){//å·²ç»åœ¨é™ä½å¤–ï¼Œå‘Šè­¦
+                if(limit_pos < cur_pos){//ÒÑ¾­ÔÚÏŞÎ»Íâ£¬¸æ¾¯
                     CreateError(ERR_SOFTLIMIT_POS, WARNING_LEVEL, CLEAR_BY_MCP_RESET, 0, chn, chn_axis);
                 //	this->m_error_code = ERR_SOFTLIMIT_POS;
                     return;
-                }else if(limit_pos == cur_pos){  //å·²ç»åˆ°è¾¾æ­£é™ä½æé™ä½ç½®
+                }else if(limit_pos == cur_pos){  //ÒÑ¾­µ½´ïÕıÏŞÎ»¼«ÏŞÎ»ÖÃ
                     CreateError(ERR_SOFTLIMIT_POS, WARNING_LEVEL, CLEAR_BY_MCP_RESET, 0, chn, chn_axis);
                     return;
                 }else if(tar_pos > limit_pos){
                     tar_pos = limit_pos;
 
                 }
-            }else if(dir == DIR_NEGATIVE){//è´Ÿå‘
+            }else if(dir == DIR_NEGATIVE){//¸ºÏò
                 limit_pos = m_p_axis_config[phy_axis].soft_limit_min_1*1e7;
 
-                if(limit_pos > cur_pos){//å·²ç»åœ¨é™ä½å¤–ï¼Œå‘Šè­¦
+                if(limit_pos > cur_pos){//ÒÑ¾­ÔÚÏŞÎ»Íâ£¬¸æ¾¯
                     CreateError(ERR_SOFTLIMIT_NEG, WARNING_LEVEL, CLEAR_BY_CLEAR_BUTTON, 0, chn, chn_axis);
                 //	this->m_error_code = ERR_SOFTLIMIT_NEG;
                     return;
-                }else if(limit_pos == cur_pos){  //å·²ç»åˆ°è¾¾è´Ÿé™ä½æé™ä½ç½®
+                }else if(limit_pos == cur_pos){  //ÒÑ¾­µ½´ï¸ºÏŞÎ»¼«ÏŞÎ»ÖÃ
                     CreateError(ERR_SOFTLIMIT_NEG, WARNING_LEVEL, CLEAR_BY_CLEAR_BUTTON, 0, chn, chn_axis);
                     return;
                 }else if(tar_pos < limit_pos){
@@ -5124,7 +5124,7 @@ void ChannelEngine::ManualMoveAbs(uint8_t phy_axis, double vel, double pos){
         cmd.data.data[4] = ((tar_pos>>32) & 0xFFFF);
         cmd.data.data[5] = ((tar_pos>>48)&0xFFFF);
 
-        cmd.data.data[6] = 0x00;   //ç»å¯¹ç›®æ ‡ä½ç½®ï¼Œæœºæ¢°åæ ‡ç³»
+        cmd.data.data[6] = 0x00;   //¾ø¶ÔÄ¿±êÎ»ÖÃ£¬»úĞµ×ø±êÏµ
 
         if(!this->m_mc_run_on_arm[chn])
             m_p_mc_comm->WriteCmd(cmd);
@@ -5132,52 +5132,52 @@ void ChannelEngine::ManualMoveAbs(uint8_t phy_axis, double vel, double pos){
             m_p_mc_arm_comm->WriteCmd(cmd);
 
         printf("ChannelEngine::ManualMoveAbs: axis = %d, tar_pos = %lld\n", phy_axis, tar_pos);
-    }else if(m_p_axis_config[phy_axis].axis_pmc){  //PMCè½´
+    }else if(m_p_axis_config[phy_axis].axis_pmc){  //PMCÖá
 #ifdef USES_GRIND_MACHINE
-        //åŠ¨ä½œå‰å¤¹çˆªå¿…é¡»ä¸Šåˆ°ä½ï¼Œä¿æŠ¤æªæ–½
+        //¶¯×÷Ç°¼Ğ×¦±ØĞëÉÏµ½Î»£¬±£»¤´ëÊ©
         if(this->m_p_pmc_reg->GReg().bits[0].left_claw_up_check == 0 ||
-                this->m_p_pmc_reg->GReg().bits[0].right_claw_up_check == 0){//å¤¹çˆªä½ä¸Šåˆ°ä½
+                this->m_p_pmc_reg->GReg().bits[0].right_claw_up_check == 0){//¼Ğ×¦Î»ÉÏµ½Î»
             return;
         }
 #endif
         PmcCmdFrame cmd;
         memset(&cmd, 0x00, sizeof(PmcCmdFrame));
 
-        cmd.data.axis_index = phy_axis+1;   //è½´å·ä»1å¼€å§‹
-        cmd.data.axis_index |= 0xFF00;      //æ ‡å¿—é€šé“å¼•æ“
-        cmd.data.cmd = 0;   //ç»å¯¹ä½ç½®
+        cmd.data.axis_index = phy_axis+1;   //ÖáºÅ´Ó1¿ªÊ¼
+        cmd.data.axis_index |= 0xFF00;      //±êÖ¾Í¨µÀÒıÇæ
+        cmd.data.cmd = 0;   //¾ø¶ÔÎ»ÖÃ
 
-        //è®¾ç½®é€Ÿåº¦
-        uint32_t feed = vel*1000/60;   //è½¬æ¢å•ä½ä¸ºum/s
+        //ÉèÖÃËÙ¶È
+        uint32_t feed = vel*1000/60;   //×ª»»µ¥Î»Îªum/s
 
 
         if((this->m_n_mask_ret_ref_over & (0x01<<phy_axis))
-                && m_p_axis_config[phy_axis].soft_limit_check_1 == 1){//è½¯é™ä½1æœ‰æ•ˆ
-            int64_t cur_pos = this->m_df_phy_axis_pos_feedback[phy_axis]*1e7;  //å½“å‰ä½ç½®
+                && m_p_axis_config[phy_axis].soft_limit_check_1 == 1){//ÈíÏŞÎ»1ÓĞĞ§
+            int64_t cur_pos = this->m_df_phy_axis_pos_feedback[phy_axis]*1e7;  //µ±Ç°Î»ÖÃ
             int64_t limit_pos = 0;
 
-            if(dir == DIR_POSITIVE){//æ­£å‘
+            if(dir == DIR_POSITIVE){//ÕıÏò
                 limit_pos = m_p_axis_config[phy_axis].soft_limit_max_1*1e7;
 
-                if(limit_pos < cur_pos){//å·²ç»åœ¨é™ä½å¤–ï¼Œå‘Šè­¦
+                if(limit_pos < cur_pos){//ÒÑ¾­ÔÚÏŞÎ»Íâ£¬¸æ¾¯
                     CreateError(ERR_SOFTLIMIT_POS, WARNING_LEVEL, CLEAR_BY_MCP_RESET, 0, CHANNEL_ENGINE_INDEX, phy_axis);
                 //	this->m_error_code = ERR_SOFTLIMIT_POS;
                     return;
-                }else if(limit_pos == cur_pos){  //å·²ç»åˆ°è¾¾æ­£é™ä½æé™ä½ç½®
+                }else if(limit_pos == cur_pos){  //ÒÑ¾­µ½´ïÕıÏŞÎ»¼«ÏŞÎ»ÖÃ
                     CreateError(ERR_SOFTLIMIT_POS, WARNING_LEVEL, CLEAR_BY_MCP_RESET, 0, CHANNEL_ENGINE_INDEX, phy_axis);
                     return;
                 }else if(tar_pos > limit_pos){
                     tar_pos = limit_pos;
 
                 }
-            }else if(dir == DIR_NEGATIVE){//è´Ÿå‘
+            }else if(dir == DIR_NEGATIVE){//¸ºÏò
                 limit_pos = m_p_axis_config[phy_axis].soft_limit_min_1*1e7;
 
-                if(limit_pos > cur_pos){//å·²ç»åœ¨é™ä½å¤–ï¼Œå‘Šè­¦
+                if(limit_pos > cur_pos){//ÒÑ¾­ÔÚÏŞÎ»Íâ£¬¸æ¾¯
                     CreateError(ERR_SOFTLIMIT_NEG, WARNING_LEVEL, CLEAR_BY_CLEAR_BUTTON, 0, CHANNEL_ENGINE_INDEX, phy_axis);
                 //	this->m_error_code = ERR_SOFTLIMIT_NEG;
                     return;
-                }else if(limit_pos == cur_pos){  //å·²ç»åˆ°è¾¾è´Ÿé™ä½æé™ä½ç½®
+                }else if(limit_pos == cur_pos){  //ÒÑ¾­µ½´ï¸ºÏŞÎ»¼«ÏŞÎ»ÖÃ
                     CreateError(ERR_SOFTLIMIT_NEG, WARNING_LEVEL, CLEAR_BY_CLEAR_BUTTON, 0, CHANNEL_ENGINE_INDEX, phy_axis);
                     return;
                 }else if(tar_pos < limit_pos){
@@ -5187,13 +5187,13 @@ void ChannelEngine::ManualMoveAbs(uint8_t phy_axis, double vel, double pos){
         }
 
 
-        memcpy(&cmd.data.data[1], &tar_pos, sizeof(tar_pos));  //è®¾ç½®ç›®æ ‡ä½ç½®
+        memcpy(&cmd.data.data[1], &tar_pos, sizeof(tar_pos));  //ÉèÖÃÄ¿±êÎ»ÖÃ
 
-        memcpy(&cmd.data.data[5], &feed, sizeof(feed)); //è®¾ç½®é€Ÿåº¦
+        memcpy(&cmd.data.data[5], &feed, sizeof(feed)); //ÉèÖÃËÙ¶È
 
 
 
-        this->m_n_run_axis_mask |= 0x01L<<phy_axis;  //è®¾ç½®å½“å‰è¿è¡Œè½´
+        this->m_n_run_axis_mask |= 0x01L<<phy_axis;  //ÉèÖÃµ±Ç°ÔËĞĞÖá
 
         this->m_p_mi_comm->SendPmcCmd(cmd);
 
@@ -5203,16 +5203,16 @@ void ChannelEngine::ManualMoveAbs(uint8_t phy_axis, double vel, double pos){
 }
 
 /**
- * @brief æ‰‹åŠ¨ç§»åŠ¨ï¼Œå‘diræ–¹å‘ç§»åŠ¨disè·ç¦»
- * @param chn : é€šé“å·ï¼Œ ä»0å¼€å§‹
- * @param phy_axis : ç‰©ç†è½´å·ï¼Œä»0å¼€å§‹
- * @param dir : è¿åŠ¨æ–¹å‘
- * @param vel : è¿åŠ¨é€Ÿåº¦, å•ä½ï¼šmm/min
- * @param inc_dis ï¼š å¢é‡ä½ç½®, ä¸ç®¡æ­£è´Ÿï¼Œåœ¨å‡½æ•°å†…éƒ¨æ ¹æ®dirå†³å®šæ­£è´Ÿ
+ * @brief ÊÖ¶¯ÒÆ¶¯£¬Ïòdir·½ÏòÒÆ¶¯dis¾àÀë
+ * @param chn : Í¨µÀºÅ£¬ ´Ó0¿ªÊ¼
+ * @param phy_axis : ÎïÀíÖáºÅ£¬´Ó0¿ªÊ¼
+ * @param dir : ÔË¶¯·½Ïò
+ * @param vel : ÔË¶¯ËÙ¶È, µ¥Î»£ºmm/min
+ * @param inc_dis £º ÔöÁ¿Î»ÖÃ, ²»¹ÜÕı¸º£¬ÔÚº¯ÊıÄÚ²¿¸ù¾İdir¾ö¶¨Õı¸º
  */
 void ChannelEngine::ManualMove(uint8_t phy_axis, int8_t dir, double vel, double inc_dis){
-    //æ£€æŸ¥ç¡¬é™ä½
-    if(CheckAxisHardLimit(phy_axis, dir)){   //ç¡¬é™ä½å‘Šè­¦ï¼Œç›´æ¥è¿”å›
+    //¼ì²éÓ²ÏŞÎ»
+    if(CheckAxisHardLimit(phy_axis, dir)){   //Ó²ÏŞÎ»¸æ¾¯£¬Ö±½Ó·µ»Ø
         printf("hard limit active, manual move return 3 \n");
         return;
     }
@@ -5221,52 +5221,52 @@ void ChannelEngine::ManualMove(uint8_t phy_axis, int8_t dir, double vel, double 
     uint8_t chn_axis = 0, chn = 0;
     chn = this->GetAxisChannel(phy_axis, chn_axis);
 
-    if(m_p_axis_config[phy_axis].axis_pmc == 0 && chn != CHANNEL_ENGINE_INDEX){ //é€šé“è½´
+    if(m_p_axis_config[phy_axis].axis_pmc == 0 && chn != CHANNEL_ENGINE_INDEX){ //Í¨µÀÖá
         McCmdFrame cmd;
         memset(&cmd, 0x00, sizeof(McCmdFrame));
 
         cmd.data.channel_index = chn;
-        cmd.data.axis_index = chn_axis+1;   //è½´å·ä»1å¼€å§‹
+        cmd.data.axis_index = chn_axis+1;   //ÖáºÅ´Ó1¿ªÊ¼
         cmd.data.cmd = CMD_MC_AXIS_MAUAL_MOVE;
 
-        //è®¾ç½®é€Ÿåº¦
-        uint32_t feed = vel*1000/60;   //è½¬æ¢å•ä½ä¸ºum/s
+        //ÉèÖÃËÙ¶È
+        uint32_t feed = vel*1000/60;   //×ª»»µ¥Î»Îªum/s
 
     //	memcpy(cmd.data.data, &feed, sizeof(feed));
         cmd.data.data[0] = (feed & 0xFFFF);
         cmd.data.data[1] = ((feed>>16)&0xFFFF);
 
-        //è®¾ç½®ç›®æ ‡ä½ç½®
-        int64_t tar_pos = fabs(inc_dis) * 1e7 *dir;   //å•ä½è½¬æ¢ï¼šmm-->0.1nms
+        //ÉèÖÃÄ¿±êÎ»ÖÃ
+        int64_t tar_pos = fabs(inc_dis) * 1e7 *dir;   //µ¥Î»×ª»»£ºmm-->0.1nms
 
         if((this->m_n_mask_ret_ref_over & (0x01<<phy_axis))
-                && m_p_axis_config[phy_axis].soft_limit_check_1 == 1){//è½¯é™ä½1æœ‰æ•ˆ
-            int64_t cur_pos = this->m_df_phy_axis_pos_feedback[phy_axis]*1e7;  //å½“å‰ä½ç½®
+                && m_p_axis_config[phy_axis].soft_limit_check_1 == 1){//ÈíÏŞÎ»1ÓĞĞ§
+            int64_t cur_pos = this->m_df_phy_axis_pos_feedback[phy_axis]*1e7;  //µ±Ç°Î»ÖÃ
             int64_t limit_pos = 0;
         //	int8_t dir = (tar_pos > cur_pos)?DIR_POSITIVE:DIR_NEGATIVE;
-            if(dir == DIR_POSITIVE){//æ­£å‘
+            if(dir == DIR_POSITIVE){//ÕıÏò
                 limit_pos = m_p_axis_config[phy_axis].soft_limit_max_1*1e7;
 
 
-                if(limit_pos < cur_pos){//å·²ç»åœ¨é™ä½å¤–ï¼Œå‘Šè­¦
+                if(limit_pos < cur_pos){//ÒÑ¾­ÔÚÏŞÎ»Íâ£¬¸æ¾¯
                     CreateError(ERR_SOFTLIMIT_POS, WARNING_LEVEL, CLEAR_BY_MCP_RESET, 0, chn, chn_axis);
                 //	this->m_error_code = ERR_SOFTLIMIT_POS;
                     return;
-                }else if(limit_pos == cur_pos){  //å·²ç»åˆ°è¾¾æ­£é™ä½æé™ä½ç½®
+                }else if(limit_pos == cur_pos){  //ÒÑ¾­µ½´ïÕıÏŞÎ»¼«ÏŞÎ»ÖÃ
                     CreateError(ERR_SOFTLIMIT_POS, WARNING_LEVEL, CLEAR_BY_MCP_RESET, 0, chn, chn_axis);
                     return;
                 }else if(tar_pos > (limit_pos-cur_pos)){
                     tar_pos = limit_pos-this->m_p_channel_control[chn].GetAxisCurIntpTarPos(chn_axis, true)*1e7;
 
                 }
-            }else if(dir == DIR_NEGATIVE){//è´Ÿå‘
+            }else if(dir == DIR_NEGATIVE){//¸ºÏò
                 limit_pos = m_p_axis_config[phy_axis].soft_limit_min_1*1e7;
 
-                if(limit_pos > cur_pos){//å·²ç»åœ¨é™ä½å¤–ï¼Œå‘Šè­¦
+                if(limit_pos > cur_pos){//ÒÑ¾­ÔÚÏŞÎ»Íâ£¬¸æ¾¯
                     CreateError(ERR_SOFTLIMIT_NEG, WARNING_LEVEL, CLEAR_BY_CLEAR_BUTTON, 0, chn, chn_axis);
                 //	this->m_error_code = ERR_SOFTLIMIT_NEG;
                     return;
-                }else if(limit_pos == cur_pos){  //å·²ç»åˆ°è¾¾è´Ÿé™ä½æé™ä½ç½®
+                }else if(limit_pos == cur_pos){  //ÒÑ¾­µ½´ï¸ºÏŞÎ»¼«ÏŞÎ»ÖÃ
                     CreateError(ERR_SOFTLIMIT_NEG, WARNING_LEVEL, CLEAR_BY_CLEAR_BUTTON, 0, chn, chn_axis);
                     return;
                 }else if(tar_pos < (limit_pos-cur_pos)){
@@ -5280,7 +5280,7 @@ void ChannelEngine::ManualMove(uint8_t phy_axis, int8_t dir, double vel, double 
         cmd.data.data[4] = ((tar_pos>>32) & 0xFFFF);
         cmd.data.data[5] = ((tar_pos>>48)&0xFFFF);
 
-        cmd.data.data[6] = 0x02;   //å¢é‡ç›®æ ‡ä½ç½®
+        cmd.data.data[6] = 0x02;   //ÔöÁ¿Ä¿±êÎ»ÖÃ
 
         if(!this->m_mc_run_on_arm[chn])
             m_p_mc_comm->WriteCmd(cmd);
@@ -5288,47 +5288,47 @@ void ChannelEngine::ManualMove(uint8_t phy_axis, int8_t dir, double vel, double 
             m_p_mc_arm_comm->WriteCmd(cmd);
 
     //	printf("ChannelEngine::ManualMove: axis = %d, tar_pos = %lld\n", phy_axis, tar_pos);
-    }else if(m_p_axis_config[phy_axis].axis_pmc){  //PMCè½´
+    }else if(m_p_axis_config[phy_axis].axis_pmc){  //PMCÖá
         PmcCmdFrame cmd;
         memset(&cmd, 0x00, sizeof(PmcCmdFrame));
 
-        cmd.data.axis_index = phy_axis+1;   //è½´å·ä»1å¼€å§‹
-        cmd.data.axis_index |= 0xFF00;      //æ ‡å¿—é€šé“å¼•æ“
-        cmd.data.cmd = 0x100;   //å¢é‡ä½ç½®
+        cmd.data.axis_index = phy_axis+1;   //ÖáºÅ´Ó1¿ªÊ¼
+        cmd.data.axis_index |= 0xFF00;      //±êÖ¾Í¨µÀÒıÇæ
+        cmd.data.cmd = 0x100;   //ÔöÁ¿Î»ÖÃ
 
-        //è®¾ç½®é€Ÿåº¦
-        uint32_t feed = vel*1000/60;   //è½¬æ¢å•ä½ä¸ºum/s
+        //ÉèÖÃËÙ¶È
+        uint32_t feed = vel*1000/60;   //×ª»»µ¥Î»Îªum/s
 
-        //è®¾ç½®ç›®æ ‡ä½ç½®
-        int64_t tar_pos = fabs(inc_dis)*1e7*dir;    //è½¬æ¢å•ä½ä¸º0.1nm
+        //ÉèÖÃÄ¿±êÎ»ÖÃ
+        int64_t tar_pos = fabs(inc_dis)*1e7*dir;    //×ª»»µ¥Î»Îª0.1nm
 
         if((this->m_n_mask_ret_ref_over & (0x01<<phy_axis))
-                && m_p_axis_config[phy_axis].soft_limit_check_1 == 1){//è½¯é™ä½1æœ‰æ•ˆ
-            int64_t cur_pos = this->m_df_phy_axis_pos_feedback[phy_axis]*1e7;  //å½“å‰ä½ç½®
+                && m_p_axis_config[phy_axis].soft_limit_check_1 == 1){//ÈíÏŞÎ»1ÓĞĞ§
+            int64_t cur_pos = this->m_df_phy_axis_pos_feedback[phy_axis]*1e7;  //µ±Ç°Î»ÖÃ
             int64_t limit_pos = 0;
             int8_t dir = (tar_pos > cur_pos)?DIR_POSITIVE:DIR_NEGATIVE;
-            if(dir == DIR_POSITIVE){//æ­£å‘
+            if(dir == DIR_POSITIVE){//ÕıÏò
                 limit_pos = m_p_axis_config[phy_axis].soft_limit_max_1*1e7;
 
-                if(limit_pos < cur_pos){//å·²ç»åœ¨é™ä½å¤–ï¼Œå‘Šè­¦
+                if(limit_pos < cur_pos){//ÒÑ¾­ÔÚÏŞÎ»Íâ£¬¸æ¾¯
                     CreateError(ERR_SOFTLIMIT_POS, WARNING_LEVEL, CLEAR_BY_MCP_RESET, 0, CHANNEL_ENGINE_INDEX, phy_axis);
                 //	this->m_error_code = ERR_SOFTLIMIT_POS;
                     return;
-                }else if(limit_pos == cur_pos){  //å·²ç»åˆ°è¾¾æ­£é™ä½æé™ä½ç½®
+                }else if(limit_pos == cur_pos){  //ÒÑ¾­µ½´ïÕıÏŞÎ»¼«ÏŞÎ»ÖÃ
                     CreateError(ERR_SOFTLIMIT_POS, WARNING_LEVEL, CLEAR_BY_MCP_RESET, 0, CHANNEL_ENGINE_INDEX, phy_axis);
                     return;
                 }else if(tar_pos > (limit_pos-cur_pos)){
                     tar_pos = limit_pos-cur_pos;
 
                 }
-            }else if(dir == DIR_NEGATIVE){//è´Ÿå‘
+            }else if(dir == DIR_NEGATIVE){//¸ºÏò
                 limit_pos = m_p_axis_config[phy_axis].soft_limit_min_1*1e7;
 
-                if(limit_pos > cur_pos){//å·²ç»åœ¨é™ä½å¤–ï¼Œå‘Šè­¦
+                if(limit_pos > cur_pos){//ÒÑ¾­ÔÚÏŞÎ»Íâ£¬¸æ¾¯
                     CreateError(ERR_SOFTLIMIT_NEG, WARNING_LEVEL, CLEAR_BY_CLEAR_BUTTON, 0, CHANNEL_ENGINE_INDEX, phy_axis);
                 //	this->m_error_code = ERR_SOFTLIMIT_NEG;
                     return;
-                }else if(limit_pos == cur_pos){  //å·²ç»åˆ°è¾¾è´Ÿé™ä½æé™ä½ç½®
+                }else if(limit_pos == cur_pos){  //ÒÑ¾­µ½´ï¸ºÏŞÎ»¼«ÏŞÎ»ÖÃ
                     CreateError(ERR_SOFTLIMIT_NEG, WARNING_LEVEL, CLEAR_BY_CLEAR_BUTTON, 0, CHANNEL_ENGINE_INDEX, phy_axis);
                     return;
                 }else if(tar_pos < (limit_pos-cur_pos)){
@@ -5339,13 +5339,13 @@ void ChannelEngine::ManualMove(uint8_t phy_axis, int8_t dir, double vel, double 
 
 
 
-        memcpy(&cmd.data.data[1], &tar_pos, sizeof(tar_pos));  //è®¾ç½®ç›®æ ‡ä½ç½®
+        memcpy(&cmd.data.data[1], &tar_pos, sizeof(tar_pos));  //ÉèÖÃÄ¿±êÎ»ÖÃ
 
-        memcpy(&cmd.data.data[5], &feed, sizeof(feed)); //è®¾ç½®é€Ÿåº¦
+        memcpy(&cmd.data.data[5], &feed, sizeof(feed)); //ÉèÖÃËÙ¶È
 
 
 
-        this->m_n_run_axis_mask |= 0x01L<<phy_axis;  //è®¾ç½®å½“å‰è¿è¡Œè½´
+        this->m_n_run_axis_mask |= 0x01L<<phy_axis;  //ÉèÖÃµ±Ç°ÔËĞĞÖá
 
         this->m_p_mi_comm->SendPmcCmd(cmd);
 
@@ -5355,14 +5355,14 @@ void ChannelEngine::ManualMove(uint8_t phy_axis, int8_t dir, double vel, double 
 }
 
 /**
- * @brief æ‰‹åŠ¨åœæ­¢
- * @param æ— 
+ * @brief ÊÖ¶¯Í£Ö¹
+ * @param ÎŞ
  */
 void ChannelEngine::ManualMoveStop(){
-    //åœæ­¢é€šé“è½´
+    //Í£Ö¹Í¨µÀÖá
     m_p_channel_control[m_n_cur_channle_index].ManualMoveStop();
 
-    //åœæ­¢PMCè½´ç§»åŠ¨
+    //Í£Ö¹PMCÖáÒÆ¶¯
     this->ManualMovePmcStop();
 
 
@@ -5372,7 +5372,7 @@ void ChannelEngine::ManualMoveStop(){
 //
 //		cmd.data.axis_index = 0xFF;
 //		cmd.data.cmd = CMD_MI_PAUSE_PMC_AXIS;
-//		cmd.data.data[0] = 0x20;   //åœæ­¢å½“å‰è½´è¿åŠ¨ï¼Œå¹¶æŠ›å¼ƒå½“å‰è¿åŠ¨æŒ‡ä»¤
+//		cmd.data.data[0] = 0x20;   //Í£Ö¹µ±Ç°ÖáÔË¶¯£¬²¢Å×Æúµ±Ç°ÔË¶¯Ö¸Áî
 //
 //		m_p_mi_comm->WriteCmd(cmd);
 //
@@ -5384,69 +5384,69 @@ void ChannelEngine::ManualMoveStop(){
 }
 
 /**
- * @brief æŒ‡å®šè½´æ‰‹åŠ¨ç§»åŠ¨
+ * @brief Ö¸¶¨ÖáÊÖ¶¯ÒÆ¶¯
  */
 void ChannelEngine::ManualMovePmc(uint8_t phy_axis, int8_t dir){
-    //æ£€æŸ¥ç¡¬é™ä½
-    if(CheckAxisHardLimit(phy_axis, dir)){   //ç¡¬é™ä½å‘Šè­¦ï¼Œç›´æ¥è¿”å›
+    //¼ì²éÓ²ÏŞÎ»
+    if(CheckAxisHardLimit(phy_axis, dir)){   //Ó²ÏŞÎ»¸æ¾¯£¬Ö±½Ó·µ»Ø
         printf("hard limit active, manual move pmc return \n");
         return;
     }
 
-//	m_channel_status.cur_manual_move_dir = dir;   //ä¿å­˜æ–¹å‘
+//	m_channel_status.cur_manual_move_dir = dir;   //±£´æ·½Ïò
 
     PmcCmdFrame cmd;
     memset(&cmd, 0x00, sizeof(PmcCmdFrame));
 
-    cmd.data.axis_index = phy_axis+1;   //è½´å·ä»1å¼€å§‹
-    cmd.data.axis_index |= 0xFF00;      //æ ‡å¿—é€šé“å¼•æ“
-    cmd.data.cmd = 0x100;   //å¢é‡ä½ç½®
+    cmd.data.axis_index = phy_axis+1;   //ÖáºÅ´Ó1¿ªÊ¼
+    cmd.data.axis_index |= 0xFF00;      //±êÖ¾Í¨µÀÒıÇæ
+    cmd.data.cmd = 0x100;   //ÔöÁ¿Î»ÖÃ
 
-    //è®¾ç½®é€Ÿåº¦
-    uint32_t feed = this->m_p_axis_config[phy_axis].manual_speed*1000/60;   //è½¬æ¢å•ä½ä¸ºum/s
+    //ÉèÖÃËÙ¶È
+    uint32_t feed = this->m_p_axis_config[phy_axis].manual_speed*1000/60;   //×ª»»µ¥Î»Îªum/s
     if(this->m_p_channel_control[0].IsRapidManualMove()){
-        feed *= 2;  //é€Ÿåº¦ç¿»å€
+        feed *= 2;  //ËÙ¶È·­±¶
         printf("double manual feed\n");
     }
 
 
-    //è®¾ç½®ç›®æ ‡ä½ç½®
+    //ÉèÖÃÄ¿±êÎ»ÖÃ
     int64_t tar_pos = 0;
 
-    if(this->m_p_channel_control[0].GetChnWorkMode() == MANUAL_STEP_MODE){ //æ‰‹åŠ¨å•æ­¥
-        tar_pos = this->m_p_channel_control[0].GetCurManualStep()*1e4*dir;		//è½¬æ¢å•ä½ä¸º0.1nm
+    if(this->m_p_channel_control[0].GetChnWorkMode() == MANUAL_STEP_MODE){ //ÊÖ¶¯µ¥²½
+        tar_pos = this->m_p_channel_control[0].GetCurManualStep()*1e4*dir;		//×ª»»µ¥Î»Îª0.1nm
 
     }else{
-        tar_pos = 99999*1e7*dir;    //æ‰‹åŠ¨è¿ç»­æ¨¡å¼ï¼Œå°†ç›®æ ‡ä½ç½®è®¾ç½®çš„å¾ˆè¿œ
+        tar_pos = 99999*1e7*dir;    //ÊÖ¶¯Á¬ĞøÄ£Ê½£¬½«Ä¿±êÎ»ÖÃÉèÖÃµÄºÜÔ¶
     }
 
     if((this->m_n_mask_ret_ref_over & (0x01<<phy_axis))
-            && this->m_p_axis_config[phy_axis].soft_limit_check_1 == 1){//è½¯é™ä½1æœ‰æ•ˆ
+            && this->m_p_axis_config[phy_axis].soft_limit_check_1 == 1){//ÈíÏŞÎ»1ÓĞĞ§
         int64_t tar_inc_max = 0;
-        int64_t cur_pos = this->GetPhyAxisMachPosFeedback(phy_axis)*1e7;  //å½“å‰ä½ç½®
-        if(dir == DIR_POSITIVE){//æ­£å‘
+        int64_t cur_pos = this->GetPhyAxisMachPosFeedback(phy_axis)*1e7;  //µ±Ç°Î»ÖÃ
+        if(dir == DIR_POSITIVE){//ÕıÏò
             tar_inc_max = m_p_axis_config[phy_axis].soft_limit_max_1*1e7 - cur_pos;
 
-            if(tar_inc_max < 0){//å·²ç»åœ¨é™ä½å¤–ï¼Œå‘Šè­¦
+            if(tar_inc_max < 0){//ÒÑ¾­ÔÚÏŞÎ»Íâ£¬¸æ¾¯
                 CreateError(ERR_SOFTLIMIT_POS, WARNING_LEVEL, CLEAR_BY_MCP_RESET, 0, CHANNEL_ENGINE_INDEX, phy_axis);
                 this->m_error_code = ERR_SOFTLIMIT_POS;
                 return;
-            }else if(tar_inc_max == 0){  //å·²ç»åˆ°è¾¾æ­£é™ä½æé™ä½ç½®
+            }else if(tar_inc_max == 0){  //ÒÑ¾­µ½´ïÕıÏŞÎ»¼«ÏŞÎ»ÖÃ
                 CreateError(ERR_SOFTLIMIT_POS, WARNING_LEVEL, CLEAR_BY_MCP_RESET, 0, CHANNEL_ENGINE_INDEX, phy_axis);
                 this->m_error_code = ERR_SOFTLIMIT_POS;
                 return;
             }else if(tar_pos > tar_inc_max){
                 tar_pos = tar_inc_max;
             }
-        }else if(dir == DIR_NEGATIVE){//è´Ÿå‘
+        }else if(dir == DIR_NEGATIVE){//¸ºÏò
             tar_inc_max = m_p_axis_config[phy_axis].soft_limit_min_1*1e7 - cur_pos;
 
-            if(tar_inc_max > 0){//å·²ç»åœ¨é™ä½å¤–ï¼Œå‘Šè­¦
+            if(tar_inc_max > 0){//ÒÑ¾­ÔÚÏŞÎ»Íâ£¬¸æ¾¯
                 CreateError(ERR_SOFTLIMIT_NEG, WARNING_LEVEL, CLEAR_BY_CLEAR_BUTTON, 0, CHANNEL_ENGINE_INDEX, phy_axis);
         //		this->m_error_code = ERR_SOFTLIMIT_NEG;
                 printf("manual move out of soft negative limit\n");
                 return;
-            }else if(tar_inc_max == 0){  //å·²ç»åˆ°è¾¾è´Ÿé™ä½æé™ä½ç½®
+            }else if(tar_inc_max == 0){  //ÒÑ¾­µ½´ï¸ºÏŞÎ»¼«ÏŞÎ»ÖÃ
                 CreateError(ERR_SOFTLIMIT_NEG, WARNING_LEVEL, CLEAR_BY_MCP_RESET, 0, CHANNEL_ENGINE_INDEX, phy_axis);
         //		this->m_error_code = ERR_SOFTLIMIT_NEG;
                 return;
@@ -5456,13 +5456,13 @@ void ChannelEngine::ManualMovePmc(uint8_t phy_axis, int8_t dir){
         }
     }
 
-    memcpy(&cmd.data.data[1], &tar_pos, sizeof(tar_pos));  //è®¾ç½®å¢é‡ç›®æ ‡ä½ç½®
+    memcpy(&cmd.data.data[1], &tar_pos, sizeof(tar_pos));  //ÉèÖÃÔöÁ¿Ä¿±êÎ»ÖÃ
 
-    memcpy(&cmd.data.data[5], &feed, sizeof(feed)); //è®¾ç½®é€Ÿåº¦
+    memcpy(&cmd.data.data[5], &feed, sizeof(feed)); //ÉèÖÃËÙ¶È
 
 
 
-    this->m_n_run_axis_mask = 0x01L<<phy_axis;  //è®¾ç½®å½“å‰è¿è¡Œè½´
+    this->m_n_run_axis_mask = 0x01L<<phy_axis;  //ÉèÖÃµ±Ç°ÔËĞĞÖá
 
     this->m_p_mi_comm->SendPmcCmd(cmd);
 
@@ -5470,7 +5470,7 @@ void ChannelEngine::ManualMovePmc(uint8_t phy_axis, int8_t dir){
 }
 
 /**
- * @brief æ‰‹åŠ¨ç§»åŠ¨
+ * @brief ÊÖ¶¯ÒÆ¶¯
  */
 void ChannelEngine::ManualMovePmc(int8_t dir){
 
@@ -5478,15 +5478,15 @@ void ChannelEngine::ManualMovePmc(int8_t dir){
 }
 
 /**
- * @brief æŒ‡å®šè½´ä»¥æŒ‡å®šé€Ÿåº¦ç§»åŠ¨åˆ°æŒ‡å®šä½ç½®
- * param phy_axis : æŒ‡å®šçš„ç‰©ç†è½´ï¼Œ ä»0å¼€å§‹
- * param tar_pos : ç›®æ ‡ä½ç½®ï¼Œå•ä½ï¼šmm
- * param vel : ç›®æ ‡é€Ÿåº¦ï¼Œ å•ä½ï¼šmm/min
- * param inc : true--å¢é‡å¼    false--ç»å¯¹å¼
+ * @brief Ö¸¶¨ÖáÒÔÖ¸¶¨ËÙ¶ÈÒÆ¶¯µ½Ö¸¶¨Î»ÖÃ
+ * param phy_axis : Ö¸¶¨µÄÎïÀíÖá£¬ ´Ó0¿ªÊ¼
+ * param tar_pos : Ä¿±êÎ»ÖÃ£¬µ¥Î»£ºmm
+ * param vel : Ä¿±êËÙ¶È£¬ µ¥Î»£ºmm/min
+ * param inc : true--ÔöÁ¿Ê½    false--¾ø¶ÔÊ½
  *
  */
 void ChannelEngine::ManualMovePmc(uint8_t phy_axis, double tar_pos, double vel, bool inc){
-    uint8_t dir = DIR_POSITIVE;  //é»˜è®¤æ­£å‘
+    uint8_t dir = DIR_POSITIVE;  //Ä¬ÈÏÕıÏò
 
     double cur_pos = this->GetPhyAxisMachPosFeedback(phy_axis);
     if((!inc && tar_pos - cur_pos < 0) ||
@@ -5494,8 +5494,8 @@ void ChannelEngine::ManualMovePmc(uint8_t phy_axis, double tar_pos, double vel, 
         dir = DIR_NEGATIVE;
 
 
-    //æ£€æŸ¥ç¡¬é™ä½
-    if(CheckAxisHardLimit(phy_axis, dir)){   //ç¡¬é™ä½å‘Šè­¦ï¼Œç›´æ¥è¿”å›
+    //¼ì²éÓ²ÏŞÎ»
+    if(CheckAxisHardLimit(phy_axis, dir)){   //Ó²ÏŞÎ»¸æ¾¯£¬Ö±½Ó·µ»Ø
         printf("hard limit active, manual move pmc return \n");
         return;
     }
@@ -5503,25 +5503,25 @@ void ChannelEngine::ManualMovePmc(uint8_t phy_axis, double tar_pos, double vel, 
     PmcCmdFrame cmd;
     memset(&cmd, 0x00, sizeof(PmcCmdFrame));
 
-    cmd.data.axis_index = phy_axis+1;   //è½´å·ä»1å¼€å§‹
-    cmd.data.axis_index |= 0xFF00;      //æ ‡å¿—é€šé“å¼•æ“
-    cmd.data.cmd = inc?0x100:0;   //ç»å¯¹ä½ç½®/å¢é‡ä½ç½®
+    cmd.data.axis_index = phy_axis+1;   //ÖáºÅ´Ó1¿ªÊ¼
+    cmd.data.axis_index |= 0xFF00;      //±êÖ¾Í¨µÀÒıÇæ
+    cmd.data.cmd = inc?0x100:0;   //¾ø¶ÔÎ»ÖÃ/ÔöÁ¿Î»ÖÃ
 
-    //è®¾ç½®é€Ÿåº¦
-    uint32_t feed = vel*1000/60;   //è½¬æ¢å•ä½ä¸ºum/s
+    //ÉèÖÃËÙ¶È
+    uint32_t feed = vel*1000/60;   //×ª»»µ¥Î»Îªum/s
 
-    //è®¾ç½®ç›®æ ‡ä½ç½®
-    int64_t target = tar_pos*1e7;    //è½¬æ¢å•ä½ä¸º0.1nm
+    //ÉèÖÃÄ¿±êÎ»ÖÃ
+    int64_t target = tar_pos*1e7;    //×ª»»µ¥Î»Îª0.1nm
 
 
     if((this->m_n_mask_ret_ref_over & (0x01<<phy_axis))
-            && this->m_p_axis_config[phy_axis].soft_limit_check_1 == 1){//è½¯é™ä½1æœ‰æ•ˆ
+            && this->m_p_axis_config[phy_axis].soft_limit_check_1 == 1){//ÈíÏŞÎ»1ÓĞĞ§
         int64_t tar_inc_max = 0;
 
-        if(dir == DIR_POSITIVE){//æ­£å‘
+        if(dir == DIR_POSITIVE){//ÕıÏò
             tar_inc_max = m_p_axis_config[phy_axis].soft_limit_max_1*1e7 - cur_pos*1e7;
 
-            if(tar_inc_max <= 0){//å·²ç»åœ¨é™ä½å¤–ï¼Œå‘Šè­¦
+            if(tar_inc_max <= 0){//ÒÑ¾­ÔÚÏŞÎ»Íâ£¬¸æ¾¯
                 CreateError(ERR_SOFTLIMIT_POS, WARNING_LEVEL, CLEAR_BY_CLEAR_BUTTON, 0, CHANNEL_ENGINE_INDEX, phy_axis);
     //			this->m_error_code = ERR_SOFTLIMIT_POS;
 
@@ -5531,10 +5531,10 @@ void ChannelEngine::ManualMovePmc(uint8_t phy_axis, double tar_pos, double vel, 
             }else if(!inc && target > m_p_axis_config[phy_axis].soft_limit_max_1*1e7){
                 target = m_p_axis_config[phy_axis].soft_limit_max_1*1e7;
             }
-        }else if(dir == DIR_NEGATIVE){//è´Ÿå‘
+        }else if(dir == DIR_NEGATIVE){//¸ºÏò
             tar_inc_max = m_p_axis_config[phy_axis].soft_limit_min_1*1e7 - cur_pos*1e7;
 
-            if(tar_inc_max > 0){//å·²ç»åœ¨é™ä½å¤–ï¼Œå‘Šè­¦
+            if(tar_inc_max > 0){//ÒÑ¾­ÔÚÏŞÎ»Íâ£¬¸æ¾¯
                 CreateError(ERR_SOFTLIMIT_NEG, WARNING_LEVEL, CLEAR_BY_CLEAR_BUTTON, 0, CHANNEL_ENGINE_INDEX, phy_axis);
         //		this->m_error_code = ERR_SOFTLIMIT_NEG;
 
@@ -5547,13 +5547,13 @@ void ChannelEngine::ManualMovePmc(uint8_t phy_axis, double tar_pos, double vel, 
         }
     }
 
-    memcpy(&cmd.data.data[1], &target, sizeof(target));  //è®¾ç½®ç›®æ ‡ä½ç½®
+    memcpy(&cmd.data.data[1], &target, sizeof(target));  //ÉèÖÃÄ¿±êÎ»ÖÃ
 
-    memcpy(&cmd.data.data[5], &feed, sizeof(feed)); //è®¾ç½®é€Ÿåº¦
+    memcpy(&cmd.data.data[5], &feed, sizeof(feed)); //ÉèÖÃËÙ¶È
 
 
 
-    this->m_n_run_axis_mask = 0x01L<<phy_axis;  //è®¾ç½®å½“å‰è¿è¡Œè½´
+    this->m_n_run_axis_mask = 0x01L<<phy_axis;  //ÉèÖÃµ±Ç°ÔËĞĞÖá
 
     this->m_p_mi_comm->SendPmcCmd(cmd);
 
@@ -5561,16 +5561,16 @@ void ChannelEngine::ManualMovePmc(uint8_t phy_axis, double tar_pos, double vel, 
 }
 
 /**
- * @brief æ‰‹åŠ¨åœæ­¢
+ * @brief ÊÖ¶¯Í£Ö¹
  */
 void ChannelEngine::ManualMovePmcStop(){
-    if(this->m_p_channel_control[0].GetChnWorkMode() == MANUAL_STEP_MODE){  //æ‰‹åŠ¨å•æ­¥æ¨¡å¼ï¼Œä¸åšå“åº”ï¼Œé€€å‡º
+    if(this->m_p_channel_control[0].GetChnWorkMode() == MANUAL_STEP_MODE){  //ÊÖ¶¯µ¥²½Ä£Ê½£¬²»×öÏìÓ¦£¬ÍË³ö
         return;
     }
     printf("send manualmove pmc stop to mi \n");
 
 #ifdef USES_PMC_PROCESS
-    //PMCæ§åˆ¶
+    //PMC¿ØÖÆ
     this->m_p_pmc_reg->FReg().bits[0].OUT0 = 0;
     this->m_p_pmc_reg->FReg().bits[0].OUT1 = 0;
     this->m_p_pmc_reg->FReg().bits[0].OUT2 = 0;
@@ -5580,14 +5580,14 @@ void ChannelEngine::ManualMovePmcStop(){
     this->m_p_pmc_reg->FReg().bits[0].OUT6 = 0;
     this->m_p_pmc_reg->FReg().bits[0].OUT7 = 0;
 #else
-    //ç³»ç»Ÿæ§åˆ¶
+    //ÏµÍ³¿ØÖÆ
     MiCmdFrame cmd;
     memset(&cmd, 0x00, sizeof(MiCmdFrame));
 
     cmd.data.axis_index = NO_AXIS;
     cmd.data.reserved = CHANNEL_ENGINE_INDEX;
     cmd.data.cmd = CMD_MI_PAUSE_PMC_AXIS;
-    cmd.data.data[0] = 0x20;   //åœæ­¢å½“å‰è½´è¿åŠ¨ï¼Œå¹¶æŠ›å¼ƒå½“å‰è¿åŠ¨æŒ‡ä»¤
+    cmd.data.data[0] = 0x20;   //Í£Ö¹µ±Ç°ÖáÔË¶¯£¬²¢Å×Æúµ±Ç°ÔË¶¯Ö¸Áî
 
     m_p_mi_comm->WriteCmd(cmd);
 
@@ -5597,9 +5597,9 @@ void ChannelEngine::ManualMovePmcStop(){
 }
 
 /**
- * @brief æš‚åœPMCè½´ç§»åŠ¨
- * @param phy_axis : ç‰©ç†è½´å·, ä»0å¼€å§‹
- * @param flag : true--æš‚åœ     false--å–æ¶ˆæš‚åœ
+ * @brief ÔİÍ£PMCÖáÒÆ¶¯
+ * @param phy_axis : ÎïÀíÖáºÅ, ´Ó0¿ªÊ¼
+ * @param flag : true--ÔİÍ£     false--È¡ÏûÔİÍ£
  */
 void ChannelEngine::PausePmcAxis(uint8_t phy_axis, bool flag){
     MiCmdFrame cmd;
@@ -5607,11 +5607,11 @@ void ChannelEngine::PausePmcAxis(uint8_t phy_axis, bool flag){
 
     uint16_t data = 0x01;
     if(!flag)
-        data = 0x10;   //å–æ¶ˆæš‚åœ
+        data = 0x10;   //È¡ÏûÔİÍ£
     cmd.data.axis_index = phy_axis+1;
     cmd.data.reserved = CHANNEL_ENGINE_INDEX;
     cmd.data.cmd = CMD_MI_PAUSE_PMC_AXIS;
-    cmd.data.data[0] = data;   //æš‚åœå½“å‰è½´è¿åŠ¨
+    cmd.data.data[0] = data;   //ÔİÍ£µ±Ç°ÖáÔË¶¯
 
     m_p_mi_comm->WriteCmd(cmd);
 
@@ -5619,8 +5619,8 @@ void ChannelEngine::PausePmcAxis(uint8_t phy_axis, bool flag){
 }
 
 /**
- * @brief æ‰‹åŠ¨åœæ­¢æŒ‡å®šè½´
- * @param phy_axis ï¼š ç‰©ç†è½´å¥½ï¼Œ ä»0å¼€å§‹
+ * @brief ÊÖ¶¯Í£Ö¹Ö¸¶¨Öá
+ * @param phy_axis £º ÎïÀíÖáºÃ£¬ ´Ó0¿ªÊ¼
  */
 void ChannelEngine::ManualMoveStop(uint8_t phy_axis){
 
@@ -5628,14 +5628,14 @@ void ChannelEngine::ManualMoveStop(uint8_t phy_axis){
     chn = this->GetAxisChannel(phy_axis, chn_axis);
     if(this->m_p_axis_config[phy_axis].axis_pmc == 0 && chn != CHANNEL_ENGINE_INDEX){
         this->m_p_channel_control[chn].ManualMoveStop(0x01<<chn_axis);
-    }else if(this->m_p_axis_config[phy_axis].axis_pmc){  //PMCè½´
+    }else if(this->m_p_axis_config[phy_axis].axis_pmc){  //PMCÖá
         MiCmdFrame cmd;
         memset(&cmd, 0x00, sizeof(MiCmdFrame));
 
         cmd.data.axis_index = phy_axis+1;
         cmd.data.reserved = CHANNEL_ENGINE_INDEX;
         cmd.data.cmd = CMD_MI_PAUSE_PMC_AXIS;
-        cmd.data.data[0] = 0x30;   //åœæ­¢æŒ‡å®šè½´è¿åŠ¨ï¼Œå¹¶æŠ›å¼ƒå½“å‰è¿åŠ¨æŒ‡ä»¤
+        cmd.data.data[0] = 0x30;   //Í£Ö¹Ö¸¶¨ÖáÔË¶¯£¬²¢Å×Æúµ±Ç°ÔË¶¯Ö¸Áî
 
         m_p_mi_comm->WriteCmd(cmd);
 
@@ -5648,19 +5648,19 @@ void ChannelEngine::ManualMoveStop(uint8_t phy_axis){
 }
 
 /**
- * @brief PMCè½´è¿è¡Œåˆ°ä½
- * @param cmd : MIå‘é€è¿‡æ¥çš„å‘½ä»¤å¸§
+ * @brief PMCÖáÔËĞĞµ½Î»
+ * @param cmd : MI·¢ËÍ¹ıÀ´µÄÃüÁîÖ¡
  */
 void ChannelEngine::PmcAxisRunOver(MiCmdFrame &cmd){
     printf("PmcAxisRunOver: axis = %hhu\n",cmd.data.axis_index);
     uint64_t mask = 0;
     uint8_t chn = cmd.data.reserved-1;
 
-    if((cmd.data.data[0]&0xFF) == 0x01){//G01æŒ‡ä»¤
+    if((cmd.data.data[0]&0xFF) == 0x01){//G01Ö¸Áî
 
         memcpy(&mask, &cmd.data.data[1], 4);
         printf("PmcAxisRunOver1: axis_mask = 0x%llx\n",mask);
-        if((this->m_n_run_axis_mask & mask) == 0){  //ä¸æ˜¯é€šé“å¼•æ“æ§åˆ¶çš„PMCè½´
+        if((this->m_n_run_axis_mask & mask) == 0){  //²»ÊÇÍ¨µÀÒıÇæ¿ØÖÆµÄPMCÖá
             if(chn < this->m_p_general_config->chn_count){
                 if(this->m_p_channel_control[chn].PmcAxisRunOver(cmd))
                     return;
@@ -5668,12 +5668,12 @@ void ChannelEngine::PmcAxisRunOver(MiCmdFrame &cmd){
             return;
         }else if(this->m_n_run_axis_mask == 0)
             return;
-    }else{ //å•è½´æŒ‡ä»¤  G00
-        uint8_t phy_axis = cmd.data.axis_index-1;  //ç‰©ç†è½´å·ï¼Œä»0å¼€å§‹
+    }else{ //µ¥ÖáÖ¸Áî  G00
+        uint8_t phy_axis = cmd.data.axis_index-1;  //ÎïÀíÖáºÅ£¬´Ó0¿ªÊ¼
         mask = 0x01L<<phy_axis;
 
         printf("PmcAxisRunOver2: axis_mask = 0x%llx\n",mask);
-        if((this->m_n_run_axis_mask & mask) == 0){  //ä¸æ˜¯é€šé“å¼•æ“æ§åˆ¶çš„PMCè½´
+        if((this->m_n_run_axis_mask & mask) == 0){  //²»ÊÇÍ¨µÀÒıÇæ¿ØÖÆµÄPMCÖá
             if(chn < this->m_p_general_config->chn_count){
                 if(this->m_p_channel_control[chn].PmcAxisRunOver(cmd))
                     return;
@@ -5684,14 +5684,14 @@ void ChannelEngine::PmcAxisRunOver(MiCmdFrame &cmd){
 
         if(this->m_p_axis_config[phy_axis].axis_pmc > 0){
             if(m_pmc_axis_ctrl[m_p_axis_config[phy_axis].axis_pmc-1].GetCmdCount() > 0 &&
-                    !m_pmc_axis_ctrl[m_p_axis_config[phy_axis].axis_pmc-1].IsPaused()){   //æœ‰æ•°æ®ï¼Œéæš‚åœçŠ¶æ€
+                    !m_pmc_axis_ctrl[m_p_axis_config[phy_axis].axis_pmc-1].IsPaused()){   //ÓĞÊı¾İ£¬·ÇÔİÍ£×´Ì¬
                 m_pmc_axis_ctrl[m_p_axis_config[phy_axis].axis_pmc-1].ExecCmdOver(true);
             }
         }
 
         this->m_n_runover_axis_mask |= mask;
 
-        if(this->m_n_run_axis_mask == this->m_n_runover_axis_mask){  //è¿è¡Œç»“æŸ
+        if(this->m_n_run_axis_mask == this->m_n_runover_axis_mask){  //ÔËĞĞ½áÊø
             this->m_n_run_axis_mask = 0;
             this->m_n_runover_axis_mask = 0;
 
@@ -5704,8 +5704,8 @@ void ChannelEngine::PmcAxisRunOver(MiCmdFrame &cmd){
 
 
 /**
- * @brief ä¸»è½´è¾“å‡º
- * @param dir : ä¸»è½´æ—‹è½¬æ–¹å‘
+ * @brief Ö÷ÖáÊä³ö
+ * @param dir : Ö÷ÖáĞı×ª·½Ïò
  */
 void ChannelEngine::SpindleOut(int dir){
     //printf("channelengine::spindleout : %d, cur_chn=%hhu\n", dir, m_n_cur_channle_index);
@@ -5714,14 +5714,14 @@ void ChannelEngine::SpindleOut(int dir){
 }
 
 /**
- * @brief æ£€æŸ¥ç‰©ç†è½´é™ä½å‘Šè­¦æƒ…å†µ
- * @param phy_axis : ç‰©ç†è½´å·ï¼Œç”±0å¼€å§‹
- * @param dir ï¼š é™ä½æ–¹å‘, -1è¡¨ç¤ºè´Ÿå‘ï¼Œ 1è¡¨ç¤ºæ­£å‘
- * @return true--è§¦å‘é™ä½   false--æ²¡æœ‰è§¦å‘
+ * @brief ¼ì²éÎïÀíÖáÏŞÎ»¸æ¾¯Çé¿ö
+ * @param phy_axis : ÎïÀíÖáºÅ£¬ÓÉ0¿ªÊ¼
+ * @param dir £º ÏŞÎ»·½Ïò, -1±íÊ¾¸ºÏò£¬ 1±íÊ¾ÕıÏò
+ * @return true--´¥·¢ÏŞÎ»   false--Ã»ÓĞ´¥·¢
  */
 bool ChannelEngine::CheckAxisHardLimit(uint8_t phy_axis, int8_t dir){
     printf("cur phy axis: %hhu, dir = %hhu, post_mask = 0x%llx, neg_mask = 0x%llx\n", phy_axis, dir, this->m_hard_limit_postive, m_hard_limit_negative);
-    if(this->m_b_ret_ref || this->m_b_ret_ref_auto)   //å›å‚è€ƒç‚¹æ—¶å±è”½ç¡¬é™ä½
+    if(this->m_b_ret_ref || this->m_b_ret_ref_auto)   //»Ø²Î¿¼µãÊ±ÆÁ±ÎÓ²ÏŞÎ»
         return false;
     if(dir == DIR_POSITIVE){
         if(this->m_hard_limit_postive & (0x01<<phy_axis))
@@ -5737,12 +5737,12 @@ bool ChannelEngine::CheckAxisHardLimit(uint8_t phy_axis, int8_t dir){
 }
 
 /**
- * @brief è®¾ç½®æŒ‡å®šè½´çš„è½¯é™ä½å¼€å…³
- * @param axis : æŒ‡å®šè½´å·ï¼Œä»0å¼€å§‹
+ * @brief ÉèÖÃÖ¸¶¨ÖáµÄÈíÏŞÎ»¿ª¹Ø
+ * @param axis : Ö¸¶¨ÖáºÅ£¬´Ó0¿ªÊ¼
  */
  /*
 void ChannelEngine::SetAxisSoftLimit(uint8_t axis){
-    //å‘é€MCè½´è½¯é™ä½æ•°æ®
+    //·¢ËÍMCÖáÈíÏŞÎ»Êı¾İ
     McCmdFrame cmd;
     memset(&cmd, 0x00, sizeof(McCmdFrame));
 
@@ -5768,13 +5768,13 @@ void ChannelEngine::SetAxisSoftLimit(uint8_t axis){
 }*/
 
 /**
- * @brief è®¾ç½®æŒ‡å®šè½´çš„è½¯é™ä½å€¼
- * @param axis : æŒ‡å®šè½´å·ï¼Œä»0å¼€å§‹
- * @param index : è½¯é™ä½ç»„å·ï¼Œæ€»å…±3ç»„ï¼Œ0-2
+ * @brief ÉèÖÃÖ¸¶¨ÖáµÄÈíÏŞÎ»Öµ
+ * @param axis : Ö¸¶¨ÖáºÅ£¬´Ó0¿ªÊ¼
+ * @param index : ÈíÏŞÎ»×éºÅ£¬×Ü¹²3×é£¬0-2
  */
  /*
 void ChannelEngine::SetAxisSoftLimitValue(uint8_t axis, uint8_t index){
-    //å‘é€MCè½´è½¯é™ä½æ•°æ®
+    //·¢ËÍMCÖáÈíÏŞÎ»Êı¾İ
     McCmdFrame cmd;
     memset(&cmd, 0x00, sizeof(McCmdFrame));
     uint16_t tmp = index;
@@ -5799,11 +5799,11 @@ void ChannelEngine::SetAxisSoftLimitValue(uint8_t axis, uint8_t index){
     cmd.data.data[0] = tmp;
 
 
-    int32_t softlimit = max*1e3;   //å•ä½ç”±mmè½¬æ¢ä¸º1um
+    int32_t softlimit = max*1e3;   //µ¥Î»ÓÉmm×ª»»Îª1um
     cmd.data.data[1] = (softlimit & 0xFFFF);
     cmd.data.data[2] = ((softlimit>>16) & 0xFFFF);
 
-    softlimit = min*1e3;   //å•ä½ç”±mmè½¬æ¢ä¸º1um
+    softlimit = min*1e3;   //µ¥Î»ÓÉmm×ª»»Îª1um
     cmd.data.data[3] = (softlimit & 0xFFFF);
     cmd.data.data[4] = ((softlimit>>16) & 0xFFFF);
 
@@ -5811,10 +5811,10 @@ void ChannelEngine::SetAxisSoftLimitValue(uint8_t axis, uint8_t index){
 }*/
 
 /**
- * @brief å¼€å§‹æ¨¡å—å‡çº§æ“ä½œ
+ * @brief ¿ªÊ¼Ä£¿éÉı¼¶²Ù×÷
  */
 void ChannelEngine::StartUpdateProcess(){
-    //åˆ›å»ºå‡çº§çº¿ç¨‹
+    //´´½¨Éı¼¶Ïß³Ì
     int res = 0;
     pthread_attr_t attr;
     struct sched_param param;
@@ -5823,16 +5823,16 @@ void ChannelEngine::StartUpdateProcess(){
     pthread_attr_setstacksize(&attr, kThreadStackSize);	//
     param.__sched_priority = 30; //90;
     pthread_attr_setschedparam(&attr, &param);
-//	res = pthread_attr_setinheritsched(&attr, PTHREAD_EXPLICIT_SCHED); //ä¸ç»§æ‰¿çˆ¶çº¿ç¨‹è°ƒåº¦æ–¹å¼ï¼Œå¦åˆ™ä»¥ä¸Šçš„è®¾ç½®ä¸ç”Ÿæ•ˆ
+//	res = pthread_attr_setinheritsched(&attr, PTHREAD_EXPLICIT_SCHED); //²»¼Ì³Ğ¸¸Ïß³Ìµ÷¶È·½Ê½£¬·ñÔòÒÔÉÏµÄÉèÖÃ²»ÉúĞ§
 //	if (res) {
-//		g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "æ¨¡å—å‡çº§å¤„ç†çº¿ç¨‹è®¾ç½®çº¿ç¨‹ç»§æ‰¿æ¨¡å¼å¤±è´¥ï¼");
+//		g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "Ä£¿éÉı¼¶´¦ÀíÏß³ÌÉèÖÃÏß³Ì¼Ì³ĞÄ£Ê½Ê§°Ü£¡");
 //		m_error_code = ERR_INIT_UPDATE;
 //		goto END;
 //	}
     res = pthread_create(&m_thread_update, &attr,
-            ChannelEngine::UpdateThread, this);    //å¼€å¯æ¨¡å—å‡çº§è¿è¡Œçº¿ç¨‹
+            ChannelEngine::UpdateThread, this);    //¿ªÆôÄ£¿éÉı¼¶ÔËĞĞÏß³Ì
     if (res != 0) {
-        g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "æ¨¡å—å‡çº§å¤„ç†çº¿ç¨‹åˆ›å»ºå¤±è´¥!");
+        g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "Ä£¿éÉı¼¶´¦ÀíÏß³Ì´´½¨Ê§°Ü!");
         m_error_code = ERR_INIT_UPDATE;
         CreateError(m_error_code, ERROR_LEVEL, CLEAR_BY_RESET_POWER);
         goto END;
@@ -5843,20 +5843,20 @@ END:
 }
 
 /**
- * @brief æ¨¡å—å‡çº§æ‰§è¡Œçº¿ç¨‹å‡½æ•°
- * @param void *args: ChannelEngineå¯¹è±¡æŒ‡é’ˆ
+ * @brief Ä£¿éÉı¼¶Ö´ĞĞÏß³Ìº¯Êı
+ * @param void *args: ChannelEngine¶ÔÏóÖ¸Õë
  */
 void *ChannelEngine::UpdateThread(void *args){
     printf("start module update thread, threadid = %ld!\n", syscall(SYS_gettid));
     ChannelEngine *p_chn_engine = static_cast<ChannelEngine *>(args);
 
     int res = ERR_NONE;
-    res = pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL); //è®¾ç½®çº¿ç¨‹ä¸ºå¯é€€å‡ºæ¨¡å¼
+    res = pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL); //ÉèÖÃÏß³ÌÎª¿ÉÍË³öÄ£Ê½
     if (res != ERR_NONE) {
         printf("Quit ChannelEngine::UpdateThread with error 1!\n");
         pthread_exit((void*) EXIT_FAILURE);
     }
-    res = pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL);  //çº¿ç¨‹é€€å‡ºæ–¹å¼ä¸ºå¼‚æ­¥é€€å‡ºï¼Œä¸ç”¨ç­‰åˆ°cancellation point
+    res = pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL);  //Ïß³ÌÍË³ö·½Ê½ÎªÒì²½ÍË³ö£¬²»ÓÃµÈµ½cancellation point
     if (res != ERR_NONE) {
         printf("Quit ChannelEngine::UpdateThread with error 2!\n");
         pthread_exit((void*) EXIT_FAILURE);
@@ -5877,50 +5877,50 @@ void *ChannelEngine::UpdateThread(void *args){
 int ChannelEngine::UpdateProcess(){
     int res = ERR_NONE;
 
-    //ä¸€é”®å‡çº§
+    //Ò»¼üÉı¼¶
     res = this->UpdateDisk();
     if(res != ERR_NONE)
         goto END;
 
-    //å‡çº§SC
+    //Éı¼¶SC
     res = this->UpdateSC();
     if(res != ERR_NONE)
         goto END;
 
 
-    //å‡çº§MC
+    //Éı¼¶MC
     res = this->UpdateMC();
     if(res != ERR_NONE)
         goto END;
 
-    //å‡çº§MI
+    //Éı¼¶MI
 //	res = this->UpdateMI();
     res = this->UpdateMI_2();
     if(res != ERR_NONE)
         goto END;
 
-    //å‡çº§PMC
+    //Éı¼¶PMC
     res = this->UpdatePMC();
     if(res != ERR_NONE)
         goto END;
 
-    //å‡çº§PL
+    //Éı¼¶PL
     res = this->UpdatePL();
     if(res != ERR_NONE)
         goto END;
 
-    //å‡çº§SPARTAN
+    //Éı¼¶SPARTAN
     res = this->UpdateSpartan();
     if(res != ERR_NONE)
         goto END;
 
-    //å‡çº§Modbusæ¨¡å—
+    //Éı¼¶ModbusÄ£¿é
     res =this->UpdateModbus();
     if(res != ERR_NONE)
         goto END;
 
 END:
-    this->SendHmiUpdateStatus(0, 0);//å…¨éƒ¨æ¨¡å—å‡çº§å®Œæˆ
+    this->SendHmiUpdateStatus(0, 0);//È«²¿Ä£¿éÉı¼¶Íê³É
 
     m_thread_update = 0;
     if(res != ERR_NONE){
@@ -5931,11 +5931,11 @@ END:
 }
 
 /**
- * @brief å‡çº§MCæ¨¡å—
+ * @brief Éı¼¶MCÄ£¿é
  * @return
  */
 int ChannelEngine::UpdateMC(){
-    //å‡çº§MCæ¨¡å—
+    //Éı¼¶MCÄ£¿é
     int res = ERR_NONE;
 //	int retry = 0;
     uint32_t i = 0;
@@ -5943,81 +5943,81 @@ int ChannelEngine::UpdateMC(){
     struct stat statbuf;
     uint32_t file_size = 0;
     uint32_t send_size = 0, read_size = 0;
-    uint16_t file_crc = 0xffff;  //æ–‡ä»¶crc
-    uint16_t file_frame_count = 0;  //æ€»å¸§æ•°
-    GCodeFrame data_frame;     //æ•°æ®å¸§
-    int fp = 0; //æ–‡ä»¶å¥æŸ„
+    uint16_t file_crc = 0xffff;  //ÎÄ¼şcrc
+    uint16_t file_frame_count = 0;  //×ÜÖ¡Êı
+    GCodeFrame data_frame;     //Êı¾İÖ¡
+    int fp = 0; //ÎÄ¼ş¾ä±ú
     uint32_t cc = 0;
 
-    //ç»„åˆå‡çº§æ–‡ä»¶åå­—
+    //×éºÏÉı¼¶ÎÄ¼şÃû×Ö
     char filepath[kMaxPathLen] = {0};
     strcpy(filepath, PATH_UPDATE_PATH);
     strcat(filepath, "module_mc.ldr");
 
-    if(access(filepath, F_OK) == -1)	//å‡çº§æ–‡ä»¶ä¸å­˜åœ¨ï¼ŒMCæ¨¡å—ä¸éœ€è¦å‡çº§
+    if(access(filepath, F_OK) == -1)	//Éı¼¶ÎÄ¼ş²»´æÔÚ£¬MCÄ£¿é²»ĞèÒªÉı¼¶
         return res;
 
     printf("start to update MC module\n");
     m_n_update_state = MODULE_UPDATE_MC;
-    m_n_mc_update_status = 0;  //åˆå§‹çŠ¶æ€ä¸ºæ— é”™è¯¯
+    m_n_mc_update_status = 0;  //³õÊ¼×´Ì¬ÎªÎŞ´íÎó
 
     this->SendHmiUpdateStatus(5, 0);
 
     if(!this->SendMcUpdateStartCmd()){
-        g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "å‘é€MCæ¨¡å—å‡çº§å¼€å§‹å‘½ä»¤å¤±è´¥ï¼");
+        g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "·¢ËÍMCÄ£¿éÉı¼¶¿ªÊ¼ÃüÁîÊ§°Ü£¡");
         res = ERR_UPDATE_MC;
         goto END;
     }
 
     printf("Succeed to send mc update start cmd\n");
 
-    //TODO æ¸…é™¤ä¸‹è¡Œè¿æ§æ•°æ®FIFOä¸­çš„å½“å‰æ•°æ®
+    //TODO Çå³ıÏÂĞĞÔË¿ØÊı¾İFIFOÖĞµÄµ±Ç°Êı¾İ
 
-    //ç­‰å¾…MCæ“¦é™¤å¤‡ä»½åŒºflash
+    //µÈ´ıMC²Á³ı±¸·İÇøflash
     printf("wait mc to erase flash!\n");
     do{
         if(!QueryMcUpdateStatus()){
-            g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "æŸ¥è¯¢MCæ¨¡å—å‡çº§çŠ¶æ€å¤±è´¥ï¼");
+            g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "²éÑ¯MCÄ£¿éÉı¼¶×´Ì¬Ê§°Ü£¡");
             res = ERR_UPDATE_MC;
             goto END;
         }
         while(!m_b_get_mc_update_status)
-            usleep(100); //ç­‰å¾…æŸ¥è¯¢ç»“æœ
+            usleep(100); //µÈ´ı²éÑ¯½á¹û
 
         if(m_n_mc_update_status == 4)
             break;
 
-        usleep(100000);  //ç­‰å¾…100ms
+        usleep(100000);  //µÈ´ı100ms
 
     }while(1);
 
-    //ä¼ è¾“æ–‡ä»¶å¤§å°
+    //´«ÊäÎÄ¼ş´óĞ¡
     printf("send file size!\n");
     this->SendHmiUpdateStatus(5, 1);
     if(stat(filepath, &statbuf) == 0)
-        file_size = statbuf.st_size;  //è·å–æ–‡ä»¶æ€»å¤§å°
+        file_size = statbuf.st_size;  //»ñÈ¡ÎÄ¼ş×Ü´óĞ¡
     else{
-        g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "è·å–æ–‡ä»¶[%s]å¤§å°å¤±è´¥ï¼", PATH_PMC_DATA);
+        g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "»ñÈ¡ÎÄ¼ş[%s]´óĞ¡Ê§°Ü£¡", PATH_PMC_DATA);
         res = ERR_UPDATE_MC;
-        goto END;		//è·å–æ–‡ä»¶å¤§å°å¤±è´¥
+        goto END;		//»ñÈ¡ÎÄ¼ş´óĞ¡Ê§°Ü
     }
     if(!this->SendMcUpdateFileSize(file_size)){
-        g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "å‘é€å‡çº§æ–‡ä»¶å¤§å°å¤±è´¥ï¼");
+        g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "·¢ËÍÉı¼¶ÎÄ¼ş´óĞ¡Ê§°Ü£¡");
         res = ERR_UPDATE_MC;
         goto END;
     }
 
-    //å‘é€æ–‡ä»¶å†…å®¹
+    //·¢ËÍÎÄ¼şÄÚÈİ
     printf("send file content!\n");
     this->SendHmiUpdateStatus(5, 2);
-    fp = open(filepath, O_RDONLY); //åªè¯»æ‰“å¼€æ–‡ä»¶
+    fp = open(filepath, O_RDONLY); //Ö»¶Á´ò¿ªÎÄ¼ş
     if(fp < 0){
-        g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "æ‰“å¼€æ–‡ä»¶[%s]å¤±è´¥ï¼", filepath);
+        g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "´ò¿ªÎÄ¼ş[%s]Ê§°Ü£¡", filepath);
         res = ERR_UPDATE_MC;
-        goto END;//æ–‡ä»¶æ‰“å¼€å¤±è´¥
+        goto END;//ÎÄ¼ş´ò¿ªÊ§°Ü
     }
 
-    //è®¡ç®—æ–‡ä»¶æ€»å¸§æ•°
+    //¼ÆËãÎÄ¼ş×ÜÖ¡Êı
     file_frame_count = file_size/MC_UPDATE_BLOCK_SIZE;
     if(file_size%MC_UPDATE_BLOCK_SIZE)
         file_frame_count++;
@@ -6027,26 +6027,26 @@ int ChannelEngine::UpdateMC(){
         send_size = file_size>MC_UPDATE_BLOCK_SIZE?MC_UPDATE_BLOCK_SIZE:file_size;
         read_size = read(fp, (void *)&data_frame.data_crc[1], send_size);
         if(read_size != send_size){
-            g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "è¯»å–æ–‡ä»¶[%s]å¤±è´¥ï¼Œ%u, %uï¼", filepath, send_size, read_size);
+            g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "¶ÁÈ¡ÎÄ¼ş[%s]Ê§°Ü£¬%u, %u£¡", filepath, send_size, read_size);
             res = ERR_UPDATE_MC;
-            goto END;//æ–‡ä»¶è¯»å–å¤±è´¥
+            goto END;//ÎÄ¼ş¶ÁÈ¡Ê§°Ü
         }
 
         cc = send_size/2;
         if(send_size%2)
             cc++;
         for(i = 0; i < cc; i++){
-            file_crc ^= data_frame.data_crc[i+1];  //è®¡ç®—CRC
+            file_crc ^= data_frame.data_crc[i+1];  //¼ÆËãCRC
         }
 
-        while(!this->m_p_mc_comm->WriteGCodeData(0, data_frame)){  //å›ºå®šç”¨é€šé“0æ•°æ®é€šé“æ›´æ–°MC
+        while(!this->m_p_mc_comm->WriteGCodeData(0, data_frame)){  //¹Ì¶¨ÓÃÍ¨µÀ0Êı¾İÍ¨µÀ¸üĞÂMC
             usleep(100);
         }
         file_size -= send_size;
 
     }
 
-    //ç­‰å¾…æ•°æ®ä¼ è¾“å®Œæˆ
+    //µÈ´ıÊı¾İ´«ÊäÍê³É
     printf("wait data receive!\n");
     while(this->m_p_mc_comm->ReadGCodeFifoCount(0) > 0)
         usleep(10000);
@@ -6055,33 +6055,33 @@ int ChannelEngine::UpdateMC(){
     this->SendHmiUpdateStatus(5, 3);
     this->SendMcUpdateFileCrc(file_frame_count, file_crc);
 
-    //æŸ¥è¯¢MCçŠ¶æ€ï¼Œç­‰å¾…MCå‡çº§æ¥æ”¶å®Œæˆ
+    //²éÑ¯MC×´Ì¬£¬µÈ´ıMCÉı¼¶½ÓÊÕÍê³É
     printf("wait update result!\n");
     do{
         if(!QueryMcUpdateStatus()){
-            g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "æŸ¥è¯¢MCæ¨¡å—å‡çº§çŠ¶æ€å¤±è´¥ï¼");
+            g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "²éÑ¯MCÄ£¿éÉı¼¶×´Ì¬Ê§°Ü£¡");
             res = ERR_UPDATE_MC;
             goto END;
         }
         while(!m_b_get_mc_update_status)
-            usleep(100); //ç­‰å¾…æŸ¥è¯¢ç»“æœ
+            usleep(100); //µÈ´ı²éÑ¯½á¹û
 
-        if(m_n_mc_update_status == 0x02){ //æŠ¥é”™
-            g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "MCå‡çº§å¤±è´¥ï¼");
+        if(m_n_mc_update_status == 0x02){ //±¨´í
+            g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "MCÉı¼¶Ê§°Ü£¡");
             res = ERR_UPDATE_MC;
             goto END;
         }
-        else if(m_n_mc_update_status == 0x13){ //CRCæ ¡éªŒé”™
-            g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "MCå‡çº§CRCæ ¡éªŒå¤±è´¥ï¼");
+        else if(m_n_mc_update_status == 0x13){ //CRCĞ£Ñé´í
+            g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "MCÉı¼¶CRCĞ£ÑéÊ§°Ü£¡");
             res = ERR_UPDATE_MC;
             goto END;
         }
-        else if(m_n_mc_update_status == 0x11){//å‡çº§æˆåŠŸ
+        else if(m_n_mc_update_status == 0x11){//Éı¼¶³É¹¦
             this->SendHmiUpdateStatus(5, 4);
             printf("Succeed to update the MC module!\n");
             break;
         }else
-            usleep(100000);  //ç­‰å¾…100ms
+            usleep(100000);  //µÈ´ı100ms
 
     }while(1);
 
@@ -6092,8 +6092,8 @@ END:
     if(fp > 0)
         close(fp);
     if(-1 == remove(filepath)){
-        //åˆ é™¤å‡çº§æ–‡ä»¶å¤±è´¥
-        g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "MCæ¨¡å—åˆ é™¤å‡çº§æ–‡ä»¶å¤±è´¥ï¼");
+        //É¾³ıÉı¼¶ÎÄ¼şÊ§°Ü
+        g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "MCÄ£¿éÉ¾³ıÉı¼¶ÎÄ¼şÊ§°Ü£¡");
     }
 
     if(res != ERR_NONE)
@@ -6105,21 +6105,21 @@ END:
 }
 
 /**
- * @brief å‡çº§MIæ¨¡å—
+ * @brief Éı¼¶MIÄ£¿é
  * @return
  */
 int ChannelEngine::UpdateMI(){
-    //å‡çº§MIæ¨¡å—
+    //Éı¼¶MIÄ£¿é
     int res = ERR_NONE;
 
     char cmd_buf[256];
 
-    //ç»„åˆå‡çº§æ–‡ä»¶åå­—
+    //×éºÏÉı¼¶ÎÄ¼şÃû×Ö
     char filepath[kMaxPathLen] = {0};
     strcpy(filepath, PATH_UPDATE_PATH);
     strcat(filepath, "module_mi.bin");
 
-    if(access(filepath, F_OK) == -1)	//å‡çº§æ–‡ä»¶ä¸å­˜åœ¨ï¼ŒMIæ¨¡å—ä¸éœ€è¦å‡çº§
+    if(access(filepath, F_OK) == -1)	//Éı¼¶ÎÄ¼ş²»´æÔÚ£¬MIÄ£¿é²»ĞèÒªÉı¼¶
         return res;
 
     printf("start to update mi module\n");
@@ -6132,7 +6132,7 @@ int ChannelEngine::UpdateMI(){
     int ret = system("flash_erase /dev/mtd0 0 1");
 
     if(ret == -1){
-        g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "MIå‡çº§æ“¦é™¤Flashå¤±è´¥ï¼errno = %d", errno);
+        g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "MIÉı¼¶²Á³ıFlashÊ§°Ü£¡errno = %d", errno);
         res = ERR_UPDATE_MI;
         goto END;
     }
@@ -6148,7 +6148,7 @@ int ChannelEngine::UpdateMI(){
     ret = system(cmd_buf);
 
     if(ret == -1){
-        g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "MIå‡çº§å†™å…¥æ•°æ®å¤±è´¥ï¼errno = %d", errno);
+        g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "MIÉı¼¶Ğ´ÈëÊı¾İÊ§°Ü£¡errno = %d", errno);
         res = ERR_UPDATE_MI;
     }
     else{
@@ -6162,8 +6162,8 @@ int ChannelEngine::UpdateMI(){
 
 END:
     if(-1 == remove(filepath)){
-        //åˆ é™¤å‡çº§æ–‡ä»¶å¤±è´¥
-        g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "MIæ¨¡å—åˆ é™¤å‡çº§æ–‡ä»¶å¤±è´¥ï¼");
+        //É¾³ıÉı¼¶ÎÄ¼şÊ§°Ü
+        g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "MIÄ£¿éÉ¾³ıÉı¼¶ÎÄ¼şÊ§°Ü£¡");
     }
     if(res != ERR_NONE)
         this->SendHmiUpdateStatus(3, 0xFF);
@@ -6173,20 +6173,20 @@ END:
 }
 
 /**
- * @brief å‡çº§MIæ¨¡å—ï¼ŒMIæ–‡ä»¶ä¸bootåˆ†å¼€åŠ è½½
+ * @brief Éı¼¶MIÄ£¿é£¬MIÎÄ¼şÓëboot·Ö¿ª¼ÓÔØ
  * @return
  */
 int ChannelEngine::UpdateMI_2(){
-    //å‡çº§MIæ¨¡å—
+    //Éı¼¶MIÄ£¿é
     int res = ERR_NONE;
 
-    //ç»„åˆå‡çº§æ–‡ä»¶åå­—
+    //×éºÏÉı¼¶ÎÄ¼şÃû×Ö
     char filepath[kMaxPathLen] = {0};
     char filedes[kMaxPathLen] = {0};
     strcpy(filepath, PATH_UPDATE_PATH);
     strcat(filepath, "module_mi.bin");
 
-    if(access(filepath, F_OK) == -1)	//å‡çº§æ–‡ä»¶ä¸å­˜åœ¨ï¼ŒMIæ¨¡å—ä¸éœ€è¦å‡çº§
+    if(access(filepath, F_OK) == -1)	//Éı¼¶ÎÄ¼ş²»´æÔÚ£¬MIÄ£¿é²»ĞèÒªÉı¼¶
         return res;
 
     printf("start to update mi module\n");
@@ -6197,23 +6197,23 @@ int ChannelEngine::UpdateMI_2(){
     printf("wait copy file for mi module...\n");
 
 
-    //æ‹·è´MIå‡çº§æ–‡ä»¶
+    //¿½±´MIÉı¼¶ÎÄ¼ş
     strcpy(filedes, PATH_MI_PROGRAM);
 
     int nn = CopyFile(filepath, filedes);
     if(0 != nn){
-        g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "MIæ¨¡å—æ‹·è´æ–‡ä»¶å¤±è´¥ï¼errno = %d", nn);
+        g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "MIÄ£¿é¿½±´ÎÄ¼şÊ§°Ü£¡errno = %d", nn);
         res = ERR_UPDATE_MI;
         goto END;
     }
 
-    //æ‹·è´å¤‡ä»½æ–‡ä»¶
+    //¿½±´±¸·İÎÄ¼ş
     this->SendHmiUpdateStatus(3, 1);
     bzero(filedes, kMaxPathLen);
     strcpy(filedes, PATH_MI_PROGRAM_BAK);
     nn = CopyFile(filepath, filedes);
     if(0 != nn){
-        g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "MIæ¨¡å—æ‹·è´å¤‡ä»½æ–‡ä»¶å¤±è´¥ï¼errno = %d", nn);
+        g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "MIÄ£¿é¿½±´±¸·İÎÄ¼şÊ§°Ü£¡errno = %d", nn);
         res = ERR_UPDATE_MI;
         goto END;
     }
@@ -6226,8 +6226,8 @@ int ChannelEngine::UpdateMI_2(){
 
 END:
     if(-1 == remove(filepath)){
-        //åˆ é™¤å‡çº§æ–‡ä»¶å¤±è´¥
-        g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "MIæ¨¡å—åˆ é™¤å‡çº§æ–‡ä»¶å¤±è´¥ï¼");
+        //É¾³ıÉı¼¶ÎÄ¼şÊ§°Ü
+        g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "MIÄ£¿éÉ¾³ıÉı¼¶ÎÄ¼şÊ§°Ü£¡");
     }
     if(res != ERR_NONE)
         this->SendHmiUpdateStatus(3, 0xFF);
@@ -6237,20 +6237,20 @@ END:
 }
 
 /**
- * @brief å‡çº§Modbusæ¨¡å—
+ * @brief Éı¼¶ModbusÄ£¿é
  * @return
  */
 int ChannelEngine::UpdateModbus(){
-    //å‡çº§Modbusæ¨¡å—
+    //Éı¼¶ModbusÄ£¿é
     int res = ERR_NONE;
 
-    //ç»„åˆå‡çº§æ–‡ä»¶åå­—
+    //×éºÏÉı¼¶ÎÄ¼şÃû×Ö
     char filepath[kMaxPathLen] = {0};
     char filedes[kMaxPathLen] = {0};
     strcpy(filepath, PATH_UPDATE_PATH);
     strcat(filepath, "module_modbus.elf");
 
-    if(access(filepath, F_OK) == -1)	//å‡çº§æ–‡ä»¶ä¸å­˜åœ¨ï¼ŒModbusæ¨¡å—ä¸éœ€è¦å‡çº§
+    if(access(filepath, F_OK) == -1)	//Éı¼¶ÎÄ¼ş²»´æÔÚ£¬ModbusÄ£¿é²»ĞèÒªÉı¼¶
         return res;
 
     printf("start to update Modbus module\n");
@@ -6261,12 +6261,12 @@ int ChannelEngine::UpdateModbus(){
     printf("wait copy file for Modbus module...\n");
 
 
-    //æ‹·è´Modbuså‡çº§æ–‡ä»¶
+    //¿½±´ModbusÉı¼¶ÎÄ¼ş
     strcpy(filedes, PATH_MODBUS_PROGRAM);
 
     int nn = CopyFile(filepath, filedes);
     if(0 != nn){
-        g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "Modbusæ¨¡å—æ‹·è´æ–‡ä»¶å¤±è´¥ï¼errno = %d", nn);
+        g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "ModbusÄ£¿é¿½±´ÎÄ¼şÊ§°Ü£¡errno = %d", nn);
         res = ERR_UPDATE_MI;
         goto END;
     }
@@ -6279,8 +6279,8 @@ int ChannelEngine::UpdateModbus(){
 
 END:
     if(-1 == remove(filepath)){
-        //åˆ é™¤å‡çº§æ–‡ä»¶å¤±è´¥
-        g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "MODBUSæ¨¡å—åˆ é™¤å‡çº§æ–‡ä»¶å¤±è´¥ï¼");
+        //É¾³ıÉı¼¶ÎÄ¼şÊ§°Ü
+        g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "MODBUSÄ£¿éÉ¾³ıÉı¼¶ÎÄ¼şÊ§°Ü£¡");
     }
     if(res != ERR_NONE)
         this->SendHmiUpdateStatus(3, 0xFF);
@@ -6290,22 +6290,22 @@ END:
 }
 
 /**
- * @brief ä¸€é”®å‡çº§
+ * @brief Ò»¼üÉı¼¶
  * @return
  */
 int ChannelEngine::UpdateDisk(){
-    //å‡çº§æ‰€æœ‰æ¨¡å—
+    //Éı¼¶ËùÓĞÄ£¿é
     int res = ERR_NONE;
     int ret;
     char cmd_buf[100];
 
-    //ç»„åˆå‡çº§æ–‡ä»¶åå­—
+    //×éºÏÉı¼¶ÎÄ¼şÃû×Ö
     char filepath[kMaxPathLen] = {0};
     char filedes[kMaxPathLen] = {0};
     strcpy(filepath, PATH_UPDATE_PATH);
     strcat(filepath, "module_disk.zip");
 
-    if(access(filepath, F_OK) == -1)	//å‡çº§æ–‡ä»¶ä¸å­˜åœ¨ï¼ŒModbusæ¨¡å—ä¸éœ€è¦å‡çº§
+    if(access(filepath, F_OK) == -1)	//Éı¼¶ÎÄ¼ş²»´æÔÚ£¬ModbusÄ£¿é²»ĞèÒªÉı¼¶
         return res;
 
     printf("start to update Disk module\n");
@@ -6315,24 +6315,24 @@ int ChannelEngine::UpdateDisk(){
 
     printf("wait copy file for Disk module...\n");
 
-    //åˆ›å»ºdiskupç›®å½•
+    //´´½¨diskupÄ¿Â¼
     ret = system("mkdir -p /cnc/diskup");
     if (ret != 0) {
-        g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "DISKæ¨¡å—åˆ›å»ºdiskupç›®å½•å¤±è´¥ï¼");
+        g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "DISKÄ£¿é´´½¨diskupÄ¿Â¼Ê§°Ü£¡");
         printf("mkdir diskup error, return %d\n", ret);
         res = ERR_UPDATE_DISK;
         goto END;
     }
 
-    //æ¸…ç©ºåŸæ¥çš„æ–‡ä»¶
+    //Çå¿ÕÔ­À´µÄÎÄ¼ş
     system("rm -rf /cnc/diskup/sc/*");
     system("rm -rf /cnc/diskup/scroot/*");
 
-    //è§£å‹åˆ°diskupç›®å½•
+    //½âÑ¹µ½diskupÄ¿Â¼
     sprintf(cmd_buf, "unzip %s -o -d /cnc/diskup", filepath);
     ret = system(cmd_buf);
     if (ret != 0) {
-        g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "DISKæ¨¡å—è§£å‹å‡çº§åŒ…å¤±è´¥ï¼");
+        g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "DISKÄ£¿é½âÑ¹Éı¼¶°üÊ§°Ü£¡");
         printf("unzip %s error, return %d\n", ret);
         res = ERR_UPDATE_DISK;
         goto END;
@@ -6340,9 +6340,9 @@ int ChannelEngine::UpdateDisk(){
 
     this->SendHmiUpdateStatus(3, 1);
 
-    //æ£€æµ‹å‡çº§è„šæœ¬æ˜¯å¦å­˜åœ¨
+    //¼ì²âÉı¼¶½Å±¾ÊÇ·ñ´æÔÚ
     if(access(PATH_UPDATE_DISK_CMD, F_OK) == -1)	{
-        g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "DISKæ¨¡å—æœªå‘ç°å‡çº§è„šæœ¬ï¼");
+        g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "DISKÄ£¿éÎ´·¢ÏÖÉı¼¶½Å±¾£¡");
         printf("can't update disk module, no scup.sh\n");
         res = ERR_UPDATE_DISK;
         goto END;
@@ -6351,11 +6351,11 @@ int ChannelEngine::UpdateDisk(){
     sprintf(cmd_buf, "chmod a+x %s", PATH_UPDATE_DISK_CMD);
     system(cmd_buf);
 
-    //è¿è¡Œè„šæœ¬
+    //ÔËĞĞ½Å±¾
     ret = system(PATH_UPDATE_DISK_CMD);
     if (ret != 0) {
         printf("scup.sh return low=%d high=%d\n", ret&0xFF, ret>>8);
-        g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "DISKæ¨¡å—è¿è¡Œå‡çº§è„šæœ¬å¤±è´¥ï¼");
+        g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "DISKÄ£¿éÔËĞĞÉı¼¶½Å±¾Ê§°Ü£¡");
         res = ERR_UPDATE_DISK;
         goto END;
     }
@@ -6366,8 +6366,8 @@ int ChannelEngine::UpdateDisk(){
 
 END:
     if(-1 == remove(filepath)){
-        //åˆ é™¤å‡çº§æ–‡ä»¶å¤±è´¥
-        g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "DISKæ¨¡å—åˆ é™¤å‡çº§æ–‡ä»¶å¤±è´¥ï¼");
+        //É¾³ıÉı¼¶ÎÄ¼şÊ§°Ü
+        g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "DISKÄ£¿éÉ¾³ıÉı¼¶ÎÄ¼şÊ§°Ü£¡");
     }
     if(res != ERR_NONE)
         this->SendHmiUpdateStatus(3, 0xFF);
@@ -6378,22 +6378,22 @@ END:
 }
 
 /**
- * @brief å‡çº§SCæ¨¡å—
+ * @brief Éı¼¶SCÄ£¿é
  * @return
  */
 int ChannelEngine::UpdateSC(){
-    //å‡çº§SCæ¨¡å—
+    //Éı¼¶SCÄ£¿é
     int res = ERR_NONE;
     int ret = 0;
     char cmd_buf[256];
 
-    //ç»„åˆå‡çº§æ–‡ä»¶åå­—
+    //×éºÏÉı¼¶ÎÄ¼şÃû×Ö
     char filepath[kMaxPathLen] = {0};
     char filedes[kMaxPathLen] = {0};
     strcpy(filepath, PATH_UPDATE_PATH);
     strcat(filepath, "module_sc.elf");
 
-    if(access(filepath, F_OK) == -1)	//å‡çº§æ–‡ä»¶ä¸å­˜åœ¨ï¼ŒSCæ¨¡å—ä¸éœ€è¦å‡çº§
+    if(access(filepath, F_OK) == -1)	//Éı¼¶ÎÄ¼ş²»´æÔÚ£¬SCÄ£¿é²»ĞèÒªÉı¼¶
         return res;
 
     printf("start to update sc module\n");
@@ -6401,14 +6401,14 @@ int ChannelEngine::UpdateSC(){
 
     this->SendHmiUpdateStatus(4, 0);
 
-    //è¯»å–å½“å‰è¿è¡Œåºå·
+    //¶ÁÈ¡µ±Ç°ÔËĞĞĞòºÅ
     char c;
     FILE* fp = fopen(PATH_BOOT_CONFIG_FILE, "rb");
     if (fp != nullptr) {
         fread(&c, 1, 1, fp);
         fclose(fp);
     }else{
-        g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "SCæ¨¡å—å‡çº§æŸ¥è¯¢å¯åŠ¨é…ç½®æ–‡ä»¶å¤±è´¥ï¼errno = %d", errno);
+        g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "SCÄ£¿éÉı¼¶²éÑ¯Æô¶¯ÅäÖÃÎÄ¼şÊ§°Ü£¡errno = %d", errno);
         res = ERR_UPDATE_SC;
         goto END;
     }
@@ -6424,7 +6424,7 @@ int ChannelEngine::UpdateSC(){
     printf("wait copy file for sc module...\n");
     this->SendHmiUpdateStatus(4, 1);
 
-    //æ‹·è´å¤åˆ¶æ–‡ä»¶
+    //¿½±´¸´ÖÆÎÄ¼ş
     bzero(cmd_buf, 256);
     strcpy(cmd_buf, "cp ");
     strcat(cmd_buf, filepath);
@@ -6434,21 +6434,21 @@ int ChannelEngine::UpdateSC(){
     ret = system(cmd_buf);
 
     if(ret == -1){
-        g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "SCæ¨¡å—å‡çº§å†™å…¥æ•°æ®å¤±è´¥ï¼errno = %d", errno);
+        g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "SCÄ£¿éÉı¼¶Ğ´ÈëÊı¾İÊ§°Ü£¡errno = %d", errno);
         res = ERR_UPDATE_SC;
         goto END;
     }
 
     printf("waiting for changing the file attributes...\n");
     this->SendHmiUpdateStatus(4, 2);
-    //ä¿®æ”¹æ–‡ä»¶å±æ€§
+    //ĞŞ¸ÄÎÄ¼şÊôĞÔ
     bzero(cmd_buf, 256);
     strcpy(cmd_buf, "chmod a+x ");
     strcat(cmd_buf, filedes);
     ret = system(cmd_buf);
 
     if(ret == -1){
-        g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "SCæ¨¡å—å‡çº§ä¿®æ”¹æ–‡ä»¶å±æ€§å¤±è´¥ï¼errno = %d", errno);
+        g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "SCÄ£¿éÉı¼¶ĞŞ¸ÄÎÄ¼şÊôĞÔÊ§°Ü£¡errno = %d", errno);
         res = ERR_UPDATE_SC;
         goto END;
     }
@@ -6456,7 +6456,7 @@ int ChannelEngine::UpdateSC(){
         sync();
     }
 
-    //ä¿®æ”¹å¯åŠ¨åºå·
+    //ĞŞ¸ÄÆô¶¯ĞòºÅ
     fp = fopen(PATH_BOOT_CONFIG_FILE, "wb");
     if(fp != nullptr) {
         fwrite(&c, 1, 1, fp);
@@ -6465,15 +6465,15 @@ int ChannelEngine::UpdateSC(){
         printf("succeed to update sc module\n");
 
     }else{
-        g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "SCæ¨¡å—å‡çº§é…ç½®å¯åŠ¨æ–‡ä»¶å¤±è´¥ï¼errno = %d", errno);
+        g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "SCÄ£¿éÉı¼¶ÅäÖÃÆô¶¯ÎÄ¼şÊ§°Ü£¡errno = %d", errno);
         res = ERR_UPDATE_SC;
     }
     this->SendHmiUpdateStatus(4, 3);
 
 END:
     if(-1 == remove(filepath)){
-        //åˆ é™¤å‡çº§æ–‡ä»¶å¤±è´¥
-        g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "MCæ¨¡å—åˆ é™¤å‡çº§æ–‡ä»¶å¤±è´¥ï¼");
+        //É¾³ıÉı¼¶ÎÄ¼şÊ§°Ü
+        g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "MCÄ£¿éÉ¾³ıÉı¼¶ÎÄ¼şÊ§°Ü£¡");
     }
     if(res != ERR_NONE)
         this->SendHmiUpdateStatus(4, 0xFF);
@@ -6483,21 +6483,21 @@ END:
 }
 
 /**
- * @brief å‡çº§PLæ¨¡å—
+ * @brief Éı¼¶PLÄ£¿é
  * @return
  */
 int ChannelEngine::UpdatePL(){
-    //å‡çº§PLæ¨¡å—
+    //Éı¼¶PLÄ£¿é
     int res = ERR_NONE;
 
     char cmd_buf[256];
 
-    //ç»„åˆå‡çº§æ–‡ä»¶åå­—
+    //×éºÏÉı¼¶ÎÄ¼şÃû×Ö
     char filepath[kMaxPathLen] = {0};
     strcpy(filepath, PATH_UPDATE_PATH);
     strcat(filepath, "module_pl.bin");
 
-    if(access(filepath, F_OK) == -1)	//å‡çº§æ–‡ä»¶ä¸å­˜åœ¨ï¼ŒPLæ¨¡å—ä¸éœ€è¦å‡çº§
+    if(access(filepath, F_OK) == -1)	//Éı¼¶ÎÄ¼ş²»´æÔÚ£¬PLÄ£¿é²»ĞèÒªÉı¼¶
         return res;
     printf("start to update PL module\n");
     m_n_update_state = MODULE_UPDATE_PL;
@@ -6509,7 +6509,7 @@ int ChannelEngine::UpdatePL(){
     int ret = system("flash_erase /dev/mtd0 0 1");
 
     if(ret == -1){
-        g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "PLå‡çº§æ“¦é™¤Flashå¤±è´¥ï¼errno = %d", errno);
+        g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "PLÉı¼¶²Á³ıFlashÊ§°Ü£¡errno = %d", errno);
         res = ERR_UPDATE_PL;
         goto END;
     }
@@ -6525,7 +6525,7 @@ int ChannelEngine::UpdatePL(){
     ret = system(cmd_buf);
 
     if(ret == -1){
-        g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "PLå‡çº§å†™å…¥æ•°æ®å¤±è´¥ï¼errno = %d", errno);
+        g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "PLÉı¼¶Ğ´ÈëÊı¾İÊ§°Ü£¡errno = %d", errno);
         res = ERR_UPDATE_PL;
     }
     else{
@@ -6539,8 +6539,8 @@ int ChannelEngine::UpdatePL(){
 
 END:
     if(-1 == remove(filepath)){
-        //åˆ é™¤å‡çº§æ–‡ä»¶å¤±è´¥
-        g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "PLæ¨¡å—åˆ é™¤å‡çº§æ–‡ä»¶å¤±è´¥ï¼");
+        //É¾³ıÉı¼¶ÎÄ¼şÊ§°Ü
+        g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "PLÄ£¿éÉ¾³ıÉı¼¶ÎÄ¼şÊ§°Ü£¡");
     }
     if(res != ERR_NONE)
         this->SendHmiUpdateStatus(3, 0xFF);
@@ -6550,21 +6550,21 @@ END:
 }
 
 /**
- * @brief å‡çº§SPARTANæ¨¡å—
+ * @brief Éı¼¶SPARTANÄ£¿é
  * @return
  */
 int ChannelEngine::UpdateSpartan(){
-    //å‡çº§SPARTANæ¨¡å—
+    //Éı¼¶SPARTANÄ£¿é
     int res = ERR_NONE;
 
     char cmd_buf[256];
 
-    //ç»„åˆå‡çº§æ–‡ä»¶åå­—
+    //×éºÏÉı¼¶ÎÄ¼şÃû×Ö
     char filepath[kMaxPathLen] = {0};
     strcpy(filepath, PATH_UPDATE_PATH);
     strcat(filepath, "module_spartan.bin");
 
-    if(access(filepath, F_OK) == -1)	//å‡çº§æ–‡ä»¶ä¸å­˜åœ¨ï¼ŒMIæ¨¡å—ä¸éœ€è¦å‡çº§
+    if(access(filepath, F_OK) == -1)	//Éı¼¶ÎÄ¼ş²»´æÔÚ£¬MIÄ£¿é²»ĞèÒªÉı¼¶
         return res;
 
     printf("start to update spartan module\n");
@@ -6582,7 +6582,7 @@ int ChannelEngine::UpdateSpartan(){
     int ret = system(cmd_buf);
 
     if(ret != 0){
-        g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "SPARTANå‡çº§å†™å…¥æ•°æ®å¤±è´¥ï¼errno = %d", errno);
+        g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "SPARTANÉı¼¶Ğ´ÈëÊı¾İÊ§°Ü£¡errno = %d", errno);
         res = ERR_UPDATE_SPARTAN;
     }
     else{
@@ -6595,8 +6595,8 @@ int ChannelEngine::UpdateSpartan(){
     }
 
     if(-1 == remove(filepath)){
-        //åˆ é™¤å‡çº§æ–‡ä»¶å¤±è´¥
-        g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "SPARTANæ¨¡å—åˆ é™¤å‡çº§æ–‡ä»¶å¤±è´¥ï¼");
+        //É¾³ıÉı¼¶ÎÄ¼şÊ§°Ü
+        g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "SPARTANÄ£¿éÉ¾³ıÉı¼¶ÎÄ¼şÊ§°Ü£¡");
     }
     if(res != ERR_NONE)
         this->SendHmiUpdateStatus(3, 0xFF);
@@ -6606,51 +6606,51 @@ int ChannelEngine::UpdateSpartan(){
 }
 
 /**
- * @brief å‡çº§PMCæ¨¡å—
+ * @brief Éı¼¶PMCÄ£¿é
  * @return
  */
 int ChannelEngine::UpdatePMC(){
-    //å‡çº§PMCæ¨¡å—
+    //Éı¼¶PMCÄ£¿é
     int res = ERR_NONE;
 
-    //ç»„åˆå‡çº§æ–‡ä»¶åå­—
+    //×éºÏÉı¼¶ÎÄ¼şÃû×Ö
     char filepath[kMaxPathLen] = {0};
 
     strcpy(filepath, PATH_UPDATE_PATH);
     strcat(filepath, "module_pmc.upd");
 
 
-    if(access(filepath, F_OK) == -1)	//å‡çº§æ–‡ä»¶ä¸å­˜åœ¨ï¼ŒPMCæ¨¡å—ä¸éœ€è¦å‡çº§
+    if(access(filepath, F_OK) == -1)	//Éı¼¶ÎÄ¼ş²»´æÔÚ£¬PMCÄ£¿é²»ĞèÒªÉı¼¶
         return res;
 
     printf("start to update PMC module\n");
     m_n_update_state = MODULE_UPDATE_PMC;
 
-    this->SendHmiUpdateStatus(3, 0);  //æ€»å…±åˆ†ä¸‰æ­¥éª¤
+    this->SendHmiUpdateStatus(3, 0);  //×Ü¹²·ÖÈı²½Öè
 
     FILE *file_src = fopen(filepath, "r+");
     if (nullptr == file_src)
     {
-        g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "PMCæ¨¡å—å‡çº§å¤±è´¥ï¼Œå‡çº§æ–‡ä»¶æ‰“å¼€å¤±è´¥[%s]ï¼errno = %d", filepath, errno);
+        g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "PMCÄ£¿éÉı¼¶Ê§°Ü£¬Éı¼¶ÎÄ¼ş´ò¿ªÊ§°Ü[%s]£¡errno = %d", filepath, errno);
         return res;
     }
 
-    uint64_t file_len = 0;   //æ–‡ä»¶é•¿åº¦
-    uint64_t total_size = 0;	//å‡çº§æ–‡ä»¶æ€»é•¿åº¦
+    uint64_t file_len = 0;   //ÎÄ¼ş³¤¶È
+    uint64_t total_size = 0;	//Éı¼¶ÎÄ¼ş×Ü³¤¶È
     fseek(file_src, 0L, SEEK_END);
-    total_size = ftell(file_src);   //è·å–æ–‡ä»¶é•¿åº¦
+    total_size = ftell(file_src);   //»ñÈ¡ÎÄ¼ş³¤¶È
 
-    fseek(file_src, 0L, SEEK_SET);   //å›åˆ°æ–‡ä»¶å¤´
+    fseek(file_src, 0L, SEEK_SET);   //»Øµ½ÎÄ¼şÍ·
 
 
-    //å‡çº§æ¢¯å½¢å›¾æ–‡ä»¶
-    char buffer[1024] = {0};   //ç¼“å†²
-    int read_cur_real = 0;		//å•æ¬¡å®é™…è¯»å–å­—èŠ‚æ•°
-    int read_cur_plan = 0;		//å•è¯è®¡åˆ’è¯»å–å­—èŠ‚æ•°
+    //Éı¼¶ÌİĞÎÍ¼ÎÄ¼ş
+    char buffer[1024] = {0};   //»º³å
+    int read_cur_real = 0;		//µ¥´ÎÊµ¼Ê¶ÁÈ¡×Ö½ÚÊı
+    int read_cur_plan = 0;		//µ¥´Ê¼Æ»®¶ÁÈ¡×Ö½ÚÊı
     FILE *file_des = fopen(PATH_PMC_LDR, "w+");
     if (nullptr == file_des)
     {
-        g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "PMCæ¢¯å½¢å›¾æ–‡ä»¶åˆ›å»ºå¤±è´¥[%s]ï¼errno = %d", PATH_PMC_LDR, errno);
+        g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "PMCÌİĞÎÍ¼ÎÄ¼ş´´½¨Ê§°Ü[%s]£¡errno = %d", PATH_PMC_LDR, errno);
         res = ERR_UPDATE_PMC;
         goto END;
     }
@@ -6658,8 +6658,8 @@ int ChannelEngine::UpdatePMC(){
     fread(&file_len, 8, 1, file_src);
     file_len = BigLittleSwitch64(file_len);
 
-    if(file_len >= total_size){	//æ–‡ä»¶é•¿åº¦ä¸åˆæ³•
-        g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "å‡çº§æ–‡ä»¶å¯èƒ½æŸå[0x%llx, 0x%llx]ï¼", total_size, file_len);
+    if(file_len >= total_size){	//ÎÄ¼ş³¤¶È²»ºÏ·¨
+        g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "Éı¼¶ÎÄ¼ş¿ÉÄÜËğ»µ[0x%llx, 0x%llx]£¡", total_size, file_len);
         res = ERR_UPDATE_PMC;
         fclose(file_des);
         goto END;
@@ -6668,8 +6668,8 @@ int ChannelEngine::UpdatePMC(){
     {
         read_cur_plan = file_len>1024?1024:file_len;
         read_cur_real = fread(buffer, 1, read_cur_plan, file_src);
-        if(read_cur_plan != read_cur_real){	//é”™è¯¯
-            g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "PMCæ¨¡å—å‡çº§ï¼Œå¤åˆ¶æ¢¯å½¢å›¾æ–‡ä»¶å‡ºé”™1ï¼%llu, %d, %d", file_len, read_cur_plan,
+        if(read_cur_plan != read_cur_real){	//´íÎó
+            g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "PMCÄ£¿éÉı¼¶£¬¸´ÖÆÌİĞÎÍ¼ÎÄ¼ş³ö´í1£¡%llu, %d, %d", file_len, read_cur_plan,
                     read_cur_real);
             res = ERR_UPDATE_PMC;
             fclose(file_des);
@@ -6683,30 +6683,30 @@ int ChannelEngine::UpdatePMC(){
     }
 
     if(file_len != 0){
-        g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "PMCæ¨¡å—å‡çº§ï¼Œå¤åˆ¶æ¢¯å½¢å›¾æ–‡ä»¶å‡ºé”™2ï¼");
+        g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "PMCÄ£¿éÉı¼¶£¬¸´ÖÆÌİĞÎÍ¼ÎÄ¼ş³ö´í2£¡");
         res = ERR_UPDATE_PMC;
         fclose(file_des);
         goto END;
     }
 
 
-    fclose(file_des); 	//èµ‹å€¼æ¢¯å½¢å›¾æ–‡ä»¶æˆåŠŸ
+    fclose(file_des); 	//¸³ÖµÌİĞÎÍ¼ÎÄ¼ş³É¹¦
     sync();
     printf("Succeed to copy ldr file!\n");
 
-    this->SendHmiUpdateStatus(3, 1);  //æ€»å…±åˆ†ä¸‰æ­¥éª¤
+    this->SendHmiUpdateStatus(3, 1);  //×Ü¹²·ÖÈı²½Öè
 
-    //å‡çº§PMCæ‰§è¡Œæ–‡ä»¶
+    //Éı¼¶PMCÖ´ĞĞÎÄ¼ş
     file_des = fopen(PATH_PMC_DATA, "w+");
     if (nullptr == file_des)
     {
-        g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "PMCæ‰§è¡Œæ–‡ä»¶åˆ›å»ºå¤±è´¥[%s]ï¼errno = %d", PATH_PMC_DATA, errno);
+        g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "PMCÖ´ĞĞÎÄ¼ş´´½¨Ê§°Ü[%s]£¡errno = %d", PATH_PMC_DATA, errno);
         res = ERR_UPDATE_PMC;
         goto END;
     }
     fread(buffer, 6, 1, file_src);
     if(strcmp(buffer, "#DAT@#") != 0){
-        g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "å‡çº§æ–‡ä»¶éæ³•ï¼Œè¯·æ£€æŸ¥ï¼");
+        g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "Éı¼¶ÎÄ¼ş·Ç·¨£¬Çë¼ì²é£¡");
         fclose(file_des);
         res = ERR_UPDATE_PMC;
         goto END;
@@ -6721,8 +6721,8 @@ int ChannelEngine::UpdatePMC(){
     {
         read_cur_plan = file_len>1024?1024:file_len;
         read_cur_real = fread(buffer, 1, read_cur_plan, file_src);
-        if(read_cur_plan != read_cur_real){	//é”™è¯¯
-            g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "PMCæ¨¡å—å‡çº§ï¼Œå¤åˆ¶æ‰§è¡Œæ–‡ä»¶å‡ºé”™1ï¼");
+        if(read_cur_plan != read_cur_real){	//´íÎó
+            g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "PMCÄ£¿éÉı¼¶£¬¸´ÖÆÖ´ĞĞÎÄ¼ş³ö´í1£¡");
             res = ERR_UPDATE_PMC;
             fclose(file_des);
             goto END;
@@ -6735,7 +6735,7 @@ int ChannelEngine::UpdatePMC(){
     }
 
     if(file_len != 0){
-        g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "PMCæ¨¡å—å‡çº§ï¼Œå¤åˆ¶æ‰§è¡Œæ–‡ä»¶å‡ºé”™2ï¼");
+        g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "PMCÄ£¿éÉı¼¶£¬¸´ÖÆÖ´ĞĞÎÄ¼ş³ö´í2£¡");
         res = ERR_UPDATE_PMC;
         fclose(file_des);
         goto END;
@@ -6743,14 +6743,14 @@ int ChannelEngine::UpdatePMC(){
 
     fclose(file_des);
 
-    this->SendHmiUpdateStatus(3, 2);  //æ€»å…±åˆ†ä¸‰æ­¥éª¤
+    this->SendHmiUpdateStatus(3, 2);  //×Ü¹²·ÖÈı²½Öè
 
     printf("Succeed to update pmc module!\n");
     END:
     fclose(file_src);
     if(-1 == remove(filepath)){
-        //åˆ é™¤å‡çº§æ–‡ä»¶å¤±è´¥
-        g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "PMCæ¨¡å—åˆ é™¤å‡çº§æ–‡ä»¶å¤±è´¥ï¼");
+        //É¾³ıÉı¼¶ÎÄ¼şÊ§°Ü
+        g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "PMCÄ£¿éÉ¾³ıÉı¼¶ÎÄ¼şÊ§°Ü£¡");
     }
     sync();
 
@@ -6760,11 +6760,11 @@ int ChannelEngine::UpdatePMC(){
 }
 
 /**
- * @brief å‘é€MCå‡çº§å¼€å§‹æŒ‡ä»¤
- * @return true--æˆåŠŸ   false--å¤±è´¥
+ * @brief ·¢ËÍMCÉı¼¶¿ªÊ¼Ö¸Áî
+ * @return true--³É¹¦   false--Ê§°Ü
  */
 bool ChannelEngine::SendMcUpdateStartCmd(){
-    //å‘é€MCå‡çº§å¼€å§‹æŒ‡ä»¤
+    //·¢ËÍMCÉı¼¶¿ªÊ¼Ö¸Áî
     McCmdFrame cmd;
     memset(&cmd, 0x00, sizeof(McCmdFrame));
 
@@ -6776,12 +6776,12 @@ bool ChannelEngine::SendMcUpdateStartCmd(){
 }
 
 /**
- * @brief å‘é€MCå‡çº§æ–‡ä»¶å¤§å°
- * @param size : å‡çº§æ–‡ä»¶16bitsåŒå­—èŠ‚æ•°é‡
- * @return true--æˆåŠŸ   false--å¤±è´¥
+ * @brief ·¢ËÍMCÉı¼¶ÎÄ¼ş´óĞ¡
+ * @param size : Éı¼¶ÎÄ¼ş16bitsË«×Ö½ÚÊıÁ¿
+ * @return true--³É¹¦   false--Ê§°Ü
  */
 bool ChannelEngine::SendMcUpdateFileSize(uint32_t size){
-    //å‘é€MCå‡çº§æ–‡ä»¶å¤§å°
+    //·¢ËÍMCÉı¼¶ÎÄ¼ş´óĞ¡
     McCmdFrame cmd;
     memset(&cmd, 0x00, sizeof(McCmdFrame));
 
@@ -6796,13 +6796,13 @@ bool ChannelEngine::SendMcUpdateFileSize(uint32_t size){
 }
 
 /**
- * @brief å‘é€MCå‡çº§æ–‡ä»¶CRC
- * @param frame_count :  å‘é€å¸§æ€»æ•°
- * @param crc : å‡çº§æ–‡ä»¶æ•´ä½“CRC
- * @return true--æˆåŠŸ   false--å¤±è´¥
+ * @brief ·¢ËÍMCÉı¼¶ÎÄ¼şCRC
+ * @param frame_count :  ·¢ËÍÖ¡×ÜÊı
+ * @param crc : Éı¼¶ÎÄ¼şÕûÌåCRC
+ * @return true--³É¹¦   false--Ê§°Ü
  */
 bool ChannelEngine::SendMcUpdateFileCrc(uint16_t frame_count, uint16_t crc){
-    //å‘é€MCå‡çº§æ–‡ä»¶CRC
+    //·¢ËÍMCÉı¼¶ÎÄ¼şCRC
     McCmdFrame cmd;
     memset(&cmd, 0x00, sizeof(McCmdFrame));
 
@@ -6817,11 +6817,11 @@ bool ChannelEngine::SendMcUpdateFileCrc(uint16_t frame_count, uint16_t crc){
 }
 
 /**
- * @brief æŸ¥è¯¢MCå‡çº§çŠ¶æ€
+ * @brief ²éÑ¯MCÉı¼¶×´Ì¬
  * @return
  */
 bool ChannelEngine::QueryMcUpdateStatus(){
-    //æŸ¥è¯¢MCå‡çº§çŠ¶æ€
+    //²éÑ¯MCÉı¼¶×´Ì¬
     McCmdFrame cmd;
     memset(&cmd, 0x00, sizeof(McCmdFrame));
 
@@ -6835,7 +6835,7 @@ bool ChannelEngine::QueryMcUpdateStatus(){
 }
 
 /**
- * @brief è·å–å®é™…æ€»çº¿è½´æ•°é‡
+ * @brief »ñÈ¡Êµ¼Ê×ÜÏßÖáÊıÁ¿
  * @return
  */
 uint16_t ChannelEngine::GetBusAxisCount(){
@@ -6851,94 +6851,94 @@ uint16_t ChannelEngine::GetBusAxisCount(){
 }
 
 /**
- * @brief åˆå§‹åŒ–PMCçš„éæ˜“å¤±æ€§å¯„å­˜å™¨
+ * @brief ³õÊ¼»¯PMCµÄ·ÇÒ×Ê§ĞÔ¼Ä´æÆ÷
  */
 void ChannelEngine::InitPmcReg(){
     printf("init pmc register\n");
-//	//æ‰“å¼€æ–‡ä»¶
-//	int fp = open(PATH_PMC_REG, O_RDONLY); //æ‰“å¼€æ–‡ä»¶
+//	//´ò¿ªÎÄ¼ş
+//	int fp = open(PATH_PMC_REG, O_RDONLY); //´ò¿ªÎÄ¼ş
 //
 //	if(fp < 0){
-//		g_ptr_trace->PrintTrace(TRACE_ERROR, PMC_REGISTER, "æ‰“å¼€pmcå¯„å­˜å™¨ä¿å­˜æ–‡ä»¶å¤±è´¥ï¼");
-//		return;//æ–‡ä»¶æ‰“å¼€å¤±è´¥
+//		g_ptr_trace->PrintTrace(TRACE_ERROR, PMC_REGISTER, "´ò¿ªpmc¼Ä´æÆ÷±£´æÎÄ¼şÊ§°Ü£¡");
+//		return;//ÎÄ¼ş´ò¿ªÊ§°Ü
 //	}
-//	uint16_t size = 0;   //å¯„å­˜å™¨å­—èŠ‚æ•°
+//	uint16_t size = 0;   //¼Ä´æÆ÷×Ö½ÚÊı
 //
-//	//è¯»å–Kå¯„å­˜å™¨
+//	//¶ÁÈ¡K¼Ä´æÆ÷
 //	ssize_t read_size = read(fp, &size, 2);
-//	if(read_size != 2){ //è¯»å–å¤±è´¥
-//		g_ptr_trace->PrintTrace(TRACE_ERROR, PMC_REGISTER, "è¯»å–Kå¯„å­˜å™¨å­—èŠ‚æ•°å¤±è´¥ï¼");
+//	if(read_size != 2){ //¶ÁÈ¡Ê§°Ü
+//		g_ptr_trace->PrintTrace(TRACE_ERROR, PMC_REGISTER, "¶ÁÈ¡K¼Ä´æÆ÷×Ö½ÚÊıÊ§°Ü£¡");
 //		return;
 //	}
 //
 //	if(size != K_REG_COUNT){
-//		g_ptr_trace->PrintTrace(TRACE_ERROR, PMC_REGISTER, "Kå¯„å­˜å™¨å¤§å°æ•°ä¸åŒ¹é…[%hu,%hu]ï¼", size, K_REG_COUNT);
+//		g_ptr_trace->PrintTrace(TRACE_ERROR, PMC_REGISTER, "K¼Ä´æÆ÷´óĞ¡Êı²»Æ¥Åä[%hu,%hu]£¡", size, K_REG_COUNT);
 //		return;
 //	}
 //	read_size = read(fp, this->m_p_pmc_reg->GetRegPtr8(PMC_REG_K), size);
 //	if(read_size != size){
-//		g_ptr_trace->PrintTrace(TRACE_ERROR, PMC_REGISTER, "è¯»å–Kå¯„å­˜å™¨æ•°æ®å¤±è´¥[%hu,%hu]ï¼", read_size, size);
+//		g_ptr_trace->PrintTrace(TRACE_ERROR, PMC_REGISTER, "¶ÁÈ¡K¼Ä´æÆ÷Êı¾İÊ§°Ü[%hu,%hu]£¡", read_size, size);
 //		return;
 //	}
 //
-//	//è¯»å–Då¯„å­˜å™¨
+//	//¶ÁÈ¡D¼Ä´æÆ÷
 //	read_size = read(fp, &size, 2);
-//	if(read_size != 2){ //è¯»å–å¤±è´¥
-//		g_ptr_trace->PrintTrace(TRACE_ERROR, PMC_REGISTER, "è¯»å–Då¯„å­˜å™¨å­—èŠ‚æ•°å¤±è´¥ï¼");
+//	if(read_size != 2){ //¶ÁÈ¡Ê§°Ü
+//		g_ptr_trace->PrintTrace(TRACE_ERROR, PMC_REGISTER, "¶ÁÈ¡D¼Ä´æÆ÷×Ö½ÚÊıÊ§°Ü£¡");
 //		return;
 //	}
 //
 //	if(size != D_REG_COUNT*2){
-//		g_ptr_trace->PrintTrace(TRACE_ERROR, PMC_REGISTER, "Kå¯„å­˜å™¨å¤§å°æ•°ä¸åŒ¹é…[%hu,%hu]ï¼", size, D_REG_COUNT*2);
+//		g_ptr_trace->PrintTrace(TRACE_ERROR, PMC_REGISTER, "K¼Ä´æÆ÷´óĞ¡Êı²»Æ¥Åä[%hu,%hu]£¡", size, D_REG_COUNT*2);
 //		return;
 //	}
 //	read_size = read(fp, this->m_p_pmc_reg->GetRegPtr16(PMC_REG_D), size);
 //	if(read_size != size){
-//		g_ptr_trace->PrintTrace(TRACE_ERROR, PMC_REGISTER, "è¯»å–Då¯„å­˜å™¨æ•°æ®å¤±è´¥[%hu,%hu]ï¼", read_size, size);
+//		g_ptr_trace->PrintTrace(TRACE_ERROR, PMC_REGISTER, "¶ÁÈ¡D¼Ä´æÆ÷Êı¾İÊ§°Ü[%hu,%hu]£¡", read_size, size);
 //		return;
 //	}
 //
-//	//è¯»å–DCå¯„å­˜å™¨
+//	//¶ÁÈ¡DC¼Ä´æÆ÷
 //	read_size = read(fp, &size, 2);
-//	if(read_size != 2){ //è¯»å–å¤±è´¥
-//		g_ptr_trace->PrintTrace(TRACE_ERROR, PMC_REGISTER, "è¯»å–DCå¯„å­˜å™¨å­—èŠ‚æ•°å¤±è´¥ï¼");
+//	if(read_size != 2){ //¶ÁÈ¡Ê§°Ü
+//		g_ptr_trace->PrintTrace(TRACE_ERROR, PMC_REGISTER, "¶ÁÈ¡DC¼Ä´æÆ÷×Ö½ÚÊıÊ§°Ü£¡");
 //		return;
 //	}
 //
 //	if(size != C_REG_COUNT*2){
-//		g_ptr_trace->PrintTrace(TRACE_ERROR, PMC_REGISTER, "DCå¯„å­˜å™¨å¤§å°æ•°ä¸åŒ¹é…[%hu,%hu]ï¼", size, C_REG_COUNT*2);
+//		g_ptr_trace->PrintTrace(TRACE_ERROR, PMC_REGISTER, "DC¼Ä´æÆ÷´óĞ¡Êı²»Æ¥Åä[%hu,%hu]£¡", size, C_REG_COUNT*2);
 //		return;
 //	}
 //	read_size = read(fp, this->m_p_pmc_reg->GetRegPtr16(PMC_REG_DC), size);
 //	if(read_size != size){
-//		g_ptr_trace->PrintTrace(TRACE_ERROR, PMC_REGISTER, "è¯»å–DCå¯„å­˜å™¨æ•°æ®å¤±è´¥[%hu,%hu]ï¼", read_size, size);
+//		g_ptr_trace->PrintTrace(TRACE_ERROR, PMC_REGISTER, "¶ÁÈ¡DC¼Ä´æÆ÷Êı¾İÊ§°Ü[%hu,%hu]£¡", read_size, size);
 //		return;
 //	}
 //
-//	//è¯»å–DTå¯„å­˜å™¨
+//	//¶ÁÈ¡DT¼Ä´æÆ÷
 //	read_size = read(fp, &size, 2);
-//	if(read_size != 2){ //è¯»å–å¤±è´¥
-//		g_ptr_trace->PrintTrace(TRACE_ERROR, PMC_REGISTER, "è¯»å–DTå¯„å­˜å™¨å­—èŠ‚æ•°å¤±è´¥ï¼");
+//	if(read_size != 2){ //¶ÁÈ¡Ê§°Ü
+//		g_ptr_trace->PrintTrace(TRACE_ERROR, PMC_REGISTER, "¶ÁÈ¡DT¼Ä´æÆ÷×Ö½ÚÊıÊ§°Ü£¡");
 //		return;
 //	}
 //
 //	if(size != T_REG_COUNT*2){
-//		g_ptr_trace->PrintTrace(TRACE_ERROR, PMC_REGISTER, "DTå¯„å­˜å™¨å¤§å°æ•°ä¸åŒ¹é…[%hu,%hu]ï¼", size, T_REG_COUNT*2);
+//		g_ptr_trace->PrintTrace(TRACE_ERROR, PMC_REGISTER, "DT¼Ä´æÆ÷´óĞ¡Êı²»Æ¥Åä[%hu,%hu]£¡", size, T_REG_COUNT*2);
 //		return;
 //	}
 //	read_size = read(fp, this->m_p_pmc_reg->GetRegPtr16(PMC_REG_DT), size);
 //	if(read_size != size){
-//		g_ptr_trace->PrintTrace(TRACE_ERROR, PMC_REGISTER, "è¯»å–DTå¯„å­˜å™¨æ•°æ®å¤±è´¥[%hu,%hu]ï¼", read_size, size);
+//		g_ptr_trace->PrintTrace(TRACE_ERROR, PMC_REGISTER, "¶ÁÈ¡DT¼Ä´æÆ÷Êı¾İÊ§°Ü[%hu,%hu]£¡", read_size, size);
 //		return;
 //	}
 
 
-    //å°†æ•°æ®å‘é€ç»™MI
+    //½«Êı¾İ·¢ËÍ¸øMI
     uint16_t i = 0, count = 0;
     uint8_t *pn8 = nullptr;
 
 
-    //å‘é€Kå¯„å­˜å™¨
+    //·¢ËÍK¼Ä´æÆ÷
     pn8 = this->m_p_pmc_reg->GetRegPtr8(PMC_REG_K);
     for(i = 0; i < K_REG_COUNT; i++){
         if(pn8[i] != 0){
@@ -6949,7 +6949,7 @@ void ChannelEngine::InitPmcReg(){
 
 #ifndef USES_PMC_2_0
     uint16_t *pn16 = nullptr;
-    //å‘é€Då¯„å­˜å™¨
+    //·¢ËÍD¼Ä´æÆ÷
     pn16 = this->m_p_pmc_reg->GetRegPtr16(PMC_REG_D);
     for(i = 0; i < D_REG_COUNT; i++){
         if(pn16[i] != 0){
@@ -6958,7 +6958,7 @@ void ChannelEngine::InitPmcReg(){
         }
     }
 
-    //å‘é€DCå¯„å­˜å™¨
+    //·¢ËÍDC¼Ä´æÆ÷
     pn16 = this->m_p_pmc_reg->GetRegPtr16(PMC_REG_DC);
     for(i = 0; i < C_REG_COUNT; i++){
         if(pn16[i] != 0){
@@ -6967,7 +6967,7 @@ void ChannelEngine::InitPmcReg(){
         }
     }
 
-    //å‘é€DTå¯„å­˜å™¨
+    //·¢ËÍDT¼Ä´æÆ÷
     pn16 = this->m_p_pmc_reg->GetRegPtr16(PMC_REG_DT);
     for(i = 0; i < T_REG_COUNT; i++){
         if(pn16[i] != 0){
@@ -6976,7 +6976,7 @@ void ChannelEngine::InitPmcReg(){
         }
     }
 
-    //å‘é€Cå¯„å­˜å™¨
+    //·¢ËÍC¼Ä´æÆ÷
     pn16 = this->m_p_pmc_reg->GetRegPtr16(PMC_REG_C);
     for(i = 0; i < C_REG_COUNT; i++){
         if(pn16[i] != 0){
@@ -6985,7 +6985,7 @@ void ChannelEngine::InitPmcReg(){
         }
     }
 #else
-    //å‘é€Då¯„å­˜å™¨
+    //·¢ËÍD¼Ä´æÆ÷
     pn8 = this->m_p_pmc_reg->GetRegPtr8(PMC_REG_D);
     for(i = 0; i < D_REG_COUNT; i++){
         if(pn8[i] != 0){
@@ -6994,7 +6994,7 @@ void ChannelEngine::InitPmcReg(){
         }
     }
 
-    //å‘é€Cå¯„å­˜å™¨
+    //·¢ËÍC¼Ä´æÆ÷
     pn8 = this->m_p_pmc_reg->GetRegPtr8(PMC_REG_C);
     count = C_REG_COUNT*4;
     for(i = 0; i < count; i++){
@@ -7004,7 +7004,7 @@ void ChannelEngine::InitPmcReg(){
         }
     }
 
-    //å‘é€Tå¯„å­˜å™¨
+    //·¢ËÍT¼Ä´æÆ÷
     pn8 = this->m_p_pmc_reg->GetRegPtr8(PMC_REG_T);
     count = T_REG_COUNT*2;
     for(i = 0; i < count; i++){
@@ -7018,11 +7018,11 @@ void ChannelEngine::InitPmcReg(){
 }
 
 /**
- * @brief å‘é€MIå‚æ•°
- * @param axis : è½´å·ï¼Œ MIçš„è½´å·ä»1å¼€å§‹, 0xFFè¡¨ç¤ºç³»ç»Ÿå‚æ•°
- * @param para_no : å‚æ•°å·
- * @param data ï¼šæ•°æ®æŒ‡é’ˆ
- * @param size ï¼šå‚æ•°æ•°æ®æ‰€å çš„å­—èŠ‚æ•°
+ * @brief ·¢ËÍMI²ÎÊı
+ * @param axis : ÖáºÅ£¬ MIµÄÖáºÅ´Ó1¿ªÊ¼, 0xFF±íÊ¾ÏµÍ³²ÎÊı
+ * @param para_no : ²ÎÊıºÅ
+ * @param data £ºÊı¾İÖ¸Õë
+ * @param size £º²ÎÊıÊı¾İËùÕ¼µÄ×Ö½ÚÊı
  */
 template<typename T>
 void ChannelEngine::SendMiParam(uint8_t axis, uint32_t para_no, T data){
@@ -7039,23 +7039,23 @@ void ChannelEngine::SendMiParam(uint8_t axis, uint32_t para_no, T data){
 }
 
 /**
- * @brief ç»™MIå‘é€åˆå§‹åŒ–å‚æ•°
+ * @brief ¸øMI·¢ËÍ³õÊ¼»¯²ÎÊı
  */
 void ChannelEngine::InitMiParam(){
 
     printf("start init mi parameters\n");
-//	uint8_t mi_axis_interface[] = {0xFF, 0x10, 0x01};   //è™šæ‹Ÿè½´ã€æ€»çº¿è½´ã€éæ€»çº¿è½´
+//	uint8_t mi_axis_interface[] = {0xFF, 0x10, 0x01};   //ĞéÄâÖá¡¢×ÜÏßÖá¡¢·Ç×ÜÏßÖá
 
-    //åˆå§‹åŒ–PMCå¯„å­˜å™¨
+    //³õÊ¼»¯PMC¼Ä´æÆ÷
     this->InitPmcReg();
 
-    //åˆå§‹åŒ–SD-LINKä»ç«™æ•°æ®
+    //³õÊ¼»¯SD-LINK´ÓÕ¾Êı¾İ
     SetSlaveInfo();
 
-    //å‘é€æ‰‹è½®ç¼–ç æ ¼å¼
-    this->SendMiParam<uint8_t>(0xFF, 10, this->m_p_general_config->hw_code_type);   //æ‰‹è½®ç¼–ç ç±»å‹
+    //·¢ËÍÊÖÂÖ±àÂë¸ñÊ½
+    this->SendMiParam<uint8_t>(0xFF, 10, this->m_p_general_config->hw_code_type);   //ÊÖÂÖ±àÂëÀàĞÍ
 
-    //å‘é€IOé‡æ˜ å°„æ•°æ®
+    //·¢ËÍIOÖØÓ³ÉäÊı¾İ
     ListNode<IoRemapInfo> *info_node = this->m_p_io_remap->HeadNode();
     while(info_node != nullptr){
         this->SendMiIoRemapInfo(info_node->data);
@@ -7063,25 +7063,25 @@ void ChannelEngine::InitMiParam(){
         info_node = info_node->next;
     }
 
-    //æ‰€æœ‰è½´ä¾æ¬¡å‘é€
+    //ËùÓĞÖáÒÀ´Î·¢ËÍ
     SCAxisConfig *axis_config = nullptr;
     uint8_t index = 0;
-    double tmp = 0.0;    //ä¸´æ—¶å˜é‡
-    uint8_t tmp_8 = 0;   //ä¸´æ—¶å˜é‡
-    uint64_t tmp_64 = 0;   //ä¸´æ—¶å˜é‡
+    double tmp = 0.0;    //ÁÙÊ±±äÁ¿
+    uint8_t tmp_8 = 0;   //ÁÙÊ±±äÁ¿
+    uint64_t tmp_64 = 0;   //ÁÙÊ±±äÁ¿
     for(int i = 0; i < this->m_p_general_config->axis_count; i++){
         axis_config = &m_p_axis_config[i];
-        index = i+1;   //MIä¸­çš„è½´å·ä»1å¼€å§‹
+        index = i+1;   //MIÖĞµÄÖáºÅ´Ó1¿ªÊ¼
 
-        //å‘é€æ’è¡¥ååŠ å‡é€Ÿç›¸å…³å‚æ•°
-        this->SendMiParam<uint8_t>(index, 1140, axis_config->post_filter_type);   //æ»¤æ³¢å™¨ç±»å‹
-        this->SendMiParam<uint16_t>(index, 1141, axis_config->post_filter_time_1);   //ä¸€çº§æ»¤æ³¢å™¨æ—¶é—´å¸¸æ•°
-        this->SendMiParam<uint16_t>(index, 1142, axis_config->post_filter_time_2);   //äºŒçº§æ»¤æ³¢å™¨æ—¶é—´å¸¸æ•°
+        //·¢ËÍ²å²¹ºó¼Ó¼õËÙÏà¹Ø²ÎÊı
+        this->SendMiParam<uint8_t>(index, 1140, axis_config->post_filter_type);   //ÂË²¨Æ÷ÀàĞÍ
+        this->SendMiParam<uint16_t>(index, 1141, axis_config->post_filter_time_1);   //Ò»¼¶ÂË²¨Æ÷Ê±¼ä³£Êı
+        this->SendMiParam<uint16_t>(index, 1142, axis_config->post_filter_time_2);   //¶ş¼¶ÂË²¨Æ÷Ê±¼ä³£Êı
 
-        this->SendMiParam<uint8_t>(index, 1002, axis_config->axis_interface);   //è½´æ¥å£ç±»å‹
-        this->SendMiParam<uint8_t>(index, 1001, axis_config->axis_type);		//è½´ç±»å‹
-        this->SendMiParam<uint8_t>(index, 1003, axis_config->axis_port);		//ä»ç«™å·æˆ–è€…å¯¹åº”è½´å£å·
-        this->SendMiParam<uint8_t>(index, 1006, axis_config->axis_pmc);			//æ˜¯å¦PMCè½´
+        this->SendMiParam<uint8_t>(index, 1002, axis_config->axis_interface);   //Öá½Ó¿ÚÀàĞÍ
+        this->SendMiParam<uint8_t>(index, 1001, axis_config->axis_type);		//ÖáÀàĞÍ
+        this->SendMiParam<uint8_t>(index, 1003, axis_config->axis_port);		//´ÓÕ¾ºÅ»òÕß¶ÔÓ¦Öá¿ÚºÅ
+        this->SendMiParam<uint8_t>(index, 1006, axis_config->axis_pmc);			//ÊÇ·ñPMCÖá
         this->SendMiParam<double>(index, 1100, axis_config->kp1);			//kp1
         this->SendMiParam<double>(index, 1101, axis_config->kp2);			//kp2
         this->SendMiParam<double>(index, 1102, axis_config->ki);			//ki
@@ -7091,46 +7091,46 @@ void ChannelEngine::InitMiParam(){
         this->SendMiParam<double>(index, 1105, tmp);			//kvff
         tmp = static_cast<double>(axis_config->kaff);
         this->SendMiParam<double>(index, 1106, tmp);			//kaff
-        tmp_64 = static_cast<uint64_t>(axis_config->track_err_limit) * 1e4;   //è½¬æ¢å•ä½ï¼šum-->0.1nm
-        this->SendMiParam<uint64_t>(index, 1107, tmp_64);	//è·Ÿè¸ªè¯¯å·®é™
-        tmp_64 = static_cast<uint64_t>(axis_config->location_err_limit) * 1e4;   //è½¬æ¢å•ä½ï¼šum-->0.1nm
-        this->SendMiParam<uint64_t>(index, 1108, tmp_64);			//å®šä½è¯¯å·®é™
-        this->SendMiParam<uint32_t>(index, 1200, axis_config->motor_count_pr);	//ç”µæœºæ¯è½¬è®¡æ•°
-        this->SendMiParam<uint32_t>(index, 1201, axis_config->motor_speed_max);	//ç”µæœºæœ€å¤§è½¬é€Ÿ
-        tmp_64 = static_cast<uint64_t>(axis_config->move_pr * 1e7);   //è½¬æ¢å•ä½ï¼šmm-->0.1nm
+        tmp_64 = static_cast<uint64_t>(axis_config->track_err_limit) * 1e4;   //×ª»»µ¥Î»£ºum-->0.1nm
+        this->SendMiParam<uint64_t>(index, 1107, tmp_64);	//¸ú×ÙÎó²îÏŞ
+        tmp_64 = static_cast<uint64_t>(axis_config->location_err_limit) * 1e4;   //×ª»»µ¥Î»£ºum-->0.1nm
+        this->SendMiParam<uint64_t>(index, 1108, tmp_64);			//¶¨Î»Îó²îÏŞ
+        this->SendMiParam<uint32_t>(index, 1200, axis_config->motor_count_pr);	//µç»úÃ¿×ª¼ÆÊı
+        this->SendMiParam<uint32_t>(index, 1201, axis_config->motor_speed_max);	//µç»ú×î´ó×ªËÙ
+        tmp_64 = static_cast<uint64_t>(axis_config->move_pr * 1e7);   //×ª»»µ¥Î»£ºmm-->0.1nm
 // 		printf("write axis param idx = %d, value = %ld\n", index, tmp_64);
-        this->SendMiParam<uint64_t>(index, 1202, tmp_64);	//æ¯è½¬ç§»åŠ¨é‡
-        this->SendMiParam<uint8_t>(index, 1203, axis_config->motor_dir);	//ç”µæœºæ—‹è½¬æ–¹å‘
+        this->SendMiParam<uint64_t>(index, 1202, tmp_64);	//Ã¿×ªÒÆ¶¯Á¿
+        this->SendMiParam<uint8_t>(index, 1203, axis_config->motor_dir);	//µç»úĞı×ª·½Ïò
         tmp_8 = axis_config->feedback_mode;
 //		if(axis_config->axis_interface == VIRTUAL_AXIS)
-//			tmp_8 = 0xFF;    //è™šæ‹Ÿè½´
+//			tmp_8 = 0xFF;    //ĞéÄâÖá
 //		else if(axis_config->axis_interface == BUS_AXIS)
 //			tmp_8 = 0x10;   //ethercat
-        this->SendMiParam<uint8_t>(index, 1204, tmp_8);	//åé¦ˆç±»å‹
+        this->SendMiParam<uint8_t>(index, 1204, tmp_8);	//·´À¡ÀàĞÍ
 //		printf("send axis[%hhu] feedback_mode %hhu #####\n", index, tmp_8);
 
         tmp_8 = axis_config->ctrl_mode;
         if(axis_config->axis_interface == VIRTUAL_AXIS)
-            tmp_8 = 0xFF;    //è™šæ‹Ÿè½´
+            tmp_8 = 0xFF;    //ĞéÄâÖá
         else if(axis_config->axis_interface == BUS_AXIS)
             tmp_8 = 0x10;   //ethercat
-        this->SendMiParam<uint8_t>(index, 1205, tmp_8);	//è½´æ§åˆ¶æ–¹å¼
-        this->SendMiParam<uint32_t>(index, 1206, axis_config->pulse_count_pr);	//æ§åˆ¶æ¯è½¬è¾“å‡ºè„‰å†²æ•°
-        this->SendMiParam<uint8_t>(index, 1207, axis_config->encoder_lines);	//å•åœˆç¼–ç å™¨çº¿æ•°
+        this->SendMiParam<uint8_t>(index, 1205, tmp_8);	//Öá¿ØÖÆ·½Ê½
+        this->SendMiParam<uint32_t>(index, 1206, axis_config->pulse_count_pr);	//¿ØÖÆÃ¿×ªÊä³öÂö³åÊı
+        this->SendMiParam<uint8_t>(index, 1207, axis_config->encoder_lines);	//µ¥È¦±àÂëÆ÷ÏßÊı
 
-        this->SendMiParam<uint16_t>(index, 1208, axis_config->encoder_max_cycle);   //æ—‹è½¬è½´ç¼–ç å™¨æ•´åœˆæœ€å¤§å€¼
+        this->SendMiParam<uint16_t>(index, 1208, axis_config->encoder_max_cycle);   //Ğı×ªÖá±àÂëÆ÷ÕûÈ¦×î´óÖµ
 
-//		this->SendMiParam<uint8_t>(index, 1209, axis_config->axis_alarm_level);	//è½´å‘Šè­¦ç”µå¹³
+//		this->SendMiParam<uint8_t>(index, 1209, axis_config->axis_alarm_level);	//Öá¸æ¾¯µçÆ½
 
         if(axis_config->axis_interface != VIRTUAL_AXIS &&
                 axis_config->feedback_mode != NO_ENCODER &&
                 axis_config->feedback_mode != INCREMENTAL_ENCODER &&
-                axis_config->ref_encoder != kAxisRefNoDef){ //å†™å…¥å‚è€ƒç‚¹æ•°æ®
+                axis_config->ref_encoder != kAxisRefNoDef){ //Ğ´Èë²Î¿¼µãÊı¾İ
             this->m_p_mi_comm->SetAxisRef(index, axis_config->ref_encoder);
             printf("send mi ref encoder : %lld\n", axis_config->ref_encoder);
         }
 
-        //è½¯é™ä½
+        //ÈíÏŞÎ»
         this->SendMiParam<double>(index, 1500, axis_config->soft_limit_max_1);
         this->SendMiParam<double>(index, 1501, axis_config->soft_limit_min_1);
         this->SendMiParam<uint8_t>(index, 1502, axis_config->soft_limit_check_1);
@@ -7141,39 +7141,39 @@ void ChannelEngine::InitMiParam(){
         this->SendMiParam<double>(index, 1507, axis_config->soft_limit_min_3);
         this->SendMiParam<uint8_t>(index, 1508, axis_config->soft_limit_check_3);
 
-        //å‘é€ä¸»è½´å¯åŠ¨æ—¶é—´ã€åˆ¶åŠ¨æ—¶é—´
+        //·¢ËÍÖ÷ÖáÆô¶¯Ê±¼ä¡¢ÖÆ¶¯Ê±¼ä
         this->SendMiParam<uint16_t>(index, 1605, axis_config->spd_start_time);
         this->SendMiParam<uint16_t>(index, 1606, axis_config->spd_stop_time);
 
-        //å‘é€åŒæ­¥è½´ç›¸å…³å‚æ•°
-        this->SendMiParam<uint8_t>(index, 1650, axis_config->sync_axis);   //æ˜¯å¦åŒæ­¥è½´
-        this->SendMiParam<uint8_t>(index, 1651, axis_config->master_axis_no); 	//ä¸»åŠ¨è½´å·
-        this->SendMiParam<double>(index, 1653, axis_config->benchmark_offset); 	//åŸºå‡†åå·®
-        this->SendMiParam<uint32_t>(index, 1655, axis_config->sync_err_max); 	//å…è®¸çš„åŒæ­¥æœ€å¤§è¯¯å·®
+        //·¢ËÍÍ¬²½ÖáÏà¹Ø²ÎÊı
+        this->SendMiParam<uint8_t>(index, 1650, axis_config->sync_axis);   //ÊÇ·ñÍ¬²½Öá
+        this->SendMiParam<uint8_t>(index, 1651, axis_config->master_axis_no); 	//Ö÷¶¯ÖáºÅ
+        this->SendMiParam<double>(index, 1653, axis_config->benchmark_offset); 	//»ù×¼Æ«²î
+        this->SendMiParam<uint32_t>(index, 1655, axis_config->sync_err_max); 	//ÔÊĞíµÄÍ¬²½×î´óÎó²î
 
-        //å‘é€åå‘é—´éš™å‚æ•°
+        //·¢ËÍ·´Ïò¼äÏ¶²ÎÊı
         this->SendMiBacklash(i);
 
-        //å‘é€è½´èºè¡¥æ•°æ®è¡¨
+        //·¢ËÍÖáÂİ²¹Êı¾İ±í
         this->SendMiPcData(i);
 
-        //å‘é€è½´èºè¡¥è®¾ç½®å‚æ•°
+        //·¢ËÍÖáÂİ²¹ÉèÖÃ²ÎÊı
         this->SendMiPcParam(i);
         this->SendMiPcParam2(i);
 
-        //å‘é€è½´å‚è€ƒç‚¹å¯¹åº”çš„æœºæ¢°åæ ‡
+        //·¢ËÍÖá²Î¿¼µã¶ÔÓ¦µÄ»úĞµ×ø±ê
         this->SendMiRefMachPos(i);
     }
 
     for(int i = 0; i < this->m_p_general_config->chn_count; i++){
-        this->m_p_channel_control[i].SendMiChnAxisMap();  //å‘é€é€šé“è½´ç‰©ç†è½´æ˜ å°„å…³ç³»ä¿¡æ¯
+        this->m_p_channel_control[i].SendMiChnAxisMap();  //·¢ËÍÍ¨µÀÖáÎïÀíÖáÓ³Éä¹ØÏµĞÅÏ¢
     }
 
     this->SendMiPhyAxisEncoder();
 
-    this->SetAxisRetRefFlag();   //å‘é€å›å‚è€ƒç‚¹ç»“æŸæ ‡å¿—
+    this->SetAxisRetRefFlag();   //·¢ËÍ»Ø²Î¿¼µã½áÊø±êÖ¾
 
-    //å‘é€è½´å‚æ•°è®¾ç½®å®Œæˆå‘½ä»¤
+    //·¢ËÍÖá²ÎÊıÉèÖÃÍê³ÉÃüÁî
     MiCmdFrame cmd;
     memset(&cmd, 0x00, sizeof(cmd));
     cmd.data.cmd = CMD_MI_INIT_COMPLETE;
@@ -7186,8 +7186,8 @@ void ChannelEngine::InitMiParam(){
 }
 
 /**
- * @brief å‘MIå‘é€èºè¡¥æ•°æ®è¡¨
- * @param axis : æŒ‡å®šç‰©ç†è½´å·ï¼Œä»0å¼€å§‹
+ * @brief ÏòMI·¢ËÍÂİ²¹Êı¾İ±í
+ * @param axis : Ö¸¶¨ÎïÀíÖáºÅ£¬´Ó0¿ªÊ¼
  */
 void ChannelEngine::SendMiPcData(uint8_t axis){
     if(this->m_p_pc_table == nullptr)
@@ -7198,39 +7198,39 @@ void ChannelEngine::SendMiPcData(uint8_t axis){
 
     cmd.data.axis_index = NO_AXIS;
 
-    //æ”¾ç½®æ•°æ®
+    //·ÅÖÃÊı¾İ
     uint16_t count = m_p_axis_config[axis].pc_count;
-    uint16_t offset = m_p_axis_config[axis].pc_offset-1;  //èµ·å§‹ç¼–å·ï¼Œ0å¼€å§‹
-    if(this->m_p_axis_config[axis].pc_type == 1){//åŒå‘èºè¡¥
-        count *= 2;   //æ•°æ®é‡ç¿»å€
+    uint16_t offset = m_p_axis_config[axis].pc_offset-1;  //ÆğÊ¼±àºÅ£¬0¿ªÊ¼
+    if(this->m_p_axis_config[axis].pc_type == 1){//Ë«ÏòÂİ²¹
+        count *= 2;   //Êı¾İÁ¿·­±¶
     }
 
     int32_t value = 0;
-    uint8_t dc = 0;    //æ¯ä¸ªæ•°æ®åŒ…çš„æ•°æ®ä¸ªæ•°
+    uint8_t dc = 0;    //Ã¿¸öÊı¾İ°üµÄÊı¾İ¸öÊı
 
     for(uint16_t i = 0; i < count; i += 3, offset += 3){
         memset(cmd.data.data, 0x00, 14);
         dc = count-i;
         if(dc > 3)
             dc = 3;
-        memcpy(&cmd.data.reserved, &dc, 1);   //èºè¡¥æ•°æ®ä¸ªæ•°
+        memcpy(&cmd.data.reserved, &dc, 1);   //Âİ²¹Êı¾İ¸öÊı
 
-        memcpy(cmd.data.data, &offset, 2);  //èµ·å§‹ç¼–å·
+        memcpy(cmd.data.data, &offset, 2);  //ÆğÊ¼±àºÅ
 
-        //ç¬¬ä¸€ç»„æ•°æ®
-        value = this->m_p_pc_table->pc_table[axis][i] * 1e7;   //å•ä½0.1nm
-        memcpy(&cmd.data.data[1], &value, 4);   //èµ·å§‹ç¼–å·
+        //µÚÒ»×éÊı¾İ
+        value = this->m_p_pc_table->pc_table[axis][i] * 1e7;   //µ¥Î»0.1nm
+        memcpy(&cmd.data.data[1], &value, 4);   //ÆğÊ¼±àºÅ
 
-        //ç¬¬äºŒç»„æ•°æ®
+        //µÚ¶ş×éÊı¾İ
         if(dc>=2){
-            value = this->m_p_pc_table->pc_table[axis][i+1] * 1e7;   //å•ä½0.1nm
-            memcpy(&cmd.data.data[3], &value, 4);   //èµ·å§‹ç¼–å·
+            value = this->m_p_pc_table->pc_table[axis][i+1] * 1e7;   //µ¥Î»0.1nm
+            memcpy(&cmd.data.data[3], &value, 4);   //ÆğÊ¼±àºÅ
         }
 
-        //ç¬¬ä¸‰ç»„æ•°æ®
+        //µÚÈı×éÊı¾İ
         if(dc == 3){
-            value = this->m_p_pc_table->pc_table[axis][i+2] * 1e7;   //å•ä½0.1nm
-            memcpy(&cmd.data.data[5], &value, 4);   //èµ·å§‹ç¼–å·
+            value = this->m_p_pc_table->pc_table[axis][i+2] * 1e7;   //µ¥Î»0.1nm
+            memcpy(&cmd.data.data[5], &value, 4);   //ÆğÊ¼±àºÅ
         }
 
         this->m_p_mi_comm->WriteCmd(cmd);
@@ -7238,8 +7238,8 @@ void ChannelEngine::SendMiPcData(uint8_t axis){
 }
 
 /**
- * @brief å‘MIå‘é€æŒ‡å®šè½´èºè¡¥å‚æ•°è®¾ç½®
- * @param axis : æŒ‡å®šç‰©ç†è½´å·ï¼Œä»0å¼€å§‹
+ * @brief ÏòMI·¢ËÍÖ¸¶¨ÖáÂİ²¹²ÎÊıÉèÖÃ
+ * @param axis : Ö¸¶¨ÎïÀíÖáºÅ£¬´Ó0¿ªÊ¼
  */
 void ChannelEngine::SendMiPcParam(uint8_t axis){
     MiCmdFrame cmd;
@@ -7248,27 +7248,27 @@ void ChannelEngine::SendMiPcParam(uint8_t axis){
 
     cmd.data.axis_index = axis+1;
 
-    //æ”¾ç½®æ•°æ®
+    //·ÅÖÃÊı¾İ
     uint16_t count = m_p_axis_config[axis].pc_count;
-    uint16_t offset = m_p_axis_config[axis].pc_offset-1;  //èµ·å§‹ç¼–å·ï¼Œ0å¼€å§‹
-    uint32_t inter = m_p_axis_config[axis].pc_inter_dist*1000;   //è½¬æ¢ä¸ºå¾®ç±³å•ä½
-    uint16_t ref_index = m_p_axis_config[axis].pc_ref_index-1;   //å‚è€ƒç‚¹å¯¹åº”ä½ç½®ï¼Œ0å¼€å§‹
+    uint16_t offset = m_p_axis_config[axis].pc_offset-1;  //ÆğÊ¼±àºÅ£¬0¿ªÊ¼
+    uint32_t inter = m_p_axis_config[axis].pc_inter_dist*1000;   //×ª»»ÎªÎ¢Ã×µ¥Î»
+    uint16_t ref_index = m_p_axis_config[axis].pc_ref_index-1;   //²Î¿¼µã¶ÔÓ¦Î»ÖÃ£¬0¿ªÊ¼
     uint16_t pc_type = this->m_p_axis_config[axis].pc_type;
     uint16_t pc_enable = m_p_axis_config[axis].pc_enable;
 
-    memcpy(cmd.data.data, &count, 2);  //è¡¥å¿æ•°æ®ä¸ªæ•°
-    memcpy(&cmd.data.data[1], &offset, 2);   //èµ·å§‹ç¼–å·
-    memcpy(&cmd.data.data[2], &inter, 4); 	 //è¡¥å¿é—´éš” ï¼Œ umå•ä½ï¼Œ32ä½æ•´å‹
-    memcpy(&cmd.data.data[4], &ref_index, 2);     //å‚è€ƒç‚¹å¯¹åº”ä½ç½®
-    memcpy(&cmd.data.data[5], &pc_type, 1);     //è¡¥å¿ç±»å‹  0--å•å‘èºè¡¥   1--åŒå‘èºè¡¥
+    memcpy(cmd.data.data, &count, 2);  //²¹³¥Êı¾İ¸öÊı
+    memcpy(&cmd.data.data[1], &offset, 2);   //ÆğÊ¼±àºÅ
+    memcpy(&cmd.data.data[2], &inter, 4); 	 //²¹³¥¼ä¸ô £¬ umµ¥Î»£¬32Î»ÕûĞÍ
+    memcpy(&cmd.data.data[4], &ref_index, 2);     //²Î¿¼µã¶ÔÓ¦Î»ÖÃ
+    memcpy(&cmd.data.data[5], &pc_type, 1);     //²¹³¥ÀàĞÍ  0--µ¥ÏòÂİ²¹   1--Ë«ÏòÂİ²¹
     memcpy(&cmd.data.data[6], &pc_enable, 1);
     this->m_p_mi_comm->WriteCmd(cmd);
 }
 
 
 /**
- * @brief å‘MIå‘é€æŒ‡å®šè½´çš„å‚è€ƒç‚¹ä½ç½®æœºæ¢°åæ ‡
- * @param axis_index : ç‰©ç†è½´å·ï¼Œä»0å¼€å§‹
+ * @brief ÏòMI·¢ËÍÖ¸¶¨ÖáµÄ²Î¿¼µãÎ»ÖÃ»úĞµ×ø±ê
+ * @param axis_index : ÎïÀíÖáºÅ£¬´Ó0¿ªÊ¼
  */
 void ChannelEngine::SendMiRefMachPos(uint8_t axis_index){
     MiCmdFrame cmd;
@@ -7277,10 +7277,10 @@ void ChannelEngine::SendMiRefMachPos(uint8_t axis_index){
 
     cmd.data.axis_index = axis_index+1;
 
-    //æ”¾ç½®æ•°æ®
+    //·ÅÖÃÊı¾İ
     uint32_t pos = 0;
     for(uint16_t i = 0; i <10; i++){
-        pos = m_p_axis_config[axis_index].axis_home_pos[i]*1000;   //è½¬æ¢ä¸ºå¾®ç±³å•ä½
+        pos = m_p_axis_config[axis_index].axis_home_pos[i]*1000;   //×ª»»ÎªÎ¢Ã×µ¥Î»
         memcpy(cmd.data.data, &pos, 4);  //
         cmd.data.data[2] = i;
 
@@ -7289,8 +7289,8 @@ void ChannelEngine::SendMiRefMachPos(uint8_t axis_index){
 }
 
 /**
- * @brief å‘MIå‘é€æŒ‡å®šè½´èºè¡¥å‚æ•°è®¾ç½®2
- * @param axis : ç‰©ç†è½´å·ï¼Œä»0å¼€å§‹
+ * @brief ÏòMI·¢ËÍÖ¸¶¨ÖáÂİ²¹²ÎÊıÉèÖÃ2
+ * @param axis : ÎïÀíÖáºÅ£¬´Ó0¿ªÊ¼
  */
 void ChannelEngine::SendMiPcParam2(uint8_t axis){
     MiCmdFrame cmd;
@@ -7299,8 +7299,8 @@ void ChannelEngine::SendMiPcParam2(uint8_t axis){
 
     cmd.data.axis_index = axis+1;
 
-    //æ”¾ç½®æ•°æ®
-    uint32_t pos = m_p_axis_config[axis].axis_home_pos[0]*1000;   //è½¬æ¢ä¸ºå¾®ç±³å•ä½
+    //·ÅÖÃÊı¾İ
+    uint32_t pos = m_p_axis_config[axis].axis_home_pos[0]*1000;   //×ª»»ÎªÎ¢Ã×µ¥Î»
     memcpy(cmd.data.data, &pos, 4);  //
 
     this->m_p_mi_comm->WriteCmd(cmd);
@@ -7308,7 +7308,7 @@ void ChannelEngine::SendMiPcParam2(uint8_t axis){
 }
 
 /**
- * @brief å‘MIå‘é€è®¾ç½®IOé‡å®šå‘çš„é…ç½®
+ * @brief ÏòMI·¢ËÍÉèÖÃIOÖØ¶¨ÏòµÄÅäÖÃ
  * @param info
  */
 void ChannelEngine::SendMiIoRemapInfo(IoRemapInfo &info){
@@ -7318,7 +7318,7 @@ void ChannelEngine::SendMiIoRemapInfo(IoRemapInfo &info){
 
     cmd.data.axis_index = 0xFF;
 
-    //æ”¾ç½®æ•°æ®
+    //·ÅÖÃÊı¾İ
     cmd.data.data[0] = info.iotype;
     cmd.data.data[1] = info.addr;
     cmd.data.data[2] = info.bit;
@@ -7331,18 +7331,18 @@ void ChannelEngine::SendMiIoRemapInfo(IoRemapInfo &info){
 }
 
 /**
- * @brief å‘MIå‘é€æŒ‡å®šè½´çš„æ»¤æ³¢å™¨ç›¸å…³å‚æ•°
- * @param phy_axis : ç‰©ç†è½´å·ï¼Œä»0å¼€å§‹
+ * @brief ÏòMI·¢ËÍÖ¸¶¨ÖáµÄÂË²¨Æ÷Ïà¹Ø²ÎÊı
+ * @param phy_axis : ÎïÀíÖáºÅ£¬´Ó0¿ªÊ¼
  */
 void ChannelEngine::SendMiAxisFilterParam(uint8_t phy_axis){
-    this->SendMiParam<uint8_t>(phy_axis+1, 1140, m_p_axis_config[phy_axis].post_filter_type);   //æ»¤æ³¢å™¨ç±»å‹
-    this->SendMiParam<uint16_t>(phy_axis+1, 1141, m_p_axis_config[phy_axis].post_filter_time_1);   //ä¸€çº§æ»¤æ³¢å™¨æ—¶é—´å¸¸æ•°
-    this->SendMiParam<uint16_t>(phy_axis+1, 1142, m_p_axis_config[phy_axis].post_filter_time_2);   //äºŒçº§æ»¤æ³¢å™¨æ—¶é—´å¸¸æ•°
+    this->SendMiParam<uint8_t>(phy_axis+1, 1140, m_p_axis_config[phy_axis].post_filter_type);   //ÂË²¨Æ÷ÀàĞÍ
+    this->SendMiParam<uint16_t>(phy_axis+1, 1141, m_p_axis_config[phy_axis].post_filter_time_1);   //Ò»¼¶ÂË²¨Æ÷Ê±¼ä³£Êı
+    this->SendMiParam<uint16_t>(phy_axis+1, 1142, m_p_axis_config[phy_axis].post_filter_time_2);   //¶ş¼¶ÂË²¨Æ÷Ê±¼ä³£Êı
 }
 
 /**
- * @brief å‘MIå‘é€æŒ‡å®šè½´çš„åå‘é—´éš™å‚æ•°
- * @param axis : ç‰©ç†è½´å·ï¼Œä»0å¼€å§‹
+ * @brief ÏòMI·¢ËÍÖ¸¶¨ÖáµÄ·´Ïò¼äÏ¶²ÎÊı
+ * @param axis : ÎïÀíÖáºÅ£¬´Ó0¿ªÊ¼
  */
 void ChannelEngine::SendMiBacklash(uint8_t axis){
     MiCmdFrame cmd;
@@ -7351,7 +7351,7 @@ void ChannelEngine::SendMiBacklash(uint8_t axis){
 
     cmd.data.axis_index = axis+1;
 
-    //æ”¾ç½®æ•°æ®
+    //·ÅÖÃÊı¾İ
     if(m_p_axis_config[axis].backlash_enable){
         uint32_t data = m_p_axis_config[axis].backlash_forward;
         memcpy(cmd.data.data, &data, 4);  //
@@ -7369,7 +7369,7 @@ void ChannelEngine::SendMiBacklash(uint8_t axis){
 
 
 /**
- * @brief å‘MIè®¾ç½®PMCå¯„å­˜å™¨
+ * @brief ÏòMIÉèÖÃPMC¼Ä´æÆ÷
  * @param sec :
  * @param index
  * @param data
@@ -7386,15 +7386,15 @@ void ChannelEngine::SendPmcRegValue(PmcRegSection sec, uint16_t index, uint16_t 
 }
 
 /**
- * @brief ä¸Šä¼ºæœ
+ * @brief ÉÏËÅ·ş
  */
 void ChannelEngine::ServoOn(){
-    //TODO å…ˆæŒ‰è½´ä¸Šä½¿èƒ½ï¼ŒåæœŸéœ€è¦ä¼˜åŒ–æŒ‰é€šé“ä¸Šä½¿èƒ½
+    //TODO ÏÈ°´ÖáÉÏÊ¹ÄÜ£¬ºóÆÚĞèÒªÓÅ»¯°´Í¨µÀÉÏÊ¹ÄÜ
 
     MiCmdFrame cmd;
     memset(&cmd, 0x00, sizeof(cmd));
     cmd.data.cmd = CMD_MI_OPERATE;
-    cmd.data.axis_index = 0xff;	  //å¯¹æ‰€æœ‰è½´ä¸Šä½¿èƒ½
+    cmd.data.axis_index = 0xff;	  //¶ÔËùÓĞÖáÉÏÊ¹ÄÜ
     cmd.data.data[0] = AXIS_ON_FLAG;
     cmd.data.data[1] = 1;
 
@@ -7408,15 +7408,15 @@ void ChannelEngine::ServoOn(){
 }
 
 /**
- * @brief ä¸‹ä¼ºæœ
+ * @brief ÏÂËÅ·ş
  */
 void ChannelEngine::ServoOff(){
-    //TODO å…ˆæŒ‰è½´ä¸Šä½¿èƒ½ï¼ŒåæœŸéœ€è¦ä¼˜åŒ–æŒ‰é€šé“ä¸‹ä½¿èƒ½
+    //TODO ÏÈ°´ÖáÉÏÊ¹ÄÜ£¬ºóÆÚĞèÒªÓÅ»¯°´Í¨µÀÏÂÊ¹ÄÜ
 
     MiCmdFrame cmd;
     memset(&cmd, 0x00, sizeof(cmd));
     cmd.data.cmd = CMD_MI_OPERATE;
-    cmd.data.axis_index = 0xff;	  //å¯¹æ‰€æœ‰è½´ä¸‹ä½¿èƒ½
+    cmd.data.axis_index = 0xff;	  //¶ÔËùÓĞÖáÏÂÊ¹ÄÜ
     cmd.data.data[0] = AXIS_ON_FLAG;
     cmd.data.data[1] = 0;
 
@@ -7431,8 +7431,8 @@ void ChannelEngine::ServoOff(){
 
 #ifdef USES_EMERGENCY_DEC_STOP
 /**
- * @brief å»¶è¿Ÿä¸‹ä¼ºæœ
- * @param chn_index : é€šé“å·ï¼Œ0xFFè¡¨ç¤ºæ‰€æœ‰é€šé“
+ * @brief ÑÓ³ÙÏÂËÅ·ş
+ * @param chn_index : Í¨µÀºÅ£¬0xFF±íÊ¾ËùÓĞÍ¨µÀ
  */
 void ChannelEngine::DelayToServoOff(uint8_t chn_index){
     printf("enter DelayToServoOff:%hhu\n", chn_index);
@@ -7452,8 +7452,8 @@ void ChannelEngine::DelayToServoOff(uint8_t chn_index){
 }
 
 /**
- * @brief è®¾ç½®é€šé“åœæ­¢åˆ°ä½æ ‡å¿—
- * @param chn_index : é€šé“å·
+ * @brief ÉèÖÃÍ¨µÀÍ£Ö¹µ½Î»±êÖ¾
+ * @param chn_index : Í¨µÀºÅ
  */
 void ChannelEngine::SetChnStoppedMask(uint8_t chn_index){
     if(chn_index < this->m_p_general_config->chn_count){
@@ -7465,7 +7465,7 @@ void ChannelEngine::SetChnStoppedMask(uint8_t chn_index){
 #endif
 
 /**
- * @brief å‘é€MIå¤ä½æŒ‡ä»¤
+ * @brief ·¢ËÍMI¸´Î»Ö¸Áî
  */
 void ChannelEngine::SendMiReset(){
     MiCmdFrame cmd;
@@ -7478,38 +7478,38 @@ void ChannelEngine::SendMiReset(){
 }
 
 /**
- * @brief è®¾ç½®MCå•é€šé“è‡ªåŠ¨æ•°æ®ç¼“å†²æ•°é‡
- * @param count : ç¼“å†²æ•°é‡
+ * @brief ÉèÖÃMCµ¥Í¨µÀ×Ô¶¯Êı¾İ»º³åÊıÁ¿
+ * @param count : »º³åÊıÁ¿
  */
 void ChannelEngine::SetMcAutoBufMax(uint16_t count){
 //	this->m_n_mc_auto_buf_max = count;
     for(int i = 0; i < this->m_p_general_config->chn_count; i++){
-        this->m_p_channel_control[i].SetMcAutoBufMax(count-kMaxGCodeFifoCount-10);   //å‡å°‘2ä¸ªï¼Œä»ç¨³å®šæ€§è€ƒè™‘ï¼Œä¸æ”¾æ»¡
+        this->m_p_channel_control[i].SetMcAutoBufMax(count-kMaxGCodeFifoCount-10);   //¼õÉÙ2¸ö£¬´ÓÎÈ¶¨ĞÔ¿¼ÂÇ£¬²»·ÅÂú
     }
 }
 
 /**
- * @brief è®¾ç½®SD-LINKä»ç«™æ•°æ®
+ * @brief ÉèÖÃSD-LINK´ÓÕ¾Êı¾İ
  */
 void ChannelEngine::SetSlaveInfo(){
 #ifdef USES_PMC_2_0
     MiCmdFrame cmd;
 
-    //é…ç½®æ‰©å±•IOæ¿å¡ä¿¡æ¯å‘½ä»¤
+    //ÅäÖÃÀ©Õ¹IO°å¿¨ĞÅÏ¢ÃüÁî
     memset(&cmd, 0x00, sizeof(cmd));
     cmd.data.cmd = CMD_MI_SET_SDLINK_SLAVE;
     cmd.data.axis_index = NO_AXIS;
 
-    int dev_count = 0;          //ä»ç«™æ€»æ•°
-    int total_in = 0;           //æ€»è¾“å…¥å­—èŠ‚æ•°
-    int total_out = 0;          //æ€»è¾“å‡ºå­—èŠ‚æ•°
-    int handwheel_count = 0;    //æ‰‹è½®ä¸ªæ•°
+    int dev_count = 0;          //´ÓÕ¾×ÜÊı
+    int total_in = 0;           //×ÜÊäÈë×Ö½ÚÊı
+    int total_out = 0;          //×ÜÊä³ö×Ö½ÚÊı
+    int handwheel_count = 0;    //ÊÖÂÖ¸öÊı
 
     if (!m_list_bdio_dev.IsEmpty())
     {
         ListNode<BdioDevInfo> *node = this->m_list_bdio_dev.HeadNode();
         while(node != nullptr){
-            //å‚æ•°æ‹¼æ¥
+            //²ÎÊıÆ´½Ó
             char16_t data0 = (node->data.device_type << 8) | (node->data.group_index);
             char16_t data1 = 0;
             char16_t data2 = node->data.in_bytes;
@@ -7534,7 +7534,7 @@ void ChannelEngine::SetSlaveInfo(){
             printf("node data6 %d------------------\n", cmd.data.data[6]);
             printf("\n");
 
-            //æ•°æ®å‘é€
+            //Êı¾İ·¢ËÍ
             this->m_p_mi_comm->WriteCmd(cmd);
             total_in += node->data.in_bytes;
             total_out += node->data.out_bytes;
@@ -7545,7 +7545,7 @@ void ChannelEngine::SetSlaveInfo(){
             node = node->next;
         }
 
-        //æ‰©å±•IOæ¿å¡é…ç½®å®Œæˆå‘½ä»¤
+        //À©Õ¹IO°å¿¨ÅäÖÃÍê³ÉÃüÁî
         memset(&cmd, 0x00, sizeof(cmd));
         cmd.data.axis_index = NO_AXIS;
         cmd.data.cmd = CMD_MI_SET_SDLINK_COMPLETE;
@@ -7573,9 +7573,9 @@ void ChannelEngine::SetSlaveInfo(){
     cmd.data.cmd = CMD_MI_SET_SDLINK_SLAVE;
     cmd.data.axis_index = NO_AXIS;
 
-    int total_in = 0;  //æ€»è¾“å…¥å­—èŠ‚æ•°
-    int total_out = 0;  //æ€»è¾“å‡ºå­—èŠ‚æ•°
-    int dev_count = 0;  //ä»ç«™æ€»æ•°
+    int total_in = 0;  //×ÜÊäÈë×Ö½ÚÊı
+    int total_out = 0;  //×ÜÊä³ö×Ö½ÚÊı
+    int dev_count = 0;  //´ÓÕ¾×ÜÊı
 
     ListNode<BdioDevInfo> *node = this->m_list_bdio_dev.HeadNode();
     while(node != nullptr){
@@ -7605,7 +7605,7 @@ void ChannelEngine::SetSlaveInfo(){
 }
 
 /**
- * @brief å‘é€è·å–MIç‰ˆæœ¬æŒ‡ä»¤
+ * @brief ·¢ËÍ»ñÈ¡MI°æ±¾Ö¸Áî
  */
 //void ChannelEngine::SendMiGetVerCmd(){
 //	MiCmdFrame cmd;
@@ -7619,15 +7619,15 @@ void ChannelEngine::SetSlaveInfo(){
 
 
 /**
- * @brief æ¸…é™¤å‘Šè­¦
+ * @brief Çå³ı¸æ¾¯
  */
 void ChannelEngine::ClearAlarm(){
-    //æ¸…é™¤å‘Šè­¦
+    //Çå³ı¸æ¾¯
     g_ptr_alarm_processor->Clear();
 }
 
 /**
- * @brief æ¸…ç©ºMIä¸­çš„PMCè½´ç§»åŠ¨æ•°æ®
+ * @brief Çå¿ÕMIÖĞµÄPMCÖáÒÆ¶¯Êı¾İ
  */
 void ChannelEngine::ClearPmcAxisMoveData(){
     MiCmdFrame cmd;
@@ -7636,7 +7636,7 @@ void ChannelEngine::ClearPmcAxisMoveData(){
     cmd.data.axis_index = NO_AXIS;
     cmd.data.reserved = CHANNEL_ENGINE_INDEX;
     cmd.data.cmd = CMD_MI_PAUSE_PMC_AXIS;
-    cmd.data.data[0] = 0x20;   //åœæ­¢å½“å‰æ‰€æœ‰PMCè½´è¿åŠ¨ï¼Œå¹¶æŠ›å¼ƒå½“å‰è¿åŠ¨æŒ‡ä»¤
+    cmd.data.data[0] = 0x20;   //Í£Ö¹µ±Ç°ËùÓĞPMCÖáÔË¶¯£¬²¢Å×Æúµ±Ç°ÔË¶¯Ö¸Áî
 
     m_p_mi_comm->WriteCmd(cmd);
     this->m_n_run_axis_mask = 0;
@@ -7644,28 +7644,28 @@ void ChannelEngine::ClearPmcAxisMoveData(){
 }
 
 /**
- * @brief ç³»ç»Ÿå¤ä½
+ * @brief ÏµÍ³¸´Î»
  */
 void ChannelEngine::SystemReset(){
 
     printf("system reset aaa\n");
-    //å„é€šé“å¤ä½å¤ä½
+    //¸÷Í¨µÀ¸´Î»¸´Î»
     for(int i = 0; i < this->m_p_general_config->chn_count; i++){
     //	printf("@@@@@@@@@RST=====1\n");
-        this->m_p_pmc_reg->FReg().bits[i].RST = 1;  //å¤ä½ä¿¡å·
+        this->m_p_pmc_reg->FReg().bits[i].RST = 1;  //¸´Î»ĞÅºÅ
         this->m_p_channel_control[i].Reset();
     }
 
     printf("system reset bbb\n");
 
-    //é€šçŸ¥MCæ¨¡å—å¤ä½
-//	SendMcResetCmd();    //ä¿®æ”¹ä¸ºæŒ‰é€šé“å¤ä½
+    //Í¨ÖªMCÄ£¿é¸´Î»
+//	SendMcResetCmd();    //ĞŞ¸ÄÎª°´Í¨µÀ¸´Î»
 
 
-    //é€šçŸ¥MIæ¨¡å—å¤ä½
+    //Í¨ÖªMIÄ£¿é¸´Î»
     this->SendMiReset();
 
-    //é€šçŸ¥HMIæ¸…é™¤å‘Šè­¦ï¼Œå¤ä½
+    //Í¨ÖªHMIÇå³ı¸æ¾¯£¬¸´Î»
     HMICmdFrame cmd;
     cmd.channel_index = CHANNEL_ENGINE_INDEX;
     cmd.cmd = CMD_SC_RESET;
@@ -7673,15 +7673,15 @@ void ChannelEngine::SystemReset(){
     cmd.data_len = 0;
     this->m_p_hmi_comm->SendCmd(cmd);
 
-    //å¤ä½å‘Šè­¦ç 
+    //¸´Î»¸æ¾¯Âë
     this->m_error_code = ERR_NONE;
 
 
-    //æ¸…ç©ºå‘Šè­¦é˜Ÿåˆ—
+    //Çå¿Õ¸æ¾¯¶ÓÁĞ
     ClearAlarm();
 
 
-    //TODO æ¿€æ´»å‚æ•°
+    //TODO ¼¤»î²ÎÊı
     printf("reset update param \n");
     g_ptr_parm_manager->ActiveResetParam();
     g_ptr_parm_manager->ActiveNewStartParam();
@@ -7693,13 +7693,13 @@ void ChannelEngine::SystemReset(){
 //		this->m_p_channel_control[i].SetMcChnCornerStopParam();
 //	}
 
-    //å¤ä½åŒæ­¥è½´æ ‡å¿—
-    if(m_b_emergency){  //æ€¥åœåæ‰é‡æ–°åŒæ­¥
+    //¸´Î»Í¬²½Öá±êÖ¾
+    if(m_b_emergency){  //¼±Í£ºó²ÅÖØĞÂÍ¬²½
         m_b_send_sync_cmd = false;
         m_n_sync_over = 0;
     }
 
-    m_b_emergency = false;  //å¤ä½æ€¥åœæ ‡å¿—
+    m_b_emergency = false;  //¸´Î»¼±Í£±êÖ¾
     m_b_power_off = false;
 
 
@@ -7710,11 +7710,11 @@ void ChannelEngine::SystemReset(){
     this->m_hard_limit_negative = 0;
     this->m_hard_limit_postive = 0;
 
-    //åˆå§‹åŒ–å›å‚è€ƒç‚¹å˜é‡
+    //³õÊ¼»¯»Ø²Î¿¼µã±äÁ¿
     if(m_b_ret_ref){
         for(uint8_t id = 0; id < this->m_p_general_config->axis_count; id++){
             if(this->m_n_mask_ret_ref & (0x01<<id)){
-                this->SetInRetRefFlag(id, false);   //å¤ä½å›é›¶ä¸­æ ‡å¿—
+                this->SetInRetRefFlag(id, false);   //¸´Î»»ØÁãÖĞ±êÖ¾
             }
         }
     }
@@ -7724,13 +7724,13 @@ void ChannelEngine::SystemReset(){
 //	m_n_get_cur_encoder_count = 0;
     memset(this->m_n_ret_ref_step, 0x00, kMaxAxisNum*sizeof(int));
 
-    this->ClearPmcAxisMoveData();   //æ¸…ç©ºPMCè½´è¿åŠ¨æ•°æ®
+    this->ClearPmcAxisMoveData();   //Çå¿ÕPMCÖáÔË¶¯Êı¾İ
 
-//	m_n_run_axis_mask = 0x00;  //å½“å‰è¿è¡Œçš„è½´çš„mask
-//	m_n_runover_axis_mask = 0x00;   //å½“å‰è¿è¡Œå®Œæˆçš„è½´çš„mask   //ClearPmcAxisMoveData()ä¸­æ¸…ç©º
+//	m_n_run_axis_mask = 0x00;  //µ±Ç°ÔËĞĞµÄÖáµÄmask
+//	m_n_runover_axis_mask = 0x00;   //µ±Ç°ÔËĞĞÍê³ÉµÄÖáµÄmask   //ClearPmcAxisMoveData()ÖĞÇå¿Õ
 
 
-    //è®°å½•å¤ä½æ“ä½œç»“æŸæ—¶é—´ï¼Œä¾›RSTä¿¡å·å»¶æ—¶åå¤ä½
+    //¼ÇÂ¼¸´Î»²Ù×÷½áÊøÊ±¼ä£¬¹©RSTĞÅºÅÑÓÊ±ºó¸´Î»
     gettimeofday(&this->m_time_rst_over, NULL);
     m_b_reset_rst_signal = true;
 
@@ -7738,8 +7738,8 @@ void ChannelEngine::SystemReset(){
 }
 
 /**
- * @brief æ€¥åœå¤„ç†
- * @param chn : é€šé“å·
+ * @brief ¼±Í£´¦Àí
+ * @param chn : Í¨µÀºÅ
  */
 void ChannelEngine::Emergency(uint8_t chn){
     if(m_b_emergency)
@@ -7748,20 +7748,20 @@ void ChannelEngine::Emergency(uint8_t chn){
         m_b_emergency = true;
 
 #ifndef USES_WOOD_MACHINE
-    //é€šçŸ¥MIä¸‹ä¼ºæœ
+    //Í¨ÖªMIÏÂËÅ·ş
     this->ServoOff();
 #endif
 
-    //æ€¥åœå¤„ç†
+    //¼±Í£´¦Àí
     for(int i = 0; i < this->m_p_general_config->chn_count; i++){
         this->m_p_channel_control[i].EmergencyStop();
     }
 
-    //åˆå§‹åŒ–å›å‚è€ƒç‚¹å˜é‡
+    //³õÊ¼»¯»Ø²Î¿¼µã±äÁ¿
     if(m_b_ret_ref){
         for(uint8_t id = 0; id < this->m_p_general_config->axis_count; id++){
             if(this->m_n_mask_ret_ref & (0x01<<id)){
-                this->SetInRetRefFlag(id, false);   //å¤ä½å›é›¶ä¸­æ ‡å¿—
+                this->SetInRetRefFlag(id, false);   //¸´Î»»ØÁãÖĞ±êÖ¾
             }
         }
     }
@@ -7771,23 +7771,23 @@ void ChannelEngine::Emergency(uint8_t chn){
 //	m_n_get_cur_encoder_count = 0;
     memset(this->m_n_ret_ref_step, 0x00, kMaxAxisNum*sizeof(int));
 
-    this->ClearPmcAxisMoveData();   //æ¸…ç©ºPMCè½´è¿åŠ¨æ•°æ®
+    this->ClearPmcAxisMoveData();   //Çå¿ÕPMCÖáÔË¶¯Êı¾İ
 
 
-    //è®°å½•å¤ä½æ“ä½œç»“æŸæ—¶é—´ï¼Œä¾›RSTä¿¡å·å»¶æ—¶åå¤ä½
+    //¼ÇÂ¼¸´Î»²Ù×÷½áÊøÊ±¼ä£¬¹©RSTĞÅºÅÑÓÊ±ºó¸´Î»
     gettimeofday(&this->m_time_rst_over, NULL);
     m_b_reset_rst_signal = true;
 
 
-    //ç½®ä½Få¯„å­˜å™¨
+    //ÖÃÎ»F¼Ä´æÆ÷
 
 
-    //å¤ä½å¢é‡å¼ç¼–ç å™¨è½´çš„å›å‚è€ƒç‚¹å®Œæˆæ ‡å¿—
+    //¸´Î»ÔöÁ¿Ê½±àÂëÆ÷ÖáµÄ»Ø²Î¿¼µãÍê³É±êÖ¾
 #ifndef USES_WOOD_MACHINE
     for(int i = 0; i < this->m_p_general_config->axis_count; i++){
-        if(m_p_axis_config[i].axis_interface != VIRTUAL_AXIS && m_p_axis_config[i].axis_type != AXIS_SPINDLE	//éä¸»è½´å¹¶ä¸”éè™šæ‹Ÿè½´
+        if(m_p_axis_config[i].axis_interface != VIRTUAL_AXIS && m_p_axis_config[i].axis_type != AXIS_SPINDLE	//·ÇÖ÷Öá²¢ÇÒ·ÇĞéÄâÖá
                 && (m_p_axis_config[i].feedback_mode == INCREMENTAL_ENCODER ||
-                        m_p_axis_config[i].feedback_mode == NO_ENCODER)   //å¢é‡ç¼–ç å™¨
+                        m_p_axis_config[i].feedback_mode == NO_ENCODER)   //ÔöÁ¿±àÂëÆ÷
                 && m_p_axis_config[i].ret_ref_mode > 0){
 //			m_n_mask_ret_ref_over &= ~(0x01<<i);   //
             this->SetRetRefFlag(i, false);
@@ -7795,14 +7795,14 @@ void ChannelEngine::Emergency(uint8_t chn){
     }
 #endif
 
-    //ç”Ÿæˆæ€¥åœé”™è¯¯ä¿¡æ¯
+    //Éú³É¼±Í£´íÎóĞÅÏ¢
     m_error_code = ERR_EMERGENCY;
     CreateError(ERR_EMERGENCY, ERROR_LEVEL, CLEAR_BY_MCP_RESET, 0, chn);
 
 }
 
 /**
- * @brief  MIçŠ¶æ€æ›´æ–°çº¿ç¨‹å‡½æ•°
+ * @brief  MI×´Ì¬¸üĞÂÏß³Ìº¯Êı
  * @param args
  */
 void *ChannelEngine::RefreshMiStatusThread(void *args){
@@ -7810,18 +7810,18 @@ void *ChannelEngine::RefreshMiStatusThread(void *args){
     printf("Start ChannelEnigine::RefreshMiStatusThread!thread id = %ld\n", syscall(SYS_gettid));
 
     int res = ERR_NONE;
-    res = pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL); //è®¾ç½®çº¿ç¨‹ä¸ºå¯é€€å‡ºæ¨¡å¼
+    res = pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL); //ÉèÖÃÏß³ÌÎª¿ÉÍË³öÄ£Ê½
     if (res != ERR_NONE) {
         printf("Quit ChannelEnigine::RefreshMiStatusThread!thread!thread with error 1!\n");
         pthread_exit((void*) EXIT_FAILURE);
     }
-    res = pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL);  //çº¿ç¨‹é€€å‡ºæ–¹å¼ä¸ºå¼‚æ­¥é€€å‡ºï¼Œä¸ç”¨ç­‰åˆ°cancellation point
+    res = pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL);  //Ïß³ÌÍË³ö·½Ê½ÎªÒì²½ÍË³ö£¬²»ÓÃµÈµ½cancellation point
     if (res != ERR_NONE) {
         printf("Quit ChannelEnigine::RefreshMiStatusThread!thread!thread with error 2!\n");
         pthread_exit((void*) EXIT_FAILURE);
     }
 
-    while(!g_sys_state.system_ready){  //ç­‰å¾…ç³»ç»Ÿå¯åŠ¨
+    while(!g_sys_state.system_ready){  //µÈ´ıÏµÍ³Æô¶¯
 //		printf("ChannelEngine::RefreshMiStatusThread wait system ready[0x%hhx]!\n", g_sys_state.module_ready_mask);
         usleep(10000);
     }
@@ -7833,11 +7833,11 @@ void *ChannelEngine::RefreshMiStatusThread(void *args){
 }
 
 /**
- * @brief æ›´æ–°MIçš„çŠ¶æ€
+ * @brief ¸üĞÂMIµÄ×´Ì¬
  * @return
  */
 bool ChannelEngine::RefreshMiStatusFun(){
-    uint64_t count = 0;   //è®¡æ•°
+    uint64_t count = 0;   //¼ÆÊı
 
     int8_t value8 = 0;
 
@@ -7865,27 +7865,27 @@ bool ChannelEngine::RefreshMiStatusFun(){
 
     while(!g_sys_state.system_quit){
 
-        if((g_sys_state.module_ready_mask & MI_READY) == 0){  //MIæœªå‡†å¤‡å¥½åˆ™ç­‰å¾…
+        if((g_sys_state.module_ready_mask & MI_READY) == 0){  //MIÎ´×¼±¸ºÃÔòµÈ´ı
             printf("wait MI_READY signal!\n");
             usleep(8000);
             continue;
         }
 
 
-        //è¯»å–æ¬ å‹ä¿¡å·
+        //¶ÁÈ¡Ç·Ñ¹ĞÅºÅ
         if(!m_b_power_off && g_sys_state.system_ready && this->m_p_mc_comm->ReadUnderVoltWarn()){
             printf("OFF\n");
             m_b_power_off = true;
 
             SaveDataPoweroff();
-            g_sys_state.system_quit = true;   //ç¨‹åºé€€å‡º
+            g_sys_state.system_quit = true;   //³ÌĞòÍË³ö
             printf("OUT\n");
             return true;
         }
 
-        //æ›´æ–°å†™å…¥Få¯„å­˜å™¨ï¼Œ æ›´æ–°å‘¨æœŸ8ms
+        //¸üĞÂĞ´ÈëF¼Ä´æÆ÷£¬ ¸üĞÂÖÜÆÚ8ms
         this->m_p_mi_comm->WritePmcReg(PMC_REG_F, p_f_reg);
-        memcpy(m_g_reg_last.all, p_g_reg, sizeof(m_g_reg_last.all));  //å¤‡ä»½Gå¯„å­˜å™¨
+        memcpy(m_g_reg_last.all, p_g_reg, sizeof(m_g_reg_last.all));  //±¸·İG¼Ä´æÆ÷
         this->m_p_mi_comm->ReadPmcReg(PMC_REG_G, p_g_reg);
         this->m_p_mi_comm->ReadPmcReg(PMC_REG_K, p_k_reg);
 
@@ -7903,8 +7903,8 @@ bool ChannelEngine::RefreshMiStatusFun(){
 #endif
 
 
-        //è¯»å–æœ€æ–°çš„PMCå¯„å­˜å™¨å€¼
-        if(count % 10 == 0){	//æ›´æ–°å‘¨æœŸ80ms
+        //¶ÁÈ¡×îĞÂµÄPMC¼Ä´æÆ÷Öµ
+        if(count % 10 == 0){	//¸üĞÂÖÜÆÚ80ms
             this->m_p_mi_comm->ReadPmcReg(PMC_REG_X, m_p_pmc_reg->GetRegPtr8(PMC_REG_X));
             this->m_p_mi_comm->ReadPmcReg(PMC_REG_Y, m_p_pmc_reg->GetRegPtr8(PMC_REG_Y));
             this->m_p_mi_comm->ReadPmcReg(PMC_REG_R, m_p_pmc_reg->GetRegPtr8(PMC_REG_R));
@@ -7924,15 +7924,15 @@ bool ChannelEngine::RefreshMiStatusFun(){
         this->CheckAxisSrvOn();
 
 
-        if(!this->m_b_power_off){  //æ‰ç”µåä¸å¤„ç†
+        if(!this->m_b_power_off){  //µôµçºó²»´¦Àí
             this->ProcessPmcSignal();
 
-            //é¦–å…ˆè¯»å–è½´å‘Šè­¦æ ‡å¿—
+            //Ê×ÏÈ¶ÁÈ¡Öá¸æ¾¯±êÖ¾
             this->m_p_mi_comm->ReadAxisWarnFlag(value8);
-            if(value8 != 0x00){//æœ‰å‘Šè­¦ï¼Œå†çœ‹å…·ä½“å‘Šè­¦ä½
-                if(value8 & 0x01){//æ­£é™ä½å‘Šè­¦
+            if(value8 != 0x00){//ÓĞ¸æ¾¯£¬ÔÙ¿´¾ßÌå¸æ¾¯Î»
+                if(value8 & 0x01){//ÕıÏŞÎ»¸æ¾¯
                     uint64_t hlimtflag = 0;
-                    this->m_p_mi_comm->ReadServoHLimitFlag(true, hlimtflag);   //è¯»å–æ­£é™ä½æ•°æ®
+                    this->m_p_mi_comm->ReadServoHLimitFlag(true, hlimtflag);   //¶ÁÈ¡ÕıÏŞÎ»Êı¾İ
                     if(m_hard_limit_postive == 0){
                         this->m_hard_limit_postive |= hlimtflag;
                         this->ProcessAxisHardLimit(0);
@@ -7940,9 +7940,9 @@ bool ChannelEngine::RefreshMiStatusFun(){
                         this->m_hard_limit_postive |= hlimtflag;
                     }
                 }
-                if(value8 & 0x02){ //è´Ÿé™ä½å‘Šè­¦
+                if(value8 & 0x02){ //¸ºÏŞÎ»¸æ¾¯
                     uint64_t hlimtflag = 0;
-                    this->m_p_mi_comm->ReadServoHLimitFlag(false, hlimtflag);   //è¯»å–è´Ÿé™ä½æ•°æ®
+                    this->m_p_mi_comm->ReadServoHLimitFlag(false, hlimtflag);   //¶ÁÈ¡¸ºÏŞÎ»Êı¾İ
                     if(m_hard_limit_negative == 0){
                         this->m_hard_limit_negative |= hlimtflag;
                         this->ProcessAxisHardLimit(1);
@@ -7950,10 +7950,10 @@ bool ChannelEngine::RefreshMiStatusFun(){
                         this->m_hard_limit_negative |= hlimtflag;
                     }
                 }
-                if(value8 & 0x04){ //ç¼–ç å™¨å‘Šè­¦
-                    this->m_p_mi_comm->ReadEncoderWarn(value64);  //è¯»å–ç¼–ç å™¨å‘Šè­¦æ•°æ®
+                if(value8 & 0x04){ //±àÂëÆ÷¸æ¾¯
+                    this->m_p_mi_comm->ReadEncoderWarn(value64);  //¶ÁÈ¡±àÂëÆ÷¸æ¾¯Êı¾İ
                     if(value64 != 0){
-                        //æœ‰ç¼–ç å™¨å‘Šè­¦
+                        //ÓĞ±àÂëÆ÷¸æ¾¯
                         uint64_t flag = 0x01;
                         for(uint8_t i = 0; i < this->m_p_general_config->axis_count; i++){
                             if(value64 & flag)
@@ -7963,25 +7963,25 @@ bool ChannelEngine::RefreshMiStatusFun(){
 
                     }
                 }
-                if(value8 & 0x08){ //ä¼ºæœå‘Šè­¦
-                    this->m_p_mi_comm->ReadServoWarn(value64);   //è¯»å–ä¼ºæœå‘Šè­¦
+                if(value8 & 0x08){ //ËÅ·ş¸æ¾¯
+                    this->m_p_mi_comm->ReadServoWarn(value64);   //¶ÁÈ¡ËÅ·ş¸æ¾¯
                     if(value64 != 0){
-                        //æœ‰ä¼ºæœå‘Šè­¦
+                        //ÓĞËÅ·ş¸æ¾¯
                         uint64_t flag = 0x01;
                         for(uint8_t i = 0; i < this->m_p_general_config->axis_count; i++){
                             if(value64 & flag){
-                                this->m_p_mi_comm->ReadServoWarnCode(i, value32);   //è¯»å–å‘Šè­¦ç 
-                                //äº§ç”Ÿå‘Šè­¦
+                                this->m_p_mi_comm->ReadServoWarnCode(i, value32);   //¶ÁÈ¡¸æ¾¯Âë
+                                //²úÉú¸æ¾¯
                                 CreateError(ERR_SERVO, ERROR_LEVEL, CLEAR_BY_MCP_RESET, value32, CHANNEL_ENGINE_INDEX, i);
                             }
                             flag = flag << 1;
                         }
                     }
                 }
-                if(value8 & 0x10){  //è·Ÿéšè¯¯å·®è¿‡å¤§å‘Šè­¦
+                if(value8 & 0x10){  //¸úËæÎó²î¹ı´ó¸æ¾¯
                     this->m_p_mi_comm->ReadTrackErr(value64);
                     if(value64 != 0){
-                        //æœ‰è·Ÿéšè¯¯å·®è¿‡å¤§å‘Šè­¦
+                        //ÓĞ¸úËæÎó²î¹ı´ó¸æ¾¯
                         uint64_t flag = 0x01;
                         for(uint8_t i = 0; i < this->m_p_general_config->axis_count; i++){
                             if(value64 & flag)
@@ -7991,10 +7991,10 @@ bool ChannelEngine::RefreshMiStatusFun(){
                     }
 
                 }
-                if(value8 & 0x20){  //åŒæ­¥è½´ä½ç½®æŒ‡ä»¤åå·®è¿‡å¤§å‘Šè­¦
+                if(value8 & 0x20){  //Í¬²½ÖáÎ»ÖÃÖ¸ÁîÆ«²î¹ı´ó¸æ¾¯
                     this->m_p_mi_comm->ReadSyncPosErr(value64);
                     if(value64 != 0){
-                        //æœ‰åŒæ­¥è½´ä½ç½®æŒ‡ä»¤åå·®è¿‡å¤§å‘Šè­¦
+                        //ÓĞÍ¬²½ÖáÎ»ÖÃÖ¸ÁîÆ«²î¹ı´ó¸æ¾¯
                         uint64_t flag = 0x01;
                         for(uint8_t i = 0; i < this->m_p_general_config->axis_count; i++){
                             if(value64 & flag)
@@ -8003,10 +8003,10 @@ bool ChannelEngine::RefreshMiStatusFun(){
                         }
                     }
                 }
-                if(value8 & 0x40){  //è½´ä½ç½®æŒ‡ä»¤è¿‡å¤§å‘Šè­¦
+                if(value8 & 0x40){  //ÖáÎ»ÖÃÖ¸Áî¹ı´ó¸æ¾¯
                     this->m_p_mi_comm->ReadIntpPosErr(value64);
                     if(value64 != 0){
-                        //æœ‰è½´ä½ç½®æŒ‡ä»¤è¿‡å¤§å‘Šè­¦
+                        //ÓĞÖáÎ»ÖÃÖ¸Áî¹ı´ó¸æ¾¯
                         uint64_t flag = 0x01;
                         for(uint8_t i = 0; i < this->m_p_general_config->axis_count; i++){
                             if(value64 & flag)
@@ -8018,53 +8018,53 @@ bool ChannelEngine::RefreshMiStatusFun(){
             }
 
 
-            //è¿›è¡Œè¿‡å‹ï¼Œæ¬ å‹ã€RTCç”µå‹ä½å‘Šè­¦æ‰«æ
-#ifndef USES_MAIN_BOARD_10MA_OLD    //è€æ¿æ²¡æœ‰æ­¤åŠŸèƒ½
+            //½øĞĞ¹ıÑ¹£¬Ç·Ñ¹¡¢RTCµçÑ¹µÍ¸æ¾¯É¨Ãè
+#ifndef USES_MAIN_BOARD_10MA_OLD    //ÀÏ°åÃ»ÓĞ´Ë¹¦ÄÜ
             if(count%1000 == 0){
                 this->CheckBattery();
             }
 #endif
 
-            if(this->m_b_ret_ref && this->m_p_pmc_reg->FReg().bits[0].SA ==1){//å›å‚è€ƒç‚¹æ“ä½œ
+            if(this->m_b_ret_ref && this->m_p_pmc_reg->FReg().bits[0].SA ==1){//»Ø²Î¿¼µã²Ù×÷
                 this->ReturnRefPoint();
             }
         }
 
-        //æ›´æ–°è½´é™ä½æ•°æ®ç»™MI
+        //¸üĞÂÖáÏŞÎ»Êı¾İ¸øMI
         this->m_p_mi_comm->WriteAxisHLimitFlag(true, m_hard_limit_postive);
         this->m_p_mi_comm->WriteAxisHLimitFlag(false, m_hard_limit_negative);
 
-        //TODO æ›´æ–°è½´çš„ä½ç½®åŠé€Ÿåº¦æ•°æ®
+        //TODO ¸üĞÂÖáµÄÎ»ÖÃ¼°ËÙ¶ÈÊı¾İ
         if(count%7 == 0){
-            if(!g_sys_state.hmi_comm_ready){  //æœªè¿æ¥HMIæ—¶åœ¨æ­¤æ›´æ–°è½´å½“å‰åé¦ˆä½ç½®
+            if(!g_sys_state.hmi_comm_ready){  //Î´Á¬½ÓHMIÊ±ÔÚ´Ë¸üĞÂÖáµ±Ç°·´À¡Î»ÖÃ
                 this->SendMonitorData(false, false);
             }
         }
 
 #ifdef USES_LICENSE_FUNC
-        //æ—¶é—´æ ¡éªŒä»¥åŠæˆæƒæ ¡éªŒ
+        //Ê±¼äĞ£ÑéÒÔ¼°ÊÚÈ¨Ğ£Ñé
         if(count % 450000 == 0){
-            //ä¸€å°æ—¶æ£€æŸ¥ä¸€æ¬¡
+            //Ò»Ğ¡Ê±¼ì²éÒ»´Î
 
-            //æ£€æŸ¥ç³»ç»Ÿæ—¶é—´
-            if(m_ln_local_time < 0){//è¯»å–æœ¬åœ°è®¡æ—¶æ–‡ä»¶å¼‚å¸¸
+            //¼ì²éÏµÍ³Ê±¼ä
+            if(m_ln_local_time < 0){//¶ÁÈ¡±¾µØ¼ÆÊ±ÎÄ¼şÒì³£
                 if(m_ln_local_time == -1){
-                    g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "æœ¬åœ°è®¡æ—¶æ–‡ä»¶ä¸å­˜åœ¨!");
+                    g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "±¾µØ¼ÆÊ±ÎÄ¼ş²»´æÔÚ!");
                 }else if(m_ln_local_time == -2){
-                    g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "æœ¬åœ°è®¡æ—¶æ–‡ä»¶å·²æŸå!");
+                    g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "±¾µØ¼ÆÊ±ÎÄ¼şÒÑËğ»µ!");
                 }else if(m_ln_local_time == -3){
-                    g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "éæ³•æœ¬åœ°è®¡æ—¶æ–‡ä»¶!");
+                    g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "·Ç·¨±¾µØ¼ÆÊ±ÎÄ¼ş!");
                 }
                 m_error_code = ERR_SYSTEM_FILE;
                 CreateError(m_error_code, ERROR_LEVEL, CLEAR_BY_MCP_RESET);
             }else if(-4 == CheckLocalTime(&m_lic_info, m_ln_local_time)){
-                g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "ç³»ç»Ÿæ—¶é—´å¼‚å¸¸!");
+                g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "ÏµÍ³Ê±¼äÒì³£!");
                 m_error_code = ERR_SYSTEM_TIME;
                 CreateError(m_error_code, ERROR_LEVEL, CLEAR_BY_MCP_RESET);
             }
 
 
-            //æ£€æŸ¥æˆæƒ
+            //¼ì²éÊÚÈ¨
             this->CheckLicense();
 
         }
@@ -8081,7 +8081,7 @@ bool ChannelEngine::RefreshMiStatusFun(){
         }
 #endif
 
-        usleep(8000);  //8mså‘¨æœŸï¼Œæ¯”PMCå‘¨æœŸç›¸åŒ
+        usleep(8000);  //8msÖÜÆÚ£¬±ÈPMCÖÜÆÚÏàÍ¬
         count++;
     }
 
@@ -8091,7 +8091,7 @@ bool ChannelEngine::RefreshMiStatusFun(){
 }
 
 /**
- * @brief ç”µå‹ç›¸å…³å‘Šè­¦æ£€æŸ¥
+ * @brief µçÑ¹Ïà¹Ø¸æ¾¯¼ì²é
  */
 void ChannelEngine::CheckBattery(){
 
@@ -8107,24 +8107,24 @@ void ChannelEngine::CheckBattery(){
 //	printf("Read GPIO value is %x\n", value);
 
 
-    if(value & 0x01){//æ¬ å‹
+    if(value & 0x01){//Ç·Ñ¹
         CreateError(ERR_VOLTAGE_OVER, WARNING_LEVEL, CLEAR_BY_MCP_RESET, 0, CHANNEL_ENGINE_INDEX, NO_AXIS);
 
     }
 
-    if(value & 0x02){//è¿‡å‹
+    if(value & 0x02){//¹ıÑ¹
         CreateError(ERR_VOLTAGE_UNDER, WARNING_LEVEL, CLEAR_BY_MCP_RESET, 0, CHANNEL_ENGINE_INDEX, NO_AXIS);
 
     }
-    if(value & 0x04){ //ç”µæ± ç”µå‹ä½
+    if(value & 0x04){ //µç³ØµçÑ¹µÍ
         CreateError(ERR_BATTERY_VOL_UNDER, WARNING_LEVEL, CLEAR_BY_MCP_RESET, 0, CHANNEL_ENGINE_INDEX, NO_AXIS);
 
     }
-    if((value & 0x08) == 0x00){//è½´è¿‡æµ,ä½æœ‰æ•ˆ
+    if((value & 0x08) == 0x00){//Öá¹ıÁ÷,µÍÓĞĞ§
         CreateError(ERR_AXIS_CURRENT_OVER, WARNING_LEVEL, CLEAR_BY_MCP_RESET, 0, CHANNEL_ENGINE_INDEX, NO_AXIS);
 
     }
-    if((value & 0x10) == 0x00){ //USBè¿‡æµ,ä½æœ‰æ•ˆ
+    if((value & 0x10) == 0x00){ //USB¹ıÁ÷,µÍÓĞĞ§
         CreateError(ERR_USB_CURRENT_OVER, WARNING_LEVEL, CLEAR_BY_MCP_RESET, 0, CHANNEL_ENGINE_INDEX, NO_AXIS);
     }
 
@@ -8133,7 +8133,7 @@ void ChannelEngine::CheckBattery(){
 }
 
 /**
- * @brief å¤„ç†PMCçš„ä¿¡å·
+ * @brief ´¦ÀíPMCµÄĞÅºÅ
  */
 void ChannelEngine::ProcessPmcSignal(){
 
@@ -8147,36 +8147,36 @@ void ChannelEngine::ProcessPmcSignal(){
         g_reg_last = &m_g_reg_last.bits[i];
         f_reg = &m_p_pmc_reg->FReg().bits[i];
 #ifdef USES_PHYSICAL_MOP
-        if(g_reg->_ESP == 0 && !m_b_emergency){ //æ€¥åœæœ‰æ•ˆ
+        if(g_reg->_ESP == 0 && !m_b_emergency){ //¼±Í£ÓĞĞ§
 //			printf("ChannelEngine::ProcessPmcSignal(), emergency stop!\n");
 
             this->Emergency();
         }
 
-        // å¤„ç†Gä¿¡å· åˆ‡æ¢å½“å‰é€šé“
+        // ´¦ÀíGĞÅºÅ ÇĞ»»µ±Ç°Í¨µÀ
         if(g_reg_last->CHNC != g_reg->CHNC)
         {
             printf("pmc siganl change chn : %d\n", g_reg->CHNC);
             this->SetCurWorkChanl(g_reg->CHNC);
         }
 
-        if((g_reg->ST && g_reg_last->ST == 0) && g_reg->_SP == 1 && f_reg->STL == 0){ //å¾ªç¯å¯åŠ¨
+        if((g_reg->ST && g_reg_last->ST == 0) && g_reg->_SP == 1 && f_reg->STL == 0){ //Ñ­»·Æô¶¯
             this->Start();
         }
 
-        if(g_reg->_SP == 0 && g_reg_last->_SP == 1 && f_reg->SPL == 0 && f_reg->STL == 1){ //å¾ªç¯ä¿æŒ
+        if(g_reg->_SP == 0 && g_reg_last->_SP == 1 && f_reg->SPL == 0 && f_reg->STL == 1){ //Ñ­»·±£³Ö
             this->Pause();
         }
 #else
-        if(g_reg->_ESP == 1 && !m_b_emergency){ //æ€¥åœæœ‰æ•ˆ
+        if(g_reg->_ESP == 1 && !m_b_emergency){ //¼±Í£ÓĞĞ§
             this->Emergency();
         }
 
-        if((g_reg->ST && g_reg_last->ST == 0) && g_reg->_SP == 0){ //å¾ªç¯å¯åŠ¨
+        if((g_reg->ST && g_reg_last->ST == 0) && g_reg->_SP == 0){ //Ñ­»·Æô¶¯
             this->Start();
         }
 
-        if(g_reg->_SP == 1 && g_reg_last->_SP == 0){ //å¾ªç¯ä¿æŒ
+        if(g_reg->_SP == 1 && g_reg_last->_SP == 0){ //Ñ­»·±£³Ö
             //printf("1212\n");
             this->Pause();
         }
@@ -8188,42 +8188,42 @@ void ChannelEngine::ProcessPmcSignal(){
 
 
 //#ifdef USES_PHYSICAL_MOP
-        //æ–¹å¼é€‰æ‹©ä¿¡å·
+        //·½Ê½Ñ¡ÔñĞÅºÅ
         if(g_reg->MD != g_reg_last->MD){
 //			printf("PMC SIGNAL -----> %d\n", g_reg->MD);
             if(g_reg->MD == 0){  //MDA
                 this->SetWorkMode(MDA_MODE);
-            }else if(g_reg->MD == 1){   //è‡ªåŠ¨
+            }else if(g_reg->MD == 1){   //×Ô¶¯
                 this->SetWorkMode(AUTO_MODE);
-            }else if(g_reg->MD == 2){   //æ‰‹è½®
+            }else if(g_reg->MD == 2){   //ÊÖÂÖ
                 this->SetWorkMode(MPG_MODE);
-            }else if(g_reg->MD == 3){   //ç¼–è¾‘
+            }else if(g_reg->MD == 3){   //±à¼­
                 this->SetWorkMode(EDIT_MODE);
-            }else if(g_reg->MD == 4){   //æ­¥è¿›
+            }else if(g_reg->MD == 4){   //²½½ø
                 this->SetWorkMode(MANUAL_STEP_MODE);
             }else if(g_reg->MD == 5){   //JOG
                 this->SetWorkMode(MANUAL_MODE);
-            }else if(g_reg->MD == 6){   //åŸç‚¹æ¨¡å¼
+            }else if(g_reg->MD == 6){   //Ô­µãÄ£Ê½
                 this->SetWorkMode(REF_MODE);
             }else{
                 printf("ERROR:Invalid work mode signal:MD=%hhu\n", g_reg->MD);
             }
         }
 
-        //ä¸»è½´æ—‹è½¬å¤„ç†
-        if(g_reg->MD == 2 || g_reg->MD == 4 || g_reg->MD == 5){  //æ‰‹åŠ¨æ¨¡å¼
-            if(g_reg->SPOS == 1 && g_reg_last->SPOS == 0 /*&& g_reg->SNEG == 0 && g_reg->_SSTP == 1 */&& f_reg->SPS != 1){ //ä¸»è½´æ­£è½¬
+        //Ö÷ÖáĞı×ª´¦Àí
+        if(g_reg->MD == 2 || g_reg->MD == 4 || g_reg->MD == 5){  //ÊÖ¶¯Ä£Ê½
+            if(g_reg->SPOS == 1 && g_reg_last->SPOS == 0 /*&& g_reg->SNEG == 0 && g_reg->_SSTP == 1 */&& f_reg->SPS != 1){ //Ö÷ÖáÕı×ª
                 this->SpindleOut(SPD_DIR_POSITIVE);
             }
-            if(g_reg->SNEG == 1 && g_reg_last->SNEG == 0 /*&& g_reg->SPOS == 0 && g_reg->_SSTP == 1 */&& f_reg->SPS != 2){ //ä¸»è½´åè½¬
+            if(g_reg->SNEG == 1 && g_reg_last->SNEG == 0 /*&& g_reg->SPOS == 0 && g_reg->_SSTP == 1 */&& f_reg->SPS != 2){ //Ö÷Öá·´×ª
                 this->SpindleOut(SPD_DIR_NEGATIVE);
             }
-            if(g_reg->_SSTP == 0 && g_reg_last->_SSTP == 1 /*&& g_reg->SNEG == 0 && g_reg->SPOS == 0 */&& f_reg->SPS != 0){ //ä¸»è½´åœè½¬
+            if(g_reg->_SSTP == 0 && g_reg_last->_SSTP == 1 /*&& g_reg->SNEG == 0 && g_reg->SPOS == 0 */&& f_reg->SPS != 0){ //Ö÷ÖáÍ£×ª
                 this->SpindleOut(SPD_DIR_STOP);
             }
         }
 
-        //é€‰åœä¿¡å· SBS
+        //Ñ¡Í£ĞÅºÅ SBS
         if(g_reg->SBS != g_reg_last->SBS){
             if(g_reg->SBS)
                 this->SetFuncState(i, FS_OPTIONAL_STOP, 1);
@@ -8232,7 +8232,7 @@ void ChannelEngine::ProcessPmcSignal(){
         }
 
 
-        //å•æ®µä¿¡å·  SBK
+        //µ¥¶ÎĞÅºÅ  SBK
         if(g_reg->SBK != g_reg_last->SBK){
             if(g_reg->SBK)
                 this->SetFuncState(i, FS_SINGLE_LINE, 1);
@@ -8241,7 +8241,7 @@ void ChannelEngine::ProcessPmcSignal(){
         }
 
 
-        //è·³æ®µä¿¡å·   BDT1
+        //Ìø¶ÎĞÅºÅ   BDT1
         if(g_reg->BDT1 != g_reg_last->BDT1){
             if(g_reg->BDT1)
                 this->SetFuncState(i, FS_BLOCK_SKIP, 1);
@@ -8249,7 +8249,7 @@ void ChannelEngine::ProcessPmcSignal(){
                 this->SetFuncState(i, FS_BLOCK_SKIP, 0);
         }
 
-        //æ‰‹è½®è·Ÿè¸ª  HWT
+        //ÊÖÂÖ¸ú×Ù  HWT
         if(g_reg->HWT != g_reg_last->HWT){
             if(g_reg->HWT)
                 this->SetFuncState(i, FS_HANDWHEEL_CONTOUR, 1);
@@ -8258,12 +8258,12 @@ void ChannelEngine::ProcessPmcSignal(){
         }
 
 
-        //æ‰‹åŠ¨æ­¥é•¿ä¿¡å·  MP
+        //ÊÖ¶¯²½³¤ĞÅºÅ  MP
         if(g_reg->MP != g_reg_last->MP){
             this->SetManualStep(i, g_reg->MP);
         }
 
-        //æ‰‹åŠ¨å¿«é€Ÿè¿›ç»™é€‰æ‹©ä¿¡å·  RT
+        //ÊÖ¶¯¿ìËÙ½ø¸øÑ¡ÔñĞÅºÅ  RT
         if(g_reg->RT != g_reg_last->RT){
             if(g_reg->RT)
                 this->SetManualRapidMove(1);
@@ -8271,7 +8271,7 @@ void ChannelEngine::ProcessPmcSignal(){
                 this->SetManualRapidMove(0);
         }
 
-        //å€ç‡ä¿¡å·å¤„ç†
+        //±¶ÂÊĞÅºÅ´¦Àí
         if(g_reg->_JV != g_reg_last->_JV){
             uint16_t ratio= ~g_reg->_JV;
             if(g_reg->_JV == 0)
@@ -8285,9 +8285,9 @@ void ChannelEngine::ProcessPmcSignal(){
         if(g_reg->ROV != g_reg_last->ROV)
             this->SetRapidRatio(i, g_reg->ROV);
 
-        //æ‰‹åŠ¨è½´è¿›ç»™
-        if(g_reg->MD == 4){   //æ­¥è¿›
-            //è½´1
+        //ÊÖ¶¯Öá½ø¸ø
+        if(g_reg->MD == 4){   //²½½ø
+            //Öá1
             if(g_reg->JP1 && g_reg_last->JP1 == 0){
                 this->SetCurAxis(i, 0);
                 this->ManualMove(DIR_POSITIVE);
@@ -8296,7 +8296,7 @@ void ChannelEngine::ProcessPmcSignal(){
                 this->SetCurAxis(i, 0);
                 this->ManualMove(DIR_NEGATIVE);
             }
-            //è½´2
+            //Öá2
             if(g_reg->JP2 && g_reg_last->JP2 == 0){
                 this->SetCurAxis(i, 1);
                 this->ManualMove(DIR_POSITIVE);
@@ -8305,7 +8305,7 @@ void ChannelEngine::ProcessPmcSignal(){
                 this->SetCurAxis(i, 1);
                 this->ManualMove(DIR_NEGATIVE);
             }
-            //è½´3
+            //Öá3
             if(g_reg->JP3 && g_reg_last->JP3 == 0){
                 this->SetCurAxis(i, 2);
                 this->ManualMove(DIR_POSITIVE);
@@ -8314,7 +8314,7 @@ void ChannelEngine::ProcessPmcSignal(){
                 this->SetCurAxis(i, 2);
                 this->ManualMove(DIR_NEGATIVE);
             }
-            //è½´4
+            //Öá4
             if(g_reg->JP4 && g_reg_last->JP4 == 0){
                 this->SetCurAxis(i, 3);
                 this->ManualMove(DIR_POSITIVE);
@@ -8323,7 +8323,7 @@ void ChannelEngine::ProcessPmcSignal(){
                 this->SetCurAxis(i, 3);
                 this->ManualMove(DIR_NEGATIVE);
             }
-            //è½´5
+            //Öá5
             if(g_reg->JP5 && g_reg_last->JP5 == 0){
                 this->SetCurAxis(i, 4);
                 this->ManualMove(DIR_POSITIVE);
@@ -8332,7 +8332,7 @@ void ChannelEngine::ProcessPmcSignal(){
                 this->SetCurAxis(i, 4);
                 this->ManualMove(DIR_NEGATIVE);
             }
-            //è½´6
+            //Öá6
             if(g_reg->JP6 && g_reg_last->JP6 == 0){
                 this->SetCurAxis(i, 5);
                 this->ManualMove(DIR_POSITIVE);
@@ -8342,7 +8342,7 @@ void ChannelEngine::ProcessPmcSignal(){
                 this->ManualMove(DIR_NEGATIVE);
             }
         }else if(g_reg->MD == 5){  //JOG
-            //è½´1
+            //Öá1
             if(g_reg->JP1 != g_reg_last->JP1){
                 if(g_reg->JP1){
                     this->SetCurAxis(i, 0);
@@ -8359,7 +8359,7 @@ void ChannelEngine::ProcessPmcSignal(){
                     this->ManualMoveStop();
                 }
             }
-            //è½´2
+            //Öá2
             if(g_reg->JP2 != g_reg_last->JP2){
                 if(g_reg->JP2){
                     this->SetCurAxis(i, 1);
@@ -8376,7 +8376,7 @@ void ChannelEngine::ProcessPmcSignal(){
                     this->ManualMoveStop();
                 }
             }
-            //è½´3
+            //Öá3
             if(g_reg->JP3 != g_reg_last->JP3){
                 if(g_reg->JP3){
                     this->SetCurAxis(i, 2);
@@ -8393,7 +8393,7 @@ void ChannelEngine::ProcessPmcSignal(){
                     this->ManualMoveStop();
                 }
             }
-            //è½´4
+            //Öá4
             if(g_reg->JP4 != g_reg_last->JP4){
                 if(g_reg->JP4){
                     this->SetCurAxis(i, 3);
@@ -8410,7 +8410,7 @@ void ChannelEngine::ProcessPmcSignal(){
                     this->ManualMoveStop();
                 }
             }
-            //è½´5
+            //Öá5
             if(g_reg->JP5 != g_reg_last->JP5){
                 if(g_reg->JP5){
                     this->SetCurAxis(i, 4);
@@ -8427,7 +8427,7 @@ void ChannelEngine::ProcessPmcSignal(){
                     this->ManualMoveStop();
                 }
             }
-            //è½´6
+            //Öá6
             if(g_reg->JP6 != g_reg_last->JP6){
                 if(g_reg->JP6){
                     this->SetCurAxis(i, 5);
@@ -8444,10 +8444,10 @@ void ChannelEngine::ProcessPmcSignal(){
                     this->ManualMoveStop();
                 }
             }
-        }else if(g_reg->MD == 6){  //åŸç‚¹æ¨¡å¼
+        }else if(g_reg->MD == 6){  //Ô­µãÄ£Ê½
 
             for(int j = 0; j < 16; j++){
-                if((g_reg->REFE & (0x01<<j)) != 0 && (g_reg_last->REFE & (0x01<<j)) == 0){// å¯åŠ¨è½´å›é›¶
+                if((g_reg->REFE & (0x01<<j)) != 0 && (g_reg_last->REFE & (0x01<<j)) == 0){// Æô¶¯Öá»ØÁã
                     this->ProcessPmcRefRet(j+16*i);
                 }
             }
@@ -8456,7 +8456,7 @@ void ChannelEngine::ProcessPmcSignal(){
 
 //#endif
 
-        //å¤„ç†å·¥è‰ºæ¨¡å¼åˆ‡æ¢
+        //´¦Àí¹¤ÒÕÄ£Ê½ÇĞ»»
 #ifdef USES_WOOD_MACHINE
         if(g_reg_last->BDM == 0 && g_reg->BDM == 1){
             this->m_p_channel_control[i].SetCurProcParamIndex(0);
@@ -8465,29 +8465,29 @@ void ChannelEngine::ProcessPmcSignal(){
         }
 #endif
 
-        //ä½¿ç”¨FINä¿¡å·çš„ä¸Šå‡æ²¿ï¼Œå¤ä½SFä¿¡å·
+        //Ê¹ÓÃFINĞÅºÅµÄÉÏÉıÑØ£¬¸´Î»SFĞÅºÅ
         if(g_reg_last->FIN == 0 && g_reg->FIN == 1){
             if(f_reg->SF == 1)
                 f_reg->SF = 0;
         }
 
-        //å¤„ç†PMCå®è°ƒç”¨åŠŸèƒ½
-        if(g_reg_last->EMPC == 0 && g_reg->EMPC == 1){  //å¤„ç†PMCå®è°ƒç”¨
+        //´¦ÀíPMCºêµ÷ÓÃ¹¦ÄÜ
+        if(g_reg_last->EMPC == 0 && g_reg->EMPC == 1){  //´¦ÀíPMCºêµ÷ÓÃ
             this->m_p_channel_control[i].CallMacroProgram(g_reg->MPCS);
-            f_reg->MPCO = 1;   //è°ƒç”¨ç»“æŸ
+            f_reg->MPCO = 1;   //µ÷ÓÃ½áÊø
         }else if(g_reg_last->EMPC == 1 && g_reg->EMPC == 0){
-            f_reg->MPCO = 0;   //ä¿¡å·å¤ä½
+            f_reg->MPCO = 0;   //ĞÅºÅ¸´Î»
         }
 
 #ifdef USES_WUXI_BLOOD_CHECK
-        if(g_reg->ret_home){//å›é›¶
+        if(g_reg->ret_home){//»ØÁã
             printf("wuxi, ret home\n");
             if(!m_p_channel_control[0].IsReturnHome()){
-                m_p_channel_control[0].SetRetHomeFlag();  //ç½®ä½æ ‡å¿—
+                m_p_channel_control[0].SetRetHomeFlag();  //ÖÃÎ»±êÖ¾
             }
         }
 
-        if(g_reg->reset){//å¤ä½
+        if(g_reg->reset){//¸´Î»
             printf("wuxi, reset\n");
             for(uint8_t i = 0; i < this->m_p_general_config->chn_count; i++){
                 this->m_p_channel_control[i].Reset();
@@ -8496,14 +8496,14 @@ void ChannelEngine::ProcessPmcSignal(){
 #endif
     }
 
-    //å¤„ç†è½´çš„é™ä½ä¿¡å·ï¼Œè™½ç„¶64ä¸ªè½´çš„é™ä½ä¿¡å·å¹³å‡åˆ†å¸ƒåœ¨å››ä¸ªé€šé“ä¸­ï¼Œä½†æ˜¯å¤„ç†æ—¶ä¸åˆ†é€šé“
-    if(!this->m_b_ret_ref){  //å›å‚è€ƒç‚¹è¿‡ç¨‹ä¸­å±è”½é™ä½
+    //´¦ÀíÖáµÄÏŞÎ»ĞÅºÅ£¬ËäÈ»64¸öÖáµÄÏŞÎ»ĞÅºÅÆ½¾ù·Ö²¼ÔÚËÄ¸öÍ¨µÀÖĞ£¬µ«ÊÇ´¦ÀíÊ±²»·ÖÍ¨µÀ
+    if(!this->m_b_ret_ref){  //»Ø²Î¿¼µã¹ı³ÌÖĞÆÁ±ÎÏŞÎ»
         chn = m_p_general_config->axis_count/16;
         if(m_p_general_config->axis_count%16)
             chn++;
         for(int i = 0; i < chn; i++){
             g_reg = &m_p_pmc_reg->GReg().bits[i];
-            if(g_reg->axis_limit_postive1 != 0x00 || g_reg->axis_limit_postive2 != 0x00){  //æ­£å‘ç¡¬é™ä½è§¦å‘
+            if(g_reg->axis_limit_postive1 != 0x00 || g_reg->axis_limit_postive2 != 0x00){  //ÕıÏòÓ²ÏŞÎ»´¥·¢
 
                 flag = g_reg->axis_limit_postive2;
                 flag <<= 8;
@@ -8521,7 +8521,7 @@ void ChannelEngine::ProcessPmcSignal(){
 
             }
 
-            if(g_reg->axis_limit_negative1 != 0x00 || g_reg->axis_limit_negative2 != 0x00){  //è´Ÿå‘ç¡¬é™ä½è§¦å‘
+            if(g_reg->axis_limit_negative1 != 0x00 || g_reg->axis_limit_negative2 != 0x00){  //¸ºÏòÓ²ÏŞÎ»´¥·¢
                 flag = g_reg->axis_limit_negative2;
                 flag <<= 8;
                 flag |= g_reg->axis_limit_negative1;
@@ -8540,14 +8540,14 @@ void ChannelEngine::ProcessPmcSignal(){
         }
     }
 
-    //å¤ä½RSTä¿¡å·
+    //¸´Î»RSTĞÅºÅ
     if(this->m_b_reset_rst_signal){
         struct timeval time_now;
         gettimeofday(&time_now, NULL);
         unsigned int time_elpase = (time_now.tv_sec-m_time_rst_over.tv_sec)*1000000+time_now.tv_usec-m_time_rst_over.tv_usec;
         if(time_elpase >= 16000){
             for(uint8_t i = 0; i < this->m_p_general_config->chn_count; i++){
-                //å»¶æ—¶æ—¶é—´åˆ°ï¼Œå¤ä½RSTä¿¡å·
+                //ÑÓÊ±Ê±¼äµ½£¬¸´Î»RSTĞÅºÅ
                 this->m_p_pmc_reg->FReg().bits[i].RST = 0;
             //	this->m_p_channel_control[i].ResetRSTSignal();
 
@@ -8556,23 +8556,23 @@ void ChannelEngine::ProcessPmcSignal(){
         }
     }
 
-    //PMCè½´æ§åˆ¶å¤„ç†
+    //PMCÖá¿ØÖÆ´¦Àí
     this->ProcessPmcAxisCtrl();
 
-    //å¤„ç†PMCæ•°æ®çª—å£
+    //´¦ÀíPMCÊı¾İ´°¿Ú
     this->ProcessPmcDataWnd();
 
 
-    //ç»™å‡ºè½´åœ¨å‚è€ƒç‚¹ä¿¡å·
+    //¸ø³öÖáÔÚ²Î¿¼µãĞÅºÅ
     int byte = 0, bit = 0;
     FRegBits *freg = nullptr;
-    double prec = 0.1;  //åœ¨ä½ç²¾åº¦
+    double prec = 0.1;  //ÔÚÎ»¾«¶È
     for(int i = 0; i < this->m_p_general_config->axis_count; i++){
         chn = i/16;
         byte = i%16;
         bit = byte%8;
         freg = &m_p_pmc_reg->FReg().bits[chn];
-        if((m_n_mask_ret_ref_over & (0x01<<i)) == 0){//æœªå›å‚è€ƒç‚¹ï¼Œéƒ½èµ‹é›¶
+        if((m_n_mask_ret_ref_over & (0x01<<i)) == 0){//Î´»Ø²Î¿¼µã£¬¶¼¸³Áã
             if(byte < 8){
                 freg->ZP11 &= ~(0x01<<bit);
                 freg->ZP21 &= ~(0x01<<bit);
@@ -8587,7 +8587,7 @@ void ChannelEngine::ProcessPmcSignal(){
             }
             continue;
         }
-        //ç¬¬ä¸€å‚è€ƒç‚¹
+        //µÚÒ»²Î¿¼µã
         if(fabs(m_df_phy_axis_pos_feedback[i]-m_p_axis_config[i].axis_home_pos[0]) < prec){
             if(byte < 8)
                 freg->ZP11 |= (0x01<<bit);
@@ -8599,7 +8599,7 @@ void ChannelEngine::ProcessPmcSignal(){
             else
                 freg->ZP12 &= ~(0x01<<bit);
         }
-        //ç¬¬äºŒå‚è€ƒç‚¹
+        //µÚ¶ş²Î¿¼µã
         if(fabs(m_df_phy_axis_pos_feedback[i]-m_p_axis_config[i].axis_home_pos[1]) < prec){
             if(byte < 8)
                 freg->ZP21 |= (0x01<<bit);
@@ -8611,7 +8611,7 @@ void ChannelEngine::ProcessPmcSignal(){
             else
                 freg->ZP22 &= ~(0x01<<bit);
         }
-        //ç¬¬ä¸‰å‚è€ƒç‚¹
+        //µÚÈı²Î¿¼µã
         if(fabs(m_df_phy_axis_pos_feedback[i]-m_p_axis_config[i].axis_home_pos[2]) < prec){
             if(byte < 8)
                 freg->ZP31 |= (0x01<<bit);
@@ -8623,7 +8623,7 @@ void ChannelEngine::ProcessPmcSignal(){
             else
                 freg->ZP32 &= ~(0x01<<bit);
         }
-        //ç¬¬å››å‚è€ƒç‚¹
+        //µÚËÄ²Î¿¼µã
         if(fabs(m_df_phy_axis_pos_feedback[i]-m_p_axis_config[i].axis_home_pos[3]) < prec){
             if(byte < 8)
                 freg->ZP41 |= (0x01<<bit);
@@ -8637,36 +8637,36 @@ void ChannelEngine::ProcessPmcSignal(){
         }
     }
 
-    //å¤„ç†PMCçš„å‘Šè­¦ï¼Œå³Aåœ°å€å¯„å­˜å™¨
+    //´¦ÀíPMCµÄ¸æ¾¯£¬¼´AµØÖ·¼Ä´æÆ÷
     this->ProcessPmcAlarm();
 
 }
 
 /**
- * @brief å¤„ç†PMCæ•°æ®çª—å£
+ * @brief ´¦ÀíPMCÊı¾İ´°¿Ú
  */
 void ChannelEngine::ProcessPmcDataWnd(){
 
     FRegBits *freg = &m_p_pmc_reg->FReg().bits[0];
     const GRegBits *greg = &m_p_pmc_reg->GReg().bits[0];
 
-    if(greg->ESTB && (freg->EREND==0)){  //ESTBä¿¡å·ä¸º1ï¼Œä¸”ERENDä¿¡å·ä¸º0æ—¶ï¼Œæ‰§è¡Œæ•°æ®å†™å…¥
-        uint8_t cmd = greg->ED1;      //å‘½ä»¤å·
-        uint8_t axis = greg->ED2;    //ç‰©ç†è½´å·
+    if(greg->ESTB && (freg->EREND==0)){  //ESTBĞÅºÅÎª1£¬ÇÒERENDĞÅºÅÎª0Ê±£¬Ö´ĞĞÊı¾İĞ´Èë
+        uint8_t cmd = greg->ED1;      //ÃüÁîºÅ
+        uint8_t axis = greg->ED2;    //ÎïÀíÖáºÅ
 
-        if(cmd == 0x01){ //è¯»å–è½´æœºæ¢°ä½ç½®åæ ‡
-            freg->wnd_data = this->GetPhyAxisMachPosFeedback(axis)*1000;   //å•ä½ï¼šum
+        if(cmd == 0x01){ //¶ÁÈ¡Öá»úĞµÎ»ÖÃ×ø±ê
+            freg->wnd_data = this->GetPhyAxisMachPosFeedback(axis)*1000;   //µ¥Î»£ºum
 
-            freg->EREND = 1;   //é€šçŸ¥PMCè¯»å–æ•°æ®
+            freg->EREND = 1;   //Í¨ÖªPMC¶ÁÈ¡Êı¾İ
 
         }
     }else if((greg->ESTB == 0) && freg->EREND){
-        freg->EREND = 0;   //å¤ä½PMCè¯»å–æ•°æ®ä¿¡å·
+        freg->EREND = 0;   //¸´Î»PMC¶ÁÈ¡Êı¾İĞÅºÅ
     }
 }
 
 /**
- * @brief å¤„ç†PMCå‘Šè­¦
+ * @brief ´¦ÀíPMC¸æ¾¯
  *
  */
 void ChannelEngine::ProcessPmcAlarm(){
@@ -8700,7 +8700,7 @@ void ChannelEngine::ProcessPmcAlarm(){
                     CreateError(errorno, errtype, CLEAR_BY_MCP_RESET, 0, CHANNEL_ENGINE_INDEX);
                 }
 
-                value = value>>1;  //å³ç§»ä¸€ä½
+                value = value>>1;  //ÓÒÒÆÒ»Î»
                 ++bit;
             }
         }
@@ -8728,7 +8728,7 @@ void ChannelEngine::ProcessPmcAlarm(){
                     CreateError(errorno, errtype, CLEAR_BY_MCP_RESET, 0, CHANNEL_ENGINE_INDEX);
                 }
 
-                value = value>>1;  //å³ç§»ä¸€ä½
+                value = value>>1;  //ÓÒÒÆÒ»Î»
                 ++bit;
             }
         }
@@ -8738,7 +8738,7 @@ void ChannelEngine::ProcessPmcAlarm(){
 }
 
 /**
- * @brief å¤„ç†PMCè½´æ§åˆ¶ä¿¡å·
+ * @brief ´¦ÀíPMCÖá¿ØÖÆĞÅºÅ
  */
 void ChannelEngine::ProcessPmcAxisCtrl(){
 //	FRegBits *freg0 = GetChnFRegBits(0);
@@ -8752,7 +8752,7 @@ void ChannelEngine::ProcessPmcAxisCtrl(){
         greg = &m_p_pmc_reg->GReg().bits[i];
         freg = &m_p_pmc_reg->FReg().bits[i];
 
-        //å¤„ç†PMCè½´é€šé“æ¿€æ´»
+        //´¦ÀíPMCÖáÍ¨µÀ¼¤»î
         bool eax[4] = {greg->EAX1, greg->EAX2, greg->EAX3, greg->EAX4};
         bool embuf[4] = {greg->EMBUFA, greg->EMBUFB, greg->EMBUFC, greg->EMBUFD};
         uint8_t ebuf[4] = {greg->EBUFA, greg->EBUFB, greg->EBUFC, greg->EBUFD};
@@ -8764,7 +8764,7 @@ void ChannelEngine::ProcessPmcAxisCtrl(){
         uint16_t spd[4] = {greg->EIFA, greg->EIFB, greg->EIFC, greg->EIFD};
         for(uint8_t j = 0; j < 4; j++){
 
-            if(!m_pmc_axis_ctrl[i*4+j].Active(eax[j])){//è½¬æ¢å¤±è´¥ï¼Œå‘Šè­¦
+            if(!m_pmc_axis_ctrl[i*4+j].Active(eax[j])){//×ª»»Ê§°Ü£¬¸æ¾¯
                 this->m_error_code = ERR_PMC_AXIS_CTRL_CHANGE;
                 CreateError(ERR_PMC_AXIS_CTRL_CHANGE, ERROR_LEVEL, CLEAR_BY_MCP_RESET, i*4+j+1, CHANNEL_ENGINE_INDEX);
                 return;
@@ -8772,15 +8772,15 @@ void ChannelEngine::ProcessPmcAxisCtrl(){
 
             if(!m_pmc_axis_ctrl[4*i+j].IsActive()){
 
-                continue;  //æœªæ¿€æ´»
+                continue;  //Î´¼¤»î
             }
 
-            //EMBUFgç¼“å†²æ— æ•ˆä¿¡å·
+            //EMBUFg»º³åÎŞĞ§ĞÅºÅ
             this->m_pmc_axis_ctrl[4*i+j].SetBuffState(!embuf[j]);
 
-            //ESBKg/EMSBKg  ç¨‹åºæ®µåœæ­¢ä¿¡å·/ç¨‹åºæ®µåœæ­¢æ— æ•ˆä¿¡å·
+            //ESBKg/EMSBKg  ³ÌĞò¶ÎÍ£Ö¹ĞÅºÅ/³ÌĞò¶ÎÍ£Ö¹ÎŞĞ§ĞÅºÅ
 
-            //æ•°æ®è¯»å–
+            //Êı¾İ¶ÁÈ¡
             if(ebuf[j] != ebsy[j]){
                 pmc_cmd.cmd = cmd[j];
                 pmc_cmd.distance = dis[j];
@@ -8788,12 +8788,12 @@ void ChannelEngine::ProcessPmcAxisCtrl(){
                 this->m_pmc_axis_ctrl[4*i+j].WriteCmd(pmc_cmd);
             }
 
-            //ECLRgå¤ä½ä¿¡å·
+            //ECLRg¸´Î»ĞÅºÅ
             if(eclr[j])
                 this->m_pmc_axis_ctrl[4*i+j].Reset();
 
 
-            //ESTPgè½´æ§åˆ¶æš‚åœä¿¡å·
+            //ESTPgÖá¿ØÖÆÔİÍ£ĞÅºÅ
             this->m_pmc_axis_ctrl[4*i+j].Pause(estp[j]);
 
         }
@@ -8801,10 +8801,10 @@ void ChannelEngine::ProcessPmcAxisCtrl(){
 }
 
 /**
- * @brief æ£€æŸ¥è½´åŸç‚¹ä¿¡å·
- * @param phy_axis ï¼š ç‰©ç†è½´å·ï¼Œ0å¼€å§‹
- * @param dir ï¼š æ–¹å‘ï¼Œ 1--æ­£å‘   -1--è´Ÿå‘
- * @return  true--æœ‰ä¿¡å·    false--æ— ä¿¡å·
+ * @brief ¼ì²éÖáÔ­µãĞÅºÅ
+ * @param phy_axis £º ÎïÀíÖáºÅ£¬0¿ªÊ¼
+ * @param dir £º ·½Ïò£¬ 1--ÕıÏò   -1--¸ºÏò
+ * @return  true--ÓĞĞÅºÅ    false--ÎŞĞÅºÅ
  */
 bool ChannelEngine::CheckAxisRefBaseSignal(uint8_t phy_axis, int8_t dir){
 
@@ -8842,9 +8842,9 @@ bool ChannelEngine::CheckAxisRefBaseSignal(uint8_t phy_axis, int8_t dir){
 }
 
 /**
- * @brief æ£€æŸ¥è½´åŸç‚¹ç²¾åŸºå‡†ä¿¡å·ï¼ˆIOä¿¡å·ï¼‰
- * @param phy_axis : ç‰©ç†è½´åºå·ï¼Œ0å¼€å§‹
- * @return  true--æœ‰ä¿¡å·    false--æ— ä¿¡å·
+ * @brief ¼ì²éÖáÔ­µã¾«»ù×¼ĞÅºÅ£¨IOĞÅºÅ£©
+ * @param phy_axis : ÎïÀíÖáĞòºÅ£¬0¿ªÊ¼
+ * @return  true--ÓĞĞÅºÅ    false--ÎŞĞÅºÅ
  */
 bool ChannelEngine::CheckAxisRefSignal(uint8_t phy_axis){
     bool res = false;
@@ -8862,17 +8862,17 @@ bool ChannelEngine::CheckAxisRefSignal(uint8_t phy_axis){
 
 
 /**
- * @brief å¤„ç†è½´ç¡¬é™ä½å‘Šè­¦,æ‰€æœ‰è½´å‡é€Ÿåœ
- * @param dir : ç¡¬é™ä½æ–¹å‘ï¼Œ0--æ­£å‘   1--è´Ÿå‘
+ * @brief ´¦ÀíÖáÓ²ÏŞÎ»¸æ¾¯,ËùÓĞÖá¼õËÙÍ£
+ * @param dir : Ó²ÏŞÎ»·½Ïò£¬0--ÕıÏò   1--¸ºÏò
  */
 void ChannelEngine::ProcessAxisHardLimit(uint8_t dir){
 
-    //å‡é€Ÿåœå¤„ç†
+    //¼õËÙÍ£´¦Àí
     for(int i = 0; i < this->m_p_general_config->chn_count; i++){
         this->m_p_channel_control[i].Pause();
     }
 
-    //ç”Ÿæˆç¡¬é™ä½é”™è¯¯ä¿¡æ¯
+    //Éú³ÉÓ²ÏŞÎ»´íÎóĞÅÏ¢
     uint32_t info = 0x00;
     if(dir == 0){
         m_error_code = ERR_HARDLIMIT_POS;
@@ -8887,9 +8887,9 @@ void ChannelEngine::ProcessAxisHardLimit(uint8_t dir){
 }
 
 /**
- * @brief è®¾ç½®PMCä¸­Få¯„å­˜å™¨çš„OUTè¾“å‡ºç‚¹ä½
- * @param index : OUTè¾“å‡ºçš„ç‚¹ä½åºå·ï¼Œä»0å¼€å§‹
- * @param value : 0--å¼€å…³å±æ€§ï¼Œæ¯æ¬¡å–å      1--æœ‰ä¿¡å·      2--æ— ä¿¡å·
+ * @brief ÉèÖÃPMCÖĞF¼Ä´æÆ÷µÄOUTÊä³öµãÎ»
+ * @param index : OUTÊä³öµÄµãÎ»ĞòºÅ£¬´Ó0¿ªÊ¼
+ * @param value : 0--¿ª¹ØÊôĞÔ£¬Ã¿´ÎÈ¡·´      1--ÓĞĞÅºÅ      2--ÎŞĞÅºÅ
  */
 void ChannelEngine::SetPmcOutSignal(uint8_t index, uint8_t value){
     if(index >= 32 || this->m_b_emergency)
@@ -8899,7 +8899,7 @@ void ChannelEngine::SetPmcOutSignal(uint8_t index, uint8_t value){
 
 //	uint8_t cur_val = this->m_p_pmc_reg->FReg().all[72+sec];
 //	printf("SetPmcOutSignal: index = %hhu, value=0x%hhx\n", index, cur_val);
-//	cur_val ^= (0x01<<bit);  //å–å
+//	cur_val ^= (0x01<<bit);  //È¡·´
 
 //	this->m_p_pmc_reg->FReg().all[72+sec] = cur_val;
 //	printf("SetPmcOutSignal new : index = %hhu, value=0x%hhx\n", index, cur_val);
@@ -8910,7 +8910,7 @@ void ChannelEngine::SetPmcOutSignal(uint8_t index, uint8_t value){
     }else if(value == 0){
         uint8_t cur_val = this->m_p_pmc_reg->FReg().all[72+sec];
     //	printf("SetPmcOutSignal: index = %hhu, value=0x%hhx\n", index, cur_val);
-        cur_val ^= (0x01<<bit);  //å–å
+        cur_val ^= (0x01<<bit);  //È¡·´
 
         this->m_p_pmc_reg->FReg().all[72+sec] = cur_val;
 
@@ -8919,11 +8919,11 @@ void ChannelEngine::SetPmcOutSignal(uint8_t index, uint8_t value){
 }
 
 /**
- * @brief è·å–å®å˜é‡çš„å€¼
- * @param chn[in] : é€šé“å·
- * @param index[in]	ï¼šå˜é‡ç´¢å¼•å·
- * @param init[out] : è¿”å›å˜é‡åˆå§‹åŒ–çŠ¶æ€ï¼Œ0--æœªåˆå§‹åŒ–   1--å·²åˆå§‹åŒ–
- * @param value[out] : è¿”å›çš„å˜é‡å€¼
+ * @brief »ñÈ¡ºê±äÁ¿µÄÖµ
+ * @param chn[in] : Í¨µÀºÅ
+ * @param index[in]	£º±äÁ¿Ë÷ÒıºÅ
+ * @param init[out] : ·µ»Ø±äÁ¿³õÊ¼»¯×´Ì¬£¬0--Î´³õÊ¼»¯   1--ÒÑ³õÊ¼»¯
+ * @param value[out] : ·µ»ØµÄ±äÁ¿Öµ
  * @return
  */
 bool ChannelEngine::GetMacroVarValue(uint8_t chn, uint32_t index, bool &init, double &value){
@@ -8939,11 +8939,11 @@ bool ChannelEngine::GetMacroVarValue(uint8_t chn, uint32_t index, bool &init, do
 }
 
 /**
- * @brief è®¾ç½®å®å˜é‡çš„å€¼
+ * @brief ÉèÖÃºê±äÁ¿µÄÖµ
  * @param chn
  * @param index
- * @param init : åˆå§‹åŒ–çŠ¶æ€ï¼Œ0--æœªåˆå§‹åŒ–   1--å·²åˆå§‹åŒ–
- * @param value : å˜é‡å€¼
+ * @param init : ³õÊ¼»¯×´Ì¬£¬0--Î´³õÊ¼»¯   1--ÒÑ³õÊ¼»¯
+ * @param value : ±äÁ¿Öµ
  * @return
  */
 bool ChannelEngine::SetMacroVarValue(uint8_t chn, uint32_t index, bool init, double value){
@@ -8953,10 +8953,10 @@ bool ChannelEngine::SetMacroVarValue(uint8_t chn, uint32_t index, bool init, dou
     if((this->m_mask_import_param & (0x01<<CONFIG_MACRO_VAR)) != 0)
         return false;
 
-    if(init){//å·²åˆå§‹åŒ–
+    if(init){//ÒÑ³õÊ¼»¯
         if(!m_p_channel_control[chn].GetMacroVar()->SetVarValue(index, value))
             return false;
-    }else{//æœªåˆå§‹åŒ–
+    }else{//Î´³õÊ¼»¯
         if(!m_p_channel_control[chn].GetMacroVar()->ResetVariable(index))
             return false;
     }
@@ -8965,11 +8965,11 @@ bool ChannelEngine::SetMacroVarValue(uint8_t chn, uint32_t index, bool init, dou
 }
 
 /**
- * @brief è·å–PMCå•å­—èŠ‚å¯„å­˜å™¨çš„å€¼
+ * @brief »ñÈ¡PMCµ¥×Ö½Ú¼Ä´æÆ÷µÄÖµ
  * @param reg_sec
  * @param reg_index
  * @param value
- * @return  true--æˆåŠŸ   false--å¤±è´¥
+ * @return  true--³É¹¦   false--Ê§°Ü
  */
 bool ChannelEngine::GetPmcRegValue_8(uint16_t reg_sec, uint16_t reg_index, uint8_t &value){
     bool res = false;
@@ -8980,11 +8980,11 @@ bool ChannelEngine::GetPmcRegValue_8(uint16_t reg_sec, uint16_t reg_index, uint8
 }
 
 /**
- * @brief è·å–PMCåŒå­—èŠ‚å¯„å­˜å™¨çš„å€¼
+ * @brief »ñÈ¡PMCË«×Ö½Ú¼Ä´æÆ÷µÄÖµ
  * @param reg_sec
  * @param reg_index
  * @param value
- * @return true--æˆåŠŸ   false--å¤±è´¥
+ * @return true--³É¹¦   false--Ê§°Ü
  */
 bool ChannelEngine::GetPmcRegValue_16(uint16_t reg_sec, uint16_t reg_index, uint16_t &value){
     bool res = false;
@@ -8995,11 +8995,11 @@ bool ChannelEngine::GetPmcRegValue_16(uint16_t reg_sec, uint16_t reg_index, uint
 }
 
 /**
- * @brief è®¾ç½®PMCå•å­—èŠ‚å¯„å­˜å™¨çš„å€¼
+ * @brief ÉèÖÃPMCµ¥×Ö½Ú¼Ä´æÆ÷µÄÖµ
  * @param reg_sec
  * @param reg_index
  * @param value
- * @return true--æˆåŠŸ   false--å¤±è´¥
+ * @return true--³É¹¦   false--Ê§°Ü
  */
 bool ChannelEngine::SetPmcRegValue_8(uint16_t reg_sec, uint16_t reg_index, uint8_t value){
     bool res = false;
@@ -9010,12 +9010,12 @@ bool ChannelEngine::SetPmcRegValue_8(uint16_t reg_sec, uint16_t reg_index, uint8
 }
 
 /**
- * @brief æŒ‰ä½è®¾ç½®å¯„å­˜å™¨å€¼
+ * @brief °´Î»ÉèÖÃ¼Ä´æÆ÷Öµ
  * @param reg_sec
  * @param reg_index
- * @param bit_index : bitä½åºå·ï¼Œ0å¼€å§‹
+ * @param bit_index : bitÎ»ĞòºÅ£¬0¿ªÊ¼
  * @param value
- * @return true--æˆåŠŸ   false--å¤±è´¥
+ * @return true--³É¹¦   false--Ê§°Ü
  */
 bool ChannelEngine::SetPmcRegBitValue_8(uint16_t reg_sec, uint16_t reg_index, uint8_t bit_index, bool value){
     bool res = false;
@@ -9027,12 +9027,12 @@ bool ChannelEngine::SetPmcRegBitValue_8(uint16_t reg_sec, uint16_t reg_index, ui
     res = this->m_p_pmc_reg->GetRegValue(static_cast<PmcRegSection>(reg_sec), reg_index, data);
 
     if(!res)
-        return res;  //å¤±è´¥è¿”å›
+        return res;  //Ê§°Ü·µ»Ø
 
     if(value){
-        data |= 0x01<<bit_index;      //ç½®1
+        data |= 0x01<<bit_index;      //ÖÃ1
     }else{
-        data &= ~(0x01<<bit_index);   //ç½®0
+        data &= ~(0x01<<bit_index);   //ÖÃ0
     }
 
     res = this->m_p_pmc_reg->SetRegValue(static_cast<PmcRegSection>(reg_sec), reg_index, data);
@@ -9040,11 +9040,11 @@ bool ChannelEngine::SetPmcRegBitValue_8(uint16_t reg_sec, uint16_t reg_index, ui
 }
 
 /**
- * @brief è®¾ç½®PMCåŒå­—èŠ‚å¯„å­˜å™¨çš„å€¼
+ * @brief ÉèÖÃPMCË«×Ö½Ú¼Ä´æÆ÷µÄÖµ
  * @param reg_sec
  * @param reg_index
  * @param value
- * @return true--æˆåŠŸ   false--å¤±è´¥
+ * @return true--³É¹¦   false--Ê§°Ü
  */
 bool ChannelEngine::SetPmcRegValue_16(uint16_t reg_sec, uint16_t reg_index, uint16_t value){
     bool res = false;
@@ -9055,17 +9055,17 @@ bool ChannelEngine::SetPmcRegValue_16(uint16_t reg_sec, uint16_t reg_index, uint
 }
 
 /**
- * @brief è®¾ç½®é€šé“çš„PMCä¿¡å·
- * @param chn_index : é€šé“å·
- * @param signal ï¼šä¿¡å·å®šä¹‰
- * @param flag ï¼š true--ç½®ä¸€    false--ç½®é›¶
+ * @brief ÉèÖÃÍ¨µÀµÄPMCĞÅºÅ
+ * @param chn_index : Í¨µÀºÅ
+ * @param signal £ºĞÅºÅ¶¨Òå
+ * @param flag £º true--ÖÃÒ»    false--ÖÃÁã
  */
 void ChannelEngine::SetPmcSignal(uint8_t chn_index, int signal, bool flag){
 
 }
 
 /**
- * @brief åˆ·æ–°ncæ–‡ä»¶file
+ * @brief Ë¢ĞÂncÎÄ¼şfile
  * @param file
  */
 void ChannelEngine::RefreshFile(char *file){
@@ -9074,7 +9074,7 @@ void ChannelEngine::RefreshFile(char *file){
 }
 
 /**
- * @brief é‡æ–°åŠ è½½æ–‡ä»¶file
+ * @brief ÖØĞÂ¼ÓÔØÎÄ¼şfile
  * @param file
  */
 void ChannelEngine::RemapFile(char *file){
@@ -9083,7 +9083,7 @@ void ChannelEngine::RemapFile(char *file){
 }
 
 /**
- * @brief å¤ä½OPä¿¡å·
+ * @brief ¸´Î»OPĞÅºÅ
  * @param chn_index
  */
 void ChannelEngine::ResetOPSignal(uint8_t chn_index){
@@ -9096,7 +9096,7 @@ void ChannelEngine::ResetOPSignal(uint8_t chn_index){
 }
 
 /**
- * @brief è®¾ç½®å‘Šè­¦ä¿¡å·
+ * @brief ÉèÖÃ¸æ¾¯ĞÅºÅ
  * @param chn_index
  * @param value
  */
@@ -9113,9 +9113,9 @@ void ChannelEngine::SetALSignal(uint8_t chn_index, bool value){
 
 
 /**
- * @brief è·å–æŒ‡å®šPMCé€šé“çš„PMCè½´åºå·
- * @param pmc_chn : PMCé€šé“å·ï¼Œå³å¯„å­˜å™¨ç»„åºå·ï¼Œä»0å¼€å§‹
- * @return æˆåŠŸè¿”å›ç‰©ç†è½´å·ï¼Œå¤±è´¥åˆ™è¿”å›0xFF
+ * @brief »ñÈ¡Ö¸¶¨PMCÍ¨µÀµÄPMCÖáĞòºÅ
+ * @param pmc_chn : PMCÍ¨µÀºÅ£¬¼´¼Ä´æÆ÷×éĞòºÅ£¬´Ó0¿ªÊ¼
+ * @return ³É¹¦·µ»ØÎïÀíÖáºÅ£¬Ê§°ÜÔò·µ»Ø0xFF
  */
 uint8_t ChannelEngine::GetPmcAxis(uint8_t pmc_chn){
 
@@ -9139,24 +9139,24 @@ uint8_t ChannelEngine::GetPmcAxis(uint8_t pmc_chn){
 }
 
 /**
- * @brief ä»…æ ¹æ®åŸç‚¹ä¿¡å·è®¾ç½®å‚è€ƒç‚¹ åŒ…æ‹¬æ­¥è¿›ç”µæœºæ ¹æ®åŸç‚¹ä¿¡å·è®¾ç½®å‚è€ƒç‚¹
+ * @brief ½ö¸ù¾İÔ­µãĞÅºÅÉèÖÃ²Î¿¼µã °üÀ¨²½½øµç»ú¸ù¾İÔ­µãĞÅºÅÉèÖÃ²Î¿¼µã
  */
 void ChannelEngine::AxisFindRefWithZeroSignal(uint8_t phy_axis){
 
-    int8_t dir = 0, dir_opt;   //å›å‚è€ƒç‚¹æ–¹å‘
-//	uint8_t ret_mode = 0;   //å›å‚è€ƒç‚¹æ–¹å¼
+    int8_t dir = 0, dir_opt;   //»Ø²Î¿¼µã·½Ïò
+//	uint8_t ret_mode = 0;   //»Ø²Î¿¼µã·½Ê½
     uint8_t chn = 0, chn_axis = 0;
 
-    dir = this->m_p_axis_config[phy_axis].ret_ref_dir?DIR_POSITIVE:DIR_NEGATIVE;  // å›å‚è€ƒç‚¹æ‰¾ç²—åŸºå‡†æ–¹å‘
-    dir_opt = (m_p_axis_config[phy_axis].ret_ref_change_dir==0)?dir*-1:dir;       //å›å‚è€ƒç‚¹æ‰¾ç²¾åŸºå‡†æ–¹å‘
+    dir = this->m_p_axis_config[phy_axis].ret_ref_dir?DIR_POSITIVE:DIR_NEGATIVE;  // »Ø²Î¿¼µãÕÒ´Ö»ù×¼·½Ïò
+    dir_opt = (m_p_axis_config[phy_axis].ret_ref_change_dir==0)?dir*-1:dir;       //»Ø²Î¿¼µãÕÒ¾«»ù×¼·½Ïò
 
     switch(this->m_n_ret_ref_step[phy_axis]){
-        case 0://æ£€æŸ¥åŸç‚¹ä¿¡å·
+        case 0://¼ì²éÔ­µãĞÅºÅ
             printf("return ref step 0, dir = %hhd, dir_opt=%hhd\n", dir, dir_opt);
-            this->SetRetRefFlag(phy_axis, false);   //å¤ä½å›å‚è€ƒç‚¹å®Œæˆæ ‡å¿—
+            this->SetRetRefFlag(phy_axis, false);   //¸´Î»»Ø²Î¿¼µãÍê³É±êÖ¾
             this->m_p_pmc_reg->FReg().bits[0].in_ref_point &= ~(0x01<<phy_axis);
 
-            if(this->CheckAxisRefBaseSignal(phy_axis, dir)){  // å·²ç»è§¦å‘ç²—åŸºå‡†ä¿¡å·ï¼Œç›´æ¥å¼€å¼€å§‹å›é€€
+            if(this->CheckAxisRefBaseSignal(phy_axis, dir)){  // ÒÑ¾­´¥·¢´Ö»ù×¼ĞÅºÅ£¬Ö±½Ó¿ª¿ªÊ¼»ØÍË
                 double move_length = this->m_p_axis_config[phy_axis].move_pr*1.2;
                 if(move_length>10.0) {
                     move_length = 10.0;
@@ -9175,7 +9175,7 @@ void ChannelEngine::AxisFindRefWithZeroSignal(uint8_t phy_axis){
             }
 
             break;
-        case 1:{//ç­‰å¾…å›é€€åˆ°ä½ï¼Œå¹¶å†æ¬¡æ£€æŸ¥åŸç‚¹ä¿¡å·
+        case 1:{//µÈ´ı»ØÍËµ½Î»£¬²¢ÔÙ´Î¼ì²éÔ­µãĞÅºÅ
             printf("return ref step 1\n");
             chn = this->GetAxisChannel(phy_axis, chn_axis);
             bool flag = CheckAxisRefBaseSignal(phy_axis, dir);
@@ -9188,119 +9188,119 @@ void ChannelEngine::AxisFindRefWithZeroSignal(uint8_t phy_axis){
                     }
                 }
                 if(flag == false){
-                        m_n_ret_ref_step[phy_axis] = 2;  //è·³è½¬ä¸‹ä¸€æ­¥
+                        m_n_ret_ref_step[phy_axis] = 2;  //Ìø×ªÏÂÒ»²½
                 }
 
-            }else if(this->m_p_axis_config[phy_axis].axis_pmc){  //PMCè½´åˆ°ä½
+            }else if(this->m_p_axis_config[phy_axis].axis_pmc){  //PMCÖáµ½Î»
                 if(this->m_n_run_axis_mask == 0 || (this->m_n_runover_axis_mask & (0x01L<<phy_axis))){
                     if(true == flag){
                         m_n_ret_ref_step[phy_axis] = 0;
                         break;
                     }else{
-                            m_n_ret_ref_step[phy_axis] = 2;  //è·³è½¬ä¸‹ä¸€æ­¥
+                            m_n_ret_ref_step[phy_axis] = 2;  //Ìø×ªÏÂÒ»²½
                     }
                 }
             }
             }
             break;
-        case 2:  //ä»¥å›å‚è€ƒç‚¹é€Ÿåº¦å‘å›å‚è€ƒç‚¹æ–¹å‘è¿åŠ¨
+        case 2:  //ÒÔ»Ø²Î¿¼µãËÙ¶ÈÏò»Ø²Î¿¼µã·½ÏòÔË¶¯
     //		printf("return ref step 2\n");
             this->ManualMove(phy_axis, dir, this->m_p_axis_config[phy_axis].ret_ref_speed, 90000.0);
-            m_n_ret_ref_step[phy_axis] = 3;  //è·³è½¬ä¸‹ä¸€æ­¥
+            m_n_ret_ref_step[phy_axis] = 3;  //Ìø×ªÏÂÒ»²½
             printf("return ref, goto step 3\n");
             break;
-        case 3:  //è§¦å‘åŸç‚¹ä¿¡å·ï¼Œåœæ­¢
+        case 3:  //´¥·¢Ô­µãĞÅºÅ£¬Í£Ö¹
     //		printf("return ref step 3\n");
             if(this->CheckAxisRefBaseSignal(phy_axis, dir)){
                 this->ManualMoveStop(phy_axis);
-                gettimeofday(&this->m_time_ret_ref[phy_axis], NULL);   //è®°å½•èµ·å§‹æ—¶é—´
-                m_n_ret_ref_step[phy_axis] = 4;  //è·³è½¬ä¸‹ä¸€æ­¥
+                gettimeofday(&this->m_time_ret_ref[phy_axis], NULL);   //¼ÇÂ¼ÆğÊ¼Ê±¼ä
+                m_n_ret_ref_step[phy_axis] = 4;  //Ìø×ªÏÂÒ»²½
                 printf("return ref, goto step 4: pos = %lf\n", this->GetPhyAxisMachPosFeedback(phy_axis));
             }
             else{
             //	this->ManualMove(phy_axis, dir, this->m_p_axis_config[phy_axis].ret_ref_speed,3.0);
             }
             break;
-        case 4:{//ç­‰å¾…åœæ­¢åˆ°ä½
+        case 4:{//µÈ´ıÍ£Ö¹µ½Î»
             struct timeval time_now;
             gettimeofday(&time_now, NULL);
             unsigned int time_elpase = (time_now.tv_sec-m_time_ret_ref[phy_axis].tv_sec)*1000000+time_now.tv_usec-m_time_ret_ref[phy_axis].tv_usec;
-            if(time_elpase >= 500000){ //å»¶æ—¶500ms
-                m_n_ret_ref_step[phy_axis] = 5;  //è·³è½¬ä¸‹ä¸€æ­¥
+            if(time_elpase >= 500000){ //ÑÓÊ±500ms
+                m_n_ret_ref_step[phy_axis] = 5;  //Ìø×ªÏÂÒ»²½
                 printf("return ref, goto step 5: pos = %lf, time=%u\n", this->GetPhyAxisMachPosFeedback(phy_axis), time_elpase);
             }
             if(!this->CheckAxisRefBaseSignal(phy_axis, dir)){
-                printf("å›å‚è€ƒç‚¹è¿‡å†²äº†ï¼ï¼ï¼ï¼ï¼ï¼ï¼\n");
+                printf("»Ø²Î¿¼µã¹ı³åÁË£¡£¡£¡£¡£¡£¡£¡\n");
             }
         }
             break;
-        case 5:  //æœ‰åŸºå‡†ï¼Œ ä½é€Ÿå›é€€è‡³åŸç‚¹ä¿¡å·æ¶ˆå¤±,
+        case 5:  //ÓĞ»ù×¼£¬ µÍËÙ»ØÍËÖÁÔ­µãĞÅºÅÏûÊ§,
             printf("return ref step 5\n");
             this->ManualMove(phy_axis, dir_opt, 60, this->m_p_axis_config[phy_axis].move_pr*2);
-            m_n_ret_ref_step[phy_axis] = 6;  //è·³è½¬ä¸‹ä¸€æ­¥
+            m_n_ret_ref_step[phy_axis] = 6;  //Ìø×ªÏÂÒ»²½
             printf("return ref, goto step 6\n");
 
             break;
-        case 6:  //æœ‰åŸºå‡†ï¼Œç­‰å¾…ç²—åŸºå‡†ä¿¡å·æ¶ˆå¤±
+        case 6:  //ÓĞ»ù×¼£¬µÈ´ı´Ö»ù×¼ĞÅºÅÏûÊ§
         //	printf("return ref step 6\n");
             if(!this->CheckAxisRefBaseSignal(phy_axis, dir)){
                 this->ManualMoveStop(phy_axis);
 
-                gettimeofday(&this->m_time_ret_ref[phy_axis], NULL);   //è®°å½•èµ·å§‹æ—¶é—´ï¼Œå»¶æ—¶300ms
+                gettimeofday(&this->m_time_ret_ref[phy_axis], NULL);   //¼ÇÂ¼ÆğÊ¼Ê±¼ä£¬ÑÓÊ±300ms
 
-                m_n_ret_ref_step[phy_axis] = 7;  //è·³è½¬ä¸‹ä¸€æ­¥
+                m_n_ret_ref_step[phy_axis] = 7;  //Ìø×ªÏÂÒ»²½
             }
             break;
-        case 7:{ //ç­‰å¾…åœæ­¢åˆ°ä½
+        case 7:{ //µÈ´ıÍ£Ö¹µ½Î»
             struct timeval time_now;
             gettimeofday(&time_now, NULL);
             unsigned int time_elpase = (time_now.tv_sec-m_time_ret_ref[phy_axis].tv_sec)*1000000+time_now.tv_usec-m_time_ret_ref[phy_axis].tv_usec;
-            if(time_elpase >= 500000){ //å»¶æ—¶500ms
-//				m_n_get_cur_encoder_count = 0;  //å¤ä½è·å–å½“å‰ç¼–ç å™¨æ¬¡æ•°
-                m_n_ret_ref_step[phy_axis] = 8;  //è·³è½¬ä¸‹ä¸€æ­¥
+            if(time_elpase >= 500000){ //ÑÓÊ±500ms
+//				m_n_get_cur_encoder_count = 0;  //¸´Î»»ñÈ¡µ±Ç°±àÂëÆ÷´ÎÊı
+                m_n_ret_ref_step[phy_axis] = 8;  //Ìø×ªÏÂÒ»²½
                 printf("return ref, goto step 8\n");
             }
         }
             break;
 
-        case 8:{ //  è®¾ç½®åŸç‚¹
+        case 8:{ //  ÉèÖÃÔ­µã
             printf("return ref step 8: send cmd to mi, set ref point\n");
             MiCmdFrame cmd;
             memset(&cmd, 0x00, sizeof(cmd));
             cmd.data.axis_index = phy_axis+1;
             cmd.data.cmd = CMD_MI_SET_REF_CUR;
 
-            int64_t pos = m_p_axis_config[phy_axis].axis_home_pos[0] * 1e7;   //å•ä½è½¬æ¢ï¼Œ0.1nm
+            int64_t pos = m_p_axis_config[phy_axis].axis_home_pos[0] * 1e7;   //µ¥Î»×ª»»£¬0.1nm
             memcpy(cmd.data.data, &pos, sizeof(int64_t));
             this->m_p_mi_comm->WriteCmd(cmd);
-            gettimeofday(&this->m_time_ret_ref[phy_axis], NULL);   //è®°å½•èµ·å§‹æ—¶é—´ï¼Œå»¶æ—¶300ms
+            gettimeofday(&this->m_time_ret_ref[phy_axis], NULL);   //¼ÇÂ¼ÆğÊ¼Ê±¼ä£¬ÑÓÊ±300ms
 
-            m_n_ret_ref_step[phy_axis] = 9;  //è·³è½¬ä¸‹ä¸€æ­¥
+            m_n_ret_ref_step[phy_axis] = 9;  //Ìø×ªÏÂÒ»²½
             printf("return ref, goto step 9\n");
 
         }
             break;
-        case 9: { //ç­‰å¾…è®¾ç½®å‚è€ƒç‚¹å®Œæˆï¼Œåœ¨MiæŒ‡ä»¤å“åº”å¤„ç†å‡½æ•°ä¸­å¤„ç†
+        case 9: { //µÈ´ıÉèÖÃ²Î¿¼µãÍê³É£¬ÔÚMiÖ¸ÁîÏìÓ¦´¦Àíº¯ÊıÖĞ´¦Àí
             struct timeval time_now;
             gettimeofday(&time_now, NULL);
             unsigned int time_elpase = (time_now.tv_sec-m_time_ret_ref[phy_axis].tv_sec)*1000000+time_now.tv_usec-m_time_ret_ref[phy_axis].tv_usec;
-            if(time_elpase >= 300000){ //å»¶æ—¶300ms
-                m_n_ret_ref_step[phy_axis] = 10;  //è·³è½¬ä¸‹ä¸€æ­¥
+            if(time_elpase >= 300000){ //ÑÓÊ±300ms
+                m_n_ret_ref_step[phy_axis] = 10;  //Ìø×ªÏÂÒ»²½
                 printf("return ref, goto step 10\n");
             }
             }
             break;
-        case 10:  //å›å‚è€ƒç‚¹å®Œæˆ
+        case 10:  //»Ø²Î¿¼µãÍê³É
             printf("axis %u return ref over\n", phy_axis);
             this->SetRetRefFlag(phy_axis, true);
-            this->m_p_pmc_reg->FReg().bits[0].in_ref_point |= (0x01<<phy_axis);   //ç½®ä½åˆ°å‚è€ƒç‚¹æ ‡å¿—
+            this->m_p_pmc_reg->FReg().bits[0].in_ref_point |= (0x01<<phy_axis);   //ÖÃÎ»µ½²Î¿¼µã±êÖ¾
 
 
             this->m_n_mask_ret_ref &= ~(0x01<<phy_axis);
             m_n_ret_ref_step[phy_axis] = 0;
 
             break;
-        case 20: //å¤±è´¥å¤„ç†
+        case 20: //Ê§°Ü´¦Àí
             this->m_n_mask_ret_ref &= ~(0x01<<phy_axis);
             m_n_ret_ref_step[phy_axis] = 0;
 
@@ -9318,8 +9318,8 @@ void ChannelEngine::AxisFindRefWithZeroSignal(uint8_t phy_axis){
 }
 
 /**
- * @brief è®¾ç½®è½´åç§°æ‰©å±•ä¸‹æ ‡ä½¿èƒ½
- * @param flag : å…è®¸è½´åç§°ä¸‹æ ‡
+ * @brief ÉèÖÃÖáÃû³ÆÀ©Õ¹ÏÂ±êÊ¹ÄÜ
+ * @param flag : ÔÊĞíÖáÃû³ÆÏÂ±ê
  */
 void ChannelEngine::SetAxisNameEx(bool flag){
     for(uint8_t i = 0; i < this->m_p_general_config->chn_count; i++){
@@ -9328,42 +9328,42 @@ void ChannelEngine::SetAxisNameEx(bool flag){
 }
 
 /**
- * @brief å½“å‰ä½ç½®è®¾ç½®ä¸ºå‚è€ƒç‚¹   è™šæ‹Ÿè½´å›å‚è€ƒç‚¹  æ­¥è¿›ç”µæœºè®¾ç½®å‚è€ƒç‚¹
+ * @brief µ±Ç°Î»ÖÃÉèÖÃÎª²Î¿¼µã   ĞéÄâÖá»Ø²Î¿¼µã  ²½½øµç»úÉèÖÃ²Î¿¼µã
  */
 void ChannelEngine::AxisFindRefNoZeroSignal(uint8_t phy_axis){
 
     switch(this->m_n_ret_ref_step[phy_axis]){
-        case 0: {// è®¾ç½®åŸç‚¹
+        case 0: {// ÉèÖÃÔ­µã
             printf("return ref step 0: send cmd to mi, set ref point\n");
             MiCmdFrame cmd;
             memset(&cmd, 0x00, sizeof(cmd));
             cmd.data.axis_index = phy_axis+1;
             cmd.data.cmd = CMD_MI_SET_REF_CUR;
 
-            int64_t pos = m_p_axis_config[phy_axis].axis_home_pos[0] * 1e7;   //å•ä½è½¬æ¢ï¼Œ0.1nm
+            int64_t pos = m_p_axis_config[phy_axis].axis_home_pos[0] * 1e7;   //µ¥Î»×ª»»£¬0.1nm
             memcpy(cmd.data.data, &pos, sizeof(int64_t));
             this->m_p_mi_comm->WriteCmd(cmd);
-            gettimeofday(&this->m_time_ret_ref[phy_axis], NULL);   //è®°å½•èµ·å§‹æ—¶é—´ï¼Œå»¶æ—¶300ms
+            gettimeofday(&this->m_time_ret_ref[phy_axis], NULL);   //¼ÇÂ¼ÆğÊ¼Ê±¼ä£¬ÑÓÊ±300ms
 
-            m_n_ret_ref_step[phy_axis] = 1;  //è·³è½¬ä¸‹ä¸€æ­¥
+            m_n_ret_ref_step[phy_axis] = 1;  //Ìø×ªÏÂÒ»²½
             printf("return ref, goto step 1\n");
 
         }
             break;
-        case 1: { //ç­‰å¾…è®¾ç½®å‚è€ƒç‚¹å®Œæˆï¼Œåœ¨MiæŒ‡ä»¤å“åº”å¤„ç†å‡½æ•°ä¸­å¤„ç†
+        case 1: { //µÈ´ıÉèÖÃ²Î¿¼µãÍê³É£¬ÔÚMiÖ¸ÁîÏìÓ¦´¦Àíº¯ÊıÖĞ´¦Àí
             struct timeval time_now;
             gettimeofday(&time_now, NULL);
             unsigned int time_elpase = (time_now.tv_sec-m_time_ret_ref[phy_axis].tv_sec)*1000000+time_now.tv_usec-m_time_ret_ref[phy_axis].tv_usec;
-            if(time_elpase >= 300000){ //å»¶æ—¶300ms
-                m_n_ret_ref_step[phy_axis] = 2;  //è·³è½¬ä¸‹ä¸€æ­¥
+            if(time_elpase >= 300000){ //ÑÓÊ±300ms
+                m_n_ret_ref_step[phy_axis] = 2;  //Ìø×ªÏÂÒ»²½
                 printf("return ref, goto step 2\n");
             }
             }
             break;
-        case 2:  //å›å‚è€ƒç‚¹å®Œæˆ
+        case 2:  //»Ø²Î¿¼µãÍê³É
             printf("axis %u return ref over\n", phy_axis);
             this->SetRetRefFlag(phy_axis, true);
-            this->m_p_pmc_reg->FReg().bits[0].in_ref_point |= (0x01<<phy_axis);   //ç½®ä½åˆ°å‚è€ƒç‚¹æ ‡å¿—
+            this->m_p_pmc_reg->FReg().bits[0].in_ref_point |= (0x01<<phy_axis);   //ÖÃÎ»µ½²Î¿¼µã±êÖ¾
 //			printf("return ref over flag : 0x%llx, 0x%hhx, 0x%hhx, 0x%hhx, 0x%hhx, 0x%hhx, 0x%hhx, 0x%hhx, 0x%hhx\n", this->m_p_pmc_reg->FReg().bits[0].in_ref_point,
 //					m_p_pmc_reg->FReg().all[200], m_p_pmc_reg->FReg().all[201], m_p_pmc_reg->FReg().all[202], m_p_pmc_reg->FReg().all[203],
 //					m_p_pmc_reg->FReg().all[204], m_p_pmc_reg->FReg().all[205], m_p_pmc_reg->FReg().all[206], m_p_pmc_reg->FReg().all[207]);
@@ -9372,7 +9372,7 @@ void ChannelEngine::AxisFindRefNoZeroSignal(uint8_t phy_axis){
 
 
             break;
-        case 20: //å¤±è´¥å¤„ç†
+        case 20: //Ê§°Ü´¦Àí
             this->m_n_mask_ret_ref &= ~(0x01<<phy_axis);
             m_n_ret_ref_step[phy_axis] = 0;
 
@@ -9390,27 +9390,27 @@ void ChannelEngine::AxisFindRefNoZeroSignal(uint8_t phy_axis){
 }
 
 /**
- * @brief è„‰å†²è¾“å‡ºæœ‰åŸºå‡†è½´å›å‚è€ƒç‚¹
+ * @brief Âö³åÊä³öÓĞ»ù×¼Öá»Ø²Î¿¼µã
  */
 void ChannelEngine::PulseAxisFindRefWithZeroSignal(uint8_t phy_axis){
 
-    int8_t dir = 0, dir_opt;   //å›å‚è€ƒç‚¹æ–¹å‘
-//	uint8_t ret_mode = 0;   //å›å‚è€ƒç‚¹æ–¹å¼
+    int8_t dir = 0, dir_opt;   //»Ø²Î¿¼µã·½Ïò
+//	uint8_t ret_mode = 0;   //»Ø²Î¿¼µã·½Ê½
     uint8_t chn = 0, chn_axis = 0;
-    double dis = 0;      //ç§»åŠ¨è·ç¦»
+    double dis = 0;      //ÒÆ¶¯¾àÀë
     static double ret_ref_record_pos[kMaxAxisNum];
 
 //	ret_mode = m_p_axis_config[phy_axis].ret_ref_mode;
-    dir = this->m_p_axis_config[phy_axis].ret_ref_dir?DIR_POSITIVE:DIR_NEGATIVE;  // å›å‚è€ƒç‚¹æ‰¾ç²—åŸºå‡†æ–¹å‘
-    dir_opt = (m_p_axis_config[phy_axis].ret_ref_change_dir==0)?dir*-1:dir;       //å›å‚è€ƒç‚¹æ‰¾ç²¾åŸºå‡†æ–¹å‘
+    dir = this->m_p_axis_config[phy_axis].ret_ref_dir?DIR_POSITIVE:DIR_NEGATIVE;  // »Ø²Î¿¼µãÕÒ´Ö»ù×¼·½Ïò
+    dir_opt = (m_p_axis_config[phy_axis].ret_ref_change_dir==0)?dir*-1:dir;       //»Ø²Î¿¼µãÕÒ¾«»ù×¼·½Ïò
 
     switch(this->m_n_ret_ref_step[phy_axis]){
-        case 0://æ£€æŸ¥åŸç‚¹ä¿¡å·
+        case 0://¼ì²éÔ­µãĞÅºÅ
             printf("return ref step 0, dir = %hhd, dir_opt=%hhd\n", dir, dir_opt);
-            this->SetRetRefFlag(phy_axis, false);   //å¤ä½å›å‚è€ƒç‚¹å®Œæˆæ ‡å¿—
+            this->SetRetRefFlag(phy_axis, false);   //¸´Î»»Ø²Î¿¼µãÍê³É±êÖ¾
             this->m_p_pmc_reg->FReg().bits[0].in_ref_point &= ~(0x01<<phy_axis);
 
-            if(this->CheckAxisRefBaseSignal(phy_axis, dir)){  // å·²ç»è§¦å‘ç²—åŸºå‡†ä¿¡å·ï¼Œç›´æ¥å¼€å¼€å§‹å›é€€
+            if(this->CheckAxisRefBaseSignal(phy_axis, dir)){  // ÒÑ¾­´¥·¢´Ö»ù×¼ĞÅºÅ£¬Ö±½Ó¿ª¿ªÊ¼»ØÍË
                 double move_length = this->m_p_axis_config[phy_axis].move_pr*1.2;
                 if(move_length>5.0) {
                     move_length = 5.0;
@@ -9429,7 +9429,7 @@ void ChannelEngine::PulseAxisFindRefWithZeroSignal(uint8_t phy_axis){
             }
 
             break;
-        case 1:{//ç­‰å¾…å›é€€åˆ°ä½ï¼Œå¹¶å†æ¬¡æ£€æŸ¥åŸç‚¹ä¿¡å·
+        case 1:{//µÈ´ı»ØÍËµ½Î»£¬²¢ÔÙ´Î¼ì²éÔ­µãĞÅºÅ
             printf("return ref step 1\n");
             chn = this->GetAxisChannel(phy_axis, chn_axis);
             bool flag = CheckAxisRefBaseSignal(phy_axis, dir);
@@ -9441,79 +9441,79 @@ void ChannelEngine::PulseAxisFindRefWithZeroSignal(uint8_t phy_axis){
                         break;
                     }
                     else{
-                        m_n_ret_ref_step[phy_axis] = 2;  //è·³è½¬ä¸‹ä¸€æ­¥
+                        m_n_ret_ref_step[phy_axis] = 2;  //Ìø×ªÏÂÒ»²½
                     }
                 }
 
-            }else if(this->m_p_axis_config[phy_axis].axis_pmc){  //PMCè½´åˆ°ä½
+            }else if(this->m_p_axis_config[phy_axis].axis_pmc){  //PMCÖáµ½Î»
                 if(this->m_n_run_axis_mask == 0 || (this->m_n_runover_axis_mask & (0x01L<<phy_axis))){
                     if(true == flag){
                         m_n_ret_ref_step[phy_axis] = 0;
                         break;
                     }else{
-                            m_n_ret_ref_step[phy_axis] = 2;  //è·³è½¬ä¸‹ä¸€æ­¥
+                            m_n_ret_ref_step[phy_axis] = 2;  //Ìø×ªÏÂÒ»²½
                     }
                 }
             }
             }
             break;
-        case 2:  //ä»¥å›å‚è€ƒç‚¹é€Ÿåº¦å‘å›å‚è€ƒç‚¹æ–¹å‘è¿åŠ¨
+        case 2:  //ÒÔ»Ø²Î¿¼µãËÙ¶ÈÏò»Ø²Î¿¼µã·½ÏòÔË¶¯
     //		printf("return ref step 2\n");
             this->ManualMove(phy_axis, dir, this->m_p_axis_config[phy_axis].ret_ref_speed, 900.0);
-            m_n_ret_ref_step[phy_axis] = 3;  //è·³è½¬ä¸‹ä¸€æ­¥
+            m_n_ret_ref_step[phy_axis] = 3;  //Ìø×ªÏÂÒ»²½
             printf("return ref, goto step 3\n");
             break;
-        case 3:  //è§¦å‘ç²—åŸºå‡†ä¿¡å·ï¼Œåœæ­¢
+        case 3:  //´¥·¢´Ö»ù×¼ĞÅºÅ£¬Í£Ö¹
     //		printf("return ref step 3\n");
             if(this->CheckAxisRefBaseSignal(phy_axis, dir)){
                 this->ManualMoveStop(phy_axis);
-                gettimeofday(&this->m_time_ret_ref[phy_axis], NULL);   //è®°å½•èµ·å§‹æ—¶é—´
-                m_n_ret_ref_step[phy_axis] = 4;  //è·³è½¬ä¸‹ä¸€æ­¥
+                gettimeofday(&this->m_time_ret_ref[phy_axis], NULL);   //¼ÇÂ¼ÆğÊ¼Ê±¼ä
+                m_n_ret_ref_step[phy_axis] = 4;  //Ìø×ªÏÂÒ»²½
                 printf("return ref, goto step 4\n");
             }
             else{
                 this->ManualMove(phy_axis, dir, this->m_p_axis_config[phy_axis].ret_ref_speed,3.0);
             }
             break;
-        case 4:{//ç­‰å¾…åœæ­¢åˆ°ä½
+        case 4:{//µÈ´ıÍ£Ö¹µ½Î»
             struct timeval time_now;
             gettimeofday(&time_now, NULL);
             unsigned int time_elpase = (time_now.tv_sec-m_time_ret_ref[phy_axis].tv_sec)*1000000+time_now.tv_usec-m_time_ret_ref[phy_axis].tv_usec;
-            if(time_elpase >= 300000){ //å»¶æ—¶300ms
-                m_n_ret_ref_step[phy_axis] = 5;  //è·³è½¬ä¸‹ä¸€æ­¥
+            if(time_elpase >= 300000){ //ÑÓÊ±300ms
+                m_n_ret_ref_step[phy_axis] = 5;  //Ìø×ªÏÂÒ»²½
                 printf("return ref, goto step 5\n");
             }
         }
             break;
-        case 5:  //æœ‰åŸºå‡†ï¼Œ ä½é€Ÿå›é€€è‡³ç²—åŸºå‡†ä¿¡å·æ¶ˆå¤±,
+        case 5:  //ÓĞ»ù×¼£¬ µÍËÙ»ØÍËÖÁ´Ö»ù×¼ĞÅºÅÏûÊ§,
             printf("return ref step 5\n");
-            this->ManualMove(phy_axis, dir_opt, 100, this->m_p_axis_config[phy_axis].move_pr*2); //æœ‰åŸºå‡†ï¼Œ ä½é€Ÿå›é€€è‡³ç²—åŸºå‡†ä¿¡å·æ¶ˆå¤±, é€Ÿåº¦ï¼š100mm/min
-            m_n_ret_ref_step[phy_axis] = 6;  //è·³è½¬ä¸‹ä¸€æ­¥
+            this->ManualMove(phy_axis, dir_opt, 100, this->m_p_axis_config[phy_axis].move_pr*2); //ÓĞ»ù×¼£¬ µÍËÙ»ØÍËÖÁ´Ö»ù×¼ĞÅºÅÏûÊ§, ËÙ¶È£º100mm/min
+            m_n_ret_ref_step[phy_axis] = 6;  //Ìø×ªÏÂÒ»²½
             printf("return ref, goto step 6\n");
 
             break;
-        case 6:  //æœ‰åŸºå‡†ï¼Œç­‰å¾…ç²—åŸºå‡†ä¿¡å·æ¶ˆå¤±
+        case 6:  //ÓĞ»ù×¼£¬µÈ´ı´Ö»ù×¼ĞÅºÅÏûÊ§
         //	printf("return ref step 6\n");
             if(!this->CheckAxisRefBaseSignal(phy_axis, dir)){
                 this->ManualMoveStop(phy_axis);
 
-                gettimeofday(&this->m_time_ret_ref[phy_axis], NULL);   //è®°å½•èµ·å§‹æ—¶é—´ï¼Œå»¶æ—¶300ms
+                gettimeofday(&this->m_time_ret_ref[phy_axis], NULL);   //¼ÇÂ¼ÆğÊ¼Ê±¼ä£¬ÑÓÊ±300ms
 
-                m_n_ret_ref_step[phy_axis] = 7;  //è·³è½¬ä¸‹ä¸€æ­¥
+                m_n_ret_ref_step[phy_axis] = 7;  //Ìø×ªÏÂÒ»²½
             }
             break;
-        case 7:{ //ç­‰å¾…åœæ­¢åˆ°ä½
+        case 7:{ //µÈ´ıÍ£Ö¹µ½Î»
             struct timeval time_now;
             gettimeofday(&time_now, NULL);
             unsigned int time_elpase = (time_now.tv_sec-m_time_ret_ref[phy_axis].tv_sec)*1000000+time_now.tv_usec-m_time_ret_ref[phy_axis].tv_usec;
-            if(time_elpase >= 200000){ //å»¶æ—¶500ms
-//				m_n_get_cur_encoder_count = 0;  //å¤ä½è·å–å½“å‰ç¼–ç å™¨æ¬¡æ•°
-                m_n_ret_ref_step[phy_axis] = 8;  //è·³è½¬ä¸‹ä¸€æ­¥
+            if(time_elpase >= 200000){ //ÑÓÊ±500ms
+//				m_n_get_cur_encoder_count = 0;  //¸´Î»»ñÈ¡µ±Ç°±àÂëÆ÷´ÎÊı
+                m_n_ret_ref_step[phy_axis] = 8;  //Ìø×ªÏÂÒ»²½
                 printf("return ref, goto step 8\n");
             }
         }
             break;
-        case 8:{ //  å‘é€å¼€å§‹æ•è·ç²¾åŸºå‡†ä¿¡å·çš„å‘½ä»¤
+        case 8:{ //  ·¢ËÍ¿ªÊ¼²¶»ñ¾«»ù×¼ĞÅºÅµÄÃüÁî
             printf("return ref step 8: send cmd to mi, set ref point\n");
 
             MiCmdFrame cmd;
@@ -9522,13 +9522,13 @@ void ChannelEngine::PulseAxisFindRefWithZeroSignal(uint8_t phy_axis){
             cmd.data.cmd = CMD_MI_ACTIVE_Z_CAPT;
             this->m_p_mi_comm->WriteCmd(cmd);
 
-            m_n_ret_ref_step[phy_axis] = 9;  //è·³è½¬ä¸‹ä¸€æ­¥
+            m_n_ret_ref_step[phy_axis] = 9;  //Ìø×ªÏÂÒ»²½
             printf("return ref, goto step 9\n");
 
         }
             break;
 
-        case 9:{ //  ç¼“æ…¢ç§»åŠ¨ï¼Œå¹¶æ£€æµ‹ç²¾åŸºå‡†
+        case 9:{ //  »ºÂıÒÆ¶¯£¬²¢¼ì²â¾«»ù×¼
             printf("return ref step 9: move to index pos\n");
 
             double move_length = this->m_p_axis_config[phy_axis].move_pr*1.2;
@@ -9536,7 +9536,7 @@ void ChannelEngine::PulseAxisFindRefWithZeroSignal(uint8_t phy_axis){
             this->ManualMove(phy_axis, dir_opt,
                         this->m_p_axis_config[phy_axis].ret_ref_speed, move_length);
 
-            m_n_ret_ref_step[phy_axis] = 10;  //è·³è½¬ä¸‹ä¸€æ­¥
+            m_n_ret_ref_step[phy_axis] = 10;  //Ìø×ªÏÂÒ»²½
             printf("return ref, goto step 10\n");
 
         }
@@ -9545,7 +9545,7 @@ void ChannelEngine::PulseAxisFindRefWithZeroSignal(uint8_t phy_axis){
         case 10:{
             printf("return ref step 1\n");
             chn = this->GetAxisChannel(phy_axis, chn_axis);
-            bool flag = CheckAxisRefBaseSignal(phy_axis, dir);  // æŸ¥è¯¢æ˜¯å¦å·²ç»æ•è·åˆ°ç²¾åŸºå‡†    ?????????????????????????
+            bool flag = CheckAxisRefBaseSignal(phy_axis, dir);  // ²éÑ¯ÊÇ·ñÒÑ¾­²¶»ñµ½¾«»ù×¼    ?????????????????????????
 
             if(chn != CHANNEL_ENGINE_INDEX){
                 if(fabs(this->GetPhyAxisMachPosFeedback(phy_axis) - ret_ref_record_pos[phy_axis]) <= 0.010){
@@ -9560,7 +9560,7 @@ void ChannelEngine::PulseAxisFindRefWithZeroSignal(uint8_t phy_axis){
                     m_n_ret_ref_step[phy_axis] = 11;
                 }
 
-            }else if(this->m_p_axis_config[phy_axis].axis_pmc){  //PMCè½´åˆ°ä½
+            }else if(this->m_p_axis_config[phy_axis].axis_pmc){  //PMCÖáµ½Î»
                 if(this->m_n_run_axis_mask == 0 || (this->m_n_runover_axis_mask & (0x01L<<phy_axis))){
                     if(false == flag){
                         m_n_ret_ref_step[phy_axis] = 20;
@@ -9568,7 +9568,7 @@ void ChannelEngine::PulseAxisFindRefWithZeroSignal(uint8_t phy_axis){
                     }else{
                         this->ManualMoveStop(phy_axis);
                         gettimeofday(&this->m_time_ret_ref[phy_axis], NULL);
-                        m_n_ret_ref_step[phy_axis] = 11;  //è·³è½¬ä¸‹ä¸€æ­¥
+                        m_n_ret_ref_step[phy_axis] = 11;  //Ìø×ªÏÂÒ»²½
                     }
                 }
             }
@@ -9576,25 +9576,25 @@ void ChannelEngine::PulseAxisFindRefWithZeroSignal(uint8_t phy_axis){
             break;
 
 
-        case 11: { //ç­‰å¾…è®¾ç½®å‚è€ƒç‚¹å®Œæˆï¼Œåœ¨MiæŒ‡ä»¤å“åº”å¤„ç†å‡½æ•°ä¸­å¤„ç†
+        case 11: { //µÈ´ıÉèÖÃ²Î¿¼µãÍê³É£¬ÔÚMiÖ¸ÁîÏìÓ¦´¦Àíº¯ÊıÖĞ´¦Àí
             struct timeval time_now;
             gettimeofday(&time_now, NULL);
             unsigned int time_elpase = (time_now.tv_sec-m_time_ret_ref[phy_axis].tv_sec)*1000000+time_now.tv_usec-m_time_ret_ref[phy_axis].tv_usec;
-            if(time_elpase >= 200000){ //å»¶æ—¶200ms
-                m_n_ret_ref_step[phy_axis] = 12;  //è·³è½¬ä¸‹ä¸€æ­¥
+            if(time_elpase >= 200000){ //ÑÓÊ±200ms
+                m_n_ret_ref_step[phy_axis] = 12;  //Ìø×ªÏÂÒ»²½
                 printf("return ref, goto step 12\n");
             }
             }
             break;
 
-        case 12:       // è®¾ç½®åŸºå‡†
+        case 12:       // ÉèÖÃ»ù×¼
             MiCmdFrame cmd;
             memset(&cmd, 0x00, sizeof(cmd));
             cmd.data.axis_index = phy_axis+1;
             cmd.data.cmd = CMD_MI_SET_REF;
             this->m_p_mi_comm->WriteCmd(cmd);
             gettimeofday(&this->m_time_ret_ref[phy_axis], NULL);
-            m_n_ret_ref_step[phy_axis] = 13;  //è·³è½¬ä¸‹ä¸€æ­¥
+            m_n_ret_ref_step[phy_axis] = 13;  //Ìø×ªÏÂÒ»²½
 
             break;
 
@@ -9602,38 +9602,38 @@ void ChannelEngine::PulseAxisFindRefWithZeroSignal(uint8_t phy_axis){
             struct timeval time_now;
             gettimeofday(&time_now, NULL);
             unsigned int time_elpase = (time_now.tv_sec-m_time_ret_ref[phy_axis].tv_sec)*1000000+time_now.tv_usec-m_time_ret_ref[phy_axis].tv_usec;
-            if(time_elpase >= 100000){ //å»¶æ—¶100ms
-                m_n_ret_ref_step[phy_axis] = 14;  //è·³è½¬ä¸‹ä¸€æ­¥
+            if(time_elpase >= 100000){ //ÑÓÊ±100ms
+                m_n_ret_ref_step[phy_axis] = 14;  //Ìø×ªÏÂÒ»²½
                 printf("return ref, goto step 14\n");
             }
             }
 
             break;
-        case 14: //ç­‰å¾…è®¾ç½®å®Œæˆï¼Œç§»åŠ¨åˆ°è½´å‚è€ƒç‚¹1
+        case 14: //µÈ´ıÉèÖÃÍê³É£¬ÒÆ¶¯µ½Öá²Î¿¼µã1
 #ifdef USES_RET_REF_TO_MACH_ZERO
-            dis = 0;   //æœºæ¢°é›¶
+            dis = 0;   //»úĞµÁã
 #else
-            dis = this->m_p_axis_config[phy_axis].axis_home_pos[0];   // åŸç‚¹åæ ‡
+            dis = this->m_p_axis_config[phy_axis].axis_home_pos[0];   // Ô­µã×ø±ê
 #endif
             this->ManualMove(phy_axis, dis, m_p_axis_config[phy_axis].ret_ref_speed, 0);
-            m_n_ret_ref_step[phy_axis] = 15;  //è·³è½¬ä¸‹ä¸€æ­¥
+            m_n_ret_ref_step[phy_axis] = 15;  //Ìø×ªÏÂÒ»²½
             printf("return ref, goto step 15\n");
             break;
 
-        case 15:  //ç­‰å¾…è½´ç§»åŠ¨åˆ°ä½,å®Œæˆï¼
+        case 15:  //µÈ´ıÖáÒÆ¶¯µ½Î»,Íê³É£¡
 #ifdef USES_RET_REF_TO_MACH_ZERO
             dis = 0;
 #else
             dis = m_p_axis_config[phy_axis].axis_home_pos[0];
 #endif
-            if(fabs(this->GetPhyAxisMachPosFeedback(phy_axis)- dis) <= 0.010){  //åˆ°ä½
-                m_n_ret_ref_step[phy_axis] = 16;  //è·³è½¬ä¸‹ä¸€æ­¥
+            if(fabs(this->GetPhyAxisMachPosFeedback(phy_axis)- dis) <= 0.010){  //µ½Î»
+                m_n_ret_ref_step[phy_axis] = 16;  //Ìø×ªÏÂÒ»²½
             }
             break;
-        case 16:  //å›å‚è€ƒç‚¹å®Œæˆ
+        case 16:  //»Ø²Î¿¼µãÍê³É
             printf("axis %u return ref over\n", phy_axis);
             this->SetRetRefFlag(phy_axis, true);
-            this->m_p_pmc_reg->FReg().bits[0].in_ref_point |= (0x01<<phy_axis);   //ç½®ä½åˆ°å‚è€ƒç‚¹æ ‡å¿—
+            this->m_p_pmc_reg->FReg().bits[0].in_ref_point |= (0x01<<phy_axis);   //ÖÃÎ»µ½²Î¿¼µã±êÖ¾
 //			printf("return ref over flag : 0x%llx, 0x%hhx, 0x%hhx, 0x%hhx, 0x%hhx, 0x%hhx, 0x%hhx, 0x%hhx, 0x%hhx\n", this->m_p_pmc_reg->FReg().bits[0].in_ref_point,
 //					m_p_pmc_reg->FReg().all[200], m_p_pmc_reg->FReg().all[201], m_p_pmc_reg->FReg().all[202], m_p_pmc_reg->FReg().all[203],
 //					m_p_pmc_reg->FReg().all[204], m_p_pmc_reg->FReg().all[205], m_p_pmc_reg->FReg().all[206], m_p_pmc_reg->FReg().all[207]);
@@ -9641,7 +9641,7 @@ void ChannelEngine::PulseAxisFindRefWithZeroSignal(uint8_t phy_axis){
             m_n_ret_ref_step[phy_axis] = 0;
             break;
 
-        case 20: //å¤±è´¥å¤„ç†
+        case 20: //Ê§°Ü´¦Àí
             this->m_n_mask_ret_ref &= ~(0x01<<phy_axis);
             m_n_ret_ref_step[phy_axis] = 0;
 
@@ -9660,24 +9660,24 @@ void ChannelEngine::PulseAxisFindRefWithZeroSignal(uint8_t phy_axis){
 
 
 /**
- * @brief è„‰å†²è¾“å‡ºæ— åŸºå‡†è½´å›å‚è€ƒç‚¹
+ * @brief Âö³åÊä³öÎŞ»ù×¼Öá»Ø²Î¿¼µã
  */
 void ChannelEngine::PulseAxisFindRefNoZeroSignal(uint8_t phy_axis){
 
-    int8_t dir = 0, dir_opt;   //å›å‚è€ƒç‚¹æ–¹å‘
-//	uint8_t ret_mode = 0;   //å›å‚è€ƒç‚¹æ–¹å¼
+    int8_t dir = 0, dir_opt;   //»Ø²Î¿¼µã·½Ïò
+//	uint8_t ret_mode = 0;   //»Ø²Î¿¼µã·½Ê½
     uint8_t chn = 0, chn_axis = 0;
-    double dis = 0;      //ç§»åŠ¨è·ç¦»
+    double dis = 0;      //ÒÆ¶¯¾àÀë
     static double ret_ref_record_pos[kMaxAxisNum];
 
 //	ret_mode = m_p_axis_config[phy_axis].ret_ref_mode;
-    dir = this->m_p_axis_config[phy_axis].ret_ref_dir?DIR_POSITIVE:DIR_NEGATIVE;  // å›å‚è€ƒç‚¹æ‰¾ç²—åŸºå‡†æ–¹å‘
-    dir_opt = (m_p_axis_config[phy_axis].ret_ref_change_dir==0)?dir*-1:dir;       //å›å‚è€ƒç‚¹æ‰¾ç²¾åŸºå‡†æ–¹å‘
+    dir = this->m_p_axis_config[phy_axis].ret_ref_dir?DIR_POSITIVE:DIR_NEGATIVE;  // »Ø²Î¿¼µãÕÒ´Ö»ù×¼·½Ïò
+    dir_opt = (m_p_axis_config[phy_axis].ret_ref_change_dir==0)?dir*-1:dir;       //»Ø²Î¿¼µãÕÒ¾«»ù×¼·½Ïò
 
     switch(this->m_n_ret_ref_step[phy_axis]){
-        case 0: {//å‘ç²¾åŸºå‡†å¼€å§‹ç§»åŠ¨
+        case 0: {//Ïò¾«»ù×¼¿ªÊ¼ÒÆ¶¯
             printf("return ref step 0, dir = %hhd, dir_opt=%hhd\n", dir, dir_opt);
-            this->SetRetRefFlag(phy_axis, false);   //å¤ä½å›å‚è€ƒç‚¹å®Œæˆæ ‡å¿—
+            this->SetRetRefFlag(phy_axis, false);   //¸´Î»»Ø²Î¿¼µãÍê³É±êÖ¾
             this->m_p_pmc_reg->FReg().bits[0].in_ref_point &= ~(0x01<<phy_axis);
 
             double move_length = this->m_p_axis_config[phy_axis].move_pr*1.2;
@@ -9688,7 +9688,7 @@ void ChannelEngine::PulseAxisFindRefNoZeroSignal(uint8_t phy_axis){
             m_n_ret_ref_step[phy_axis] = 2;
             }
             break;
-        case 2:{ //  å‘é€å¼€å§‹æ•è·ç²¾åŸºå‡†ä¿¡å·çš„å‘½ä»¤
+        case 2:{ //  ·¢ËÍ¿ªÊ¼²¶»ñ¾«»ù×¼ĞÅºÅµÄÃüÁî
             printf("return ref step 2: send cmd to mi, set ref point\n");
 
             MiCmdFrame cmd;
@@ -9697,15 +9697,15 @@ void ChannelEngine::PulseAxisFindRefNoZeroSignal(uint8_t phy_axis){
             cmd.data.cmd = CMD_MI_ACTIVE_Z_CAPT;
             this->m_p_mi_comm->WriteCmd(cmd);
 
-            gettimeofday(&this->m_time_ret_ref[phy_axis], NULL);   //è®°å½•èµ·å§‹æ—¶é—´ï¼Œå»¶æ—¶300ms
+            gettimeofday(&this->m_time_ret_ref[phy_axis], NULL);   //¼ÇÂ¼ÆğÊ¼Ê±¼ä£¬ÑÓÊ±300ms
 
-            m_n_ret_ref_step[phy_axis] = 3;  //è·³è½¬ä¸‹ä¸€æ­¥
+            m_n_ret_ref_step[phy_axis] = 3;  //Ìø×ªÏÂÒ»²½
             printf("return ref, goto step 3\n");
 
         }
             break;
 
-        case 3:{ //  ç¼“æ…¢ç§»åŠ¨ï¼Œå¹¶æ£€æµ‹ç²¾åŸºå‡†
+        case 3:{ //  »ºÂıÒÆ¶¯£¬²¢¼ì²â¾«»ù×¼
             printf("return ref step 3: move to index pos\n");
 
             double move_length = this->m_p_axis_config[phy_axis].move_pr*1.2;
@@ -9713,7 +9713,7 @@ void ChannelEngine::PulseAxisFindRefNoZeroSignal(uint8_t phy_axis){
             this->ManualMove(phy_axis, dir_opt,
                         this->m_p_axis_config[phy_axis].ret_ref_speed, move_length);
 
-            m_n_ret_ref_step[phy_axis] = 4;  //è·³è½¬ä¸‹ä¸€æ­¥
+            m_n_ret_ref_step[phy_axis] = 4;  //Ìø×ªÏÂÒ»²½
             printf("return ref, goto step 4\n");
 
         }
@@ -9722,7 +9722,7 @@ void ChannelEngine::PulseAxisFindRefNoZeroSignal(uint8_t phy_axis){
         case 4:{
             printf("return ref step 4\n");
             chn = this->GetAxisChannel(phy_axis, chn_axis);
-            bool flag = CheckAxisRefBaseSignal(phy_axis, dir);  // æŸ¥è¯¢æ˜¯å¦å·²ç»æ•è·åˆ°ç²¾åŸºå‡†    ?????????????????????????
+            bool flag = CheckAxisRefBaseSignal(phy_axis, dir);  // ²éÑ¯ÊÇ·ñÒÑ¾­²¶»ñµ½¾«»ù×¼    ?????????????????????????
 
             if(chn != CHANNEL_ENGINE_INDEX){
                 if(fabs(this->GetPhyAxisMachPosFeedback(phy_axis) - ret_ref_record_pos[phy_axis]) <= 0.010){
@@ -9737,7 +9737,7 @@ void ChannelEngine::PulseAxisFindRefNoZeroSignal(uint8_t phy_axis){
                     m_n_ret_ref_step[phy_axis] = 5;
                 }
 
-            }else if(this->m_p_axis_config[phy_axis].axis_pmc){  //PMCè½´åˆ°ä½
+            }else if(this->m_p_axis_config[phy_axis].axis_pmc){  //PMCÖáµ½Î»
                 if(this->m_n_run_axis_mask == 0 || (this->m_n_runover_axis_mask & (0x01L<<phy_axis))){
                     if(false == flag){
                         m_n_ret_ref_step[phy_axis] = 20;
@@ -9745,7 +9745,7 @@ void ChannelEngine::PulseAxisFindRefNoZeroSignal(uint8_t phy_axis){
                     }else{
                             this->ManualMoveStop(phy_axis);
                             gettimeofday(&this->m_time_ret_ref[phy_axis], NULL);
-                            m_n_ret_ref_step[phy_axis] = 5;  //è·³è½¬ä¸‹ä¸€æ­¥
+                            m_n_ret_ref_step[phy_axis] = 5;  //Ìø×ªÏÂÒ»²½
                     }
                 }
             }
@@ -9753,25 +9753,25 @@ void ChannelEngine::PulseAxisFindRefNoZeroSignal(uint8_t phy_axis){
             break;
 
 
-        case 5: { //ç­‰å¾…è®¾ç½®å‚è€ƒç‚¹å®Œæˆï¼Œåœ¨MiæŒ‡ä»¤å“åº”å¤„ç†å‡½æ•°ä¸­å¤„ç†
+        case 5: { //µÈ´ıÉèÖÃ²Î¿¼µãÍê³É£¬ÔÚMiÖ¸ÁîÏìÓ¦´¦Àíº¯ÊıÖĞ´¦Àí
             struct timeval time_now;
             gettimeofday(&time_now, NULL);
             unsigned int time_elpase = (time_now.tv_sec-m_time_ret_ref[phy_axis].tv_sec)*1000000+time_now.tv_usec-m_time_ret_ref[phy_axis].tv_usec;
-            if(time_elpase >= 200000){ //å»¶æ—¶200ms
-                m_n_ret_ref_step[phy_axis] = 6;  //è·³è½¬ä¸‹ä¸€æ­¥
+            if(time_elpase >= 200000){ //ÑÓÊ±200ms
+                m_n_ret_ref_step[phy_axis] = 6;  //Ìø×ªÏÂÒ»²½
                 printf("return ref, goto step 6\n");
             }
             }
             break;
 
-        case 6:       // è®¾ç½®åŸºå‡†
+        case 6:       // ÉèÖÃ»ù×¼
             MiCmdFrame cmd;
             memset(&cmd, 0x00, sizeof(cmd));
             cmd.data.axis_index = phy_axis+1;
             cmd.data.cmd = CMD_MI_SET_REF;
             this->m_p_mi_comm->WriteCmd(cmd);
             gettimeofday(&this->m_time_ret_ref[phy_axis], NULL);
-            m_n_ret_ref_step[phy_axis] = 7;  //è·³è½¬ä¸‹ä¸€æ­¥
+            m_n_ret_ref_step[phy_axis] = 7;  //Ìø×ªÏÂÒ»²½
 
             break;
 
@@ -9779,38 +9779,38 @@ void ChannelEngine::PulseAxisFindRefNoZeroSignal(uint8_t phy_axis){
             struct timeval time_now;
             gettimeofday(&time_now, NULL);
             unsigned int time_elpase = (time_now.tv_sec-m_time_ret_ref[phy_axis].tv_sec)*1000000+time_now.tv_usec-m_time_ret_ref[phy_axis].tv_usec;
-            if(time_elpase >= 100000){ //å»¶æ—¶100ms
-                m_n_ret_ref_step[phy_axis] = 8;  //è·³è½¬ä¸‹ä¸€æ­¥
+            if(time_elpase >= 100000){ //ÑÓÊ±100ms
+                m_n_ret_ref_step[phy_axis] = 8;  //Ìø×ªÏÂÒ»²½
                 printf("return ref, goto step 8\n");
             }
             }
             break;
 
-        case 8: //ç­‰å¾…è®¾ç½®å®Œæˆï¼Œç§»åŠ¨åˆ°è½´å‚è€ƒç‚¹1
+        case 8: //µÈ´ıÉèÖÃÍê³É£¬ÒÆ¶¯µ½Öá²Î¿¼µã1
 #ifdef USES_RET_REF_TO_MACH_ZERO
-            dis = 0;    //æœºæ¢°é›¶
+            dis = 0;    //»úĞµÁã
 #else
-            dis = this->m_p_axis_config[phy_axis].axis_home_pos[0];   // åŸç‚¹åæ ‡
+            dis = this->m_p_axis_config[phy_axis].axis_home_pos[0];   // Ô­µã×ø±ê
 #endif
             this->ManualMove(phy_axis, dis, m_p_axis_config[phy_axis].ret_ref_speed, 0);
-            m_n_ret_ref_step[phy_axis] = 9;  //è·³è½¬ä¸‹ä¸€æ­¥
+            m_n_ret_ref_step[phy_axis] = 9;  //Ìø×ªÏÂÒ»²½
             printf("return ref, goto step 9\n");
             break;
 
-        case 9:  //ç­‰å¾…è½´ç§»åŠ¨åˆ°ä½,å®Œæˆï¼
+        case 9:  //µÈ´ıÖáÒÆ¶¯µ½Î»,Íê³É£¡
 #ifdef USES_RET_REF_TO_MACH_ZERO
-            dis = 0;    //æœºæ¢°é›¶
+            dis = 0;    //»úĞµÁã
 #else
-            dis = this->m_p_axis_config[phy_axis].axis_home_pos[0];   // åŸç‚¹åæ ‡
+            dis = this->m_p_axis_config[phy_axis].axis_home_pos[0];   // Ô­µã×ø±ê
 #endif
-            if(fabs(this->GetPhyAxisMachPosFeedback(phy_axis)- dis) <= 0.010){  //åˆ°ä½
-                m_n_ret_ref_step[phy_axis] = 10;  //è·³è½¬ä¸‹ä¸€æ­¥
+            if(fabs(this->GetPhyAxisMachPosFeedback(phy_axis)- dis) <= 0.010){  //µ½Î»
+                m_n_ret_ref_step[phy_axis] = 10;  //Ìø×ªÏÂÒ»²½
             }
             break;
-        case 11:  //å›å‚è€ƒç‚¹å®Œæˆ
+        case 11:  //»Ø²Î¿¼µãÍê³É
             printf("axis %u return ref over\n", phy_axis);
             this->SetRetRefFlag(phy_axis, true);
-            this->m_p_pmc_reg->FReg().bits[0].in_ref_point |= (0x01<<phy_axis);   //ç½®ä½åˆ°å‚è€ƒç‚¹æ ‡å¿—
+            this->m_p_pmc_reg->FReg().bits[0].in_ref_point |= (0x01<<phy_axis);   //ÖÃÎ»µ½²Î¿¼µã±êÖ¾
 //			printf("return ref over flag : 0x%llx, 0x%hhx, 0x%hhx, 0x%hhx, 0x%hhx, 0x%hhx, 0x%hhx, 0x%hhx, 0x%hhx\n", this->m_p_pmc_reg->FReg().bits[0].in_ref_point,
 //					m_p_pmc_reg->FReg().all[200], m_p_pmc_reg->FReg().all[201], m_p_pmc_reg->FReg().all[202], m_p_pmc_reg->FReg().all[203],
 //					m_p_pmc_reg->FReg().all[204], m_p_pmc_reg->FReg().all[205], m_p_pmc_reg->FReg().all[206], m_p_pmc_reg->FReg().all[207]);
@@ -9818,7 +9818,7 @@ void ChannelEngine::PulseAxisFindRefNoZeroSignal(uint8_t phy_axis){
             m_n_ret_ref_step[phy_axis] = 0;
             break;
 
-        case 20: //å¤±è´¥å¤„ç†
+        case 20: //Ê§°Ü´¦Àí
             this->m_n_mask_ret_ref &= ~(0x01<<phy_axis);
             m_n_ret_ref_step[phy_axis] = 0;
 
@@ -9837,27 +9837,27 @@ void ChannelEngine::PulseAxisFindRefNoZeroSignal(uint8_t phy_axis){
 
 
 /**
- * @brief  ethcatè½´æœ‰åŸºå‡†è½´å›å‚è€ƒç‚¹
+ * @brief  ethcatÖáÓĞ»ù×¼Öá»Ø²Î¿¼µã
  */
 void ChannelEngine::EcatAxisFindRefWithZeroSignal(uint8_t phy_axis){
 
-    int8_t dir = 0, dir_opt;   //å›å‚è€ƒç‚¹æ–¹å‘
-//	uint8_t ret_mode = 0;   //å›å‚è€ƒç‚¹æ–¹å¼
+    int8_t dir = 0, dir_opt;   //»Ø²Î¿¼µã·½Ïò
+//	uint8_t ret_mode = 0;   //»Ø²Î¿¼µã·½Ê½
     uint8_t chn = 0, chn_axis = 0;
-    double dis = 0;      //ç§»åŠ¨è·ç¦»
+    double dis = 0;      //ÒÆ¶¯¾àÀë
 //	static double ret_ref_start_pos[kMaxAxisNum];
 
 //	ret_mode = m_p_axis_config[phy_axis].ret_ref_mode;
-    dir = this->m_p_axis_config[phy_axis].ret_ref_dir?DIR_POSITIVE:DIR_NEGATIVE;  // å›å‚è€ƒç‚¹æ‰¾ç²—åŸºå‡†æ–¹å‘
-    dir_opt = (m_p_axis_config[phy_axis].ret_ref_change_dir==0)?dir*-1:dir;       //å›å‚è€ƒç‚¹æ‰¾ç²¾åŸºå‡†æ–¹å‘
+    dir = this->m_p_axis_config[phy_axis].ret_ref_dir?DIR_POSITIVE:DIR_NEGATIVE;  // »Ø²Î¿¼µãÕÒ´Ö»ù×¼·½Ïò
+    dir_opt = (m_p_axis_config[phy_axis].ret_ref_change_dir==0)?dir*-1:dir;       //»Ø²Î¿¼µãÕÒ¾«»ù×¼·½Ïò
 
     switch(this->m_n_ret_ref_step[phy_axis]){
-        case 0://æ£€æŸ¥åŸç‚¹ä¿¡å·
+        case 0://¼ì²éÔ­µãĞÅºÅ
             printf("return ref step 0, dir = %hhd, dir_opt=%hhd\n", dir, dir_opt);
-            this->SetRetRefFlag(phy_axis, false);   //å¤ä½å›å‚è€ƒç‚¹å®Œæˆæ ‡å¿—
+            this->SetRetRefFlag(phy_axis, false);   //¸´Î»»Ø²Î¿¼µãÍê³É±êÖ¾
             this->m_p_pmc_reg->FReg().bits[0].in_ref_point &= ~(0x01<<phy_axis);
 
-            if(this->CheckAxisRefBaseSignal(phy_axis, dir)){  // å·²ç»è§¦å‘ç²—åŸºå‡†ä¿¡å·ï¼Œç›´æ¥å¼€å¼€å§‹å›é€€
+            if(this->CheckAxisRefBaseSignal(phy_axis, dir)){  // ÒÑ¾­´¥·¢´Ö»ù×¼ĞÅºÅ£¬Ö±½Ó¿ª¿ªÊ¼»ØÍË
                 double move_length = this->m_p_axis_config[phy_axis].move_pr*1.2;
                 if(move_length>10.0) {
                     move_length = 10.0;
@@ -9876,46 +9876,46 @@ void ChannelEngine::EcatAxisFindRefWithZeroSignal(uint8_t phy_axis){
             }
 
             break;
-        case 1:{//ç­‰å¾…å›é€€åˆ°ä½ï¼Œå¹¶å†æ¬¡æ£€æŸ¥åŸç‚¹ä¿¡å·
+        case 1:{//µÈ´ı»ØÍËµ½Î»£¬²¢ÔÙ´Î¼ì²éÔ­µãĞÅºÅ
         //	printf("return ref step 1\n");
             chn = this->GetAxisChannel(phy_axis, chn_axis);
             bool flag = CheckAxisRefBaseSignal(phy_axis, dir);
 
             if(chn != CHANNEL_ENGINE_INDEX){
                 if(fabs(this->GetPhyAxisMachPosFeedback(phy_axis) - m_df_ret_ref_tar_pos[phy_axis]) <= 0.010){
-                    if(true == flag){   //å›åˆ°step0ï¼Œç»§ç»­å›é€€
+                    if(true == flag){   //»Øµ½step0£¬¼ÌĞø»ØÍË
                         m_n_ret_ref_step[phy_axis] = 0;
                         break;
                     }
                 }
                 if(flag == false){
-                        m_n_ret_ref_step[phy_axis] = 2;  //è·³è½¬ä¸‹ä¸€æ­¥
+                        m_n_ret_ref_step[phy_axis] = 2;  //Ìø×ªÏÂÒ»²½
                 }
 
-            }else if(this->m_p_axis_config[phy_axis].axis_pmc){  //PMCè½´åˆ°ä½
+            }else if(this->m_p_axis_config[phy_axis].axis_pmc){  //PMCÖáµ½Î»
                 if(this->m_n_run_axis_mask == 0 || (this->m_n_runover_axis_mask & (0x01L<<phy_axis))){
                     if(true == flag){
                         m_n_ret_ref_step[phy_axis] = 0;
                         break;
                     }else{
-                            m_n_ret_ref_step[phy_axis] = 2;  //è·³è½¬ä¸‹ä¸€æ­¥
+                            m_n_ret_ref_step[phy_axis] = 2;  //Ìø×ªÏÂÒ»²½
                     }
                 }
             }
             }
             break;
-        case 2:  //ä»¥å›å‚è€ƒç‚¹é€Ÿåº¦å‘å›å‚è€ƒç‚¹æ–¹å‘è¿åŠ¨
+        case 2:  //ÒÔ»Ø²Î¿¼µãËÙ¶ÈÏò»Ø²Î¿¼µã·½ÏòÔË¶¯
     //		printf("return ref step 2\n");
             this->ManualMove(phy_axis, dir, this->m_p_axis_config[phy_axis].ret_ref_speed, 90000.0);
-            m_n_ret_ref_step[phy_axis] = 3;  //è·³è½¬ä¸‹ä¸€æ­¥
+            m_n_ret_ref_step[phy_axis] = 3;  //Ìø×ªÏÂÒ»²½
             printf("return ref, goto step 3\n");
             break;
-        case 3:  //è§¦å‘ç²—åŸºå‡†ä¿¡å·ï¼Œåœæ­¢
+        case 3:  //´¥·¢´Ö»ù×¼ĞÅºÅ£¬Í£Ö¹
     //		printf("return ref step 3\n");
             if(this->CheckAxisRefBaseSignal(phy_axis, dir)){
                 this->ManualMoveStop(phy_axis);
-                gettimeofday(&this->m_time_ret_ref[phy_axis], NULL);   //è®°å½•èµ·å§‹æ—¶é—´
-                m_n_ret_ref_step[phy_axis] = 4;  //è·³è½¬ä¸‹ä¸€æ­¥
+                gettimeofday(&this->m_time_ret_ref[phy_axis], NULL);   //¼ÇÂ¼ÆğÊ¼Ê±¼ä
+                m_n_ret_ref_step[phy_axis] = 4;  //Ìø×ªÏÂÒ»²½
                 this->SendMonitorData(false, false);
                 printf("return ref, goto step 4, curpos=%lf\n", this->GetPhyAxisMachPosIntp(phy_axis));
             }
@@ -9923,18 +9923,18 @@ void ChannelEngine::EcatAxisFindRefWithZeroSignal(uint8_t phy_axis){
             //	this->ManualMove(phy_axis, dir, this->m_p_axis_config[phy_axis].ret_ref_speed,1.0);
             }
             break;
-        case 4:{//ç­‰å¾…åœæ­¢åˆ°ä½
+        case 4:{//µÈ´ıÍ£Ö¹µ½Î»
             struct timeval time_now;
             gettimeofday(&time_now, NULL);
             unsigned int time_elpase = (time_now.tv_sec-m_time_ret_ref[phy_axis].tv_sec)*1000000+time_now.tv_usec-m_time_ret_ref[phy_axis].tv_usec;
-            if(time_elpase >= 1000000){ //å»¶æ—¶1000ms
-                m_n_ret_ref_step[phy_axis] = 5;  //è·³è½¬ä¸‹ä¸€æ­¥
+            if(time_elpase >= 1000000){ //ÑÓÊ±1000ms
+                m_n_ret_ref_step[phy_axis] = 5;  //Ìø×ªÏÂÒ»²½
                 this->SendMonitorData(false, false);
                 printf("return ref, goto step 5, curpos = %lf, time=%u\n", this->GetPhyAxisMachPosIntp(phy_axis), time_elpase);
             }
         }
             break;
-        case 5:{  //æœ‰åŸºå‡†ï¼Œ ä½é€Ÿå›é€€è‡³ç²—åŸºå‡†ä¿¡å·æ¶ˆå¤±,
+        case 5:{  //ÓĞ»ù×¼£¬ µÍËÙ»ØÍËÖÁ´Ö»ù×¼ĞÅºÅÏûÊ§,
         //	printf("return ref step 5\n");
             double move_length = this->m_p_axis_config[phy_axis].move_pr*2;
             if(move_length>10.0) {
@@ -9943,42 +9943,42 @@ void ChannelEngine::EcatAxisFindRefWithZeroSignal(uint8_t phy_axis){
                 move_length = 1.0;
             }
             m_df_ret_ref_tar_pos[phy_axis] = this->GetPhyAxisMachPosFeedback(phy_axis)+move_length* dir_opt;
-            this->ManualMove(phy_axis, dir_opt, 60, move_length); //æœ‰åŸºå‡†ï¼Œ ä½é€Ÿå›é€€è‡³ç²—åŸºå‡†ä¿¡å·æ¶ˆå¤±, é€Ÿåº¦ï¼š60mm/min
-            m_n_ret_ref_step[phy_axis] = 6;  //è·³è½¬ä¸‹ä¸€æ­¥
+            this->ManualMove(phy_axis, dir_opt, 60, move_length); //ÓĞ»ù×¼£¬ µÍËÙ»ØÍËÖÁ´Ö»ù×¼ĞÅºÅÏûÊ§, ËÙ¶È£º60mm/min
+            m_n_ret_ref_step[phy_axis] = 6;  //Ìø×ªÏÂÒ»²½
             printf("return ref, goto step 6\n");
 
             break;
         }
-        case 6:  //æœ‰åŸºå‡†ï¼Œç­‰å¾…ç²—åŸºå‡†ä¿¡å·æ¶ˆå¤±
+        case 6:  //ÓĞ»ù×¼£¬µÈ´ı´Ö»ù×¼ĞÅºÅÏûÊ§
         //	printf("return ref step 6\n");
             if(!this->CheckAxisRefBaseSignal(phy_axis, dir)){
                 this->ManualMoveStop(phy_axis);
 
-                gettimeofday(&this->m_time_ret_ref[phy_axis], NULL);   //è®°å½•èµ·å§‹æ—¶é—´ï¼Œå»¶æ—¶600ms
+                gettimeofday(&this->m_time_ret_ref[phy_axis], NULL);   //¼ÇÂ¼ÆğÊ¼Ê±¼ä£¬ÑÓÊ±600ms
 
-                m_n_ret_ref_step[phy_axis] = 7;  //è·³è½¬ä¸‹ä¸€æ­¥
-            }else if(fabs(this->GetPhyAxisMachPosFeedback(phy_axis) - m_df_ret_ref_tar_pos[phy_axis]) <= 0.010){  //æ¥è¿‘ç›®æ ‡ä½ç½®ï¼Œç²—åŸºå‡†ä¿¡å·è¿˜åœ¨ï¼Œåˆ™ç»§ç»­å›é€€
-                m_n_ret_ref_step[phy_axis] = 5;  //è·³è½¬ç¬¬5æ­¥
+                m_n_ret_ref_step[phy_axis] = 7;  //Ìø×ªÏÂÒ»²½
+            }else if(fabs(this->GetPhyAxisMachPosFeedback(phy_axis) - m_df_ret_ref_tar_pos[phy_axis]) <= 0.010){  //½Ó½üÄ¿±êÎ»ÖÃ£¬´Ö»ù×¼ĞÅºÅ»¹ÔÚ£¬Ôò¼ÌĞø»ØÍË
+                m_n_ret_ref_step[phy_axis] = 5;  //Ìø×ªµÚ5²½
             }
             break;
-        case 7:{ //ç­‰å¾…åœæ­¢åˆ°ä½
+        case 7:{ //µÈ´ıÍ£Ö¹µ½Î»
             struct timeval time_now;
             gettimeofday(&time_now, NULL);
             unsigned int time_elpase = (time_now.tv_sec-m_time_ret_ref[phy_axis].tv_sec)*1000000+time_now.tv_usec-m_time_ret_ref[phy_axis].tv_usec;
-            if(time_elpase >= 600000){ //å»¶æ—¶600ms
-//				m_n_get_cur_encoder_count = 0;  //å¤ä½è·å–å½“å‰ç¼–ç å™¨æ¬¡æ•°
+            if(time_elpase >= 600000){ //ÑÓÊ±600ms
+//				m_n_get_cur_encoder_count = 0;  //¸´Î»»ñÈ¡µ±Ç°±àÂëÆ÷´ÎÊı
                 if(!this->CheckAxisRefBaseSignal(phy_axis, dir)){
-                    m_n_ret_ref_step[phy_axis] = 8;  //è·³è½¬ä¸‹ä¸€æ­¥
+                    m_n_ret_ref_step[phy_axis] = 8;  //Ìø×ªÏÂÒ»²½
                     printf("return ref, goto step 8\n");
-                }else{      //å¦‚æœåˆå‘ç°ç²—åŸºå‡†æœ‰ä¿¡å·ï¼Œåˆ™ç»§ç»­å›é€€
-                    m_n_ret_ref_step[phy_axis] = 5;  //å›è·³è‡³ç¬¬5æ­¥
+                }else{      //Èç¹ûÓÖ·¢ÏÖ´Ö»ù×¼ÓĞĞÅºÅ£¬Ôò¼ÌĞø»ØÍË
+                    m_n_ret_ref_step[phy_axis] = 5;  //»ØÌøÖÁµÚ5²½
                     printf("return ref, goto step 5\n");
                 }
 
             }
         }
             break;
-        case 8:{ // è®¾ç½®åŸç‚¹
+        case 8:{ // ÉèÖÃÔ­µã
     //		printf("return ref step 8: send cmd to mi, set ref point\n");
             MiCmdFrame cmd;
             memset(&cmd, 0x00, sizeof(cmd));
@@ -9986,42 +9986,42 @@ void ChannelEngine::EcatAxisFindRefWithZeroSignal(uint8_t phy_axis){
             cmd.data.cmd = CMD_MI_SET_REF_POINT;
 
 
-            uint16_t err = m_p_axis_config[phy_axis].ref_mark_err * 1e3;     //å•ä½è½¬æ¢ï¼Œ mm->um
-            cmd.data.data[0] = err;    //å‚è€ƒç‚¹åŸºå‡†è¯¯å·®
-            int64_t pos = m_p_axis_config[phy_axis].axis_home_pos[0]*1e7;   //å•ä½è½¬æ¢,0.1nm
+            uint16_t err = m_p_axis_config[phy_axis].ref_mark_err * 1e3;     //µ¥Î»×ª»»£¬ mm->um
+            cmd.data.data[0] = err;    //²Î¿¼µã»ù×¼Îó²î
+            int64_t pos = m_p_axis_config[phy_axis].axis_home_pos[0]*1e7;   //µ¥Î»×ª»»,0.1nm
             memcpy(&cmd.data.data[1], &pos, sizeof(int64_t));
             cmd.data.data[5] = this->m_p_axis_config[phy_axis].ref_signal;
             cmd.data.data[6] = this->m_p_axis_config[phy_axis].ret_ref_dir;
 
             this->m_p_mi_comm->WriteCmd(cmd);
-//			gettimeofday(&this->m_time_ret_ref[phy_axis], nullptr);   //è®°å½•èµ·å§‹æ—¶é—´ï¼Œå»¶æ—¶300ms
+//			gettimeofday(&this->m_time_ret_ref[phy_axis], nullptr);   //¼ÇÂ¼ÆğÊ¼Ê±¼ä£¬ÑÓÊ±300ms
 
-            m_n_ret_ref_step[phy_axis] = 9;  //è·³è½¬ä¸‹ä¸€æ­¥
+            m_n_ret_ref_step[phy_axis] = 9;  //Ìø×ªÏÂÒ»²½
             printf("return ref, goto step 9\n");
 
         }
             break;
-        case 9: //ç­‰å¾…è®¾ç½®å‚è€ƒç‚¹å®Œæˆï¼Œåœ¨MiæŒ‡ä»¤å“åº”å¤„ç†å‡½æ•°ä¸­å¤„ç†
+        case 9: //µÈ´ıÉèÖÃ²Î¿¼µãÍê³É£¬ÔÚMiÖ¸ÁîÏìÓ¦´¦Àíº¯ÊıÖĞ´¦Àí
 
             break;
-        case 10: //ç­‰å¾…è½´ç§»åŠ¨åˆ°ä½,å®Œæˆ
+        case 10: //µÈ´ıÖáÒÆ¶¯µ½Î»,Íê³É
 #ifdef USES_RET_REF_TO_MACH_ZERO
-            dis = 0;    //æœºæ¢°é›¶
+            dis = 0;    //»úĞµÁã
 #else
-            dis = this->m_p_axis_config[phy_axis].axis_home_pos[0];   // åŸç‚¹åæ ‡
+            dis = this->m_p_axis_config[phy_axis].axis_home_pos[0];   // Ô­µã×ø±ê
 #endif
-            this->SendMonitorData(false, false);  //å†æ¬¡è¯»å–å®æ—¶ä½ç½®
+            this->SendMonitorData(false, false);  //ÔÙ´Î¶ÁÈ¡ÊµÊ±Î»ÖÃ
 
-            if(fabs(this->GetPhyAxisMachPosFeedback(phy_axis)- dis) <= 0.010){  //åˆ°ä½
-                m_n_ret_ref_step[phy_axis] = 11;  //è·³è½¬ä¸‹ä¸€æ­¥
+            if(fabs(this->GetPhyAxisMachPosFeedback(phy_axis)- dis) <= 0.010){  //µ½Î»
+                m_n_ret_ref_step[phy_axis] = 11;  //Ìø×ªÏÂÒ»²½
             }
         //	printf("return ref, goto step 11\n");
             break;
-        case 11:  //å›å‚è€ƒç‚¹å®Œæˆ
+        case 11:  //»Ø²Î¿¼µãÍê³É
             printf("axis %u return ref over\n", phy_axis);
             if(this->m_p_axis_config[phy_axis].feedback_mode == ABSOLUTE_ENCODER_YASAKAWA ||
                 this->m_p_axis_config[phy_axis].feedback_mode == ABSOLUTE_ENCODER_PANASONIC ||
-                this->m_p_axis_config[phy_axis].feedback_mode == LINEAR_ENCODER){  //ç»å¯¹å€¼éœ€è·å–æœºæ¢°é›¶ç‚¹çš„ç¼–ç å™¨å€¼å¹¶ä¿å­˜ï¼Œæ–¹ä¾¿æ–­ç‚¹åæ¢å¤åæ ‡
+                this->m_p_axis_config[phy_axis].feedback_mode == LINEAR_ENCODER){  //¾ø¶ÔÖµĞè»ñÈ¡»úĞµÁãµãµÄ±àÂëÆ÷Öµ²¢±£´æ£¬·½±ã¶Ïµãºó»Ö¸´×ø±ê
                 MiCmdFrame mi_cmd;
                 memset(&mi_cmd, 0x00, sizeof(mi_cmd));
                 mi_cmd.data.cmd = CMD_MI_GET_ZERO_ENCODER;
@@ -10030,7 +10030,7 @@ void ChannelEngine::EcatAxisFindRefWithZeroSignal(uint8_t phy_axis){
                 this->m_p_mi_comm->WriteCmd(mi_cmd);
             }
             this->SetRetRefFlag(phy_axis, true);
-            this->m_p_pmc_reg->FReg().bits[0].in_ref_point |= (0x01<<phy_axis);   //ç½®ä½åˆ°å‚è€ƒç‚¹æ ‡å¿—
+            this->m_p_pmc_reg->FReg().bits[0].in_ref_point |= (0x01<<phy_axis);   //ÖÃÎ»µ½²Î¿¼µã±êÖ¾
 
 //			printf("return ref over flag : 0x%llx, 0x%hhx, 0x%hhx, 0x%hhx, 0x%hhx, 0x%hhx, 0x%hhx, 0x%hhx, 0x%hhx\n", this->m_p_pmc_reg->FReg().bits[0].in_ref_point,
 //					m_p_pmc_reg->FReg().all[200], m_p_pmc_reg->FReg().all[201], m_p_pmc_reg->FReg().all[202], m_p_pmc_reg->FReg().all[203],
@@ -10044,7 +10044,7 @@ void ChannelEngine::EcatAxisFindRefWithZeroSignal(uint8_t phy_axis){
                 m_n_ret_ref_auto_cur = 0;
             }
             break;
-        case 20: //å¤±è´¥å¤„ç†
+        case 20: //Ê§°Ü´¦Àí
             this->m_n_mask_ret_ref &= ~(0x01<<phy_axis);
             m_n_ret_ref_step[phy_axis] = 0;
 
@@ -10062,27 +10062,27 @@ void ChannelEngine::EcatAxisFindRefWithZeroSignal(uint8_t phy_axis){
 }
 
 /**
- * @brief ethcatè½´æœ‰åŸºå‡†å›å‚è€ƒç‚¹ï¼Œç²—åŸºå‡†ä¸ç²¾åŸºå‡†å‡ä¸ºIOä¿¡å·ï¼Œç›´çº¿ç”µæœº
+ * @brief ethcatÖáÓĞ»ù×¼»Ø²Î¿¼µã£¬´Ö»ù×¼Óë¾«»ù×¼¾ùÎªIOĞÅºÅ£¬Ö±Ïßµç»ú
  * @param phy_axis
  */
 void ChannelEngine::EcatAxisFindRefWithZeroSignal2(uint8_t phy_axis){
-    int8_t dir = 0, dir_opt;   //å›å‚è€ƒç‚¹æ–¹å‘
-//	uint8_t ret_mode = 0;   //å›å‚è€ƒç‚¹æ–¹å¼
+    int8_t dir = 0, dir_opt;   //»Ø²Î¿¼µã·½Ïò
+//	uint8_t ret_mode = 0;   //»Ø²Î¿¼µã·½Ê½
     uint8_t chn = 0, chn_axis = 0;
-//	double dis = 0;      //ç§»åŠ¨è·ç¦»
+//	double dis = 0;      //ÒÆ¶¯¾àÀë
 //	static double ret_ref_start_pos[kMaxAxisNum];
 
 //	ret_mode = m_p_axis_config[phy_axis].ret_ref_mode;
-    dir = this->m_p_axis_config[phy_axis].ret_ref_dir?DIR_POSITIVE:DIR_NEGATIVE;  // å›å‚è€ƒç‚¹æ‰¾ç²—åŸºå‡†æ–¹å‘
-    dir_opt = (m_p_axis_config[phy_axis].ret_ref_change_dir==0)?dir*-1:dir;       //å›å‚è€ƒç‚¹æ‰¾ç²¾åŸºå‡†æ–¹å‘
+    dir = this->m_p_axis_config[phy_axis].ret_ref_dir?DIR_POSITIVE:DIR_NEGATIVE;  // »Ø²Î¿¼µãÕÒ´Ö»ù×¼·½Ïò
+    dir_opt = (m_p_axis_config[phy_axis].ret_ref_change_dir==0)?dir*-1:dir;       //»Ø²Î¿¼µãÕÒ¾«»ù×¼·½Ïò
 
     switch(this->m_n_ret_ref_step[phy_axis]){
-        case 0://æ£€æŸ¥åŸç‚¹ä¿¡å·
+        case 0://¼ì²éÔ­µãĞÅºÅ
             printf("return ref step 0, dir = %hhd, dir_opt=%hhd\n", dir, dir_opt);
-            this->SetRetRefFlag(phy_axis, false);   //å¤ä½å›å‚è€ƒç‚¹å®Œæˆæ ‡å¿—
+            this->SetRetRefFlag(phy_axis, false);   //¸´Î»»Ø²Î¿¼µãÍê³É±êÖ¾
             this->m_p_pmc_reg->FReg().bits[0].in_ref_point &= ~(0x01<<phy_axis);
 
-            if(this->CheckAxisRefBaseSignal(phy_axis, dir)){  // å·²ç»è§¦å‘ç²—åŸºå‡†ä¿¡å·ï¼Œç›´æ¥å¼€å§‹å›é€€
+            if(this->CheckAxisRefBaseSignal(phy_axis, dir)){  // ÒÑ¾­´¥·¢´Ö»ù×¼ĞÅºÅ£¬Ö±½Ó¿ªÊ¼»ØÍË
                 double move_length = this->m_p_axis_config[phy_axis].move_pr*1.2;
                 if(move_length>10.0){
                     move_length = 10.0;
@@ -10100,7 +10100,7 @@ void ChannelEngine::EcatAxisFindRefWithZeroSignal2(uint8_t phy_axis){
             }
 
             break;
-        case 1:{//ç­‰å¾…å›é€€åˆ°ä½ï¼Œå¹¶å†æ¬¡æ£€æŸ¥åŸç‚¹ä¿¡å·
+        case 1:{//µÈ´ı»ØÍËµ½Î»£¬²¢ÔÙ´Î¼ì²éÔ­µãĞÅºÅ
             printf("return ref step 1\n");
             chn = this->GetAxisChannel(phy_axis, chn_axis);
             bool flag = CheckAxisRefBaseSignal(phy_axis, dir);
@@ -10113,114 +10113,114 @@ void ChannelEngine::EcatAxisFindRefWithZeroSignal2(uint8_t phy_axis){
                     }
                 }
                 if(flag == false){
-                    m_n_ret_ref_step[phy_axis] = 2;  //è·³è½¬ä¸‹ä¸€æ­¥
+                    m_n_ret_ref_step[phy_axis] = 2;  //Ìø×ªÏÂÒ»²½
                 }
 
-            }else if(this->m_p_axis_config[phy_axis].axis_pmc){  //PMCè½´åˆ°ä½
+            }else if(this->m_p_axis_config[phy_axis].axis_pmc){  //PMCÖáµ½Î»
                 if(this->m_n_run_axis_mask == 0 || (this->m_n_runover_axis_mask & (0x01L<<phy_axis))){
                     if(true == flag){
                         m_n_ret_ref_step[phy_axis] = 0;
                         break;
                     }else{
-                        m_n_ret_ref_step[phy_axis] = 2;  //è·³è½¬ä¸‹ä¸€æ­¥
+                        m_n_ret_ref_step[phy_axis] = 2;  //Ìø×ªÏÂÒ»²½
                     }
                 }
             }
             }
             break;
-        case 2:  //ä»¥å›å‚è€ƒç‚¹é€Ÿåº¦å‘å›å‚è€ƒç‚¹æ–¹å‘è¿åŠ¨
+        case 2:  //ÒÔ»Ø²Î¿¼µãËÙ¶ÈÏò»Ø²Î¿¼µã·½ÏòÔË¶¯
     //		printf("return ref step 2\n");
             this->ManualMove(phy_axis, dir, this->m_p_axis_config[phy_axis].ret_ref_speed, 90000.0);
-            m_n_ret_ref_step[phy_axis] = 3;  //è·³è½¬ä¸‹ä¸€æ­¥
+            m_n_ret_ref_step[phy_axis] = 3;  //Ìø×ªÏÂÒ»²½
             printf("return ref, goto step 3\n");
             break;
-        case 3:  //è§¦å‘ç²—åŸºå‡†ä¿¡å·ï¼Œåœæ­¢
+        case 3:  //´¥·¢´Ö»ù×¼ĞÅºÅ£¬Í£Ö¹
     //		printf("return ref step 3\n");
-            if(this->CheckAxisRefBaseSignal(phy_axis, dir)){  //è§¦å‘ç²—åŸºå‡†
-                if(m_p_axis_config[phy_axis].ret_ref_change_dir){  //åå‘å¯»æ‰¾ç²¾åŸºå‡†ï¼Œåˆ™å…ˆåœæ­¢åˆ°ä½
+            if(this->CheckAxisRefBaseSignal(phy_axis, dir)){  //´¥·¢´Ö»ù×¼
+                if(m_p_axis_config[phy_axis].ret_ref_change_dir){  //·´ÏòÑ°ÕÒ¾«»ù×¼£¬ÔòÏÈÍ£Ö¹µ½Î»
                     this->ManualMoveStop(phy_axis);
-                    gettimeofday(&this->m_time_ret_ref[phy_axis], NULL);   //è®°å½•èµ·å§‹æ—¶é—´
-                    m_n_ret_ref_step[phy_axis] = 4;  //è·³è½¬ä¸‹ä¸€æ­¥
+                    gettimeofday(&this->m_time_ret_ref[phy_axis], NULL);   //¼ÇÂ¼ÆğÊ¼Ê±¼ä
+                    m_n_ret_ref_step[phy_axis] = 4;  //Ìø×ªÏÂÒ»²½
                     printf("return ref, goto step 4\n");
-                }else{  //åŒå‘å‡é€Ÿå¯»æ‰¾ç²¾åŸºå‡†
+                }else{  //Í¬Ïò¼õËÙÑ°ÕÒ¾«»ù×¼
                     this->ManualMove(phy_axis, dir_opt, 20,3.0);
-                    m_n_ret_ref_step[phy_axis] = 5;  //è·³è½¬ä¸‹ä¸€æ­¥
+                    m_n_ret_ref_step[phy_axis] = 5;  //Ìø×ªÏÂÒ»²½
                 }
             }
             else{
             //	this->ManualMove(phy_axis, dir, this->m_p_axis_config[phy_axis].ret_ref_speed,3.0);
             }
             break;
-        case 4:{//ç­‰å¾…åœæ­¢åˆ°ä½
+        case 4:{//µÈ´ıÍ£Ö¹µ½Î»
             struct timeval time_now;
             gettimeofday(&time_now, NULL);
             unsigned int time_elpase = (time_now.tv_sec-m_time_ret_ref[phy_axis].tv_sec)*1000000+time_now.tv_usec-m_time_ret_ref[phy_axis].tv_usec;
-            if(time_elpase >= 300000){ //å»¶æ—¶300ms
-                m_n_ret_ref_step[phy_axis] = 5;  //è·³è½¬ä¸‹ä¸€æ­¥
+            if(time_elpase >= 300000){ //ÑÓÊ±300ms
+                m_n_ret_ref_step[phy_axis] = 5;  //Ìø×ªÏÂÒ»²½
                 printf("return ref, goto step 5\n");
             }
         }
             break;
-        case 5:  //ä½é€Ÿå¯»æ‰¾ç²¾åŸºå‡†è¿åŠ¨
+        case 5:  //µÍËÙÑ°ÕÒ¾«»ù×¼ÔË¶¯
             printf("return ref step 5\n");
-            this->ManualMove(phy_axis, dir_opt, 20, 3); //ä½é€Ÿå¯»æ‰¾ç²¾åŸºå‡†
-            m_n_ret_ref_step[phy_axis] = 6;  //è·³è½¬ä¸‹ä¸€æ­¥
+            this->ManualMove(phy_axis, dir_opt, 20, 3); //µÍËÙÑ°ÕÒ¾«»ù×¼
+            m_n_ret_ref_step[phy_axis] = 6;  //Ìø×ªÏÂÒ»²½
             printf("return ref, goto step 6\n");
 
             break;
-        case 6:  //ç­‰å¾…ç²¾åŸºå‡†ä¿¡å·
+        case 6:  //µÈ´ı¾«»ù×¼ĞÅºÅ
         //	printf("return ref step 6\n");
             if(this->CheckAxisRefSignal(phy_axis)){
                 this->ManualMoveStop(phy_axis);
-                gettimeofday(&this->m_time_ret_ref[phy_axis], NULL);   //è®°å½•èµ·å§‹æ—¶é—´ï¼Œå»¶æ—¶300ms
-                m_n_ret_ref_step[phy_axis] = 7;  //è·³è½¬ä¸‹ä¸€æ­¥
+                gettimeofday(&this->m_time_ret_ref[phy_axis], NULL);   //¼ÇÂ¼ÆğÊ¼Ê±¼ä£¬ÑÓÊ±300ms
+                m_n_ret_ref_step[phy_axis] = 7;  //Ìø×ªÏÂÒ»²½
             }else{
-                this->ManualMove(phy_axis, dir_opt, 20, 3); //ä½é€Ÿå¯»æ‰¾ç²¾åŸºå‡†
+                this->ManualMove(phy_axis, dir_opt, 20, 3); //µÍËÙÑ°ÕÒ¾«»ù×¼
             }
             break;
-        case 7:{ //ç­‰å¾…åœæ­¢åˆ°ä½
+        case 7:{ //µÈ´ıÍ£Ö¹µ½Î»
             struct timeval time_now;
             gettimeofday(&time_now, NULL);
             unsigned int time_elpase = (time_now.tv_sec-m_time_ret_ref[phy_axis].tv_sec)*1000000+time_now.tv_usec-m_time_ret_ref[phy_axis].tv_usec;
-            if(time_elpase >= 200000){ //å»¶æ—¶200ms
-//				m_n_get_cur_encoder_count = 0;  //å¤ä½è·å–å½“å‰ç¼–ç å™¨æ¬¡æ•°
-                m_n_ret_ref_step[phy_axis] = 8;  //è·³è½¬ä¸‹ä¸€æ­¥
+            if(time_elpase >= 200000){ //ÑÓÊ±200ms
+//				m_n_get_cur_encoder_count = 0;  //¸´Î»»ñÈ¡µ±Ç°±àÂëÆ÷´ÎÊı
+                m_n_ret_ref_step[phy_axis] = 8;  //Ìø×ªÏÂÒ»²½
                 printf("return ref, goto step 8\n");
             }
         }
             break;
-        case 8:{ // è®¾ç½®å½“å‰ä½ç½®ä¸ºå‚è€ƒç‚¹
+        case 8:{ // ÉèÖÃµ±Ç°Î»ÖÃÎª²Î¿¼µã
             printf("return ref step 8: send cmd to mi, set ref point\n");
             MiCmdFrame cmd;
             memset(&cmd, 0x00, sizeof(cmd));
             cmd.data.axis_index = phy_axis+1;
             cmd.data.cmd = CMD_MI_SET_REF_CUR;
 
-            int64_t pos = m_p_axis_config[phy_axis].axis_home_pos[0] * 1e7;   //å•ä½è½¬æ¢ï¼Œ0.1nm
+            int64_t pos = m_p_axis_config[phy_axis].axis_home_pos[0] * 1e7;   //µ¥Î»×ª»»£¬0.1nm
             memcpy(cmd.data.data, &pos, sizeof(int64_t));
             this->m_p_mi_comm->WriteCmd(cmd);
-            gettimeofday(&this->m_time_ret_ref[phy_axis], NULL);   //è®°å½•èµ·å§‹æ—¶é—´ï¼Œå»¶æ—¶300ms
+            gettimeofday(&this->m_time_ret_ref[phy_axis], NULL);   //¼ÇÂ¼ÆğÊ¼Ê±¼ä£¬ÑÓÊ±300ms
 
-            m_n_ret_ref_step[phy_axis] = 9;  //è·³è½¬ä¸‹ä¸€æ­¥
+            m_n_ret_ref_step[phy_axis] = 9;  //Ìø×ªÏÂÒ»²½
             printf("return ref, goto step 9\n");
 
         }
             break;
-        case 9: { //ç­‰å¾…è®¾ç½®å‚è€ƒç‚¹å®Œæˆï¼Œåœ¨MiæŒ‡ä»¤å“åº”å¤„ç†å‡½æ•°ä¸­å¤„ç†
+        case 9: { //µÈ´ıÉèÖÃ²Î¿¼µãÍê³É£¬ÔÚMiÖ¸ÁîÏìÓ¦´¦Àíº¯ÊıÖĞ´¦Àí
             struct timeval time_now;
             gettimeofday(&time_now, NULL);
             unsigned int time_elpase = (time_now.tv_sec-m_time_ret_ref[phy_axis].tv_sec)*1000000+time_now.tv_usec-m_time_ret_ref[phy_axis].tv_usec;
-            if(time_elpase >= 200000){ //å»¶æ—¶200ms
-                m_n_ret_ref_step[phy_axis] = 10;  //è·³è½¬ä¸‹ä¸€æ­¥
+            if(time_elpase >= 200000){ //ÑÓÊ±200ms
+                m_n_ret_ref_step[phy_axis] = 10;  //Ìø×ªÏÂÒ»²½
                 printf("return ref, goto step 8\n");
             }
             }
             break;
-        case 10:  //å›å‚è€ƒç‚¹å®Œæˆ
+        case 10:  //»Ø²Î¿¼µãÍê³É
             printf("axis %u return ref over\n", phy_axis);
 
             this->SetRetRefFlag(phy_axis, true);
-            this->m_p_pmc_reg->FReg().bits[0].in_ref_point |= (0x01<<phy_axis);   //ç½®ä½åˆ°å‚è€ƒç‚¹æ ‡å¿—
+            this->m_p_pmc_reg->FReg().bits[0].in_ref_point |= (0x01<<phy_axis);   //ÖÃÎ»µ½²Î¿¼µã±êÖ¾
 
             this->m_n_mask_ret_ref &= ~(0x01<<phy_axis);
             m_n_ret_ref_step[phy_axis] = 0;
@@ -10231,7 +10231,7 @@ void ChannelEngine::EcatAxisFindRefWithZeroSignal2(uint8_t phy_axis){
                 m_n_ret_ref_auto_cur = 0;
             }
             break;
-        case 20: //å¤±è´¥å¤„ç†
+        case 20: //Ê§°Ü´¦Àí
             this->m_n_mask_ret_ref &= ~(0x01<<phy_axis);
             m_n_ret_ref_step[phy_axis] = 0;
 
@@ -10250,19 +10250,19 @@ void ChannelEngine::EcatAxisFindRefWithZeroSignal2(uint8_t phy_axis){
 
 
 /**
- * @brief ethcatè½´æ— åŸºå‡†è½´å›å‚è€ƒç‚¹
+ * @brief ethcatÖáÎŞ»ù×¼Öá»Ø²Î¿¼µã
  */
 void ChannelEngine::EcatAxisFindRefNoZeroSignal(uint8_t phy_axis){
     switch(this->m_n_ret_ref_step[phy_axis]){
-        case 0: {// è®¡ç®—åŸç‚¹åç§»ï¼Œè®¾ç½®åŸç‚¹
+        case 0: {// ¼ÆËãÔ­µãÆ«ÒÆ£¬ÉèÖÃÔ­µã
             printf("return ref step 0: send cmd to mi, set ref point\n");
             MiCmdFrame cmd;
             memset(&cmd, 0x00, sizeof(cmd));
             cmd.data.axis_index = phy_axis+1;
             cmd.data.cmd = CMD_MI_SET_REF_POINT;
 
-            cmd.data.data[0] = 0x01;    //å½“å‰ç²¾åŸºå‡†
-            int64_t pos = m_p_axis_config[phy_axis].axis_home_pos[0]*1e7;   //å•ä½è½¬æ¢,0.1nm
+            cmd.data.data[0] = 0x01;    //µ±Ç°¾«»ù×¼
+            int64_t pos = m_p_axis_config[phy_axis].axis_home_pos[0]*1e7;   //µ¥Î»×ª»»,0.1nm
             memcpy(&cmd.data.data[1], &pos, sizeof(int64_t));
             cmd.data.data[5] = this->m_p_axis_config[phy_axis].ref_signal;
             cmd.data.data[6] = this->m_p_axis_config[phy_axis].ret_ref_dir;
@@ -10270,33 +10270,33 @@ void ChannelEngine::EcatAxisFindRefNoZeroSignal(uint8_t phy_axis){
             this->m_p_mi_comm->WriteCmd(cmd);
 
 
-            m_n_ret_ref_step[phy_axis] = 1;  //è·³è½¬ä¸‹ä¸€æ­¥
+            m_n_ret_ref_step[phy_axis] = 1;  //Ìø×ªÏÂÒ»²½
             printf("return ref, goto step 1\n");
 
         }
             break;
-        case 1:  //ç­‰å¾…è®¾ç½®å‚è€ƒç‚¹å®Œæˆï¼Œåœ¨MiæŒ‡ä»¤å“åº”å¤„ç†å‡½æ•°ä¸­å¤„ç†
+        case 1:  //µÈ´ıÉèÖÃ²Î¿¼µãÍê³É£¬ÔÚMiÖ¸ÁîÏìÓ¦´¦Àíº¯ÊıÖĞ´¦Àí
 
             break;
 
-        case 10:{  //ç­‰å¾…è½´ç§»åŠ¨åˆ°ä½,å®Œæˆï¼
+        case 10:{  //µÈ´ıÖáÒÆ¶¯µ½Î»,Íê³É£¡
 #ifdef USES_RET_REF_TO_MACH_ZERO
-            double dis = 0;    //æœºæ¢°é›¶
+            double dis = 0;    //»úĞµÁã
 #else
-            double dis = this->m_p_axis_config[phy_axis].axis_home_pos[0];   // åŸç‚¹åæ ‡
+            double dis = this->m_p_axis_config[phy_axis].axis_home_pos[0];   // Ô­µã×ø±ê
 #endif
-            this->SendMonitorData(false, false);  //å†æ¬¡è¯»å–å®æ—¶ä½ç½®
-            if(fabs(this->GetPhyAxisMachPosFeedback(phy_axis)- dis) <= 0.010){  //åˆ°ä½
-                m_n_ret_ref_step[phy_axis] = 11;  //è·³è½¬ä¸‹ä¸€æ­¥
+            this->SendMonitorData(false, false);  //ÔÙ´Î¶ÁÈ¡ÊµÊ±Î»ÖÃ
+            if(fabs(this->GetPhyAxisMachPosFeedback(phy_axis)- dis) <= 0.010){  //µ½Î»
+                m_n_ret_ref_step[phy_axis] = 11;  //Ìø×ªÏÂÒ»²½
                 printf("return ref[%hhu, %lf, %lf], goto step 11\n", phy_axis, this->GetPhyAxisMachPosFeedback(phy_axis), dis);
             }
             break;
         }
-        case 11:  //å›å‚è€ƒç‚¹å®Œæˆ
+        case 11:  //»Ø²Î¿¼µãÍê³É
             printf("axis %u return ref over\n", phy_axis);
             if(this->m_p_axis_config[phy_axis].feedback_mode == ABSOLUTE_ENCODER_YASAKAWA ||
                 this->m_p_axis_config[phy_axis].feedback_mode == ABSOLUTE_ENCODER_PANASONIC ||
-                this->m_p_axis_config[phy_axis].feedback_mode == LINEAR_ENCODER){  //ç»å¯¹å€¼éœ€è¦å‘é€è®¾ç½®å‚è€ƒç‚¹æŒ‡ä»¤
+                this->m_p_axis_config[phy_axis].feedback_mode == LINEAR_ENCODER){  //¾ø¶ÔÖµĞèÒª·¢ËÍÉèÖÃ²Î¿¼µãÖ¸Áî
                 MiCmdFrame mi_cmd;
                 memset(&mi_cmd, 0x00, sizeof(mi_cmd));
                 mi_cmd.data.cmd = CMD_MI_GET_ZERO_ENCODER;
@@ -10305,7 +10305,7 @@ void ChannelEngine::EcatAxisFindRefNoZeroSignal(uint8_t phy_axis){
                 this->m_p_mi_comm->WriteCmd(mi_cmd);
             }
             this->SetRetRefFlag(phy_axis, true);
-            this->m_p_pmc_reg->FReg().bits[0].in_ref_point |= (0x01<<phy_axis);   //ç½®ä½åˆ°å‚è€ƒç‚¹æ ‡å¿—
+            this->m_p_pmc_reg->FReg().bits[0].in_ref_point |= (0x01<<phy_axis);   //ÖÃÎ»µ½²Î¿¼µã±êÖ¾
 
             this->m_n_mask_ret_ref &= ~(0x01<<phy_axis);
             m_n_ret_ref_step[phy_axis] = 0;
@@ -10316,7 +10316,7 @@ void ChannelEngine::EcatAxisFindRefNoZeroSignal(uint8_t phy_axis){
                 m_n_ret_ref_auto_cur = 0;
             }
             break;
-        case 20: //å¤±è´¥å¤„ç†
+        case 20: //Ê§°Ü´¦Àí
             this->m_n_mask_ret_ref &= ~(0x01<<phy_axis);
             m_n_ret_ref_step[phy_axis] = 0;
 
@@ -10335,20 +10335,20 @@ void ChannelEngine::EcatAxisFindRefNoZeroSignal(uint8_t phy_axis){
 
 
 /**
- * @brief å›å‚è€ƒç‚¹æ‰§è¡Œå‡½æ•°
+ * @brief »Ø²Î¿¼µãÖ´ĞĞº¯Êı
  */
 void ChannelEngine::ReturnRefPoint(){
 
-//	int8_t dir = 0, dir_opt;   //å›å‚è€ƒç‚¹æ–¹å‘
-//	uint8_t ret_mode = 0;   //å›å‚è€ƒç‚¹æ–¹å¼
+//	int8_t dir = 0, dir_opt;   //»Ø²Î¿¼µã·½Ïò
+//	uint8_t ret_mode = 0;   //»Ø²Î¿¼µã·½Ê½
 //	uint8_t chn = 0, chn_axis = 0;
-//	double dis = 0;      //ç§»åŠ¨è·ç¦»
+//	double dis = 0;      //ÒÆ¶¯¾àÀë
 //	static double ret_ref_start_pos[kMaxAxisNum];
-//	static uint8_t ret_ref_auto_cur = 0;    //è‡ªåŠ¨å›å‚è€ƒç‚¹æ—¶ï¼Œå½“å‰é¡ºåºå·
+//	static uint8_t ret_ref_auto_cur = 0;    //×Ô¶¯»Ø²Î¿¼µãÊ±£¬µ±Ç°Ë³ĞòºÅ
     int count = 0;
     for(uint i = 0; i < this->m_p_general_config->axis_count; i++){
         if((m_n_mask_ret_ref & (0x01<<i)) == 0 ||
-                (m_p_axis_config[i].ret_ref_mode == 0 && m_p_axis_config[i].feedback_mode == INCREMENTAL_ENCODER)){  //ç¦æ­¢å›å‚è€ƒç‚¹
+                (m_p_axis_config[i].ret_ref_mode == 0 && m_p_axis_config[i].feedback_mode == INCREMENTAL_ENCODER)){  //½ûÖ¹»Ø²Î¿¼µã
             continue;
         }
         if(this->m_b_ret_ref_auto){
@@ -10357,61 +10357,61 @@ void ChannelEngine::ReturnRefPoint(){
             count++;
         }
 
-        if(this->m_p_axis_config[i].axis_interface == VIRTUAL_AXIS){// è™šæ‹Ÿè½´
-            this->AxisFindRefNoZeroSignal(i);   // ç›´æ¥è®¾ç½®é›¶ç‚¹
+        if(this->m_p_axis_config[i].axis_interface == VIRTUAL_AXIS){// ĞéÄâÖá
+            this->AxisFindRefNoZeroSignal(i);   // Ö±½ÓÉèÖÃÁãµã
 
-        }else if(this->m_p_axis_config[i].axis_interface == BUS_AXIS){     // æ€»çº¿è½´
-            //è®¾ç½®å›é›¶æ ‡å¿—
+        }else if(this->m_p_axis_config[i].axis_interface == BUS_AXIS){     // ×ÜÏßÖá
+            //ÉèÖÃ»ØÁã±êÖ¾
             this->SetInRetRefFlag(i, true);
 
-            if(this->m_p_axis_config[i].feedback_mode == NO_ENCODER){   // æ­¥è¿›ç”µæœºï¼Œæ— åé¦ˆ
+            if(this->m_p_axis_config[i].feedback_mode == NO_ENCODER){   // ²½½øµç»ú£¬ÎŞ·´À¡
                 if(this->m_p_axis_config[i].ret_ref_mode == 1){
-                     this->AxisFindRefWithZeroSignal(i); // æ ¹æ®é›¶ç‚¹ä¿¡å·è®¾ç½®é›¶ç‚¹
+                     this->AxisFindRefWithZeroSignal(i); // ¸ù¾İÁãµãĞÅºÅÉèÖÃÁãµã
                 }else{
-                    this->AxisFindRefNoZeroSignal(i);  // ç›´æ¥è®¾ç½®é›¶ç‚¹
+                    this->AxisFindRefNoZeroSignal(i);  // Ö±½ÓÉèÖÃÁãµã
                 }
             }else if(this->m_p_axis_config[i].ret_ref_mode == 1){
-                this->EcatAxisFindRefWithZeroSignal(i);    //  æ€»çº¿æœ‰åŸºå‡†å›é›¶
+                this->EcatAxisFindRefWithZeroSignal(i);    //  ×ÜÏßÓĞ»ù×¼»ØÁã
             }else if(this->m_p_axis_config[i].ret_ref_mode == 2){
-                this->EcatAxisFindRefNoZeroSignal(i);    //  æ€»çº¿æ— åŸºå‡†å›é›¶
-            }else if(this->m_p_axis_config[i].ret_ref_mode == 4){  //æ€»çº¿åŒåŸºå‡†å›é›¶ï¼Œç²—ã€ç²¾åŸºå‡†éƒ½æ˜¯IOè¾“å…¥ä¿¡å·
+                this->EcatAxisFindRefNoZeroSignal(i);    //  ×ÜÏßÎŞ»ù×¼»ØÁã
+            }else if(this->m_p_axis_config[i].ret_ref_mode == 4){  //×ÜÏßË«»ù×¼»ØÁã£¬´Ö¡¢¾«»ù×¼¶¼ÊÇIOÊäÈëĞÅºÅ
                 this->EcatAxisFindRefWithZeroSignal2(i);
             }else if(this->m_p_axis_config[i].ret_ref_mode == 0 &&
-                    (this->m_p_axis_config[i].feedback_mode == ABSOLUTE_ENCODER_YASAKAWA || this->m_p_axis_config[i].feedback_mode == ABSOLUTE_ENCODER_PANASONIC)){  //ç»å¯¹å€¼ç¼–ç å™¨å¹¶ä¸”ç¦æ­¢å›é›¶
-                this->AxisFindRefNoZeroSignal(i);   // ç›´æ¥è®¾ç½®é›¶ç‚¹
+                    (this->m_p_axis_config[i].feedback_mode == ABSOLUTE_ENCODER_YASAKAWA || this->m_p_axis_config[i].feedback_mode == ABSOLUTE_ENCODER_PANASONIC)){  //¾ø¶ÔÖµ±àÂëÆ÷²¢ÇÒ½ûÖ¹»ØÁã
+                this->AxisFindRefNoZeroSignal(i);   // Ö±½ÓÉèÖÃÁãµã
             }
-        }else if(this->m_p_axis_config[i].axis_interface == ANALOG_AXIS){   // éæ€»çº¿è½´
-            //è®¾ç½®å›é›¶æ ‡å¿—
+        }else if(this->m_p_axis_config[i].axis_interface == ANALOG_AXIS){   // ·Ç×ÜÏßÖá
+            //ÉèÖÃ»ØÁã±êÖ¾
             this->SetInRetRefFlag(i, true);
 
-            if(this->m_p_axis_config[i].feedback_mode == NO_ENCODER){   // æ­¥è¿›ç”µæœºï¼Œæ— åé¦ˆ
+            if(this->m_p_axis_config[i].feedback_mode == NO_ENCODER){   // ²½½øµç»ú£¬ÎŞ·´À¡
                 if(this->m_p_axis_config[i].ret_ref_mode == 1){
-                     this->AxisFindRefWithZeroSignal(i); // æ ¹æ®é›¶ç‚¹ä¿¡å·è®¾ç½®é›¶ç‚¹
+                     this->AxisFindRefWithZeroSignal(i); // ¸ù¾İÁãµãĞÅºÅÉèÖÃÁãµã
                 }
                 else{
-                     this->AxisFindRefNoZeroSignal(i);  // ç›´æ¥è®¾ç½®é›¶ç‚¹
+                     this->AxisFindRefNoZeroSignal(i);  // Ö±½ÓÉèÖÃÁãµã
                 }
             }
             else if(this->m_p_axis_config[i].ret_ref_mode == 1){
-                this->PulseAxisFindRefWithZeroSignal(i);    //  è„‰å†²æ¨¡æ‹Ÿé‡å‹æœ‰åŸºå‡†å›é›¶
+                this->PulseAxisFindRefWithZeroSignal(i);    //  Âö³åÄ£ÄâÁ¿ĞÍÓĞ»ù×¼»ØÁã
             }
             else if(this->m_p_axis_config[i].ret_ref_mode == 2){
-                this->PulseAxisFindRefNoZeroSignal(i);    // è„‰å†²æ¨¡æ‹Ÿé‡å‹æ— åŸºå‡†å›é›¶
+                this->PulseAxisFindRefNoZeroSignal(i);    // Âö³åÄ£ÄâÁ¿ĞÍÎŞ»ù×¼»ØÁã
             }
         }
 
 /*
         ret_mode = m_p_axis_config[i].ret_ref_mode;
         dir = this->m_p_axis_config[i].ret_ref_dir?DIR_POSITIVE:DIR_NEGATIVE;
-        dir_opt = (m_p_axis_config[i].ret_ref_change_dir==0)?dir*-1:dir;  //å›å‚è€ƒç‚¹æ–¹å‘ç›¸åçš„æ–¹å‘
+        dir_opt = (m_p_axis_config[i].ret_ref_change_dir==0)?dir*-1:dir;  //»Ø²Î¿¼µã·½ÏòÏà·´µÄ·½Ïò
 
         switch(this->m_n_ret_ref_step[i]){
-        case 0://æ£€æŸ¥åŸç‚¹ä¿¡å·
+        case 0://¼ì²éÔ­µãĞÅºÅ
             printf("return ref step 0, dir = %hhd, dir_opt=%hhd\n", dir, dir_opt);
-            this->SetRetRefFlag(i, false);   //å¤ä½å›å‚è€ƒç‚¹å®Œæˆæ ‡å¿—
+            this->SetRetRefFlag(i, false);   //¸´Î»»Ø²Î¿¼µãÍê³É±êÖ¾
             this->m_p_pmc_reg->FReg().bits[0].in_ref_point &= ~(0x01<<i);
 
-            if(this->CheckAxisRefBaseSignal(i, dir)){  //å›é€€1.2ä¸ªèºè·
+            if(this->CheckAxisRefBaseSignal(i, dir)){  //»ØÍË1.2¸öÂİ¾à
                 ret_ref_start_pos[i] = this->GetPhyAxisMachPosFeedback(i)+this->m_p_axis_config[i].move_pr*1.2;
                 this->ManualMove(i, dir*-1,
                         this->m_p_axis_config[i].ret_ref_speed, this->m_p_axis_config[i].move_pr*1.2);
@@ -10423,7 +10423,7 @@ void ChannelEngine::ReturnRefPoint(){
             }
 
             break;
-        case 1://ç­‰å¾…å›é€€åˆ°ä½ï¼Œå¹¶å†æ¬¡æ£€æŸ¥åŸç‚¹ä¿¡å·
+        case 1://µÈ´ı»ØÍËµ½Î»£¬²¢ÔÙ´Î¼ì²éÔ­µãĞÅºÅ
             printf("return ref step 1\n");
             chn = this->GetAxisChannel(i, chn_axis);
             if(chn != CHANNEL_ENGINE_INDEX){
@@ -10432,27 +10432,27 @@ void ChannelEngine::ReturnRefPoint(){
                         m_n_ret_ref_step[i] = 0;
                         break;
                     }else{
-                        if(ret_mode == 2)  //æ— åŸºå‡†
-                            m_n_ret_ref_step[i] = 5;  //è·³è½¬ä¸‹ä¸€æ­¥
-                        else if(ret_mode == 1)   //æœ‰åŸºå‡†
-                            m_n_ret_ref_step[i] = 2;  //è·³è½¬ä¸‹ä¸€æ­¥
+                        if(ret_mode == 2)  //ÎŞ»ù×¼
+                            m_n_ret_ref_step[i] = 5;  //Ìø×ªÏÂÒ»²½
+                        else if(ret_mode == 1)   //ÓĞ»ù×¼
+                            m_n_ret_ref_step[i] = 2;  //Ìø×ªÏÂÒ»²½
                     }
                 }
-            }else if(this->m_p_axis_config[i].axis_pmc){  //PMCè½´åˆ°ä½
+            }else if(this->m_p_axis_config[i].axis_pmc){  //PMCÖáµ½Î»
                 if(this->m_n_run_axis_mask == 0 || (this->m_n_runover_axis_mask & (0x01L<<i))){
                     if(CheckAxisRefBaseSignal(i, dir)){
                         m_n_ret_ref_step[i] = 0;
                         break;
                     }else{
-                        if(ret_mode == 2)  //æ— åŸºå‡†
-                            m_n_ret_ref_step[i] = 5;  //è·³è½¬ä¸‹ä¸€æ­¥
-                        else if(ret_mode == 1)   //æœ‰åŸºå‡†
-                            m_n_ret_ref_step[i] = 2;  //è·³è½¬ä¸‹ä¸€æ­¥
+                        if(ret_mode == 2)  //ÎŞ»ù×¼
+                            m_n_ret_ref_step[i] = 5;  //Ìø×ªÏÂÒ»²½
+                        else if(ret_mode == 1)   //ÓĞ»ù×¼
+                            m_n_ret_ref_step[i] = 2;  //Ìø×ªÏÂÒ»²½
                     }
                 }
             }
             break;
-        case 2:{   //å‘MIå‘é€å¼€å§‹å›å‚è€ƒç‚¹å‘½ä»¤
+        case 2:{   //ÏòMI·¢ËÍ¿ªÊ¼»Ø²Î¿¼µãÃüÁî
     //		printf("return ref step 2\n");
             MiCmdFrame cmd;
             memset(&cmd, 0x00, sizeof(cmd));
@@ -10461,101 +10461,101 @@ void ChannelEngine::ReturnRefPoint(){
             cmd.data.axis_index = i+1;
 
             this->m_p_mi_comm->WriteCmd(cmd);
-            m_n_ret_ref_step[i] = 3;  //è·³è½¬ä¸‹ä¸€æ­¥
+            m_n_ret_ref_step[i] = 3;  //Ìø×ªÏÂÒ»²½
             printf("return ref, goto step 3\n");
         }
             break;
-        case 3:  //ä»¥å›å‚è€ƒç‚¹é€Ÿåº¦å‘å›å‚è€ƒç‚¹æ–¹å‘è¿åŠ¨
+        case 3:  //ÒÔ»Ø²Î¿¼µãËÙ¶ÈÏò»Ø²Î¿¼µã·½ÏòÔË¶¯
     //		printf("return ref step 3\n");
             this->ManualMove(i, dir, this->m_p_axis_config[i].ret_ref_speed, 90000.);
-            m_n_ret_ref_step[i] = 4;  //è·³è½¬ä¸‹ä¸€æ­¥
+            m_n_ret_ref_step[i] = 4;  //Ìø×ªÏÂÒ»²½
             printf("return ref, goto step 4\n");
             break;
-        case 4:  //è§¦å‘ç²—åŸºå‡†ä¿¡å·ï¼Œåœæ­¢
+        case 4:  //´¥·¢´Ö»ù×¼ĞÅºÅ£¬Í£Ö¹
     //		printf("return ref step 4\n");
             if(this->CheckAxisRefBaseSignal(i, dir)){
                 this->ManualMoveStop(i);
-                gettimeofday(&this->m_time_ret_ref[phy_axis], NULL);   //è®°å½•èµ·å§‹æ—¶é—´ï¼Œå»¶æ—¶200ms
-                m_n_ret_ref_step[i] = 50;  //è·³è½¬ä¸‹ä¸€æ­¥
+                gettimeofday(&this->m_time_ret_ref[phy_axis], NULL);   //¼ÇÂ¼ÆğÊ¼Ê±¼ä£¬ÑÓÊ±200ms
+                m_n_ret_ref_step[i] = 50;  //Ìø×ªÏÂÒ»²½
                 printf("return ref, goto step 50\n");
             }
             break;
-        case 50:{//ç­‰å¾…åœæ­¢åˆ°ä½
+        case 50:{//µÈ´ıÍ£Ö¹µ½Î»
             struct timeval time_now;
             gettimeofday(&time_now, NULL);
             unsigned int time_elpase = (time_now.tv_sec-m_time_ret_ref[phy_axis].tv_sec)*1000000+time_now.tv_usec-m_time_ret_ref[phy_axis].tv_usec;
-            if(time_elpase >= 300000){ //å»¶æ—¶300ms
-                m_n_ret_ref_step[i] = 5;  //è·³è½¬ä¸‹ä¸€æ­¥
+            if(time_elpase >= 300000){ //ÑÓÊ±300ms
+                m_n_ret_ref_step[i] = 5;  //Ìø×ªÏÂÒ»²½
                 printf("return ref, goto step 5\n");
             }
         }
             break;
         case 5:
             printf("return ref step 5\n");
-            if(ret_mode == 1)//æœ‰åŸºå‡†ï¼Œ ä½é€Ÿå›é€€è‡³ç²—åŸºå‡†ä¿¡å·æ¶ˆå¤±, é€Ÿåº¦ï¼š100mm/min
+            if(ret_mode == 1)//ÓĞ»ù×¼£¬ µÍËÙ»ØÍËÖÁ´Ö»ù×¼ĞÅºÅÏûÊ§, ËÙ¶È£º100mm/min
                 this->ManualMove(i, dir_opt, 100, this->m_p_axis_config[i].move_pr*2);
-            else if(ret_mode ==2){ //æ— åŸºå‡†ï¼Œå›å‚è€ƒç‚¹æ–¹å‘ç§»åŠ¨1.1ä¸ªèºè·
+            else if(ret_mode ==2){ //ÎŞ»ù×¼£¬»Ø²Î¿¼µã·½ÏòÒÆ¶¯1.1¸öÂİ¾à
                 ret_ref_start_pos[i] = this->GetPhyAxisMachPosFeedback(i)+this->m_p_axis_config[i].move_pr*1.1;
                 this->ManualMove(i, dir, m_p_axis_config[i].ret_ref_speed, this->m_p_axis_config[i].move_pr*1.1);
             }
-            m_n_ret_ref_step[i] = 6;  //è·³è½¬ä¸‹ä¸€æ­¥
+            m_n_ret_ref_step[i] = 6;  //Ìø×ªÏÂÒ»²½
             printf("return ref, goto step 6\n");
 
             break;
         case 6:
         //	printf("return ref step 6\n");
-            if(ret_mode == 1){//æœ‰åŸºå‡†ï¼Œç­‰å¾…ç²—åŸºå‡†ä¿¡å·æ¶ˆå¤±
+            if(ret_mode == 1){//ÓĞ»ù×¼£¬µÈ´ı´Ö»ù×¼ĞÅºÅÏûÊ§
                 if(!this->CheckAxisRefBaseSignal(i, dir)){
                     this->ManualMoveStop(i);
 
-                    gettimeofday(&this->m_time_ret_ref[phy_axis], NULL);   //è®°å½•èµ·å§‹æ—¶é—´ï¼Œå»¶æ—¶300ms
+                    gettimeofday(&this->m_time_ret_ref[phy_axis], NULL);   //¼ÇÂ¼ÆğÊ¼Ê±¼ä£¬ÑÓÊ±300ms
 
-                    m_n_ret_ref_step[i] = 70;  //è·³è½¬ä¸‹ä¸€æ­¥
+                    m_n_ret_ref_step[i] = 70;  //Ìø×ªÏÂÒ»²½
                 }
-            }else if(ret_mode == 2){  //æ— åŸºå‡†ï¼Œ ä½ç½®åˆ°ä½
+            }else if(ret_mode == 2){  //ÎŞ»ù×¼£¬ Î»ÖÃµ½Î»
                 if(fabs(this->GetPhyAxisMachPosFeedback(i) - ret_ref_start_pos[i]) <= 0.001){
-                    m_n_ret_ref_step[i] = 7;  //è·³è½¬ä¸‹ä¸€æ­¥
+                    m_n_ret_ref_step[i] = 7;  //Ìø×ªÏÂÒ»²½
                 }
             }
             break;
-        case 70:{ //ç­‰å¾…åœæ­¢åˆ°ä½
+        case 70:{ //µÈ´ıÍ£Ö¹µ½Î»
             struct timeval time_now;
             gettimeofday(&time_now, NULL);
             unsigned int time_elpase = (time_now.tv_sec-m_time_ret_ref[phy_axis].tv_sec)*1000000+time_now.tv_usec-m_time_ret_ref[phy_axis].tv_usec;
-            if(time_elpase >= 800000){ //å»¶æ—¶800ms
-                m_n_get_cur_encoder_count = 0;  //å¤ä½è·å–å½“å‰ç¼–ç å™¨æ¬¡æ•°
-                m_n_ret_ref_step[i] = 7;  //è·³è½¬ä¸‹ä¸€æ­¥
+            if(time_elpase >= 800000){ //ÑÓÊ±800ms
+                m_n_get_cur_encoder_count = 0;  //¸´Î»»ñÈ¡µ±Ç°±àÂëÆ÷´ÎÊı
+                m_n_ret_ref_step[i] = 7;  //Ìø×ªÏÂÒ»²½
                 printf("return ref, goto step 7\n");
             }
         }
             break;
-        case 7:{ //è¯»å–å½“å‰ç¼–ç å™¨å€¼
+        case 7:{ //¶ÁÈ¡µ±Ç°±àÂëÆ÷Öµ
             printf("return ref step 7: get_encoder_count = %hhu\n",
                     this->m_n_get_cur_encoder_count);
             MiCmdFrame cmd;
             memset(&cmd, 0x00, sizeof(cmd));
             cmd.data.axis_index = i+1;
 
-            if(m_p_axis_config[i].feedback_mode == NO_ENCODER){   //æ— åé¦ˆåˆ™å°†å½“å‰ä½ç½®è®¾ç½®ä¸ºé›¶ç‚¹
+            if(m_p_axis_config[i].feedback_mode == NO_ENCODER){   //ÎŞ·´À¡Ôò½«µ±Ç°Î»ÖÃÉèÖÃÎªÁãµã
                 cmd.data.cmd = CMD_MI_SET_REF_POINT;
             }else{
-                cmd.data.cmd = CMD_MI_GET_CUR_ENCODER;   //å…¶å®ƒç±»å‹åˆ™è¯»å–å½“å‰å•åœˆç»å¯¹å€¼
+                cmd.data.cmd = CMD_MI_GET_CUR_ENCODER;   //ÆäËüÀàĞÍÔò¶ÁÈ¡µ±Ç°µ¥È¦¾ø¶ÔÖµ
             }
 
 
             this->m_p_mi_comm->WriteCmd(cmd);
-            m_n_ret_ref_step[i] = 8;  //è·³è½¬ä¸‹ä¸€æ­¥
+            m_n_ret_ref_step[i] = 8;  //Ìø×ªÏÂÒ»²½
             printf("return ref, goto step 8\n");
 
         }
             break;
-        case 8: //ç­‰å¾…è®¾ç½®å‚è€ƒç‚¹å®Œæˆï¼Œåœ¨MiæŒ‡ä»¤å“åº”å¤„ç†å‡½æ•°ä¸­å¤„ç†
+        case 8: //µÈ´ıÉèÖÃ²Î¿¼µãÍê³É£¬ÔÚMiÖ¸ÁîÏìÓ¦´¦Àíº¯ÊıÖĞ´¦Àí
 
 
             break;
-        case 9: //ç­‰å¾…è®¾ç½®å®Œæˆï¼Œç§»åŠ¨åˆ°è½´å‚è€ƒç‚¹1
+        case 9: //µÈ´ıÉèÖÃÍê³É£¬ÒÆ¶¯µ½Öá²Î¿¼µã1
 
-            dis = this->m_p_axis_config[i].axis_home_pos[0]-this->GetPhyAxisMachPosFeedback(i);   //ç§»åŠ¨è·ç¦»
+            dis = this->m_p_axis_config[i].axis_home_pos[0]-this->GetPhyAxisMachPosFeedback(i);   //ÒÆ¶¯¾àÀë
             if(dis >= 0)
                 dir = DIR_POSITIVE;
             else
@@ -10564,31 +10564,31 @@ void ChannelEngine::ReturnRefPoint(){
             printf("axis %u dir = %hhd, dis = %lf, curpos = %lf\n", i, dir, dis, GetPhyAxisMachPosFeedback(i));
 
             this->ManualMove(i, dir, m_p_axis_config[i].ret_ref_speed, dis);
-            m_n_ret_ref_step[i] = 10;  //è·³è½¬ä¸‹ä¸€æ­¥
+            m_n_ret_ref_step[i] = 10;  //Ìø×ªÏÂÒ»²½
             printf("return ref, goto step 10\n");
             break;
-        case 10:  //ç­‰å¾…è½´ç§»åŠ¨åˆ°ä½,å®Œæˆï¼
+        case 10:  //µÈ´ıÖáÒÆ¶¯µ½Î»,Íê³É£¡
 
-            if(fabs(this->GetPhyAxisMachPosFeedback(i)- m_p_axis_config[i].axis_home_pos[0]) <= 0.005){  //åˆ°ä½
-                m_n_ret_ref_step[i] = 11;  //è·³è½¬ä¸‹ä¸€æ­¥
+            if(fabs(this->GetPhyAxisMachPosFeedback(i)- m_p_axis_config[i].axis_home_pos[0]) <= 0.005){  //µ½Î»
+                m_n_ret_ref_step[i] = 11;  //Ìø×ªÏÂÒ»²½
             }
             break;
-        case 11:  //å›å‚è€ƒç‚¹å®Œæˆ
+        case 11:  //»Ø²Î¿¼µãÍê³É
             printf("axis %u return ref over\n", i);
             if(this->m_p_axis_config[i].feedback_mode == ABSOLUTE_ENCODER_YASAKAWA ||
                 this->m_p_axis_config[i].feedback_mode == ABSOLUTE_ENCODER_PANASONIC ||
-                this->m_p_axis_config[i].feedback_mode == LINEAR_ENCODER){  //ç»å¯¹å€¼éœ€è¦å‘é€è®¾ç½®å‚è€ƒç‚¹æŒ‡ä»¤
+                this->m_p_axis_config[i].feedback_mode == LINEAR_ENCODER){  //¾ø¶ÔÖµĞèÒª·¢ËÍÉèÖÃ²Î¿¼µãÖ¸Áî
                 MiCmdFrame mi_cmd;
                 memset(&mi_cmd, 0x00, sizeof(mi_cmd));
                 mi_cmd.data.cmd = CMD_MI_SET_REF_CUR;
                 mi_cmd.data.axis_index = i+1;
-                int64_t pos = m_p_axis_config[i].axis_home_pos[0] * 1e7;   //å•ä½è½¬æ¢ï¼Œ0.1nm
+                int64_t pos = m_p_axis_config[i].axis_home_pos[0] * 1e7;   //µ¥Î»×ª»»£¬0.1nm
                 memcpy(cmd.data.data, &pos, sizeof(int64_t));
 
                 this->m_p_mi_comm->WriteCmd(mi_cmd);
             }else{
                 this->SetRetRefFlag(i, true);
-                this->m_p_pmc_reg->FReg().bits[0].in_ref_point |= (0x01<<i);   //ç½®ä½åˆ°å‚è€ƒç‚¹æ ‡å¿—
+                this->m_p_pmc_reg->FReg().bits[0].in_ref_point |= (0x01<<i);   //ÖÃÎ»µ½²Î¿¼µã±êÖ¾
             }
 //			printf("return ref over flag : 0x%llx, 0x%hhx, 0x%hhx, 0x%hhx, 0x%hhx, 0x%hhx, 0x%hhx, 0x%hhx, 0x%hhx\n", this->m_p_pmc_reg->FReg().bits[0].in_ref_point,
 //					m_p_pmc_reg->FReg().all[200], m_p_pmc_reg->FReg().all[201], m_p_pmc_reg->FReg().all[202], m_p_pmc_reg->FReg().all[203],
@@ -10599,7 +10599,7 @@ void ChannelEngine::ReturnRefPoint(){
 
 
 //#ifdef USES_PMC_PROCESS
-            //PMCè½´æŒ‡ä»¤å›å‚è€ƒç‚¹ç»“æŸå¤„ç†
+            //PMCÖáÖ¸Áî»Ø²Î¿¼µã½áÊø´¦Àí
             if(this->m_p_axis_config[i].axis_pmc > 0 &&
                     this->m_pmc_axis_ctrl[m_p_axis_config[i].axis_pmc-1].GetCmdCount() > 0 &&
                     !this->m_pmc_axis_ctrl[m_p_axis_config[i].axis_pmc-1].IsPaused()){
@@ -10607,13 +10607,13 @@ void ChannelEngine::ReturnRefPoint(){
             }
 
             if(i == 5)
-                this->m_p_pmc_reg->FReg().bits[0].OUT8 = 0;  //pmc Xè½´å›é›¶å¤ä½
+                this->m_p_pmc_reg->FReg().bits[0].OUT8 = 0;  //pmc XÖá»ØÁã¸´Î»
             else if(i == 6)
-                this->m_p_pmc_reg->FReg().bits[0].OUT9 = 0;  //pmc Yè½´å›é›¶å¤ä½
+                this->m_p_pmc_reg->FReg().bits[0].OUT9 = 0;  //pmc YÖá»ØÁã¸´Î»
             else if(i == 7)
-                this->m_p_pmc_reg->FReg().bits[0].OUT10 = 0;  //pmc å·¦Zè½´å›é›¶å¤ä½
+                this->m_p_pmc_reg->FReg().bits[0].OUT10 = 0;  //pmc ×óZÖá»ØÁã¸´Î»
             else if(i == 8)
-                this->m_p_pmc_reg->FReg().bits[0].OUT11 = 0;  //pmc å³Zè½´å›é›¶å¤ä½
+                this->m_p_pmc_reg->FReg().bits[0].OUT11 = 0;  //pmc ÓÒZÖá»ØÁã¸´Î»
 //#endif
 
             if(m_n_mask_ret_ref == 0){
@@ -10622,11 +10622,11 @@ void ChannelEngine::ReturnRefPoint(){
                 m_n_ret_ref_auto_cur = 0;
             }
             break;
-        case 20: //å¤±è´¥å¤„ç†
+        case 20: //Ê§°Ü´¦Àí
             this->m_n_mask_ret_ref &= ~(0x01<<i);
             m_n_ret_ref_step[i] = 0;
 //#ifdef USES_PMC_PROCESS
-            //PMCè½´æŒ‡ä»¤å›å‚è€ƒç‚¹ç»“æŸå¤„ç†
+            //PMCÖáÖ¸Áî»Ø²Î¿¼µã½áÊø´¦Àí
             if(this->m_p_axis_config[i].axis_pmc > 0 &&
                     this->m_pmc_axis_ctrl[m_p_axis_config[i].axis_pmc-1].GetCmdCount() > 0 &&
                     !this->m_pmc_axis_ctrl[m_p_axis_config[i].axis_pmc-1].IsPaused()){
@@ -10634,13 +10634,13 @@ void ChannelEngine::ReturnRefPoint(){
             }
 
             if(i == 5)
-                this->m_p_pmc_reg->FReg().bits[0].OUT8 = 0;  //pmc Xè½´å›é›¶å¤ä½
+                this->m_p_pmc_reg->FReg().bits[0].OUT8 = 0;  //pmc XÖá»ØÁã¸´Î»
             else if(i == 6)
-                this->m_p_pmc_reg->FReg().bits[0].OUT9 = 0;  //pmc Yè½´å›é›¶å¤ä½
+                this->m_p_pmc_reg->FReg().bits[0].OUT9 = 0;  //pmc YÖá»ØÁã¸´Î»
             else if(i == 7)
-                this->m_p_pmc_reg->FReg().bits[0].OUT10 = 0;  //pmc å·¦Zè½´å›é›¶å¤ä½
+                this->m_p_pmc_reg->FReg().bits[0].OUT10 = 0;  //pmc ×óZÖá»ØÁã¸´Î»
             else if(i == 8)
-                this->m_p_pmc_reg->FReg().bits[0].OUT11 = 0;  //pmc å³Zè½´å›é›¶å¤ä½
+                this->m_p_pmc_reg->FReg().bits[0].OUT11 = 0;  //pmc ÓÒZÖá»ØÁã¸´Î»
 //#endif
             if(m_n_mask_ret_ref == 0){
                 this->m_b_ret_ref = false;
@@ -10668,15 +10668,15 @@ void ChannelEngine::ReturnRefPoint(){
             this->m_b_ret_ref = false;
             this->m_b_ret_ref_auto = false;
             m_n_ret_ref_auto_cur = 0;
-            printf("è‡ªåŠ¨å›é›¶å¼‚å¸¸ï¼\n");
+            printf("×Ô¶¯»ØÁãÒì³££¡\n");
         }
     }
 }
 
 /**
- * @brief è®¾ç½®è½´å›å‚è€ƒç‚¹å®Œæˆæ ‡å¿—
- * @param phy_axis : ç‰©ç†è½´å·ï¼Œä»0å¼€å§‹
- * @param flag ï¼š true--è®¾ç½®å®Œæˆæ ‡å¿—    false--å–æ¶ˆå®Œæˆæ ‡å¿—
+ * @brief ÉèÖÃÖá»Ø²Î¿¼µãÍê³É±êÖ¾
+ * @param phy_axis : ÎïÀíÖáºÅ£¬´Ó0¿ªÊ¼
+ * @param flag £º true--ÉèÖÃÍê³É±êÖ¾    false--È¡ÏûÍê³É±êÖ¾
  */
 void ChannelEngine::SetRetRefFlag(uint8_t phy_axis, bool flag){
 //	printf("SetRetRefFlag: axis=%hhu, flag =%hhu\n", phy_axis, flag);
@@ -10694,11 +10694,11 @@ void ChannelEngine::SetRetRefFlag(uint8_t phy_axis, bool flag){
             m_p_pmc_reg->FReg().bits[chn].ZRF2 |= (0x01<<bit);
 
     }else{
-        if(m_p_axis_config[phy_axis].axis_interface == VIRTUAL_AXIS || m_p_axis_config[phy_axis].axis_type == AXIS_SPINDLE	//ä¸»è½´å’Œè™šæ‹Ÿè½´ä¸ç”¨å›å‚è€ƒç‚¹
-            || (m_p_axis_config[phy_axis].feedback_mode == NO_ENCODER && m_p_axis_config[phy_axis].ret_ref_mode == 0)    //æ— åé¦ˆï¼Œå¹¶ä¸”ç¦æ­¢å›å‚è€ƒç‚¹
-            || (m_p_axis_config[phy_axis].feedback_mode != INCREMENTAL_ENCODER && m_p_axis_config[phy_axis].feedback_mode != NO_ENCODER && m_p_axis_config[phy_axis].ref_encoder != kAxisRefNoDef)    //ç»å¯¹å€¼ç¼–ç å™¨ï¼Œå·²è®¾å®šå‚è€ƒç‚¹
-            || (m_p_axis_config[phy_axis].feedback_mode == INCREMENTAL_ENCODER && m_p_axis_config[phy_axis].ret_ref_mode == 0)){  //å¢é‡ç¼–ç å™¨ï¼Œç¦æ­¢å›å‚è€ƒç‚¹
-            return;   //ä¸ç”¨å›å‚è€ƒç‚¹çš„è½´ç¦æ­¢å°†å›é›¶æ ‡å¿—å¤ä½
+        if(m_p_axis_config[phy_axis].axis_interface == VIRTUAL_AXIS || m_p_axis_config[phy_axis].axis_type == AXIS_SPINDLE	//Ö÷ÖáºÍĞéÄâÖá²»ÓÃ»Ø²Î¿¼µã
+            || (m_p_axis_config[phy_axis].feedback_mode == NO_ENCODER && m_p_axis_config[phy_axis].ret_ref_mode == 0)    //ÎŞ·´À¡£¬²¢ÇÒ½ûÖ¹»Ø²Î¿¼µã
+            || (m_p_axis_config[phy_axis].feedback_mode != INCREMENTAL_ENCODER && m_p_axis_config[phy_axis].feedback_mode != NO_ENCODER && m_p_axis_config[phy_axis].ref_encoder != kAxisRefNoDef)    //¾ø¶ÔÖµ±àÂëÆ÷£¬ÒÑÉè¶¨²Î¿¼µã
+            || (m_p_axis_config[phy_axis].feedback_mode == INCREMENTAL_ENCODER && m_p_axis_config[phy_axis].ret_ref_mode == 0)){  //ÔöÁ¿±àÂëÆ÷£¬½ûÖ¹»Ø²Î¿¼µã
+            return;   //²»ÓÃ»Ø²Î¿¼µãµÄÖá½ûÖ¹½«»ØÁã±êÖ¾¸´Î»
         }
         this->m_n_mask_ret_ref_over &= ~(0x01<<phy_axis);
 
@@ -10708,7 +10708,7 @@ void ChannelEngine::SetRetRefFlag(uint8_t phy_axis, bool flag){
             m_p_pmc_reg->FReg().bits[chn].ZRF2 &= ~(0x01<<bit);
     }
 
-//	if(this->m_p_axis_config[phy_axis].axis_pmc == 0){//éPMCè½´    //PMCè½´ä¹Ÿèƒ½åŠ è½½åˆ°é€šé“
+//	if(this->m_p_axis_config[phy_axis].axis_pmc == 0){//·ÇPMCÖá    //PMCÖáÒ²ÄÜ¼ÓÔØµ½Í¨µÀ
         uint8_t chn_axis = 0;
         chn = this->GetAxisChannel(phy_axis, chn_axis);
         if(chn != CHANNEL_ENGINE_INDEX){
@@ -10721,10 +10721,10 @@ void ChannelEngine::SetRetRefFlag(uint8_t phy_axis, bool flag){
 }
 
 /**
- * @brief è·å–ç‰©ç†è½´æ‰€å±é€šé“åŠé€šé“è½´ç¼–å·
- * @param phy_axis : ç‰©ç†è½´å·ï¼Œä»0å¼€å§‹
- * @param chn_axis[out] ï¼š  é€šé“è½´å·ï¼Œä»0å¼€å§‹
- * @return è¿”å›æ‰€å±é€šé“å·ï¼Œä»0å¼€å§‹,0xFFè¡¨ç¤ºæ²¡æœ‰æ‰€å±é€šé“
+ * @brief »ñÈ¡ÎïÀíÖáËùÊôÍ¨µÀ¼°Í¨µÀÖá±àºÅ
+ * @param phy_axis : ÎïÀíÖáºÅ£¬´Ó0¿ªÊ¼
+ * @param chn_axis[out] £º  Í¨µÀÖáºÅ£¬´Ó0¿ªÊ¼
+ * @return ·µ»ØËùÊôÍ¨µÀºÅ£¬´Ó0¿ªÊ¼,0xFF±íÊ¾Ã»ÓĞËùÊôÍ¨µÀ
  */
 uint8_t ChannelEngine::GetAxisChannel(uint8_t phy_axis, uint8_t &chn_axis){
     uint8_t chn = this->m_map_phy_axis_chn[phy_axis];
@@ -10742,16 +10742,16 @@ uint8_t ChannelEngine::GetAxisChannel(uint8_t phy_axis, uint8_t &chn_axis){
 }
 
 /**
- * @brief æµ‹è¯•tmpç›®å½•æ˜¯å¦å­˜åœ¨ï¼Œä¸å­˜åœ¨åˆ™åˆ›å»º
+ * @brief ²âÊÔtmpÄ¿Â¼ÊÇ·ñ´æÔÚ£¬²»´æÔÚÔò´´½¨
  */
 void ChannelEngine::CheckTmpDir(){
-    DIR *dir = opendir("/cnc/tmp/");   //æ‰“å¼€ä¸´æ—¶ç›®å½•
+    DIR *dir = opendir("/cnc/tmp/");   //´ò¿ªÁÙÊ±Ä¿Â¼
     if(dir == nullptr){
-        //åˆ›å»ºç›®å½•
-        if(mkdir("/cnc/tmp/", 0755) == -1){//åˆ›å»ºç›®å½•å¤±è´¥
-            g_ptr_trace->PrintTrace(TRACE_ERROR, HMI_COMMUNICATION, "åˆ›å»ºç›®å½•å¤±è´¥ï¼[/cnc/tmp/]");
+        //´´½¨Ä¿Â¼
+        if(mkdir("/cnc/tmp/", 0755) == -1){//´´½¨Ä¿Â¼Ê§°Ü
+            g_ptr_trace->PrintTrace(TRACE_ERROR, HMI_COMMUNICATION, "´´½¨Ä¿Â¼Ê§°Ü£¡[/cnc/tmp/]");
         }else{
-            g_ptr_trace->PrintTrace(TRACE_INFO, HMI_COMMUNICATION, "æ‰“å¼€ç›®å½•[/cnc/tmp/]å¤±è´¥ï¼è‡ªåŠ¨åˆ›å»ºæ”¹ç›®å½•ï¼");
+            g_ptr_trace->PrintTrace(TRACE_INFO, HMI_COMMUNICATION, "´ò¿ªÄ¿Â¼[/cnc/tmp/]Ê§°Ü£¡×Ô¶¯´´½¨¸ÄÄ¿Â¼£¡");
         }
     }else{
         closedir(dir);
@@ -10760,7 +10760,7 @@ void ChannelEngine::CheckTmpDir(){
 
 
 /**
- * @brief è¾“å‡ºè°ƒè¯•æ•°æ®
+ * @brief Êä³öµ÷ÊÔÊı¾İ
  */
 void ChannelEngine::PrintDebugInfo(){
     printf("CHN ENGINE DEBUG INFO: module_ready_mask=0x%hhu\n", g_sys_state.module_ready_mask);

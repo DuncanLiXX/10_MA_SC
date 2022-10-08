@@ -1344,6 +1344,28 @@ bool ParmManager::ReadAxisConfig(){
 			m_sc_axis_config[i].spd_speed_match = m_ini_axis->GetIntValueOrDefault(sname, "spd_speed_match", 1);
 			m_sc_axis_config[i].spd_speed_diff_limit = m_ini_axis->GetIntValueOrDefault(sname, "spd_speed_diff_limit", 10);
 			m_sc_axis_config[i].spd_encoder_location = m_ini_axis->GetIntValueOrDefault(sname, "spd_encoder_location", 0);
+
+            m_sc_axis_config[i].spd_ctrl_GST = m_ini_axis->GetIntValueOrDefault(sname, "spd_ctrl_GST", 0);
+            m_sc_axis_config[i].spd_ctrl_SGB = m_ini_axis->GetIntValueOrDefault(sname, "spd_ctrl_SGB", 0);
+            m_sc_axis_config[i].spd_ctrl_SFA = m_ini_axis->GetIntValueOrDefault(sname, "spd_ctrl_SFA", 1);
+            m_sc_axis_config[i].spd_ctrl_ORM = m_ini_axis->GetIntValueOrDefault(sname, "spd_ctrl_ORM", 0);
+            m_sc_axis_config[i].spd_ctrl_TCW = m_ini_axis->GetIntValueOrDefault(sname, "spd_ctrl_TCW", 1);
+            m_sc_axis_config[i].spd_ctrl_CWM = m_ini_axis->GetIntValueOrDefault(sname, "spd_ctrl_CWM", 0);
+            m_sc_axis_config[i].spd_ctrl_TSO = m_ini_axis->GetIntValueOrDefault(sname, "spd_ctrl_TSO", 0);
+
+            m_sc_axis_config[i].spd_analog_gain = m_ini_axis->GetIntValueOrDefault(sname, "spd_analog_gain", 1000);
+            m_sc_axis_config[i].spd_sor_speed = m_ini_axis->GetIntValueOrDefault(sname, "spd_sor_speed", 20);
+            m_sc_axis_config[i].spd_motor_min_speed = m_ini_axis->GetIntValueOrDefault(sname, "spd_motor_min_speed", 0);
+            m_sc_axis_config[i].spd_motor_max_speed = m_ini_axis->GetIntValueOrDefault(sname, "spd_motor_max_speed", 32767);
+            m_sc_axis_config[i].spd_gear_speed_low = m_ini_axis->GetIntValueOrDefault(sname, "spd_gear_speed_low", 1500);
+            m_sc_axis_config[i].spd_gear_speed_middle = m_ini_axis->GetIntValueOrDefault(sname, "spd_gear_speed_middle", 5000);
+            m_sc_axis_config[i].spd_gear_speed_high = m_ini_axis->GetIntValueOrDefault(sname, "spd_gear_speed_high", 10000);
+            m_sc_axis_config[i].spd_gear_switch_speed1 = m_ini_axis->GetIntValueOrDefault(sname, "spd_gear_switch_speed1", 1500);
+            m_sc_axis_config[i].spd_gear_switch_speed2 = m_ini_axis->GetIntValueOrDefault(sname, "spd_gear_switch_speed2", 5000);
+            m_sc_axis_config[i].spd_sync_error_gain = m_ini_axis->GetIntValueOrDefault(sname, "spd_sync_error_gain", 200);
+            m_sc_axis_config[i].spd_speed_feed_gain = m_ini_axis->GetIntValueOrDefault(sname, "spd_speed_feed_gain", 60000);
+            m_sc_axis_config[i].spd_pos_ratio_gain = m_ini_axis->GetIntValueOrDefault(sname, "spd_pos_ratio_gain", 100000);
+
 			m_sc_axis_config[i].fast_locate = m_ini_axis->GetIntValueOrDefault(sname, "fast_locat", 1);
 			m_sc_axis_config[i].pos_disp_mode = m_ini_axis->GetIntValueOrDefault(sname, "pos_disp_mode", 0);
 			m_sc_axis_config[i].encoder_max_cycle = m_ini_axis->GetIntValueOrDefault(sname, "encoder_max_cycle", 0);  //最大圈数默认值由256改为0
@@ -1461,6 +1483,28 @@ bool ParmManager::ReadAxisConfig(){
 			m_sc_axis_config[i].spd_speed_match = 1;
 			m_sc_axis_config[i].spd_speed_diff_limit = 10;
 			m_sc_axis_config[i].spd_encoder_location = 0;
+
+            m_sc_axis_config[i].spd_ctrl_GST = 0;
+            m_sc_axis_config[i].spd_ctrl_SGB = 0;
+            m_sc_axis_config[i].spd_ctrl_SFA = 1;
+            m_sc_axis_config[i].spd_ctrl_ORM = 0;
+            m_sc_axis_config[i].spd_ctrl_TCW = 1;
+            m_sc_axis_config[i].spd_ctrl_CWM = 0;
+            m_sc_axis_config[i].spd_ctrl_TSO = 0;
+
+            m_sc_axis_config[i].spd_analog_gain = 1000;
+            m_sc_axis_config[i].spd_sor_speed = 20;
+            m_sc_axis_config[i].spd_motor_min_speed = 0;
+            m_sc_axis_config[i].spd_motor_max_speed = 32767;
+            m_sc_axis_config[i].spd_gear_speed_low = 1500;
+            m_sc_axis_config[i].spd_gear_speed_middle = 5000;
+            m_sc_axis_config[i].spd_gear_speed_high = 10000;
+            m_sc_axis_config[i].spd_gear_switch_speed1 = 1500;
+            m_sc_axis_config[i].spd_gear_switch_speed2 = 5000;
+            m_sc_axis_config[i].spd_sync_error_gain = 200;
+            m_sc_axis_config[i].spd_speed_feed_gain = 60000;
+            m_sc_axis_config[i].spd_pos_ratio_gain = 100000;
+
 			m_sc_axis_config[i].fast_locate = 1;
 			m_sc_axis_config[i].pos_disp_mode = 0;
 			m_sc_axis_config[i].encoder_max_cycle = 0;   //最大圈数默认值由256改为0
@@ -1566,7 +1610,29 @@ bool ParmManager::ReadAxisConfig(){
 			m_ini_axis->AddKeyValuePair(string("spd_speed_check"), string("1"), ns);
 			m_ini_axis->AddKeyValuePair(string("spd_speed_match"), string("1"), ns);
 			m_ini_axis->AddKeyValuePair(string("spd_speed_diff_limit"), string("10"), ns);
-			m_ini_axis->AddKeyValuePair(string("spd_encoder_location"), string("0"), ns);
+            m_ini_axis->AddKeyValuePair(string("spd_encoder_location"), string("0"), ns);
+
+            m_ini_axis->AddKeyValuePair(string("spd_ctrl_GST"), string("0"), ns);
+            m_ini_axis->AddKeyValuePair(string("spd_ctrl_SGB"), string("0"), ns);
+            m_ini_axis->AddKeyValuePair(string("spd_ctrl_SFA"), string("1"), ns);
+            m_ini_axis->AddKeyValuePair(string("spd_ctrl_ORM"), string("0"), ns);
+            m_ini_axis->AddKeyValuePair(string("spd_ctrl_TCW"), string("1"), ns);
+            m_ini_axis->AddKeyValuePair(string("spd_ctrl_CWM"), string("0"), ns);
+            m_ini_axis->AddKeyValuePair(string("spd_ctrl_TSO"), string("0"), ns);
+
+            m_ini_axis->AddKeyValuePair(string("spd_analog_gain"), string("1000"), ns);
+            m_ini_axis->AddKeyValuePair(string("spd_sor_speed"), string("20"), ns);
+            m_ini_axis->AddKeyValuePair(string("spd_motor_min_speed"), string("0"), ns);
+            m_ini_axis->AddKeyValuePair(string("spd_motor_max_speed"), string("32767"), ns);
+            m_ini_axis->AddKeyValuePair(string("spd_gear_speed_low"), string("1500"), ns);
+            m_ini_axis->AddKeyValuePair(string("spd_gear_speed_middle"), string("5000"), ns);
+            m_ini_axis->AddKeyValuePair(string("spd_gear_speed_high"), string("10000"), ns);
+            m_ini_axis->AddKeyValuePair(string("spd_gear_switch_speed1"), string("1500"), ns);
+            m_ini_axis->AddKeyValuePair(string("spd_gear_switch_speed2"), string("5000"), ns);
+            m_ini_axis->AddKeyValuePair(string("spd_sync_error_gain"), string("200"), ns);
+            m_ini_axis->AddKeyValuePair(string("spd_speed_feed_gain"), string("60000"), ns);
+            m_ini_axis->AddKeyValuePair(string("spd_pos_ratio_gain"), string("100000"), ns);
+
 			m_ini_axis->AddKeyValuePair(string("fast_locate"), string("1"), ns);
 			m_ini_axis->AddKeyValuePair(string("pos_disp_mode"), string("0"), ns);
 			m_ini_axis->AddKeyValuePair(string("encoder_max_cycle"), string("0"), ns);  //最大圈数默认值由256改为0
@@ -4361,6 +4427,83 @@ bool ParmManager::UpdateAxisParam(uint8_t axis_index, uint32_t param_no, ParamVa
 		sprintf(kname, "auto_sync");
 		m_ini_axis->SetIntValue(sname, kname,value.value_uint8);
 		break;
+    case 1657:	//SOR信号用途
+        sprintf(kname, "spd_ctrl_GST");
+        m_ini_axis->SetIntValue(sname, kname,value.value_uint8);
+        break;
+    case 1658:	//主轴换挡方式
+        sprintf(kname, "spd_ctrl_SGB");
+        m_ini_axis->SetIntValue(sname, kname,value.value_uint8);
+        break;
+    case 1659:	//齿轮换挡时是否输出SF信号
+        sprintf(kname, "spd_ctrl_SFA");
+        m_ini_axis->SetIntValue(sname, kname,value.value_uint8);
+        break;
+    case 1660:	//主轴定向时的转向
+        sprintf(kname, "spd_ctrl_ORM");
+        m_ini_axis->SetIntValue(sname, kname,value.value_uint8);
+        break;
+    case 1661:	//主轴转向是否受M03/M04影响
+        sprintf(kname, "spd_ctrl_TCW");
+        m_ini_axis->SetIntValue(sname, kname,value.value_uint8);
+        break;
+    case 1662:	//主轴转向取反
+        sprintf(kname, "spd_ctrl_CWM");
+        m_ini_axis->SetIntValue(sname, kname,value.value_uint8);
+        break;
+    case 1663:	//螺纹切削和刚性攻丝时，主轴倍率设置
+        sprintf(kname, "spd_ctrl_TSO");
+        m_ini_axis->SetIntValue(sname, kname,value.value_uint8);
+        break;
+    case 1664:	//模拟输出增益
+        sprintf(kname, "spd_analog_gain");
+        m_ini_axis->SetIntValue(sname, kname,value.value_uint16);
+        break;
+    case 1665:	//主轴齿轮换档/定向时的主轴转速
+        sprintf(kname, "spd_sor_speed");
+        m_ini_axis->SetIntValue(sname, kname,value.value_uint16);
+        break;
+    case 1666:	//主轴电机最小钳制速度
+        sprintf(kname, "spd_motor_min_speed");
+        m_ini_axis->SetIntValue(sname, kname,value.value_uint16);
+        break;
+    case 1667:	//主轴电机最大钳制速度
+        sprintf(kname, "spd_motor_max_speed");
+        m_ini_axis->SetIntValue(sname, kname,value.value_uint16);
+        break;
+    case 1668:	//齿轮低档位最高转速
+        sprintf(kname, "spd_gear_speed_low");
+        m_ini_axis->SetIntValue(sname, kname,value.value_uint16);
+        break;
+    case 1669:	//齿轮中档位最高转速
+        sprintf(kname, "spd_gear_speed_middle");
+        m_ini_axis->SetIntValue(sname, kname,value.value_uint16);
+        break;
+    case 1670:	//齿轮高档位最高转速
+        sprintf(kname, "spd_gear_speed_high");
+        m_ini_axis->SetIntValue(sname, kname,value.value_uint16);
+        break;
+    case 1671:	//B方式档1->档2电机转速
+        sprintf(kname, "spd_gear_switch_speed1");
+        m_ini_axis->SetIntValue(sname, kname,value.value_uint16);
+        break;
+    case 1672:	//B方式档2->档3电机转速
+        sprintf(kname, "spd_gear_switch_speed2");
+        m_ini_axis->SetIntValue(sname, kname,value.value_uint16);
+        break;
+    case 1673:	//攻丝同步误差增益
+        sprintf(kname, "spd_sync_error_gain");
+        m_ini_axis->SetIntValue(sname, kname,value.value_uint32);
+        break;
+    case 1674:	//攻丝轴速度前馈增益
+        sprintf(kname, "spd_speed_feed_gain");
+        m_ini_axis->SetIntValue(sname, kname,value.value_uint32);
+        break;
+    case 1675:	//攻丝轴位置比例增益
+        sprintf(kname, "spd_pos_ratio_gain");
+        m_ini_axis->SetIntValue(sname, kname,value.value_uint32);
+        break;
+
 	default:
 		g_ptr_trace->PrintLog(LOG_ALARM, "轴参数更新，参数号非法：%d", param_no);
 		res = false;
@@ -5681,6 +5824,63 @@ void ParmManager::ActiveAxisParam(uint8_t axis_index, uint32_t param_no, ParamVa
 	case 1656:	//从动轴回参考点后自动同步校准
 		this->m_sc_axis_config[axis_index].auto_sync = value.value_uint8;
 		break;
+    case 1657:	//SOR信号用途
+        this->m_sc_axis_config[axis_index].spd_ctrl_GST = value.value_uint8;
+        break;
+    case 1658:	//主轴换挡方式
+        this->m_sc_axis_config[axis_index].spd_ctrl_SGB = value.value_uint8;
+        break;
+    case 1659:	//齿轮换挡时是否输出SF信号
+        this->m_sc_axis_config[axis_index].spd_ctrl_SFA = value.value_uint8;
+        break;
+    case 1660:	//主轴定向时的转向
+        this->m_sc_axis_config[axis_index].spd_ctrl_ORM = value.value_uint8;
+        break;
+    case 1661:	//主轴转向是否受M03/M04影响
+        this->m_sc_axis_config[axis_index].spd_ctrl_TCW = value.value_uint8;
+        break;
+    case 1662:	//主轴转向取反
+        this->m_sc_axis_config[axis_index].spd_ctrl_CWM = value.value_uint8;
+        break;
+    case 1663:	//螺纹切削和刚性攻丝时，主轴倍率设置
+        this->m_sc_axis_config[axis_index].spd_ctrl_TSO = value.value_uint8;
+        break;
+    case 1664:	//模拟输出增益
+        this->m_sc_axis_config[axis_index].spd_analog_gain = value.value_uint16;
+        break;
+    case 1665:	//主轴齿轮换档/定向时的主轴转速
+        this->m_sc_axis_config[axis_index].spd_sor_speed = value.value_uint16;
+        break;
+    case 1666:	//主轴电机最小钳制速度
+        this->m_sc_axis_config[axis_index].spd_motor_min_speed = value.value_uint16;
+        break;
+    case 1667:	//主轴电机最大钳制速度
+        this->m_sc_axis_config[axis_index].spd_motor_max_speed = value.value_uint16;
+        break;
+    case 1668:	//齿轮低档位最高转速
+        this->m_sc_axis_config[axis_index].spd_gear_speed_low = value.value_uint16;
+        break;
+    case 1669:	//齿轮中档位最高转速
+        this->m_sc_axis_config[axis_index].spd_gear_speed_middle = value.value_uint16;
+        break;
+    case 1670:	//齿轮高档位最高转速
+        this->m_sc_axis_config[axis_index].spd_gear_speed_high = value.value_uint16;
+        break;
+    case 1671:	//B方式档1->档2电机转速
+        this->m_sc_axis_config[axis_index].spd_gear_switch_speed1 = value.value_uint16;
+        break;
+    case 1672:	//B方式档2->档3电机转速
+        this->m_sc_axis_config[axis_index].spd_gear_switch_speed2 = value.value_uint16;
+        break;
+    case 1673:	//攻丝同步误差增益
+        this->m_sc_axis_config[axis_index].spd_sync_error_gain = value.value_uint32;
+        break;
+    case 1674:	//攻丝轴速度前馈增益
+        this->m_sc_axis_config[axis_index].spd_speed_feed_gain = value.value_uint32;
+        break;
+    case 1675:	//攻丝轴位置比例增益
+        this->m_sc_axis_config[axis_index].spd_pos_ratio_gain = value.value_uint32;
+        break;
 	default:
 		g_ptr_trace->PrintLog(LOG_ALARM, "轴参数激活，参数号非法：%d", param_no);
 		break;

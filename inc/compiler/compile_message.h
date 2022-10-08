@@ -1070,6 +1070,36 @@ protected:
 
 
 };
+
+
+/**
+ * @brief 输入指令消息（G10）
+ */
+class InputMsg : public RecordMsg{
+public:
+	InputMsg();    //构造函数
+	virtual ~InputMsg();  //析构函数
+
+	virtual void Execute();		//执行函数
+	virtual void GetData(void* rec );	//获取数据
+	virtual void SetData(void* rec);		//设置数据
+	//生成待输出给MC的运动控制数据包
+	virtual int GetOutputData(GCodeFrame *data, uint32_t mask, bool flag);
+	virtual void PrintString();   //用于程序调试
+	InputMsg& operator=( const InputMsg& msg);  //赋值运算符
+
+	double LData;
+	double PData;
+	double HData;
+	double DData;
+	double RData;
+	double XData;
+	double YData;
+	double ZData;
+	double QData;
+
+};
+
 #endif
 
 //class FiveAxisMsg:public ModeMsg{

@@ -136,6 +136,7 @@ enum CodeMsgType{
 	AUTO_TOOL_MEASURE_MSG, //32  自动对刀指令消息
 	RESTART_OVER_MSG,     //33   加工复位完成消息
 	MOVE_MSG,             //34   移动指令基类消息
+	INPUT_MSG,
 	GUARD_MSG           //消息类型卫兵
 };
 

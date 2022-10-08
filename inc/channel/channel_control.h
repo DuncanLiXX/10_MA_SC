@@ -390,6 +390,7 @@ private:
 	bool ExecuteMacroProgCallMsg(RecordMsg *msg); //实际执行宏程序调用消息
 	bool ExecuteAutoToolMeasureMsg(RecordMsg *msg);   //实际执行自动对刀指令消息
 	bool ExecuteRestartOverMsg(RecordMsg *msg);   //实际执行加工复位完成指令消息
+	bool ExecuteInputMsg(RecordMsg *msg);		//执行G10 输入指令消息
 
 #ifdef USES_SPEED_TORQUE_CTRL	
 	bool ExecuteSpeedCtrlMsg(RecordMsg *msg);   //执行速度控制消息

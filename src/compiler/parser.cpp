@@ -587,7 +587,12 @@ bool Parser::AnalyzeGCode(LexerGCode *gcode){
 				return false;
 			else
 				has_move_code = true;
-		}else{
+		}else if(m_mode_code[0] == G10_CMD){
+			if(!CreateInputMsg()){
+				return false;
+			}
+		}
+		else{
 			if(!CreateModeMsg(m_mode_code[0]))
 				return false;
 		}
@@ -2726,7 +2731,6 @@ bool Parser::CreateRefReturnMsg(const int gcode){
 
 	if(GetCodeData(P_DATA, data)){
 		new_msg->ref_id = (int)data;
-		printf("-----> G30 P data %lf\n", new_msg->ref_id);
 	}
 
 	if(this->m_p_compiler_status->jump_flag)
@@ -3014,6 +3018,24 @@ bool Parser::CreateSpindleCheckMsg(){
 
 	ProcessLastBlockRec(new_msg);
 
+	return true;
+}
+
+bool Parser::CreateInputMsg(){
+	InputMsg * new_msg = new InputMsg();
+
+	GetCodeData(L_DATA, new_msg->LData);
+	GetCodeData(P_DATA, new_msg->PData);
+	GetCodeData(H_DATA, new_msg->HData);
+	GetCodeData(D_DATA, new_msg->DData);
+	GetCodeData(R_DATA, new_msg->RData);
+	GetCodeData(X_DATA, new_msg->XData);
+	GetCodeData(Y_DATA, new_msg->YData);
+	GetCodeData(Z_DATA, new_msg->ZData);
+	GetCodeData(Q_DATA, new_msg->QData);
+
+	m_p_parser_result->Append(new_msg);
+	ProcessLastBlockRec(new_msg);
 	return true;
 }
 

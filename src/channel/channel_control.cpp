@@ -1263,7 +1263,6 @@ bool ChannelControl::SetSysVarValue(const int index, const double &value){
 		int id = index - 2201;
 		if(id < kMaxToolCount){
 			this->m_p_chn_tool_config->geometry_compensation[id][2] = value;
-
 			g_ptr_parm_manager->UpdateToolMeasure(this->m_n_channel_index, id+1, value);
 			this->NotifyHmiToolOffsetChanged(id+1);   //通知HMI刀偏值更改
 		}else
@@ -5522,6 +5521,9 @@ bool ChannelControl::ExecuteMessage(){
 		case RESTART_OVER_MSG:
 			res = this->ExecuteRestartOverMsg(msg);
 			break;
+		case INPUT_MSG:
+			res = this->ExecuteInputMsg(msg);
+			break;
 		default:
 			break;
 		}
@@ -7585,7 +7587,6 @@ bool ChannelControl::ExecuteModeMsg(RecordMsg *msg){
 		}
 	}
 
-
 	//更新模态
 	int mode_index = GCode2Mode[cmd/10];
 	if(McModeFlag[mode_index]){//需要发送给MC的模态指令
@@ -9342,7 +9343,6 @@ bool ChannelControl::ExecuteRefReturnMsg(RecordMsg *msg){
 				return false;
 
 			}else{
-				printf("--------> G30 %lf\n", refmsg->ref_id);
 				for(i = 0; i < m_p_channel_config->chn_axis_count; i++){
 					if(axis_mask & (0x01<<i)){
 						phy_axis = this->GetPhyAxis(i);
@@ -10213,6 +10213,114 @@ bool ChannelControl::ExecuteClearCirclePosMsg(RecordMsg *msg){
 
 	printf("execute clearpos message\n");
 
+	return true;
+}
+
+// @add zk 处理 G10 输入数据指令
+bool ChannelControl::ExecuteInputMsg(RecordMsg * msg){
+
+	InputMsg * input_msg = (InputMsg *)msg;
+
+	if(this->m_n_restart_mode != NOT_RESTART &&
+			input_msg->GetLineNo() < this->m_n_restart_line
+#ifdef USES_ADDITIONAL_PROGRAM
+				&& this->m_n_add_prog_type == NONE_ADD      //非附加程序运行状态
+#endif
+	){//加工复位
+		return true;
+	}
+
+	int count = 0;
+	while(count < 4 ){
+		if(this->ReadMcMoveDataCount() > 0 || !this->CheckBlockOverFlag() ||
+				m_channel_status.machining_state == MS_PAUSED ||
+				m_channel_status.machining_state == MS_WARNING){
+			return false;    //还未运行到位
+		}
+		else{
+			count++;
+//			printf("ExecuteModeMsg: step=%d, %d, c = %d\n", m_channel_mc_status.step_over,m_channel_mc_status.auto_block_over, count);
+			usleep(5000);   //等待5ms，因为MC状态更新周期为5ms，需要等待状态确认
+		}
+	}
+
+	//单段模式
+	if(this->IsStepMode()){
+		if(this->m_b_need_change_to_pause){//单段，切换暂停状态
+			this->m_b_need_change_to_pause = false;
+			m_n_run_thread_state = PAUSE;
+			SetMachineState(MS_PAUSED);
+			return false;
+		}
+
+		//设置当前行号
+		SetCurLineNo(msg->GetLineNo());
+
+	}else{//非单段模式
+		if(m_channel_status.machining_state == MS_PAUSED ||
+				m_channel_status.machining_state == MS_WARNING)
+			return false;
+	}
+
+	int input_type = input_msg->LData;
+	int tool_number = input_msg->PData;
+	int plane = this->m_mc_mode_exec.bits.mode_g17;
+	printf("------------------------> L: %d P: %d plane: %d\n", input_type, tool_number, plane);
+
+	if(tool_number <= 0 or tool_number > kMaxToolCount){
+		// @TODO 刀具号超出范围
+		CreateError(ERR_NO_CUR_RUN_DATA, ERROR_LEVEL, CLEAR_BY_MCP_RESET, 0, m_n_channel_index);
+		this->m_error_code = ERR_NO_CUR_RUN_DATA;
+		return false;
+	}
+
+	switch(input_type){
+		case 10:{
+			// XY平面 刀长补偿 Z   TODO 其他平面的情况下 刀长补偿到不同的轴号
+			if(plane == 0)
+				this->m_p_chn_tool_config->geometry_compensation[tool_number-1][2] = input_msg->RData;
+			else if(plane == 1)
+				this->m_p_chn_tool_config->geometry_compensation[tool_number-1][1] = input_msg->RData;
+			else if(plane == 3)
+				this->m_p_chn_tool_config->geometry_compensation[tool_number-1][0] = input_msg->RData;
+
+			g_ptr_parm_manager->UpdateToolMeasure(this->m_n_channel_index, tool_number, input_msg->RData);
+			this->NotifyHmiToolOffsetChanged(tool_number);   //通知HMI刀偏值更改
+			break;
+		}
+		case 11:{
+			this->m_p_chn_tool_config->radius_compensation[tool_number-1] = input_msg->RData;
+			this->NotifyHmiToolOffsetChanged(tool_number);   //通知HMI刀偏值更改
+			break;
+		}
+		case 12:{
+			this->m_p_chn_tool_config->geometry_wear[tool_number-1] = input_msg->RData;
+			this->NotifyHmiToolOffsetChanged(tool_number);   //通知HMI刀偏值更改
+			break;
+		}
+		case 13:{
+			this->m_p_chn_tool_config->radius_wear[tool_number-1] = input_msg->RData;
+			this->NotifyHmiToolOffsetChanged(tool_number);   //通知HMI刀偏值更改
+			break;
+		}
+		case 50:{
+			int param = input_msg->PData;
+
+			if(SetSysVarValue(param, input_msg->RData))
+				break;
+			else{
+				CreateError(ERR_NO_CUR_RUN_DATA, ERROR_LEVEL, CLEAR_BY_MCP_RESET, 0, m_n_channel_index);
+				this->m_error_code = ERR_NO_CUR_RUN_DATA;
+				return false;
+			}
+		}
+		default:{
+			// @TODO 不支持的L指定
+			CreateError(ERR_NO_CUR_RUN_DATA, ERROR_LEVEL, CLEAR_BY_MCP_RESET, 0, m_n_channel_index);
+			this->m_error_code = ERR_NO_CUR_RUN_DATA;
+			return false;
+		}
+	}
 
 	return true;
 }
@@ -10282,7 +10390,6 @@ void ChannelControl::SetFuncState(int state, uint8_t mode){
 			this->m_p_f_reg->MBDT1 = 1;
 		}
 	}
-
 
 	//通知HMI
 	this->SendChnStatusChangeCmdToHmi(FUNC_STATE);
@@ -11230,8 +11337,6 @@ void ChannelControl::SetMcAxisOrigin(uint8_t axis_index){
  * @param axis_index : 轴号索引，从0开始
  */
 void ChannelControl::SetMcAxisOrigin(uint8_t axis_index, int64_t origin_pos){
-
-	printf("set axis origin axis: %d origin: %llu\n");
 	McCmdFrame cmd;
 	memset(&cmd, 0x00, sizeof(McCmdFrame));
 

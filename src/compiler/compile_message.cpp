@@ -3753,5 +3753,36 @@ bool operator ==( const TorqueCtrlMsg &one, TorqueCtrlMsg &two){
 		return true;
 	return false;
 }
+
+// @add zk
+InputMsg::InputMsg():RecordMsg(){
+	SetMsgType(INPUT_MSG);
+}
+
+InputMsg::~InputMsg(){
+
+}
+
+void InputMsg::Execute(){}
+void InputMsg::GetData(void* rec ){}
+void InputMsg::SetData(void* rec){}
+//生成待输出给MC的运动控制数据包
+int InputMsg::GetOutputData(GCodeFrame *data, uint32_t mask, bool flag)
+{
+	return 0;
+}
+void InputMsg::PrintString(){}
+int GetSimulateData(CompilerSimData &data){return 1;}
+
+InputMsg& InputMsg::operator=( const InputMsg& msg){
+	if(&msg == this)
+		return *this;
+	this->m_n_type = msg.m_n_type;
+	this->m_n_line_no = msg.m_n_line_no;
+	this->m_n_flags.all = msg.m_n_flags.all;
+
+	return *this;
+}
+// @add zk
 #endif
 

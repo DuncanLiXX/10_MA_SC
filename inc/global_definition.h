@@ -34,7 +34,7 @@
 
 #define MOVE_FILTER_PARAM_FROM_CHN_TO_AXIS     //将插补后加减速参数从通道参数挪到轴参数
 
-#define USES_SPEED_TORQUE_CTRL      // 速度控制与力矩控制开关
+//#define USES_SPEED_TORQUE_CTRL      // 速度控制与力矩控制开关
 
 #define USES_PMC_2_0         //使用PMC2.0版本
 

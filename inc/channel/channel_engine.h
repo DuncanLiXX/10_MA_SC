@@ -19,6 +19,7 @@
 #include "comm_data_definition.h"
 #include "pmc_axis_ctrl.h"
 #include "channel_data.h"
+#include "parm_manager.h"
 
 #include "license_interface.h"
 
@@ -113,8 +114,6 @@ void SetMcArmComm(MCArmCommunication *comm){this->m_p_mc_arm_comm = comm;}   //É
 	void SetManualRatio(uint8_t chn, uint8_t ratio);	//ÉèÖÃÊÖ¶¯±¶ÂÊ
 	void SetRapidRatio(uint8_t ratio);	//ÉèÖÃ¿ìËÙ½ø¸ø±¶ÂÊ
 	void SetRapidRatio(uint8_t chn, uint8_t ratio);	//ÉèÖÃ¿ìËÙ½ø¸ø±¶ÂÊ
-	void SetSpindleRatio(uint8_t ratio);	//ÉèÖÃÖ÷Öá±¶ÂÊ
-	void SetSpindleRatio(uint8_t chn, uint8_t ratio);	//ÉèÖÃÖ÷Öá±¶ÂÊ
 	void SetManualStep(uint16_t step);	//ÉèÖÃÊÖ¶¯²½³¤
 	void SetManualStep(uint8_t chn, uint8_t step);  //ÉèÖÃÊÖ¶¯²½³¤
 	void SetManualRapidMove(uint8_t mode = 10);			//ÉèÖÃÊÖ¶¯¿ìËÙÒÆ¶¯×´Ì¬
@@ -182,8 +181,6 @@ void SetMcArmComm(MCArmCommunication *comm){this->m_p_mc_arm_comm = comm;}   //É
 //	void SetAxisSoftLimitValue(uint8_t axis, uint8_t index);   //ÉèÖÃÖ¸¶¨ÖáµÄÈíÏŞÎ»Öµ
 
 	uint32_t GetDaPrecision(){return this->m_n_da_prec;}  //·µ»ØDA¾«¶ÈÖµ
-
-	void SpindleOut(int dir);			//Ö÷ÖáÊä³ö
 
 	bool CheckAxisHardLimit(uint8_t phy_axis, int8_t dir);   //¼ì²éÎïÀíÖáÏŞÎ»¸æ¾¯Çé¿ö
 
@@ -449,6 +446,10 @@ private:	//Ë½ÓĞ³ÉÔ±º¯Êı
 	void ProcessSkipCmdRsp(MiCmdFrame &cmd);    //´¦ÀíMI·µ»ØµÄÌø×ªÃüÁîÏìÓ¦
 	void ProcessRefreshAxisZeroEncoder(MiCmdFrame &cmd);   //´¦ÀíMIË¢ĞÂÖáÁãµã±àÂëÆ÷ÖµÃüÁî
 	void ProcessMiEnSyncAxisRsp(MiCmdFrame &cmd);      //´¦ÀíMIÊ¹ÄÜÍ¬²½ÖáÖ¸ÁîµÄÏìÓ¦
+    void ProcessMiSpdLocateRsp(MiCmdFrame &cmd);    //´¦ÀíMIÖ÷Öá¶¨Î»µÄÏìÓ¦
+    void ProcessMiOperateCmdRsp(MiCmdFrame &cmd);  //´¦ÀíMI²Ù×÷Ö¸Áî
+    void ProcessMiAxisCtrlModeRsp(MiCmdFrame &cmd);     //´¦ÀíMIÖáÄ£Ê½ÇĞ»»ÏìÓ¦
+    void ProcessMiSpindleSpeedRsp(MiCmdFrame &cmd);     //´¦ÀíMI DAÊä³öµÄÏìÓ¦
 	
 	void ProcessSetAxisCurMachPosRsp(MiCmdFrame &cmd);   //´¦ÀíMI¶ÔÉèÖÃÖáµ±Ç°Î»ÖÃ»úĞµ×ø±êÃüÁîµÄÏìÓ¦
 
@@ -530,6 +531,7 @@ private:  //Ë½ÓĞ³ÉÔ±±äÁ¿
 
 	PmcRegister *m_p_pmc_reg;			//PMC¼Ä´æÆ÷
 	GRegister m_g_reg_last;             //ÉÏÒ»ÖÜÆÚµÄG¼Ä´æÆ÷
+    FRegister m_f_reg_last;             //ÉÏÒ»ÖÜÆÚµÄF¼Ä´æÆ÷
 
 	bool m_b_emergency;				//¼±Í£×´Ì¬±êÖ¾  true--¼±Í£×´Ì¬    false--·Ç¼±Í£×´Ì¬
 	uint64_t m_hard_limit_postive;	//Ó²ÏŞÎ»´¥·¢±êÖ¾£¬ÕıÏò   64bit´ú±í64Öá

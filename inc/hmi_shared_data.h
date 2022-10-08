@@ -1257,7 +1257,25 @@ struct HmiAxisConfig{
 	uint8_t spd_speed_diff_limit;				//转速误差允许比例   0~100
 	uint8_t spd_encoder_location;				//编码器位置     0--电机端     1--主轴端
 
-
+    uint8_t spd_ctrl_GST;                       //SOR信号用途  0：主轴定向  1：齿轮换挡
+    uint8_t spd_ctrl_SGB;                       //主轴换挡方式 0：A方式  1：B方式
+    uint8_t spd_ctrl_SFA;                       //齿轮换挡时是否输出SF信号 0：输出  1：不输出
+    uint8_t spd_ctrl_ORM;                       //主轴定向时的转向 0：正  1：负
+    uint8_t spd_ctrl_TCW;                       //主轴转向是否受M03/M04影响 0：不受影响 1：受影响
+    uint8_t spd_ctrl_CWM;                       //主轴转向取反 0：否  1：是
+    uint8_t spd_ctrl_TSO;                       //螺纹切削和刚性攻丝时，主轴倍率设置  0：强制100%  1：有效
+    uint16_t spd_analog_gain;                   //模拟输出增益 700-1250 单位：0.1%
+    uint16_t spd_sor_speed;                     //主轴齿轮换档/定向时的主轴转速
+    uint16_t spd_motor_min_speed;               //主轴电机最小钳制速度
+    uint16_t spd_motor_max_speed;               //主轴电机最大钳制速度
+    uint16_t spd_gear_speed_low;                //齿轮低档位最高转速 rpm
+    uint16_t spd_gear_speed_middle;             //齿轮中档位最高转速 rpm
+    uint16_t spd_gear_speed_high;               //齿轮高档位最高转速 rpm
+    uint16_t spd_gear_switch_speed1;            //B方式档1->档2电机转速
+    uint16_t spd_gear_switch_speed2;            //B方式档2->档3电机转速
+    uint32_t spd_sync_error_gain;                    //同步误差增益  范围为0~1000，默认为200
+    uint32_t spd_speed_feed_gain;                    //轴速度前馈增益 范围为0~100000，默认为60000
+    uint32_t spd_pos_ratio_gain;                    //轴位置比例增益 范围0~200000，默认为100000
 
 	//旋转轴相关参数
 	uint8_t fast_locate;							//快速定位    0--关闭   1--打开

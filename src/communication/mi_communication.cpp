@@ -237,6 +237,99 @@ char *MICommunication::GetPmcDataAddr(){
 	return ptr;
 }
 
+void MICommunication::SendOperateCmd(uint16_t opt, uint8_t axis, uint16_t enable)
+{
+    MiCmdFrame cmd;
+    memset(&cmd, 0x00, sizeof(cmd));
+    cmd.data.cmd = CMD_MI_OPERATE;
+    cmd.data.axis_index = axis;
+    cmd.data.data[0] = opt;
+    cmd.data.data[1] = enable;
+    WriteCmd(cmd);
+}
+
+void MICommunication::SendAxisEnableCmd(uint8_t axis, bool enable)
+{
+    // opt为1，代表是轴使能操作
+    SendOperateCmd(1,axis,enable);
+}
+
+void MICommunication::SendTapAxisCmd(uint8_t chn, uint8_t spd_axis, uint8_t z_axis)
+{
+    MiCmdFrame cmd;
+    memset(&cmd, 0x00, sizeof(cmd));
+    cmd.data.cmd = CMD_MI_SET_TAP_AXIS;
+    cmd.data.axis_index = 0xFF;
+    cmd.data.reserved = chn;
+    // 协议中的物理轴号从1开始
+    cmd.data.data[0] = spd_axis;
+    cmd.data.data[1] = z_axis;
+    WriteCmd(cmd);
+}
+
+void MICommunication::SendTapRatioCmd(uint8_t chn, int32_t ratio)
+{
+    MiCmdFrame cmd;
+    memset(&cmd, 0x00, sizeof(cmd));
+    cmd.data.cmd = CMD_MI_SET_TAP_RATIO;
+    cmd.data.axis_index = 0xFF;
+    cmd.data.reserved = chn;
+    memcpy(&cmd.data.data[0], &ratio, sizeof(int32_t));
+    WriteCmd(cmd);
+}
+
+void MICommunication::SendTapParams(uint8_t chn, uint16_t error_gain, uint16_t feed_gain, uint16_t ratio_gain)
+{
+    MiCmdFrame cmd;
+    memset(&cmd, 0x00, sizeof(cmd));
+    cmd.data.cmd = CMD_MI_SET_TAP_PARAM;
+    cmd.data.axis_index = 0xFF;
+    cmd.data.reserved = chn;
+
+    uint32_t param = error_gain*1000;
+    memcpy(&cmd.data.data[0], &param, sizeof(uint32_t));
+
+    param = feed_gain*1000;
+    memcpy(&cmd.data.data[2], &param, sizeof(uint32_t));
+
+    param = ratio_gain*1000;
+    memcpy(&cmd.data.data[4], &param, sizeof(uint32_t));
+
+    WriteCmd(cmd);
+}
+
+void MICommunication::SendTapStateCmd(uint8_t chn, bool enable)
+{
+    MiCmdFrame cmd;
+    memset(&cmd, 0x00, sizeof(cmd));
+    cmd.data.cmd = CMD_MI_SET_TAP_STATE;
+    cmd.data.axis_index = 0xFF;
+    cmd.data.reserved = chn;
+    cmd.data.data[0] = enable?1:0;
+    WriteCmd(cmd);
+}
+
+void MICommunication::SendSpdLocateCmd(uint8_t chn, uint8_t axis)
+{
+    MiCmdFrame cmd;
+    memset(&cmd, 0x00, sizeof(cmd));
+    cmd.data.cmd = CMD_MI_SPD_LOCATE;
+    cmd.data.axis_index = axis;
+    cmd.data.reserved = chn;
+    WriteCmd(cmd);
+}
+
+void MICommunication::SendAxisCtrlModeSwitchCmd(uint8_t axis, uint8_t type)
+{
+    MiCmdFrame cmd;
+    memset(&cmd, 0x00, sizeof(cmd));
+    cmd.data.cmd = CMD_MI_SET_AXIS_CTRL_MODE;
+    cmd.data.axis_index = axis;
+    cmd.data.data[0] = type;
+
+    WriteCmd(cmd);
+}
+
 /**
  * @brief 初始化上下行命令通道，将所有命令帧的读写标志位置0
  */

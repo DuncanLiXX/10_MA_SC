@@ -15,7 +15,6 @@
 #define LICCODECOUNT (24) //授权码长度
 #define SN_COUNT     (13)  //产品序列号(SN)长度
 
-
 //时间结构体
 struct LitronucDate
 {
@@ -32,7 +31,7 @@ struct LitronucLicInfo
 	char sn[SN_COUNT+1];
 	LitronucDate dead_line;
 	char licflag;  //许可标志位
-	               //'p'--在许可期    'f'--永久许可   'n'--无lic
+	               //'p'--在许可期    'f'--永久许可'n'--无lic
 	               //'m'--授权即将到期    'o'--过期许可  'v'--非法许可
 	char nWarn; //存储距离到期日的小时数
 	char nInfo;
@@ -61,7 +60,7 @@ int DataDecrypt(char **lppDest, long &lnDesLen, char *lpSrc, long lnSrcLen);  //
 
 /**
  * @brief 授权码解密
- * @param szStr[in/out] : 授权码字符串
+ * @param szStr[in] : 授权码字符串
  * @return true--合法授权码    false--非法授权码
  */
 bool DecryptLicense(char *szStr);
@@ -84,7 +83,8 @@ long ReadLocalTime(char *dev_sn);
  * @brief 初始化创建本地计时文件
  * @return true--成功   false--失败
  */
-bool InitLocalTime();
+bool InitLocalTime(char *dev_sn);
+
 
 /**
  * @brief 更新本地计时文件
@@ -99,7 +99,7 @@ bool WriteLocalTime(char *dev_sn, long hours, bool force = false);
  * @brief 检查系统时间
  * @param plic ： 系统授权信息
  * @param local_time ： 系统计时
- * @return 0--正常  -1--文件丢失    -2--文件损坏   -3--非本机文件     -4--系统时间异常
+ * @return  0--正常   -1--文件丢失    -2--文件损坏   -3--非本机文件     -4--系统时间异常
  */
 int CheckLocalTime(LitronucLicInfo *plic, long &local_time);
 

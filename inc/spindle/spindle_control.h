@@ -1,0 +1,160 @@
+#ifndef SPINDLE_CONTROL_H_
+#define SPINDLE_CONTROL_H_
+
+#include "pmc_register.h"
+
+class MCCommunication;
+class MICommunication;
+
+struct SCAxisConfig;
+
+/*
+ *@date 2022/09/19
+ *@brief:实现主轴功能逻辑
+ */
+
+namespace Spindle {
+enum CncPolar
+{
+    Stop = -1,
+    Positive = 0,
+    Negative = 1,
+};
+enum Level  // 档位
+{
+    Low,    // 档位1
+    Middle, // 档位2
+    High    // 档位3
+};
+enum Mode
+{
+    Speed,
+    Position
+};
+}
+
+class SpindleControl
+{
+public:
+    SpindleControl();
+
+    // 设置主轴相关组件
+    void SetComponent(MICommunication *mi,
+                    MCCommunication *mc,
+                    FRegBits *f_reg);
+    // 设置主轴相关配置
+    void SetSpindleParams(SCAxisConfig *spindle,
+                          uint32_t da_prec,
+                          uint8_t phy_axis,
+                          uint8_t z_axis);
+
+    void Reset();
+
+    void InputSCode(uint32_t s_code);            // S指令输入
+    uint32_t GetSCode();
+
+    // 极性输入由 反转信号SRV(G70.4),正转信号SFR(G70.5) 决定
+    // 1.主轴停: SRV==0&&SFR==0
+    // 2.主轴正转: SRV==0&&SFR==1
+    // 3.主轴反转: SRV==1&&SFR==0
+    void InputPolar(Spindle::CncPolar polar);
+
+    // 主轴模式由 刚性攻丝信号RGTAP(G61.0) 决定
+    // 1.速度模式: RGTAP==0
+    // 2.位置模式: RGTAP==1
+    void SetMode(Spindle::Mode mode);
+    Spindle::Mode GetMode();             // 获取主轴控制模式
+
+    bool isTapEnable();     // 刚性攻丝是否使能
+
+    void StartRigidTap(double feed);    // 开始刚性攻丝 G84
+    void CancelRigidTap();              // 取消刚性攻丝 G80
+
+    void InputSSTP(bool _SSTP);     // _SSTP信号输入 低有效
+    void InputSOR(bool SOR);        // SOR信号输入
+    void InputSOV(uint8_t SOV);     // SOV信号输入
+    void InputRI(uint16_t RI);      // RI信号输入
+    void InputSGN(bool SGN);        // SGN信号输入
+    void InputSSIN(bool SSIN);      // SSIN信号输入
+    void InputSIND(bool SIND);      // SIND信号输入
+    void InputORCMA(bool ORCMA);    // 定位信号信号输入
+    void InputRGTAP(bool RGTAP);    // 刚性攻丝信号输入
+    void RspORCMA(bool success);    // 定位信号命令回复
+    void RspCtrlMode(uint8_t axis,Spindle::Mode mode);  // 模式切换回复
+    void RspAxisEnable(uint8_t axis,bool enable);       // 轴使能回复
+    void RspSpindleSpeed(uint8_t axis,bool success);    // 0:速度未到达  1:速度到达
+
+    void InputFIN(bool FIN);
+
+    int32_t GetSpindleSpeed();  // 获取真实主轴转速，带有方向，用于hmi显示转速 单位:rpm
+
+private:
+    void UpdateParams();        // 更新常用主轴参数到成员变量中
+    void UpdateSpindleState();  // 根据当前状态更新转速
+    uint16_t GetMaxSpeed();
+    Spindle::CncPolar CalPolar();    // 根据当前状态获取主轴转向
+    int32_t CalDaOutput();     // 根据当前状态获取DA电平值
+
+    // 根据当前速度更新档位输出
+    //参数： speed: 主轴转速 单位：rpm
+    //返回值： 0：不换挡  1：换挡
+    bool UpdateSpindleLevel(uint16_t speed);
+
+    // 根据当前状态获取目标档位
+    void CalLevel(uint8_t &GR1O, uint8_t &GR2O, uint8_t &GR3O);
+
+    // 根据当前状态发送主轴转速给Mi
+    void SendSpdSpeedToMi();
+    // 发送SF信号后，延时发送转速
+    void DelaySendSpdSpeedToMi(uint16_t ms);
+
+    // 向MC发送刚性攻丝状态命令，MC会切换到刚性攻丝的速度规划参数
+    void SendMcRigidTapFlag(bool enable);
+
+private:
+    MICommunication *mi{nullptr};
+    MCCommunication *mc{nullptr};
+    int chn{0};
+    SCAxisConfig *spindle{nullptr}; // 主轴1
+    uint8_t phy_axis{0};       // 主轴物理轴号,从0开始
+    uint8_t z_axis{2};         // z轴物理轴号,从0开始
+    uint32_t da_prec{4095};    // DA精度
+
+    FRegBits *F{nullptr};            // F寄存器
+
+    Spindle::Level level{Spindle::Low};           // 当前档位
+    Spindle::CncPolar cnc_polar{Spindle::Stop};    // 主轴方向
+    uint32_t cnc_speed{0};             // S代码的转速 单位:rpm
+
+    Spindle::Mode mode{Spindle::Speed};             // 控制模式
+    bool tap_enable{false};     // 攻丝状态  false:不在攻丝状态 true:处于攻丝状态
+    bool motor_enable{true};   // 电机使能状态
+    bool wait_sar{false};       // 等待速度到达 0:不在等待 1:正在等待
+    bool wait_off{false};       // 等待电机下使能 0:不在等待 1:正在等待
+
+    // 信号
+    bool _SSTP;  //主轴停止信号     G29.6  低有效
+    bool SOR;    //主轴准停信号    G29.5
+    bool SAR;    //主轴到达信号    G29.4
+    uint8_t SOV;    //主轴倍率       G30
+    uint16_t RI; //主轴转速输入    G31~G32
+    bool SGN;    //PMC输入的主轴方向    G33.5   0：正 1：负
+    bool SSIN;   //主轴方向由CNC决定还是PMC决定  G33.6   0：CNC 1：PMC
+    bool SIND;   //主轴速度由CNC决定还是PMC决定 G33.7   0：CNC 1：PMC
+    bool ORCMA;  // 主轴定向信号
+    bool RGTAP;  //刚攻状态  0：退出刚攻状态  1：进入刚攻状态
+
+    // 参数
+    uint8_t GST{0};    //SOR信号用于： 0：主轴定向 1：齿轮换档
+    uint8_t SGB{0};    //齿轮换档方式 0：A方式 1：B方式
+    uint8_t SFA{0};    //SF信号输出： 0：齿轮换档时 1：与齿轮换挡无关
+    uint8_t ORM{0};    //主轴定向时的电压极性 0：正 1：负
+    uint8_t TCW{1};    //主轴转向是否受M03/M04影响 0：不受影响 1：受影响
+    uint8_t CWM{0};    //主轴转向取反 0：否  1：是
+    uint8_t TSO{1};    //螺纹切削和刚性攻丝时，主轴倍率  0：强制100%  1：有效
+
+    uint16_t TM{16000};    //SF信号输出延时 单位:ms
+    uint16_t TMF{16000};   //SF选通信号打开后，数据的输出延时 单位:ms
+};
+
+#endif

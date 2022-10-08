@@ -201,7 +201,26 @@ public:
 
 	char *GetPmcDataAddr();		//获取PMC梯形图数据区的地址
 
-	void SendOperateCmd(uint16_t opt, uint8_t axis, uint16_t data);   //发送轴操作指令
+    // opt:操作类型，详细可查看[SC-MI命令参数]文档
+    // axis:轴号，从1开始
+    // enable: 0:功能关 1:功能开
+    void SendOperateCmd(uint16_t opt, uint8_t axis, uint16_t enable);   //发送轴操作指令
+    void SendAxisEnableCmd(uint8_t axis,bool enable);   // 轴上使能
+
+    // spd_aixs: 主轴轴号，从1开始
+    // z_axis: z轴轴号，从1开始
+    void SendTapAxisCmd(uint8_t chn,uint8_t spd_axis,uint8_t z_axis); // 发送攻丝轴号
+
+    void SendTapRatioCmd(uint8_t chn,int32_t ratio); // 发送攻丝比例
+    // 发送同步误差增益，轴速度前馈增益，轴位置比例增益
+    void SendTapParams(uint8_t chn,uint16_t error_gain,
+                       uint16_t feed_gain,uint16_t ratio_gain);
+    void SendTapStateCmd(uint8_t chn,bool enable); // 发送攻丝状态给MI
+    // axis: 主轴轴号，从1开始
+    void SendSpdLocateCmd(uint8_t chn, uint8_t axis); // 发送主轴定位命令
+    // axis: 轴号，从1开始
+    // type: 0—直线型位置控制输出；1—旋转型位置控制输出；2—速度指令输出；3—力矩指令输出
+    void SendAxisCtrlModeSwitchCmd(uint8_t axis,uint8_t type);
 
 	bool ReadEncoderWarn(uint64_t &value);		//读取轴编码器告警标志
 	bool ReadServoHLimitFlag(bool pos_flag, uint64_t &value);   //读取伺服限位告警信息

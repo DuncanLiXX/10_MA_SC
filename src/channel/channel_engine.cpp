@@ -762,7 +762,7 @@ void ChannelEngine::SetMiWorkMode(uint8_t value){
     cmd.data.data[0] = value;
 
     uint8_t chn_count = this->m_p_channel_mode_group[this->m_n_cur_chn_group_index].GetChannelCount();
-    for(uint8_t i = 0; i < chn_count; i++){
+    for(uint i = 0; i < chn_count; i++){
         cmd.data.axis_index = NO_AXIS;
         cmd.data.reserved = this->m_p_channel_mode_group[this->m_n_cur_chn_group_index].GetChannel(i);  //通道号，从0开始
 

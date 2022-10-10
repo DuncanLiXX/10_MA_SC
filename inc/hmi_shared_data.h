@@ -588,6 +588,7 @@ enum GCode{
 	G21_CMD = 210,
 	G25_CMD = 250,
 	G26_CMD = 260,
+	G27_CMD = 270,
 	G28_CMD = 280,
 	G29_CMD = 290,
 	G30_CMD = 300,

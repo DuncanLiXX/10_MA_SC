@@ -417,8 +417,20 @@ bool ChannelControl::Initialize(uint8_t chn_index, ChannelEngine *engine, HMICom
 		goto END;
 	}
 
+	/*printf("------------- %d\n", strlen(m_channel_status.cur_nc_file_name));
+
+	if(strlen(m_channel_status.cur_nc_file_name) > kMaxFileNameLen-2){
+		g_ptr_trace->PrintLog(LOG_ALARM, "CHN[%d]文件名过长: [%s] 打开失败!",
+				m_n_channel_index, m_channel_status.cur_nc_file_name);
+		CreateError(ERR_OPEN_FILE, ERROR_LEVEL, CLEAR_BY_MCP_RESET, 0,
+				m_n_channel_index);
+		goto END;
+	}*/
+
+
 	//默认打开文件
-	if(strlen(m_channel_status.cur_nc_file_name) > 0){
+	if(strlen(m_channel_status.cur_nc_file_name) > 0 and
+	   strlen(m_channel_status.cur_nc_file_name) < kMaxFileNameLen - 2){  // @modify zk 加载过长文件名导致崩溃
 		strcpy(path, PATH_NC_FILE);
 		strcat(path, m_channel_status.cur_nc_file_name);   //拼接文件绝对路径
 		//验证文件是否存在
@@ -3379,6 +3391,8 @@ void ChannelControl::ProcessHmiSimulateCmd(HMICmdFrame &cmd){
 void ChannelControl::ProcessHmiSetNcFileCmd(HMICmdFrame &cmd){
 
 	cmd.frame_number |= 0x8000;   //设置回复标志
+	// @add zk 防止打开过长文件名文件
+	if(strlen(cmd.data) > 127) return;
     if (strcmp(m_channel_status.cur_nc_file_name, cmd.data))
         m_time_remain = 0;
 	if(this->m_channel_status.chn_work_mode != AUTO_MODE){   //非自动模式
@@ -9197,7 +9211,7 @@ bool ChannelControl::ExecuteRefReturnMsg(RecordMsg *msg){
 			type = MDT_CHN_SIM_TOOL_PATH;
 
 
-		//发送参考点数据数据
+		//发送参考点数据
 		uint8_t chn_axis = this->GetChnAxisFromName(AXIS_NAME_X);
 		if(chn_axis != 0xFF && (axis_mask & (0x01<<chn_axis))){
 			data_mid.pos[0] = 	mid_pos.m_df_point[chn_axis];   //中间点位数据
@@ -9282,7 +9296,7 @@ bool ChannelControl::ExecuteRefReturnMsg(RecordMsg *msg){
 		CreateError(ERR_NO_CUR_RUN_DATA, ERROR_LEVEL, CLEAR_BY_MCP_RESET, gcode, m_n_channel_index);
 		return false;
 	}
-	if(gcode == G28_CMD || gcode == G30_CMD){
+	if(gcode == G28_CMD or gcode == G30_CMD){
 		switch(refmsg->GetExecStep()){
 		case 0:
 			printf("ret ref:step0\n");
@@ -9373,7 +9387,6 @@ bool ChannelControl::ExecuteRefReturnMsg(RecordMsg *msg){
 							this->ManualMove(i, target_pos, m_p_axis_config[phy_axis].rapid_speed);  //机械坐标系
 						}
 					}
-
 				}
 			}
 
@@ -9403,6 +9416,52 @@ bool ChannelControl::ExecuteRefReturnMsg(RecordMsg *msg){
 
 		default:
 			printf("ref return msg execute error!\n");
+			break;
+		}
+	}else if(gcode == G27_CMD){
+		switch(refmsg->GetExecStep()){
+		case 0:
+			// 移动到 G27 指定点
+			for(i = 0; i < m_p_channel_config->chn_axis_count; i++){
+				if(axis_mask & (0x01<<i)){
+					phy_axis = this->GetPhyAxis(i);
+					if(phy_axis != 0xff){
+						this->ManualMove(i, pos[i], m_p_axis_config[phy_axis].rapid_speed, true);  //工件坐标系
+					}
+				}
+			}
+			refmsg->SetExecStep(1);
+			return false;
+		case 1:
+			//第二步：等待对应轴到位
+			for(i = 0; i < m_p_channel_config->chn_axis_count; i++){
+				if(axis_mask & (0x01<<i)){
+					if(fabs(this->m_channel_rt_status.cur_pos_work.GetAxisValue(i) - pos[i]) > 1e-3){ //未到位
+//						printf("step 1: axis %hhu cur pos = %lf, target=%lf\n", i, m_channel_rt_status.cur_pos_work.GetAxisValue(i), pos[i]);
+						flag = false;
+						phy_axis = this->GetPhyAxis(i);
+						if(phy_axis != 0xff){
+							this->ManualMove(i, pos[i], m_p_axis_config[phy_axis].rapid_speed, true);  //工件坐标系
+						}
+					//	printf("cur work pos = %lf, tar pos = %lf\n", m_channel_rt_status.cur_pos_work.GetAxisPos(i), pos[i]);
+					}
+
+				}
+			}
+			if(flag)
+				refmsg->SetExecStep(2);  //跳转下一步
+			return false;
+		case 2:
+			//第三步：判断是否为参考点
+			for(i = 0; i < m_p_channel_config->chn_axis_count; i++){
+				if(axis_mask & (0x01<<i)){
+					phy_axis = this->GetPhyAxis(i);
+					if(phy_axis != 0xff){
+
+					}
+				}
+			}
+			usleep(1000000);
 			break;
 		}
 	}

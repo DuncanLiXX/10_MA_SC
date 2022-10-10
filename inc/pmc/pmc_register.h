@@ -959,7 +959,7 @@ struct GRegBits{
 	//G103
 	uint8_t :8;
 	//G104~G105
-	uint16_t REFE:16;             //物理轴回参考点使能信号，  bit0~bit15  轴1~轴15
+	uint16_t REFE:16;           //物理轴回参考点使能信号，  bit0~bit15  轴1~轴15
 	//G106
 	uint8_t :8;
 	//G107

@@ -10373,7 +10373,7 @@ void ChannelEngine::ReturnRefPoint(){
             }else if(this->m_p_axis_config[i].ret_ref_mode == 1){
                 this->EcatAxisFindRefWithZeroSignal(i);    //  总线有基准回零
             }else if(this->m_p_axis_config[i].ret_ref_mode == 2){
-                this->EcatAxisFindRefNoZeroSignal(i);    //  总线无基准回零
+                this->EcatAxisFindRefNoZeroSignal(i);      //  总线无基准回零
             }else if(this->m_p_axis_config[i].ret_ref_mode == 4){  //总线双基准回零，粗、精基准都是IO输入信号
                 this->EcatAxisFindRefWithZeroSignal2(i);
             }else if(this->m_p_axis_config[i].ret_ref_mode == 0 &&
@@ -10655,7 +10655,6 @@ void ChannelEngine::ReturnRefPoint(){
         }
         */
     }
-
 
     if(m_n_mask_ret_ref == 0){
             this->m_b_ret_ref = false;

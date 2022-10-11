@@ -81,8 +81,6 @@ void InitSysState(){
     GetLocalIP("eth0", g_sys_state.local_host_addr);    //获取本地IP地址
 }
 
-
-
 /**
  * @brief 为SPARTAN6初始化加载代码,通过PL进行加载
  * @return

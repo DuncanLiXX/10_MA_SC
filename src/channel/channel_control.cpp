@@ -5585,7 +5585,6 @@ bool ChannelControl::ExecuteMessage(){
 					msg->IsMoveMsg() && this->m_b_mc_need_start){
 //				printf("move data send start, msg type = %d\n", msg->GetMsgType());
 				this->StartMcIntepolate();
-				printf("----------11111----------\n");
 			}
 //			else {
 //				printf("ismovemsg:%hhu, m_b_mc_need_start=%hhu\n", msg->IsMoveMsg(), m_b_mc_need_start);
@@ -9172,6 +9171,7 @@ bool ChannelControl::ExecutePolarIntpMsg(RecordMsg *msg){
  * @param msg
  * @return
  */
+static int wait_times = 0;
 bool ChannelControl::ExecuteRefReturnMsg(RecordMsg *msg){
 	RefReturnMsg *refmsg = (RefReturnMsg *)msg;
 
@@ -9209,7 +9209,6 @@ bool ChannelControl::ExecuteRefReturnMsg(RecordMsg *msg){
 
 		if(m_simulate_mode == SIM_TOOLPATH)
 			type = MDT_CHN_SIM_TOOL_PATH;
-
 
 		//发送参考点数据
 		uint8_t chn_axis = this->GetChnAxisFromName(AXIS_NAME_X);
@@ -9277,7 +9276,6 @@ bool ChannelControl::ExecuteRefReturnMsg(RecordMsg *msg){
 		return false;
 	}
 
-
 	//设置当前行号
 	SetCurLineNo(refmsg->GetLineNo());
 
@@ -9291,15 +9289,17 @@ bool ChannelControl::ExecuteRefReturnMsg(RecordMsg *msg){
 	uint8_t i = 0;
 	bool flag = true;
 	int ref_id = refmsg->ref_id;
-	if(ref_id < 0 or ref_id > 10){
+	if(gcode == G30_CMD and (ref_id < 1 or ref_id > 4)){
 		//  参考点序号超出范围
+		printf("G30 specify a refpoint not exist ！\n");
 		CreateError(ERR_NO_CUR_RUN_DATA, ERROR_LEVEL, CLEAR_BY_MCP_RESET, gcode, m_n_channel_index);
 		return false;
 	}
+
+
 	if(gcode == G28_CMD or gcode == G30_CMD){
 		switch(refmsg->GetExecStep()){
 		case 0:
-			printf("ret ref:step0\n");
 			//第一步：控制对应的轴走到中间点位置
 			for(i = 0; i < m_p_channel_config->chn_axis_count; i++){
 				if(axis_mask & (0x01<<i)){
@@ -9357,11 +9357,12 @@ bool ChannelControl::ExecuteRefReturnMsg(RecordMsg *msg){
 				return false;
 
 			}else{
+				// G30
 				for(i = 0; i < m_p_channel_config->chn_axis_count; i++){
 					if(axis_mask & (0x01<<i)){
 						phy_axis = this->GetPhyAxis(i);
 						if(phy_axis != 0xff){
-							this->ManualMove(i, m_p_axis_config[phy_axis].axis_home_pos[ref_id], m_p_axis_config[phy_axis].rapid_speed);  //机械坐标系
+							this->ManualMove(i, m_p_axis_config[phy_axis].axis_home_pos[ref_id-1], m_p_axis_config[phy_axis].rapid_speed);  //机械坐标系
 						}
 					}
 				}
@@ -9375,8 +9376,9 @@ bool ChannelControl::ExecuteRefReturnMsg(RecordMsg *msg){
 			double target_pos = 0;
 #else
 			double target_pos =  m_p_axis_config[phy_axis].axis_home_pos[0];
-			if(gcode == G30_CMD) target_pos = m_p_axis_config[phy_axis].axis_home_pos[ref_id];
 #endif
+			if(gcode == G30_CMD) target_pos = m_p_axis_config[phy_axis].axis_home_pos[ref_id-1];
+
 			for(i = 0; i < m_p_channel_config->chn_axis_count; i++){
 				if(axis_mask & (0x01<<i)){
 					if(fabs(this->m_channel_rt_status.cur_pos_machine.GetAxisValue(i) - target_pos) > 5e-3){ //未到位
@@ -9412,6 +9414,7 @@ bool ChannelControl::ExecuteRefReturnMsg(RecordMsg *msg){
 				this->m_p_compiler->SetCurPos(this->m_channel_mc_status.intp_pos);   //同步编译器位置
 			}else
 				this->RefreshOuputMovePos(m_channel_rt_status.cur_pos_work);    //同步已编译的轴移动指令的位置
+
 			break;
 
 		default:
@@ -9421,6 +9424,7 @@ bool ChannelControl::ExecuteRefReturnMsg(RecordMsg *msg){
 	}else if(gcode == G27_CMD){
 		switch(refmsg->GetExecStep()){
 		case 0:
+			printf("G27 step 0 ...\n");
 			// 移动到 G27 指定点
 			for(i = 0; i < m_p_channel_config->chn_axis_count; i++){
 				if(axis_mask & (0x01<<i)){
@@ -9433,11 +9437,13 @@ bool ChannelControl::ExecuteRefReturnMsg(RecordMsg *msg){
 			refmsg->SetExecStep(1);
 			return false;
 		case 1:
+			printf("G27 step 1 ...\n");
 			//第二步：等待对应轴到位
 			for(i = 0; i < m_p_channel_config->chn_axis_count; i++){
 				if(axis_mask & (0x01<<i)){
-					if(fabs(this->m_channel_rt_status.cur_pos_work.GetAxisValue(i) - pos[i]) > 1e-3){ //未到位
-//						printf("step 1: axis %hhu cur pos = %lf, target=%lf\n", i, m_channel_rt_status.cur_pos_work.GetAxisValue(i), pos[i]);
+					//printf("axis %hhu abs %lf\n", fabs(this->m_channel_rt_status.cur_pos_work.GetAxisValue(i) - pos[i]));
+					if(fabs(this->m_channel_rt_status.cur_pos_work.GetAxisValue(i) - pos[i]) > 0.001){ //未到位
+						//printf("step 1: axis %hhu cur pos = %lf, target=%lf\n", i, m_channel_rt_status.cur_pos_work.GetAxisValue(i), pos[i]);
 						flag = false;
 						phy_axis = this->GetPhyAxis(i);
 						if(phy_axis != 0xff){
@@ -9452,16 +9458,40 @@ bool ChannelControl::ExecuteRefReturnMsg(RecordMsg *msg){
 				refmsg->SetExecStep(2);  //跳转下一步
 			return false;
 		case 2:
+			printf("G27 step 2 ...\n");
 			//第三步：判断是否为参考点
+			bool in_pos = false;
+
+			// 检测每个参考点到位信号  因为机械坐标系会延时到达 所以要多检测几次
 			for(i = 0; i < m_p_channel_config->chn_axis_count; i++){
 				if(axis_mask & (0x01<<i)){
 					phy_axis = this->GetPhyAxis(i);
 					if(phy_axis != 0xff){
-
+						if(i<8){
+							in_pos = CheckFRegState(94, i);
+						}else{
+							in_pos = CheckFRegState(95, i-8);
+						}
+						if(!in_pos) break;
 					}
 				}
 			}
-			usleep(1000000);
+
+			if(!in_pos){
+				// 没有到位
+				wait_times ++;
+
+				if(wait_times > 10){
+					// 十次检测都没到位  判断为回参考点失败 发出警告
+					wait_times = 0;
+					CreateError(ERR_RET_REF_FAILED, ERROR_LEVEL, CLEAR_BY_MCP_RESET, gcode, m_n_channel_index);
+				}
+
+				return false;
+			}else{
+				wait_times = 0;
+			}
+
 			break;
 		}
 	}
@@ -10362,7 +10392,7 @@ bool ChannelControl::ExecuteInputMsg(RecordMsg * msg){
 			this->NotifyHmiToolOffsetChanged(tool_number);   //通知HMI刀偏值更改
 			break;
 		}
-		case 50:{
+		case 20:{
 			int param = input_msg->PData;
 
 			if(SetSysVarValue(param, input_msg->RData))
@@ -10372,6 +10402,9 @@ bool ChannelControl::ExecuteInputMsg(RecordMsg * msg){
 				this->m_error_code = ERR_NO_CUR_RUN_DATA;
 				return false;
 			}
+		}
+		case 50:{  // 修改系统参数, 立即生效的才有用(有些参数这样改会存在问题)
+
 		}
 		default:{
 			// @TODO 不支持的L指定
@@ -19144,47 +19177,10 @@ void ChannelControl::PrintDebugInfo1(){
 // @test zk
 void ChannelControl::test(){
 
-	/*StartMcIntepolate();
-	printf("test zk .... \n");
-	StraightFeed(0, 100, 200, 100, 1000);
-	StraightTraverse(0, 0, 0, 0);*/
-
-	AuxMsg *msg = new AuxMsg(29);
-	ExecMCode(msg , 0);
-	// G84.3
-	//this->SendMcRigidTapFlag(true);
-	//this->SendMiTapStateCmd(true);
-	//this->m_n_G843_flag = 1;
-	// G84
-	//1. 发送主轴和Z轴的对应物理轴号
-	uint16_t spd_phy = this->m_spd_axis_phy[0];
-	uint16_t z_phy = this->GetPhyAxisFromName(AXIS_NAME_Z)+1;
-
-	this->SendMiTapAxisCmd(spd_phy, z_phy);
-
-	//2. 发送刚攻参数
-	this->SendMiTapParamCmd();
-
-	//3. 发送刚攻状态及比例
-	uint8_t pc = 0;
-	uint32_t pm = 0;
-	uint32_t mask = 0x01;
-	double feed = 0;
-	int i  = 0;
-
-	feed = 500;
-	if(feed > 0){
-//			printf("scode %d move_pr %f feed %f\n",this->m_n_cur_scode,this->m_p_axis_config[this->m_spd_axis_phy[0]-1].move_pr,feed);
-		int32_t ratio = -10000*this->m_n_cur_scode*this->m_p_axis_config[this->m_spd_axis_phy[0]-1].move_pr/feed;
-//			printf("ratio %h\n",ratio);
-		this->m_n_G843_ratio = ratio;
-		this->SendMcRigidTapFlag(false);
-		this->SendMiTapStateCmd(false);
-		this->m_n_G843_flag = 0;
-		this->SendMiTapRatioCmd(ratio);
+	for(int i=0; i< 4; i++){
+		printf("work coord axis %d pos %lf\n", i, m_channel_rt_status.cur_pos_work.GetAxisValue(i));
+		printf("mach coord axis %d pos %lf\n",i, this->m_channel_rt_status.cur_pos_machine.GetAxisValue(i));
 	}
-
-	StartMcIntepolate();
 
 }
 // @test zk

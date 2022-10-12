@@ -1090,13 +1090,18 @@ public:
 
 	double LData;
 	double PData;
+	double RData;
 	double HData;
 	double DData;
-	double RData;
 	double XData;
 	double YData;
 	double ZData;
 	double QData;
+
+};
+
+// ×¼Í£ÏûÏ¢  G09
+class ExatStopMsg: public MoveMsg{
 
 };
 

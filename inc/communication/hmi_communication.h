@@ -26,6 +26,54 @@
 class ChannelEngine;
 
 
+// @test zk
+typedef struct MEMPACKED         //定义一个mem occupy的结构体
+{
+    char name1[20];      //定义一个char类型的数组名name有20个元素
+    unsigned long MemTotal;
+    char name2[20];
+    unsigned long MemFree;
+    char name3[20];
+    unsigned long Buffers;
+    char name4[20];
+    unsigned long Cached;
+    char name5[20];
+    unsigned long SwapCached;
+}MEM_OCCUPY;
+
+//proc/stat文件结构
+//cpu  633666 46912 249878 176813696 782884 2859 19625 0
+//cpu0 633666 46912 249878 176813696 782884 2859 19625 0
+//intr 5812844
+//ctxt 265816063
+//btime 1455203832
+//processes 596625
+//procs_running 1
+//procs_blocked 0
+
+typedef struct CPUPACKED         //定义一个cpu occupy的结构体
+{
+    char name[20];      //定义一个char类型的数组名name有20个元素
+    unsigned int user; //定义一个无符号的int类型的user
+    unsigned int nice; //定义一个无符号的int类型的nice
+    unsigned int system;//定义一个无符号的int类型的system
+    unsigned int idle; //定义一个无符号的int类型的idle
+    unsigned int lowait;
+    unsigned int irq;
+    unsigned int softirq;
+}CPU_OCCUPY;
+
+
+void get_memoccupy(MEM_OCCUPY *mem); //对无类型get函数含有一个形参结构体类弄的指针O
+
+
+int get_cpuoccupy(CPU_OCCUPY *cpust); //对无类型get函数含有一个形参结构体类弄的指针O
+
+
+void cal_cpuoccupy(CPU_OCCUPY *o, CPU_OCCUPY *n);
+// @test zk
+
+
 /**
  * @brief SC模块与HMI模块间的通讯接口，支持UDP及TCP连接
  */
@@ -181,7 +229,8 @@ private:
 //	uint8_t m_n_alarm_file_type;      //待发送的告警历史文件类型
 
 	ErrorType m_error_code;           //错误码
-
+	MEM_OCCUPY mem_stat;
+	CPU_OCCUPY cpu_stat;
 
 
 };
@@ -192,5 +241,7 @@ struct SaveAsParam{
 	char path_old[kMaxPathLen];   //原文件绝对路径
 	char path_new[kMaxPathLen];   //新文件绝对路径
 };
+
+
 
 #endif /* HMICOMMUNICATION_H_ */

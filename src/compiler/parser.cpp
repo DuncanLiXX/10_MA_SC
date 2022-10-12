@@ -591,6 +591,8 @@ bool Parser::AnalyzeGCode(LexerGCode *gcode){
 			if(!CreateInputMsg()){
 				return false;
 			}
+		}else if(m_mode_code[0] == G09_CMD){
+
 		}
 		else{
 			if(!CreateModeMsg(m_mode_code[0]))

@@ -9328,7 +9328,6 @@ bool ChannelControl::ExecuteRefReturnMsg(RecordMsg *msg){
 						}
 					//	printf("cur work pos = %lf, tar pos = %lf\n", m_channel_rt_status.cur_pos_work.GetAxisPos(i), pos[i]);
 					}
-
 				}
 			}
 			if(flag)
@@ -9484,6 +9483,7 @@ bool ChannelControl::ExecuteRefReturnMsg(RecordMsg *msg){
 				if(wait_times > 10){
 					// 十次检测都没到位  判断为回参考点失败 发出警告
 					wait_times = 0;
+					m_error_code = ERR_RET_REF_FAILED;
 					CreateError(ERR_RET_REF_FAILED, ERROR_LEVEL, CLEAR_BY_MCP_RESET, gcode, m_n_channel_index);
 				}
 
@@ -19177,10 +19177,6 @@ void ChannelControl::PrintDebugInfo1(){
 // @test zk
 void ChannelControl::test(){
 
-	for(int i=0; i< 4; i++){
-		printf("work coord axis %d pos %lf\n", i, m_channel_rt_status.cur_pos_work.GetAxisValue(i));
-		printf("mach coord axis %d pos %lf\n",i, this->m_channel_rt_status.cur_pos_machine.GetAxisValue(i));
-	}
 
 }
 // @test zk

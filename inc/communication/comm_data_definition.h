@@ -266,6 +266,7 @@ enum MiCmdCode{
 	CMD_MI_SET_IO_REMAP = 0x135,          //设置IO重定向数据
 
 	CMD_MI_SET_AXIS_MACH_POS = 0x136,     //设置指定物理轴当前位置的机械坐标
+    CMD_MI_SPD_LOCATE = 0x137,            //SC通知MI主轴定位
 
 	CMD_MI_DEBUG_M_FUN = 0x8001,            //MI调试指令
 	CMD_MI_HW_TRACE_STATE_CHANGED_RSP = 0x8009,   //MI通知SC手轮跟踪状态切换响应命令

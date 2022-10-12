@@ -2568,7 +2568,7 @@ void HMICommunication::ProcessHmiVirtualMOPCmd(HMICmdFrame &cmd){
 		m_p_channel_engine->SetManualRatio(cmd.data[0]);
 		break;
 	case MOP_KEY_SPD_RATIO:
-		m_p_channel_engine->SetSpindleRatio(cmd.data[0]);
+        // lidianqiang: 去掉倍率控制的接口，主轴倍率只由PMC信号SOV来控制
 		break;
 	case MOP_KEY_STEP_LEN:{
 		uint16_t step;
@@ -2615,13 +2615,16 @@ void HMICommunication::ProcessHmiVirtualMOPCmd(HMICmdFrame &cmd){
 		m_p_channel_engine->SetCurAxis(cmd.data[0]);   //设置当前轴
 		break;
 	case MOP_KEY_SPD_FOREWARD:			//主轴正转
-		m_p_channel_engine->SpindleOut(SPD_DIR_POSITIVE);
+        // lidianqiang: 去掉主轴控制的接口，主轴由PMC来控制
+        // m_p_channel_engine->SpindleOut(SPD_DIR_POSITIVE);
 		break;
 	case MOP_KEY_SPD_STOP:				//主轴停转
-		m_p_channel_engine->SpindleOut(SPD_DIR_STOP);
+        // lidianqiang: 去掉主轴控制的接口，主轴由PMC来控制
+        // m_p_channel_engine->SpindleOut(SPD_DIR_STOP);
 		break;
 	case MOP_KEY_SPD_REVERSE:			//主轴反转
-		m_p_channel_engine->SpindleOut(SPD_DIR_NEGATIVE);
+        // lidianqiang: 去掉主轴控制的接口，主轴由PMC来控制
+        // m_p_channel_engine->SpindleOut(SPD_DIR_NEGATIVE);
 		break;
     case MOP_KEY_EMERGENCY:				//急停
         std::cout << "mop energency" << std::endl;

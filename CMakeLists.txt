@@ -24,6 +24,7 @@ set(SC_SRC
         src/variable.cpp;
         src/alarm_processor/alarm_processor.cpp;
         src/Algorithm/coord_processor.cpp;
+        src/spindle/spindle_control.cpp
 )
 
 set(CHANNEL_SRC
@@ -80,6 +81,7 @@ target_include_directories(${TARGET_NAME} PRIVATE inc/compiler)
 target_include_directories(${TARGET_NAME} PRIVATE inc/parameter)
 target_include_directories(${TARGET_NAME} PRIVATE inc/pmc)
 target_include_directories(${TARGET_NAME} PRIVATE inc/tool_compensate)
+target_include_directories(${TARGET_NAME} PRIVATE inc/spindle)
 target_include_directories(${TARGET_NAME} PRIVATE lib/inc)
 
 # 设置库文件的查找路径

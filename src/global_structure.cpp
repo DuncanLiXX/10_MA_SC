@@ -13,7 +13,7 @@
 
 #include "global_structure.h"
 #include "global_include.h"
-
+#include "parm_manager.h"
 
 //坐标系信息
 CoordInfo::CoordInfo() {

@@ -16,6 +16,7 @@
 #include "mc_communication.h"
 #include "channel_control.h"
 #include "variable.h"
+#include "parm_manager.h"
 
 //template<> int ListNode<LabelOffset>::new_count = 0;
 //template<> int ListNode<SubProgOffset>::new_count = 0;

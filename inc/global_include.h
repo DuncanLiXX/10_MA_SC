@@ -61,7 +61,6 @@ using namespace std;
 #include "geometry_data.h"
 #include "hmi_shared_data.h"
 #include "trace.h"
-#include "parm_manager.h"
 
 //前置类型声明
 class HMICommunication;

@@ -77,6 +77,42 @@
 							<tool id="xilinx.gnu.armv7.linux.size.debug.1587133517" name="ARM v7 Linux Print Size" superClass="xilinx.gnu.armv7.linux.size.debug"/>
 						</toolChain>
 					</folderInfo>
+					<fileInfo id="xilinx.gnu.armv7.linux.exe.debug.1275939872.1016083751" name="channel_engine.cpp" rcbsApplicability="disable" resourcePath="src/channel/channel_engine.cpp" toolsToInvoke="xilinx.gnu.armv7.linux.cxx.toolchain.compiler.debug.1438990366.249857575">
+						<tool id="xilinx.gnu.armv7.linux.cxx.toolchain.compiler.debug.1438990366.249857575" name="ARM v7 Linux g++ compiler" superClass="xilinx.gnu.armv7.linux.cxx.toolchain.compiler.debug.1438990366">
+							<option id="xilinx.gnu.compiler.dircategory.includes.1809797054" superClass="xilinx.gnu.compiler.dircategory.includes" valueType="includePath">
+								<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/inc}&quot;"/>
+								<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/inc/tool_compensate}&quot;"/>
+								<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/lib/inc}&quot;"/>
+								<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/inc/pmc}&quot;"/>
+								<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/inc/Algorithm}&quot;"/>
+								<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/inc/alarm_processor}&quot;"/>
+								<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/inc/parameter}&quot;"/>
+								<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/inc/communication}&quot;"/>
+								<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/inc/channel}&quot;"/>
+								<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/inc/compiler}&quot;"/>
+								<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/inc/spindle}&quot;"/>
+							</option>
+							<inputType id="xilinx.gnu.armv7.linux.cxx.compiler.input.1651072509" name="C++ source files" superClass="xilinx.gnu.armv7.linux.cxx.compiler.input"/>
+						</tool>
+					</fileInfo>
+					<fileInfo id="xilinx.gnu.armv7.linux.exe.debug.1275939872.581614898" name="channel_control.cpp" rcbsApplicability="disable" resourcePath="src/channel/channel_control.cpp" toolsToInvoke="xilinx.gnu.armv7.linux.cxx.toolchain.compiler.debug.1438990366.1236096649">
+						<tool id="xilinx.gnu.armv7.linux.cxx.toolchain.compiler.debug.1438990366.1236096649" name="ARM v7 Linux g++ compiler" superClass="xilinx.gnu.armv7.linux.cxx.toolchain.compiler.debug.1438990366">
+							<option id="xilinx.gnu.compiler.dircategory.includes.2126671002" name="Include Paths" superClass="xilinx.gnu.compiler.dircategory.includes" valueType="includePath">
+								<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/inc}&quot;"/>
+								<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/inc/tool_compensate}&quot;"/>
+								<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/lib/inc}&quot;"/>
+								<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/inc/pmc}&quot;"/>
+								<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/inc/Algorithm}&quot;"/>
+								<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/inc/alarm_processor}&quot;"/>
+								<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/inc/parameter}&quot;"/>
+								<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/inc/communication}&quot;"/>
+								<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/inc/channel}&quot;"/>
+								<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/inc/compiler}&quot;"/>
+								<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/inc/spindle}&quot;"/>
+							</option>
+							<inputType id="xilinx.gnu.armv7.linux.cxx.compiler.input.1932189487" name="C++ source files" superClass="xilinx.gnu.armv7.linux.cxx.compiler.input"/>
+						</tool>
+					</fileInfo>
 				</configuration>
 			</storageModule>
 			<storageModule moduleId="org.eclipse.cdt.core.externalSettings"/>
@@ -161,6 +197,89 @@
 								<inputType id="xilinx.gnu.linker.input.lscript.1912185892" name="Linker Script" superClass="xilinx.gnu.linker.input.lscript"/>
 							</tool>
 							<tool id="xilinx.gnu.armv7.linux.size.release.2033757513" name="ARM v7 Linux Print Size" superClass="xilinx.gnu.armv7.linux.size.release"/>
+						</toolChain>
+					</folderInfo>
+					<fileInfo id="xilinx.gnu.armv7.linux.exe.release.956080055.1959435435" name="channel_engine.cpp" rcbsApplicability="disable" resourcePath="src/channel/channel_engine.cpp" toolsToInvoke="xilinx.gnu.armv7.linux.cxx.toolchain.compiler.release.1283547875.200046302">
+						<tool id="xilinx.gnu.armv7.linux.cxx.toolchain.compiler.release.1283547875.200046302" name="ARM v7 Linux g++ compiler" superClass="xilinx.gnu.armv7.linux.cxx.toolchain.compiler.release.1283547875">
+							<option id="xilinx.gnu.compiler.dircategory.includes.2020316762" superClass="xilinx.gnu.compiler.dircategory.includes" valueType="includePath">
+								<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/inc}&quot;"/>
+								<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/inc/tool_compensate}&quot;"/>
+								<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/lib/inc}&quot;"/>
+								<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/inc/pmc}&quot;"/>
+								<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/inc/Algorithm}&quot;"/>
+								<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/inc/alarm_processor}&quot;"/>
+								<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/inc/parameter}&quot;"/>
+								<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/inc/communication}&quot;"/>
+								<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/inc/channel}&quot;"/>
+								<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/inc/compiler}&quot;"/>
+								<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/inc/spindle}&quot;"/>
+							</option>
+							<inputType id="xilinx.gnu.armv7.linux.cxx.compiler.input.1813266801" name="C++ source files" superClass="xilinx.gnu.armv7.linux.cxx.compiler.input"/>
+						</tool>
+					</fileInfo>
+					<fileInfo id="xilinx.gnu.armv7.linux.exe.release.956080055.240094185" name="channel_control.cpp" rcbsApplicability="disable" resourcePath="src/channel/channel_control.cpp" toolsToInvoke="xilinx.gnu.armv7.linux.cxx.toolchain.compiler.release.1283547875.2065312663">
+						<tool id="xilinx.gnu.armv7.linux.cxx.toolchain.compiler.release.1283547875.2065312663" name="ARM v7 Linux g++ compiler" superClass="xilinx.gnu.armv7.linux.cxx.toolchain.compiler.release.1283547875">
+							<option id="xilinx.gnu.compiler.dircategory.includes.258336038" name="Include Paths" superClass="xilinx.gnu.compiler.dircategory.includes" valueType="includePath">
+								<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/inc}&quot;"/>
+								<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/inc/tool_compensate}&quot;"/>
+								<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/lib/inc}&quot;"/>
+								<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/inc/pmc}&quot;"/>
+								<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/inc/Algorithm}&quot;"/>
+								<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/inc/alarm_processor}&quot;"/>
+								<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/inc/parameter}&quot;"/>
+								<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/inc/communication}&quot;"/>
+								<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/inc/channel}&quot;"/>
+								<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/inc/compiler}&quot;"/>
+								<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/inc/spindle}&quot;"/>
+							</option>
+							<inputType id="xilinx.gnu.armv7.linux.cxx.compiler.input.492347909" name="C++ source files" superClass="xilinx.gnu.armv7.linux.cxx.compiler.input"/>
+						</tool>
+					</fileInfo>
+					<fileInfo id="xilinx.gnu.armv7.linux.exe.release.956080055.1609740483" name="spindle_control.cpp" rcbsApplicability="disable" resourcePath="src/spindle/spindle_control.cpp" toolsToInvoke="xilinx.gnu.armv7.linux.cxx.toolchain.compiler.release.1283547875.167720936">
+						<tool id="xilinx.gnu.armv7.linux.cxx.toolchain.compiler.release.1283547875.167720936" name="ARM v7 Linux g++ compiler" superClass="xilinx.gnu.armv7.linux.cxx.toolchain.compiler.release.1283547875">
+							<option id="xilinx.gnu.compiler.dircategory.includes.200904554" name="Include Paths" superClass="xilinx.gnu.compiler.dircategory.includes" valueType="includePath">
+								<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/inc}&quot;"/>
+								<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/inc/tool_compensate}&quot;"/>
+								<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/lib/inc}&quot;"/>
+								<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/inc/pmc}&quot;"/>
+								<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/inc/Algorithm}&quot;"/>
+								<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/inc/alarm_processor}&quot;"/>
+								<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/inc/parameter}&quot;"/>
+								<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/inc/communication}&quot;"/>
+								<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/inc/channel}&quot;"/>
+								<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/inc/compiler}&quot;"/>
+								<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/inc/spindle}&quot;"/>
+							</option>
+							<inputType id="xilinx.gnu.armv7.linux.cxx.compiler.input.1272239948" name="C++ source files" superClass="xilinx.gnu.armv7.linux.cxx.compiler.input"/>
+						</tool>
+					</fileInfo>
+					<folderInfo id="xilinx.gnu.armv7.linux.exe.release.956080055.400925293" name="/" resourcePath="inc/spindle">
+						<toolChain id="xilinx.gnu.armv7.linux.exe.release.toolchain.1168503620" name="Xilinx ARM v7 GNU/Linux Toolchain" superClass="xilinx.gnu.armv7.linux.exe.release.toolchain" unusedChildren="">
+							<targetPlatform binaryParser="com.xilinx.sdk.managedbuilder.XELF.arm.a53.x32.linux" id="xilinx.armv7.linux.target.gnu.base.release" isAbstract="false" name="Release Platform" superClass="xilinx.armv7.linux.target.gnu.base.release"/>
+							<tool id="xilinx.gnu.armv7.linux.c.toolchain.assembler.release.1259955795" name="ARM v7 Linux gcc assembler" superClass="xilinx.gnu.armv7.linux.c.toolchain.assembler.release.122223232">
+								<inputType id="xilinx.gnu.assembler.input.866982675" superClass="xilinx.gnu.assembler.input"/>
+							</tool>
+							<tool id="xilinx.gnu.armv7.linux.c.toolchain.compiler.release.565926197" name="ARM v7 Linux gcc compiler" superClass="xilinx.gnu.armv7.linux.c.toolchain.compiler.release.1032175806"/>
+							<tool id="xilinx.gnu.armv7.linux.cxx.toolchain.compiler.release.422951782" name="ARM v7 Linux g++ compiler" superClass="xilinx.gnu.armv7.linux.cxx.toolchain.compiler.release.1283547875">
+								<option id="xilinx.gnu.compiler.dircategory.includes.582078954" name="Include Paths" superClass="xilinx.gnu.compiler.dircategory.includes" valueType="includePath">
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/inc}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/inc/tool_compensate}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/lib/inc}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/inc/pmc}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/inc/Algorithm}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/inc/alarm_processor}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/inc/parameter}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/inc/communication}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/inc/channel}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/inc/compiler}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;/${ProjName}/inc/spindle&quot;"/>
+								</option>
+								<inputType id="xilinx.gnu.armv7.linux.cxx.compiler.input.859791549" name="C++ source files" superClass="xilinx.gnu.armv7.linux.cxx.compiler.input"/>
+							</tool>
+							<tool id="xilinx.gnu.armv7.linux.toolchain.archiver.601750546" name="ARM v7 Linux archiver" superClass="xilinx.gnu.armv7.linux.toolchain.archiver.1782408388"/>
+							<tool id="xilinx.gnu.armv7.linux.c.toolchain.linker.release.791049863" name="ARM v7 Linux gcc linker" superClass="xilinx.gnu.armv7.linux.c.toolchain.linker.release.1349377167"/>
+							<tool id="xilinx.gnu.armv7.linux.cxx.toolchain.linker.release.101557934" name="ARM v7 Linux g++ linker" superClass="xilinx.gnu.armv7.linux.cxx.toolchain.linker.release.952224979"/>
+							<tool id="xilinx.gnu.armv7.linux.size.release.411838955" name="ARM v7 Linux Print Size" superClass="xilinx.gnu.armv7.linux.size.release.2033757513"/>
 						</toolChain>
 					</folderInfo>
 				</configuration>

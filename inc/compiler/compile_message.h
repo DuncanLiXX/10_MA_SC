@@ -1070,7 +1070,7 @@ protected:
 
 
 };
-
+#endif
 
 /**
  * @brief 输入指令消息（G10）
@@ -1105,7 +1105,7 @@ class ExatStopMsg: public MoveMsg{
 
 };
 
-#endif
+
 
 //class FiveAxisMsg:public ModeMsg{
 //public:

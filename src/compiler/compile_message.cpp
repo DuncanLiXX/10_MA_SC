@@ -3754,6 +3754,8 @@ bool operator ==( const TorqueCtrlMsg &one, TorqueCtrlMsg &two){
 	return false;
 }
 
+#endif
+
 // @add zk
 InputMsg::InputMsg():RecordMsg(){
 	SetMsgType(INPUT_MSG);
@@ -3784,5 +3786,5 @@ InputMsg& InputMsg::operator=( const InputMsg& msg){
 	return *this;
 }
 // @add zk
-#endif
+
 

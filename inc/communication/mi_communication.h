@@ -179,7 +179,7 @@ public:
 #endif
 //	void ReadPhyAxisIntpPos(double *pos, uint8_t count);   //读取物理轴机械插补位置
 	bool ReadPhyAxisSpeed(int32_t *speed, uint8_t index);  	//读取指定物理轴速度
-	void ReadPhyAxisEncoder(int64_t *encoder, uint8_t count);   //读取物理轴当前编码器反馈
+    void ReadPhyAxisEncoder(int64_t *encoder, uint8_t count);   //读取物理轴当前编码器反馈
 	void ReadPmcAxisRemainDis(double *pos, uint8_t count);    //读取PMC轴余移动量
 	bool ReadCmd(MiCmdFrame &data);    //读取指令
 	bool WriteCmd(MiCmdFrame &data, bool resend = false);   //发送指令
@@ -195,7 +195,8 @@ public:
 	bool ReadPmcReg(int sec, uint8_t *reg);		//读取PMC寄存器，按地址段读取
 	bool WritePmcReg(int sec, uint8_t *reg);		//写入PMC寄存器，按地址段写入
 
-	bool SetAxisRef(uint8_t axis, int64_t encoder);		//设置轴参考点
+    bool SetAxisRef(uint8_t axis, int64_t encoder);		//设置轴参考点
+    void SetAxisRefCur(uint8_t axis, double mach_pos);		//设置指定轴的参考点
 
 	bool StartMI();   //启动MI程序
 
@@ -217,7 +218,7 @@ public:
                        uint16_t feed_gain,uint16_t ratio_gain);
     void SendTapStateCmd(uint8_t chn,bool enable); // 发送攻丝状态给MI
     // axis: 主轴轴号，从1开始
-    void SendSpdLocateCmd(uint8_t chn, uint8_t axis); // 发送主轴定位命令
+    void SendSpdLocateCmd(uint8_t chn, uint8_t axis, bool enable); // 发送主轴定位命令
     // axis: 轴号，从1开始
     // type: 0—直线型位置控制输出；1—旋转型位置控制输出；2—速度指令输出；3—力矩指令输出
     void SendAxisCtrlModeSwitchCmd(uint8_t axis,uint8_t type);

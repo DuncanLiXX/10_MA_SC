@@ -2535,10 +2535,12 @@ void HMICommunication::ProcessHmiVirtualMOPCmd(HMICmdFrame &cmd){
 		m_p_channel_engine->SetFuncState(CHANNEL_ENGINE_INDEX, FS_HANDWHEEL_CONTOUR);
 		break;
 	case MOP_KEY_G00_RATIO:    //快速倍率
-		m_p_channel_engine->SetRapidRatio(cmd.data[0]);
+        // lidianqiang: 去掉倍率控制的接口，快速倍率只由PMC信号ROV来控制
 		break;
 	case MOP_KEY_FEED_RATIO:
-		m_p_channel_engine->SetAutoRatio(cmd.data[0]);
+        // lidianqiang: 去掉倍率控制的接口，进给倍率只由PMC信号_FV来控制
+        // m_p_channel_engine->SetAutoRatio(cmd.data[0]);
+        // todo: 手动倍率也应该由pmc信号_JV来控制
 		m_p_channel_engine->SetManualRatio(cmd.data[0]);
 		break;
 	case MOP_KEY_SPD_RATIO:

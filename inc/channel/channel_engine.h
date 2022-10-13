@@ -93,8 +93,8 @@ void SetMcArmComm(MCArmCommunication *comm){this->m_p_mc_arm_comm = comm;}   //É
 	bool Stop(bool reset);	 //Í£Ö¹³ÌĞòÖ´ĞĞ£¬ÓÃÓÚ´¦ÀíÏµÍ³¸æ¾¯ÏÂµÄ³ÌĞòÍ£Ö¹
 	bool Stop(uint8_t chn, bool reset);  //Í£Ö¹³ÌĞòÖ´ĞĞ£¬ÓÃÓÚ´¦ÀíÏµÍ³¸æ¾¯ÏÂµÄ³ÌĞòÍ£Ö¹
 	bool SetCurWorkChanl(uint8_t work_chan);   //ÉèÖÃµ±Ç°Í¨µÀºÅ
-    void ServoOn();	//ÉÏËÅ·ş
-    void ServoOff();	//ÏÂËÅ·ş
+    void ServoOn();     //¶Ô³ıÖ÷ÖáÍâµÄËùÓĞÖáÉÏÊ¹ÄÜ
+    void ServoOff();	//¶Ô³ıÖ÷ÖáÍâµÄËùÓĞÖáÏÂÊ¹ÄÜ
 
 #ifdef USES_EMERGENCY_DEC_STOP
     void DelayToServoOff(uint8_t chn_index);  //ÑÓ³ÙÏÂËÅ·ş

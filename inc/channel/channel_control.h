@@ -53,11 +53,13 @@ public:
 
     SpindleControl *GetSpdCtrl(){return m_p_spindle;}
 
+
 //	bool OpenFile(const char *file_name);   //打开待编译文件
 
 	ErrorType GetErrorCode(){return m_error_code;}   //返回当前错误码
 
 	const ChannelStatusCollect &GetChnStatus(){return this->m_channel_status;}  //获取当前通道状态结构体
+    const ChannelRealtimeStatus &GetRealtimeStatus(){return m_channel_rt_status;} //获取实时状态结构体
 
 	uint8_t GetChnAxisCount(){return this->m_p_channel_config->chn_axis_count;}   //获取通道轴数量
 	uint8_t GetChnAxisName(uint8_t idx){return this->m_p_channel_config->chn_axis_name[idx];}   //获取通道轴名称

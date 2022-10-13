@@ -77,7 +77,9 @@ private:
     bool CreateSkipRunMsg(const int gcode);	  //构造运行中中断跳转消息
     bool CreateMacroProgCallMsg();   //构造宏程序调用指令消息，并插入消息队列
     bool CreateAutoToolMeasureMsg();   //构造自动对刀指令消息，并插入消息队列
-	
+	bool CreateInputMsg();			   // @add zk G10 L_ P_ R_
+	bool CreateExactStopMsg();         // @add zk G09 X_ Y_ Z_
+
 #ifdef USES_SPEED_TORQUE_CTRL	
     bool CreateSpeedCtrlMsg(const int gcode);     //构造速度控制消息
     bool CreateTorqueCtrlMsg(const int gcode);     //构造力矩控制消息

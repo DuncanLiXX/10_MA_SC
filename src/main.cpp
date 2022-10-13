@@ -81,8 +81,6 @@ void InitSysState(){
     GetLocalIP("eth0", g_sys_state.local_host_addr);    //获取本地IP地址
 }
 
-
-
 /**
  * @brief 为SPARTAN6初始化加载代码,通过PL进行加载
  * @return
@@ -816,7 +814,7 @@ int main()
 
     printf("Enter the main loop, thread id = %ld!\n", syscall(SYS_gettid));
 
-    //修改主线程优先级
+//	修改主线程优先级
 //	pthread_attr_t attr;
 //	struct sched_param param;
 //	int policy;

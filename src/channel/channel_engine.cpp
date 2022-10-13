@@ -4099,10 +4099,10 @@ void ChannelEngine::ProcessHmiSetPmcReg(HMICmdFrame &cmd){
             printf("set pmc reg bit: sec = %hu, index = %hu, bit = %hhu, count = %hhu, value = %u\n", reg_sec, reg_index, bit_index, bit_count, bit_value32);
 
             // @test zk
-//            if(reg_sec == 2 and reg_index == 82 and bit_index == 1 and bit_value32 == 1){
-//                printf("冷却！！！\n");
-//                this->m_p_channel_control[0].test();
-//            }
+            if(reg_sec == 2 and reg_index == 82 and bit_index == 1 and bit_value32 == 1){
+                printf("冷却！！！\n");
+                this->m_p_channel_control[0].test();
+            }
             // @test zk
         }
         break;
@@ -10431,7 +10431,7 @@ void ChannelEngine::ReturnRefPoint(){
             }else if(this->m_p_axis_config[i].ret_ref_mode == 1){
                 this->EcatAxisFindRefWithZeroSignal(i);    //  总线有基准回零
             }else if(this->m_p_axis_config[i].ret_ref_mode == 2){
-                this->EcatAxisFindRefNoZeroSignal(i);    //  总线无基准回零
+                this->EcatAxisFindRefNoZeroSignal(i);      //  总线无基准回零
             }else if(this->m_p_axis_config[i].ret_ref_mode == 4){  //总线双基准回零，粗、精基准都是IO输入信号
                 this->EcatAxisFindRefWithZeroSignal2(i);
             }else if(this->m_p_axis_config[i].ret_ref_mode == 0 &&
@@ -10713,7 +10713,6 @@ void ChannelEngine::ReturnRefPoint(){
         }
         */
     }
-
 
     if(m_n_mask_ret_ref == 0){
             this->m_b_ret_ref = false;

@@ -291,7 +291,6 @@ void Compiler::InitCompiler() {
 
 	this->m_p_block_msg_list = this->m_p_block_msg_list_auto;
 
-
 	//创建AUTO模式刀补处理缓冲
 	this->m_p_tool_compensate_auto = new ToolCompensate();
 	if (this->m_p_tool_compensate_auto == nullptr) {
@@ -1460,6 +1459,16 @@ bool Compiler::OpenFile(const char *file, bool sub_flag) {
 	printf("compiler::openfile, file[%s], sub_flag= %hhu\n", file, sub_flag);
 	int res = 0;
 
+	// @add zk 加载过长文件名导致崩溃
+	if(strlen(file) > kMaxFileNameLen-1){
+		g_ptr_trace->PrintLog(LOG_ALARM, "CHN[%d]文件名过长[%s]打开文件失败!",
+				m_n_channel_index, file);
+		CreateError(ERR_OPEN_FILE, ERROR_LEVEL, CLEAR_BY_MCP_RESET, 0,
+				m_n_channel_index);
+		return false;
+	}
+	// @add zk
+
 	if(this->m_work_mode == MDA_COMPILER && !sub_flag){  //
 		char tmp_file[kMaxPathLen] = {0};	//文件路径
 		this->m_p_channel_control->GetMdaFilePath(tmp_file);
@@ -1468,6 +1477,8 @@ bool Compiler::OpenFile(const char *file, bool sub_flag) {
 			return false;
 		}
 	}
+
+
 
 	if (!m_p_file_map_info->OpenFile(file, sub_flag)) {
 		g_ptr_trace->PrintLog(LOG_ALARM, "CHN[%d]编译器打开文件[%s]失败!",

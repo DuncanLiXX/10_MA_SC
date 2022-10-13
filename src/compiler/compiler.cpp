@@ -291,7 +291,6 @@ void Compiler::InitCompiler() {
 
 	this->m_p_block_msg_list = this->m_p_block_msg_list_auto;
 
-
 	//创建AUTO模式刀补处理缓冲
 	this->m_p_tool_compensate_auto = new ToolCompensate();
 	if (this->m_p_tool_compensate_auto == nullptr) {

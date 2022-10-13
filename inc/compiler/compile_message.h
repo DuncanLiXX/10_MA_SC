@@ -364,7 +364,7 @@ private:
 };
 
 /**
- * @brief 参考点返回消息，包括G28、G29、G30
+ * @brief 参考点返回消息，包括G27 G28、G29、G30
  */
 class RefReturnMsg : public ModeMsg{
 public:
@@ -1101,8 +1101,25 @@ public:
 };
 
 // 准停消息  G09
-class ExatStopMsg: public MoveMsg{
+class ExactStopMsg: public RecordMsg{
+public:
+	ExactStopMsg(const DPointChn &source, const DPointChn &target, const uint32_t axis_mask);    //构造函数
+	virtual ~ExactStopMsg();  //析构函数
 
+	virtual void Execute();		//执行函数
+	virtual void GetData(void* rec );	//获取数据
+	virtual void SetData(void* rec);		//设置数据
+	virtual int GetOutputData(GCodeFrame *data, uint32_t mask, bool flag);
+	virtual void PrintString();   //用于程序调试
+	ExactStopMsg& operator=( const ExactStopMsg& msg);  //赋值运算符
+
+	DPointChn &GetTargetPos(){return m_point_target;}  //返回终点坐标
+	DPointChn &GetSourcePos(){return m_point_source;}  //返回起点坐标
+	uint32_t GetAxisMask(){return m_axis_mask;}
+
+	DPointChn m_point_target;
+	DPointChn m_point_source;
+	uint32_t  m_axis_mask;
 };
 
 

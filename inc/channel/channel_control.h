@@ -344,6 +344,7 @@ public:
 	bool CallAdditionalProgram(AddProgType type);  //调用附加程序（前置/后置）
 #endif
 
+	void test(); // @test zk
 	// @ add zk
 	void StraightFeed(int chn, double x, double y, double z, int feed);
 	void StraightTraverse(int chn, double x, double y, double z);
@@ -394,6 +395,7 @@ private:
 	bool ExecuteAutoToolMeasureMsg(RecordMsg *msg);   //实际执行自动对刀指令消息
 	bool ExecuteRestartOverMsg(RecordMsg *msg);   //实际执行加工复位完成指令消息
 	bool ExecuteInputMsg(RecordMsg *msg);		//执行G10 输入指令消息
+	bool ExecuteExactStopMsg(RecordMsg *msg);   // G09
 
 #ifdef USES_SPEED_TORQUE_CTRL	
 	bool ExecuteSpeedCtrlMsg(RecordMsg *msg);   //执行速度控制消息

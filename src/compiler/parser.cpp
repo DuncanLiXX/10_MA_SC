@@ -592,7 +592,9 @@ bool Parser::AnalyzeGCode(LexerGCode *gcode){
 				return false;
 			}
 		}else if(m_mode_code[0] == G09_CMD){
-
+			if(!CreateExactStopMsg()){
+				return false;
+			}
 		}
 		else{
 			if(!CreateModeMsg(m_mode_code[0]))
@@ -620,6 +622,11 @@ bool Parser::AnalyzeGCode(LexerGCode *gcode){
 	//TODO 处理14组模态指令：G54~G59 工件坐标系选择指令，包括G5401~G5499扩展工件坐标系
 	if(m_mode_mask & GMODE_14){
 		if(!CreateCoordMsg(m_mode_code[14]))
+			return false;
+	}
+
+	if(m_mode_mask & GMODE_15){
+		if(!CreateModeMsg(m_mode_code[15]))
 			return false;
 	}
 
@@ -3035,6 +3042,35 @@ bool Parser::CreateInputMsg(){
 	GetCodeData(Y_DATA, new_msg->YData);
 	GetCodeData(Z_DATA, new_msg->ZData);
 	GetCodeData(Q_DATA, new_msg->QData);
+
+	new_msg->SetLineNo(this->m_p_lexer_result->line_no);
+	m_p_parser_result->Append(new_msg);
+	ProcessLastBlockRec(new_msg);
+	return true;
+}
+
+bool Parser::CreateExactStopMsg(){
+	DPointChn source = this->m_p_compiler_status->cur_pos;   //起点
+	DPointChn target = source;	//终点
+
+	RecordMsg *new_msg = nullptr;
+	uint32_t axis_mask = 0;
+	uint8_t io = 0;
+	double data = 0;
+
+	uint8_t pmc_count = 0;
+
+	if(!GetTargetPos(target, axis_mask, &pmc_count))
+		return false;
+
+	new_msg = new ExactStopMsg(source, target, axis_mask);
+	if(new_msg == nullptr){
+		//TODO 内存分配失败，告警
+		CreateError(ERR_MEMORY_NEW, FATAL_LEVEL, CLEAR_BY_RESET_POWER);
+		return false;
+	}
+
+	new_msg->SetLineNo(this->m_p_lexer_result->line_no);  //设置当前行号
 
 	m_p_parser_result->Append(new_msg);
 	ProcessLastBlockRec(new_msg);

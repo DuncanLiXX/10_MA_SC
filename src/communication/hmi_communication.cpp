@@ -4469,7 +4469,6 @@ int get_cpuoccupy(CPU_OCCUPY *cpust) //对无类型get函数含有一个形参结构体类弄的指
 
     sscanf(buff, "%s %u %u %u %u %u %u %u", cpu_occupy->name, &cpu_occupy->user, &cpu_occupy->nice, &cpu_occupy->system, &cpu_occupy->idle, &cpu_occupy->lowait, &cpu_occupy->irq, &cpu_occupy->softirq);
 
-
     fclose(fd);
 
     return 0;
@@ -4488,6 +4487,6 @@ void cal_cpuoccupy(CPU_OCCUPY *o, CPU_OCCUPY *n)
     cpu_use = idle / sum;
     idle = n->user + n->system + n->nice - o->user - o->system - o->nice;
     cpu_use = idle / sum;
-    printf("---cpu use---: %.3f\n",cpu_use);
+    //printf("---cpu use---: %.3f\n",cpu_use);
 }
 //@test zk

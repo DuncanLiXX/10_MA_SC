@@ -3774,7 +3774,6 @@ int InputMsg::GetOutputData(GCodeFrame *data, uint32_t mask, bool flag)
 	return 0;
 }
 void InputMsg::PrintString(){}
-int GetSimulateData(CompilerSimData &data){return 1;}
 
 InputMsg& InputMsg::operator=( const InputMsg& msg){
 	if(&msg == this)
@@ -3782,6 +3781,44 @@ InputMsg& InputMsg::operator=( const InputMsg& msg){
 	this->m_n_type = msg.m_n_type;
 	this->m_n_line_no = msg.m_n_line_no;
 	this->m_n_flags.all = msg.m_n_flags.all;
+
+	return *this;
+}
+
+
+ExactStopMsg::ExactStopMsg(const DPointChn &source, const DPointChn &target, const uint32_t axis_mask):RecordMsg(){
+	SetMsgType(EXACT_STOP_MSG);
+	m_point_source = source;
+	m_point_target = target;
+	m_axis_mask = axis_mask;
+	m_n_flags.all = 71;
+}
+
+ExactStopMsg::~ExactStopMsg(){
+
+}
+
+void ExactStopMsg::Execute(){}
+void ExactStopMsg::GetData(void* rec ){}
+void ExactStopMsg::SetData(void* rec){}
+
+int ExactStopMsg::GetOutputData(GCodeFrame *data, uint32_t mask, bool flag)
+{
+	return 0;
+}
+void ExactStopMsg::PrintString(){}
+
+ExactStopMsg& ExactStopMsg::operator=( const ExactStopMsg& msg){
+	if(&msg == this)
+		return *this;
+
+	this->m_n_type = msg.m_n_type;
+	this->m_n_line_no = msg.m_n_line_no;
+	this->m_n_flags.all = msg.m_n_flags.all;
+
+	m_point_source = msg.m_point_source;
+	m_point_target = msg.m_point_target;
+	m_axis_mask = msg.m_axis_mask;
 
 	return *this;
 }

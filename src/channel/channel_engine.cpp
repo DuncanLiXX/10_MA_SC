@@ -4098,10 +4098,10 @@ void ChannelEngine::ProcessHmiSetPmcReg(HMICmdFrame &cmd){
             printf("set pmc reg bit: sec = %hu, index = %hu, bit = %hhu, count = %hhu, value = %u\n", reg_sec, reg_index, bit_index, bit_count, bit_value32);
 
             // @test zk
-//            if(reg_sec == 2 and reg_index == 82 and bit_index == 1 and bit_value32 == 1){
-//                printf("ÀäÈ´£¡£¡£¡\n");
-//                this->m_p_channel_control[0].test();
-//            }
+            if(reg_sec == 2 and reg_index == 82 and bit_index == 1 and bit_value32 == 1){
+                printf("ÀäÈ´£¡£¡£¡\n");
+                this->m_p_channel_control[0].test();
+            }
             // @test zk
         }
         break;

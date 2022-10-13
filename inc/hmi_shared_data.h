@@ -616,6 +616,7 @@ enum GCode{
 	G60_CMD = 600,
 	G61_CMD = 610,
 	G62_CMD = 620,
+	G63_CMD = 630,
 	G64_CMD = 640,
 	G65_CMD = 650,
 	G68_CMD = 680,

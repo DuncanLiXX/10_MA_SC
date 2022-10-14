@@ -145,7 +145,7 @@ void SpindleControl::StartRigidTap(double feed)
     // ratio:攻丝比例，10000*S/F，S单位为rpm，F单位为mm/min
     int32_t ratio = -10000.0*cnc_speed*spindle->move_pr/feed;
     if(TSO)
-        ratio *= SOV;
+        ratio *= SOV/100.0;
 
     // 发送攻丝轴号
     mi->SendTapAxisCmd(chn, phy_axis+1, z_axis+1);

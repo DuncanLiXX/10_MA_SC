@@ -179,7 +179,7 @@ public:
 #endif
 //	void ReadPhyAxisIntpPos(double *pos, uint8_t count);   //读取物理轴机械插补位置
 	bool ReadPhyAxisSpeed(int32_t *speed, uint8_t index);  	//读取指定物理轴速度
-	void ReadPhyAxisEncoder(int64_t *encoder, uint8_t count);   //读取物理轴当前编码器反馈
+    void ReadPhyAxisEncoder(int64_t *encoder, uint8_t count);   //读取物理轴当前编码器反馈
 	void ReadPmcAxisRemainDis(double *pos, uint8_t count);    //读取PMC轴余移动量
 	bool ReadCmd(MiCmdFrame &data);    //读取指令
 	bool WriteCmd(MiCmdFrame &data, bool resend = false);   //发送指令
@@ -195,13 +195,33 @@ public:
 	bool ReadPmcReg(int sec, uint8_t *reg);		//读取PMC寄存器，按地址段读取
 	bool WritePmcReg(int sec, uint8_t *reg);		//写入PMC寄存器，按地址段写入
 
-	bool SetAxisRef(uint8_t axis, int64_t encoder);		//设置轴参考点
+    bool SetAxisRef(uint8_t axis, int64_t encoder);		//设置轴参考点
+    void SetAxisRefCur(uint8_t axis, double mach_pos);		//设置指定轴的参考点
 
 	bool StartMI();   //启动MI程序
 
 	char *GetPmcDataAddr();		//获取PMC梯形图数据区的地址
 
-	void SendOperateCmd(uint16_t opt, uint8_t axis, uint16_t data);   //发送轴操作指令
+    // opt:操作类型，详细可查看[SC-MI命令参数]文档
+    // axis:轴号，从1开始
+    // enable: 0:功能关 1:功能开
+    void SendOperateCmd(uint16_t opt, uint8_t axis, uint16_t enable);   //发送轴操作指令
+    void SendAxisEnableCmd(uint8_t axis,bool enable);   // 轴上使能
+
+    // spd_aixs: 主轴轴号，从1开始
+    // z_axis: z轴轴号，从1开始
+    void SendTapAxisCmd(uint8_t chn,uint8_t spd_axis,uint8_t z_axis); // 发送攻丝轴号
+
+    void SendTapRatioCmd(uint8_t chn,int32_t ratio); // 发送攻丝比例
+    // 发送同步误差增益，轴速度前馈增益，轴位置比例增益
+    void SendTapParams(uint8_t chn,uint16_t error_gain,
+                       uint16_t feed_gain,uint16_t ratio_gain);
+    void SendTapStateCmd(uint8_t chn,bool enable); // 发送攻丝状态给MI
+    // axis: 主轴轴号，从1开始
+    void SendSpdLocateCmd(uint8_t chn, uint8_t axis, bool enable); // 发送主轴定位命令
+    // axis: 轴号，从1开始
+    // type: 0—直线型位置控制输出；1—旋转型位置控制输出；2—速度指令输出；3—力矩指令输出
+    void SendAxisCtrlModeSwitchCmd(uint8_t axis,uint8_t type);
 
 	bool ReadEncoderWarn(uint64_t &value);		//读取轴编码器告警标志
 	bool ReadServoHLimitFlag(bool pos_flag, uint64_t &value);   //读取伺服限位告警信息

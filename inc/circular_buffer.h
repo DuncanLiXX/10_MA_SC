@@ -16,7 +16,6 @@
 #include <pthread.h>
 #include "global_definition.h"
 
-
 /**
  * @brief 循环缓冲区类
  * 此类中所有长度均指T的个数，并不是字节数！！！

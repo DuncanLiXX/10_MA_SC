@@ -1323,6 +1323,8 @@ RefReturnMsg& RefReturnMsg::operator=( const RefReturnMsg& msg){
 	this->m_n_flags.all = msg.m_n_flags.all;
 	this->m_n_axis_mask = msg.m_n_axis_mask;
 	this->m_pos_middle = msg.m_pos_middle;
+	this->ref_id = msg.ref_id;
+	printf("========================= %lf\n", msg.ref_id);
 	return *this;
 }
 
@@ -2732,7 +2734,7 @@ int LineMsg::GetOutputData(GCodeFrame *data, uint32_t mask, bool flag){
 	data->data.pos6 = MM2NM0_1(pos.a7);
 	data->data.pos7 = MM2NM0_1(pos.a8);
 
-	//printf("pos %lf -- %lf -- %lf \n", pos.x, pos.y, pos.z);
+	printf("-----------------------> LineMsg pos %lf -- %lf -- %lf \n", pos.x, pos.y, pos.z);
 	//printf("posnm %lld -- %lld -- %lld \n", data->data.pos0, data->data.pos1, data->data.pos2);
 
 	data->data.reserved = this->m_io_data;   //IO数据
@@ -3751,5 +3753,75 @@ bool operator ==( const TorqueCtrlMsg &one, TorqueCtrlMsg &two){
 		return true;
 	return false;
 }
+
 #endif
+
+// @add zk
+InputMsg::InputMsg():RecordMsg(){
+	SetMsgType(INPUT_MSG);
+}
+
+InputMsg::~InputMsg(){
+
+}
+
+void InputMsg::Execute(){}
+void InputMsg::GetData(void* rec ){}
+void InputMsg::SetData(void* rec){}
+//生成待输出给MC的运动控制数据包
+int InputMsg::GetOutputData(GCodeFrame *data, uint32_t mask, bool flag)
+{
+	return 0;
+}
+void InputMsg::PrintString(){}
+
+InputMsg& InputMsg::operator=( const InputMsg& msg){
+	if(&msg == this)
+		return *this;
+	this->m_n_type = msg.m_n_type;
+	this->m_n_line_no = msg.m_n_line_no;
+	this->m_n_flags.all = msg.m_n_flags.all;
+
+	return *this;
+}
+
+
+ExactStopMsg::ExactStopMsg(const DPointChn &source, const DPointChn &target, const uint32_t axis_mask):RecordMsg(){
+	SetMsgType(EXACT_STOP_MSG);
+	m_point_source = source;
+	m_point_target = target;
+	m_axis_mask = axis_mask;
+	m_n_flags.all = 71;
+}
+
+ExactStopMsg::~ExactStopMsg(){
+
+}
+
+void ExactStopMsg::Execute(){}
+void ExactStopMsg::GetData(void* rec ){}
+void ExactStopMsg::SetData(void* rec){}
+
+int ExactStopMsg::GetOutputData(GCodeFrame *data, uint32_t mask, bool flag)
+{
+	return 0;
+}
+void ExactStopMsg::PrintString(){}
+
+ExactStopMsg& ExactStopMsg::operator=( const ExactStopMsg& msg){
+	if(&msg == this)
+		return *this;
+
+	this->m_n_type = msg.m_n_type;
+	this->m_n_line_no = msg.m_n_line_no;
+	this->m_n_flags.all = msg.m_n_flags.all;
+
+	m_point_source = msg.m_point_source;
+	m_point_target = msg.m_point_target;
+	m_axis_mask = msg.m_axis_mask;
+
+	return *this;
+}
+// @add zk
+
 

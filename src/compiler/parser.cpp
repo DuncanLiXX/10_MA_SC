@@ -569,7 +569,7 @@ bool Parser::AnalyzeGCode(LexerGCode *gcode){
 			if(!CreateTimeWaitMsg()){
 				return false;
 			}
-		}else if(m_mode_code[0] == G28_CMD){
+		}else if(m_mode_code[0] == G27_CMD or m_mode_code[0] == G28_CMD or m_mode_code[0] == G30_CMD){
 			if(!CreateRefReturnMsg(m_mode_code[0]))
 				return false;
 			else
@@ -587,7 +587,16 @@ bool Parser::AnalyzeGCode(LexerGCode *gcode){
 				return false;
 			else
 				has_move_code = true;
-		}else{
+		}else if(m_mode_code[0] == G10_CMD){
+			if(!CreateInputMsg()){
+				return false;
+			}
+		}else if(m_mode_code[0] == G09_CMD){
+			if(!CreateExactStopMsg()){
+				return false;
+			}
+		}
+		else{
 			if(!CreateModeMsg(m_mode_code[0]))
 				return false;
 		}
@@ -616,6 +625,10 @@ bool Parser::AnalyzeGCode(LexerGCode *gcode){
 			return false;
 	}
 
+	if(m_mode_mask & GMODE_15){
+		if(!CreateModeMsg(m_mode_code[15]))
+			return false;
+	}
 
 	//处理10组模态指令：G98/G99 固定循环（初始平面/R点平面）返回
 	if(m_mode_mask & GMODE_10){
@@ -1876,7 +1889,8 @@ bool Parser::CreateLoopMsg(const int gcode){
 		new_msg->SetFlag(FLAG_JUMP, true);
 
 	m_p_parser_result->Append(new_msg);
-	this->m_p_compiler_status->mode.gmode[GetModeGroup(gcode)] = gcode;
+	//@test zk run message时会去修改模态  在这里修改太早了
+	//this->m_p_compiler_status->mode.gmode[GetModeGroup(gcode)] = gcode;
 //	this->m_p_compiler_status->mode.move_mode = 9;
 
 //	printf("create loop msg : %d\n", gcode);
@@ -1907,7 +1921,6 @@ bool Parser::CreateCoordMsg(const int gcode){
 		CreateError(ERR_MEMORY_NEW, FATAL_LEVEL, CLEAR_BY_RESET_POWER);
 		return false;
 	}
-
 
 	new_msg->SetLineNo(this->m_p_lexer_result->line_no);  //设置当前行号
 	if(this->m_p_compiler_status->jump_flag)
@@ -2713,23 +2726,28 @@ bool Parser::CreateRefReturnMsg(const int gcode){
 	uint32_t mask = 0;
 	DPointChn middle;
 
-
 	this->GetTargetPos(middle, mask);
 
-
-	RecordMsg *new_msg = new RefReturnMsg(gcode, mask, middle);
+	RefReturnMsg *new_msg = new RefReturnMsg(gcode, mask, middle);
 	if(new_msg == nullptr){
 		//TODO 内存分配失败，告警
 		CreateError(ERR_MEMORY_NEW, FATAL_LEVEL, CLEAR_BY_RESET_POWER);
 		return false;
 	}
 	new_msg->SetLineNo(this->m_p_lexer_result->line_no);  //设置当前行号
+
+	double data;
+
+	if(GetCodeData(P_DATA, data)){
+		new_msg->ref_id = (int)data;
+	}
+
 	if(this->m_p_compiler_status->jump_flag)
 		new_msg->SetFlag(FLAG_JUMP, true);
 
-	m_p_parser_result->Append(new_msg);
+	m_p_parser_result->Append((RecordMsg *)new_msg);
 
-	ProcessLastBlockRec(new_msg);
+	ProcessLastBlockRec((RecordMsg *)new_msg);
 
 	this->m_p_compiler_status->mode.gmode[0] = gcode;
 
@@ -3009,6 +3027,53 @@ bool Parser::CreateSpindleCheckMsg(){
 
 	ProcessLastBlockRec(new_msg);
 
+	return true;
+}
+
+bool Parser::CreateInputMsg(){
+	InputMsg * new_msg = new InputMsg();
+
+	GetCodeData(L_DATA, new_msg->LData);
+	GetCodeData(P_DATA, new_msg->PData);
+	GetCodeData(H_DATA, new_msg->HData);
+	GetCodeData(D_DATA, new_msg->DData);
+	GetCodeData(R_DATA, new_msg->RData);
+	GetCodeData(X_DATA, new_msg->XData);
+	GetCodeData(Y_DATA, new_msg->YData);
+	GetCodeData(Z_DATA, new_msg->ZData);
+	GetCodeData(Q_DATA, new_msg->QData);
+
+	new_msg->SetLineNo(this->m_p_lexer_result->line_no);
+	m_p_parser_result->Append(new_msg);
+	ProcessLastBlockRec(new_msg);
+	return true;
+}
+
+bool Parser::CreateExactStopMsg(){
+	DPointChn source = this->m_p_compiler_status->cur_pos;   //起点
+	DPointChn target = source;	//终点
+
+	RecordMsg *new_msg = nullptr;
+	uint32_t axis_mask = 0;
+	uint8_t io = 0;
+	double data = 0;
+
+	uint8_t pmc_count = 0;
+
+	if(!GetTargetPos(target, axis_mask, &pmc_count))
+		return false;
+
+	new_msg = new ExactStopMsg(source, target, axis_mask);
+	if(new_msg == nullptr){
+		//TODO 内存分配失败，告警
+		CreateError(ERR_MEMORY_NEW, FATAL_LEVEL, CLEAR_BY_RESET_POWER);
+		return false;
+	}
+
+	new_msg->SetLineNo(this->m_p_lexer_result->line_no);  //设置当前行号
+
+	m_p_parser_result->Append(new_msg);
+	ProcessLastBlockRec(new_msg);
 	return true;
 }
 

@@ -125,13 +125,14 @@ struct FRegBits{
 	//F33
 	uint8_t :8;
 	//F34
-	uint8_t :8;
+    uint8_t GR1O:1;                      //档位1选择信号
+    uint8_t GR2O:1;                      //档位2选择信号
+    uint8_t GR3O:1;                      //档位3选择信号
+    uint8_t :5;
 	//F35
 	uint8_t :8;
-	//F36
-	uint8_t :8;
-	//F37
-	uint8_t :8;
+    //F36~F37
+    uint16_t RO:16;                      //主轴电机转速输出
 	//F38
 	uint8_t :6;
 	uint8_t SPS:2;                       //主轴旋转状态  F38.6~F38.7  0--停转   1--正转  2--反转
@@ -148,7 +149,12 @@ struct FRegBits{
 	//F44
 	uint8_t :8;
 	//F45
-	uint8_t :8;
+    uint8_t :1;
+    uint8_t SST:1;     // 零速信号 F45.1
+    uint8_t :1;
+    uint8_t SAR:1;     // 速度到达信号 F45.3
+    uint8_t :3;
+    uint8_t ORAR:1;    // 定向结束信号 F45.7
 	//F46
 	uint8_t :8;
 	//F47
@@ -181,7 +187,7 @@ struct FRegBits{
 	uint8_t EREND:1;                //外部数据输入读取结束信号   F60.0
 	uint8_t :7;
 	//F61
-	uint8_t :8;
+    uint8_t :8;
 	//F62
 	uint8_t :8;
 	//F63
@@ -190,7 +196,8 @@ struct FRegBits{
 	uint8_t :7;
 	uint8_t TAM:1;               //自动对刀信号      F64.7
 	//F65
-	uint8_t :8;
+    uint8_t RGSPP:1;            //进入攻丝状态反馈 F65.0
+    uint8_t :7;
 	//F66
 	uint8_t :8;
 	//F67
@@ -782,21 +789,19 @@ struct GRegBits{
 	uint8_t :1;
 	//G29
 	uint8_t GR21:1;     //齿轮选择信号（输入）     G29.0
-	uint8_t :1;
-	uint8_t SPOS:1;     //主轴正转信号         G29.2
-	uint8_t SNEG:1;     //主轴反转信号         G29.3
-	uint8_t SAR:1;      //主轴速度到达信号         G29.4
-	uint8_t SOR:1;      //主轴定向信号           G29.5
+    uint8_t :4;
+    uint8_t SOR:1;      //主轴定向信号           G29.5
 	uint8_t _SSTP:1;    //主轴停信号             G29.6
 	uint8_t :1;
 	//G30
 	uint8_t SOV:8;      //主轴倍率信号    SOV0~SOV7     G30.0~G30.7     单位：1%
-	//G31
-	uint8_t :8;
-	//G32
-	uint8_t :8;
+    //G31~G32
+    uint16_t RI:16;     //主轴转速输入 R01I~R16I
 	//G33
-	uint8_t :8;
+    uint8_t :5;
+    uint8_t SGN:1;      //PMC输入的主轴方向    G33.5   0：正 1：负
+    uint8_t SSIN:1;     //主轴方向由CNC决定还是PMC决定  G33.6   0：CNC 1：PMC
+    uint8_t SIND:1;     //主轴速度由CNC决定还是PMC决定 G33.7   0：CNC 1：PMC
 	//G34
 	uint8_t :8;
 	//G35
@@ -857,7 +862,8 @@ struct GRegBits{
 	//G60
 	uint8_t :8;
 	//G61
-	uint8_t :8;
+    uint8_t RGTAP:1;    // 刚性攻丝信号 G61.0
+    uint8_t :7;
 	//G62
 	uint8_t :8;
 	//G63
@@ -874,10 +880,14 @@ struct GRegBits{
 	uint8_t :5;
 	//G68
 	uint8_t :8;
-	//G69
+    //G69
 	uint8_t :8;
 	//G70
-	uint8_t :8;
+    uint8_t :4;
+    uint8_t SRV:1;      //主轴反转 G70.4
+    uint8_t SFR:1;      //主轴正转 G70.5
+    uint8_t ORCMA:1;    //主轴定向 G70.6
+    uint8_t :1;
 	//G71
 	uint8_t :8;
 	//G72
@@ -959,7 +969,7 @@ struct GRegBits{
 	//G103
 	uint8_t :8;
 	//G104~G105
-	uint16_t REFE:16;             //物理轴回参考点使能信号，  bit0~bit15  轴1~轴15
+	uint16_t REFE:16;           //物理轴回参考点使能信号，  bit0~bit15  轴1~轴15
 	//G106
 	uint8_t :8;
 	//G107

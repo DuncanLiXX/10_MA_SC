@@ -22,11 +22,11 @@ class ChannelControl;
 class Qc{
 public:
     int type = 0;
+    uint64_t lino = 0;
 };
 
 class StraightTraverseQc : public Qc{
 public:
-    int type = 0;
     double dx = 0;
     double dy = 0;
     double x = 0;
@@ -35,7 +35,6 @@ public:
 
 class StraightFeedQc : public Qc{
 public:
-    int type = 1;
     double dx = 0;
     double dy = 0;
     double x = 0;
@@ -44,7 +43,6 @@ public:
 
 class ArcFeedQc : public Qc{
 public:
-    int type = 2;
     int original_turns = 0;
     double end1 = 0;
     double end2 = 0;
@@ -95,12 +93,12 @@ private:   //私有接口函数
     void __find_ends(double *end_x, double *end_y);
     void __checkRadius(int clockWise, double xStart, double yStart, double xEnd, double yEnd, double radius, double *i, double *j);
 
-    void __ARC_FEED(double first_end, double second_end, double first_axis, double second_axis, int rotation);
-    void __STRAIGHT_FEED(double end_x, double end_y);
-    void __STRAIGHT_TRAVERSE(double end_x, double end_y);
-    void __enqueue_STRAIGHT_TRAVERSE(double dx, double dy, double x, double y);
-    void __enqueue_STRAIGHT_FEED(double dx, double dy, double x, double y);
-    void __enqueue_ARC_FEED(int original_turns, double end1, double end2, double center1, double center2, int turn);
+    void __ARC_FEED(double first_end, double second_end, double first_axis, double second_axis, int rotation, uint64_t lino = 0);
+    void __STRAIGHT_FEED(double end_x, double end_y, uint64_t lino = 0);
+    void __STRAIGHT_TRAVERSE(double end_x, double end_y, uint64_t lino = 0);
+    void __enqueue_STRAIGHT_TRAVERSE(double dx, double dy, double x, double y, uint64_t lino = 0);
+    void __enqueue_STRAIGHT_FEED(double dx, double dy, double x, double y, uint64_t lino = 0);
+    void __enqueue_ARC_FEED(int original_turns, double end1, double end2, double center1, double center2, int turn, uint64_t lino = 0);
     bool __TOOL_INSIDE_ARC(int side, int turn){
         return (side == 1 and turn > 0) or (side == 2 and turn < 0);
     }
@@ -155,7 +153,6 @@ private:
     double __center2 = 0;
     int __turn;
 
-    uint64_t lineno = 0;
     DPointChn cur_point;
     bool first_move = true;
     RecordMsg * msg;

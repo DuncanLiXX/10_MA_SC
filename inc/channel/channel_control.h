@@ -26,6 +26,7 @@ class MICommunication;  //MI通讯类
 class MCCommunication;  //MC通讯类
 class MCArmCommunication;  //MC-ARM通讯类
 class PmcRegister;		//PMC寄存器类
+class SpindleControl;   //主轴控制类
 struct SCSystemConfig; //SC通道配置
 struct SCChannelConfig;  //SC通道配置
 struct SCAxisConfig;     //SC轴配置
@@ -42,19 +43,23 @@ public:
 	virtual ~ChannelControl(); //析构函数
 
 	// @test zk
-	void test();
+    //void test();
 	// @test zk
 
 	bool Initialize(uint8_t chn_index, ChannelEngine *engine, HMICommunication *hmi_comm,
 			MICommunication *mi_comm, MCCommunication *mc_comm, ParmManager *parm, PmcRegister *reg);  //初始化函数
 	
 	void SetMcArmComm(MCArmCommunication *comm){this->m_p_mc_arm_comm = comm;}   //设置MC-ARM通讯接口
-	
+
+    SpindleControl *GetSpdCtrl(){return m_p_spindle;}
+
+
 //	bool OpenFile(const char *file_name);   //打开待编译文件
 
 	ErrorType GetErrorCode(){return m_error_code;}   //返回当前错误码
 
 	const ChannelStatusCollect &GetChnStatus(){return this->m_channel_status;}  //获取当前通道状态结构体
+    const ChannelRealtimeStatus &GetRealtimeStatus(){return m_channel_rt_status;} //获取实时状态结构体
 
 	uint8_t GetChnAxisCount(){return this->m_p_channel_config->chn_axis_count;}   //获取通道轴数量
 	uint8_t GetChnAxisName(uint8_t idx){return this->m_p_channel_config->chn_axis_name[idx];}   //获取通道轴名称
@@ -118,8 +123,8 @@ public:
 	void SetAutoRatio(uint8_t ratio);    //设置自动倍率
 	void SetManualRatio(uint8_t ratio);	//设置手动倍率
 	void SetRapidRatio(uint8_t ratio);	//设置快速进给倍率
-	void SetSpindleRatio(uint8_t ratio);	//设置主轴倍率
-	void SetManualStep(uint8_t step);	//设置手动步长
+    void SetSpindleRatio(uint8_t ratio);	//设置主轴倍率
+    void SetManualStep(uint8_t step);	//设置手动步长
 	void SetManualRapidMove(uint8_t mode = 10);			//设置手动快速移动状态
 	void SetCurAxis(uint8_t axis);		//设置当前轴
 
@@ -341,6 +346,7 @@ public:
 	bool CallAdditionalProgram(AddProgType type);  //调用附加程序（前置/后置）
 #endif
 
+	void test(); // @test zk
 	// @ add zk
 	void StraightFeed(int chn, double x, double y, double z, int feed);
 	void StraightTraverse(int chn, double x, double y, double z);
@@ -390,6 +396,8 @@ private:
 	bool ExecuteMacroProgCallMsg(RecordMsg *msg); //实际执行宏程序调用消息
 	bool ExecuteAutoToolMeasureMsg(RecordMsg *msg);   //实际执行自动对刀指令消息
 	bool ExecuteRestartOverMsg(RecordMsg *msg);   //实际执行加工复位完成指令消息
+	bool ExecuteInputMsg(RecordMsg *msg);		//执行G10 输入指令消息
+	bool ExecuteExactStopMsg(RecordMsg *msg);   // G09
 
 #ifdef USES_SPEED_TORQUE_CTRL	
 	bool ExecuteSpeedCtrlMsg(RecordMsg *msg);   //执行速度控制消息
@@ -427,7 +435,7 @@ private:
 	void ProcessLaserCalibration();        //处理激光调高器标定
 
 
-	void ReadHeightRegulatorInput();			//读取调高器输入信号
+    void ReadHeightRegulatorInput();			//读取调高器输入信号
 	void SetHeightRegulatorOutput(uint8_t idx, bool value);  //设置调高器输出信号
 	void SendCatchPosCmd(uint64_t axis_mask, uint16_t io_idx, bool level);         //向MI发送轴位置捕获指令
 #endif
@@ -452,21 +460,20 @@ private:
 	void SendWorkModeToMc(uint16_t work_mode);    //向MC模块发送加工模式命令，主要用于区分插补目标位置，方便计算不同模式的余移动量
 	void PauseMc();		//暂停MC模块的运行
 	void SetMcAxisOrigin(uint8_t axis_index);		//向MC设置轴的工件坐标系原点
+	void SetMcAxisOrigin(uint8_t axis_index, int64_t origin_pos); //向MC设置轴的工件坐标系原点
 	void ActiveMcOrigin(bool active_flag);		//激活设置的工件坐标系
 	void SetMcAxisToolOffset(uint8_t axis_index); 	//向MC设置各轴刀具偏置
 	void ActiveMcToolOffset(bool active_flag);		//激活设置的刀具偏置
 	void SendMcG31Stop();    //向MC发送G31停止命令
-	void SendMcRigidTapFlag(bool tap_flag);    //向MC发送刚性攻丝开关
+    //void SendMcRigidTapFlag(bool tap_flag);    //向MC发送刚性攻丝开关
 
 	void SendMcResetCmd();		//发送MC复位指令
-
 
 	uint16_t ReadMcMoveDataCount();   //读取当前MC中运动数据的数量
 	bool CheckBlockOverFlag();	//当前分块到位标志是否有效
 	bool CheckStepOverFlag();	//当前单段到位标志是否有效
 
 	bool IsMcNeedStart();   //MC是否需要发送启动命令
-
 
 	void StartMcIntepolate();    			//启动MC开始插补
 
@@ -530,9 +537,8 @@ private:
 	bool ResetAllAxisOutZero(void);
 	bool ResetAllAxisCtrlMode(uint8_t flag);
 
-#endif
-
 	void ProcessSpdModeSwitch(AuxMsg *msg, uint8_t index);  //处理主轴CS模式切换流程
+#endif
 
     void SendAxisMapCmdToMi(uint8_t phy_axis,uint8_t chan,uint8_t axis);   //发送物理轴与通道轴映射关系设置命令
 
@@ -540,9 +546,6 @@ private:
 	void SetMFSig(uint8_t index, bool value);      //设置MFn选通信号
 	bool GetMFINSig(uint8_t index);    //返回指定序号的MFIN信号
 	bool GetMExcSig(uint8_t index);    //返回指定序号的MExc信号
-
-	void SendSCodeToPmc(int32_t s_code);			//将S指令发送至PMC寄存器
-	void SetSFSig(bool vlaue);		//设置SF选通信号
 
 	void SendTCodeToPmc(uint32_t t_code, uint8_t index);			//将T指令发送至PMC寄存器
 	void SetTFSig(uint8_t index, bool value);		//设置TF选通信号
@@ -576,12 +579,12 @@ private:
 
 	void ExecMCode(AuxMsg *msg, uint8_t index);     //具体执行M指令系统动作
 
-	void SendMiTapAxisCmd(uint16_t spd, uint16_t zAxis);   //发送攻丝轴号给MI
-	void SendMiTapParamCmd();      //发送攻丝参数给MI
-	void SendMiTapRatioCmd(int32_t ratio);   //发送攻丝比例给MI
-	void SendMiTapStateCmd(bool state);   //发送攻丝状态给MI
+//	void SendMiTapAxisCmd(uint16_t spd, uint16_t zAxis);   //发送攻丝轴号给MI
+//	void SendMiTapParamCmd();      //发送攻丝参数给MI
+//	void SendMiTapRatioCmd(int32_t ratio);   //发送攻丝比例给MI
+//	void SendMiTapStateCmd(bool state);   //发送攻丝状态给MI
 
-	void ProcessM29Reset();     //处理M29状态复位流程
+    //void ProcessM29Reset();     //处理M29状态复位流程
 
 	void MiDebugFunc(int mcode);      //发送MI调试指令
 
@@ -605,12 +608,15 @@ private://私有成员变量
 	HMICommunication *m_p_hmi_comm;    //HMI通讯接口
 	MICommunication *m_p_mi_comm;		//MI通讯接口
 	MCCommunication *m_p_mc_comm;		//MC通讯接口
-	MCArmCommunication *m_p_mc_arm_comm;   //MC-ARM通讯接口
+    MCArmCommunication *m_p_mc_arm_comm;   //MC-ARM通讯接口
+    SpindleControl *m_p_spindle;
 	SCSystemConfig *m_p_general_config;   //系统配置
 	SCChannelConfig *m_p_channel_config;  //通道配置
 	SCAxisConfig *m_p_axis_config;        //轴配置
 	SCCoordConfig *m_p_chn_coord_config;  //工件坐标系配置
 	SCCoordConfig *m_p_chn_ex_coord_config; //扩展工件坐标系配置
+	SCCoordConfig *m_p_chn_g92_offset;    //@add zk G92 全局坐标系偏移
+
 	SCToolOffsetConfig *m_p_chn_tool_config;		//刀具偏置配置
 	SCToolPotConfig *m_p_chn_tool_info;     //刀具信息，包括刀具类型、刀套号、寿命等
 
@@ -688,7 +694,7 @@ private://私有成员变量
 	uint8_t m_change_work_mode_to;	//即将切换的目标工作模式，等待系统停止G代码运行
 
 	int16_t m_n_cur_tcode;		//当前T代码，M06激活,-1表示未初始化
-	int32_t m_n_cur_scode;		//当前S代码，M03/M04激活,-1表示未初始化   单位：rpm
+    int32_t m_n_cur_scode;		//当前S代码，M03/M04激活,-1表示未初始化   单位：rpm
 //	int16_t m_n_cur_dcode;		//当前D代码，G41/G42激活,-1表示未初始化
 //	int16_t m_n_cur_hcode;		//当前H代码，G43/G44激活,-1表示未初始化
 
@@ -764,9 +770,9 @@ private://私有成员变量
 
     DPointChn m_pos_simulate_cur_work;    //仿真模式下的当前工件坐标
 
-	uint8_t m_n_M29_flag;   //  M29 M28 flag;   0--M28  1--M29
-	uint8_t m_n_G843_flag;  //  G843 flag;   0--非刚攻跟随状态         1--刚攻跟随状态
-	int32_t m_n_G843_ratio; // G843 ratio; 跟随刚性攻丝的比例值， 该值*10000倍，
+//	uint8_t m_n_M29_flag;   //  M29 M28 flag;   0--M28  1--M29
+//	uint8_t m_n_G843_flag;  //  G843 flag;   0--非刚攻跟随状态         1--刚攻跟随状态
+//	int32_t m_n_G843_ratio; // G843 ratio; 跟随刚性攻丝的比例值， 该值*10000倍，
 
 	bool m_b_hmi_graph;    //HMI是否处于图形模式，此模式需要发送实时高频位置数据
 	uint8_t m_n_xyz_axis_phy[3];    //XYZ轴对应的物理轴号，0开始

@@ -25,6 +25,10 @@
 # build files
 Debug/
 Release/
+build/
 
 #
 *.user
+cmake/
+doc/
+*.user.*

@@ -109,9 +109,6 @@ typedef ListBuffer<McCmdFrame> McCmdBuffer;   //待输出的指令消息队列
 class MCCommunication {
 public:
 
-	// @test zk
-	void test(int16_t frame_index);
-
 	virtual ~MCCommunication();	//析构函数
 
 	static MCCommunication *GetInstance();   //单例模式，获取此类实例的唯一访问点

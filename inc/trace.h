@@ -16,7 +16,7 @@
 #include <pthread.h>
 #include <string.h>
 #include <string>
-#include "mosquittopp.h"
+//#include "mosquittopp.h"
 //#include <mqtt_protocol.h>
 #include "hmi_shared_data.h"
 
@@ -221,8 +221,8 @@ private:
 	int32_t m_trace_handler;	//跟踪信息文件句柄
 	int32_t m_alarm_handler;	//告警信息文件句柄
 
-    std::string m_topic_dest = "localhost";
-    mosqpp::mosquittopp m_topic_mosq;
+    //std::string m_topic_dest = "localhost";
+    //mosqpp::mosquittopp m_topic_mosq;
 
 };
 

@@ -210,12 +210,6 @@ bool MCCommunication::CanWriteGCode(uint8_t chn){
 	return true;
 }
 
-// @tset zk
-void MCCommunication::test(int16_t frame_index){
-
-
-}
-
 /**
  * @brief 写入G代码编译出的运动控制数据
  * @param chn : 通道索引号，0开始

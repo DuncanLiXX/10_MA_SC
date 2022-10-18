@@ -37,7 +37,6 @@ public:
 	void RemoveHead();   //删除头部数据
 	void RemoveData(int pos);   //移除pos位置的数据
 
-
 private:
 	T* m_buffer; //数据缓冲区指针
 	int m_buffer_capacity;  //缓冲区总容量
@@ -162,7 +161,6 @@ int CircularBuffer<T>::WriteData(const T* data, int data_length) {
 			data++;
 			tmp--;
 		}
-
 	}
 	if (m_write_pointer >= m_buffer + m_buffer_capacity) {//写指针超范围后回退
 		m_write_pointer -= m_buffer_capacity;
@@ -532,37 +530,45 @@ void CircularBuffer<T>::RemoveHead() {
  */
 template<class T>
 void CircularBuffer<T>::RemoveData(int pos){
-	if(pos == 0){  //如果是头部，则直接移除
-		this->RemoveHead();
-		return;
-	}
+    if(pos == 0){  //如果是头部，则直接移除
+        this->RemoveHead();
+        return;
+    }
 
-	pthread_mutex_lock(&m_mutex);
+    pthread_mutex_lock(&m_mutex);
 
-	T* pointer = NULL, *ppm = NULL;
-	int count = this->BufLen()-pos-1;  //待挪动数据量
+    T* pointer = NULL, *ppm = NULL;
+    int count = this->BufLen()-pos-1;  //待挪动数据量
 
-	if (pos >= 0 && pos < m_buffer_cur_length) {
-		pointer = m_read_pointer + pos;
-		if (pointer >= (m_buffer + m_buffer_capacity)) {
-			pointer -= m_buffer_capacity;
-		}
-	}
+    if (pos >= 0 && pos < m_buffer_cur_length) {
+        pointer = m_read_pointer + pos;
+        if (pointer >= (m_buffer + m_buffer_capacity)) {
+            pointer -= m_buffer_capacity;
+        }
 
-	while(count > 0){
-		ppm = pointer+1;
-		if(ppm >= m_buffer + m_buffer_capacity)
-			ppm -= m_buffer_capacity;
+        if (count == 0)
+        {// 删除最后一个元素
+            this->m_write_pointer--;
+            m_buffer_cur_length--;
+        }
+        else
+        {
+            while(count > 0){
+                ppm = pointer+1;
+                if(ppm >= m_buffer + m_buffer_capacity)
+                    ppm -= m_buffer_capacity;
 
-		*pointer = *ppm;
-		pointer = ppm;
-		count--;
-	}
+                *pointer = *ppm;
+                pointer = ppm;
+                count--;
+            }
 
-	this->m_write_pointer = ppm;
-	m_buffer_cur_length--;
+            this->m_write_pointer = ppm;
+            m_buffer_cur_length--;
+        }
+    }
 
-	pthread_mutex_unlock(&m_mutex);
+    pthread_mutex_unlock(&m_mutex);
 }
 
 

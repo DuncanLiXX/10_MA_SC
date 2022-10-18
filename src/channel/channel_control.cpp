@@ -1600,7 +1600,7 @@ void ChannelControl::StartRunGCode(){
 	}
 
 	//检查当前是否处于错误状态
-	if(g_ptr_alarm_processor->HasErrorInfo(m_n_channel_index)){
+        if(g_ptr_alarm_processor->HasErrorInfo(m_n_channel_index)){
 		ErrorInfo err_info;
 		g_ptr_alarm_processor->GetLatestErrorInfo(&err_info);
 		g_ptr_trace->PrintLog(LOG_ALARM, "系统处于告警状态，禁止自动运行！last error = %d", err_info.error_code);
@@ -5365,7 +5365,7 @@ bool ChannelControl::ExecuteMessage(){
               	}
 				
 				if(m_channel_mc_status.cur_mode == MC_MODE_MANUAL && this->m_channel_mc_status.buf_data_count == 0 && count >= 3){
-					CreateError(ERR_HW_REV_OVER, WARNING_LEVEL, CLEAR_BY_CLEAR_BUTTON, 0, m_n_channel_index);
+                    CreateError(ERR_HW_REV_OVER, WARNING_LEVEL, CLEAR_BY_MCP_RESET, 0, m_n_channel_index);
 					return res;
 				}
 			}
@@ -10525,11 +10525,11 @@ void ChannelControl::ManualMove2(uint8_t axis, int8_t dir, double vel, double in
 			limit_pos = m_p_axis_config[phy_axis].soft_limit_min_1*1e7;
 
 			if(limit_pos > cur_pos){//已经在限位外，告警
-				CreateError(ERR_SOFTLIMIT_NEG, WARNING_LEVEL, CLEAR_BY_CLEAR_BUTTON, 0, m_n_channel_index, m_channel_status.cur_axis);
+                CreateError(ERR_SOFTLIMIT_NEG, WARNING_LEVEL, CLEAR_BY_MCP_RESET, 0, m_n_channel_index, m_channel_status.cur_axis);
 			//	this->m_error_code = ERR_SOFTLIMIT_NEG;
 				return;
 			}else if(limit_pos == cur_pos){  //已经到达负限位极限位置
-				CreateError(ERR_SOFTLIMIT_NEG, WARNING_LEVEL, CLEAR_BY_CLEAR_BUTTON, 0, m_n_channel_index, m_channel_status.cur_axis);
+                CreateError(ERR_SOFTLIMIT_NEG, WARNING_LEVEL, CLEAR_BY_MCP_RESET, 0, m_n_channel_index, m_channel_status.cur_axis);
 				return;
 			}else if(tar_pos < (limit_pos-cur_pos)){
 				tar_pos = limit_pos-this->GetAxisCurIntpTarPos(m_channel_status.cur_axis, true)*1e7;
@@ -10637,12 +10637,12 @@ void ChannelControl::ManualMove(int8_t dir){
 			printf("manual move, dir = %hhd, max = %lld, tar = %lld\n", dir, tar_inc_max,
 					tar_pos);
 			if(tar_inc_max > 0){//已经在限位外，告警
-				CreateError(ERR_SOFTLIMIT_NEG, WARNING_LEVEL, CLEAR_BY_CLEAR_BUTTON, 0, m_n_channel_index, m_channel_status.cur_axis);
+                CreateError(ERR_SOFTLIMIT_NEG, WARNING_LEVEL, CLEAR_BY_MCP_RESET, 0, m_n_channel_index, m_channel_status.cur_axis);
 			//	this->m_error_code = ERR_SOFTLIMIT_NEG;
 				printf("manual move out of soft negative limit\n");
 				return;
 			}else if(tar_inc_max == 0){  //已经到达负限位极限位置
-				CreateError(ERR_SOFTLIMIT_NEG, WARNING_LEVEL, CLEAR_BY_CLEAR_BUTTON, 0, m_n_channel_index, m_channel_status.cur_axis);
+                CreateError(ERR_SOFTLIMIT_NEG, WARNING_LEVEL, CLEAR_BY_MCP_RESET, 0, m_n_channel_index, m_channel_status.cur_axis);
 				return;
 			}else{
 				tar_inc_max = limit_pos - this->GetAxisCurIntpTarPos(m_channel_status.cur_axis, true)*1e7;   //与当前目标位置的机械坐标的差值
@@ -10739,12 +10739,12 @@ void ChannelControl::ManualMovePmc(int8_t dir){
 			printf("manual move, dir = %hhd, max = %lld, tar = %lld\n", dir, tar_inc_max,
 					tar_pos);
 			if(tar_inc_max > 0){//已经在限位外，告警
-				CreateError(ERR_SOFTLIMIT_NEG, WARNING_LEVEL, CLEAR_BY_CLEAR_BUTTON, 0, m_n_channel_index, m_channel_status.cur_axis);
+                CreateError(ERR_SOFTLIMIT_NEG, WARNING_LEVEL, CLEAR_BY_MCP_RESET, 0, m_n_channel_index, m_channel_status.cur_axis);
 			//	this->m_error_code = ERR_SOFTLIMIT_NEG;
 				printf("manual move out of soft negative limit\n");
 				return;
 			}else if(tar_inc_max == 0){  //已经到达负限位极限位置
-				CreateError(ERR_SOFTLIMIT_NEG, WARNING_LEVEL, CLEAR_BY_CLEAR_BUTTON, 0, m_n_channel_index, m_channel_status.cur_axis);
+                CreateError(ERR_SOFTLIMIT_NEG, WARNING_LEVEL, CLEAR_BY_MCP_RESET, 0, m_n_channel_index, m_channel_status.cur_axis);
 				return;
 			}else{
 				tar_inc_max = limit_pos - this->GetAxisCurIntpTarPos(m_channel_status.cur_axis, true)*1e7;   //与当前目标位置的机械坐标的差值
@@ -10851,12 +10851,12 @@ void ChannelControl::ManualMove(uint8_t axis, double pos, double vel, bool workc
 			limit_pos = m_p_axis_config[phy_axis].soft_limit_min_1*1e7;
 
 			if(limit_pos > cur_pos){//已经在限位外，告警
-				CreateError(ERR_SOFTLIMIT_NEG, WARNING_LEVEL, CLEAR_BY_CLEAR_BUTTON, 0, m_n_channel_index, m_channel_status.cur_axis);
+                CreateError(ERR_SOFTLIMIT_NEG, WARNING_LEVEL, CLEAR_BY_MCP_RESET, 0, m_n_channel_index, m_channel_status.cur_axis);
 			//	this->m_error_code = ERR_SOFTLIMIT_NEG;
 				printf("manual move out of soft negative limit\n");
 				return;
 			}else if(limit_pos == cur_pos){  //已经到达负限位极限位置
-				CreateError(ERR_SOFTLIMIT_NEG, WARNING_LEVEL, CLEAR_BY_CLEAR_BUTTON, 0, m_n_channel_index, m_channel_status.cur_axis);
+                CreateError(ERR_SOFTLIMIT_NEG, WARNING_LEVEL, CLEAR_BY_MCP_RESET, 0, m_n_channel_index, m_channel_status.cur_axis);
 				return;
 			}else if(tar_pos < limit_pos){
 				tar_pos = limit_pos;
@@ -11078,12 +11078,12 @@ void ChannelControl::ManualMovePmc(uint8_t axis, double pos, double vel){
 			limit_pos = m_p_axis_config[phy_axis].soft_limit_min_1*1e7;
 
 			if(limit_pos > cur_pos){//已经在限位外，告警
-				CreateError(ERR_SOFTLIMIT_NEG, WARNING_LEVEL, CLEAR_BY_CLEAR_BUTTON, 0, m_n_channel_index, m_channel_status.cur_axis);
+                CreateError(ERR_SOFTLIMIT_NEG, WARNING_LEVEL, CLEAR_BY_MCP_RESET, 0, m_n_channel_index, m_channel_status.cur_axis);
 			//	this->m_error_code = ERR_SOFTLIMIT_NEG;
 				printf("manual move out of soft negative limit\n");
 				return;
 			}else if(limit_pos == cur_pos){  //已经到达负限位极限位置
-				CreateError(ERR_SOFTLIMIT_NEG, WARNING_LEVEL, CLEAR_BY_CLEAR_BUTTON, 0, m_n_channel_index, m_channel_status.cur_axis);
+                CreateError(ERR_SOFTLIMIT_NEG, WARNING_LEVEL, CLEAR_BY_MCP_RESET, 0, m_n_channel_index, m_channel_status.cur_axis);
 				return;
 			}else if(tar_pos < limit_pos){
 				tar_pos = limit_pos;
@@ -15573,7 +15573,7 @@ bool ChannelControl::StartBreakpointContinue(){
 	if (res != 0) {
 		g_ptr_trace->PrintLog(LOG_ALARM, "CHN[%d]断点继续处理线程创建失败!", m_n_channel_index);
 		m_error_code = ERR_INIT_BREAKCONTINUE;
-		CreateError(m_error_code, ERROR_LEVEL, CLEAR_BY_MCP_RESET, 0, m_n_channel_index);
+        CreateError(m_error_code, ERROR_LEVEL, CLEAR_BY_RESET_POWER, 0, m_n_channel_index);
 		goto END;
 	}
 

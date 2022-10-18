@@ -985,6 +985,7 @@ int HMICommunication::ProcessHmiCmd(){
             case CMD_HMI_CLEAR_MACHINETIME_TOTAL: //HMI向SC请求清除累计时间
             case CMD_HMI_GET_HANDWHEEL_INFO:      //HMI向SC获取手轮信息
             case CMD_HMI_SET_HANDWHEEL_INFO:      //HMI向SC设置手轮信息
+            case CMD_HMI_GET_ERROR_INFO:          //HMI向SC获取错误信息
 #ifdef USES_GRIND_MACHINE
 			case CMD_SC_MECH_ARM_ERR:         //HMI响应机械手告警指令
 #endif
@@ -1018,6 +1019,7 @@ int HMICommunication::ProcessHmiCmd(){
 			case CMD_SC_TOOL_MEASURE_OVER:    //手动对刀结束命令的响应
 			case CMD_SC_PARAM_CHANGED:
 			case CMD_SC_NOTIFY_MACH_OVER:     //加工结束通知消息的响应
+            case CMD_SC_NOTIFY_ALARM_CHANGE:
 				break;
 			case CMD_HMI_GET_SYS_INFO:
 				m_p_channel_engine->ProcessHmiCmd(cmd);
@@ -1102,7 +1104,7 @@ int HMICommunication::TransFile(){
 				//	printf("ERROR! Failed to accept file trans link!err=%d\n", errno);
 					this->m_b_trans_file = false;   //复位文件传输标志
 					g_ptr_trace->PrintLog(LOG_ALARM, "接受文件传输连接失败！errno = %d", errno);
-                    CreateError(ERR_FILE_TRANS, ERROR_LEVEL, CLEAR_BY_CLEAR_BUTTON, errno);
+                    CreateError(ERR_FILE_TRANS, ERROR_LEVEL, CLEAR_BY_MCP_RESET, errno);
 					continue;
 				}
 				else
@@ -1118,7 +1120,7 @@ int HMICommunication::TransFile(){
 			}
 			if(res != ERR_NONE){
 				g_ptr_trace->PrintLog(LOG_ALARM, "文件传输异常中断！errno = %d", errno);
-				CreateError(res, ERROR_LEVEL, CLEAR_BY_CLEAR_BUTTON, errno);
+                CreateError(res, ERROR_LEVEL, CLEAR_BY_MCP_RESET, errno);
 			}
 
 		}
@@ -1552,7 +1554,7 @@ void *HMICommunication::SaveAsFileThread(void *args){
 
 	if(res != ERR_NONE){
 		printf("save as res = %d\n", res);
-		CreateError(res, WARNING_LEVEL, CLEAR_BY_CLEAR_BUTTON, errno);
+        CreateError(res, WARNING_LEVEL, CLEAR_BY_MCP_RESET, errno);
 	}
 
 
@@ -2173,7 +2175,7 @@ void HMICommunication::ProcessHmiNcFileInfoCmd(HMICmdRecvNode &cmd_node){
 	if(dir == nullptr){
 	//	printf("Failed to open dir [%s]!\n", PATH_NC_FILE);
 		g_ptr_trace->PrintLog(LOG_ALARM, "打开文件目录失败！[%s]", PATH_NC_FILE);
-		CreateError(ERR_OPEN_DIR, WARNING_LEVEL, CLEAR_BY_CLEAR_BUTTON, errno);
+        CreateError(ERR_OPEN_DIR, WARNING_LEVEL, CLEAR_BY_MCP_RESET, errno);
 		return;
 	}
 
@@ -4278,7 +4280,7 @@ int HMICommunication::GetNcFileCount(const char *path){
 	if(dir == nullptr){
 	//	printf("Failed to open dir [%s]!\n", PATH_NC_FILE);
 		g_ptr_trace->PrintLog(LOG_ALARM, "打开文件目录失败！[%s]", path);
-		CreateError(ERR_OPEN_DIR, WARNING_LEVEL, CLEAR_BY_CLEAR_BUTTON, errno);
+        CreateError(ERR_OPEN_DIR, WARNING_LEVEL, CLEAR_BY_MCP_RESET, errno);
 		return count;
 	}
 
@@ -4320,7 +4322,7 @@ int HMICommunication::GetEsbFileCount(const char *path){
 		//创建目录
 		if(mkdir(PATH_ESB_FILE, 0755) == -1){//创建目录失败
 			g_ptr_trace->PrintTrace(TRACE_ERROR, HMI_COMMUNICATION, "创建目录失败！[%s]", PATH_ESB_FILE);
-			CreateError(ERR_OPEN_DIR, WARNING_LEVEL, CLEAR_BY_CLEAR_BUTTON, errno);
+            CreateError(ERR_OPEN_DIR, WARNING_LEVEL, CLEAR_BY_MCP_RESET, errno);
 		}else{
 			g_ptr_trace->PrintTrace(TRACE_INFO, HMI_COMMUNICATION, "打开目录[%s]失败！自动创建改目录！", PATH_ESB_FILE);
 		}
@@ -4370,7 +4372,7 @@ bool HMICommunication::GetNcFileInfo(const char *path, uint64_t &size, char *tim
 	struct stat statbuf;
 	if(stat(path, &statbuf) == -1){
 		g_ptr_trace->PrintLog(LOG_ALARM, "打开文件失败！[%s]", path);
-		CreateError(ERR_OPEN_FILE, WARNING_LEVEL, CLEAR_BY_CLEAR_BUTTON, errno);
+        CreateError(ERR_OPEN_FILE, WARNING_LEVEL, CLEAR_BY_MCP_RESET, errno);
 		return false;
 	}
 

@@ -360,6 +360,7 @@ private:	//私有成员函数
 	void ProcessHmiGetCurProcIndex(HMICmdFrame &cmd);    //处理HMI获取工艺参数组号的命令
 
 	void ProcessHmiClearMsgCmd(HMICmdFrame &cmd);     //处理HMI清除消息命令
+    void ProcessHmiGetErrorCmd(HMICmdFrame &cmd);       //处理HMI获取SC错误命令
 	
 	void ProcessHmiEnableSyncAxisCmd(HMICmdFrame &cmd);   //处理HMI使能同步轴命令
 	void ProcessHmiCheckSyncCmd(HMICmdFrame &cmd);      //处理HMI查询同步轴使能命令

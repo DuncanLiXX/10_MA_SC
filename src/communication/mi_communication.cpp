@@ -99,7 +99,6 @@ MICommunication::MICommunication() {
 	if(m_error_code != ERR_NONE){
 		CreateError(m_error_code, FATAL_LEVEL, CLEAR_BY_RESET_POWER);
 	}
-
 }
 
 /**

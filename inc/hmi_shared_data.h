@@ -446,6 +446,14 @@ enum ErrorType {
 	ERR_TOOL_LIFE_OVER = 1660,  //刀具寿命到达    级别：警告
 	ERR_TOOL_LIFE_COMING,       //刀具寿命即将到达     级别：警告
 
+    //主轴告警
+    ERR_SPD_TAP_START_FAIL = 1700,      //刚性攻丝失败(没有进入位置模式)
+    ERR_SPD_RUN_IN_TAP = 1701,          //刚攻状态发送速度指令
+    ERR_SPD_TAP_RATIO_FAULT = 1702,     //刚性攻丝比例异常
+    ERR_SPD_LOCATE_SPEED = 1703,        //定位时主轴转速异常
+    ERR_SPD_SW_LEVEL_FAIL = 1704,       //主轴换挡超时
+    ERR_SPD_TAP_POS_ERROR = 1705,       //刚攻位置错误
+
 	//PMC轴告警
 	ERR_PMC_AXIS_CTRL_CHANGE = 1900,   //PMC轴控制状态切换
 

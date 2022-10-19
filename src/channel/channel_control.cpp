@@ -533,9 +533,10 @@ void ChannelControl::InitialChannelStatus(){
 			m_n_spindle_count++;
             m_p_spindle->SetComponent(m_p_mi_comm,
                                     m_p_mc_comm,
-                                      m_p_f_reg);
+                                      m_p_f_reg,
+                                      m_p_g_reg);
             m_p_spindle->SetSpindleParams(&m_p_axis_config[phy_axis-1],
-                    da_prec,phy_axis-1,z_axis-1);
+                    da_prec,phy_axis-1,z_axis);
 		}
 
 		//初始化PMC轴信息
@@ -2830,15 +2831,7 @@ uint8_t ChannelControl::GetCurPhyAxis(){
  *
  */
 void ChannelControl::SetAxisRefCur(uint8_t axis){
-	MiCmdFrame cmd;
-	memset(&cmd, 0x00, sizeof(cmd));
-	cmd.data.cmd = CMD_MI_SET_REF_CUR;
-	cmd.data.axis_index = axis;
-//	cmd.data.reserved = type;
-	int64_t pos = m_p_axis_config[axis-1].axis_home_pos[0]*1e7;   //单位转换,0.1nm
-	memcpy(cmd.data.data, &pos, sizeof(int64_t));
-
-	this->m_p_mi_comm->WriteCmd(cmd);
+    m_p_mi_comm->SetAxisRefCur(axis,m_p_axis_config[axis-1].axis_home_pos[0]);
 }
 
 /**
@@ -6823,7 +6816,21 @@ bool ChannelControl::ExecuteLineMsg(RecordMsg *msg, bool flag_block){
 		return true;
 	}
 
-	if(msg->IsNeedWaitMsg() && (m_simulate_mode == SIM_NONE || m_simulate_mode == SIM_MACHINING)){//需要等待的命令
+
+    if(m_p_spindle->isTapEnable()){
+        uint8_t z_axis =  this->GetPhyAxisFromName(AXIS_NAME_Z);
+
+        if(fabs(this->m_channel_rt_status.cur_pos_work.GetAxisValue(z_axis)
+                - linemsg->GetTargetPos().GetAxisValue(z_axis)) < 0.0001){
+            m_error_code = ERR_SPD_TAP_POS_ERROR;
+            CreateError(ERR_SPD_TAP_POS_ERROR, ERROR_LEVEL, CLEAR_BY_MCP_RESET, 0, m_n_channel_index);
+            printf("攻丝状态下， Z轴起点与终点相同 \n");
+            printf("source pos:%lf,to pos:%lf\n",linemsg->GetSourcePos().GetAxisValue(2),
+                   linemsg->GetTargetPos().GetAxisValue(2));
+            return false;
+        }
+    }
+    if(msg->IsNeedWaitMsg() && (m_simulate_mode == SIM_NONE || m_simulate_mode == SIM_MACHINING)){//需要等待的命令
 
 		if(linemsg->GetExecStep() == 0){ //只有第一步开始执行时需要等待
 			int limit = 2;

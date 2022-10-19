@@ -762,7 +762,7 @@ void ChannelEngine::SetMiWorkMode(uint8_t value){
     cmd.data.data[0] = value;
 
     uint8_t chn_count = this->m_p_channel_mode_group[this->m_n_cur_chn_group_index].GetChannelCount();
-    for(uint8_t i = 0; i < chn_count; i++){
+    for(uint i = 0; i < chn_count; i++){
         cmd.data.axis_index = NO_AXIS;
         cmd.data.reserved = this->m_p_channel_mode_group[this->m_n_cur_chn_group_index].GetChannel(i);  //通道号，从0开始
 
@@ -1954,6 +1954,7 @@ void ChannelEngine::ProcessMiOperateCmdRsp(MiCmdFrame &cmd)
 {
     MiCtrlOperate type = (MiCtrlOperate)cmd.data.data[0];
     uint8_t axis = cmd.data.axis_index;
+    printf("cmd.data.data[1] = %d\n",cmd.data.data[1]);
     bool enable = cmd.data.data[1];
     if(type == MOTOR_ON_FLAG){
         m_p_channel_control[0].GetSpdCtrl()->RspAxisEnable(axis,enable);
@@ -1965,10 +1966,11 @@ void ChannelEngine::ProcessMiAxisCtrlModeRsp(MiCmdFrame &cmd)
     uint8_t axis = cmd.data.axis_index;
     uint8_t mode = cmd.data.data[0];
     if(mode == 1){
-        m_p_channel_control[0].GetSpdCtrl()->RspCtrlMode(axis,Speed);
-    }else if(mode == 2){
         m_p_channel_control[0].GetSpdCtrl()->RspCtrlMode(axis,Position);
+    }else if(mode == 2){
+        m_p_channel_control[0].GetSpdCtrl()->RspCtrlMode(axis,Speed);
     }
+    printf("ProcessMiAxisCtrlModeRsp mode=%d\n",cmd.data.data[0]);
 }
 
 void ChannelEngine::ProcessMiSpindleSpeedRsp(MiCmdFrame &cmd)
@@ -2347,7 +2349,6 @@ void ChannelEngine::ProcessMiBusError(MiCmdFrame &cmd){
     err_info |= err_sub_index;
     err_info <<= 8;
     err_info |= slave_no;
-
 
     g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "receive Mi Bus err: no=%hhu, sub_idx=%hhu, idx=%hu, code=%hu\n",
             slave_no, err_sub_index, err_index, err_code);
@@ -7400,43 +7401,42 @@ void ChannelEngine::SendPmcRegValue(PmcRegSection sec, uint16_t index, uint16_t 
  * @brief 上伺服
  */
 void ChannelEngine::ServoOn(){
-    //TODO 先按轴上使能，后期需要优化按通道上使能
-
+    // 对除主轴外的所有轴上使能
     MiCmdFrame cmd;
     memset(&cmd, 0x00, sizeof(cmd));
     cmd.data.cmd = CMD_MI_OPERATE;
-    cmd.data.axis_index = 0xff;	  //对所有轴上使能
     cmd.data.data[0] = AXIS_ON_FLAG;
     cmd.data.data[1] = 1;
 
-    this->m_p_mi_comm->WriteCmd(cmd);
+    for(int i = 0; i < this->m_p_general_config->axis_count; i++){
+        if(m_p_axis_config[i].axis_type == AXIS_SPINDLE)
+            continue;
+        cmd.data.axis_index = i+1;
+        this->m_p_mi_comm->WriteCmd(cmd);
 
-//	for(int i = 0; i < this->m_p_general_config->axis_count; i++){
-//		cmd.data.axis_index = i+1;
-//		this->m_p_mi_comm->WriteCmd(cmd);
-//
-//	}
+    }
 }
 
 /**
  * @brief 下伺服
  */
 void ChannelEngine::ServoOff(){
-    //TODO 先按轴上使能，后期需要优化按通道下使能
+    //对除主轴外的所有轴下使能
 
     MiCmdFrame cmd;
     memset(&cmd, 0x00, sizeof(cmd));
     cmd.data.cmd = CMD_MI_OPERATE;
-    cmd.data.axis_index = 0xff;	  //对所有轴下使能
     cmd.data.data[0] = AXIS_ON_FLAG;
     cmd.data.data[1] = 0;
 
     this->m_p_mi_comm->WriteCmd(cmd);
 
-//	for(int i = 0; i < this->m_p_general_config->axis_count; i++){
-//		cmd.data.axis_index = i+1;
-//		this->m_p_mi_comm->WriteCmd(cmd);
-//	}
+    for(int i = 0; i < this->m_p_general_config->axis_count; i++){
+        if(m_p_axis_config[i].axis_type == AXIS_SPINDLE)
+            continue;
+        cmd.data.axis_index = i+1;
+        this->m_p_mi_comm->WriteCmd(cmd);
+    }
 }
 
 
@@ -8271,6 +8271,10 @@ void ChannelEngine::ProcessPmcSignal(){
             ctrl->GetSpdCtrl()->InputORCMA(g_reg->ORCMA);
         }
 
+        if(f_reg->SF == 1 && g_reg->FIN == 1){
+            f_reg->SF = 0;
+        }
+
         //通知类型的信号，只保留一个周期
         {
             if(f_reg_last->SAR == 1)    // 复位速度到达信号
@@ -8282,8 +8286,6 @@ void ChannelEngine::ProcessPmcSignal(){
             if(f_reg_last->SST == 1)    // 复位零速信号
                 f_reg->SST = 0;
 
-            if(f_reg->SF == 1)          // 主轴功能选通信号
-                f_reg->SF = 0;
         }
 
         //选停信号 SBS

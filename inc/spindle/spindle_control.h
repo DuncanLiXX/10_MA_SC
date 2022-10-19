@@ -41,7 +41,8 @@ public:
     // 设置主轴相关组件
     void SetComponent(MICommunication *mi,
                     MCCommunication *mc,
-                    FRegBits *f_reg);
+                    FRegBits *f_reg,
+                    const GRegBits *g_reg);
     // 设置主轴相关配置
     void SetSpindleParams(SCAxisConfig *spindle,
                           uint32_t da_prec,
@@ -105,8 +106,10 @@ private:
 
     // 根据当前状态发送主轴转速给Mi
     void SendSpdSpeedToMi();
-    // 发送SF信号后，延时发送转速
-    void DelaySendSpdSpeedToMi(uint16_t ms);
+    // 异步处理模式切换完成
+    void ProcessModeChanged(Spindle::Mode mode);
+    // 异步等待换挡完成
+    void ProcessSwitchLevel(uint16_t ms);
 
     // 向MC发送刚性攻丝状态命令，MC会切换到刚性攻丝的速度规划参数
     void SendMcRigidTapFlag(bool enable);
@@ -121,16 +124,19 @@ private:
     uint32_t da_prec{4095};    // DA精度
 
     FRegBits *F{nullptr};            // F寄存器
+    const GRegBits *G{nullptr};            // F寄存器
 
+    Spindle::Level to_level{Spindle::Low};        // 目标档位
     Spindle::Level level{Spindle::Low};           // 当前档位
     Spindle::CncPolar cnc_polar{Spindle::Stop};    // 主轴方向
     uint32_t cnc_speed{0};             // S代码的转速 单位:rpm
 
     Spindle::Mode mode{Spindle::Speed};             // 控制模式
     bool tap_enable{false};     // 攻丝状态  false:不在攻丝状态 true:处于攻丝状态
-    bool motor_enable{true};   // 电机使能状态
+    bool motor_enable{false};   // 电机使能状态
     bool wait_sar{false};       // 等待速度到达 0:不在等待 1:正在等待
     bool wait_off{false};       // 等待电机下使能 0:不在等待 1:正在等待
+    bool wait_on{false};        // 等待电机上使能 0:不在等待 1:正在等待
 
     // 信号
     bool _SSTP;  //主轴停止信号     G29.6  低有效
@@ -141,13 +147,13 @@ private:
     bool SGN;    //PMC输入的主轴方向    G33.5   0：正 1：负
     bool SSIN;   //主轴方向由CNC决定还是PMC决定  G33.6   0：CNC 1：PMC
     bool SIND;   //主轴速度由CNC决定还是PMC决定 G33.7   0：CNC 1：PMC
-    bool ORCMA;  // 主轴定向信号
-    bool RGTAP;  //刚攻状态  0：退出刚攻状态  1：进入刚攻状态
+    bool ORCMA;  // 主轴定向信号 G70.6
+    bool RGTAP;  //刚攻状态  0：退出刚攻状态  1：进入刚攻状态 G61.0
 
     // 参数
     uint8_t GST{0};    //SOR信号用于： 0：主轴定向 1：齿轮换档
     uint8_t SGB{0};    //齿轮换档方式 0：A方式 1：B方式
-    uint8_t SFA{0};    //SF信号输出： 0：齿轮换档时 1：与齿轮换挡无关
+    uint8_t SFA{0};    //换挡功能开关： 0：关闭 1：打开
     uint8_t ORM{0};    //主轴定向时的电压极性 0：正 1：负
     uint8_t TCW{1};    //主轴转向是否受M03/M04影响 0：不受影响 1：受影响
     uint8_t CWM{0};    //主轴转向取反 0：否  1：是

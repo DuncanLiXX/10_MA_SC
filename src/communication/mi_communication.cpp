@@ -249,6 +249,8 @@ void MICommunication::SendOperateCmd(uint16_t opt, uint8_t axis, uint16_t enable
 
 void MICommunication::SendAxisEnableCmd(uint8_t axis, bool enable)
 {
+    printf("SendAxisEnable:axis = %d, enable = %d\n",axis,true);
+
     // opt为1，代表是轴使能操作
     SendOperateCmd(1,axis,enable);
 }
@@ -308,13 +310,14 @@ void MICommunication::SendTapStateCmd(uint8_t chn, bool enable)
     WriteCmd(cmd);
 }
 
-void MICommunication::SendSpdLocateCmd(uint8_t chn, uint8_t axis)
+void MICommunication::SendSpdLocateCmd(uint8_t chn, uint8_t axis,bool enable)
 {
     MiCmdFrame cmd;
     memset(&cmd, 0x00, sizeof(cmd));
     cmd.data.cmd = CMD_MI_SPD_LOCATE;
     cmd.data.axis_index = axis;
     cmd.data.reserved = chn;
+    cmd.data.data[0] = enable;
     WriteCmd(cmd);
 }
 
@@ -1000,10 +1003,23 @@ bool MICommunication::SetAxisRef(uint8_t axis, int64_t encoder){
 	memset(&cmd, 0x00, sizeof(MiCmdFrame));
 	cmd.data.axis_index = axis;
 	cmd.data.cmd = CMD_MI_SET_REF;
-	memcpy(&cmd.data.data, &encoder, sizeof(int64_t));
+    memcpy(&cmd.data.data, &encoder, sizeof(int64_t));
 
 	return this->WriteCmd(cmd);
 
+}
+
+void MICommunication::SetAxisRefCur(uint8_t axis, double mach_pos)
+{
+    MiCmdFrame cmd;
+    memset(&cmd, 0x00, sizeof(cmd));
+    cmd.data.cmd = CMD_MI_SET_REF_CUR;
+    cmd.data.axis_index = axis;
+//	cmd.data.reserved = type;
+    int64_t pos = mach_pos*1e7;   //单位转换,0.1nm
+    memcpy(cmd.data.data, &pos, sizeof(int64_t));
+
+    WriteCmd(cmd);
 }
 
 /**

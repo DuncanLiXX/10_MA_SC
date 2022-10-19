@@ -5,6 +5,9 @@
 #include "mc_communication.h"
 #include "mi_communication.h"
 #include "parm_definition.h"
+#include "global_include.h"
+#include "channel_control.h"
+#include "channel_engine.h"
 
 using namespace Spindle;
 
@@ -14,11 +17,20 @@ SpindleControl::SpindleControl()
 
 void SpindleControl::SetComponent(MICommunication *mi,
                                   MCCommunication *mc,
-                                  FRegBits *f_reg)
+                                  FRegBits *f_reg,
+                                  const GRegBits *g_reg)
 {
     this->mi = mi;
     this->mc = mc;
     this->F = f_reg;
+    this->G = g_reg;
+    InputSSTP(G->_SSTP);
+    InputSOR(G->SOR);
+    InputSOV(G->SOV);
+    InputRI(G->RI);
+    InputSGN(G->SGN);
+    InputSSIN(G->SSIN);
+    InputSIND(G->SIND);
 }
 
 void SpindleControl::SetSpindleParams(SCAxisConfig *spindle,
@@ -49,6 +61,7 @@ void SpindleControl::InputSCode(uint32_t s_code)
 {
     if(!spindle)
         return;
+    printf("SpindleControl::InputSCode s_code = %d\n");
     F->scode_0 = (s_code&0xFF);
     F->scode_1 = ((s_code>>8)&0xFF);
     F->scode_2 = ((s_code>>16)&0xFF);
@@ -59,6 +72,8 @@ void SpindleControl::InputSCode(uint32_t s_code)
         cnc_speed = spindle->spd_max_speed;
     if(cnc_speed < spindle->spd_min_speed)
         cnc_speed = spindle->spd_min_speed;
+    if(CalPolar() == Stop)
+        return;
     UpdateSpindleState();
 }
 
@@ -71,23 +86,19 @@ void SpindleControl::InputPolar(Spindle::CncPolar polar)
 {
     if(!spindle)
         return;
-    cnc_polar = polar;
+    printf("SpindleControl::InputPolar %d\n",polar);
     if(polar == Positive || polar == Negative){
         // 收到正/反转信号
-        if(!motor_enable) //主轴不在使能状态，需要先使能
-        {
-            mi->SendAxisEnableCmd(phy_axis+1, true);
-            std::this_thread::sleep_for(std::chrono::microseconds(50));
-        }
-        wait_sar = true;
-        UpdateSpindleState();
+        wait_on = true;
+        mi->SendAxisEnableCmd(phy_axis+1, true);
+        printf("SendAxisEnable enable = %d\n",true);
     }else{
         // 收到主轴停信号
-        if(!motor_enable) //主轴已经不在使能状态
-            return;
         wait_off = true;
         mi->SendAxisEnableCmd(phy_axis+1,false);
+        printf("SendAxisEnable enable = %d\n",false);
     }
+    cnc_polar = polar;
 }
 
 void SpindleControl::SetMode(Mode mode)
@@ -116,10 +127,19 @@ void SpindleControl::StartRigidTap(double feed)
 {
     if(!spindle)
         return;
-    // todo:如果不在位置模式，报警：速度模式下不能刚性攻丝
+    // 如果不在位置模式，报警：速度模式下不能刚性攻丝
+    if(mode != Position){
+        CreateError(ERR_SPD_TAP_START_FAIL,
+                    ERROR_LEVEL,
+                    CLEAR_BY_MCP_RESET);
+        return;
+    }
 
-    // todo:如果进给为0，报警：攻丝比例异常
+    // 如果进给为0，报警：攻丝比例异常
     if(feed == 0){
+        CreateError(ERR_SPD_TAP_RATIO_FAULT,
+                    ERROR_LEVEL,
+                    CLEAR_BY_MCP_RESET);
         return;
     }
     // ratio:攻丝比例，10000*S/F，S单位为rpm，F单位为mm/min
@@ -129,6 +149,7 @@ void SpindleControl::StartRigidTap(double feed)
 
     // 发送攻丝轴号
     mi->SendTapAxisCmd(chn, phy_axis+1, z_axis+1);
+    printf("SendTapAxisCmd spd=%d,z=%d\n",phy_axis+1,z_axis+1);
     // 发送攻丝参数
     mi->SendTapParams(chn,spindle->spd_sync_error_gain,
                       spindle->spd_speed_feed_gain,
@@ -151,11 +172,10 @@ void SpindleControl::CancelRigidTap()
 
     tap_enable = false;
 
-    // 给信号梯图来取消攻丝
-    if(RGTAP)
-        F->RGSPP = 0;
 
-    // todo:在一段时间内等待切回速度模式，否则报警：取消刚性攻丝后没有进入速度模式
+    // 给信号梯图来取消攻丝
+    if(F->RGSPP)
+        F->RGSPP = 0;
 }
 
 // _SSTP信号输入 低有效
@@ -180,6 +200,7 @@ void SpindleControl::InputSOR(bool SOR)
 {
     if(!spindle)
         return;
+    printf("InputSOR:SOR = %d\n");
     this->SOR = SOR;
     // 修改主轴使能状态
     if(!_SSTP && SOR)
@@ -237,11 +258,23 @@ void SpindleControl::InputORCMA(bool ORCMA)
 {
     if(!spindle)
         return;
+
     // 收到定位信号，向MI发送主轴定位指令
     this->ORCMA = ORCMA;
     if(ORCMA)
     {
-        mi->SendSpdLocateCmd(chn, phy_axis+1);
+        // 定位时主轴转速为0，报警
+        if(abs(GetSpindleSpeed()) == 0){
+            CreateError(ERR_SPD_LOCATE_SPEED,
+                        ERROR_LEVEL,
+                        CLEAR_BY_MCP_RESET);
+            return;
+        }
+        mi->SendSpdLocateCmd(chn, phy_axis+1,true);
+        printf("SendSpdLocateCmd enable = %d\n",true);
+    }else{
+        mi->SendSpdLocateCmd(chn, phy_axis+1,false);
+        printf("SendSpdLocateCmd enable = %d\n",false);
     }
 }
 
@@ -257,15 +290,16 @@ void SpindleControl::InputRGTAP(bool RGTAP)
         toMode = Speed;
 
     // 模式不一样才切换
-    if(mode != toMode){
-        SetMode(toMode);
-    }
+    //if(mode != toMode){
+    SetMode(toMode);
+    //}
 }
 
 void SpindleControl::RspORCMA(bool success)
 {
     if(!spindle)
         return;
+    printf("SpindleControl::RspORCMA : success = %d\n",success);
     // 定位成功，将ORAR置为1，通知PMC定位动作完成
     if(success && ORCMA){
         F->ORAR = 1;
@@ -276,13 +310,11 @@ void SpindleControl::RspCtrlMode(uint8_t axis, Spindle::Mode mode)
 {
     if(!spindle)
         return;
-    if(axis == phy_axis+1){
-        // 刚性攻丝信号为1的状态下，切换到了位置模式，那么准备攻丝
-        if(mode == Position && RGTAP){
-            F->RGSPP = 1;
-        }
-
-        this->mode = mode;
+    printf("RspCtrlMode:axis = %d,mode = %d\n",axis,mode);
+    if(axis == phy_axis + 1){
+        auto func = std::bind(&SpindleControl::ProcessModeChanged,
+                              this, std::placeholders::_1);
+        std::async(std::launch::async, func, mode);
     }
 }
 
@@ -290,12 +322,20 @@ void SpindleControl::RspAxisEnable(uint8_t axis, bool enable)
 {
     if(!spindle)
         return;
-    // 正在等待下使能，并且收到了回复
+    printf("RspAxisEnable:axis = %d,enable = %d\n",axis,enable);
+
     if(axis == phy_axis+1){
+        // 正在等待下使能，并且收到了回复
         motor_enable = enable;
         if(wait_off && !enable){
             wait_off = false;
             F->SST = 1;
+        }
+        // 正在等待上使能，上使能后根据当前状态发生转速
+        if(wait_on){
+            wait_on = false;
+            wait_sar = true;
+            UpdateSpindleState();
         }
     }
 }
@@ -304,11 +344,14 @@ void SpindleControl::RspSpindleSpeed(uint8_t axis, bool success)
 {
     if(!spindle)
         return;
-    // 正在等待速度到达，并且收到了回复
-    if(axis == phy_axis+1 && wait_sar && success)
-    {
-        wait_sar = false;
-        F->SAR = 1;
+    printf("SpindleControl::RspSpindleSpeed: axis=%d,success=%d\n",axis,success);
+    if(axis == phy_axis + 1){
+        // 正在等待速度到达，并且收到了回复
+        if(wait_sar && success)
+        {
+            wait_sar = false;
+            F->SAR = 1;
+        }
     }
 }
 
@@ -322,14 +365,14 @@ int32_t SpindleControl::GetSpindleSpeed()
         return 0;
     }
 
-    CncPolar polar = CalPolar();
-    if(polar == Stop){
-        return 0;
-    }
-    speed = fabs(speed);
-    if(polar == Negative){
-        speed *= -1;
-    }
+    //    CncPolar polar = CalPolar();
+    //    if(polar == Stop){
+    //        return 0;
+    //    }
+    //    speed = fabs(speed);
+    //    if(polar == Negative){
+    //        speed *= -1;
+    //    }
     speed = speed*60/(spindle->move_pr*1000);
     return speed;
 }
@@ -367,6 +410,11 @@ uint16_t SpindleControl::GetMaxSpeed()
 {
     if(!spindle)
         return 0;
+    Level level;
+    if(SFA) // 如果开启了换挡功能，最大转速根据
+        level = to_level;
+    else
+        level = this->level;
     if(level == Low)
         return  spindle->spd_gear_speed_low;
     else if(level == Middle)
@@ -384,7 +432,7 @@ CncPolar SpindleControl::CalPolar()
     if(SSIN == 0) // 极性由cnc来确定
     {
         // 主轴定向功能，极性由参数ORM设定
-        if(GST == 0 && SOR == 1)
+        if(SOR == 1)
         {
             return (CncPolar)ORM;
         }
@@ -395,7 +443,7 @@ CncPolar SpindleControl::CalPolar()
          *  1      0     M03为正  M04为负
          *  1      1     M04为负  M03为正
          */
-        if(TCW == 0)
+        else if(TCW == 0)
         {
             polar = CWM;
         }
@@ -439,6 +487,7 @@ int32_t SpindleControl::CalDaOutput()
     {
         output = RI;
     }
+    printf("SIND=%d SOR=%d cnc_speed=%d SOV=%d max_spd=%d da_prec=%d\n",SIND,SOR,cnc_speed,SOV,max_spd,da_prec);
 
     if(output >= da_prec)
     {
@@ -461,6 +510,9 @@ bool SpindleControl::UpdateSpindleLevel(uint16_t speed)
     uint8_t GR1O = 0, GR2O = 0, GR3O = 0;
     CalLevel(GR1O, GR2O, GR3O);
 
+    printf("GRO: %d %d %d %d %d %d\n",F->GR1O,F->GR2O,F->GR3O,
+           GR1O,GR2O,GR3O);
+
     // 档位选择信号需要修改
     if(GR1O != F->GR1O || GR2O != F->GR2O || GR3O != F->GR3O)
     {
@@ -474,39 +526,24 @@ bool SpindleControl::UpdateSpindleLevel(uint16_t speed)
             //延时TM ms后发送SF信号
             std::this_thread::sleep_for(std::chrono::microseconds(TM));
             F->SF = 1;
+            printf("set SF 1\n");
 
             // 记录档位
             if(GR1O){
-                level = Low;
+                to_level = Low;
             }else if(GR2O){
-                level = Middle;
+                to_level = Middle;
             }else if(GR3O){
-                level = High;
+                to_level = High;
             }else{
                 printf("Spindle error: unknowed level!");
             }
 
             //延时TMF ms后发送速度(异步)
-            SpindleControl s;
-            auto func = std::bind(&SpindleControl::DelaySendSpdSpeedToMi,
+            SendSpdSpeedToMi();
+            auto func = std::bind(&SpindleControl::ProcessSwitchLevel,
                                   this, std::placeholders::_1);
             std::async(std::launch::async, func, TMF);
-
-            //            //等待SF信号关闭(收到FIN信号后，ProcessPmcSignal中会把SF设置为0)
-            //            int delay = 0;
-            //            while(F->SF == 1 || delay > 5000)
-            //            {
-            //                std::this_thread::sleep_for(std::chrono::microseconds(10));
-            //                delay += 10;
-            //                if(F->SF == 0)  // PMC回应了SF信号，换挡成功
-            //                {
-            //                    SwLevelSuccess();
-            //                }
-            //            }
-            //            if(F->SF == 1) // PMC处理超时
-            //            {
-            //                printf("FIN response for SF timeout!\n");
-            //            }
 
             return true;
         }
@@ -564,22 +601,29 @@ void SpindleControl::SendSpdSpeedToMi()
 {
     if(!spindle)
         return;
+    CncPolar polar;
+    int32_t output;
     // 攻丝状态下禁止修改转速
-    if(RGTAP)
-        return;
-
-    // 获取方向
-    CncPolar polar = CalPolar();
-    if(polar == Stop)
-    {
+    if(RGTAP){
+        CreateError(ERR_SPD_RUN_IN_TAP,
+                    ERROR_LEVEL,
+                    CLEAR_BY_MCP_RESET);
         return;
     }
 
-    // 获取速度
-    int32_t output = CalDaOutput();
-
-    // 速度输出到PMC（不考虑方向）
-    F->RO = output;
+    // 获取方向
+    polar = CalPolar();
+    if(polar == Stop)
+    {
+        output = 0;
+    }
+    else
+    {
+        // 获取速度
+        output = CalDaOutput();
+        // 速度输出到PMC（不考虑方向）
+        F->RO = output;
+    }
 
     output *= spindle->spd_analog_gain/1000.0;     // 乘以增益
 
@@ -593,17 +637,64 @@ void SpindleControl::SendSpdSpeedToMi()
     MiCmdFrame cmd;
     memset(&cmd, 0x00, sizeof(cmd));
     cmd.data.cmd = CMD_MI_SET_SPD_SPEED;
-    cmd.data.axis_index = phy_axis;
+    cmd.data.axis_index = phy_axis+1;
     cmd.data.data[0] = (int16_t)output;
+    printf("send spindle DA output: %d\n",output);
     mi->WriteCmd(cmd);
 }
 
-void SpindleControl::DelaySendSpdSpeedToMi(uint16_t ms)
+void SpindleControl::ProcessModeChanged(Spindle::Mode mode)
+{
+    // 刚性攻丝信号为1的状态下，切换到了位置模式，那么准备攻丝
+    if(mode == Position && RGTAP){
+        ChannelEngine *engine = ChannelEngine::GetInstance();
+        ChannelControl *control = engine->GetChnControl(0);
+        ChannelRealtimeStatus status = control->GetRealtimeStatus();
+        double pos = status.cur_pos_machine.GetAxisValue(phy_axis);
+        mi->SetAxisRefCur(phy_axis+1,pos);
+        printf("SetAxisRefCur: axis=%d, pos = %lf\n",phy_axis+1,pos);
+        std::this_thread::sleep_for(std::chrono::microseconds(100*1000));
+        F->RGSPP = 1;
+    }
+
+    this->mode = mode;
+    if(mode == Speed)
+        printf("RspCtrlMode:Speed\n");
+    else if(mode == Position)
+        printf("RspCtrlMode:Position\n");
+}
+
+void SpindleControl::ProcessSwitchLevel(uint16_t ms)
 {
     if(!spindle)
         return;
-    std::this_thread::sleep_for(std::chrono::microseconds(ms));
-    SendSpdSpeedToMi();
+    //    usleep(ms*1000);
+    //    std::this_thread::sleep_for(std::chrono::microseconds(ms*1000));
+    //    SendSpdSpeedToMi();
+
+    //等待SF信号关闭(收到FIN信号后，ProcessPmcSignal中会把SF设置为0)
+    int delay = 0;
+    while(F->SF == 1 && delay < 5000)
+    {
+        std::this_thread::sleep_for(std::chrono::microseconds(10000));
+        delay += 10;
+        if(F->SF == 0)  // PMC回应了SF信号，换挡成功
+        {
+            // 目标档位赋值给当前档位
+            level = to_level;
+            printf("change level: %d\n",level);
+            break;
+        }
+    }
+    if(F->SF == 1) // PMC处理超时
+    {
+        // 清除掉目标档位
+        printf("change level fail\n");
+        to_level = level;
+        CreateError(ERR_SPD_SW_LEVEL_FAIL,
+                    ERROR_LEVEL,
+                    CLEAR_BY_MCP_RESET);
+    }
 }
 
 void SpindleControl::SendMcRigidTapFlag(bool enable)

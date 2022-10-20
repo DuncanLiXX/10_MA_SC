@@ -414,7 +414,7 @@ bool ParmManager::ReadSysConfig(){
 		m_sc_system_config->trace_level = m_ini_system->GetIntValueOrDefault("system", "trace_level", 0);
 		m_sc_system_config->debug_mode = m_ini_system->GetIntValueOrDefault("system", "debug_mode", 0);
 
-		m_sc_system_config->hw_rev_trace = m_ini_system->GetIntValueOrDefault("system", "hw_rev_trace", 0);
+        m_sc_system_config->hw_rev_trace = m_ini_system->GetIntValueOrDefault("system", "hw_rev_trace", 0);
 
 		g_ptr_trace->PrintTrace(TRACE_INFO, PARAM_MANAGER, "读取系统配置文件成功！\n");
 
@@ -575,8 +575,9 @@ bool ParmManager::ReadChnConfig(){
 
 			m_sc_channel_config[i].arc_err_limit = m_ini_chn->GetIntValueOrDefault(sname, "arc_err_limit", 3);
 			m_sc_channel_config[i].default_plane = m_ini_chn->GetIntValueOrDefault(sname, "default_plane", 0);
-			m_sc_channel_config[i].default_cmd_mode = m_ini_chn->GetIntValueOrDefault(sname, "default_cmd_mode", 0);
-			m_sc_channel_config[i].rapid_mode = m_ini_chn->GetIntValueOrDefault(sname, "rapid_mode", 0);
+            m_sc_channel_config[i].default_cmd_mode = m_ini_chn->GetIntValueOrDefault(sname, "default_cmd_mode", 0);
+            m_sc_channel_config[i].default_feed_mode = m_ini_chn->GetIntValueOrDefault(sname, "default_feed_mode", 1);
+            m_sc_channel_config[i].rapid_mode = m_ini_chn->GetIntValueOrDefault(sname, "rapid_mode", 0);
 
 			m_sc_channel_config[i].cut_plan_mode = m_ini_chn->GetIntValueOrDefault(sname, "cut_plan_mode", 1);	//默认S型
 			m_sc_channel_config[i].rapid_plan_mode = m_ini_chn->GetIntValueOrDefault(sname, "rapid_plan_mode", 1);	//默认S型
@@ -592,7 +593,9 @@ bool ParmManager::ReadChnConfig(){
 			m_sc_channel_config[i].chn_small_line_time = m_ini_chn->GetIntValueOrDefault(sname, "chn_small_line_time", 30);
 
 			m_sc_channel_config[i].g31_skip_signal = m_ini_chn->GetIntValueOrDefault(sname, "g31_skip_signal", 0);
-			m_sc_channel_config[i].g31_sig_level = m_ini_chn->GetIntValueOrDefault(sname, "g31_sig_level", 0);
+            m_sc_channel_config[i].g31_sig_level = m_ini_chn->GetIntValueOrDefault(sname, "g31_sig_level", 0);
+            m_sc_channel_config[i].rst_hold_time = m_ini_chn->GetIntValueOrDefault(sname, "rst_hold_time", 16);
+            m_sc_channel_config[i].rst_mode = m_ini_chn->GetIntValueOrDefault(sname, "rst_mode", 0);
 
 #ifdef USES_WOOD_MACHINE
 			m_sc_channel_config[i].debug_param_1 = m_ini_chn->GetIntValueOrDefault(sname, "debug_param_1", 0);  //调试参数1
@@ -659,8 +662,9 @@ bool ParmManager::ReadChnConfig(){
 
 			m_sc_channel_config[i].arc_err_limit = 3;
 			m_sc_channel_config[i].default_plane = 0;
-			m_sc_channel_config[i].default_cmd_mode = 0;
-			m_sc_channel_config[i].rapid_mode = 0;
+            m_sc_channel_config[i].default_cmd_mode = 0;
+            m_sc_channel_config[i].default_feed_mode = 1;
+            m_sc_channel_config[i].rapid_mode = 0;
 
 			m_sc_channel_config[i].cut_plan_mode = 1;	//默认S型
 			m_sc_channel_config[i].rapid_plan_mode = 1;	//默认S型
@@ -676,7 +680,9 @@ bool ParmManager::ReadChnConfig(){
 			m_sc_channel_config[i].chn_small_line_time = 30;
 
 			m_sc_channel_config[i].g31_skip_signal = 0;
-			m_sc_channel_config[i].g31_sig_level = 0;
+            m_sc_channel_config[i].g31_sig_level = 0;
+            m_sc_channel_config[i].rst_hold_time = 16;
+            m_sc_channel_config[i].rst_mode = 0;
 #ifdef USES_WOOD_MACHINE
 			m_sc_channel_config[i].debug_param_1 = 0;  //调试参数1
 			m_sc_channel_config[i].debug_param_2 = 0;  //调试参数2
@@ -743,8 +749,9 @@ bool ParmManager::ReadChnConfig(){
 
 			m_ini_chn->AddKeyValuePair(string("arc_err_limit"), string("3"), ns);
 			m_ini_chn->AddKeyValuePair(string("default_plane"), string("0"), ns);
-			m_ini_chn->AddKeyValuePair(string("default_cmd_mode"), string("0"), ns);
-			m_ini_chn->AddKeyValuePair(string("rapid_mode"), string("0"), ns);
+            m_ini_chn->AddKeyValuePair(string("default_cmd_mode"), string("0"), ns);
+            m_ini_chn->AddKeyValuePair(string("default_feed_mode"), string("1"), ns);
+            m_ini_chn->AddKeyValuePair(string("rapid_mode"), string("0"), ns);
 
 			m_ini_chn->AddKeyValuePair(string("cut_plan_mode"), string("1"), ns);
 			m_ini_chn->AddKeyValuePair(string("rapid_plan_mode"), string("1"), ns);
@@ -760,7 +767,9 @@ bool ParmManager::ReadChnConfig(){
 			m_ini_chn->AddKeyValuePair(string("chn_small_line_time"), string("30"), ns);
 
 			m_ini_chn->AddKeyValuePair(string("g31_skip_signal"), string("0"), ns);
-			m_ini_chn->AddKeyValuePair(string("g31_sig_level"), string("0"), ns);
+            m_ini_chn->AddKeyValuePair(string("g31_sig_level"), string("0"), ns);
+            m_ini_chn->AddKeyValuePair(string("rst_hold_time"), string("16"), ns);
+            m_ini_chn->AddKeyValuePair(string("rst_mode"), string("0"), ns);
 
 #ifdef USES_WOOD_MACHINE
 			m_ini_chn->AddKeyValuePair(string("debug_param_1"), string("0"), ns);
@@ -4021,6 +4030,10 @@ bool ParmManager::UpdateChnParam(uint8_t chn_index, uint32_t param_no, ParamValu
 		sprintf(kname, "ex_coord_count");
 		m_ini_chn->SetIntValue(sname, kname, value.value_uint8);
 		break;
+    case 405:   //默认进给方式
+        sprintf(kname, "default_feed_mode");
+        m_ini_chn->SetIntValue(sname, kname, value.value_uint8);
+        break;
 	case 506:	//加工计时方式
 		sprintf(kname, "timing_mode");
 		m_ini_chn->SetIntValue(sname, kname, value.value_uint8);
@@ -4033,6 +4046,14 @@ bool ParmManager::UpdateChnParam(uint8_t chn_index, uint32_t param_no, ParamValu
 		sprintf(kname, "g31_sig_level");
 		m_ini_chn->SetIntValue(sname, kname, value.value_uint8);
 		break;
+    case 512:   //复位时间
+        sprintf(kname, "rst_hold_time");
+        m_ini_chn->SetIntValue(sname, kname, value.value_uint16);
+        break;
+    case 513:   //复位是否保留运行数据
+        sprintf(kname, "rst_mode");
+        m_ini_chn->SetIntValue(sname, kname, value.value_uint8);
+        break;
 #ifdef USES_WOOD_MACHINE
 	case 600:  //DSP调试参数1
 		sprintf(kname, "debug_param_1");
@@ -5397,6 +5418,9 @@ void ParmManager::ActiveChnParam(uint8_t chn_index, uint32_t param_no, ParamValu
 	case 404:	//扩展工件坐标系数量
 		this->m_sc_channel_config[chn_index].ex_coord_count = value.value_uint8;
 		break;
+    case 405:	//默认进给方式
+        this->m_sc_channel_config[chn_index].default_feed_mode = value.value_uint8;
+        break;
 	case 506:	//加工计时方式
 		this->m_sc_channel_config[chn_index].timing_mode = value.value_uint8;
 		break;
@@ -5406,6 +5430,12 @@ void ParmManager::ActiveChnParam(uint8_t chn_index, uint32_t param_no, ParamValu
 	case 511:   //G31跳转信号有效电平
 		this->m_sc_channel_config[chn_index].g31_sig_level = value.value_uint8;
 		break;
+    case 512:   //复位时间
+        this->m_sc_channel_config[chn_index].rst_hold_time = value.value_uint16;
+        break;
+    case 513:   //复位是否保留运行时间
+        this->m_sc_channel_config[chn_index].rst_mode = value.value_uint8;
+        break;
 #ifdef USES_WOOD_MACHINE
 	case 600:  //DSP调试参数1
 		this->m_sc_channel_config[chn_index].debug_param_1 = value.value_int32;

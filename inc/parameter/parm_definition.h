@@ -119,8 +119,9 @@ struct SCChannelConfig{
 	uint16_t chn_s_cut_filter_time;		//切削进给S型规划时间常数  //单位：ms
 
 
-	uint8_t default_plane;			//默认平面		0：XY平面  1：YZ平面   2：XZ平面
-	uint8_t default_cmd_mode;		//默认指令模式   0:绝对编程  1：相对编程
+    uint8_t default_plane;			//默认平面	   0：G17  1：G18  2：G19
+    uint8_t default_cmd_mode;		//默认指令模式   0：G90  1：G91
+    uint8_t default_feed_mode;      //默认进给方式   0：G00  1：G01  2：G02  3：G03
 
 	uint8_t rapid_mode;				//G00模式    0：定位     1：直线定位
 	uint8_t cut_plan_mode;			//切削规划模式	0：T型   1：S型
@@ -140,6 +141,8 @@ struct SCChannelConfig{
 
 	uint32_t g31_skip_signal;       //G31跳转信号，例如X1004.7保存为10047，即乘10倍
 	uint8_t g31_sig_level;          //G31跳转信号有效电平    0--低电平    1--高电平
+    uint16_t rst_hold_time;         //复位时间 单位:ms
+    uint8_t rst_mode;             //复位时是否保留运行数据  0:不保留 1:保留
 
 #ifdef USES_WOOD_MACHINE
 	int debug_param_1;             //调试参数1
@@ -267,7 +270,7 @@ struct SCAxisConfig{
     uint8_t spd_ctrl_CWM;                       //主轴转向取反 0：否  1：是
     uint8_t spd_ctrl_TSO;                       //螺纹切削和刚性攻丝时，主轴倍率设置  0：强制100%  1：有效
     uint16_t spd_analog_gain;                   //模拟输出增益 700-1250 单位：0.1%
-    uint16_t spd_sor_speed;                     //主轴齿轮换档/定向时的主轴转速
+    uint16_t spd_sor_speed;                     //主轴齿轮换档/定向时的主轴转速 rpm
     uint16_t spd_motor_min_speed;               //主轴电机最小钳制速度
     uint16_t spd_motor_max_speed;               //主轴电机最大钳制速度
     uint16_t spd_gear_speed_low;                //齿轮低档位最高转速 rpm

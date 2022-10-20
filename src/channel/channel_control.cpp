@@ -573,6 +573,12 @@ void ChannelControl::InitialChannelStatus(){
  * @brief 通道复位函数
  */
 void ChannelControl::Reset(){
+    if(m_p_spindle->isTapEnable()){
+        CreateError(ERR_SPD_RESET_IN_TAP,
+                    WARNING_LEVEL,
+                    CLEAR_BY_MCP_RESET);
+        return;
+    }
 
 	this->m_error_code = ERR_NONE;
 
@@ -1554,9 +1560,33 @@ void ChannelControl::ClearMachineTimeTotal()
  */
 void ChannelControl::ResetMode(){
 	printf("reset mode start!!!\n");
-	m_channel_status.gmode[1] = G00_CMD;   //01组默认G00
-	m_channel_status.gmode[2] = G17_CMD;   //02组默认G17
-	m_channel_status.gmode[3] = G90_CMD;   //03组默认G90
+
+    //01组根据通道参数：默认进给方式 来复位
+    if(m_p_channel_config->default_feed_mode == 0){
+        m_channel_status.gmode[1] = G00_CMD;
+    }else if(m_p_channel_config->default_feed_mode == 1){
+        m_channel_status.gmode[1] = G01_CMD;
+    }else if(m_p_channel_config->default_feed_mode == 2){
+        m_channel_status.gmode[1] = G02_CMD;
+    }else{
+        m_channel_status.gmode[1] = G03_CMD;
+    }
+
+    //02组根据通道参数：默认加工平面 来复位
+    if(m_p_channel_config->default_plane == 0){
+        m_channel_status.gmode[2] = G17_CMD;
+    }else if(m_p_channel_config->default_plane == 1){
+        m_channel_status.gmode[2] = G18_CMD;
+    }else{
+        m_channel_status.gmode[2] = G19_CMD;
+    }
+
+    // 03组根据通道参数：默认指令模式 来复位
+    if(m_p_channel_config->default_cmd_mode == 0){
+        m_channel_status.gmode[3] = G90_CMD;
+    }else{
+        m_channel_status.gmode[3] = G91_CMD;
+    }
 
 	m_channel_status.gmode[5] = G94_CMD;  //05组默认G94  每分钟进给
 	m_channel_status.gmode[6] = G21_CMD;  //06组默认G21  公制单位
@@ -1748,18 +1778,19 @@ void ChannelControl::StartRunGCode(){
 			m_channel_rt_status.machining_time = 0;    //重置加工时间
 		}
 		else if(m_channel_status.machining_state == MS_PAUSED){
+            // lidianqiang:暂时去掉断点继续功能
 #ifndef USES_GRIND_MACHINE  //玻璃机不需要断点返回功能
-	#ifndef USES_ADDITIONAL_PROGRAM
-			if(this->m_scene_auto.need_reload_flag){
-	#endif
-				if(StartBreakpointContinue()){
-					g_ptr_trace->PrintTrace(TRACE_INFO, CHANNEL_CONTROL_SC, "start break point continue thread\n");
-					gettimeofday(&m_time_start_maching, nullptr);  //初始化启动时间													   
-					goto END;
-				}
-	#ifndef USES_ADDITIONAL_PROGRAM
-			}
-	#endif
+    #ifndef USES_ADDITIONAL_PROGRAM
+            if(this->m_scene_auto.need_reload_flag){
+    #endif
+                if(StartBreakpointContinue()){
+                    g_ptr_trace->PrintTrace(TRACE_INFO, CHANNEL_CONTROL_SC, "start break point continue thread\n");
+                    gettimeofday(&m_time_start_maching, nullptr);  //初始化启动时间
+                    goto END;
+                }
+    #ifndef USES_ADDITIONAL_PROGRAM
+            }
+    #endif
 #else
 
 #endif
@@ -3760,6 +3791,12 @@ void ChannelControl::SetMachineState(uint8_t mach_state){
 	g_ptr_trace->PrintTrace(TRACE_INFO, CHANNEL_CONTROL_SC, "Enter SetMachineState, old = %d, new = %d, m_n_run_thread_state = %d\n", m_channel_status.machining_state, mach_state, m_n_run_thread_state);
 	if(m_channel_status.machining_state == mach_state)
 		return;
+
+    if(mach_state == MS_WARNING){
+        if(m_p_spindle->isTapEnable()){    // 刚性攻丝期间出现了警告，取消攻丝
+            m_p_spindle->CancelRigidTap();
+        }
+    }
 
 	if(mach_state == MS_WARNING && m_channel_status.machining_state == MS_STOPPING
 			&& m_channel_mc_status.cur_mode != MC_MODE_MANUAL)  //等待停止到位后再切换为告警状态
@@ -16181,8 +16218,10 @@ int ChannelControl::BreakContinueProcess(){
 			memcpy(m_channel_status.gmode, m_scene_auto.gmode, 2*kMaxGModeCount);
 
 			this->SendChnStatusChangeCmdToHmi(G_MODE);
-			m_n_breakcontinue_segment = 40;
-			printf("goto step 40\n");
+            m_n_breakcontinue_segment = 60;
+            // lidianqiang:取消Z轴抬刀和下刀动作
+            // m_n_breakcontinue_segment = 40;
+            printf("goto step 40\n");
 			break;
 		case 40: 	//恢复主轴状态
             //lidianqiang:主轴恢复与当前主轴功能有冲突，暂不考虑主轴恢复的问题
@@ -16206,32 +16245,32 @@ int ChannelControl::BreakContinueProcess(){
 //				break;
 //			}
 
-			m_n_breakcontinue_segment = 50;
+            m_n_breakcontinue_segment = 50;
 			printf("goto step 50\n");
 			break;
         case 50:	//回到断点位置，首先Z轴移动到安全高度(如果没有其他轴需要移动，则不需要到安全高度)
-			if(this->m_channel_rt_status.cur_pos_machine == m_scene_auto.cur_pos_machine){
-				m_n_breakcontinue_segment = 0;
-				printf("axis not move !!!!\n");
-				break;
-			}
-			else{
-				printf("cur pos : %f, %f, %f, %f, scene pos: %f, %f, %f, %f\n", m_channel_rt_status.cur_pos_machine.m_df_point[0], m_channel_rt_status.cur_pos_machine.m_df_point[1],
-						m_channel_rt_status.cur_pos_machine.m_df_point[2], m_channel_rt_status.cur_pos_machine.m_df_point[3], m_scene_auto.cur_pos_machine.m_df_point[0],
-						m_scene_auto.cur_pos_machine.m_df_point[1], m_scene_auto.cur_pos_machine.m_df_point[2], m_scene_auto.cur_pos_machine.m_df_point[3]);
-			}
-			chn_axis_z = this->GetChnAxisFromName(AXIS_NAME_Z);
-			phy_axis = m_p_channel_config->chn_axis_phy[chn_axis_z];
-			if(phy_axis > 0){  //
-				safe_pos = m_p_axis_config[phy_axis-1].axis_home_pos[1];
-			}
+            if(this->m_channel_rt_status.cur_pos_machine == m_scene_auto.cur_pos_machine){
+                m_n_breakcontinue_segment = 0;
+                printf("axis not move !!!!\n");
+                break;
+            }
+            else{
+                printf("cur pos : %f, %f, %f, %f, scene pos: %f, %f, %f, %f\n", m_channel_rt_status.cur_pos_machine.m_df_point[0], m_channel_rt_status.cur_pos_machine.m_df_point[1],
+                        m_channel_rt_status.cur_pos_machine.m_df_point[2], m_channel_rt_status.cur_pos_machine.m_df_point[3], m_scene_auto.cur_pos_machine.m_df_point[0],
+                        m_scene_auto.cur_pos_machine.m_df_point[1], m_scene_auto.cur_pos_machine.m_df_point[2], m_scene_auto.cur_pos_machine.m_df_point[3]);
+            }
+            chn_axis_z = this->GetChnAxisFromName(AXIS_NAME_Z);
+            phy_axis = m_p_channel_config->chn_axis_phy[chn_axis_z];
+            if(phy_axis > 0){  //
+                safe_pos = m_p_axis_config[phy_axis-1].axis_home_pos[1];
+            }
 
             if(m_channel_rt_status.cur_pos_machine.GetAxisValue(chn_axis_z)< safe_pos)  //当Z轴低于安全高度时，先抬到安全高度
-				this->ManualMove(chn_axis_z, safe_pos, 2000);		//TODO 使用机械坐标系
-			else{
-				m_n_breakcontinue_segment = 60;
-				break;
-			}
+                this->ManualMove(chn_axis_z, safe_pos, 2000);		//TODO 使用机械坐标系
+            else{
+                m_n_breakcontinue_segment = 60;
+                break;
+            }
 
 			m_n_breakcontinue_segment++;
 			printf("goto step 51\n");
@@ -16297,12 +16336,14 @@ int ChannelControl::BreakContinueProcess(){
 			break;
 		}
 		case 62:  	//Z轴复位到断点位置
-			chn_axis_z = this->GetChnAxisFromName(AXIS_NAME_Z);
+//			chn_axis_z = this->GetChnAxisFromName(AXIS_NAME_Z);
 
-			this->ManualMove(chn_axis_z, m_scene_auto.cur_pos_machine.m_df_point[chn_axis_z], 2000);		//TODO 使用机械坐标系
+//			this->ManualMove(chn_axis_z, m_scene_auto.cur_pos_machine.m_df_point[chn_axis_z], 2000);		//TODO 使用机械坐标系
 
-			m_n_breakcontinue_segment++;
-			printf("goto step 63\n");
+//			m_n_breakcontinue_segment++;
+//			printf("goto step 63\n");
+            // lidianqiang:取消Z轴抬刀和下刀动作
+            m_n_breakcontinue_segment = 0;
 			break;
 		case 63:	//等待Z轴到位
 			if(fabs(m_channel_rt_status.cur_pos_machine.m_df_point[2] - m_scene_auto.cur_pos_machine.m_df_point[2]) < 1e-3){ //到位

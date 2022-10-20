@@ -4054,6 +4054,7 @@ void ChannelControl::SendIntpModeCmdToMc(uint16_t intp_mode){
  * @param work_mode : 0--手动    1--自动    2--MDA
  */
 void ChannelControl::SendWorkModeToMc(uint16_t work_mode){
+
 	McCmdFrame cmd;
 	memset(&cmd, 0x00, sizeof(McCmdFrame));
 
@@ -4955,6 +4956,8 @@ bool ChannelControl::OutputData(RecordMsg *msg, bool flag_block){
 	case ARC_MSG:{
 		//设置当前平面
 		uint16_t plane = this->m_mc_mode_exec.bits.mode_g17;   //
+		// @test zk
+		printf("arc_id: %d plane : %d\n",((ArcMsg*)msg)->arc_id, plane);
 		if(plane == 2) //YZ平面，G19
 			data_frame.data.ext_type |= 0x02;
 		else if(plane == 1)  //XZ平面，G18
@@ -5693,7 +5696,6 @@ bool ChannelControl::ExecuteMessage(){
 							if(msg->GetMsgType() == FEED_MSG){
 								this->m_p_last_output_msg = node_tmp->pre;
 								this->m_p_output_msg_list->Delete(node_tmp);   //删除FEED命令包
-
 					//			printf("delete feed msg##@@@\n");
 							}
 
@@ -7091,6 +7093,8 @@ bool ChannelControl::ExecuteArcMsg(RecordMsg *msg, bool flag_block){
 		return true;
 	}
 
+	printf("execute arc msg  arc_id: %d\n", arc_msg->arc_id);
+
 	if(!OutputData(msg, flag_block))
 		return false;
 
@@ -7971,7 +7975,8 @@ bool ChannelControl::ExecuteLoopMsg(RecordMsg *msg){
 
 //	printf("execute loop msg: gmode[9] = %hu, gcode = %d\n", m_channel_status.gmode[9], loopmsg->GetGCode());
 
-	if(m_channel_status.gmode[9] == G80_CMD && loopmsg->GetGCode() == G84_CMD){ //切换刚性攻丝模态，则发送数据给MI
+	if(m_channel_status.gmode[9] == G80_CMD &&
+			(loopmsg->GetGCode() == G84_CMD or loopmsg->GetGCode() == G74_CMD)){ //切换刚性攻丝模态，则发送数据给MI
 
 		uint8_t pc = 0;
 		uint32_t pm = 0;
@@ -7991,14 +7996,18 @@ bool ChannelControl::ExecuteLoopMsg(RecordMsg *msg){
 			pm = pm>>1;
 			i++;
 		}
-        m_p_spindle->StartRigidTap(feed);
+
+		if(loopmsg->GetGCode() == G74_CMD){
+			m_p_spindle->StartRigidTap(-feed);
+		}else{
+			m_p_spindle->StartRigidTap(feed);
+		}
 
 	}else if(m_channel_status.gmode[9] == G84_CMD && loopmsg->GetGCode() == G80_CMD){  //关闭刚攻状态
         m_p_spindle->CancelRigidTap();
 	}
 	
 	this->m_channel_status.gmode[9] = loopmsg->GetGCode();
-
 
 
 	// @test zk  尝试不调用子程序 用代码实现固定循环  问题：行号无法更新
@@ -9294,13 +9303,13 @@ bool ChannelControl::ExecuteRefReturnMsg(RecordMsg *msg){
 	uint8_t i = 0;
 	bool flag = true;
 	int ref_id = refmsg->ref_id;
+
 	if(gcode == G30_CMD and (ref_id < 1 or ref_id > 4)){
 		//  参考点序号超出范围
 		printf("G30 specify a refpoint not exist ！\n");
 		CreateError(ERR_NO_CUR_RUN_DATA, ERROR_LEVEL, CLEAR_BY_MCP_RESET, gcode, m_n_channel_index);
 		return false;
 	}
-
 
 	if(gcode == G28_CMD or gcode == G30_CMD){
 		switch(refmsg->GetExecStep()){
@@ -19304,6 +19313,7 @@ void ChannelControl::StraightFeed(int chn, double x, double y, double z, int fee
 	frame.data.pos2 = MM2NM0_1(z);
 	m_p_mc_comm->WriteGCodeData(chn, frame);
 }
+
 // 直接往mc运动队列中加入 G00 数据  作用效果同上
 void ChannelControl::StraightTraverse(int chn, double x, double y, double z)
 {
@@ -19318,7 +19328,6 @@ void ChannelControl::StraightTraverse(int chn, double x, double y, double z)
 	frame.data.pos2 = MM2NM0_1(z);
 	m_p_mc_comm->WriteGCodeData(chn, frame);
 }
-
 
 void ChannelControl::g73_func(){
 	StartMcIntepolate();

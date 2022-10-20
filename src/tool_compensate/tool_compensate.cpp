@@ -13,7 +13,6 @@
 #include "channel_control.h"
 #include "tool_comp_data.h"
 #include "tool_compensate.h"
-#include "math.h"
 
 void ToolCompensate::__ARC_FEED(double first_end, double second_end,
                                 double first_axis, double second_axis,
@@ -45,22 +44,66 @@ void ToolCompensate::__ARC_FEED(double first_end, double second_end,
         }
     }
 
+    //m_p_output_msg_list->Append(msg);
+    //return ;
+
     target.SetAxisValue(0, first_end);
     target.SetAxisValue(1, second_end);
+    target.SetAxisValue(2, cur_point.GetAxisValue(2));
 
     DPointChn center = target;
     center.SetAxisValue(0, cur_point.GetAxisValue(0) + first_axis);
     center.SetAxisValue(1, cur_point.GetAxisValue(1) + second_axis);
     double radius = sqrt(first_axis*first_axis + second_axis+second_axis);
-    int code = rotation < 0? 2:3;
 
-    ArcMsg * new_msg = new ArcMsg(code, cur_point, target, center, radius, feed, mask);
-    new_msg->SetLineNo(0);
+    /**************************/
+	int8_t major_flag = 1;  //优弧标志， 1--劣弧    -1--优弧
+	int8_t circle_flag = 0;	//整圆标志， 0--圆弧    1--整圆
+	int8_t dir_flag = -1;  //方向标志，-1:clockwise,1:anticlockwise
+
+    int code;
+	// 圆弧方向
+	if(rotation < 0){
+    	code = G02_CMD;
+    	dir_flag = -1;
+    }else{
+    	code = G03_CMD;
+    	dir_flag = 1;
+    }
+
+	if(cur_point == target){
+		//判断是否整圆
+		circle_flag = 1;    //IJK编程，起点和终点重合则为整圆
+
+		major_flag = -1;    //优弧
+	}
+	else{
+
+		DPlane cen = Point2Plane(center, PLANE_XY);
+		DPlane tar = Point2Plane(target, PLANE_XY);
+
+		//判断优劣弧
+		DPlane src = Point2Plane(cur_point, PLANE_XY);
+		double angle_start = GetVectAngle(src, cen);
+		double angle_end = GetVectAngle(tar, cen);
+		double angle = (angle_end - angle_start) * dir_flag;
+		if(angle < 0)
+			angle += 2*M_PI;
+		if(angle > M_PI)
+			major_flag = -1;   //大于180度，优弧
+	}
+	/*************************************/
+    ArcMsg * new_msg = new ArcMsg(code, cur_point, target, center, radius,
+    		feed, mask, dir_flag, major_flag, circle_flag);
+    new_msg->SetLineNo(msg->GetLineNo());
+    new_msg->SetPlaneMode(PLANE_XY);   //设置平面模态
 
     RecordMsgFlag flags;
-    flags.all = 71;
+    flags.all = 0;
     new_msg->SetFlags(flags);
-
+    //((ArcMsg *)msg)->arc_id = 100;
+    //m_p_output_msg_list->Append(msg);
+    new_msg->arc_id = 200;
     m_p_output_msg_list->Append(new_msg);
     cur_point = target;
 }
@@ -216,7 +259,7 @@ void ToolCompensate::ProcessData(ListNode<RecordMsg *> *node){
 
 	msg = node->data;
 	// 记录行号
-    switch(msg->GetMsgType()){
+    /*switch(msg->GetMsgType()){
         case LINE_MSG:{
             LineMsg * line_msg = (LineMsg *) msg;
 
@@ -255,7 +298,8 @@ void ToolCompensate::ProcessData(ListNode<RecordMsg *> *node){
         }
         case ARC_MSG:{
 
-            ArcMsg * arc_msg = (ArcMsg *) msg;
+        	ArcMsg * arc_msg = (ArcMsg *) msg;
+
             if(first_move){
                 cur_point = arc_msg->GetSourcePos();
                 first_move = false;
@@ -299,13 +343,12 @@ void ToolCompensate::ProcessData(ListNode<RecordMsg *> *node){
         	__dequeue_canons();
         	break;
         }
-    }
+    }*/
 
     this->m_p_output_msg_list->Append(node);
-
 }
 
-void ToolCompensate::ResetAllDatas() {
+void ToolCompensate::ResetAllDatas(){
 
 }
 

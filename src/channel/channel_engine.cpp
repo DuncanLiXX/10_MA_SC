@@ -8204,7 +8204,7 @@ void ChannelEngine::ProcessPmcSignal(){
 #endif
 
         if(g_reg->RRW == 1 && g_reg_last->RRW == 0){
-            this->SystemReset();
+        	this->SystemReset();
         }
 
 

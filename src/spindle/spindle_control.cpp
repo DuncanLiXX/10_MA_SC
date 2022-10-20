@@ -51,8 +51,6 @@ void SpindleControl::Reset()
         return;
     wait_sar = false;
     wait_off = false;
-    if(isTapEnable())
-        CancelRigidTap();
 
     UpdateParams();
 }
@@ -411,6 +409,7 @@ uint16_t SpindleControl::GetMaxSpeed()
     if(!spindle)
         return 0;
     Level level;
+
     if(SFA) // 如果开启了换挡功能，最大转速根据
         level = to_level;
     else
@@ -520,29 +519,12 @@ bool SpindleControl::UpdateSpindleLevel(uint16_t speed)
         F->GR2O = GR2O;
         F->GR3O = GR3O;
 
-        // SFA使能时，需要发送SF信号
-        if(SFA)
+        // SFA使能时，才执行换挡动作
+        if(SFA && SIND == 0)
         {
-            //延时TM ms后发送SF信号
-            std::this_thread::sleep_for(std::chrono::microseconds(TM));
-            F->SF = 1;
-            printf("set SF 1\n");
-
-            // 记录档位
-            if(GR1O){
-                to_level = Low;
-            }else if(GR2O){
-                to_level = Middle;
-            }else if(GR3O){
-                to_level = High;
-            }else{
-                printf("Spindle error: unknowed level!");
-            }
-
-            //延时TMF ms后发送速度(异步)
-            SendSpdSpeedToMi();
+            //异步处理换挡逻辑
             auto func = std::bind(&SpindleControl::ProcessSwitchLevel,
-                                  this, std::placeholders::_1);
+                                  this);
             std::async(std::launch::async, func, TMF);
 
             return true;
@@ -558,7 +540,17 @@ void SpindleControl::CalLevel(uint8_t &GR1O, uint8_t &GR2O, uint8_t &GR3O)
     GR1O = 0;
     GR2O = 0;
     GR3O = 0;
-    if(SGB == 0) // A换挡方式
+
+    if(SSIN)    // 转速由PMC来控制，保持当前档位
+    {
+        if(level == Low)
+            GR1O = 1;
+        else if(level == Middle)
+            GR2O = 1;
+        else
+            GR3O = 1;
+    }
+    else if(SGB == 0) // A换挡方式
     {
         //档位1：0~档位1最大转速
         //档位2：档位1最大转速~档位2最大转速
@@ -664,13 +656,30 @@ void SpindleControl::ProcessModeChanged(Spindle::Mode mode)
         printf("RspCtrlMode:Position\n");
 }
 
-void SpindleControl::ProcessSwitchLevel(uint16_t ms)
+void SpindleControl::ProcessSwitchLevel()
 {
     if(!spindle)
         return;
-    //    usleep(ms*1000);
-    //    std::this_thread::sleep_for(std::chrono::microseconds(ms*1000));
-    //    SendSpdSpeedToMi();
+
+    //延时TM us后发送SF信号
+    std::this_thread::sleep_for(std::chrono::microseconds(TM));
+    F->SF = 1;
+    printf("set SF 1\n");
+
+    // 记录档位
+    if(F->GR1O){
+        to_level = Low;
+    }else if(F->GR2O){
+        to_level = Middle;
+    }else if(F->GR3O){
+        to_level = High;
+    }else{
+        printf("Spindle error: unknowed level!");
+    }
+
+    // 延时TMF后发送速度
+    std::this_thread::sleep_for(std::chrono::microseconds(TMF));
+    SendSpdSpeedToMi();
 
     //等待SF信号关闭(收到FIN信号后，ProcessPmcSignal中会把SF设置为0)
     int delay = 0;

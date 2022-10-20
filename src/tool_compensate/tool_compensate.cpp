@@ -259,7 +259,7 @@ void ToolCompensate::ProcessData(ListNode<RecordMsg *> *node){
 
 	msg = node->data;
 	// 记录行号
-    /*switch(msg->GetMsgType()){
+    switch(msg->GetMsgType()){
         case LINE_MSG:{
             LineMsg * line_msg = (LineMsg *) msg;
 
@@ -293,7 +293,6 @@ void ToolCompensate::ProcessData(ListNode<RecordMsg *> *node){
             if(!__errInfo.empty()){
 				std::cout << "---------------------------> compensate error: " <<  __errInfo << std::endl;
 			}
-
             return;
         }
         case ARC_MSG:{
@@ -343,7 +342,7 @@ void ToolCompensate::ProcessData(ListNode<RecordMsg *> *node){
         	__dequeue_canons();
         	break;
         }
-    }*/
+    }
 
     this->m_p_output_msg_list->Append(node);
 }
@@ -644,7 +643,6 @@ void ToolCompensate::__convert_straight_comp2(int move, double px, double py) {
             if(move == 1){
                 // original_turn=0.0, doesn't matter, since we will not move this arc's endpoint
                 int turn = side == 1 ? -1 : 1;
-                printf("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\n");
                 __enqueue_ARC_FEED(0.0, mid_x, mid_y, opx, opy, turn);
             }else{
                 // 快速移动 不需要圆弧过渡

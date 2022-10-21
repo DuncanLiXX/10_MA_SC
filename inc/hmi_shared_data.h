@@ -455,6 +455,7 @@ enum ErrorType {
     ERR_SPD_LOCATE_SPEED = 1703,        //定位时主轴转速异常
     ERR_SPD_SW_LEVEL_FAIL = 1704,       //主轴换挡超时
     ERR_SPD_TAP_POS_ERROR = 1705,       //刚攻位置错误
+    ERR_SPD_RESET_IN_TAP = 1706,        //刚性攻丝中不能复位
 
 	//PMC轴告警
 	ERR_PMC_AXIS_CTRL_CHANGE = 1900,   //PMC轴控制状态切换
@@ -936,7 +937,6 @@ struct HmiChannelRealtimeStatus {
 };
 
 
-
 /*
  * @brief HMI使用的通道状态
  */
@@ -944,7 +944,8 @@ struct HmiChannelStatus{
 	double rated_manual_speed; 		//手动速度，单位：mm/s
 	uint32_t workpiece_count;       //工件计数，最大99999999
     uint32_t workpiece_count_total; //总共件数
-	Mask32 func_state_flags;        //系统功能状态标志，包括单段、跳段、选停、空运行、手轮跟踪、机床锁，辅助锁
+    uint32_t machinetime_total;         //累计加工时间
+    Mask32 func_state_flags;        //系统功能状态标志，包括单段、跳段、选停、空运行、手轮跟踪、机床锁，辅助锁
 	int32_t rated_spindle_speed;    //用户设定主轴转速，单位：转/分钟
 	uint32_t rated_feed; 					//用户设定进给速度，单位：um/s
 	uint16_t g_code_mode[kMaxGModeCount];	//G指令模态信息
@@ -966,6 +967,8 @@ struct HmiChannelStatus{
 	uint8_t returned_to_ref_point;	//是否已回参考点，bit0-bit7分别表示轴0-7是否已回参考点
 	uint8_t es_button_on;			//急停按键是否处于按下状态，每一个bit表示一个急停按键
 	char cur_nc_file_name[kMaxFileNameLen];	//当前加工主程序文件名
+	uint8_t cur_chn_axis_phy[kMaxAxisChn];	    //当前通道内轴对应的物理轴索引
+	int mcode; // @add zk 暂时没用
 };
 
 /**
@@ -1139,8 +1142,9 @@ struct HmiChnConfig{
 
 
 
-	uint8_t default_plane;			//默认平面		0：XY平面  1：YZ平面   2：XZ平面
-	uint8_t default_cmd_mode;		//默认指令模式   0:绝对编程  1：相对编程
+    uint8_t default_plane;			//默认平面	   0：G17  1：G18  2：G19
+    uint8_t default_cmd_mode;		//默认指令模式   0：G90  1：G91
+    uint8_t default_feed_mode;      //默认进给方式   0：G00  1：G01  2：G02  3：G03
 
 	uint8_t rapid_mode;				//G00模式    0：定位     1：直线定位
 	uint8_t cut_plan_mode;			//切削规划模式	0：T型   1：S型
@@ -1160,6 +1164,8 @@ struct HmiChnConfig{
 
 	uint32_t g31_skip_signal;       //G31跳转信号，例如X1004.7保存为10047，即乘10倍
 	uint8_t g31_sig_level;          //G31跳转信号有效电平    0--低电平    1--高电平
+    uint16_t rst_hold_time;         //复位时间 单位:ms
+    uint8_t rst_mode;               //复位时运行数据是否保留  0:不保留 1：保留
 
 #ifdef USES_WOOD_MACHINE
 	int debug_param_1;             //调试参数1

@@ -6977,7 +6977,6 @@ void ChannelEngine::InitPmcReg(){
     uint16_t i = 0, count = 0;
     uint8_t *pn8 = nullptr;
 
-
     //发送K寄存器
     pn8 = this->m_p_pmc_reg->GetRegPtr8(PMC_REG_K);
     for(i = 0; i < K_REG_COUNT; i++){
@@ -7053,6 +7052,7 @@ void ChannelEngine::InitPmcReg(){
         //	printf("Init T reg c%hu = %hu\n", i, pn8[i]);
         }
     }
+
 
 #endif
 }
@@ -7687,15 +7687,20 @@ void ChannelEngine::ClearPmcAxisMoveData(){
  */
 void ChannelEngine::SystemReset(){
 
-    printf("system reset aaa\n");
-    //各通道复位复位
+    printf("system reset\n");
+    //各通道复位
     for(int i = 0; i < this->m_p_general_config->chn_count; i++){
-    //	printf("@@@@@@@@@RST=====1\n");
+        // 攻丝状态禁止复位
+        if(this->m_p_channel_control[0].GetSpdCtrl()->isTapEnable()){
+            CreateError(ERR_SPD_TAP_RATIO_FAULT,
+                        WARNING_LEVEL,
+                        CLEAR_BY_MCP_RESET);
+            return;
+        }
+
         this->m_p_pmc_reg->FReg().bits[i].RST = 1;  //复位信号
         this->m_p_channel_control[i].Reset();
     }
-
-    printf("system reset bbb\n");
 
     //通知MC模块复位
 //	SendMcResetCmd();    //修改为按通道复位
@@ -7738,9 +7743,7 @@ void ChannelEngine::SystemReset(){
         m_n_sync_over = 0;
     }
 
-    m_b_emergency = false;  //复位急停标志
     m_b_power_off = false;
-
 
 #ifdef USES_EMERGENCY_DEC_STOP
     this->m_b_delay_servo_off = false;
@@ -7781,10 +7784,7 @@ void ChannelEngine::SystemReset(){
  * @param chn : 通道号
  */
 void ChannelEngine::Emergency(uint8_t chn){
-    if(m_b_emergency)
-        return;
-    else
-        m_b_emergency = true;
+    m_b_emergency = true;
 
 #ifndef USES_WOOD_MACHINE
     //通知MI下伺服
@@ -7815,7 +7815,8 @@ void ChannelEngine::Emergency(uint8_t chn){
 
     //记录复位操作结束时间，供RST信号延时后复位
     gettimeofday(&this->m_time_rst_over, NULL);
-    m_b_reset_rst_signal = true;
+    // lidianqiang:急停后，rst信号需要保持为1。等解除急停并且按下复位后才恢复
+    // m_b_reset_rst_signal = true;
 
 
     //置位F寄存器
@@ -8191,10 +8192,13 @@ void ChannelEngine::ProcessPmcSignal(){
         ctrl = &m_p_channel_control[i];
 
 #ifdef USES_PHYSICAL_MOP
-        if(g_reg->_ESP == 0 && !m_b_emergency){ //急停有效
-//			printf("ChannelEngine::ProcessPmcSignal(), emergency stop!\n");
-
+        if(g_reg->_ESP == 0 && !m_b_emergency){ //进入急停
+            f_reg->RST = 1;
             this->Emergency();
+            m_b_emergency = 1;
+        }else if(g_reg->_ESP == 1 && m_b_emergency){ // 取消急停
+            m_b_emergency = false;
+            f_reg->RST = 0;
         }
 
         // 处理G信号 切换当前通道
@@ -8227,7 +8231,7 @@ void ChannelEngine::ProcessPmcSignal(){
 #endif
 
         if(g_reg->RRW == 1 && g_reg_last->RRW == 0){
-            this->SystemReset();
+        	this->SystemReset();
         }
 
 
@@ -8558,6 +8562,8 @@ void ChannelEngine::ProcessPmcSignal(){
 
 		//处理PMC宏调用功能
 		if(g_reg_last->EMPC == 0 && g_reg->EMPC == 1){  //处理PMC宏调用
+			// @test zk
+			printf("PMC CALL SUB PROG : %d\n", g_reg->MPCS);
 			this->m_p_channel_control[i].CallMacroProgram(g_reg->MPCS);
 			f_reg->MPCO = 1;   //调用结束
 		}else if(g_reg_last->EMPC == 1 && g_reg->EMPC == 0){
@@ -8630,7 +8636,7 @@ void ChannelEngine::ProcessPmcSignal(){
         struct timeval time_now;
         gettimeofday(&time_now, NULL);
         unsigned int time_elpase = (time_now.tv_sec-m_time_rst_over.tv_sec)*1000000+time_now.tv_usec-m_time_rst_over.tv_usec;
-        if(time_elpase >= 16000){
+        if(time_elpase >= this->m_p_channel_config[0].rst_hold_time * 1000){
             for(uint8_t i = 0; i < this->m_p_general_config->chn_count; i++){
                 //延时时间到，复位RST信号
                 this->m_p_pmc_reg->FReg().bits[i].RST = 0;

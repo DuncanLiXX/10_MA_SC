@@ -66,6 +66,8 @@ public:
     void SetMode(Spindle::Mode mode);
     Spindle::Mode GetMode();             // 获取主轴控制模式
 
+    bool IsValid();
+
     bool isTapEnable();     // 刚性攻丝是否使能
 
     void StartRigidTap(double feed);    // 开始刚性攻丝 G84
@@ -92,7 +94,7 @@ public:
 private:
     void UpdateParams();        // 更新常用主轴参数到成员变量中
     void UpdateSpindleState();  // 根据当前状态更新转速
-    uint16_t GetMaxSpeed();
+    uint16_t GetMaxSpeed();     // 获取当前档位最大转速
     Spindle::CncPolar CalPolar();    // 根据当前状态获取主轴转向
     int32_t CalDaOutput();     // 根据当前状态获取DA电平值
 
@@ -108,8 +110,8 @@ private:
     void SendSpdSpeedToMi();
     // 异步处理模式切换完成
     void ProcessModeChanged(Spindle::Mode mode);
-    // 异步等待换挡完成
-    void ProcessSwitchLevel(uint16_t ms);
+    // 异步处理换挡逻辑
+    void ProcessSwitchLevel();
 
     // 向MC发送刚性攻丝状态命令，MC会切换到刚性攻丝的速度规划参数
     void SendMcRigidTapFlag(bool enable);
@@ -151,16 +153,16 @@ private:
     bool RGTAP;  //刚攻状态  0：退出刚攻状态  1：进入刚攻状态 G61.0
 
     // 参数
-    uint8_t GST{0};    //SOR信号用于： 0：主轴定向 1：齿轮换档
-    uint8_t SGB{0};    //齿轮换档方式 0：A方式 1：B方式
-    uint8_t SFA{0};    //换挡功能开关： 0：关闭 1：打开
-    uint8_t ORM{0};    //主轴定向时的电压极性 0：正 1：负
-    uint8_t TCW{1};    //主轴转向是否受M03/M04影响 0：不受影响 1：受影响
-    uint8_t CWM{0};    //主轴转向取反 0：否  1：是
-    uint8_t TSO{1};    //螺纹切削和刚性攻丝时，主轴倍率  0：强制100%  1：有效
+    uint8_t GST{0};    //(1657)SOR信号用于： 0：主轴定向 1：齿轮换档
+    uint8_t SGB{0};    //(1658)齿轮换档方式 0：A方式 1：B方式
+    uint8_t SFA{0};    //(1659)换挡功能开关： 0：关闭 1：打开
+    uint8_t ORM{0};    //(1660)主轴定向时的转向 0：正 1：负
+    uint8_t TCW{1};    //(1661)主轴转向是否受M03/M04影响 0：不受影响 1：受影响
+    uint8_t CWM{0};    //(1662)主轴转向取反 0：否  1：是
+    uint8_t TSO{0};    //(1663)螺纹切削和刚性攻丝时，主轴倍率  0：强制100%  1：有效
 
-    uint16_t TM{16000};    //SF信号输出延时 单位:ms
-    uint16_t TMF{16000};   //SF选通信号打开后，数据的输出延时 单位:ms
+    uint16_t TM{16000};    //SF信号输出延时 单位:us
+    uint16_t TMF{16000};   //SF选通信号打开后，数据的输出延时 单位:us
 };
 
 #endif

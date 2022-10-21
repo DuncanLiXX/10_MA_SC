@@ -771,6 +771,7 @@ private:
  */
 class ArcMsg : public MoveMsg{
 public:
+	int arc_id;  // @test zk
 	ArcMsg(int code,
 			const DPointChn& source,
 	        const DPointChn& target,
@@ -778,8 +779,8 @@ public:
 		    const double& radius,
 			const double feed,
 			const uint32_t axis_mask,
-		    const int8_t dir_flag = 0 ,
-			const int8_t major_flag = 0,
+		    const int8_t dir_flag = -1 ,
+			const int8_t major_flag = 1,
 			const int8_t circle_flag = 0);
 
 	virtual void Execute();		//Ö´ÐÐº¯Êý

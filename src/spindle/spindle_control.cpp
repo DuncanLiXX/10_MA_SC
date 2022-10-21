@@ -116,6 +116,15 @@ Mode SpindleControl::GetMode()
     return mode;
 }
 
+bool SpindleControl::IsValid()
+{
+    if(!spindle || spindle->axis_interface == 0){
+        return false;
+    }else{
+        return true;
+    }
+}
+
 bool SpindleControl::isTapEnable()
 {
     return tap_enable;
@@ -123,7 +132,7 @@ bool SpindleControl::isTapEnable()
 
 void SpindleControl::StartRigidTap(double feed)
 {
-    if(!spindle)
+    if(!spindle || spindle->axis_interface == 0)
         return;
     // 如果不在位置模式，报警：速度模式下不能刚性攻丝
     if(mode != Position){
@@ -162,7 +171,7 @@ void SpindleControl::StartRigidTap(double feed)
 
 void SpindleControl::CancelRigidTap()
 {
-    if(!spindle)
+    if(!spindle || spindle->axis_interface == 0)
         return;
     SendMcRigidTapFlag(false);
     mi->SendTapStateCmd(chn, false);

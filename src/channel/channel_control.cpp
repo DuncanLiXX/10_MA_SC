@@ -537,6 +537,7 @@ void ChannelControl::InitialChannelStatus(){
                                       m_p_g_reg);
             m_p_spindle->SetSpindleParams(&m_p_axis_config[phy_axis-1],
                     da_prec,phy_axis-1,z_axis);
+            printf("spindle:%d\n",phy_axis-1);
 		}
 
 		//初始化PMC轴信息
@@ -6717,6 +6718,14 @@ bool ChannelControl::ExecuteAuxMsg(RecordMsg *msg){
 				ProcessAxisMapSwitch(tmp, m_index);
 				break;
 			}
+
+            // 主轴不存在或者主轴为虚拟轴，不执行主轴辅助功能
+            if((mcode == 3 || mcode == 4 || mcode == 5
+                || mcode == 19 || mcode == 20 || mcode == 29)
+                    && !m_p_spindle->IsValid()){
+                tmp->SetExecStep(m_index, 0xFF);    //置位结束状态
+                break;
+            }
 
 
 			if(tmp->GetExecStep(m_index) == 0){

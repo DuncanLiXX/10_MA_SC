@@ -390,7 +390,8 @@ bool ParmManager::ReadSysConfig(){
 		m_sc_system_config->cnc_mode = 1;
 		m_sc_system_config->max_chn_count = kMaxChnCount;
 		m_sc_system_config->max_axis_count = kMaxAxisNum;     //12;
-		m_sc_system_config->chn_count = m_ini_system->GetIntValueOrDefault("system", "chn_count", 1);
+        //m_sc_system_config->chn_count = m_ini_system->GetIntValueOrDefault("system", "chn_count", 1);
+        m_sc_system_config->chn_count = 1; //目前SC只支持单通道
 		m_sc_system_config->axis_count = m_ini_system->GetIntValueOrDefault("system", "axis_count", 4);
 		m_sc_system_config->axis_name_ex = m_ini_system->GetIntValueOrDefault("system", "axis_name_ex", 0);
 		m_sc_system_config->bus_cycle = m_ini_system->GetIntValueOrDefault("system", "bus_cycle", 3);
@@ -1741,13 +1742,19 @@ bool ParmManager::ReadToolConfig(){
 				m_sc_tool_pot_config[i].huge_tool_flag[j] = m_ini_tool->GetIntValueOrDefault(sname, kname, 0);
 
 				sprintf(kname, "tool_pot_index_%d", j);
-				m_sc_tool_pot_config[i].tool_pot_index[j] = m_ini_tool->GetIntValueOrDefault(sname, kname, j+1);
+                m_sc_tool_pot_config[i].tool_pot_index[j] = m_ini_tool->GetIntValueOrDefault(sname, kname, j);
 
 				sprintf(kname, "tool_life_max_%d", j);
 				m_sc_tool_pot_config[i].tool_life_max[j] = m_ini_tool->GetIntValueOrDefault(sname, kname, 0);
 
 				sprintf(kname, "tool_life_cur_%d", j);
 				m_sc_tool_pot_config[i].tool_life_cur[j] = m_ini_tool->GetIntValueOrDefault(sname, kname, 0);
+
+                sprintf(kname, "tool_threshold_%d", j);
+                m_sc_tool_pot_config[i].tool_threshold[j] = m_ini_tool->GetIntValueOrDefault(sname, kname, 0);
+
+                sprintf(kname, "tool_life_type_%d", j);
+                m_sc_tool_pot_config[i].tool_life_type[j] = m_ini_tool->GetIntValueOrDefault(sname, kname, 0);
 			}
 
 		}
@@ -1761,8 +1768,8 @@ bool ParmManager::ReadToolConfig(){
 			goto END;
 		}
 
-//		for(i = 0; i < m_sc_system_config->chn_count; i++){
-		for(i = 0; i < m_sc_system_config->max_chn_count; i++){  //支持参数修改一次重启
+        for(i = 0; i < m_sc_system_config->chn_count; i++){
+        //for(i = 0; i < m_sc_system_config->max_chn_count; i++){  //支持参数修改一次重启
 			//生成默认ini配置
 			memset(sname, 0x00, sizeof(sname));
 			sprintf(sname, "channel_%d", i);
@@ -1795,8 +1802,10 @@ bool ParmManager::ReadToolConfig(){
 				m_sc_tool_config[i].geometry_compensation[j][1] = 0.0;
 				m_ini_tool->AddKeyValuePair(kname, string("0.0"), ns);
 				sprintf(kname, "geo_comp_z_%d", j);
-				m_sc_tool_config[i].geometry_compensation[j][2] = 5.0;   //for test
-				m_ini_tool->AddKeyValuePair(kname, string("5.0"), ns);
+//				m_sc_tool_config[i].geometry_compensation[j][2] = 5.0;   //for test
+//				m_ini_tool->AddKeyValuePair(kname, string("5.0"), ns);
+                m_sc_tool_config[i].geometry_compensation[j][2] = 0.0;   //for test
+                m_ini_tool->AddKeyValuePair(kname, string("0.0"), ns);
 
 				sprintf(kname, "geo_wear_%d", j);
 				m_sc_tool_config[i].geometry_wear[j] = 	0.0;
@@ -1811,15 +1820,35 @@ bool ParmManager::ReadToolConfig(){
 				m_ini_tool->AddKeyValuePair(kname, string("0.0"), ns);
 
 				//刀位信息
+                sprintf(kname, "tool_type_%d", j);
+                m_sc_tool_pot_config[i].tool_type[j] = 0;
+                m_ini_tool->AddKeyValuePair(kname, string("0"), ns);
+
 		//		m_sc_tool_pot_config[i].tool_index = j+1;
 				sprintf(kname, "huge_tool_flag_%d", j);
 				m_sc_tool_pot_config[i].huge_tool_flag[j] = 0;
 				m_ini_tool->AddKeyValuePair(kname, string("0"), ns);
 
 				sprintf(kname, "tool_pot_index_%d", j);
-				sprintf(value, "%d", j);
-				m_sc_tool_pot_config[i].tool_pot_index[j] = j;
+                sprintf(value, "%d", j);
+                m_sc_tool_pot_config[i].tool_pot_index[j] = j;
 				m_ini_tool->AddKeyValuePair(kname, value, ns);
+
+                sprintf(kname, "tool_life_cur_%d", j);
+                m_sc_tool_pot_config[i].tool_life_cur[j] = 0;
+                m_ini_tool->AddKeyValuePair(kname, string("0"), ns);
+
+                sprintf(kname, "tool_life_max_%d", j);
+                m_sc_tool_pot_config[i].tool_life_max[j] = 0;
+                m_ini_tool->AddKeyValuePair(kname, string("0"), ns);
+
+                sprintf(kname, "tool_threshold_%d", j);
+                m_sc_tool_pot_config[i].tool_threshold[j] = 0;
+                m_ini_tool->AddKeyValuePair(kname, string("0"), ns);
+
+                sprintf(kname, "tool_life_type_%d", j);
+                m_sc_tool_pot_config[i].tool_life_type[j] = 0;
+                m_ini_tool->AddKeyValuePair(kname, string("0"), ns);
 			}
 		}
 
@@ -3096,6 +3125,13 @@ void ParmManager::UpdateToolPotConfig(uint16_t chn_index, SCToolPotConfig &cfg){
 
 		sprintf(kname, "tool_life_cur_%d", i);
 		m_ini_tool->SetIntValue(sname, kname, m_sc_tool_pot_config[chn_index].tool_life_cur[i]);
+
+        sprintf(kname, "tool_threshold_%d", i);
+        m_ini_tool->SetIntValue(sname, kname, m_sc_tool_pot_config[chn_index].tool_threshold[i]);
+
+        sprintf(kname, "tool_life_type_%d", i);
+        m_ini_tool->SetIntValue(sname, kname, m_sc_tool_pot_config[chn_index].tool_life_type[i]);
+
 	}
 
 	this->m_ini_tool->Save();
@@ -3131,6 +3167,12 @@ void ParmManager::UpdateToolPotConfig(uint16_t chn_index, bool save){
 
 		sprintf(kname, "tool_life_cur_%d", i);
 		m_ini_tool->SetIntValue(sname, kname, m_sc_tool_pot_config[chn_index].tool_life_cur[i]);
+
+        sprintf(kname, "tool_threshold_%d", i);
+        m_ini_tool->SetIntValue(sname, kname, m_sc_tool_pot_config[chn_index].tool_threshold[i]);
+
+        sprintf(kname, "tool_life_type_%d", i);
+        m_ini_tool->SetIntValue(sname, kname, m_sc_tool_pot_config[chn_index].tool_life_type[i]);
 	}
 
 	if(save)

@@ -3495,7 +3495,7 @@ void ChannelEngine::ProcessHmiGetParam(HMICmdFrame &cmd){
         break;
     case AXIS_CONFIG:
         index = cmd.data[0];
-//		printf("get axis config %hhu, frameindex=%hu\n", index, cmd.frame_number);
+        //printf("get axis config %hhu, frameindex=%hu\n", index, cmd.frame_number);
         if(index >= this->m_p_general_config->max_axis_count){//轴号超范围, 支持参数修改后一次重启
             printf("get axis config failed, index=%hhu, axis_count:%hhu\n", index, m_p_general_config->max_axis_count);
             cmd.data_len = 0;
@@ -3550,6 +3550,7 @@ void ChannelEngine::ProcessHmiGetParam(HMICmdFrame &cmd){
         break;
     }
     case TOOL_POT_CONFIG:
+        std::cout << "Get Pot Config" << std::endl;
         if(cmd.channel_index >= m_p_general_config->chn_count)//通道索引超范围
             cmd.data_len = 0;
         else{

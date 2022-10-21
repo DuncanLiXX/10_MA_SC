@@ -572,7 +572,7 @@ private:
 	bool NotifyHmiToolOffsetChanged(uint8_t h_idx);     //通知HMI刀具偏置参数值发生变更
 	bool NotifyHmiWorkcoordChanged(uint8_t coord_idx);   //通知HMI工件坐标系设置发生变更
 	bool NotifyHmiWorkcoordExChanged(uint8_t coor_idx);  //通知HMI 扩展坐标系设置发生变更
-	bool NotifyHmiMCode(int mcode);
+    bool NotifyHmiToolPotChanged();    //通知HMI刀具信息发生改变
 
 	void DoRestart(uint64_t line_no);     //加工复位执行函数
 	void InitRestartMode();         //初始化加工复位中间模态

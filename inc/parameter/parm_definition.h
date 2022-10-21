@@ -322,7 +322,7 @@ struct SCToolPotConfig{
 	int tool_life_max[kMaxToolCount];								//刀具寿命，单位：min
 	int tool_life_cur[kMaxToolCount];								//已使用寿命，单位：min
 	int tool_threshold[kMaxToolCount];                             //刀具寿命预警阈值
-	uint8_t tool_life_type[kMaxToolCount];                          //刀具计寿类型，0--换刀次数，1--切削时间，2--切削距离
+    uint8_t tool_life_type[kMaxToolCount];                          //刀具计寿类型，0--关闭,1--换刀次数，2--切削时间，3--切削距离
 };
 
 

@@ -445,7 +445,7 @@ enum ErrorType {
 
 	ERR_HW_REV_OVER = 1650,      //手轮反向跟踪无更多数据   级别：警告
 
-	ERR_TOOL_LIFE_OVER = 1660,  //刀具寿命到达    级别：警告
+    ERR_TOOL_LIFE_OVER = 1660,  //刀具寿命到达
 	ERR_TOOL_LIFE_COMING,       //刀具寿命即将到达     级别：警告
 
     //主轴告警
@@ -1620,6 +1620,11 @@ enum HmiMsgId{
 
 	MSG_ID_GUARD
 
+};
+
+enum ToolPotLifeType {
+    ToolPot_Close,      //关闭计次
+    ToolPot_Cnt,        //换刀次数计次
 };
 
 #endif /* INC_HMI_SHARED_DATA_H_ */

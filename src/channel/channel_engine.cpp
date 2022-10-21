@@ -6949,7 +6949,6 @@ void ChannelEngine::InitPmcReg(){
     uint16_t i = 0, count = 0;
     uint8_t *pn8 = nullptr;
 
-
     //发送K寄存器
     pn8 = this->m_p_pmc_reg->GetRegPtr8(PMC_REG_K);
     for(i = 0; i < K_REG_COUNT; i++){
@@ -7025,6 +7024,7 @@ void ChannelEngine::InitPmcReg(){
         //	printf("Init T reg c%hu = %hu\n", i, pn8[i]);
         }
     }
+
 
 #endif
 }
@@ -8535,6 +8535,8 @@ void ChannelEngine::ProcessPmcSignal(){
 
 		//处理PMC宏调用功能
 		if(g_reg_last->EMPC == 0 && g_reg->EMPC == 1){  //处理PMC宏调用
+			// @test zk
+			printf("PMC CALL SUB PROG : %d\n", g_reg->MPCS);
 			this->m_p_channel_control[i].CallMacroProgram(g_reg->MPCS);
 			f_reg->MPCO = 1;   //调用结束
 		}else if(g_reg_last->EMPC == 1 && g_reg->EMPC == 0){

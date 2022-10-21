@@ -58,6 +58,7 @@ struct ChannelStatusCollect{
 	uint8_t cur_axis_ctrl_mode[kMaxAxisChn];    //当前各通道轴控制模式, 2-速度控制模式    3-力矩控制模式
 #endif
 	uint8_t cur_chn_axis_phy[kMaxAxisChn];	    //当前通道内轴对应的物理轴索引
+	int mcode; // @add zk 暂时没用
 };
 
 

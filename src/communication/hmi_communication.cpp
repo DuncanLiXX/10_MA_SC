@@ -1312,7 +1312,6 @@ int HMICommunication::Monitor(){
 			 cpu_stat = cpu_cur;
 	   	}
 		 // @test zk
-
 	   usleep(50000);
 	 //  	usleep(200000);
 

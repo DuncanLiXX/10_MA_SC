@@ -925,7 +925,6 @@ struct HmiChannelRealtimeStatus {
 };
 
 
-
 /*
  * @brief HMI使用的通道状态
  */
@@ -933,7 +932,8 @@ struct HmiChannelStatus{
 	double rated_manual_speed; 		//手动速度，单位：mm/s
 	uint32_t workpiece_count;       //工件计数，最大99999999
     uint32_t workpiece_count_total; //总共件数
-	Mask32 func_state_flags;        //系统功能状态标志，包括单段、跳段、选停、空运行、手轮跟踪、机床锁，辅助锁
+    uint32_t machinetime_total;         //累计加工时间
+    Mask32 func_state_flags;        //系统功能状态标志，包括单段、跳段、选停、空运行、手轮跟踪、机床锁，辅助锁
 	int32_t rated_spindle_speed;    //用户设定主轴转速，单位：转/分钟
 	uint32_t rated_feed; 					//用户设定进给速度，单位：um/s
 	uint16_t g_code_mode[kMaxGModeCount];	//G指令模态信息
@@ -955,6 +955,8 @@ struct HmiChannelStatus{
 	uint8_t returned_to_ref_point;	//是否已回参考点，bit0-bit7分别表示轴0-7是否已回参考点
 	uint8_t es_button_on;			//急停按键是否处于按下状态，每一个bit表示一个急停按键
 	char cur_nc_file_name[kMaxFileNameLen];	//当前加工主程序文件名
+	uint8_t cur_chn_axis_phy[kMaxAxisChn];	    //当前通道内轴对应的物理轴索引
+	int mcode; // @add zk 暂时没用
 };
 
 /**

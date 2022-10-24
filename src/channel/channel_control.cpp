@@ -2370,9 +2370,8 @@ void ChannelControl::SendMonitorData(bool bAxis, bool btime){
 			m_channel_rt_status.spindle_cur_speed *= m_channel_status.spindle_dir;  //加上方向
 			m_channel_rt_status.spindle_cur_speed = m_channel_rt_status.spindle_cur_speed * 60/(m_p_axis_config[m_spd_axis_phy[0]-1].move_pr*1000);		//单位由um/s 转换为rpm
 
-
 //			if(m_channel_rt_status.spindle_cur_speed != 0)
-//				printf("current spindle speed: %d rpm\n", m_channel_rt_status.spindle_cur_speed);
+//			printf("current spindle speed: %d rpm\n", m_channel_rt_status.spindle_cur_speed);
 		}
 
 	}
@@ -2405,7 +2404,6 @@ void ChannelControl::SendMonitorData(bool bAxis, bool btime){
 	memcpy(buffer+1, &chn_index, 1);
 	memcpy(buffer+2, &data_len, 2);
 	memcpy(buffer+4, &hmi_rt_status, data_len);
-
 
 	this->m_p_hmi_comm->SendMonitorData(buffer, buf_len);//send(socket, buffer, buf_len, MSG_NOSIGNAL);
 
@@ -4956,8 +4954,6 @@ bool ChannelControl::OutputData(RecordMsg *msg, bool flag_block){
 	case ARC_MSG:{
 		//设置当前平面
 		uint16_t plane = this->m_mc_mode_exec.bits.mode_g17;   //
-		// @test zk
-		printf("arc_id: %d plane : %d\n",((ArcMsg*)msg)->arc_id, plane);
 		if(plane == 2) //YZ平面，G19
 			data_frame.data.ext_type |= 0x02;
 		else if(plane == 1)  //XZ平面，G18
@@ -5777,6 +5773,9 @@ bool ChannelControl::ExecuteAuxMsg(RecordMsg *msg){
 		SetCurLineNo(msg->GetLineNo());
 
 		mcode = tmp->GetMCode(m_index);
+
+		printf("mcode : %d\n", mcode);
+
 		if(mcode == 2 || mcode == 30){
 			ResetMcLineNo();//复位MC模块当前行号
 			this->SetCurLineNo(1);
@@ -5875,6 +5874,8 @@ bool ChannelControl::ExecuteAuxMsg(RecordMsg *msg){
 			continue;       //已执行完成则直接跳过
 
 		mcode = tmp->GetMCode(m_index);
+
+		printf("-----> %d\n", mcode);
 		NotifyHmiMCode(mcode);
 
 		switch(mcode){
@@ -8009,14 +8010,6 @@ bool ChannelControl::ExecuteLoopMsg(RecordMsg *msg){
 	
 	this->m_channel_status.gmode[9] = loopmsg->GetGCode();
 
-
-	// @test zk  尝试不调用子程序 用代码实现固定循环  问题：行号无法更新
-	//if(loopmsg->GetGCode() == G73_CMD){
-	//	g73_func();
-	//}
-	//StartMcIntepolate();
-	//StraightFeed(0,150,150,150,1000);
-	// @test zk
 
 	// 通知HMI模态变化
 	this->SendChnStatusChangeCmdToHmi(G_MODE);

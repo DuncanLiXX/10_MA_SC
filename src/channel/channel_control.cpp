@@ -537,6 +537,7 @@ void ChannelControl::InitialChannelStatus(){
                                       m_p_g_reg);
             m_p_spindle->SetSpindleParams(&m_p_axis_config[phy_axis-1],
                     da_prec,phy_axis-1,z_axis);
+            printf("spindle:%d\n",phy_axis-1);
 		}
 
 		//初始化PMC轴信息
@@ -1252,6 +1253,18 @@ bool ChannelControl::GetSysVarValue(const int index, double&value){
 			value = this->m_p_chn_tool_config->radius_compensation[id];
 		else
 			value = 0.0;
+    }else if(index >= 30001 && index <= 30060) {    //刀具寿命管理方式
+        int id = index - 30001;
+        value = this->m_p_chn_tool_info->tool_life_type[id];
+    }else if(index >= 30101 && index <= 30160) {    //刀具最大寿命
+        int id = index - 30101;
+        value = this->m_p_chn_tool_info->tool_life_max[id];
+    }else if(index >= 30201 && index <= 30260) {    //刀具已用寿命
+        int id = index - 30201;
+        value = this->m_p_chn_tool_info->tool_life_cur[id];
+    }else if(index >= 30301 && index <= 30360) {    //刀具预警寿命
+        int id = index - 30301;
+        value = this->m_p_chn_tool_info->tool_threshold[id];
 	}else{
 		return false;
 	}
@@ -1308,7 +1321,7 @@ bool ChannelControl::SetSysVarValue(const int index, const double &value){
 	}else if(index == 3901){  //已加工件数
         //this->m_channel_status.workpiece_count = value;
         this->m_channel_status.workpiece_count_total = value;
-		g_ptr_parm_manager->SetCurWorkPiece(m_n_channel_index, m_channel_status.workpiece_count);
+        g_ptr_parm_manager->SetCurWorkPiece(m_n_channel_index, m_channel_status.workpiece_count_total);
 	}else if(index == 4320){  //设置当前刀号
 		this->m_channel_status.cur_tool = value;
 		g_ptr_parm_manager->SetCurTool(m_n_channel_index, m_channel_status.cur_tool);
@@ -1451,6 +1464,19 @@ bool ChannelControl::SetSysVarValue(const int index, const double &value){
 		else
 			return false;
 	}
+    else if(index >= 30001 && index <= 30060) {    //刀具寿命管理方式
+        int id = index - 30001;
+        this->m_p_chn_tool_info->tool_life_type[id] = value;
+    }else if(index >= 30101 && index <= 30160) {    //刀具最大寿命
+        int id = index - 30101;
+        this->m_p_chn_tool_info->tool_life_max[id] = value;
+    }else if(index >= 30201 && index <= 30260) {    //刀具已用寿命
+        int id = index - 30201;
+        this->m_p_chn_tool_info->tool_life_cur[id] = value;
+    }else if(index >= 30301 && index <= 30360) {    //刀具预警寿命
+        int id = index - 30301;
+        this->m_p_chn_tool_info->tool_threshold[id] = value;
+    }
 	else
 		return false;
 
@@ -1648,7 +1674,7 @@ void ChannelControl::StartRunGCode(){
 	}
 
 	//检查当前是否处于错误状态
-	if(g_ptr_alarm_processor->HasErrorInfo(m_n_channel_index)){
+        if(g_ptr_alarm_processor->HasErrorInfo(m_n_channel_index)){
 		ErrorInfo err_info;
 		g_ptr_alarm_processor->GetLatestErrorInfo(&err_info);
 		g_ptr_trace->PrintLog(LOG_ALARM, "系统处于告警状态，禁止自动运行！last error = %d", err_info.error_code);
@@ -4749,6 +4775,23 @@ bool ChannelControl::RefreshStatusFun(){
 			}
 		}
 #endif
+        if(m_channel_status.cur_tool > 0 && m_channel_status.cur_tool <= kMaxToolCount){
+            int cur_tool = m_channel_status.cur_tool - 1;
+            if(m_p_chn_tool_info->tool_life_type[cur_tool] == ToolPot_Cnt)
+            {// 按次计数
+                if (m_p_chn_tool_info->tool_life_cur[cur_tool] >= m_p_chn_tool_info->tool_threshold[cur_tool])
+                {
+                    if (m_p_chn_tool_info->tool_life_cur[cur_tool] >= m_p_chn_tool_info->tool_life_max[cur_tool])
+                    {
+                        CreateError(ERR_TOOL_LIFE_OVER, ERROR_LEVEL, CLEAR_BY_MCP_RESET, m_channel_status.cur_tool, m_n_channel_index);
+                    }
+                    else
+                    {
+                        CreateError(ERR_TOOL_LIFE_COMING, WARNING_LEVEL, CLEAR_BY_MCP_RESET, m_channel_status.cur_tool, m_n_channel_index);
+                    }
+                }
+            }
+        }
 
 		count++;   //计数加一
 		usleep(4000);
@@ -5405,7 +5448,7 @@ bool ChannelControl::ExecuteMessage(){
               	}
 				
 				if(m_channel_mc_status.cur_mode == MC_MODE_MANUAL && this->m_channel_mc_status.buf_data_count == 0 && count >= 3){
-					CreateError(ERR_HW_REV_OVER, WARNING_LEVEL, CLEAR_BY_CLEAR_BUTTON, 0, m_n_channel_index);
+                    CreateError(ERR_HW_REV_OVER, WARNING_LEVEL, CLEAR_BY_MCP_RESET, 0, m_n_channel_index);
 					return res;
 				}
 			}
@@ -6487,6 +6530,78 @@ bool ChannelControl::ExecuteAuxMsg(RecordMsg *msg){
 			}
 
 			break;
+        case 36:    //换刀完成
+        {
+            if(tmp->GetExecStep(m_index) == 0){
+                printf("execute M36, test\n");
+                this->SendMCodeToPmc(mcode, m_index);
+                gettimeofday(&m_time_m_start[m_index], NULL);
+
+                tmp->IncreaseExecStep(m_index);
+            }else if(tmp->GetExecStep(m_index) == 1){
+                //等待TMF延时，置位MF选通信号
+                gettimeofday(&time_now, NULL);
+                time_elpase = (time_now.tv_sec-m_time_m_start[m_index].tv_sec)*1000000+time_now.tv_usec-m_time_m_start[m_index].tv_usec;
+                if(time_elpase < 16000)
+                    break;		//未到延时时间
+
+                this->SetMFSig(m_index, true);    //置位选通信号
+                gettimeofday(&m_time_m_start[m_index], NULL);
+
+                tmp->IncreaseExecStep(m_index);
+            }else if(tmp->GetExecStep(m_index) == 2){
+                //等待FIN信号
+                if(this->m_p_g_reg->FIN == 1 || this->GetMFINSig(m_index))
+                    gettimeofday(&m_time_m_start[m_index], NULL);   //开始计时
+                else{
+                    gettimeofday(&time_now, NULL);
+                    time_elpase = (time_now.tv_sec-m_time_m_start[m_index].tv_sec)*1000000+time_now.tv_usec-m_time_m_start[m_index].tv_usec;
+                    if(time_elpase > kMCodeTimeout && !this->GetMExcSig(m_index)){//超过200ms任未进入执行状态，则告警“不支持的M代码”
+                        CreateError(ERR_M_CODE, ERROR_LEVEL, CLEAR_BY_MCP_RESET, mcode, m_n_channel_index);
+                        this->m_error_code = ERR_M_CODE;
+                    }else
+                        break;
+                }
+
+                tmp->IncreaseExecStep(m_index);
+            }else if(tmp->GetExecStep(m_index) == 3){
+                if(this->m_p_g_reg->FIN == 0 && !this->GetMFINSig(m_index)){
+                    tmp->SetExecStep(m_index, 2);
+                    break;
+                }
+
+                //等待TFIN延时，复位MF信号
+                gettimeofday(&time_now, NULL);
+                time_elpase = (time_now.tv_sec-m_time_m_start[m_index].tv_sec)*1000000+time_now.tv_usec-m_time_m_start[m_index].tv_usec;
+                if(time_elpase < 16000)
+                    break;		//未到延时时间
+                this->SetMFSig(m_index, false);    //复位选通信号
+
+                tmp->IncreaseExecStep(m_index);
+            }else if(tmp->GetExecStep(m_index) == 4){
+                //等待FIN信号复位
+                if(this->m_p_g_reg->FIN == 1 || this->GetMFINSig(m_index))
+                    break;
+
+                //复位辅助指令信号和DEN信号
+                this->SendMCodeToPmc(0, m_index);
+                int cur_tool = this->m_channel_status.cur_tool - 1;
+                if (cur_tool >= 0 && cur_tool < kMaxToolCount)   //cur_tool=0是主轴
+                {
+                    std::cout << m_p_chn_tool_info->tool_life_max[cur_tool] << " " << m_p_chn_tool_info->tool_life_type[cur_tool] << std::endl;
+                    if (m_p_chn_tool_info->tool_life_type[cur_tool] == ToolPot_Cnt)
+                    {//刀具寿命：计次方式
+                        m_p_chn_tool_info->tool_life_cur[cur_tool]++;
+                        NotifyHmiToolPotChanged();
+                        g_ptr_parm_manager->UpdateToolPotConfig(m_n_channel_index, *m_p_chn_tool_info);
+                        std::cout << "cur_tool: " << cur_tool << " cur_life: " << m_p_chn_tool_info->tool_life_cur[cur_tool]
+                                  << "max_life: " << m_p_chn_tool_info->tool_life_max[cur_tool] << " cur threshold: " << m_p_chn_tool_info->tool_threshold[cur_tool] << std::endl;
+                    }
+                }
+                tmp->SetExecStep(m_index, 0xFF);    //置位结束状态
+            }
+        }
+            break;
 	#ifdef USES_GRIND_MACHINE
 		case 10: //开启震荡磨
 			this->EnableGrindShock(true);
@@ -6718,6 +6833,14 @@ bool ChannelControl::ExecuteAuxMsg(RecordMsg *msg){
 				ProcessAxisMapSwitch(tmp, m_index);
 				break;
 			}
+
+            // 主轴不存在或者主轴为虚拟轴，不执行主轴辅助功能
+            if((mcode == 3 || mcode == 4 || mcode == 5
+                || mcode == 19 || mcode == 20 || mcode == 29)
+                    && !m_p_spindle->IsValid()){
+                tmp->SetExecStep(m_index, 0xFF);    //置位结束状态
+                break;
+            }
 
 
 			if(tmp->GetExecStep(m_index) == 0){
@@ -10922,11 +11045,11 @@ void ChannelControl::ManualMove2(uint8_t axis, int8_t dir, double vel, double in
 			limit_pos = m_p_axis_config[phy_axis].soft_limit_min_1*1e7;
 
 			if(limit_pos > cur_pos){//已经在限位外，告警
-				CreateError(ERR_SOFTLIMIT_NEG, WARNING_LEVEL, CLEAR_BY_CLEAR_BUTTON, 0, m_n_channel_index, m_channel_status.cur_axis);
+                CreateError(ERR_SOFTLIMIT_NEG, WARNING_LEVEL, CLEAR_BY_MCP_RESET, 0, m_n_channel_index, m_channel_status.cur_axis);
 			//	this->m_error_code = ERR_SOFTLIMIT_NEG;
 				return;
 			}else if(limit_pos == cur_pos){  //已经到达负限位极限位置
-				CreateError(ERR_SOFTLIMIT_NEG, WARNING_LEVEL, CLEAR_BY_CLEAR_BUTTON, 0, m_n_channel_index, m_channel_status.cur_axis);
+                CreateError(ERR_SOFTLIMIT_NEG, WARNING_LEVEL, CLEAR_BY_MCP_RESET, 0, m_n_channel_index, m_channel_status.cur_axis);
 				return;
 			}else if(tar_pos < (limit_pos-cur_pos)){
 				tar_pos = limit_pos-this->GetAxisCurIntpTarPos(m_channel_status.cur_axis, true)*1e7;
@@ -11034,12 +11157,12 @@ void ChannelControl::ManualMove(int8_t dir){
 			printf("manual move, dir = %hhd, max = %lld, tar = %lld\n", dir, tar_inc_max,
 					tar_pos);
 			if(tar_inc_max > 0){//已经在限位外，告警
-				CreateError(ERR_SOFTLIMIT_NEG, WARNING_LEVEL, CLEAR_BY_CLEAR_BUTTON, 0, m_n_channel_index, m_channel_status.cur_axis);
+                CreateError(ERR_SOFTLIMIT_NEG, WARNING_LEVEL, CLEAR_BY_MCP_RESET, 0, m_n_channel_index, m_channel_status.cur_axis);
 			//	this->m_error_code = ERR_SOFTLIMIT_NEG;
 				printf("manual move out of soft negative limit\n");
 				return;
 			}else if(tar_inc_max == 0){  //已经到达负限位极限位置
-				CreateError(ERR_SOFTLIMIT_NEG, WARNING_LEVEL, CLEAR_BY_CLEAR_BUTTON, 0, m_n_channel_index, m_channel_status.cur_axis);
+                CreateError(ERR_SOFTLIMIT_NEG, WARNING_LEVEL, CLEAR_BY_MCP_RESET, 0, m_n_channel_index, m_channel_status.cur_axis);
 				return;
 			}else{
 				tar_inc_max = limit_pos - this->GetAxisCurIntpTarPos(m_channel_status.cur_axis, true)*1e7;   //与当前目标位置的机械坐标的差值
@@ -11136,12 +11259,12 @@ void ChannelControl::ManualMovePmc(int8_t dir){
 			printf("manual move, dir = %hhd, max = %lld, tar = %lld\n", dir, tar_inc_max,
 					tar_pos);
 			if(tar_inc_max > 0){//已经在限位外，告警
-				CreateError(ERR_SOFTLIMIT_NEG, WARNING_LEVEL, CLEAR_BY_CLEAR_BUTTON, 0, m_n_channel_index, m_channel_status.cur_axis);
+                CreateError(ERR_SOFTLIMIT_NEG, WARNING_LEVEL, CLEAR_BY_MCP_RESET, 0, m_n_channel_index, m_channel_status.cur_axis);
 			//	this->m_error_code = ERR_SOFTLIMIT_NEG;
 				printf("manual move out of soft negative limit\n");
 				return;
 			}else if(tar_inc_max == 0){  //已经到达负限位极限位置
-				CreateError(ERR_SOFTLIMIT_NEG, WARNING_LEVEL, CLEAR_BY_CLEAR_BUTTON, 0, m_n_channel_index, m_channel_status.cur_axis);
+                CreateError(ERR_SOFTLIMIT_NEG, WARNING_LEVEL, CLEAR_BY_MCP_RESET, 0, m_n_channel_index, m_channel_status.cur_axis);
 				return;
 			}else{
 				tar_inc_max = limit_pos - this->GetAxisCurIntpTarPos(m_channel_status.cur_axis, true)*1e7;   //与当前目标位置的机械坐标的差值
@@ -11248,12 +11371,12 @@ void ChannelControl::ManualMove(uint8_t axis, double pos, double vel, bool workc
 			limit_pos = m_p_axis_config[phy_axis].soft_limit_min_1*1e7;
 
 			if(limit_pos > cur_pos){//已经在限位外，告警
-				CreateError(ERR_SOFTLIMIT_NEG, WARNING_LEVEL, CLEAR_BY_CLEAR_BUTTON, 0, m_n_channel_index, m_channel_status.cur_axis);
+                CreateError(ERR_SOFTLIMIT_NEG, WARNING_LEVEL, CLEAR_BY_MCP_RESET, 0, m_n_channel_index, m_channel_status.cur_axis);
 			//	this->m_error_code = ERR_SOFTLIMIT_NEG;
 				printf("manual move out of soft negative limit\n");
 				return;
 			}else if(limit_pos == cur_pos){  //已经到达负限位极限位置
-				CreateError(ERR_SOFTLIMIT_NEG, WARNING_LEVEL, CLEAR_BY_CLEAR_BUTTON, 0, m_n_channel_index, m_channel_status.cur_axis);
+                CreateError(ERR_SOFTLIMIT_NEG, WARNING_LEVEL, CLEAR_BY_MCP_RESET, 0, m_n_channel_index, m_channel_status.cur_axis);
 				return;
 			}else if(tar_pos < limit_pos){
 				tar_pos = limit_pos;
@@ -11475,12 +11598,12 @@ void ChannelControl::ManualMovePmc(uint8_t axis, double pos, double vel){
 			limit_pos = m_p_axis_config[phy_axis].soft_limit_min_1*1e7;
 
 			if(limit_pos > cur_pos){//已经在限位外，告警
-				CreateError(ERR_SOFTLIMIT_NEG, WARNING_LEVEL, CLEAR_BY_CLEAR_BUTTON, 0, m_n_channel_index, m_channel_status.cur_axis);
+                CreateError(ERR_SOFTLIMIT_NEG, WARNING_LEVEL, CLEAR_BY_MCP_RESET, 0, m_n_channel_index, m_channel_status.cur_axis);
 			//	this->m_error_code = ERR_SOFTLIMIT_NEG;
 				printf("manual move out of soft negative limit\n");
 				return;
 			}else if(limit_pos == cur_pos){  //已经到达负限位极限位置
-				CreateError(ERR_SOFTLIMIT_NEG, WARNING_LEVEL, CLEAR_BY_CLEAR_BUTTON, 0, m_n_channel_index, m_channel_status.cur_axis);
+                CreateError(ERR_SOFTLIMIT_NEG, WARNING_LEVEL, CLEAR_BY_MCP_RESET, 0, m_n_channel_index, m_channel_status.cur_axis);
 				return;
 			}else if(tar_pos < limit_pos){
 				tar_pos = limit_pos;
@@ -16003,7 +16126,7 @@ bool ChannelControl::StartBreakpointContinue(){
 	if (res != 0) {
 		g_ptr_trace->PrintLog(LOG_ALARM, "CHN[%d]断点继续处理线程创建失败!", m_n_channel_index);
 		m_error_code = ERR_INIT_BREAKCONTINUE;
-		CreateError(m_error_code, ERROR_LEVEL, CLEAR_BY_MCP_RESET, 0, m_n_channel_index);
+        CreateError(m_error_code, ERROR_LEVEL, CLEAR_BY_RESET_POWER, 0, m_n_channel_index);
 		goto END;
 	}
 
@@ -18730,6 +18853,23 @@ bool ChannelControl::NotifyHmiToolOffsetChanged(uint8_t h_idx){     //
 	memcpy(&cmd.data[1], &tool_offset, sizeof(HmiToolOffsetConfig));
 
 	return this->m_p_hmi_comm->SendCmd(cmd);
+}
+
+/**
+ * @brief 通知HMI刀具信息发生改变
+ * @param tool_index : 值索引
+ */
+bool ChannelControl::NotifyHmiToolPotChanged()
+{
+    HMICmdFrame cmd;
+    memset((void *)&cmd, 0x00, sizeof(HMICmdFrame));
+    cmd.channel_index = m_n_channel_index;
+    cmd.cmd = CMD_SC_PARAM_CHANGED;
+    cmd.cmd_extension = TOOL_POT_CONFIG;
+    cmd.data_len = sizeof(HmiToolPotConfig);
+    memcpy(&cmd.data[0], g_ptr_parm_manager->GetToolPotConfig(cmd.channel_index), sizeof(HmiToolPotConfig));
+
+    return this->m_p_hmi_comm->SendCmd(cmd);
 }
 
 

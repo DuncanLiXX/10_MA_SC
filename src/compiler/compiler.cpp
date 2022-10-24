@@ -733,7 +733,7 @@ void Compiler::PreScan() {
 	if (nullptr == file) {
 		g_ptr_trace->PrintLog(LOG_ALARM, "预扫描线程打开文件失败[%s]！errno = %d",
 				m_p_file_map_info->str_file_name, errno);
-		CreateError(ERR_OPEN_FILE, ERROR_LEVEL, CLEAR_BY_MCP_RESET, 0,
+        CreateError(ERR_OPEN_FILE, ERROR_LEVEL, CLEAR_BY_MCP_RESET, 0,
 				m_n_channel_index);
 		goto END;
 	}
@@ -4002,8 +4002,8 @@ bool Compiler::CreateErrorMsg(const ErrorType err, uint64_t line_no) {
 		m_error_code = ERR_MEMORY_NEW;
 		g_ptr_trace->PrintLog(LOG_ALARM, "CHN[%d]编译器告警分配内存失败！",
 				m_n_channel_index);
-		CreateError(ERR_MEMORY_NEW, FATAL_LEVEL, CLEAR_BY_RESET_POWER, 0,
-				m_n_channel_index);
+        CreateError(ERR_MEMORY_NEW, FATAL_LEVEL, CLEAR_BY_RESET_POWER, 0,
+                m_n_channel_index);
 		return false;
 	}
 	new_msg->SetLineNo(line_no);  //设置当前行号
@@ -4381,7 +4381,7 @@ bool Compiler::ReturnFromSubProg() {
 			if (res != 0) {
 				g_ptr_trace->PrintLog(LOG_ALARM, "预扫描线程退出失败4！errno = %d\n",
 						res);
-				CreateError(ERR_QUIT_PRESCAN, ERROR_LEVEL, CLEAR_BY_RESET_POWER,
+                CreateError(ERR_QUIT_PRESCAN, ERROR_LEVEL, CLEAR_BY_RESET_POWER,
 						0, m_n_channel_index);
 				return false;
 			}

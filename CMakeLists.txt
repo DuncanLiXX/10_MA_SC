@@ -61,8 +61,6 @@ set(PMC_SRC
 set(TOOL_COMPENSATE_SRC
         src/tool_compensate/tool_comp_data.cpp;
         src/tool_compensate/tool_compensate.cpp;
-        src/tool_compensate/tool_math.cpp;
-        src/tool_compensate/tools_comp.cpp;
 )
 
 set (SC_SRC ${SC_SRC} ${COMMUNICATION_SRC} ${COMPILER_SRC} ${CHANNEL_SRC}

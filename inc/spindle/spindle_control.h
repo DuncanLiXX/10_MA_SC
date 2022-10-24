@@ -66,6 +66,8 @@ public:
     void SetMode(Spindle::Mode mode);
     Spindle::Mode GetMode();             // 获取主轴控制模式
 
+    bool IsValid();
+
     bool isTapEnable();     // 刚性攻丝是否使能
 
     void StartRigidTap(double feed);    // 开始刚性攻丝 G84

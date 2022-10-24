@@ -13,6 +13,12 @@
 #define INC_ALARM_PROCESSOR_ALARM_PROCESSOR_H_
 
 #include "global_include.h"
+#include <chrono>
+#include <tuple>
+#include <deque>
+
+using namespace std::chrono;
+using namespace std;
 
 //前置类声明
 class HMICommunication;
@@ -58,23 +64,30 @@ public:
 	 */
 	int GetErrorInfo(ErrorInfo* error_info);
 
-	/*
+    /*
+     * @brief 读取通道内所有错误信息
+     * @param chn_index 通道号
+     * @return 通道内的所有错误信息
+     */
+    deque<ErrorInfo> GetErrorInfo();
+
+    /*
 	 * @brief 判断是否有出错信息
-	 * @param 无
+     * @param level 错误等级
 	 * @return 处理结果,true-有未处理的出错信息;false-无未处理的出错信息
 	 */
-	bool HasErrorInfo(int level = ERROR_LEVEL);
+    bool HasErrorInfo(int level = ERROR_LEVEL);
 
-	/**
+    /*
 	 * @brief 判断是否有属于指定通道的告警，通道引擎的告警属于任意通道
 	 * @param chn_index ： 指定通道
 	 * @return 处理结果,true-有未处理的出错信息;false-无未处理的出错信息
 	 */
-	bool HasErrorInfo(uint8_t chn_index);
+    bool HasErrorInfo(uint8_t chn_index);
 
 	//判断是否有重复告警
-	bool HasErrorInfo(uint16_t error_code, uint8_t error_level,
-		uint8_t clear_type, int32_t error_info, uint8_t channel_index, uint8_t axis_index);
+    bool ContainErrorInfo(uint16_t error_code, uint8_t error_level,
+		uint8_t clear_type, int32_t error_info, uint8_t channel_index, uint8_t axis_index); 
 
 	/*
 	 * @brief 读取最新的错误信息
@@ -87,6 +100,8 @@ public:
 
 	void SendToHmi();   //将当前错误都输出到HMI
 
+    void NotifyToHmi(); //通知HMI报警列表发生改变
+
 	void PrintError();	//打印输出所有错误信息
 
 	void Clear();   //清空告警队列
@@ -94,6 +109,8 @@ public:
 	void ClearWarning(uint8_t chn);  //清空告警即以下等级的消息
 
 	void RemoveWarning(uint8_t chn, uint16_t error_code);   //清空指定告警
+
+    void ProcessAutoAlarm();// 处理自动类型的告警
 
 private:  //私有接口函数
 	/**
@@ -106,18 +123,26 @@ private:  //私有接口函数
 
 	bool SendToHmi(ErrorInfo *err); //将告警信息发送至HMI
 
-
 	void ProcessAlarm(ErrorInfo *err); //告警的统一处理函数
+
+    // 刷新自动类型告警的状态
+    void UpdateAutoAlarm(uint16_t error_code, uint8_t error_level,
+                           uint8_t clear_type, int32_t error_info, uint8_t channel_index = CHANNEL_ENGINE_INDEX, uint8_t axis_index = NO_AXIS);
 
 private:
 
-	static AlarmProcessor* m_instance; 	//单实例指针
-	pthread_mutex_t m_mutex;    //读写互斥量
-	ErrorInfo m_latest_error;   //最近一次的告警信息
-	CircularBuffer<ErrorInfo>* m_error_info_input_list;    //告警信息列表
+    static AlarmProcessor* m_instance; 	//单实例指针
+    pthread_mutex_t m_mutex;    //读写互斥量
+    ErrorInfo m_latest_error;   //最近一次的告警信息
+    CircularBuffer<ErrorInfo>* m_error_info_input_list;    //报警信息列表
 
-	HMICommunication *m_p_hmi_comm;   //HMI通讯接口
-	ChannelEngine *m_p_chn_engine;		//通道引擎指针
+    HMICommunication *m_p_hmi_comm;     //HMI通讯接口
+    ChannelEngine *m_p_chn_engine;		//通道引擎指针
+
+    int IMM_INTERVAL = 100;              //立即报警最小间隔,单位(ms)
+    time_point<steady_clock> m_timePoint;
+    using ErrorPair = pair<ErrorInfo, time_point<steady_clock>>;
+    deque<ErrorPair> m_auto_error_list;
 };
 
 

@@ -1,7 +1,5 @@
 #ifndef SINGLETON_H
 #define SINGLETON_H
-#include <QDebug>
-#include <QThread>
 
 template<typename T>
 class Singleton

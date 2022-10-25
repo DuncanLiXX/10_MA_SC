@@ -3,6 +3,7 @@
 #include "parm_definition.h"
 #include "alarm_processor.h"
 #include "trace.h"
+#include "channel_data.h"
 #include <functional>
 #include <future>
 #include <string>

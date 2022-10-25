@@ -2,8 +2,7 @@
 #define SHOWSC_H
 
 #include "singleton.h"
-#include "channel_data.h"
-#include "trace.h"
+#include "global_include.h"
 
 class ChannelControl;
 class SpindleControl;
@@ -17,6 +16,10 @@ class FiveAxisConfig;
 class FRegBits;
 class GRegBits;
 class TraceInfo;
+
+struct ChannelStatusCollect;
+struct ChannelRealtimeStatus;
+struct ChannelMcStatus;
 
 void ScPrintf(const char *__format,va_list args);
 

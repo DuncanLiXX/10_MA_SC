@@ -8121,11 +8121,12 @@ bool ChannelControl::ExecuteLoopMsg(RecordMsg *msg){
 			i++;
 		}
 
+		/* 通过 M28 M29 解除 建立 主轴同步
 		if(loopmsg->GetGCode() == G74_CMD){
 			m_p_spindle->StartRigidTap(-feed);
 		}else{
 			m_p_spindle->StartRigidTap(feed);
-		}
+		}*/
 
 	}else if(m_channel_status.gmode[9] == G84_CMD && loopmsg->GetGCode() == G80_CMD){  //关闭刚攻状态
         m_p_spindle->CancelRigidTap();

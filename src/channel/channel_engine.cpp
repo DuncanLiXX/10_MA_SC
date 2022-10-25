@@ -62,7 +62,7 @@ ChannelEngine::ChannelEngine() {
 
 //#ifdef USES_SPEED_TORQUE_CTRL
     m_df_phy_axis_speed_feedback = nullptr;
-    m_df_phy_axis_speed_feedback = nullptr;
+    m_df_phy_axis_torque_feedback = nullptr;
 //#endif
 
     m_p_pmc_reg = nullptr;
@@ -8233,7 +8233,6 @@ void ChannelEngine::ProcessPmcSignal(){
         if(g_reg->RRW == 1 && g_reg_last->RRW == 0){
         	this->SystemReset();
         }
-
 
 //#ifdef USES_PHYSICAL_MOP
         //方式选择信号

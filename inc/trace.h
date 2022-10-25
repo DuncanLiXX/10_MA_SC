@@ -16,7 +16,6 @@
 #include <pthread.h>
 #include <string.h>
 #include <string>
-#include <vector>
 #include "mosquittopp.h"
 #include "hmi_shared_data.h"
 
@@ -100,6 +99,26 @@ enum PrintType{
     TypePrintOutput =           18,//print函数的打印输出
 };
 
+namespace mosqpp {
+
+struct mosquitto_message{
+    int mid;
+    char *topic;
+    void *payload;
+    int payloadlen;
+    int qos;
+    bool retain;
+};
+
+class TraceMesSend : public mosquittopp {
+    public:
+        TraceMesSend(const char *id=NULL, bool clean_session=true);
+        virtual ~TraceMesSend();
+        void on_connect(int) override;
+        void on_message(const mosquitto_message * msg) override;
+};
+
+}//end namespace mosqpp
 
 /**
  * @brief 日志、跟踪消息输出类
@@ -245,7 +264,7 @@ private:
     int32_t m_alarm_handler;	//告警信息文件句柄
 
     std::string m_topic_dest = "192.168.100.102";
-    mosqpp::mosquittopp m_topic_mosq;
+    mosqpp::TraceMesSend m_topic_mosq;
 };
 
 

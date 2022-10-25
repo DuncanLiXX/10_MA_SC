@@ -11,8 +11,7 @@
 #include "trace.h"
 #include "global_include.h"
 #include "showsc.h"
-#include <utility>
-
+#include "singleton.h"
 
 //文件保存目录
 #define LOG_PATH "/cnc/trace/log/"
@@ -500,3 +499,34 @@ uint64_t TraceInfo::GetAlarmTotalSize(){
 	return;
 }*/
 
+namespace mosqpp {
+
+
+TraceMesSend::TraceMesSend(const char *id, bool clean_session)
+    : mosquittopp(id, clean_session)
+{
+}
+
+TraceMesSend::~TraceMesSend()
+{
+}
+
+void TraceMesSend::on_connect(int)
+{
+    subscribe(nullptr, SwitchTopic.c_str());
+    return;
+}
+
+void TraceMesSend::on_message(const mosquitto_message * msg)
+{
+    std::string strTopic(msg->topic);
+    std::string content((char *)msg->payload, msg->payloadlen);
+
+    if (strTopic == SwitchTopic)
+    {
+        PrintType pt = (PrintType)(atoi(content.c_str()));
+        Singleton<ShowSc>::instance().SetPrintType(pt);
+    }
+}
+
+}

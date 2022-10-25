@@ -16,6 +16,11 @@ ShowSc::ShowSc()
     std::async(std::launch::async, process);
 }
 
+ShowSc::~ShowSc()
+{
+
+}
+
 void ScPrintf(const char *__format, va_list args)
 {
     char s[128];

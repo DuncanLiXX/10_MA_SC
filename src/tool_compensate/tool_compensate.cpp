@@ -13,6 +13,7 @@
 #include "channel_control.h"
 #include "tool_comp_data.h"
 #include "tool_compensate.h"
+#include "rs274.h"
 
 
 /**

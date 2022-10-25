@@ -8128,8 +8128,8 @@ bool ChannelControl::ExecuteLoopMsg(RecordMsg *msg){
 			m_p_spindle->StartRigidTap(feed);
 		}*/
 
-	}else if(m_channel_status.gmode[9] == G84_CMD && loopmsg->GetGCode() == G80_CMD){  //�رոչ�״̬
-        m_p_spindle->CancelRigidTap();
+	}else if((m_channel_status.gmode[9] == G84_CMD || m_channel_status.gmode[9] == G74_CMD) && loopmsg->GetGCode() == G80_CMD){  //�رոչ�״̬
+        //m_p_spindle->CancelRigidTap();
 	}
 	
 	this->m_channel_status.gmode[9] = loopmsg->GetGCode();

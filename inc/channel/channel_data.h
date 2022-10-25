@@ -15,6 +15,7 @@
 
 //#include "global_include.h"
 #include "compiler_data.h"
+#include "compile_message.h"
 
 //需要发送到MC的模态组的标志
 const unsigned char McModeFlag[kMaxGModeCount] = {0, 0, 1, 1, 0, 1, 0, 1, 0, 1,     		//0组~9组

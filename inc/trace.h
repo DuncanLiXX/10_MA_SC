@@ -16,8 +16,8 @@
 #include <pthread.h>
 #include <string.h>
 #include <string>
-//#include "mosquittopp.h"
-//#include <mqtt_protocol.h>
+#include <vector>
+#include "mosquittopp.h"
 #include "hmi_shared_data.h"
 
 //TraceLevel数据结构用于设置调试信息打印级别
@@ -78,6 +78,52 @@ enum TraceModule {
 
 };
 
+enum PrintType{
+      TypeNone =                  0,//不打印
+      TypeChnStatus =             1,//通道状态
+      TypeMcStatus =              2,//MC状态
+      TypeRealtimeData =          3,//实时数据
+      TypeSpindle =               4,//主轴状态
+      TypeSysConfig =             5,//系统配置
+      TypeChnConfig =             6,//通道配置
+      TypeAxisConfig =            7,//轴参配置
+      TypeCoordConfig =           8,//工件坐标系偏置
+      TypeExCoordConfig =         9,//拓展工件坐标系偏置
+      TypeGrbCoordConfig =        10,//全局工件坐标系偏置
+      TypeTooOffsetlConfig =      11,//刀具偏置配置
+      TypeToolPotConfig =         12,//刀具信息
+      TypeFiveAxisConfig =        13,//五轴参数
+      TypeMode =                  14,//模态
+      TypeWarning =               15,//警告
+      TypeFRegState =             16,//F寄存器
+      TypeGRegState =             17,//G寄存器
+      TypeMax,
+  };
+
+namespace mosqpp {
+
+struct mosquitto_message{
+    int mid;
+    char *topic;
+    void *payload;
+    int payloadlen;
+    int qos;
+    bool retain;
+};
+
+class TraceMesSend : public mosquittopp {
+    private:
+        void ProcessRecvTopic(const std::string &str);
+        std::vector<int> vecTypeSwitch;
+    public:
+        TraceMesSend(const char *id=NULL, bool clean_session=true);
+        virtual ~TraceMesSend();
+        bool NeedPublish(int i);
+        void on_connect(int) override;
+        void on_message(const mosquitto_message * msg) override;
+};
+}
+
 /**
  * @brief 日志、跟踪消息输出类
  */
@@ -117,7 +163,7 @@ public:
      * @param trace_message 调试信息内容
      * @return 无
      */
-    void PrintTopic(const std::string &topic, const char * trace_message, ...);
+    void PrintTopic(int topic, std::string content);
 
 	/*
 	 * @brief 输出告警信息
@@ -221,9 +267,8 @@ private:
 	int32_t m_trace_handler;	//跟踪信息文件句柄
 	int32_t m_alarm_handler;	//告警信息文件句柄
 
-    //std::string m_topic_dest = "localhost";
-    //mosqpp::mosquittopp m_topic_mosq;
-
+    std::string m_topic_dest = "192.168.100.155";
+    mosqpp::TraceMesSend m_topic_mosq;
 };
 
 

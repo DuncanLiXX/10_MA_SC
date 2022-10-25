@@ -10,6 +10,7 @@
  */
 #include "trace.h"
 #include "global_include.h"
+#include <utility>
 
 
 //文件保存目录
@@ -104,9 +105,9 @@ TraceInfo::TraceInfo() :
 	}
 
     // topic 形式的数据监控
-    //mosquitto_lib_init();
-    //m_topic_mosq.connect(m_topic_dest.c_str());
-	//m_topic_mosq.loop_start();
+    mosqpp::lib_init();
+    m_topic_mosq.connect(m_topic_dest.c_str());
+    m_topic_mosq.loop_start();
 }
 
 //由于m_instance为静态变量，所以系统会自动析构
@@ -130,7 +131,7 @@ TraceInfo::~TraceInfo() {
 	}
 
     // topic 形式的数据监控
-    //mosquitto_lib_cleanup();
+    mosqpp::lib_cleanup();
 }
 
 //GetInstance是获得此类实例的唯一全局访问点
@@ -218,23 +219,18 @@ void TraceInfo::PrintTrace(TraceLevel trace_level, TraceModule trace_module,
     }
 }
 
-/*void TraceInfo::PrintTopic(const std::string &topic, const char *trace_message, ...)
+void TraceInfo::PrintTopic(int topic, std::string content)
 {
-    if (m_topic_mosq.isConnected())
+    if (m_topic_mosq.isConnected() )
     {
-        //处理可变长度参数
-        char trace_message_buf[kMaxMsgLen] = { 0 };       //用于保存trace_message
-        va_list arg_ptr;
-        va_start(arg_ptr, trace_message);
-        vsnprintf(trace_message_buf, sizeof(trace_message_buf),
-                trace_message, arg_ptr);
-        va_end(arg_ptr);
-
-        //主题发布
-        m_topic_mosq.publish(nullptr, topic.c_str(), strlen(trace_message_buf), trace_message_buf);
+        if (m_topic_mosq.NeedPublish(topic))
+        {
+            //主题发布
+            m_topic_mosq.publish(nullptr, std::to_string(topic).c_str(), content.size(), content.c_str());
+        }
     }
     return;
-}*/
+}
 
 //调试信息输出函数
 void TraceInfo::TraceOutput(const char* trace_message) {
@@ -512,3 +508,61 @@ uint64_t TraceInfo::GetAlarmTotalSize(){
 
 
 
+
+namespace mosqpp {
+
+
+void TraceMesSend::ProcessRecvTopic(const std::string &str)
+{
+    std::string key = str.substr(0, str.find('='));
+    std::string value = str.substr(str.find('=')+1, str.size());
+
+    if (!value.empty() && !key.empty())
+    {
+        int iKey = atoi(key.c_str());
+        int iValue = atoi(value.c_str());
+        if (iKey >= 0 && iKey < TypeMax)
+            vecTypeSwitch[iKey] = iValue;
+        publish(nullptr, "RevTopic", str.size(), str.c_str());
+    }
+}
+
+TraceMesSend::TraceMesSend(const char *id, bool clean_session)
+    : mosquittopp(id, clean_session)
+{
+    vecTypeSwitch.resize(TypeMax);
+}
+
+
+
+
+TraceMesSend::~TraceMesSend()
+{
+
+}
+
+bool TraceMesSend::NeedPublish(int i)
+{
+    if (i < 0 && i >TypeMax)
+        return false;
+    return vecTypeSwitch[i];
+}
+
+void TraceMesSend::on_connect(int)
+{
+    subscribe(nullptr, "SetTopic");
+    return;
+}
+
+void TraceMesSend::on_message(const mosquitto_message * msg)
+{
+    std::string strTopic(msg->topic);
+    std::string content((char *)msg->payload, msg->payloadlen);
+
+    if (strTopic == "SetTopic")
+    {
+        ProcessRecvTopic(content);
+    }
+}
+
+}

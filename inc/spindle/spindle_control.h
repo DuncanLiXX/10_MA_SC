@@ -70,6 +70,7 @@ public:
 
     bool isTapEnable();     // 刚性攻丝是否使能
 
+    void SetTapFeed(double feed);       // 设置攻丝进给
     void StartRigidTap(double feed);    // 开始刚性攻丝 G84
     void CancelRigidTap();              // 取消刚性攻丝 G80
 
@@ -82,6 +83,7 @@ public:
     void InputSIND(bool SIND);      // SIND信号输入
     void InputORCMA(bool ORCMA);    // 定位信号信号输入
     void InputRGTAP(bool RGTAP);    // 刚性攻丝信号输入
+    void InputRGMD(bool RGMD);      // 刚性攻丝模式切换
     void RspORCMA(bool success);    // 定位信号命令回复
     void RspCtrlMode(uint8_t axis,Spindle::Mode mode);  // 模式切换回复
     void RspAxisEnable(uint8_t axis,bool enable);       // 轴使能回复
@@ -116,7 +118,7 @@ private:
     // 向MC发送刚性攻丝状态命令，MC会切换到刚性攻丝的速度规划参数
     void SendMcRigidTapFlag(bool enable);
 
-private:
+public:
     MICommunication *mi{nullptr};
     MCCommunication *mc{nullptr};
     int chn{0};
@@ -131,7 +133,8 @@ private:
     Spindle::Level to_level{Spindle::Low};        // 目标档位
     Spindle::Level level{Spindle::Low};           // 当前档位
     Spindle::CncPolar cnc_polar{Spindle::Stop};    // 主轴方向
-    uint32_t cnc_speed{0};             // S代码的转速 单位:rpm
+    uint32_t cnc_speed{0};              // S代码的转速 单位:rpm
+    double tap_feed{0.0};                    // 攻丝进给
 
     Spindle::Mode mode{Spindle::Speed};             // 控制模式
     bool tap_enable{false};     // 攻丝状态  false:不在攻丝状态 true:处于攻丝状态
@@ -151,6 +154,7 @@ private:
     bool SIND;   //主轴速度由CNC决定还是PMC决定 G33.7   0：CNC 1：PMC
     bool ORCMA;  // 主轴定向信号 G70.6
     bool RGTAP;  //刚攻状态  0：退出刚攻状态  1：进入刚攻状态 G61.0
+    bool RGMD;   //主轴控制模式 0：速度模式  1：位置模式 G61.1
 
     // 参数
     uint8_t GST{0};    //(1657)SOR信号用于： 0：主轴定向 1：齿轮换档

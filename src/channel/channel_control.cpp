@@ -19,6 +19,7 @@
 #include "channel_engine.h"
 #include "alarm_processor.h"
 #include "spindle_control.h"
+#include "showsc.h"
 
 using namespace Spindle;
 
@@ -210,6 +211,9 @@ ChannelControl::~ChannelControl() {
 		m_p_compiler = nullptr;
 	}
 
+    //释放打印线程
+    delete  &Singleton<ShowSc>::instance();
+
 	pthread_mutex_destroy(&m_mutex_change_state);
 
 }
@@ -278,6 +282,84 @@ bool ChannelControl::Initialize(uint8_t chn_index, ChannelEngine *engine, HMICom
 	this->m_p_chn_proc_param = parm->GetChnProcessParam(chn_index);
 	this->m_p_axis_proc_param = parm->GetAxisProcParam();
 
+#ifdef USES_FIVE_AXIS_FUNC
+    this->m_p_chn_5axis_config = parm->GetFiveAxisConfig(chn_index);
+    this->UpdateFiveAxisRotParam();
+#endif
+
+    this->m_n_spindle_count = 0;
+    memset(m_spd_axis_phy, 0x00, kMaxChnSpdCount);
+
+    //初始化回参考点标志
+    m_channel_status.returned_to_ref_point = 0x00;
+    uint8_t phy_axis = 0;
+    uint64_t flag = 0x01;
+    for(int i = 0; i < this->m_p_channel_config->chn_axis_count; i++){
+        phy_axis = m_p_channel_config->chn_axis_phy[i];
+        if(phy_axis == 0){//未配置
+            m_channel_status.returned_to_ref_point |= (0x01<<i);
+            continue;
+        }
+//		printf("init axis %d ref_flag, interface=%hhu, feedback=%hhu, ref_encoder=0x%llx\n", i,
+//				m_p_axis_config[phy_axis-1].axis_interface,
+//				m_p_axis_config[phy_axis-1].feedback_mode,
+//				m_p_axis_config[phy_axis-1].ref_encoder);
+        if(m_p_axis_config[phy_axis-1].axis_interface == VIRTUAL_AXIS || m_p_axis_config[phy_axis-1].axis_type == AXIS_SPINDLE	//主轴和虚拟轴不用回参考点
+                || (m_p_axis_config[phy_axis-1].feedback_mode == NO_ENCODER && m_p_axis_config[phy_axis-1].ret_ref_mode == 0)   //无反馈,并且禁止回参考点
+                || (m_p_axis_config[phy_axis-1].feedback_mode != INCREMENTAL_ENCODER && m_p_axis_config[phy_axis-1].ref_encoder != kAxisRefNoDef)  //非增量式，并已确定零点
+                || (m_p_axis_config[phy_axis-1].feedback_mode == INCREMENTAL_ENCODER && m_p_axis_config[phy_axis-1].ret_ref_mode == 0)){   //增量式并禁止回参考点
+            m_channel_status.returned_to_ref_point |= (0x01<<i);
+        }
+        if(m_p_axis_config[phy_axis-1].axis_interface != VIRTUAL_AXIS)
+            this->m_n_real_phy_axis |= (flag<<(phy_axis-1));    //初始化实际物理轴mask
+
+        uint8_t z_axis =  this->GetPhyAxisFromName(AXIS_NAME_Z);
+        uint32_t da_prec = m_p_channel_engine->GetDaPrecision();
+        //初始化主轴信息
+        if(m_p_axis_config[phy_axis-1].axis_type == AXIS_SPINDLE && m_n_spindle_count < kMaxChnSpdCount){
+            this->m_spd_axis_phy[m_n_spindle_count] = phy_axis;
+            m_n_spindle_count++;
+            m_p_spindle->SetComponent(m_p_mi_comm,
+                                    m_p_mc_comm,
+                                      m_p_f_reg,
+                                      m_p_g_reg);
+            m_p_spindle->SetSpindleParams(&m_p_axis_config[phy_axis-1],
+                    da_prec,phy_axis-1,z_axis);
+            printf("spindle:%d\n",phy_axis-1);
+        }
+
+        //初始化PMC轴信息
+        if(m_p_axis_config[phy_axis-1].axis_pmc > 0){
+            this->m_mask_pmc_axis |= (0x01<<i);
+            this->m_n_pmc_axis_count++;
+        }else if(m_p_axis_config[phy_axis-1].axis_type != AXIS_SPINDLE){   //插补轴, 排除主轴
+            this->m_mask_intp_axis |= (0x01<<i);
+            this->m_n_intp_axis_count++;
+        }
+
+#ifdef USES_SPEED_TORQUE_CTRL
+        // 轴控制模式，初始化配置到当前状态
+        m_channel_status.cur_axis_ctrl_mode[i] = m_p_axis_config[phy_axis-1].axis_type;
+#endif
+        m_channel_status.cur_chn_axis_phy[i]   = m_p_channel_config->chn_axis_phy[i];
+    }
+    ShowSc &showSc = Singleton<ShowSc>::instance();
+    showSc.AddComponent(&m_channel_status);
+    showSc.AddComponent(&m_channel_rt_status);
+    showSc.AddComponent(&m_channel_mc_status);
+    showSc.AddComponent(m_p_spindle);
+    showSc.AddComponent(m_p_general_config);
+    showSc.AddComponent(m_p_channel_config);
+    showSc.AddComponent(m_p_axis_config);
+    showSc.AddComponent(m_p_chn_coord_config,
+                        m_p_chn_ex_coord_config,
+                        m_p_chn_g92_offset);
+    showSc.AddComponent(m_p_chn_tool_config);
+    showSc.AddComponent(m_p_chn_tool_info);
+    showSc.AddComponent(m_p_chn_5axis_config);
+    showSc.AddComponent(m_p_f_reg);
+    showSc.AddComponent(m_p_g_reg);
+
 	this->m_macro_variable.SetChnIndex(m_n_channel_index);
 
 
@@ -285,11 +367,6 @@ bool ChannelControl::Initialize(uint8_t chn_index, ChannelEngine *engine, HMICom
 	this->GetMdaFilePath(m_str_mda_path);   //初始化mda文件路径
 
     m_channel_rt_status.machining_time_total = g_ptr_parm_manager->GetCurTotalMachingTime(chn_index);
-
-#ifdef USES_FIVE_AXIS_FUNC
-	this->m_p_chn_5axis_config = parm->GetFiveAxisConfig(chn_index);
-	this->UpdateFiveAxisRotParam();
-#endif
 
 #ifdef USES_GRIND_MACHINE
 	m_p_grind_config = parm->GetGrindConfig();       //磨床参数
@@ -498,64 +575,6 @@ void ChannelControl::InitialChannelStatus(){
 	this->m_n_cur_proc_group = g_ptr_parm_manager->GetCurProcParamIndex(m_n_channel_index);
 	this->m_p_f_reg->PPI = m_n_cur_proc_group;
 
-
-	this->m_n_spindle_count = 0;
-	memset(m_spd_axis_phy, 0x00, kMaxChnSpdCount);
-
-	//初始化回参考点标志
-	m_channel_status.returned_to_ref_point = 0x00;
-	uint8_t phy_axis = 0;
-	uint64_t flag = 0x01;
-	for(int i = 0; i < this->m_p_channel_config->chn_axis_count; i++){
-		phy_axis = m_p_channel_config->chn_axis_phy[i];
-		if(phy_axis == 0){//未配置
-			m_channel_status.returned_to_ref_point |= (0x01<<i);
-			continue;
-		}
-//		printf("init axis %d ref_flag, interface=%hhu, feedback=%hhu, ref_encoder=0x%llx\n", i,
-//				m_p_axis_config[phy_axis-1].axis_interface,
-//				m_p_axis_config[phy_axis-1].feedback_mode,
-//				m_p_axis_config[phy_axis-1].ref_encoder);
-		if(m_p_axis_config[phy_axis-1].axis_interface == VIRTUAL_AXIS || m_p_axis_config[phy_axis-1].axis_type == AXIS_SPINDLE	//主轴和虚拟轴不用回参考点
-				|| (m_p_axis_config[phy_axis-1].feedback_mode == NO_ENCODER && m_p_axis_config[phy_axis-1].ret_ref_mode == 0)   //无反馈,并且禁止回参考点
-				|| (m_p_axis_config[phy_axis-1].feedback_mode != INCREMENTAL_ENCODER && m_p_axis_config[phy_axis-1].ref_encoder != kAxisRefNoDef)  //非增量式，并已确定零点
-				|| (m_p_axis_config[phy_axis-1].feedback_mode == INCREMENTAL_ENCODER && m_p_axis_config[phy_axis-1].ret_ref_mode == 0)){   //增量式并禁止回参考点
-			m_channel_status.returned_to_ref_point |= (0x01<<i);
-		}
-		if(m_p_axis_config[phy_axis-1].axis_interface != VIRTUAL_AXIS)
-			this->m_n_real_phy_axis |= (flag<<(phy_axis-1));    //初始化实际物理轴mask
-
-        uint8_t z_axis =  this->GetPhyAxisFromName(AXIS_NAME_Z);
-        uint32_t da_prec = m_p_channel_engine->GetDaPrecision();
-		//初始化主轴信息
-		if(m_p_axis_config[phy_axis-1].axis_type == AXIS_SPINDLE && m_n_spindle_count < kMaxChnSpdCount){
-			this->m_spd_axis_phy[m_n_spindle_count] = phy_axis;
-			m_n_spindle_count++;
-            m_p_spindle->SetComponent(m_p_mi_comm,
-                                    m_p_mc_comm,
-                                      m_p_f_reg,
-                                      m_p_g_reg);
-            m_p_spindle->SetSpindleParams(&m_p_axis_config[phy_axis-1],
-                    da_prec,phy_axis-1,z_axis);
-            printf("spindle:%d\n",phy_axis-1);
-		}
-
-		//初始化PMC轴信息
-		if(m_p_axis_config[phy_axis-1].axis_pmc > 0){
-			this->m_mask_pmc_axis |= (0x01<<i);
-			this->m_n_pmc_axis_count++;
-		}else if(m_p_axis_config[phy_axis-1].axis_type != AXIS_SPINDLE){   //插补轴, 排除主轴
-			this->m_mask_intp_axis |= (0x01<<i);
-			this->m_n_intp_axis_count++;
-		}
-
-
-#ifdef USES_SPEED_TORQUE_CTRL
-		// 轴控制模式，初始化配置到当前状态
-		m_channel_status.cur_axis_ctrl_mode[i] = m_p_axis_config[phy_axis-1].axis_type;
-#endif
-		m_channel_status.cur_chn_axis_phy[i]   = m_p_channel_config->chn_axis_phy[i];
-	}
 //	printf("ini ref flag = 0x%hhx, spindle count = %hhu\n", m_channel_status.returned_to_ref_point, m_n_spindle_count);
 
 	if(this->m_n_spindle_count > kMaxSpindleChn){  //主轴个数超限
@@ -2365,17 +2384,7 @@ void ChannelControl::SendMonitorData(bool bAxis, bool btime){
 //	//end for test
 
 	if(this->m_n_spindle_count > 0){
-		if(m_p_mi_comm->ReadPhyAxisSpeed(&m_channel_rt_status.spindle_cur_speed, this->m_spd_axis_phy[0]-1)){
-		//	printf("spd speed : %d, dir = %hhd\n", m_channel_rt_status.spindle_cur_speed, m_channel_status.spindle_dir);
-			m_channel_rt_status.spindle_cur_speed = fabs(m_channel_rt_status.spindle_cur_speed);  //取绝对值
-			m_channel_rt_status.spindle_cur_speed *= m_channel_status.spindle_dir;  //加上方向
-			m_channel_rt_status.spindle_cur_speed = m_channel_rt_status.spindle_cur_speed * 60/(m_p_axis_config[m_spd_axis_phy[0]-1].move_pr*1000);		//单位由um/s 转换为rpm
-
-
-//			if(m_channel_rt_status.spindle_cur_speed != 0)
-//				printf("current spindle speed: %d rpm\n", m_channel_rt_status.spindle_cur_speed);
-		}
-
+        m_channel_rt_status.spindle_cur_speed = m_p_spindle->GetSpindleSpeed();
 	}
 
 
@@ -8006,14 +8015,14 @@ bool ChannelControl::ExecuteLoopMsg(RecordMsg *msg){
 			i++;
 		}
 
-		if(loopmsg->GetGCode() == G74_CMD){
-			m_p_spindle->StartRigidTap(-feed);
-		}else{
-			m_p_spindle->StartRigidTap(feed);
-		}
+        if(loopmsg->GetGCode() == G74_CMD){
+            m_p_spindle->SetTapFeed(-feed);
+        }else{
+            m_p_spindle->SetTapFeed(feed);
+        }
 
-	}else if(m_channel_status.gmode[9] == G84_CMD && loopmsg->GetGCode() == G80_CMD){  //关闭刚攻状态
-        m_p_spindle->CancelRigidTap();
+    }else if((m_channel_status.gmode[9] == G84_CMD || m_channel_status.gmode[9] == G74_CMD) && loopmsg->GetGCode() == G80_CMD){  //关闭刚攻状态
+        //m_p_spindle->CancelRigidTap();
 	}
 	
 	this->m_channel_status.gmode[9] = loopmsg->GetGCode();

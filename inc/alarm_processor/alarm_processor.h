@@ -95,6 +95,8 @@ public:
 
 	void RemoveWarning(uint8_t chn, uint16_t error_code);   //清空指定告警
 
+    CircularBuffer<ErrorInfo>* GetWarningList(){return m_error_info_input_list;}
+
 private:  //私有接口函数
 	/**
 	 * @brief 错误处理类构造函数

@@ -4450,6 +4450,7 @@ uint8_t ChannelEngine::GetChnAxistoPhyAixs(uint8_t chn_index, uint8_t chn_axis){
  * @return true--成功   false--失败
  */
 bool ChannelEngine::Start(){
+    printf("Start :m_b_emergency=%d\n",m_b_emergency);
     if(this->m_b_emergency)
         return false;
 
@@ -8203,7 +8204,7 @@ void ChannelEngine::ProcessPmcSignal(){
         }
 #endif
 
-        if(g_reg->RRW == 1 && g_reg_last->RRW == 0){
+        if(g_reg->ERS == 1 && g_reg_last->ERS == 0){
         	this->SystemReset();
         }
 
@@ -8269,6 +8270,10 @@ void ChannelEngine::ProcessPmcSignal(){
         // 刚性攻丝信号
         if(g_reg->RGTAP != g_reg_last->RGTAP){
             ctrl->GetSpdCtrl()->InputRGTAP(g_reg->RGTAP);
+        }
+        // 主轴控制模式切换
+        if(g_reg->RGMD != g_reg_last->RGMD){
+            ctrl->GetSpdCtrl()->InputRGMD(g_reg->RGMD);
         }
         // 定位信号
         if(g_reg->ORCMA != g_reg_last->ORCMA){

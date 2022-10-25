@@ -259,7 +259,7 @@ void ToolCompensate::ProcessData(ListNode<RecordMsg *> *node){
 
 	msg = node->data;
 	// ¼ÇÂ¼ÐÐºÅ
-    switch(msg->GetMsgType()){
+    /*switch(msg->GetMsgType()){
         case LINE_MSG:{
             LineMsg * line_msg = (LineMsg *) msg;
 
@@ -342,7 +342,7 @@ void ToolCompensate::ProcessData(ListNode<RecordMsg *> *node){
         	__dequeue_canons();
         	break;
         }
-    }
+    }*/
 
     this->m_p_output_msg_list->Append(node);
 }

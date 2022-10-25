@@ -1308,7 +1308,7 @@ bool MICommunication::ProcessCmdFun(){
 		//TODO 校验CRC
 		if(!CheckCrc(cmd_frame.data_crc, kMaxCmdCount*2-1, cmd_frame.data.crc)){
 			//CRC校验失败
-			CreateError(ERR_MI_CMD_CRC, WARNING_LEVEL, CLEAR_BY_CLEAR_BUTTON);  //生成MI通讯CRC校验错告警
+            CreateError(ERR_MI_CMD_CRC, WARNING_LEVEL, CLEAR_BY_MCP_RESET);  //生成MI通讯CRC校验错告警
 			continue;
 		}
 

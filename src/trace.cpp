@@ -10,6 +10,8 @@
  */
 #include "trace.h"
 #include "global_include.h"
+#include "showsc.h"
+#include <utility>
 
 
 //文件保存目录
@@ -104,9 +106,9 @@ TraceInfo::TraceInfo() :
 	}
 
     // topic 形式的数据监控
-    //mosquitto_lib_init();
-    //m_topic_mosq.connect(m_topic_dest.c_str());
-	//m_topic_mosq.loop_start();
+    mosqpp::lib_init();
+    m_topic_mosq.connect(m_topic_dest.c_str());
+    m_topic_mosq.loop_start();
 }
 
 //由于m_instance为静态变量，所以系统会自动析构
@@ -130,7 +132,7 @@ TraceInfo::~TraceInfo() {
 	}
 
     // topic 形式的数据监控
-    //mosquitto_lib_cleanup();
+    mosqpp::lib_cleanup();
 }
 
 //GetInstance是获得此类实例的唯一全局访问点
@@ -218,23 +220,11 @@ void TraceInfo::PrintTrace(TraceLevel trace_level, TraceModule trace_module,
     }
 }
 
-/*void TraceInfo::PrintTopic(const std::string &topic, const char *trace_message, ...)
+void TraceInfo::SendMsg(std::string topic, std::string content)
 {
-    if (m_topic_mosq.isConnected())
-    {
-        //处理可变长度参数
-        char trace_message_buf[kMaxMsgLen] = { 0 };       //用于保存trace_message
-        va_list arg_ptr;
-        va_start(arg_ptr, trace_message);
-        vsnprintf(trace_message_buf, sizeof(trace_message_buf),
-                trace_message, arg_ptr);
-        va_end(arg_ptr);
-
-        //主题发布
-        m_topic_mosq.publish(nullptr, topic.c_str(), strlen(trace_message_buf), trace_message_buf);
-    }
+    m_topic_mosq.publish(nullptr, topic.c_str(), content.size(), content.c_str());
     return;
-}*/
+}
 
 //调试信息输出函数
 void TraceInfo::TraceOutput(const char* trace_message) {
@@ -509,6 +499,4 @@ uint64_t TraceInfo::GetAlarmTotalSize(){
 	}
 	return;
 }*/
-
-
 

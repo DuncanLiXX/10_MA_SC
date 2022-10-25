@@ -50,53 +50,51 @@ ADCommunication *g_ptr_ad_comm = nullptr;     //辅助设备通讯接口
  * @param axis_index ：轴号
  */
 void CreateError(uint16_t error_code, uint8_t error_level,
-    uint8_t clear_type, int32_t error_info, uint8_t channel_index, uint8_t axis_index) {
-    if(g_ptr_alarm_processor->HasErrorInfo(error_code, error_level, clear_type, error_info, channel_index, axis_index)){
+    uint8_t clear_type, int32_t error_info, uint8_t channel_index, uint8_t axis_index) { 
+    if(axis_index != 0xffff) {
+        axis_index++;	//0,1,2,3,4 --> 1,2,3,4,5
+    }
+    if(g_ptr_alarm_processor->ContainErrorInfo(error_code, error_level, clear_type, error_info, channel_index, axis_index)){
+        return;  //重复告警
+    }
 
-		return;  //重复告警
-	}
+    ErrorInfo err_info;
+    memset(&err_info, 0x00, sizeof(ErrorInfo));
+    time_t cur_time;
+    err_info.channel_index = channel_index;
+    err_info.axis_index = axis_index;
+    err_info.error_code = (uint16_t) error_code;
+    err_info.error_level = (uint8_t) error_level;
+    err_info.clear_type = (uint8_t) clear_type;
+    err_info.error_info = error_info;
+    struct tm* time_info;
+    cur_time = time(NULL);
+    if (cur_time != -1) {
+        time_info = localtime(&cur_time);
+        if (time_info != NULL) {
+            err_info.time = (uint64_t) time_info->tm_sec & (uint64_t) 0xff;
+            err_info.time |= ((uint64_t) time_info->tm_min & (uint64_t) 0xff)
+                << 8;
+            err_info.time |= ((uint64_t) time_info->tm_hour & (uint64_t) 0xff)
+                << 16;
+            err_info.time |= ((uint64_t) time_info->tm_mday & (uint64_t) 0xff)
+                << 24;
+            err_info.time |= ((uint64_t) (time_info->tm_mon + 1)
+                & (uint64_t) 0xff) << 32;
+            err_info.time |= ((uint64_t) (time_info->tm_year + 1900)
+                & (uint64_t) 0xffff) << 40;
+        } else {
+            err_info.time = 0;
+        }
+    } else {
+        err_info.time = 0;
+    }
 
-	ErrorInfo err_info;
-	memset(&err_info, 0x00, sizeof(ErrorInfo));
-	time_t cur_time;
-	if(axis_index != 0xffff) {
-		axis_index++;	//0,1,2,3,4 --> 1,2,3,4,5
-	}
-	err_info.channel_index = channel_index;
-	err_info.axis_index = axis_index;
-	err_info.error_code = (uint16_t) error_code;
-	err_info.error_level = (uint8_t) error_level;
-	err_info.clear_type = (uint8_t) clear_type;
-	err_info.error_info = error_info;
-	struct tm* time_info;
-	cur_time = time(NULL);
-	if (cur_time != -1) {
-		time_info = localtime(&cur_time);
-		if (time_info != NULL) {
-			err_info.time = (uint64_t) time_info->tm_sec & (uint64_t) 0xff;
-			err_info.time |= ((uint64_t) time_info->tm_min & (uint64_t) 0xff)
-					<< 8;
-			err_info.time |= ((uint64_t) time_info->tm_hour & (uint64_t) 0xff)
-					<< 16;
-			err_info.time |= ((uint64_t) time_info->tm_mday & (uint64_t) 0xff)
-					<< 24;
-			err_info.time |= ((uint64_t) (time_info->tm_mon + 1)
-					& (uint64_t) 0xff) << 32;
-			err_info.time |= ((uint64_t) (time_info->tm_year + 1900)
-					& (uint64_t) 0xffff) << 40;
-		} else {
-			err_info.time = 0;
-		}
-	} else {
-		err_info.time = 0;
-	}
+    g_ptr_alarm_processor->SetErrorInfo(&err_info);
 
-	g_ptr_alarm_processor->SetErrorInfo(&err_info);
-
-
-	if(error_level < WARNING_LEVEL){
-		g_ptr_chn_engine->SetChnMachineState(channel_index, MS_WARNING);
-	}
+    if(error_level < WARNING_LEVEL){
+        g_ptr_chn_engine->SetChnMachineState(channel_index, MS_WARNING);
+    }
 
 
 	//保存告警行号，PLC报警时由于error_info存的是PLC报警号信息，所以PLC报警时不保存

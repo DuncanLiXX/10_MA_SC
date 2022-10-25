@@ -21,6 +21,7 @@
 #include "alarm_processor.h"
 #include "channel_mode_group.h"
 #include "spindle_control.h"
+#include "showsc.h"
 
 
 //#include <unistd.h>
@@ -119,6 +120,10 @@ ChannelEngine::ChannelEngine() {
     this->CheckTmpDir();
 
     this->InitBdioDev();
+
+    ShowSc& showSc = Singleton<ShowSc>::instance();
+    showSc.SetPrintType(TypePrintOutput);
+    showSc.SetInterval(1000);
 }
 
 /**
@@ -278,7 +283,6 @@ void ChannelEngine::ReadIoDev_pmc2(){
 
     std::ifstream ifs;
     ifs.open(PATH_PMC_LDR, std::ios::binary | std::ios::in);
-
     if (ifs.is_open())
     {
         //#SDLINKIO@# 从梯图文件中找到SD-LINK配置
@@ -339,7 +343,7 @@ void ChannelEngine::ReadIoDev_pmc2(){
                     {
                         m_list_bdio_dev.Clear();
                         std::cout << static_cast<int>(devInfo.group_index) << " not sequence " << std::endl;
-                        CreateError(ERR_PMC_SDLINK_CONFIG, WARNING_LEVEL, CLEAR_BY_CLEAR_BUTTON);
+                        CreateError(ERR_PMC_SDLINK_CONFIG, ERROR_LEVEL, CLEAR_BY_RESET_POWER);
                         break;
                     }
                 }
@@ -347,7 +351,7 @@ void ChannelEngine::ReadIoDev_pmc2(){
                 if (!CheckIoDev_pmc2(devInfo))
                 {
                     m_list_bdio_dev.Clear();
-                    CreateError(ERR_PMC_SDLINK_CONFIG, WARNING_LEVEL, CLEAR_BY_CLEAR_BUTTON);
+                    CreateError(ERR_PMC_SDLINK_CONFIG, ERROR_LEVEL, CLEAR_BY_RESET_POWER);
                     break;
                 }
 
@@ -2134,7 +2138,7 @@ int ChannelEngine::CheckLicense(bool force){
             lpLicInfo->nInfo = 1;
             lpLicInfo->nWarn = leave;   //剩余小时数
 
-            CreateError(ERR_LIC_DUE_SOON, INFO_LEVEL, CLEAR_BY_CLEAR_BUTTON, leave);
+            CreateError(ERR_LIC_DUE_SOON, INFO_LEVEL, CLEAR_BY_MCP_RESET, leave);
         }
     }
     else if((deaddaycount - curdaycount) > 48)
@@ -2237,16 +2241,18 @@ void ChannelEngine::ProcessMiGetESBCmd(MiCmdFrame &cmd){
  */
 void ChannelEngine::ProcessMiAlarm(MiCmdFrame &cmd){
     uint32_t alarm_id = 0;
-    uint16_t alarm_level = INFO_LEVEL;
-    uint8_t clear_type = CLEAR_BY_MCP_RESET;
+    //uint16_t alarm_level = WARNING_LEVEL;
+    //uint8_t clear_type = CLEAR_BY_MCP_RESET;
+    uint16_t alarm_level = FATAL_LEVEL;
+    uint8_t clear_type = CLEAR_BY_RESET_POWER;
 
     alarm_id = cmd.data.data[1]; //高16位
     alarm_id = alarm_id<<16;
     alarm_id += cmd.data.data[0];   //低16位
     alarm_level = cmd.data.data[2];
 
-    if(alarm_level >= WARNING_LEVEL)
-        clear_type = CLEAR_BY_CLEAR_BUTTON;
+//    if(alarm_level >= WARNING_LEVEL)
+//        clear_type = CLEAR_BY_CLEAR_BUTTON;
 
     g_ptr_trace->PrintTrace(TRACE_WARNING, CHANNEL_ENGINE_SC, "ChannelEngine::ProcessMiAlarm, alarm_id=%u, level=%hu", alarm_id, alarm_level);
 
@@ -2697,17 +2703,17 @@ void ChannelEngine::ProcessHmiCmd(HMICmdFrame &cmd){
         break;
     case CMD_HMI_CLEAR_MSG:               //HMI通知SC清除消息  0x33
         printf("process CMD_HMI_CLEAR_MSG:%hhu, cmd_ex=%hhu \n", cmd.channel_index, cmd.cmd_extension);
-//		if(cmd.channel_index == CHANNEL_ENGINE_INDEX){
-//			this->ProcessHmiClearMsgCmd(cmd);
-//		}else if(cmd.channel_index < this->m_p_general_config->chn_count){
-//			this->m_p_channel_control[cmd.channel_index].ProcessHmiCmd(cmd);
-//		}else{
-//			cmd.frame_number |= 0x8000;
-//			cmd.cmd_extension = FAILED;
-//			cmd.data_len = 0;
-//			this->m_p_hmi_comm->SendCmd(cmd);
-//			g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "命令[%d]通道号非法！%d", cmd.cmd, cmd.channel_index);
-//		}
+        if(cmd.channel_index == CHANNEL_ENGINE_INDEX){
+            this->ProcessHmiClearMsgCmd(cmd);
+        }else if(cmd.channel_index < this->m_p_general_config->chn_count){
+            this->m_p_channel_control[cmd.channel_index].ProcessHmiCmd(cmd);
+        }else{
+            cmd.frame_number |= 0x8000;
+            cmd.cmd_extension = FAILED;
+            cmd.data_len = 0;
+            this->m_p_hmi_comm->SendCmd(cmd);
+            g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "命令[%d]通道号非法！%d", cmd.cmd, cmd.channel_index);
+        }
         break;
     case CMD_HMI_SYNC_AXIS_OPT:           //HMI通知HMI进行同步轴使能操作 0x34
         this->ProcessHmiEnableSyncAxisCmd(cmd);
@@ -2763,9 +2769,12 @@ void ChannelEngine::ProcessHmiCmd(HMICmdFrame &cmd){
         }
         else
         {
-            CreateError(ERR_PMC_SDLINK_CONFIG, WARNING_LEVEL, CLEAR_BY_CLEAR_BUTTON);
+            CreateError(ERR_PMC_SDLINK_CONFIG, ERROR_LEVEL, CLEAR_BY_RESET_POWER);
         }
     }
+        break;
+    case CMD_HMI_GET_ERROR_INFO:
+        this->ProcessHmiGetErrorCmd(cmd);
         break;
     default:
         g_ptr_trace->PrintTrace(TRACE_WARNING, CHANNEL_ENGINE_SC, "不支持的HMI指令[%d]", cmd.cmd);
@@ -3123,6 +3132,29 @@ void ChannelEngine::ProcessHmiClearMsgCmd(HMICmdFrame &cmd){
     this->m_p_hmi_comm->SendCmd(cmd);
 }
 
+void ChannelEngine::ProcessHmiGetErrorCmd(HMICmdFrame &cmd)
+{
+    cmd.frame_number |= 0x8000;
+    cmd.data_len = 0;
+    memset(cmd.data, 0x00, kMaxHmiDataLen);
+
+    auto infolist = g_ptr_alarm_processor->GetErrorInfo();
+    size_t infoSize = sizeof(ErrorInfo);
+    for (auto itr = infolist.begin(); itr != infolist.end(); ++itr)
+    {
+        memcpy(cmd.data + cmd.data_len, &*itr, infoSize);
+        int data_len = cmd.data_len + infoSize;
+        if (data_len < kMaxHmiDataLen)
+            cmd.data_len = data_len;
+        else
+            break;
+    }
+
+    std::cout << "Process Hmi cmd, err cnt: " << infolist.size() << std::endl;
+
+    this->m_p_hmi_comm->SendCmd(cmd);
+}
+
 /**
  * @brief 处理HMI使能同步轴命令
  * @param cmd  : HMI指令包
@@ -3468,7 +3500,7 @@ void ChannelEngine::ProcessHmiGetParam(HMICmdFrame &cmd){
         break;
     case AXIS_CONFIG:
         index = cmd.data[0];
-//		printf("get axis config %hhu, frameindex=%hu\n", index, cmd.frame_number);
+        //printf("get axis config %hhu, frameindex=%hu\n", index, cmd.frame_number);
         if(index >= this->m_p_general_config->max_axis_count){//轴号超范围, 支持参数修改后一次重启
             printf("get axis config failed, index=%hhu, axis_count:%hhu\n", index, m_p_general_config->max_axis_count);
             cmd.data_len = 0;
@@ -3523,6 +3555,7 @@ void ChannelEngine::ProcessHmiGetParam(HMICmdFrame &cmd){
         break;
     }
     case TOOL_POT_CONFIG:
+        std::cout << "Get Pot Config" << std::endl;
         if(cmd.channel_index >= m_p_general_config->chn_count)//通道索引超范围
             cmd.data_len = 0;
         else{
@@ -4615,7 +4648,7 @@ bool ChannelEngine::SetWorkMode(uint8_t work_mode){
 */
 
     if(work_mode != REF_MODE && this->m_b_ret_ref){
-        CreateError(ERR_SWITCH_MODE_IN_RET_REF, WARNING_LEVEL, CLEAR_BY_CLEAR_BUTTON);
+        CreateError(ERR_SWITCH_MODE_IN_RET_REF, WARNING_LEVEL, CLEAR_BY_MCP_RESET);
         return false;
     }
 
@@ -5132,11 +5165,11 @@ void ChannelEngine::ManualMoveAbs(uint8_t phy_axis, double vel, double pos){
                 limit_pos = m_p_axis_config[phy_axis].soft_limit_min_1*1e7;
 
                 if(limit_pos > cur_pos){//已经在限位外，告警
-                    CreateError(ERR_SOFTLIMIT_NEG, WARNING_LEVEL, CLEAR_BY_CLEAR_BUTTON, 0, chn, chn_axis);
+                    CreateError(ERR_SOFTLIMIT_NEG, WARNING_LEVEL, CLEAR_BY_MCP_RESET, 0, chn, chn_axis);
                 //	this->m_error_code = ERR_SOFTLIMIT_NEG;
                     return;
                 }else if(limit_pos == cur_pos){  //已经到达负限位极限位置
-                    CreateError(ERR_SOFTLIMIT_NEG, WARNING_LEVEL, CLEAR_BY_CLEAR_BUTTON, 0, chn, chn_axis);
+                    CreateError(ERR_SOFTLIMIT_NEG, WARNING_LEVEL, CLEAR_BY_MCP_RESET, 0, chn, chn_axis);
                     return;
                 }else if(tar_pos < limit_pos){
                     tar_pos = limit_pos;
@@ -5199,11 +5232,11 @@ void ChannelEngine::ManualMoveAbs(uint8_t phy_axis, double vel, double pos){
                 limit_pos = m_p_axis_config[phy_axis].soft_limit_min_1*1e7;
 
                 if(limit_pos > cur_pos){//已经在限位外，告警
-                    CreateError(ERR_SOFTLIMIT_NEG, WARNING_LEVEL, CLEAR_BY_CLEAR_BUTTON, 0, CHANNEL_ENGINE_INDEX, phy_axis);
+                    CreateError(ERR_SOFTLIMIT_NEG, WARNING_LEVEL, CLEAR_BY_MCP_RESET, 0, CHANNEL_ENGINE_INDEX, phy_axis);
                 //	this->m_error_code = ERR_SOFTLIMIT_NEG;
                     return;
                 }else if(limit_pos == cur_pos){  //已经到达负限位极限位置
-                    CreateError(ERR_SOFTLIMIT_NEG, WARNING_LEVEL, CLEAR_BY_CLEAR_BUTTON, 0, CHANNEL_ENGINE_INDEX, phy_axis);
+                    CreateError(ERR_SOFTLIMIT_NEG, WARNING_LEVEL, CLEAR_BY_MCP_RESET, 0, CHANNEL_ENGINE_INDEX, phy_axis);
                     return;
                 }else if(tar_pos < limit_pos){
                     tar_pos = limit_pos;
@@ -5288,11 +5321,11 @@ void ChannelEngine::ManualMove(uint8_t phy_axis, int8_t dir, double vel, double 
                 limit_pos = m_p_axis_config[phy_axis].soft_limit_min_1*1e7;
 
                 if(limit_pos > cur_pos){//已经在限位外，告警
-                    CreateError(ERR_SOFTLIMIT_NEG, WARNING_LEVEL, CLEAR_BY_CLEAR_BUTTON, 0, chn, chn_axis);
+                    CreateError(ERR_SOFTLIMIT_NEG, WARNING_LEVEL, CLEAR_BY_MCP_RESET, 0, chn, chn_axis);
                 //	this->m_error_code = ERR_SOFTLIMIT_NEG;
                     return;
                 }else if(limit_pos == cur_pos){  //已经到达负限位极限位置
-                    CreateError(ERR_SOFTLIMIT_NEG, WARNING_LEVEL, CLEAR_BY_CLEAR_BUTTON, 0, chn, chn_axis);
+                    CreateError(ERR_SOFTLIMIT_NEG, WARNING_LEVEL, CLEAR_BY_MCP_RESET, 0, chn, chn_axis);
                     return;
                 }else if(tar_pos < (limit_pos-cur_pos)){
                     tar_pos = limit_pos-this->m_p_channel_control[chn].GetAxisCurIntpTarPos(chn_axis, true)*1e7;
@@ -5350,11 +5383,11 @@ void ChannelEngine::ManualMove(uint8_t phy_axis, int8_t dir, double vel, double 
                 limit_pos = m_p_axis_config[phy_axis].soft_limit_min_1*1e7;
 
                 if(limit_pos > cur_pos){//已经在限位外，告警
-                    CreateError(ERR_SOFTLIMIT_NEG, WARNING_LEVEL, CLEAR_BY_CLEAR_BUTTON, 0, CHANNEL_ENGINE_INDEX, phy_axis);
+                    CreateError(ERR_SOFTLIMIT_NEG, WARNING_LEVEL, CLEAR_BY_MCP_RESET, 0, CHANNEL_ENGINE_INDEX, phy_axis);
                 //	this->m_error_code = ERR_SOFTLIMIT_NEG;
                     return;
                 }else if(limit_pos == cur_pos){  //已经到达负限位极限位置
-                    CreateError(ERR_SOFTLIMIT_NEG, WARNING_LEVEL, CLEAR_BY_CLEAR_BUTTON, 0, CHANNEL_ENGINE_INDEX, phy_axis);
+                    CreateError(ERR_SOFTLIMIT_NEG, WARNING_LEVEL, CLEAR_BY_MCP_RESET, 0, CHANNEL_ENGINE_INDEX, phy_axis);
                     return;
                 }else if(tar_pos < (limit_pos-cur_pos)){
                     tar_pos = limit_pos-cur_pos;
@@ -5467,7 +5500,7 @@ void ChannelEngine::ManualMovePmc(uint8_t phy_axis, int8_t dir){
             tar_inc_max = m_p_axis_config[phy_axis].soft_limit_min_1*1e7 - cur_pos;
 
             if(tar_inc_max > 0){//已经在限位外，告警
-                CreateError(ERR_SOFTLIMIT_NEG, WARNING_LEVEL, CLEAR_BY_CLEAR_BUTTON, 0, CHANNEL_ENGINE_INDEX, phy_axis);
+                CreateError(ERR_SOFTLIMIT_NEG, WARNING_LEVEL, CLEAR_BY_MCP_RESET, 0, CHANNEL_ENGINE_INDEX, phy_axis);
         //		this->m_error_code = ERR_SOFTLIMIT_NEG;
                 printf("manual move out of soft negative limit\n");
                 return;
@@ -5547,7 +5580,7 @@ void ChannelEngine::ManualMovePmc(uint8_t phy_axis, double tar_pos, double vel, 
             tar_inc_max = m_p_axis_config[phy_axis].soft_limit_max_1*1e7 - cur_pos*1e7;
 
             if(tar_inc_max <= 0){//已经在限位外，告警
-                CreateError(ERR_SOFTLIMIT_POS, WARNING_LEVEL, CLEAR_BY_CLEAR_BUTTON, 0, CHANNEL_ENGINE_INDEX, phy_axis);
+                CreateError(ERR_SOFTLIMIT_POS, WARNING_LEVEL, CLEAR_BY_MCP_RESET, 0, CHANNEL_ENGINE_INDEX, phy_axis);
     //			this->m_error_code = ERR_SOFTLIMIT_POS;
 
                 return;
@@ -5560,7 +5593,7 @@ void ChannelEngine::ManualMovePmc(uint8_t phy_axis, double tar_pos, double vel, 
             tar_inc_max = m_p_axis_config[phy_axis].soft_limit_min_1*1e7 - cur_pos*1e7;
 
             if(tar_inc_max > 0){//已经在限位外，告警
-                CreateError(ERR_SOFTLIMIT_NEG, WARNING_LEVEL, CLEAR_BY_CLEAR_BUTTON, 0, CHANNEL_ENGINE_INDEX, phy_axis);
+                CreateError(ERR_SOFTLIMIT_NEG, WARNING_LEVEL, CLEAR_BY_MCP_RESET, 0, CHANNEL_ENGINE_INDEX, phy_axis);
         //		this->m_error_code = ERR_SOFTLIMIT_NEG;
 
                 return;
@@ -7884,7 +7917,6 @@ bool ChannelEngine::RefreshMiStatusFun(){
             continue;
         }
 
-
         //读取欠压信号
         if(!m_b_power_off && g_sys_state.system_ready && this->m_p_mc_comm->ReadUnderVoltWarn()){
             printf("OFF\n");
@@ -8766,7 +8798,7 @@ void ChannelEngine::ProcessPmcAlarm(){
                         errtype = ERROR_LEVEL;
                     else
                         errtype = FATAL_LEVEL;
-                    CreateError(errorno, errtype, CLEAR_BY_MCP_RESET, 0, CHANNEL_ENGINE_INDEX);
+                    CreateError(errorno, errtype, CLEAR_BY_AUTO, 0, CHANNEL_ENGINE_INDEX);
                 }
 
                 value = value>>1;  //右移一位
@@ -8793,8 +8825,8 @@ void ChannelEngine::ProcessPmcAlarm(){
                     else if(errorno < 20480)
                         errtype = ERROR_LEVEL;
                     else
-                        errtype = FATAL_LEVEL;
-                    CreateError(errorno, errtype, CLEAR_BY_MCP_RESET, 0, CHANNEL_ENGINE_INDEX);
+                        errtype = FATAL_LEVEL
+                    CreateError(errorno, errtype, CLEAR_BY_AUTO, 0, CHANNEL_ENGINE_INDEX);
                 }
 
                 value = value>>1;  //右移一位
@@ -8804,6 +8836,7 @@ void ChannelEngine::ProcessPmcAlarm(){
         alarmreg += 8;  //pt++;
     }
 #endif
+    g_ptr_alarm_processor->ProcessAutoAlarm();
 }
 
 /**

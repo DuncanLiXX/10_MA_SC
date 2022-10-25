@@ -3,6 +3,7 @@
 
 #include "singleton.h"
 #include "channel_data.h"
+#include "trace.h"
 
 class ChannelControl;
 class SpindleControl;
@@ -15,33 +16,15 @@ class SCToolPotConfig;
 class FiveAxisConfig;
 class FRegBits;
 class GRegBits;
+class TraceInfo;
 
 void ScPrintf(const char *__format,va_list args);
 
+const std::string SwitchTopic = "/sc/switch";  // 打印类型选择
+const std::string PrintTopic = "/sc/print";    // 打印输出
 
 class ShowSc{
 public:
-    enum PrintType{
-        TypeNone =                  0,//不打印
-        TypeChnStatus =             1,//通道状态
-        TypeMcStatus =              2,//MC状态
-        TypeRealtimeData =          3,//实时数据
-        TypeSpindle =               4,//主轴状态
-        TypeSysConfig =             5,//系统配置
-        TypeChnConfig =             6,//通道配置
-        TypeAxisConfig =            7,//轴参配置
-        TypeCoordConfig =           8,//工件坐标系偏置
-        TypeExCoordConfig =         9,//拓展工件坐标系偏置
-        TypeGrbCoordConfig =        10,//全局工件坐标系偏置
-        TypeTooOffsetlConfig =      11,//刀具偏置配置
-        TypeToolPotConfig =         12,//刀具信息
-        TypeFiveAxisConfig =        13,//五轴参数
-        TypeMode =                  14,//模态
-        TypeWarning =               15,//警告
-        TypeFRegState =             16,//F寄存器
-        TypeGRegState =             17,//G寄存器
-        TypePrintOutput =           18,//print函数的打印输出
-    };
 
     ShowSc();
     ~ShowSc();
@@ -77,6 +60,7 @@ private:
     // 打印处理线程
     void ProcessPrintThread();
 
+    // 根据key和value，格式化后追加到s中
     void AddPair(string &s,string key,int64_t value);
     void AddPair(string &s,string key,uint32_t value);
     void AddPair(string &s,string key,int32_t value);
@@ -100,32 +84,37 @@ private:
     void PrintExCoordConfig();  // 打印拓展工件坐标系配置
     void PrintGrbCoordConfig(); // 打印全局工件坐标系配置
     void PrintToolOffsetConfig();   // 打印刀具偏置配置
-    void PrintToolPotConfig();  // 打印道具信息配置
+    void PrintToolPotConfig();  // 打印刀具信息配置
     void PrintFiveAxisCoinfig();    // 打印五轴参数配置
     void PrintMode();   // 打印模态
     void PrintWarning();    // 打印警告
     void PrintFRegState();  // 打印F寄存器
     void PrintGRegState();  // 打印G寄存器
 
+    // 发送信息
+    void SendMsg(string &s);
+
 private:
     PrintType print_type{TypeNone};
     int interval{1000};
 
-    ChannelStatusCollect *chn_status{nullptr};
-    ChannelRealtimeStatus *chn_rt_status{nullptr};
-    ChannelMcStatus *mc_status{nullptr};
-    SpindleControl *spindle{nullptr};
-    SCSystemConfig *sys_config{nullptr};
-    SCChannelConfig *chn_config{nullptr};
-    SCAxisConfig *axis_config{nullptr};
-    SCCoordConfig *coord{nullptr};
-    SCCoordConfig *ex_coord{nullptr};
-    SCCoordConfig *global_coord{nullptr};
-    SCToolOffsetConfig *tool_offset{nullptr};
-    SCToolPotConfig *tool_pot{nullptr};
-    FiveAxisConfig *fiveaxis_config{nullptr};
-    FRegBits *F;
-    const GRegBits *G;
+    TraceInfo *trace;
+
+    ChannelStatusCollect *chn_status{nullptr};  // 通道状态
+    ChannelRealtimeStatus *chn_rt_status{nullptr}; // 实时数据
+    ChannelMcStatus *mc_status{nullptr};    // MC状态
+    SpindleControl *spindle{nullptr}; // 主轴状态
+    SCSystemConfig *sys_config{nullptr}; // 系统配置
+    SCChannelConfig *chn_config{nullptr}; // 通道配置
+    SCAxisConfig *axis_config{nullptr}; // 轴配置
+    SCCoordConfig *coord{nullptr}; // 坐标系配置
+    SCCoordConfig *ex_coord{nullptr}; // 拓展坐标系配置
+    SCCoordConfig *global_coord{nullptr}; // 全局坐标系配置
+    SCToolOffsetConfig *tool_offset{nullptr}; // 刀具偏置配置
+    SCToolPotConfig *tool_pot{nullptr}; // 刀具信息配置
+    FiveAxisConfig *fiveaxis_config{nullptr}; // 五轴配置
+    const FRegBits *F; // F寄存器
+    const GRegBits *G; //G寄存器
 
     bool exit_flag{false};
 };

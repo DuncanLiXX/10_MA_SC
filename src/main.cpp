@@ -734,7 +734,6 @@ int Initialize(){
 //程序退出处理函数
 void ProgramQuit(int sig) {
     g_sys_state.system_quit = true;
-
 }
 
 

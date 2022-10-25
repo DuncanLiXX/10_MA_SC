@@ -2,12 +2,14 @@
 #include "spindle_control.h"
 #include "parm_definition.h"
 #include "alarm_processor.h"
+#include "trace.h"
 #include <functional>
 #include <future>
 #include <string>
 
 ShowSc::ShowSc()
 {
+    trace = TraceInfo::GetInstance();
     auto process = std::bind(&ShowSc::ProcessPrintThread,
                              this);
     std::async(std::launch::async, process);
@@ -197,6 +199,8 @@ void ShowSc::PrintChnStatus()
         key = key + "axis_phy"+"[" + to_string(axis) +"]";
         AddPair(s,"axis_phy",chn_status->cur_chn_axis_phy[axis]);
     }
+
+    SendMsg(s);
 }
 
 void ShowSc::PrintMcStatus()
@@ -267,6 +271,8 @@ void ShowSc::PrintMcStatus()
     AddPair(s,"step_over",mc_status->step_over);
     AddPair(s,"auto_block_over",mc_status->auto_block_over);
     AddPair(s,"mda_block_over",mc_status->mda_block_over);
+
+    SendMsg(s);
 }
 
 
@@ -306,6 +312,8 @@ void ShowSc::PrintRealtimeData()
     AddPair(s,"machining_time_remains",chn_rt_status->machining_time_remains);
     AddPair(s,"machining_time_total",chn_rt_status->machining_time_total);
     AddPair(s,"line_no",chn_rt_status->line_no);
+
+    SendMsg(s);
 }
 
 void ShowSc::PrintSpindle()
@@ -373,6 +381,8 @@ void ShowSc::PrintSpindle()
     AddPair(s,"spd_sync_error_gain",cfg->spd_sync_error_gain);
     AddPair(s,"spd_speed_feed_gain",cfg->spd_speed_feed_gain);
     AddPair(s,"spd_pos_ratio_gain",cfg->spd_pos_ratio_gain);
+
+    SendMsg(s);
 }
 
 void ShowSc::PrintSysConfig()
@@ -405,6 +415,8 @@ void ShowSc::PrintSysConfig()
     AddPair(s,"trace_level",cfg->trace_level);
     AddPair(s,"debug_mode",cfg->debug_mode);
     AddPair(s,"hw_rev_trace",cfg->hw_rev_trace);
+
+    SendMsg(s);
 }
 
 void ShowSc::PrintChnConfig()
@@ -487,6 +499,8 @@ void ShowSc::PrintChnConfig()
     AddPair(s,"g31_sig_level",cfg->g31_sig_level);
     AddPair(s,"rst_hold_time",cfg->rst_hold_time);
     AddPair(s,"rst_mode",cfg->rst_mode);
+
+    SendMsg(s);
 }
 
 void ShowSc::PrintAxisConfig(int axis)
@@ -593,6 +607,8 @@ void ShowSc::PrintAxisConfig(int axis)
     }
 
     AddPair(s,"ref_mark_err",cfg->ref_mark_err);
+
+    SendMsg(s);
 }
 
 void ShowSc::PrintCoordConfig()
@@ -620,6 +636,8 @@ void ShowSc::PrintCoordConfig()
         g93_value_s = g93_value_s + "]";
         AddPair(s,"G92",g93_value_s);
     }
+
+    SendMsg(s);
 }
 
 void ShowSc::PrintExCoordConfig()
@@ -638,6 +656,8 @@ void ShowSc::PrintExCoordConfig()
 
         AddPair(s,coord_name_s,value_s);
     }
+
+    SendMsg(s);
 }
 
 void ShowSc::PrintGrbCoordConfig()
@@ -672,6 +692,8 @@ void ShowSc::PrintMode()
         string value = "G"+to_string((int)mode[i]/10);
         AddPair(s,key,value);
     }
+
+    SendMsg(s);
 }
 
 void ShowSc::PrintWarning()
@@ -679,6 +701,8 @@ void ShowSc::PrintWarning()
     AlarmProcessor *alarms = AlarmProcessor::GetInstance();
     if(!alarms)
         return;
+
+    string s= "";
 
     CircularBuffer<ErrorInfo>* list = alarms->GetWarningList();
     int count = list->BufLen();
@@ -688,7 +712,10 @@ void ShowSc::PrintWarning()
         char value[128];
         sprintf(value,"chn=%hhu, axis=%hhu, err_code=%hu, err_info=0x%x\n",
                 info->channel_index, info->axis_index, info->error_code, info->error_info);
+        AddPair(s,key,value);
     }
+
+    SendMsg(s);
 }
 
 void ShowSc::PrintFRegState()
@@ -708,7 +735,7 @@ void ShowSc::PrintFRegState()
         AddPair(s,reg_name_s,reg_value_s);
     }
 
-
+    SendMsg(s);
 }
 
 void ShowSc::PrintGRegState()
@@ -727,4 +754,11 @@ void ShowSc::PrintGRegState()
         }
         AddPair(s,reg_name_s,reg_value_s);
     }
+
+    SendMsg(s);
+}
+
+void ShowSc::SendMsg(string &s)
+{
+    trace->SendMsg(PrintTopic,s);
 }

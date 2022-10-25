@@ -166,7 +166,7 @@ enum HMICmdCode {
 	CMD_HMI_SET_REF_POINT,			 //HMI通知SC将当前位置设置为当前轴的原点
 	CMD_HMI_GET_MACRO_VAR,			 //HMI向SC请求宏变量的值
 	CMD_HMI_SET_MACRO_VAR,			 //HMI向SC设置宏变量寄存器的值
-    CMD_HMI_CLEAR_TOTAL_PIECE,       //HMI请求清空总共件数
+        CMD_HMI_CLEAR_TOTAL_PIECE,       //HMI请求清空总共件数
 
 //	CMD_HMI_SET_CUR_PMC_AXIS,        //HMI设置当前PMC轴  0x20
 	CMD_HMI_SET_CALIBRATION = 35,	 //HMI向SC发出激光调高器标定指令  0x23
@@ -189,9 +189,10 @@ enum HMICmdCode {
 	CMD_HMI_SYNC_TIME,               //HMI向SC查询当前系统时间  0x36
 	CMD_HMI_CHECK_SYNC_EN,           //HMI向SC查询同步轴状态 0x37
 	CMD_HMI_GET_SYS_INFO,
-    CMD_HMI_CLEAR_MACHINETIME_TOTAL, //HMI向SC请求清除累计时间
-    CMD_HMI_GET_HANDWHEEL_INFO,      //HMI向SC获取手轮信息
-    CMD_HMI_SET_HANDWHEEL_INFO,      //HMI向SC设置手轮信息
+    CMD_HMI_CLEAR_MACHINETIME_TOTAL, //HMI向SC请求清除累计时间 0x39
+    CMD_HMI_GET_HANDWHEEL_INFO,      //HMI向SC获取手轮信息 0x3A
+    CMD_HMI_SET_HANDWHEEL_INFO,      //HMI向SC设置手轮信息 0x3B
+    CMD_HMI_GET_ERROR_INFO,          //HMI向SC获取错误信息 0x3C
 
 
 	//SC-->HMI
@@ -219,7 +220,8 @@ enum HMICmdCode {
 	CMD_SC_TOOL_MEASURE_OVER,       //SC通知HMI手动对刀结果  0x79
 	CMD_SC_PARAM_CHANGED,           //SC通知HMI参数发生更改   0x7A
 	CMD_SC_NOTIFY_MACH_OVER,        //SC通知HMI加工完成       0x7B
-	CMD_SC_NOTIFY_MCODE,				//SC通知HMI M代码执行
+    CMD_SC_NOTIFY_MCODE,			//SC通知HMI M代码执行
+    CMD_SC_NOTIFY_ALARM_CHANGE,     //SC通知HMI报警信息改变
 
 
 	CMD_HMI_GUARD = 255       //HMI命令字卫兵 0xFF
@@ -443,7 +445,7 @@ enum ErrorType {
 
 	ERR_HW_REV_OVER = 1650,      //手轮反向跟踪无更多数据   级别：警告
 
-	ERR_TOOL_LIFE_OVER = 1660,  //刀具寿命到达    级别：警告
+    ERR_TOOL_LIFE_OVER = 1660,  //刀具寿命到达
 	ERR_TOOL_LIFE_COMING,       //刀具寿命即将到达     级别：警告
 
     //主轴告警
@@ -838,32 +840,42 @@ enum ConfigMaskBits{
  */
 //#pragma pack(1)  //单字节对齐
 struct ErrorInfo {
-	uint64_t time; 			//错误产生时间，由高到低分别为：年（2字节）月（1字节）日（1字节）时（1字节）分（1字节）秒（1字节），最高字节保留
-	int32_t error_info;     //错误信息
-	uint16_t error_code;    //错误码
-	uint8_t channel_index;  //通道号
-	uint8_t axis_index;    //通道内轴序号
-	uint8_t error_level;    //错误级别
-	uint8_t clear_type;		//清除告警类别
+    uint64_t time; 	    //错误产生时间，由高到低分别为：年（2字节）月（1字节）日（1字节）时（1字节）分（1字节）秒（1字节），最高字节保留
+    int32_t error_info;     //错误信息
+    uint16_t error_code;    //错误码
+    uint8_t channel_index;  //通道号
+    uint8_t axis_index;     //通道内轴序号
+    uint8_t error_level;    //错误级别
+    uint8_t clear_type;	    //清除告警类别
+
+    bool operator==(const ErrorInfo &info) const {
+        if(info.axis_index == axis_index && info.channel_index == channel_index &&
+            info.clear_type == clear_type && info.error_code == error_code &&
+            info.error_level == error_level && info.error_info == error_info){
+            return true;
+        }
+        else
+            return false;
+    }
 };
 //#pragma pack()
 
 //错误级别
 enum ErrorLevel {
-	FATAL_LEVEL = 0, 	//严重错误
-	ERROR_LEVEL, 		//错误
-	WARNING_LEVEL, 		//警告
-	INFO_LEVEL			//提示信息
+    FATAL_LEVEL = 0, 	//严重错误
+    ERROR_LEVEL,        //错误
+    WARNING_LEVEL,      //警告
+    INFO_LEVEL,	        //提示信息
+    MAX_LEVEL,
 };
 
 /*
  * @brief 告警清除类别
  */
 enum ErrorClearType {
-	CLEAR_BY_RESET_POWER = 0, 	//重启电源后清除
-	CLEAR_BY_MCP_RESET,			//MCP面板reset按键清除
-	CLEAR_BY_CLEAR_BUTTON,		//清除告警按键清除
-	CLEAR_BY_NC_START			//开始加工命令后清除
+    CLEAR_BY_RESET_POWER = 0, 	//重启电源后清除
+    CLEAR_BY_MCP_RESET,         //复位清除
+    CLEAR_BY_AUTO,              //自动清除
 };
 
 //32bit的mask
@@ -1614,6 +1626,11 @@ enum HmiMsgId{
 
 	MSG_ID_GUARD
 
+};
+
+enum ToolPotLifeType {
+    ToolPot_Close,      //关闭计次
+    ToolPot_Cnt,        //换刀次数计次
 };
 
 #endif /* INC_HMI_SHARED_DATA_H_ */

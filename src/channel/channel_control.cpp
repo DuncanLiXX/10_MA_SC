@@ -287,6 +287,20 @@ bool ChannelControl::Initialize(uint8_t chn_index, ChannelEngine *engine, HMICom
     this->UpdateFiveAxisRotParam();
 #endif
 
+    m_n_cur_tcode = -1;
+//	m_n_cur_scode = -1;
+//	m_n_cur_dcode = -1;
+//	m_n_cur_hcode = -1;
+
+    m_n_real_phy_axis = 0;
+
+    this->m_mask_intp_axis = 0;
+    this->m_n_intp_axis_count = 0;
+    this->m_mask_pmc_axis = 0;
+    this->m_n_pmc_axis_count = 0;
+
+    m_b_need_change_to_pause = false;
+
     this->m_n_spindle_count = 0;
     memset(m_spd_axis_phy, 0x00, kMaxChnSpdCount);
 
@@ -343,6 +357,7 @@ bool ChannelControl::Initialize(uint8_t chn_index, ChannelEngine *engine, HMICom
 #endif
         m_channel_status.cur_chn_axis_phy[i]   = m_p_channel_config->chn_axis_phy[i];
     }
+
     ShowSc &showSc = Singleton<ShowSc>::instance();
     showSc.AddComponent(&m_channel_status);
     showSc.AddComponent(&m_channel_rt_status);
@@ -393,20 +408,6 @@ bool ChannelControl::Initialize(uint8_t chn_index, ChannelEngine *engine, HMICom
 	m_simulate_mode = SIM_NONE;    //默认在非仿真模式
 #endif
 
-	m_n_cur_tcode = -1;
-//	m_n_cur_scode = -1;
-//	m_n_cur_dcode = -1;
-//	m_n_cur_hcode = -1;
-
-	m_n_real_phy_axis = 0;
-
-	this->m_mask_intp_axis = 0;
-	this->m_n_intp_axis_count = 0;
-	this->m_mask_pmc_axis = 0;
-	this->m_n_pmc_axis_count = 0;
-
-	m_b_need_change_to_pause = false;
-
 	this->m_b_mc_on_arm = this->m_p_channel_engine->IsMcArmChn(this->m_n_channel_index);
 		
 	m_scene_auto.need_reload_flag = false;
@@ -421,7 +422,7 @@ bool ChannelControl::Initialize(uint8_t chn_index, ChannelEngine *engine, HMICom
 
 	 m_n_graph_pos_count = 0;
 	 m_n_graph_pos_write_idx = 0;
-	 m_n_graph_pos_read_idx = 0;								
+     m_n_graph_pos_read_idx = 0;
 
 
 	//创建自动模式输出指令消息列表

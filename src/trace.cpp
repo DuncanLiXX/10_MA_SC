@@ -10,6 +10,7 @@
  */
 #include "trace.h"
 #include "global_include.h"
+#include "global_definition.h"
 #include "showsc.h"
 #include "singleton.h"
 
@@ -105,8 +106,10 @@ TraceInfo::TraceInfo() :
 	}
 
     // topic 形式的数据监控
+    GetHostAddressFrmFile();
     mosqpp::lib_init();
     m_topic_mosq.connect(m_topic_dest.c_str());
+    std::cout << "--------------------" << m_topic_dest << std::endl;
     m_topic_mosq.loop_start();
 }
 
@@ -442,7 +445,31 @@ uint64_t TraceInfo::GetAlarmTotalSize(){
 			file_size += statbuf.st_size;  //获取文件总大小
 	}
 
-	return file_size;
+    return file_size;
+}
+
+void TraceInfo::GetHostAddressFrmFile()
+{
+    std::string sectionName = "host";
+    std::string keyName = "address";
+    if (m_addressFile.Load(HOST_ADDRESS_FILE) == 0)
+    {
+        std::string value;
+        m_addressFile.GetStringValueOrDefault(sectionName, keyName, &value, m_topic_dest);
+        m_topic_dest = value;
+    }
+    else
+    {
+        if(!m_addressFile.CreateFile(HOST_ADDRESS_FILE)){
+            inifile::IniSection *ns = nullptr;
+            ns = m_addressFile.AddSecttion(sectionName);
+            if (ns)
+            {
+                m_addressFile.AddKeyValuePair(keyName, m_topic_dest, ns);
+                m_addressFile.Save();
+            }
+        }
+    }
 }
 
 //同步文件到磁盘

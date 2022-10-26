@@ -1,5 +1,4 @@
 #include "showsc.h"
-#include "spindle_control.h"
 #include "parm_definition.h"
 #include "alarm_processor.h"
 #include "trace.h"
@@ -7,6 +6,7 @@
 #include <functional>
 #include <future>
 #include <string>
+#include "spindle_control.h"
 
 ShowSc::ShowSc()
 {

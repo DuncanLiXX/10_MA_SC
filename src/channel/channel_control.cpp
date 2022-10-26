@@ -8130,17 +8130,17 @@ bool ChannelControl::ExecuteLoopMsg(RecordMsg *msg){
 			i++;
 		}
 
-	if((m_channel_status.gmode[9] == G84_CMD || m_channel_status.gmode[9] == G74_CMD) && loopmsg->GetGCode() == G80_CMD){  //�رոչ�״̬
-        if(loopmsg->GetGCode() == G74_CMD){
-            m_p_spindle->SetTapFeed(-feed);
-        }else{
-            m_p_spindle->SetTapFeed(feed);
-        }
-
-    }else if((m_channel_status.gmode[9] == G84_CMD || m_channel_status.gmode[9] == G74_CMD) && loopmsg->GetGCode() == G80_CMD){  //�رոչ�״̬
-        //m_p_spindle->CancelRigidTap();
-	}
+		if((m_channel_status.gmode[9] == G84_CMD || m_channel_status.gmode[9] == G74_CMD) && loopmsg->GetGCode() == G80_CMD){  //�رոչ�״̬
+			if(loopmsg->GetGCode() == G74_CMD){
+				m_p_spindle->SetTapFeed(-feed);
+			}else{
+				m_p_spindle->SetTapFeed(feed);
+			}
 	
+		}else if((m_channel_status.gmode[9] == G84_CMD || m_channel_status.gmode[9] == G74_CMD) && loopmsg->GetGCode() == G80_CMD){  //�رոչ�״̬
+			//m_p_spindle->CancelRigidTap();
+		}
+	}
 	this->m_channel_status.gmode[9] = loopmsg->GetGCode();
 
 

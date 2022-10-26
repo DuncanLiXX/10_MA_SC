@@ -18,6 +18,7 @@
 #include <string>
 #include "mosquittopp.h"
 #include "hmi_shared_data.h"
+#include "inifile.h"
 
 //TraceLevel数据结构用于设置调试信息打印级别
 enum TraceLevel {
@@ -240,6 +241,11 @@ public:
      */
     static uint64_t GetAlarmTotalSize();
 
+    /**
+     *  @brief 从配置文件中读取主机ip地址的值
+     *
+     */
+    void GetHostAddressFrmFile();
     /*
      * @brief 同步文件到磁盘
      */
@@ -265,6 +271,7 @@ private:
 
     std::string m_topic_dest = "192.168.100.102";
     mosqpp::TraceMesSend m_topic_mosq;
+    inifile::IniFile m_addressFile;
 };
 
 

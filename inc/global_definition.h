@@ -121,6 +121,7 @@
 #define GRIND_CONFIG_FILE "/cnc/config/grind_config.ini"   //磨削专用参数配置文件
 #endif
 #define HANDWHEEL_CONFIG_FILE "/cnc/config/handwheel_map.ini"
+#define HOST_ADDRESS_FILE     "/cnc/config/host_address.ini"
 
 
 #define BOARD_TEMPATURE "/sys/bus/i2c/devices/1-0048/hwmon/hwmon0/temp1_input"   //主板温度保存文件

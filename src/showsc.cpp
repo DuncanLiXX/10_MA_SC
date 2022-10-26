@@ -11,9 +11,10 @@
 ShowSc::ShowSc()
 {
     trace = TraceInfo::GetInstance();
+    std::future<void> * res = new std::future<void>();
     auto process = std::bind(&ShowSc::ProcessPrintThread,
                              this);
-    std::async(std::launch::async, process);
+    *res = std::async(std::launch::async, process);
 }
 
 ShowSc::~ShowSc()

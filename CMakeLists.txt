@@ -25,6 +25,7 @@ set(SC_SRC
         src/alarm_processor/alarm_processor.cpp;
         src/Algorithm/coord_processor.cpp;
         src/spindle/spindle_control.cpp
+        src/showsc.cpp
 )
 
 set(CHANNEL_SRC
@@ -63,11 +64,13 @@ set(TOOL_COMPENSATE_SRC
         src/tool_compensate/tool_compensate.cpp;
 )
 
+
 set (SC_SRC ${SC_SRC} ${COMMUNICATION_SRC} ${COMPILER_SRC} ${CHANNEL_SRC}
-			${PARAMETER_SRC} ${PMC_SRC} ${TOOL_COMPENSATE_SRC})
+                        ${PARAMETER_SRC} ${PMC_SRC} ${TOOL_COMPENSATE_SRC})
 
 # 生成名称为 ${TARGET_NAME} 的可执行文件
 add_executable(${TARGET_NAME} ${SC_SRC})
+
 
 # 设置头文件的查找路径
 target_include_directories(${TARGET_NAME} PRIVATE inc)
@@ -80,6 +83,7 @@ target_include_directories(${TARGET_NAME} PRIVATE inc/parameter)
 target_include_directories(${TARGET_NAME} PRIVATE inc/pmc)
 target_include_directories(${TARGET_NAME} PRIVATE inc/tool_compensate)
 target_include_directories(${TARGET_NAME} PRIVATE inc/spindle)
+target_include_directories(${TARGET_NAME} PRIVATE inc/mem_share)
 target_include_directories(${TARGET_NAME} PRIVATE lib/inc)
 
 # 设置库文件的查找路径

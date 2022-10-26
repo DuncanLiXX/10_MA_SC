@@ -197,7 +197,9 @@ struct FRegBits{
 	uint8_t TAM:1;               //自动对刀信号      F64.7
 	//F65
     uint8_t RGSPP:1;            //进入攻丝状态反馈 F65.0
-    uint8_t :7;
+    uint8_t :1;
+    uint8_t RGMP:1;
+    uint8_t :5;
 	//F66
 	uint8_t :8;
 	//F67
@@ -863,7 +865,8 @@ struct GRegBits{
 	uint8_t :8;
 	//G61
     uint8_t RGTAP:1;    // 刚性攻丝信号 G61.0
-    uint8_t :7;
+    uint8_t RGMD:1;     // 刚性攻丝模式切换信号 G61.1
+    uint8_t :6;
 	//G62
 	uint8_t :8;
 	//G63

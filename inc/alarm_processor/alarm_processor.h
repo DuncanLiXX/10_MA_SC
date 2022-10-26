@@ -110,6 +110,7 @@ public:
 
 	void RemoveWarning(uint8_t chn, uint16_t error_code);   //清空指定告警
 
+    CircularBuffer<ErrorInfo>* GetWarningList(){return m_error_info_input_list;}
     void ProcessAutoAlarm();// 处理自动类型的告警
 
 private:  //私有接口函数

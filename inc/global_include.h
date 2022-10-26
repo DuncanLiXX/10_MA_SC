@@ -61,6 +61,7 @@ using namespace std;
 #include "geometry_data.h"
 #include "hmi_shared_data.h"
 #include "trace.h"
+#include "showsc.h"
 
 //前置类型声明
 class HMICommunication;
@@ -127,5 +128,7 @@ extern uint64_t GetFreeDisk();
 
 //将字符串中的字母都转换为大写
 extern void StrUpper(char *str);
+
+extern void ScPrintf(const char *__format,va_list args);
 
 #endif /* INC_GLOBAL_INCLUDE_H_ */

@@ -10,7 +10,9 @@
  */
 #include "trace.h"
 #include "global_include.h"
-
+#include "global_definition.h"
+#include "showsc.h"
+#include "singleton.h"
 
 //文件保存目录
 #define LOG_PATH "/cnc/trace/log/"
@@ -104,9 +106,11 @@ TraceInfo::TraceInfo() :
 	}
 
     // topic 形式的数据监控
-    //mosquitto_lib_init();
-    //m_topic_mosq.connect(m_topic_dest.c_str());
-	//m_topic_mosq.loop_start();
+    GetHostAddressFrmFile();
+    mosqpp::lib_init();
+    m_topic_mosq.connect(m_topic_dest.c_str());
+    std::cout << "--------------------" << m_topic_dest << std::endl;
+    m_topic_mosq.loop_start();
 }
 
 //由于m_instance为静态变量，所以系统会自动析构
@@ -130,7 +134,7 @@ TraceInfo::~TraceInfo() {
 	}
 
     // topic 形式的数据监控
-    //mosquitto_lib_cleanup();
+    mosqpp::lib_cleanup();
 }
 
 //GetInstance是获得此类实例的唯一全局访问点
@@ -218,23 +222,11 @@ void TraceInfo::PrintTrace(TraceLevel trace_level, TraceModule trace_module,
     }
 }
 
-/*void TraceInfo::PrintTopic(const std::string &topic, const char *trace_message, ...)
+void TraceInfo::SendMsg(std::string topic, std::string content)
 {
-    if (m_topic_mosq.isConnected())
-    {
-        //处理可变长度参数
-        char trace_message_buf[kMaxMsgLen] = { 0 };       //用于保存trace_message
-        va_list arg_ptr;
-        va_start(arg_ptr, trace_message);
-        vsnprintf(trace_message_buf, sizeof(trace_message_buf),
-                trace_message, arg_ptr);
-        va_end(arg_ptr);
-
-        //主题发布
-        m_topic_mosq.publish(nullptr, topic.c_str(), strlen(trace_message_buf), trace_message_buf);
-    }
+    m_topic_mosq.publish(nullptr, topic.c_str(), content.size(), content.c_str());
     return;
-}*/
+}
 
 //调试信息输出函数
 void TraceInfo::TraceOutput(const char* trace_message) {
@@ -453,7 +445,31 @@ uint64_t TraceInfo::GetAlarmTotalSize(){
 			file_size += statbuf.st_size;  //获取文件总大小
 	}
 
-	return file_size;
+    return file_size;
+}
+
+void TraceInfo::GetHostAddressFrmFile()
+{
+    std::string sectionName = "host";
+    std::string keyName = "address";
+    if (m_addressFile.Load(HOST_ADDRESS_FILE) == 0)
+    {
+        std::string value;
+        m_addressFile.GetStringValueOrDefault(sectionName, keyName, &value, m_topic_dest);
+        m_topic_dest = value;
+    }
+    else
+    {
+        if(!m_addressFile.CreateFile(HOST_ADDRESS_FILE)){
+            inifile::IniSection *ns = nullptr;
+            ns = m_addressFile.AddSecttion(sectionName);
+            if (ns)
+            {
+                m_addressFile.AddKeyValuePair(keyName, m_topic_dest, ns);
+                m_addressFile.Save();
+            }
+        }
+    }
 }
 
 //同步文件到磁盘
@@ -510,5 +526,34 @@ uint64_t TraceInfo::GetAlarmTotalSize(){
 	return;
 }*/
 
+namespace mosqpp {
 
 
+TraceMesSend::TraceMesSend(const char *id, bool clean_session)
+    : mosquittopp(id, clean_session)
+{
+}
+
+TraceMesSend::~TraceMesSend()
+{
+}
+
+void TraceMesSend::on_connect(int)
+{
+    subscribe(nullptr, SwitchTopic.c_str());
+    return;
+}
+
+void TraceMesSend::on_message(const mosquitto_message * msg)
+{
+    std::string strTopic(msg->topic);
+    std::string content((char *)msg->payload, msg->payloadlen);
+
+    if (strTopic == SwitchTopic)
+    {
+        PrintType pt = (PrintType)(atoi(content.c_str()));
+        Singleton<ShowSc>::instance().SetPrintType(pt);
+    }
+}
+
+}

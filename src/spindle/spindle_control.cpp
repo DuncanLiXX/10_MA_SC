@@ -77,7 +77,7 @@ void SpindleControl::InputSCode(uint32_t s_code)
 
 uint32_t SpindleControl::GetSCode()
 {
-    return cnc_speed;
+    return cnc_speed*SOV/100.0;
 }
 
 void SpindleControl::InputPolar(Spindle::CncPolar polar)
@@ -130,6 +130,11 @@ bool SpindleControl::isTapEnable()
     return tap_enable;
 }
 
+void SpindleControl::SetTapFeed(double feed)
+{
+    tap_feed = feed;
+}
+
 void SpindleControl::StartRigidTap(double feed)
 {
     if(!spindle || spindle->axis_interface == 0)
@@ -167,6 +172,8 @@ void SpindleControl::StartRigidTap(double feed)
     SendMcRigidTapFlag(true);
     mi->SendTapStateCmd(chn,true);
     tap_enable = true;
+    std::this_thread::sleep_for(std::chrono::microseconds(100*1000));
+    F->RGSPP = 1;
 }
 
 void SpindleControl::CancelRigidTap()
@@ -290,16 +297,22 @@ void SpindleControl::InputRGTAP(bool RGTAP)
     if(!spindle)
         return;
     this->RGTAP = RGTAP;
-    Mode toMode;
     if(RGTAP)
-        toMode = Position;
+        StartRigidTap(tap_feed);
     else
-        toMode = Speed;
+        CancelRigidTap();
+}
 
-    // 模式不一样才切换
-    //if(mode != toMode){
-    SetMode(toMode);
-    //}
+void SpindleControl::InputRGMD(bool RGMD)
+{
+    if(!spindle)
+        return;
+    this->RGMD = RGMD;
+
+    if(RGMD)
+        SetMode(Position);
+    else
+        SetMode(Speed);
 }
 
 void SpindleControl::RspORCMA(bool success)
@@ -366,6 +379,11 @@ int32_t SpindleControl::GetSpindleSpeed()
 {
     if(!spindle)
         return 0;
+
+    if(spindle->axis_interface == 0){
+        int speed = cnc_speed * SOV/100.0;
+        return speed;
+    }
 
     int32_t speed;
     if(!mi->ReadPhyAxisSpeed(&speed, phy_axis)){
@@ -646,23 +664,22 @@ void SpindleControl::SendSpdSpeedToMi()
 
 void SpindleControl::ProcessModeChanged(Spindle::Mode mode)
 {
-    // 刚性攻丝信号为1的状态下，切换到了位置模式，那么准备攻丝
-    if(mode == Position && RGTAP){
+    if(mode == Position){
         ChannelEngine *engine = ChannelEngine::GetInstance();
         ChannelControl *control = engine->GetChnControl(0);
         ChannelRealtimeStatus status = control->GetRealtimeStatus();
         double pos = status.cur_pos_machine.GetAxisValue(phy_axis);
         mi->SetAxisRefCur(phy_axis+1,pos);
         printf("SetAxisRefCur: axis=%d, pos = %lf\n",phy_axis+1,pos);
+        printf("RspCtrlMode:Position\n");
         std::this_thread::sleep_for(std::chrono::microseconds(100*1000));
-        F->RGSPP = 1;
+        F->RGMP = 1;
+    }else{
+        F->RGMP = 0;
+        printf("RspCtrlMode:Speed\n");
     }
 
     this->mode = mode;
-    if(mode == Speed)
-        printf("RspCtrlMode:Speed\n");
-    else if(mode == Position)
-        printf("RspCtrlMode:Position\n");
 }
 
 void SpindleControl::ProcessSwitchLevel()

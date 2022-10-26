@@ -33,7 +33,6 @@ struct SCAxisConfig;     //SC轴配置
 struct FRegBits;		//F寄存器点位定义
 struct GRegBits;		//G寄存器点位定义
 
-
 /**
  * @brief 通道控制类
  */
@@ -610,7 +609,7 @@ private://私有成员变量
 	MICommunication *m_p_mi_comm;		//MI通讯接口
 	MCCommunication *m_p_mc_comm;		//MC通讯接口
     MCArmCommunication *m_p_mc_arm_comm;   //MC-ARM通讯接口
-    SpindleControl *m_p_spindle;
+    SpindleControl *m_p_spindle;        //主轴模块
 	SCSystemConfig *m_p_general_config;   //系统配置
 	SCChannelConfig *m_p_channel_config;  //通道配置
 	SCAxisConfig *m_p_axis_config;        //轴配置

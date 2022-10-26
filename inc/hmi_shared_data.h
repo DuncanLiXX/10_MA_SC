@@ -1166,6 +1166,8 @@ struct HmiChnConfig{
 	uint8_t g31_sig_level;          //G31跳转信号有效电平    0--低电平    1--高电平
     uint16_t rst_hold_time;         //复位时间 单位:ms
     uint8_t rst_mode;               //复位时运行数据是否保留  0:不保留 1：保留
+    uint32_t g00_max_speed;         //G00最高转速
+    uint32_t g01_max_speed;         //G01最高转速
 
 #ifdef USES_WOOD_MACHINE
 	int debug_param_1;             //调试参数1

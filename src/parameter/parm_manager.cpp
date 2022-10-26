@@ -597,6 +597,8 @@ bool ParmManager::ReadChnConfig(){
             m_sc_channel_config[i].g31_sig_level = m_ini_chn->GetIntValueOrDefault(sname, "g31_sig_level", 0);
             m_sc_channel_config[i].rst_hold_time = m_ini_chn->GetIntValueOrDefault(sname, "rst_hold_time", 16);
             m_sc_channel_config[i].rst_mode = m_ini_chn->GetIntValueOrDefault(sname, "rst_mode", 0);
+            m_sc_channel_config[i].g00_max_speed = m_ini_chn->GetIntValueOrDefault(sname, "g00_max_speed", 30000);
+            m_sc_channel_config[i].g01_max_speed = m_ini_chn->GetIntValueOrDefault(sname, "g01_max_speed", 30000);
 
 #ifdef USES_WOOD_MACHINE
 			m_sc_channel_config[i].debug_param_1 = m_ini_chn->GetIntValueOrDefault(sname, "debug_param_1", 0);  //调试参数1
@@ -684,6 +686,8 @@ bool ParmManager::ReadChnConfig(){
             m_sc_channel_config[i].g31_sig_level = 0;
             m_sc_channel_config[i].rst_hold_time = 16;
             m_sc_channel_config[i].rst_mode = 0;
+            m_sc_channel_config[i].g00_max_speed = 30000;
+            m_sc_channel_config[i].g01_max_speed = 30000;
 #ifdef USES_WOOD_MACHINE
 			m_sc_channel_config[i].debug_param_1 = 0;  //调试参数1
 			m_sc_channel_config[i].debug_param_2 = 0;  //调试参数2
@@ -771,6 +775,8 @@ bool ParmManager::ReadChnConfig(){
             m_ini_chn->AddKeyValuePair(string("g31_sig_level"), string("0"), ns);
             m_ini_chn->AddKeyValuePair(string("rst_hold_time"), string("16"), ns);
             m_ini_chn->AddKeyValuePair(string("rst_mode"), string("0"), ns);
+            m_ini_chn->AddKeyValuePair(string("g00_max_speed"), string("30000"), ns);
+            m_ini_chn->AddKeyValuePair(string("g01_max_speed"), string("30000"), ns);
 
 #ifdef USES_WOOD_MACHINE
 			m_ini_chn->AddKeyValuePair(string("debug_param_1"), string("0"), ns);
@@ -4096,6 +4102,14 @@ bool ParmManager::UpdateChnParam(uint8_t chn_index, uint32_t param_no, ParamValu
         sprintf(kname, "rst_mode");
         m_ini_chn->SetIntValue(sname, kname, value.value_uint8);
         break;
+    case 514:   //G00最高进给速度
+        sprintf(kname, "g00_max_speed");
+        m_ini_chn->SetIntValue(sname, kname, value.value_uint32);
+        break;
+    case 515:   //G01最高进给速度
+        sprintf(kname, "g01_max_speed");
+        m_ini_chn->SetIntValue(sname, kname, value.value_uint32);
+        break;
 #ifdef USES_WOOD_MACHINE
 	case 600:  //DSP调试参数1
 		sprintf(kname, "debug_param_1");
@@ -5477,6 +5491,12 @@ void ParmManager::ActiveChnParam(uint8_t chn_index, uint32_t param_no, ParamValu
         break;
     case 513:   //复位是否保留运行时间
         this->m_sc_channel_config[chn_index].rst_mode = value.value_uint8;
+        break;
+    case 514:   //G00最高进给速度
+        this->m_sc_channel_config[chn_index].g00_max_speed = value.value_uint32;
+        break;
+    case 515:   //G01最高进给速度
+        this->m_sc_channel_config[chn_index].g01_max_speed = value.value_uint32;
         break;
 #ifdef USES_WOOD_MACHINE
 	case 600:  //DSP调试参数1

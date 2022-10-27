@@ -1,5 +1,4 @@
 #include "showsc.h"
-#include "spindle_control.h"
 #include "parm_definition.h"
 #include "alarm_processor.h"
 #include "trace.h"
@@ -7,6 +6,7 @@
 #include <functional>
 #include <future>
 #include <string>
+#include "spindle_control.h"
 
 ShowSc::ShowSc()
 {
@@ -506,6 +506,8 @@ void ShowSc::PrintChnConfig()
     AddPair(s,"g31_sig_level",cfg->g31_sig_level);
     AddPair(s,"rst_hold_time",cfg->rst_hold_time);
     AddPair(s,"rst_mode",cfg->rst_mode);
+    AddPair(s,"g00_max_speed",cfg->g00_max_speed);
+    AddPair(s,"g01_max_speed",cfg->g01_max_speed);
 
     SendMsg(s);
 }

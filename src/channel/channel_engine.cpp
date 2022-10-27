@@ -10115,7 +10115,16 @@ void ChannelEngine::EcatAxisFindRefWithZeroSignal(uint8_t phy_axis){
             this->SendMonitorData(false, false);  //再次读取实时位置
 
             if(fabs(this->GetPhyAxisMachPosFeedback(phy_axis)- dis) <= 0.010){  //到位
-                m_n_ret_ref_step[phy_axis] = 11;  //跳转下一步
+                if (m_p_axis_config[phy_axis].ref_z_distance_max == 0
+                        || m_p_axis_config[phy_axis].ref_z_distance_max > this->m_p_axis_config[phy_axis].ref_base_diff)
+                {
+                    m_n_ret_ref_step[phy_axis] = 11;  //跳转下一步
+                }
+                else
+                {
+                    m_error_code = ERR_RET_REF_Z_ERR;
+                    m_n_ret_ref_step[phy_axis] = 20;
+                }
             }
         //	printf("return ref, goto step 11\n");
             break;
@@ -10131,12 +10140,56 @@ void ChannelEngine::EcatAxisFindRefWithZeroSignal(uint8_t phy_axis){
 
                 this->m_p_mi_comm->WriteCmd(mi_cmd);
             }
+
+
+            if (this->m_p_axis_config[phy_axis].ref_offset_pos)
+            {
+                this->ManualMoveAbs(phy_axis, this->m_p_axis_config[phy_axis].ret_ref_speed, this->m_p_axis_config[phy_axis].ref_offset_pos); //有基准，
+                m_n_ret_ref_step[phy_axis] = 12;
+            }
+            else
+            {
+                m_n_ret_ref_step[phy_axis] = 15;
+            }
+        break;
+        case 12://运动停止
+            if(fabs(this->GetPhyAxisMachPosFeedback(phy_axis) - this->m_p_axis_config[phy_axis].ref_offset_pos) <= 0.010){  //到位
+                gettimeofday(&this->m_time_ret_ref[phy_axis], NULL);   //记录起始时间，延时600ms
+                m_n_ret_ref_step[phy_axis] = 13;
+            }
+            break;
+        case 13: {
+            struct timeval time_now;
+            gettimeofday(&time_now, NULL);
+            unsigned int time_elpase = (time_now.tv_sec-m_time_ret_ref[phy_axis].tv_sec)*1000000+time_now.tv_usec-m_time_ret_ref[phy_axis].tv_usec;
+            if(time_elpase >= 600000){ //延时600ms
+                MiCmdFrame mi_cmd;
+                memset(&mi_cmd, 0x00, sizeof(mi_cmd));
+                mi_cmd.data.cmd = CMD_MI_SET_AXIS_MACH_POS;
+                mi_cmd.data.axis_index = phy_axis+1;
+                mi_cmd.data.data[0] = 0;
+                mi_cmd.data.data[1] = 0;
+                this->m_p_mi_comm->WriteCmd(mi_cmd);
+                gettimeofday(&this->m_time_ret_ref[phy_axis], NULL);   //记录起始时间，延时200ms
+                m_n_ret_ref_step[phy_axis] = 14;
+            }
+        }
+            break;
+        case 14: {
+            struct timeval time_now;
+            gettimeofday(&time_now, NULL);
+            unsigned int time_elpase = (time_now.tv_sec-m_time_ret_ref[phy_axis].tv_sec)*1000000+time_now.tv_usec-m_time_ret_ref[phy_axis].tv_usec;
+            if(time_elpase >= 200000) //延时200ms,等待MI处理
+                m_n_ret_ref_step[phy_axis] = 15;
+        }
+        break;
+        case 15:
             this->SetRetRefFlag(phy_axis, true);
             this->m_p_pmc_reg->FReg().bits[0].in_ref_point |= (0x01<<phy_axis);   //置位到参考点标志
 
-//			printf("return ref over flag : 0x%llx, 0x%hhx, 0x%hhx, 0x%hhx, 0x%hhx, 0x%hhx, 0x%hhx, 0x%hhx, 0x%hhx\n", this->m_p_pmc_reg->FReg().bits[0].in_ref_point,
-//					m_p_pmc_reg->FReg().all[200], m_p_pmc_reg->FReg().all[201], m_p_pmc_reg->FReg().all[202], m_p_pmc_reg->FReg().all[203],
-//					m_p_pmc_reg->FReg().all[204], m_p_pmc_reg->FReg().all[205], m_p_pmc_reg->FReg().all[206], m_p_pmc_reg->FReg().all[207]);
+    //			printf("return ref over flag : 0x%llx, 0x%hhx, 0x%hhx, 0x%hhx, 0x%hhx, 0x%hhx, 0x%hhx, 0x%hhx, 0x%hhx\n", this->m_p_pmc_reg->FReg().bits[0].in_ref_point,
+    //					m_p_pmc_reg->FReg().all[200], m_p_pmc_reg->FReg().all[201], m_p_pmc_reg->FReg().all[202], m_p_pmc_reg->FReg().all[203],
+    //					m_p_pmc_reg->FReg().all[204], m_p_pmc_reg->FReg().all[205], m_p_pmc_reg->FReg().all[206], m_p_pmc_reg->FReg().all[207]);
             this->m_n_mask_ret_ref &= ~(0x01<<phy_axis);
             m_n_ret_ref_step[phy_axis] = 0;
 
@@ -10145,7 +10198,7 @@ void ChannelEngine::EcatAxisFindRefWithZeroSignal(uint8_t phy_axis){
                 this->m_b_ret_ref_auto = false;
                 m_n_ret_ref_auto_cur = 0;
             }
-            break;
+        break;
         case 20: //失败处理
             this->m_n_mask_ret_ref &= ~(0x01<<phy_axis);
             m_n_ret_ref_step[phy_axis] = 0;
@@ -10155,8 +10208,7 @@ void ChannelEngine::EcatAxisFindRefWithZeroSignal(uint8_t phy_axis){
                 this->m_b_ret_ref_auto = false;
                 m_n_ret_ref_auto_cur = 0;
             }
-            m_error_code = ERR_RET_REF_FAILED;
-            CreateError(ERR_RET_REF_FAILED, WARNING_LEVEL, CLEAR_BY_MCP_RESET, 0, CHANNEL_ENGINE_INDEX, phy_axis+1);
+            CreateError(m_error_code, WARNING_LEVEL, CLEAR_BY_MCP_RESET, 0, CHANNEL_ENGINE_INDEX, phy_axis+1);
             break;
         default:
             break;

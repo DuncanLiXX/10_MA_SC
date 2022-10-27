@@ -204,6 +204,7 @@ struct SCAxisConfig{
 	double rapid_speed;						//定位速度，单位:mm/min
 	double reset_speed;						//复位速度，单位：mm/min
 	double ret_ref_speed;					//回参考点速度，单位：mm/min
+    double ret_ref_speed_second;            //回参考点低速度，单位：mm/min
 
 	double rapid_acc;   					//定位加速度，单位:mm/s^2
 	double manual_acc;						//手动加速度，单位:mm/s^2

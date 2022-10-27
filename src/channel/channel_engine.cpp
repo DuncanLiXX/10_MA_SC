@@ -9338,7 +9338,7 @@ void ChannelEngine::AxisFindRefWithZeroSignal(uint8_t phy_axis){
             break;
         case 5:  //有基准， 低速回退至原点信号消失,
             printf("return ref step 5\n");
-            this->ManualMove(phy_axis, dir_opt, 60, this->m_p_axis_config[phy_axis].move_pr*2);
+            this->ManualMove(phy_axis, dir_opt, this->m_p_axis_config[phy_axis].ret_ref_speed_second, this->m_p_axis_config[phy_axis].move_pr*2);//60
             m_n_ret_ref_step[phy_axis] = 6;  //跳转下一步
             printf("return ref, goto step 6\n");
 
@@ -10045,7 +10045,7 @@ void ChannelEngine::EcatAxisFindRefWithZeroSignal(uint8_t phy_axis){
                 move_length = 1.0;
             }
             m_df_ret_ref_tar_pos[phy_axis] = this->GetPhyAxisMachPosFeedback(phy_axis)+move_length* dir_opt;
-            this->ManualMove(phy_axis, dir_opt, 60, move_length); //有基准， 低速回退至粗基准信号消失, 速度：60mm/min
+            this->ManualMove(phy_axis, dir_opt, this->m_p_axis_config[phy_axis].ret_ref_speed_second, move_length); //有基准， 低速回退至粗基准信号消失//60
             m_n_ret_ref_step[phy_axis] = 6;  //跳转下一步
             printf("return ref, goto step 6\n");
 
@@ -10245,7 +10245,7 @@ void ChannelEngine::EcatAxisFindRefWithZeroSignal2(uint8_t phy_axis){
                     m_n_ret_ref_step[phy_axis] = 4;  //跳转下一步
                     printf("return ref, goto step 4\n");
                 }else{  //同向减速寻找精基准
-                    this->ManualMove(phy_axis, dir_opt, 20,3.0);
+                    this->ManualMove(phy_axis, dir_opt, this->m_p_axis_config[phy_axis].ret_ref_speed_second,3.0);//20
                     m_n_ret_ref_step[phy_axis] = 5;  //跳转下一步
                 }
             }
@@ -10265,7 +10265,7 @@ void ChannelEngine::EcatAxisFindRefWithZeroSignal2(uint8_t phy_axis){
             break;
         case 5:  //低速寻找精基准运动
             printf("return ref step 5\n");
-            this->ManualMove(phy_axis, dir_opt, 20, 3); //低速寻找精基准
+            this->ManualMove(phy_axis, dir_opt, this->m_p_axis_config[phy_axis].ret_ref_speed_second, 3); //低速寻找精基准//20
             m_n_ret_ref_step[phy_axis] = 6;  //跳转下一步
             printf("return ref, goto step 6\n");
 
@@ -10277,7 +10277,7 @@ void ChannelEngine::EcatAxisFindRefWithZeroSignal2(uint8_t phy_axis){
                 gettimeofday(&this->m_time_ret_ref[phy_axis], NULL);   //记录起始时间，延时300ms
                 m_n_ret_ref_step[phy_axis] = 7;  //跳转下一步
             }else{
-                this->ManualMove(phy_axis, dir_opt, 20, 3); //低速寻找精基准
+                this->ManualMove(phy_axis, dir_opt, this->m_p_axis_config[phy_axis].ret_ref_speed_second, 3); //低速寻找精基准//20
             }
             break;
         case 7:{ //等待停止到位

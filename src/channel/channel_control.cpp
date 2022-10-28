@@ -329,17 +329,17 @@ bool ChannelControl::Initialize(uint8_t chn_index, ChannelEngine *engine, HMICom
 
         uint8_t z_axis =  this->GetPhyAxisFromName(AXIS_NAME_Z);
         uint32_t da_prec = m_p_channel_engine->GetDaPrecision();
+
         //初始化主轴信息
         if(m_p_axis_config[phy_axis-1].axis_type == AXIS_SPINDLE && m_n_spindle_count < kMaxChnSpdCount){
             this->m_spd_axis_phy[m_n_spindle_count] = phy_axis;
             m_n_spindle_count++;
+            m_p_spindle->SetSpindleParams(&m_p_axis_config[phy_axis-1],
+                    da_prec,phy_axis-1,z_axis);
             m_p_spindle->SetComponent(m_p_mi_comm,
                                     m_p_mc_comm,
                                       m_p_f_reg,
                                       m_p_g_reg);
-            m_p_spindle->SetSpindleParams(&m_p_axis_config[phy_axis-1],
-                    da_prec,phy_axis-1,z_axis);
-            printf("spindle:%d\n",phy_axis-1);
         }
 
         //初始化PMC轴信息
@@ -10842,6 +10842,8 @@ void ChannelControl::SetManualStep(uint8_t step){
 		return;
 
 	this->m_channel_status.manual_step = step;
+
+
 
 //	printf("set manual step : %hhu\n", step);
 

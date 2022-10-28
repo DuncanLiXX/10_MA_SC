@@ -4859,15 +4859,19 @@ void ChannelEngine::SetManualStep(uint8_t chn, uint8_t step){
     switch(step){
     case 0:
         step = MANUAL_STEP_1;
+        m_p_mi_comm->SendMpgStep(chn,true,1);
         break;
     case 1:
         step = MANUAL_STEP_10;
+        m_p_mi_comm->SendMpgStep(chn,true,10);
         break;
     case 2:
         step = MANUAL_STEP_100;
+        m_p_mi_comm->SendMpgStep(chn,true,m_p_channel_config[chn].mpg_level3_step);
         break;
     case 3:
         step = MANUAL_STEP_1000;
+        m_p_mi_comm->SendMpgStep(chn,true,m_p_channel_config[chn].mpg_level4_step);
         break;
     }
 

@@ -201,7 +201,9 @@ struct FRegBits{
     uint8_t RGMP:1;
     uint8_t :5;
 	//F66
-	uint8_t :8;
+    uint8_t :1;
+    uint8_t RTPT:1;         //刚性攻丝回退结束信号 F66.1
+    uint8_t :6;
 	//F67
 	uint8_t :8;
 	//F68
@@ -868,7 +870,9 @@ struct GRegBits{
     uint8_t RGMD:1;     // 刚性攻丝模式切换信号 G61.1
     uint8_t :6;
 	//G62
-	uint8_t :8;
+    uint8_t :6;
+    uint8_t RTNT:1;     // 刚性攻丝回退启动信号
+    uint8_t :1;
 	//G63
 	uint8_t :8;
 	//G64

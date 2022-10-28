@@ -599,6 +599,8 @@ bool ParmManager::ReadChnConfig(){
             m_sc_channel_config[i].rst_mode = m_ini_chn->GetIntValueOrDefault(sname, "rst_mode", 0);
             m_sc_channel_config[i].g00_max_speed = m_ini_chn->GetIntValueOrDefault(sname, "g00_max_speed", 30000);
             m_sc_channel_config[i].g01_max_speed = m_ini_chn->GetIntValueOrDefault(sname, "g01_max_speed", 30000);
+            m_sc_channel_config[i].mpg_level3_step = m_ini_chn->GetIntValueOrDefault(sname, "mpg_level3_step", 100);
+            m_sc_channel_config[i].mpg_level4_step = m_ini_chn->GetIntValueOrDefault(sname, "mpg_level4_step", 1000);
 
 #ifdef USES_WOOD_MACHINE
 			m_sc_channel_config[i].debug_param_1 = m_ini_chn->GetIntValueOrDefault(sname, "debug_param_1", 0);  //调试参数1
@@ -688,6 +690,8 @@ bool ParmManager::ReadChnConfig(){
             m_sc_channel_config[i].rst_mode = 0;
             m_sc_channel_config[i].g00_max_speed = 30000;
             m_sc_channel_config[i].g01_max_speed = 30000;
+            m_sc_channel_config[i].mpg_level3_step = 100;
+            m_sc_channel_config[i].mpg_level4_step = 1000;
 #ifdef USES_WOOD_MACHINE
 			m_sc_channel_config[i].debug_param_1 = 0;  //调试参数1
 			m_sc_channel_config[i].debug_param_2 = 0;  //调试参数2
@@ -777,6 +781,8 @@ bool ParmManager::ReadChnConfig(){
             m_ini_chn->AddKeyValuePair(string("rst_mode"), string("0"), ns);
             m_ini_chn->AddKeyValuePair(string("g00_max_speed"), string("30000"), ns);
             m_ini_chn->AddKeyValuePair(string("g01_max_speed"), string("30000"), ns);
+            m_ini_chn->AddKeyValuePair(string("mpg_level3_step"), string("100"), ns);
+            m_ini_chn->AddKeyValuePair(string("mpg_level4_step"), string("1000"), ns);
 
 #ifdef USES_WOOD_MACHINE
 			m_ini_chn->AddKeyValuePair(string("debug_param_1"), string("0"), ns);
@@ -1381,6 +1387,9 @@ bool ParmManager::ReadAxisConfig(){
             m_sc_axis_config[i].spd_sync_error_gain = m_ini_axis->GetIntValueOrDefault(sname, "spd_sync_error_gain", 200);
             m_sc_axis_config[i].spd_speed_feed_gain = m_ini_axis->GetIntValueOrDefault(sname, "spd_speed_feed_gain", 60000);
             m_sc_axis_config[i].spd_pos_ratio_gain = m_ini_axis->GetIntValueOrDefault(sname, "spd_pos_ratio_gain", 100000);
+            m_sc_axis_config[i].spd_rtnt_rate_on = m_ini_axis->GetIntValueOrDefault(sname, "spd_rtnt_rate_on", 0);
+            m_sc_axis_config[i].spd_rtnt_rate = m_ini_axis->GetIntValueOrDefault(sname, "spd_rtnt_rate", 100);
+            m_sc_axis_config[i].spd_rtnt_distance = m_ini_axis->GetIntValueOrDefault(sname, "spd_rtnt_distance", 0);
 
 			m_sc_axis_config[i].fast_locate = m_ini_axis->GetIntValueOrDefault(sname, "fast_locat", 1);
 			m_sc_axis_config[i].pos_disp_mode = m_ini_axis->GetIntValueOrDefault(sname, "pos_disp_mode", 0);
@@ -1520,6 +1529,9 @@ bool ParmManager::ReadAxisConfig(){
             m_sc_axis_config[i].spd_sync_error_gain = 200;
             m_sc_axis_config[i].spd_speed_feed_gain = 60000;
             m_sc_axis_config[i].spd_pos_ratio_gain = 100000;
+            m_sc_axis_config[i].spd_rtnt_rate_on = 0;
+            m_sc_axis_config[i].spd_rtnt_rate = 100;
+            m_sc_axis_config[i].spd_rtnt_distance = 0;
 
 			m_sc_axis_config[i].fast_locate = 1;
 			m_sc_axis_config[i].pos_disp_mode = 0;
@@ -1648,6 +1660,9 @@ bool ParmManager::ReadAxisConfig(){
             m_ini_axis->AddKeyValuePair(string("spd_sync_error_gain"), string("200"), ns);
             m_ini_axis->AddKeyValuePair(string("spd_speed_feed_gain"), string("60000"), ns);
             m_ini_axis->AddKeyValuePair(string("spd_pos_ratio_gain"), string("100000"), ns);
+            m_ini_axis->AddKeyValuePair(string("spd_rtnt_rate_on"), string("0"), ns);
+            m_ini_axis->AddKeyValuePair(string("spd_rtnt_rate"), string("100"), ns);
+            m_ini_axis->AddKeyValuePair(string("spd_rtnt_distance"), string("0"), ns);
 
 			m_ini_axis->AddKeyValuePair(string("fast_locate"), string("1"), ns);
 			m_ini_axis->AddKeyValuePair(string("pos_disp_mode"), string("0"), ns);
@@ -4110,6 +4125,14 @@ bool ParmManager::UpdateChnParam(uint8_t chn_index, uint32_t param_no, ParamValu
         sprintf(kname, "g01_max_speed");
         m_ini_chn->SetIntValue(sname, kname, value.value_uint32);
         break;
+    case 516:   //手轮3档的自定义步长
+        sprintf(kname, "mpg_level3_step");
+        m_ini_chn->SetIntValue(sname, kname, value.value_uint16);
+        break;
+    case 517:   //手轮4档的自定义步长
+        sprintf(kname, "mpg_level4_step");
+        m_ini_chn->SetIntValue(sname, kname, value.value_uint16);
+        break;
 #ifdef USES_WOOD_MACHINE
 	case 600:  //DSP调试参数1
 		sprintf(kname, "debug_param_1");
@@ -4578,6 +4601,18 @@ bool ParmManager::UpdateAxisParam(uint8_t axis_index, uint32_t param_no, ParamVa
         break;
     case 1675:	//攻丝轴位置比例增益
         sprintf(kname, "spd_pos_ratio_gain");
+        m_ini_axis->SetIntValue(sname, kname,value.value_uint32);
+        break;
+    case 1676:	//攻丝回退期间，倍率是否有效
+        sprintf(kname, "spd_rtnt_rate_on");
+        m_ini_axis->SetIntValue(sname, kname,value.value_uint8);
+        break;
+    case 1677:	//攻丝回退倍率
+        sprintf(kname, "spd_rtnt_rate");
+        m_ini_axis->SetIntValue(sname, kname,value.value_uint8);
+        break;
+    case 1678:	//攻丝回退的额外回退值
+        sprintf(kname, "spd_rtnt_distance");
         m_ini_axis->SetIntValue(sname, kname,value.value_uint32);
         break;
 
@@ -5498,6 +5533,12 @@ void ParmManager::ActiveChnParam(uint8_t chn_index, uint32_t param_no, ParamValu
     case 515:   //G01最高进给速度
         this->m_sc_channel_config[chn_index].g01_max_speed = value.value_uint32;
         break;
+    case 516:   //手轮3档的自定义步长
+        this->m_sc_channel_config[chn_index].mpg_level3_step = value.value_uint16;
+        break;
+    case 517:   //手轮4档的自定义步长
+        this->m_sc_channel_config[chn_index].mpg_level4_step = value.value_uint16;
+        break;
 #ifdef USES_WOOD_MACHINE
 	case 600:  //DSP调试参数1
 		this->m_sc_channel_config[chn_index].debug_param_1 = value.value_int32;
@@ -5972,6 +6013,15 @@ void ParmManager::ActiveAxisParam(uint8_t axis_index, uint32_t param_no, ParamVa
         break;
     case 1675:	//攻丝轴位置比例增益
         this->m_sc_axis_config[axis_index].spd_pos_ratio_gain = value.value_uint32;
+        break;
+    case 1676:	//攻丝回退期间，倍率是否有效
+        this->m_sc_axis_config[axis_index].spd_rtnt_rate_on = value.value_uint8;
+        break;
+    case 1677:	//攻丝回退倍率
+        this->m_sc_axis_config[axis_index].spd_rtnt_rate = value.value_uint8;
+        break;
+    case 1678:	//攻丝回退的额外回退值
+        this->m_sc_axis_config[axis_index].spd_rtnt_distance = value.value_uint32;
         break;
 	default:
 		g_ptr_trace->PrintLog(LOG_ALARM, "轴参数激活，参数号非法：%d", param_no);

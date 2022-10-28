@@ -59,6 +59,9 @@ public:
     void AddComponent(FRegBits *p){F = p;}
     void AddComponent(const GRegBits *p){G = p;}
 
+    // 发送信息
+    void SendMsg(string &s);
+
 private:
     // 打印处理线程
     void ProcessPrintThread();
@@ -93,9 +96,6 @@ private:
     void PrintWarning();    // 打印警告
     void PrintFRegState();  // 打印F寄存器
     void PrintGRegState();  // 打印G寄存器
-
-    // 发送信息
-    void SendMsg(string &s);
 
 private:
     PrintType print_type{TypeNone};

@@ -26,6 +26,9 @@ void ScPrintf(const char *__format, va_list args)
 {
     char s[128];
     sprintf(s,__format,args);
+    string str = s;
+    ShowSc &showSc = Singleton<ShowSc>::instance();
+    showSc.SendMsg(str);
 }
 
 void ShowSc::ProcessPrintThread()
@@ -116,6 +119,13 @@ void ShowSc::AddPair(string &s, string key, uint8_t value)
 void ShowSc::AddPair(string &s, string key, int8_t value)
 {
     s = s + key + "\t\t" + to_string(value) + "\n";
+}
+void ShowSc::AddPair(string &s, string key, bool value)
+{
+    if(value)
+        s = s + key + "\t\ttrue\n";
+    else
+        s = s + key + "\t\tfalse\n";
 }
 
 void ShowSc::AddPair(string &s, string key, double value)
@@ -389,6 +399,10 @@ void ShowSc::PrintSpindle()
     AddPair(s,"spd_speed_feed_gain",cfg->spd_speed_feed_gain);
     AddPair(s,"spd_pos_ratio_gain",cfg->spd_pos_ratio_gain);
 
+    AddPair(s,"spd_rtnt_rate_on",cfg->spd_rtnt_rate_on);
+    AddPair(s,"spd_rtnt_rate",cfg->spd_rtnt_rate);
+    AddPair(s,"spd_rtnt_distance",cfg->spd_rtnt_distance);
+
     SendMsg(s);
 }
 
@@ -508,6 +522,8 @@ void ShowSc::PrintChnConfig()
     AddPair(s,"rst_mode",cfg->rst_mode);
     AddPair(s,"g00_max_speed",cfg->g00_max_speed);
     AddPair(s,"g01_max_speed",cfg->g01_max_speed);
+    AddPair(s,"mpg_level3_step",cfg->mpg_level3_step);
+    AddPair(s,"mpg_level4_step",cfg->mpg_level4_step);
 
     SendMsg(s);
 }

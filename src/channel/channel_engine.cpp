@@ -8221,6 +8221,13 @@ void ChannelEngine::ProcessPmcSignal(){
         if(g_reg->_SP == 0 && g_reg_last->_SP == 1 && f_reg->SPL == 0 && f_reg->STL == 1){ //循环保持
             this->Pause();
         }
+
+        // @test zk
+        if(g_reg->RRW == 1 && g_reg_last->RRW == 0){
+			this->SystemReset();
+		}
+        // @test
+
 #else
         if(g_reg->_ESP == 1 && !m_b_emergency){ //急停有效
             this->Emergency();

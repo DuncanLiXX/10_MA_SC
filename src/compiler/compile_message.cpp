@@ -2734,7 +2734,7 @@ int LineMsg::GetOutputData(GCodeFrame *data, uint32_t mask, bool flag){
 	data->data.pos6 = MM2NM0_1(pos.a7);
 	data->data.pos7 = MM2NM0_1(pos.a8);
 
-	printf("-----------------------> LineMsg pos %lf -- %lf -- %lf \n", pos.x, pos.y, pos.z);
+	printf("-----------------------> LineMsg pos %lf -- %lf -- %lf mask: %d\n", pos.x, pos.y, pos.z, mask);
 	//printf("posnm %lld -- %lld -- %lld \n", data->data.pos0, data->data.pos1, data->data.pos2);
 
 	data->data.reserved = this->m_io_data;   //IOÊý¾Ý

@@ -5928,7 +5928,6 @@ bool ChannelControl::ExecuteAuxMsg(RecordMsg *msg){
 
 		mcode = tmp->GetMCode(m_index);
 
-		printf("-----> %d\n", mcode);
 		NotifyHmiMCode(mcode);
 
 		switch(mcode){

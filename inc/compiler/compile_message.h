@@ -758,6 +758,7 @@ public:
 
 	CompensateMsg& operator=( const CompensateMsg& msg);  //赋值运算符
 	friend bool operator ==( const CompensateMsg &one, CompensateMsg &two);  //判断运算符
+	int GetGcode(){return m_n_g_code;};
 private:
 	uint16_t m_n_data;   //数据，对于G41/G42为D值，对于G43/G44为H值
 	uint16_t m_n_data_last;   //之前的数据，对于G41/G42为D值，对于G43/G44为H值，用于手轮反向引导

@@ -19,7 +19,6 @@
 
 class ChannelControl;
 
-
 class ToolCompensate {
 public:
 	ToolCompensate();		//构造函数
@@ -33,7 +32,7 @@ public:
 	void SetChannelIndex(uint8_t chn_index);    //设置通道号
 
     //void setDMode(int Dvalue);
-    void setToolRadius(double radius){__cutter_comp_radius = radius;}
+    void setToolRadius(double radius){comp_radius = radius;}
 
     void Reset();
 
@@ -46,7 +45,7 @@ private:
 
     DPointChn cur_point;
     RecordMsg * msg;
-    double __cutter_comp_radius;
+    double comp_radius;
 };
 
 #endif /* TOOL_COMPENSATE_H_ */

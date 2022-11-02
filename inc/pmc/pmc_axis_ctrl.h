@@ -53,9 +53,9 @@ private:
 	uint8_t GetRecvBufIndex();   //获得当前接收缓冲的索引号
 	void ExecuteCmd();           //执行当前执行缓冲中的指令
 
-private:
+public:
 	uint8_t m_n_group_index;    //PMC轴控制组号，0-15
-	uint8_t m_n_phy_axis;       //对应的物理轴索引，从0开始
+    uint8_t m_n_phy_axis;       //对应的物理轴索引，从0开始
 	bool m_b_active;           //本控制组是否激活
 	bool m_b_buffer;           //缓冲是否有效    true--有效   false--无效
 	bool m_b_step_stop;        //程序段停止有效   true--停止有效    false--停止无效

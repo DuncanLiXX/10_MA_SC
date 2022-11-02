@@ -179,8 +179,8 @@ void PmcAxisCtrl::SetStepStop(bool flag){
  */
 void PmcAxisCtrl::Reset(){
 	printf("PmcAxisCtrl::Reset, axis=%hhu, cmdcount = %hhu\n", m_n_phy_axis, m_n_cmd_count);
+    this->m_p_channel_engine->ManualMoveStop(this->m_n_phy_axis);
 	if(this->m_n_cmd_count > 0){  //Í£Ö¹µ±Ç°Ö¸ÁîÖ´ĞĞ£¬Çå¿Õ»º³å
-		this->m_p_channel_engine->ManualMoveStop(this->m_n_phy_axis);
 		this->m_n_cmd_count = 0;
 		this->m_b_pause = false;
 

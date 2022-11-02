@@ -289,6 +289,8 @@ void SetMcArmComm(MCArmCommunication *comm){this->m_p_mc_arm_comm = comm;}   //É
 
     void PrintDebugInfo();		//Êä³öµ÷ÊÔÊı¾İ
 
+    PmcAxisCtrl *GetPmcAxisCtrl(){return m_pmc_axis_ctrl;}
+
 private:	//Ë½ÓĞ³ÉÔ±º¯Êı
 	ChannelEngine();   //¹¹Ôìº¯Êı
 

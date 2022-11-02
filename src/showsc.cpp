@@ -7,6 +7,7 @@
 #include <future>
 #include <string>
 #include "spindle_control.h"
+#include "pmc_axis_ctrl.h"
 
 ShowSc::ShowSc()
 {
@@ -76,6 +77,8 @@ void ShowSc::ProcessPrintThread()
             PrintFRegState();break;
         case TypeGRegState:
             PrintGRegState();break;
+        case TypePmcAxis:
+            PrintPmcAxisCtrl();break;
         default:break;
         }
 
@@ -776,6 +779,39 @@ void ShowSc::PrintGRegState()
         AddPair(s,reg_name_s,reg_value_s);
     }
 
+    SendMsg(s);
+}
+
+void ShowSc::PrintPmcAxisCtrl()
+{
+    if(!pmc_axis_ctrl)
+        return;
+
+    string s = "";
+    for(int i = 0; i < 4; i++){
+        PmcAxisCtrl *cfg = &pmc_axis_ctrl[i];
+        char title[20];
+        sprintf(title,"[Group-%d]",i);
+        AddPair(s,title,"");
+        AddPair(s,"m_n_group_index",cfg->m_n_group_index);
+        AddPair(s,"m_n_phy_axis",cfg->m_n_phy_axis);
+        AddPair(s,"m_b_active",cfg->m_b_active);
+        AddPair(s,"m_b_buffer",cfg->m_b_buffer);
+        AddPair(s,"m_b_step_stop",cfg->m_b_step_stop);
+        AddPair(s,"m_b_pause",cfg->m_b_pause);
+        AddPair(s,"m_n_cmd_count",cfg->m_n_cmd_count);
+        AddPair(s,"m_n_buf_exec",cfg->m_n_buf_exec);
+        AddPair(s,"cmd[0].cmd",cfg->m_pmc_cmd_buffer[0].cmd);
+        AddPair(s,"cmd[0].speed",cfg->m_pmc_cmd_buffer[0].speed);
+        AddPair(s,"cmd[0].distance",cfg->m_pmc_cmd_buffer[0].distance);
+        AddPair(s,"cmd[1].cmd",cfg->m_pmc_cmd_buffer[1].cmd);
+        AddPair(s,"cmd[1].speed",cfg->m_pmc_cmd_buffer[1].speed);
+        AddPair(s,"cmd[1].distance",cfg->m_pmc_cmd_buffer[1].distance);
+        AddPair(s,"cmd[2].cmd",cfg->m_pmc_cmd_buffer[2].cmd);
+        AddPair(s,"cmd[2].speed",cfg->m_pmc_cmd_buffer[2].speed);
+        AddPair(s,"cmd[2].distance",cfg->m_pmc_cmd_buffer[2].distance);
+        s.append("\n");
+    }
     SendMsg(s);
 }
 

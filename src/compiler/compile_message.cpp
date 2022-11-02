@@ -3071,6 +3071,13 @@ int ArcMsg::GetSimulateData(CompilerSimData &data){
 void ArcMsg::PrintString(){
 	printf("[%lld]ArcMsg, radius = %lf, dir = %d, major_flag = %d, circle_flag = %d\n",
 			m_n_line_no, m_df_radius, m_flag_direct, m_flag_major, m_flag_circle);
+
+	double *tar = m_point_target.m_df_point;
+	double *src = m_point_source.m_df_point;
+	double *cen = m_point_center.m_df_point;
+
+	printf("target: %lf %lf src %lf %lf center: %lf %lf\n",
+			*tar, *(tar+1), *src, *(src+1), *cen, *(cen+1));
 }
 
 /**

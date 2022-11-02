@@ -24,7 +24,7 @@ public:
 	ToolCompensate();		//构造函数
 	virtual ~ToolCompensate();   //析构函数
 
-	void SetOutputMsgList(OutputMsgList *output_msg){m_p_output_msg_list = output_msg;}  //设置指令消息输出缓冲区指针
+	void SetOutputMsgList(OutputMsgList *output_msg);  //设置指令消息输出缓冲区指针
 
 	void ProcessData(ListNode<RecordMsg *> *node);    //数据处理入口函数
 

@@ -7214,6 +7214,10 @@ bool ChannelControl::ExecuteRapidMsg(RecordMsg *msg, bool flag_block){
 bool ChannelControl::ExecuteArcMsg(RecordMsg *msg, bool flag_block){
 	ArcMsg *arc_msg = (ArcMsg *)msg;
 
+	// @test zk
+	printf("******** execute arc msg ********\n");
+	arc_msg->PrintString();
+
 	if(this->m_n_restart_mode != NOT_RESTART &&
 			arc_msg->GetLineNo() < this->m_n_restart_line
 #ifdef USES_ADDITIONAL_PROGRAM

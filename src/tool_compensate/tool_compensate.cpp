@@ -15,7 +15,6 @@
 #include "tool_compensate.h"
 #include "rs274.h"
 
-
 Interp interp;
 
 /**
@@ -40,6 +39,11 @@ ToolCompensate::ToolCompensate() {
  */
 ToolCompensate::~ToolCompensate() {
 	// TODO Auto-generated destructor stub
+}
+
+void ToolCompensate::SetOutputMsgList(OutputMsgList *output_msg){
+	m_p_output_msg_list = output_msg;
+	setOutputMsgList(output_msg);
 }
 
 /**
@@ -158,32 +162,73 @@ void ToolCompensate::ProcessData(ListNode<RecordMsg *> *node){
 	}*/
 
 
-
 	switch(msg->GetMsgType()){
-		case LINE_MSG:
-		case RAPID_MSG:
-		case ARC_MSG:
-			interp.init_block(&interp._setup._block);
-			break;
-		case COMPENSATE_MSG:
-		{
-			break;
-		}
-	}
 
-	switch(msg->GetMsgType()){
-		case LINE_MSG:{
-			LineMsg * tmsg = (LineMsg *) msg;
+		case RAPID_MSG:{
+			RapidMsg * tmsg = (RapidMsg *)msg;
 			block * pblock = interp.interp_block();
+			interp.init_block(pblock);
 			pblock->x_flag = true;
 			pblock->y_flag = true;
 			pblock->z_flag = true;
+			pblock->x_number = tmsg->GetTargetPos().GetAxisValue(0);
+			pblock->y_number = tmsg->GetTargetPos().GetAxisValue(1);
+			pblock->z_number = tmsg->GetTargetPos().GetAxisValue(2);
+			pblock->line_number = tmsg->GetLineNo();
+			pblock->flags = tmsg->GetFlags().all;
+			printf("convert rapid ... \n");
+			interp.convert_straight(0, &interp._setup._block, &interp._setup);
+			break;
 		}
-		case RAPID_MSG:{
-			RapidMsg * tmsg = (RapidMsg *)msg;
+		case LINE_MSG:{
+			LineMsg * tmsg = (LineMsg *) msg;
+			block * pblock = interp.interp_block();
+			interp.init_block(pblock);
+			pblock->x_flag = true;
+			pblock->y_flag = true;
+			pblock->z_flag = true;
+			pblock->x_number = tmsg->GetTargetPos().GetAxisValue(0);
+			pblock->y_number = tmsg->GetTargetPos().GetAxisValue(1);
+			pblock->z_number = tmsg->GetTargetPos().GetAxisValue(2);
+			pblock->flags = tmsg->GetFlags().all;
+			pblock->f_number = tmsg->GetFeed();
+			pblock->line_number = tmsg->GetLineNo();
+			printf("convert line ... \n");
+			interp.convert_straight(10, &interp._setup._block, &interp._setup);
+			break;
 		}
 		case ARC_MSG:{
 			ArcMsg * tmsg = (ArcMsg *) msg;
+			block * pblock = interp.interp_block();
+			interp.init_block(pblock);
+			pblock->x_flag = true;
+			pblock->y_flag = true;
+			pblock->z_flag = true;
+			pblock->x_number = tmsg->GetTargetPos().GetAxisValue(0);
+			pblock->y_number = tmsg->GetTargetPos().GetAxisValue(1);
+			pblock->z_number = tmsg->GetTargetPos().GetAxisValue(2);
+			pblock->flags = tmsg->GetFlags().all;
+			pblock->f_number = tmsg->GetFeed();
+			pblock->line_number = tmsg->GetLineNo();
+
+			if(tmsg->getR() != 0){
+				pblock->r_flag = true;
+				pblock->r_number = tmsg->getR();
+			}else{
+				pblock->i_flag = true;
+				pblock->j_flag = true;
+				pblock->i_number = tmsg->getI();
+				pblock->j_number = tmsg->getJ();
+			}
+
+			printf("convert arc ... \n");
+			if(tmsg->getDirect() == -1){
+				interp.convert_arc(20, &interp._setup._block, &interp._setup);
+			}else{
+				interp.convert_arc(30, &interp._setup._block, &interp._setup);
+			}
+
+			break;
 		}
 		case COMPENSATE_MSG:{
 			CompensateMsg * tmsg = (CompensateMsg *)msg;
@@ -202,14 +247,26 @@ void ToolCompensate::ProcessData(ListNode<RecordMsg *> *node){
 
 				interp.convert_cutter_compensation_on(RIGHT,this->comp_radius,&interp._setup);
 			}
+
+			break;
 		}
 		default:{
 
+			if(interp.isCompOn){
+				uint16_t flags = msg->GetFlags().all;
+
+				// 遇到 M30 或 等待移动到位标志  压空刀补队列 完成运动
+				if((flags & FLAG_BLOCK_OVER) or (flags & FLAG_WAIT_MOVE_OVER) or (flags & FLAG_EOF))
+				{
+					interp.flush_comp();
+				}
+			}
+
+			this->m_p_output_msg_list->Append(node);
 		}
 	}
 
-
-    this->m_p_output_msg_list->Append(node);
+	//this->m_p_output_msg_list->Append(node);
 
 }
 

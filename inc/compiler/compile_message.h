@@ -207,8 +207,16 @@ public:
 
 	MoveMsg& operator=( const MoveMsg& msg);  //赋值运算符
 	friend bool operator ==( const MoveMsg &one, MoveMsg &two);  //判断运算符
+
+	DPointChn &GetTargetPos(){return m_point_target;}  //返回终点坐标
+	DPointChn &GetSourcePos(){return m_point_source;}  //返回起点坐标
+	void SetTargetPos(DPointChn pos){ m_point_target = pos;}  //
+	void SetSourcePos(DPointChn pos){ m_point_source = pos;}  //
+
 protected:
 	bool m_b_mach_coord;    //当前是否机械坐标系
+	DPointChn m_point_target;   //目标点
+	DPointChn m_point_source;   //起始点
 };
 
 
@@ -583,11 +591,6 @@ public:
 	virtual int GetSimulateData(CompilerSimData &data);    //生成仿真数据包
 
 	virtual void PrintString();   //用于程序调试
-
-	DPointChn &GetTargetPos(){return m_point_target;}  //返回终点坐标
-	DPointChn &GetSourcePos(){return m_point_source;}  //返回起点坐标
-	void SetTargetPos(DPointChn pos){ m_point_target = pos;}  // 
-	void SetSourcePos(DPointChn pos){ m_point_source = pos;}  //
 	
 	uint32_t GetAxisMoveMask(){return m_axis_move_mask;}   //返回移动轴mask
 
@@ -604,8 +607,6 @@ public:
 	RapidMsg& operator=( const RapidMsg& msg);  //赋值运算符
 	friend bool operator ==( const RapidMsg &one, RapidMsg &two);  //判断运算符
 private:
-	DPointChn m_point_target;   //目标点
-	DPointChn m_point_source;   //起始点
 	uint32_t m_axis_move_mask;  //移动轴mask，bit0-bit15分别标志通道第1-16轴是否有移动指令
 	uint8_t m_io_data;       //io输出数据，0x00表示无IO输出   从1开始，有效范围1~127
 
@@ -634,11 +635,6 @@ public:
 
 	void SetFeed(const double feed){m_df_feed = feed;}  //设置进给速度
 	double GetFeed(){return m_df_feed;};    //获取进给速度
-
-	DPointChn &GetTargetPos(){return m_point_target;}  //返回终点坐标
-	DPointChn &GetSourcePos(){return m_point_source;}  //返回起点坐标
-	void SetTargetPos(DPointChn pos){ m_point_target = pos;}
-	void SetSourcePos(DPointChn pos){m_point_source = pos;}  
 	
 	uint32_t GetAxisMoveMask(){return m_axis_move_mask;}   //返回移动轴mask
 
@@ -656,8 +652,6 @@ public:
 	friend bool operator ==( const LineMsg &one, LineMsg &two);  //判断运算符
 
 protected:
-	DPointChn m_point_target;   //目标点
-	DPointChn m_point_source;   //起始点
 	double m_df_feed;		//进给速度   单位：mm/min
 	uint32_t m_axis_move_mask;  //移动轴mask，bit0-bit15分别标志通道第1-16轴是否有移动指令
 	uint8_t m_io_data;       //io输出数据，0x00表示无IO输出   从1开始，有效范围1~127
@@ -797,12 +791,8 @@ public:
 	double GetFeed(){return m_df_feed;};    //获取进给速度
 	void SetPlaneMode(const uint16_t gmode2){m_gmode_2 = gmode2;}    //设置加工平面模态
 
-	DPointChn &GetTargetPos(){return m_point_target;}  //返回终点坐标
-	DPointChn &GetSourcePos(){return m_point_source;}  //返回起点坐标
 	DPointChn &GetCenterPos(){return m_point_center;}  //返回起点坐标
 	
-	void SetTargetPos(DPointChn pos){ m_point_target = pos;}
-	void SetSourcePos(DPointChn pos){m_point_source = pos;}  
 	void SetCenterPos(DPointChn pos){m_point_center = pos;}  
 	
 	void getArcFlags(int8_t &dir, int8_t &major, int8_t &circle){dir=m_flag_direct,major=m_flag_major,circle=m_flag_circle;}    // 返回圆心角 
@@ -831,8 +821,6 @@ private:
 	int8_t m_flag_direct;  	//轨迹方向标志，-1:clockwise,1:anticlockwise  //顺时针(-1)，逆时针(1)
 	int8_t m_flag_major;   	//优弧标志， 1:劣弧   -1:优弧
 	int8_t m_flag_circle;	//整圆标志， 0：圆弧	1：整圆
-	DPointChn  m_point_source; //起点坐标
-	DPointChn  m_point_target;	//终点坐标
 	DPointChn  m_point_center;	//圆心坐标
 	double  m_df_radius;	//半径，单位mm
 	double m_df_feed;		//进给速度   单位：mm/min

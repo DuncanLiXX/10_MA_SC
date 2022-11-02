@@ -11,6 +11,9 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <vector>
+#include "compile_message.h"
+
+void setOutputMsgList(OutputMsgList * output_msg_list);
 
 enum queued_canon_type {
 	QSTRAIGHT_TRAVERSE,
@@ -21,6 +24,12 @@ enum queued_canon_type {
 enum CUTTER_COMP_DIRECTION {
     RIGHT = 1,
     LEFT = 2,
+};
+
+enum CANON_PLANE{
+	CANON_PLANE_XY,
+	CANON_PLANE_XZ,
+	CANON_PLANE_YZ
 };
 
 
@@ -62,6 +71,8 @@ typedef struct block_struct
 	int      m_count;
 	int      m_modes[10];
 
+	uint16_t flags;
+
 } block;
 
 typedef block * block_pointer;
@@ -82,7 +93,7 @@ typedef struct setup_struct
 
 	block _block;                                 // parsed next block
 
-	bool cutter_comp_firstmove; // this is the first comp move
+	bool cutter_comp_firstmove = true; // this is the first comp move
 	double cutter_comp_radius;                    // current cutter compensation radius
 	int cutter_comp_side;                         // current cutter compensation side
 	bool arc_not_allowed;
@@ -98,18 +109,19 @@ typedef struct setup_struct
 typedef setup * setup_pointer;
 /*******************************************************/
 
-
-
 struct straight_traverse {
     int line_number;
     double dx, dy, dz;          // direction of original motion
     double x,y,z, a,b,c, u,v,w;
+    uint16_t flags;
 };
 
 struct straight_feed {
     int line_number;
     double dx, dy, dz;          // direction of original motion
     double x,y,z, a,b,c, u,v,w; // target
+    uint16_t flags;
+    double feedrate;
 };
 
 struct arc_feed {
@@ -118,6 +130,8 @@ struct arc_feed {
     double end1, end2, center1, center2;
     int turn;
     double end3, a,b,c, u,v,w;
+    uint16_t flags;
+    double feedrate;
 };
 
 struct queued_canon {
@@ -159,6 +173,11 @@ class Interp{
 public:
 	Interp(){}
 	~Interp(){}
+
+
+	void flush_comp(){
+		dequeue_canons(&_setup);
+	}
 
 	int move_endpoint_and_flush(setup_pointer s, double x, double y);
 
@@ -294,6 +313,8 @@ public:
 	 block* interp_block(){return &_setup._block;}
 
 	 setup _setup;
+
+	 bool isCompOn = false;
 };
 
 void ARC_FEED(int line_number,
@@ -319,6 +340,7 @@ void STRAIGHT_TRAVERSE(int line_number,
                        double x, double y, double z,
                        double a, double b, double c,
                        double u, double v, double w);
+
 
 
 #endif /* INC_TOOL_COMPENSATE_RS274_H_ */

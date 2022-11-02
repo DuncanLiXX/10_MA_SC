@@ -3501,17 +3501,18 @@ bool Parser::CalArcCenter(const DPointChn &src, const DPointChn &tar, const doub
 		m_error_code = ERR_ARC_INVALID_DATA;
 		return false;
 	}
-	printf("src(%lf, %lf), tar(%lf, %lf), L/2= %lf, radius=%lf\n", source.x, source.y, target.x, target.y, dr, radius);
+	// @test zk
+	//printf("src(%lf, %lf), tar(%lf, %lf), L/2= %lf, radius=%lf\n", source.x, source.y, target.x, target.y, dr, radius);
 	double  angle = GetVectAngle(target, source) + flag * M_PI_2;
 	printf("angle = %lf\n", angle);
 	dr = sqrt(dr2);
 	printf("dr = %lf, dr2=%lf\n", dr, dr2);
 	DPlane  move(dr * cos(angle), dr * sin(angle) );
 	DPlane center = mid + move;
-	printf("mid(%lf, %lf), move(%lf, %lf)\n", mid.x, mid.y, move.x, move.y);
+	//printf("mid(%lf, %lf), move(%lf, %lf)\n", mid.x, mid.y, move.x, move.y);
 	cen = src;
 	Plane2Point(center, cen, this->m_p_compiler_status->mode.gmode[2]);
-	printf("cal arc center: (%lf, %lf, %lf)\n", cen.m_df_point[0], cen.m_df_point[1], cen.m_df_point[2]);
+	//printf("cal arc center: (%lf, %lf, %lf)\n", cen.m_df_point[0], cen.m_df_point[1], cen.m_df_point[2]);
 
 	return true;
 }

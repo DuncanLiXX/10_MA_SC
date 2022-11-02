@@ -7,6 +7,7 @@
 
 #include "rs274.h"
 #include <cmath>
+#include "geometry_data.h"
 
 #define RADIUS_TOLERANCE_MM 0.001
 #define TINY 1e-12
@@ -15,12 +16,27 @@
 #define TOOL_INSIDE_ARC(side, turn) (((side)==LEFT&&(turn)>0)||((side)==RIGHT&&(turn)<0))
 
 static double endpoint[2];
+
 static int endpoint_valid = 0;
+
+static double temp_point[3] = {0,0,0};
+
+static double feed_rate = 0;
+static uint16_t g_flags = 0;
 
 std::vector<queued_canon>& qc(void) {
     static std::vector<queued_canon> c;
     return c;
 }
+
+
+OutputMsgList *comp_output_list = nullptr;
+
+
+void setOutputMsgList(OutputMsgList * output_msg_list){
+	comp_output_list = output_msg_list;
+}
+
 
 int Interp::arc_data_comp_ijk(int move,
 							  int plane,
@@ -374,6 +390,9 @@ int Interp::convert_arc2(int move,
 					   &center1, &center2, &turn, radius_tolerance, spiral_abs_tolerance, RADIUS_TOLERANCE_MM);
 	}
 
+	feed_rate = block->f_number;
+	g_flags = block->flags;
+
 	ARC_FEED(block->line_number, end1, end2, center1, center2, turn, end3,
 		   AA_end, BB_end, CC_end, u, v, w);
 	*current1 = end1;
@@ -408,7 +427,7 @@ int Interp::convert_arc_comp1(int move,
     comp_get_current(settings, &cx, &cy, &cz);
 
     if(hypot((end_x - cx), (end_y - cy)) <= tool_radius){
-    	printf("Radius of cutter compensation entry arc is not greater than the tool radius");
+    	printf("Radius of cutter compensation entry arc is not greater than the tool radius\n");
     	return 0;
     }
 
@@ -701,6 +720,7 @@ int Interp::convert_cutter_compensation_off(setup_pointer settings)
 	}
 	settings->cutter_comp_side = false;
 	settings->cutter_comp_firstmove = true;
+	isCompOn = false;
 	return 0;
 }
 
@@ -709,6 +729,7 @@ int Interp::convert_cutter_compensation_on(int side, double radius,
 {
 	settings->cutter_comp_radius = radius;
 	settings->cutter_comp_side = side;
+	isCompOn =  true;
 	return 0;
 }
 
@@ -732,13 +753,15 @@ int Interp::convert_straight(int move,
 	if((settings->cutter_comp_side) &&
 	   (settings->cutter_comp_radius > 0.0))
 	{
-        if (settings->cutter_comp_firstmove)
+		if (settings->cutter_comp_firstmove)
             status = convert_straight_comp1(move, block, settings, end_x, end_y, end_z,
                                             AA_end, BB_end, CC_end, u_end, v_end, w_end);
         else
             status = convert_straight_comp2(move, block, settings, end_x, end_y, end_z,
                                             AA_end, BB_end, CC_end, u_end, v_end, w_end);
 	}else if (move == 0) {
+
+		g_flags = block->flags;
 		STRAIGHT_TRAVERSE(block->line_number, end_x, end_y, end_z,
 						  AA_end, BB_end, CC_end,
 						  u_end, v_end, w_end);
@@ -746,6 +769,9 @@ int Interp::convert_straight(int move,
 		settings->current_y = end_y;
 		settings->current_z = end_z;
 	} else if (move == 10) {
+		feed_rate = block->f_number;
+		g_flags = block->flags;
+
 		STRAIGHT_FEED(block->line_number, end_x, end_y, end_z,
 				  AA_end, BB_end, CC_end,
 				  u_end, v_end, w_end);
@@ -764,6 +790,8 @@ int Interp::convert_straight_comp1(int move,
 								   double AA_end, double BB_end, double CC_end,
 								   double u_end, double v_end, double w_end)
 {
+	printf("convert line comp1 ...\n");
+
 	double alpha;
 	double distance;
 	double radius = settings->cutter_comp_radius; /* always will be positive */
@@ -801,7 +829,7 @@ int Interp::convert_straight_comp1(int move,
 								  end_x, end_y, pz,
 								  AA_end, BB_end, CC_end, u_end, v_end, w_end);
 	}
-	else if (move == 1) {
+	else if (move == 10) {
 		enqueue_STRAIGHT_FEED(settings, block->line_number,
 							  cos(alpha), sin(alpha), 0,
 							  end_x, end_y, pz,
@@ -830,7 +858,7 @@ int Interp::convert_straight_comp2(int move,
 								   double AA_end, double BB_end, double CC_end,
 								   double u_end, double v_end, double w_end)
 {
-    double alpha;
+	double alpha;
     double beta;
     double end_x, end_y, end_z;                 /* x-coordinate of actual end point */
     double gamma;
@@ -848,12 +876,13 @@ int Interp::convert_straight_comp2(int move,
     comp_get_programmed(settings, &opx, &opy, &opz);
 
     if ((py == opy) && (px == opx)) {     /* no XY motion */
-        if (move == 0) {
+
+    	if (move == 0) {
             enqueue_STRAIGHT_TRAVERSE(settings, block->line_number,
                                       px - opx, py - opy, pz - opz,
                                       cx, cy, pz,
                                       AA_end, BB_end, CC_end, u_end, v_end, w_end);
-        } else if (move == 1) {
+        } else if (move == 10) {
             enqueue_STRAIGHT_FEED(settings, block->line_number,
                                   px - opx, py - opy, pz - opz,
                                   cx, cy, pz, AA_end, BB_end, CC_end, u_end, v_end, w_end);
@@ -862,7 +891,7 @@ int Interp::convert_straight_comp2(int move,
         	//ERS(NCE_BUG_CODE_NOT_G0_OR_G1);
         // end already filled out, above
     } else {
-        // some XY motion
+    	// some XY motion
         side = settings->cutter_comp_side;
         radius = settings->cutter_comp_radius;      /* will always be positive */
         theta = atan2(cy - opy, cx - opx);
@@ -906,8 +935,8 @@ int Interp::convert_straight_comp2(int move,
         }
 
         if (!concave && (beta > small)) {       /* ARC NEEDED */
-            //CHP(move_endpoint_and_flush(settings, cx, cy));
-            if(move == 1) {
+        	move_endpoint_and_flush(settings, cx, cy);
+            if(move == 10) {
                 enqueue_ARC_FEED(settings, block->line_number,
                                  0.0, // doesn't matter, since we will not move this arc's endpoint
                                  mid_x, mid_y, opx, opy,
@@ -943,7 +972,7 @@ int Interp::convert_straight_comp2(int move,
                 mid_y = cy + retreat * sin(theta + gamma);
                 // we actually want to move the previous line's endpoint here.  That's the same as
                 // discarding that line and doing this one instead.
-                //CHP(move_endpoint_and_flush(settings, mid_x, mid_y));
+                move_endpoint_and_flush(settings, mid_x, mid_y);
             } else {
                 // arc->line
                 // beware: the arc we saved is the compensated one.
@@ -989,7 +1018,7 @@ int Interp::convert_straight_comp2(int move,
                 }
                 mid_x = prev.center1 + oldrad * cos(angle_from_center);
                 mid_y = prev.center2 + oldrad * sin(angle_from_center);
-                //CHP(move_endpoint_and_flush(settings, mid_x, mid_y));
+                move_endpoint_and_flush(settings, mid_x, mid_y);
             }
         } else {
             // no arc needed, also not concave (colinear lines or tangent arc->line)
@@ -1022,7 +1051,15 @@ double Interp::find_arc_length(double x1, double y1, double z1,
 							   int turn,
 							   double x2, double y2, double z2)
 {
-    return 0;
+	double radius;
+	double theta;                 /* amount of turn of arc in radians */
+
+	radius = hypot((center_x - x1), (center_y - y1));
+	theta = find_turn(x1, y1, center_x, center_y, turn, x2, y2);
+	if (z2 == z1)
+		return (radius * fabs(theta));
+	else
+		return hypot((radius * theta), (z2 - z1));
 }
 
 int Interp::find_ends(block_pointer block, setup_pointer s,
@@ -1074,7 +1111,24 @@ double Interp::find_turn(double x1, double y1,
 						 int turn,
 						 double x2, double y2)
 {
-    return 0;
+	double alpha;                 /* angle of first radius */
+	double beta;                  /* angle of second radius */
+	double theta;                 /* amount of turn of arc CCW - negative if CW */
+
+	if (turn == 0)
+	return 0.0;
+	alpha = atan2((y1 - center_y), (x1 - center_x));
+	beta = atan2((y2 - center_y), (x2 - center_x));
+	if (turn > 0) {
+		if (beta <= alpha)
+			beta = (beta + (2 * M_PIl));
+		theta = ((beta - alpha) + ((turn - 1) * (2 * M_PIl)));
+	} else {                      /* turn < 0 */
+		if (alpha <= beta)
+			alpha = (alpha + (2 * M_PIl));
+		theta = ((beta - alpha) + ((turn + 1) * (2 * M_PIl)));
+	}
+	return (theta);
 }
 
 int Interp::init_block(block_pointer block)
@@ -1104,52 +1158,190 @@ int Interp::init_block(block_pointer block)
 }
 
 
-int Interp::move_endpoint_and_flush(setup_pointer s, double x, double y)
+int Interp::move_endpoint_and_flush(setup_pointer settings, double x, double y)
 {
+    double x1;
+    double y1;
+    double x2;
+    double y2;
+    double dot;
 
+    if(qc().empty()) return 0;
+
+    for(unsigned int i = 0; i<qc().size(); i++) {
+        // there may be several moves in the queue, and we need to
+        // change all of them.  consider moving into a concave corner,
+        // then up and back down, then continuing on.  there will be
+        // three moves to change.
+
+        queued_canon &q = qc()[i];
+
+        switch(q.type) {
+        case QARC_FEED:
+            double r1, r2, l1, l2;
+            r1 = hypot(q.data.arc_feed.end1 - q.data.arc_feed.center1,
+                       q.data.arc_feed.end2 - q.data.arc_feed.center2);
+            l1 = q.data.arc_feed.original_turns;
+            q.data.arc_feed.end1 = x;
+            q.data.arc_feed.end2 = y;
+            r2 = hypot(x - q.data.arc_feed.center1,
+                       y - q.data.arc_feed.center2);
+            l2 = find_turn(endpoint[0], endpoint[1],
+                           q.data.arc_feed.center1, q.data.arc_feed.center2,
+                           q.data.arc_feed.turn,
+                           x, y);
+            printf("moving endpoint of arc lineno %d old sweep %f new sweep %f\n", q.data.arc_feed.line_number, l1, l2);
+
+            if(fabs(r1-r2) > .01)
+                printf("BUG: cutter compensation has generated an invalid arc with mismatched radii r1 %f r2 %f\n", r1, r2);
+            if(l1 != 0.0 && endpoint_valid && fabs(l2) > fabs(l1) + 0.254) {
+                printf("Arc move in concave corner cannot be reached by the tool without gouging\n");
+            }
+            q.data.arc_feed.end1 = x;
+            q.data.arc_feed.end2 = y;
+            break;
+        case QSTRAIGHT_TRAVERSE:
+            switch(settings->plane) {
+            case CANON_PLANE_XY:
+                x1 = q.data.straight_traverse.dx; // direction of original motion
+                y1 = q.data.straight_traverse.dy;
+                x2 = x - endpoint[0];         // new direction after clipping
+                y2 = y - endpoint[1];
+                break;
+            case CANON_PLANE_XZ:
+                x1 = q.data.straight_traverse.dz; // direction of original motion
+                y1 = q.data.straight_traverse.dx;
+                x2 = x - endpoint[0];         // new direction after clipping
+                y2 = y - endpoint[1];
+                break;
+            default:
+                printf("BUG: Unsupported plane in cutter compensation\n");
+            }
+
+            dot = x1 * x2 + y1 * y2; // not normalized; we only care about the angle
+            printf("moving endpoint of traverse old dir %f new dir %f dot %f endpoint_valid %d\n", atan2(y1,x1), atan2(y2,x2), dot, endpoint_valid);
+
+            if(endpoint_valid && dot<0) {
+                // oops, the move is the wrong way.  this means the
+                // path has crossed because we backed up further
+                // than the line is long.  this will gouge.
+                printf("Straight traverse in concave corner cannot be reached by the tool without gouging\n");
+            }
+            switch(settings->plane) {
+            case CANON_PLANE_XY:
+                q.data.straight_traverse.x = x;
+                q.data.straight_traverse.y = y;
+                break;
+            case CANON_PLANE_XZ:
+                q.data.straight_traverse.z = x;
+                q.data.straight_traverse.x = y;
+                break;
+            default:
+                printf("BUG: Unsupported plane in cutter compensation\n");
+            }
+            break;
+        case QSTRAIGHT_FEED:
+            switch(settings->plane) {
+            case CANON_PLANE_XY:
+                x1 = q.data.straight_feed.dx; // direction of original motion
+                y1 = q.data.straight_feed.dy;
+                x2 = x - endpoint[0];         // new direction after clipping
+                y2 = y - endpoint[1];
+                break;
+            case CANON_PLANE_XZ:
+                x1 = q.data.straight_feed.dz; // direction of original motion
+                y1 = q.data.straight_feed.dx;
+                x2 = x - endpoint[0];         // new direction after clipping
+                y2 = y - endpoint[1];
+                break;
+            default:
+                printf("BUG: Unsupported plane [%d] in cutter compensation", settings->plane);
+            }
+
+            dot = x1 * x2 + y1 * y2;
+            printf("moving endpoint of feed old dir %f new dir %f dot %f endpoint_valid %d\n", atan2(y1,x1), atan2(y2,x2), dot, endpoint_valid);
+
+            if(endpoint_valid && dot<0) {
+                // oops, the move is the wrong way.  this means the
+                // path has crossed because we backed up further
+                // than the line is long.  this will gouge.
+                printf("Straight feed in concave corner cannot be reached by the tool without gouging\n");
+            }
+            switch(settings->plane) {
+            case CANON_PLANE_XY:
+                q.data.straight_feed.x = x;
+                q.data.straight_feed.y = y;
+                break;
+            case CANON_PLANE_XZ:
+                q.data.straight_feed.z = x;
+                q.data.straight_feed.x = y;
+                break;
+            default:
+                printf("BUG: Unsupported plane in cutter compensation\n");
+            }
+            break;
+        default:
+            // other things are not moves - we don't have to mess with them.
+            ;
+        }
+    }
+    dequeue_canons(settings);
+    set_endpoint(x, y);
+    return 0;
 }
 
 void dequeue_canons(setup_pointer settings)
 {
-	 if(qc().empty()) return;
+	if(qc().empty()) return;
 
-	    for(unsigned int i = 0; i<qc().size(); i++) {
-	        queued_canon &q = qc()[i];
+	for(unsigned int i = 0; i<qc().size(); i++) {
+		queued_canon &q = qc()[i];
 
-	        switch(q.type) {
-	        case QARC_FEED:
-	            printf("issuing arc feed lineno %d\n", q.data.arc_feed.line_number);
-	            ARC_FEED(q.data.arc_feed.line_number,
-	                     q.data.arc_feed.end1,
-	                     q.data.arc_feed.end2,
-	                     q.data.arc_feed.center1,
-	                     q.data.arc_feed.center2,
-	                     q.data.arc_feed.turn,
-	                     q.data.arc_feed.end3,
-	                     q.data.arc_feed.a, q.data.arc_feed.b, q.data.arc_feed.c,
-	                     q.data.arc_feed.u, q.data.arc_feed.v, q.data.arc_feed.w);
-	            break;
-	        case QSTRAIGHT_FEED:
-	            printf("issuing straight feed lineno %d\n", q.data.straight_feed.line_number);
-	            STRAIGHT_FEED(q.data.straight_feed.line_number,
-	                          q.data.straight_feed.x,
-	                          q.data.straight_feed.y,
-	                          q.data.straight_feed.z,
-	                          q.data.straight_feed.a, q.data.straight_feed.b, q.data.straight_feed.c,
-	                          q.data.straight_feed.u, q.data.straight_feed.v, q.data.straight_feed.w);
-	            break;
-	        case QSTRAIGHT_TRAVERSE:
-	            printf("issuing straight traverse lineno %d\n", q.data.straight_traverse.line_number);
-	            STRAIGHT_TRAVERSE(q.data.straight_traverse.line_number,
-	                              q.data.straight_traverse.x,
-	                              q.data.straight_traverse.y,
-	                              q.data.straight_traverse.z,
-	                              q.data.straight_traverse.a, q.data.straight_traverse.b, q.data.straight_traverse.c,
-	                              q.data.straight_traverse.u, q.data.straight_traverse.v, q.data.straight_traverse.w);
-	            break;
-	        }
-	    }
-	    qc().clear();
+		switch(q.type) {
+		case QARC_FEED:
+			printf("issuing arc feed lineno %d\n", q.data.arc_feed.line_number);
+
+			feed_rate = q.data.arc_feed.feedrate;
+			g_flags = q.data.arc_feed.flags;
+
+			ARC_FEED(q.data.arc_feed.line_number,
+					 q.data.arc_feed.end1,
+					 q.data.arc_feed.end2,
+					 q.data.arc_feed.center1,
+					 q.data.arc_feed.center2,
+					 q.data.arc_feed.turn,
+					 q.data.arc_feed.end3,
+					 q.data.arc_feed.a, q.data.arc_feed.b, q.data.arc_feed.c,
+					 q.data.arc_feed.u, q.data.arc_feed.v, q.data.arc_feed.w);
+			break;
+		case QSTRAIGHT_FEED:
+			printf("issuing straight feed lineno %d\n", q.data.straight_feed.line_number);
+
+			feed_rate = q.data.straight_feed.feedrate;
+			g_flags = q.data.straight_feed.flags;
+
+			STRAIGHT_FEED(q.data.straight_feed.line_number,
+						  q.data.straight_feed.x,
+						  q.data.straight_feed.y,
+						  q.data.straight_feed.z,
+						  q.data.straight_feed.a, q.data.straight_feed.b, q.data.straight_feed.c,
+						  q.data.straight_feed.u, q.data.straight_feed.v, q.data.straight_feed.w);
+			break;
+		case QSTRAIGHT_TRAVERSE:
+			printf("issuing straight traverse lineno %d\n", q.data.straight_traverse.line_number);
+
+			g_flags = q.data.straight_traverse.flags;
+
+			STRAIGHT_TRAVERSE(q.data.straight_traverse.line_number,
+							  q.data.straight_traverse.x,
+							  q.data.straight_traverse.y,
+							  q.data.straight_traverse.z,
+							  q.data.straight_traverse.a, q.data.straight_traverse.b, q.data.straight_traverse.c,
+							  q.data.straight_traverse.u, q.data.straight_traverse.v, q.data.straight_traverse.w);
+			break;
+		}
+	}
+	qc().clear();
 }
 
 int enqueue_STRAIGHT_FEED(setup_pointer settings, int l,
@@ -1158,7 +1350,42 @@ int enqueue_STRAIGHT_FEED(setup_pointer settings, int l,
 						  double a, double b, double c,
 						  double u, double v, double w)
 {
+    queued_canon q;
+    q.type = QSTRAIGHT_FEED;
+    q.data.straight_feed.line_number = l;
+    switch(settings->plane) {
+    case CANON_PLANE_XY:
+        q.data.straight_feed.dx = dx;
+        q.data.straight_feed.dy = dy;
+        q.data.straight_feed.dz = dz;
+        q.data.straight_feed.x = x;
+        q.data.straight_feed.y = y;
+        q.data.straight_feed.z = z;
+        break;
+    case CANON_PLANE_XZ:
+        q.data.straight_feed.dz = dx;
+        q.data.straight_feed.dx = dy;
+        q.data.straight_feed.dy = dz;
+        q.data.straight_feed.z = x;
+        q.data.straight_feed.x = y;
+        q.data.straight_feed.y = z;
+        break;
+    default:
+        ;
+    }
+    q.data.straight_feed.a = a;
+    q.data.straight_feed.b = b;
+    q.data.straight_feed.c = c;
+    q.data.straight_feed.u = u;
+    q.data.straight_feed.v = v;
+    q.data.straight_feed.w = w;
 
+    q.data.straight_feed.feedrate = settings->_block.f_number;
+    q.data.straight_feed.flags = settings->_block.flags;
+
+    qc().push_back(q);
+    printf("enqueue straight feed lineno %d to %f %f %f direction %f %f %f\n", l, x,y,z, dx, dy, dz);
+    return 0;
 }
 
 int enqueue_STRAIGHT_TRAVERSE(setup_pointer settings, int l,
@@ -1167,11 +1394,43 @@ int enqueue_STRAIGHT_TRAVERSE(setup_pointer settings, int l,
 							  double a, double b, double c,
 							  double u, double v, double w)
 {
-
+    queued_canon q;
+    q.type = QSTRAIGHT_TRAVERSE;
+    q.data.straight_traverse.line_number = l;
+    switch(settings->plane) {
+    case CANON_PLANE_XY:
+        q.data.straight_traverse.dx = dx;
+        q.data.straight_traverse.dy = dy;
+        q.data.straight_traverse.dz = dz;
+        q.data.straight_traverse.x = x;
+        q.data.straight_traverse.y = y;
+        q.data.straight_traverse.z = z;
+        break;
+    case CANON_PLANE_XZ:
+        q.data.straight_traverse.dz = dx;
+        q.data.straight_traverse.dx = dy;
+        q.data.straight_traverse.dy = dz;
+        q.data.straight_traverse.z = x;
+        q.data.straight_traverse.x = y;
+        q.data.straight_traverse.y = z;
+        break;
+    default:
+        ;
+    }
+    q.data.straight_feed.flags = settings->_block.flags;
+    q.data.straight_traverse.a = a;
+    q.data.straight_traverse.b = b;
+    q.data.straight_traverse.c = c;
+    q.data.straight_traverse.u = u;
+    q.data.straight_traverse.v = v;
+    q.data.straight_traverse.w = w;
+    printf("enqueue straight traverse lineno %d to %f %f %f direction %f %f %f\n", l, x,y,z, dx, dy, dz);
+    qc().push_back(q);
+    return 0;
 }
 
 void enqueue_ARC_FEED(setup_pointer settings, int l,
-                      double original_arclen,
+                      double original_turns,
                       double end1, double end2,
 					  double center1, double center2,
                       int turn,
@@ -1179,11 +1438,33 @@ void enqueue_ARC_FEED(setup_pointer settings, int l,
 					  double a, double b, double c,
 					  double u, double v, double w)
 {
+    queued_canon q;
 
+    q.type = QARC_FEED;
+    q.data.arc_feed.line_number = l;
+    q.data.arc_feed.original_turns = original_turns;
+    q.data.arc_feed.end1 = end1;
+    q.data.arc_feed.end2 = end2;
+    q.data.arc_feed.center1 = center1;
+    q.data.arc_feed.center2 = center2;
+    q.data.arc_feed.turn = turn;
+    q.data.arc_feed.end3 = end3;
+    q.data.arc_feed.a = a;
+    q.data.arc_feed.b = b;
+    q.data.arc_feed.c = c;
+    q.data.arc_feed.u = u;
+    q.data.arc_feed.v = v;
+    q.data.arc_feed.w = w;
+
+    q.data.arc_feed.feedrate = settings->_block.f_number;
+    q.data.arc_feed.flags = settings->_block.flags;
+
+    printf("enqueue arc lineno %d to %f %f center %f %f turn %d sweeping %f\n", l, end1, end2, center1, center2, turn, original_turns);
+    qc().push_back(q);
 }
 
 void ARC_FEED(int line_number,
-              double first_end,
+			  double first_end,
 			  double second_end,
 			  double first_axis,
 			  double second_axis,
@@ -1196,14 +1477,56 @@ void ARC_FEED(int line_number,
 			  double v_position,
 			  double w_position)
 {
+	if(comp_output_list == nullptr){
+		printf("out put msg list not initialized1.\n");
+		return;
+	}
 
-}
+	DPointChn source(temp_point[0], temp_point[1], temp_point[2]);
+	DPointChn target(first_end, second_end, temp_point[2]);
+	DPointChn center(first_axis, second_axis, temp_point[2]);
 
-void STRAIGHT_FEED(int line_number,
-                   double x, double y, double z,
-                   double a, double b, double c,
-                   double u, double v, double w)
-{
+	int8_t major_flag = 1;  //优弧标志， 1--劣弧    -1--优弧
+	int8_t circle_flag = 0;	//整圆标志， 0--圆弧    1--整圆
+	int8_t dir_flag = -1;  //方向标志，-1:clockwise,1:anticlockwise
+
+	int gcode = 20;
+	double radius = hypot(first_end-first_axis, second_end-second_axis);
+
+	if(rotation > 0){
+		dir_flag = 1;
+		gcode = 30;
+	}
+
+	if(temp_point[0] == first_end and temp_point[1] == second_end)
+		circle_flag = 1;
+
+	temp_point[0] = first_end;
+	temp_point[1] = second_end;
+
+	DPlane src = Point2Plane(source, 0);
+	DPlane tar = Point2Plane(target, 0);
+	DPlane cen = Point2Plane(center, 0);
+
+	double angle_start = GetVectAngle(src, cen);
+	double angle_end = GetVectAngle(tar, cen);
+	double angle = (angle_end - angle_start) * dir_flag;
+
+	if(angle < 0) angle += 2*M_PI;
+
+	if(angle > M_PI) major_flag = -1;   //大于180度，优弧
+
+	RecordMsg * new_msg =
+			new ArcMsg(gcode, source, target, center, radius,
+					   feed_rate, 7, dir_flag, major_flag, circle_flag);
+
+	new_msg->SetLineNo(line_number);
+
+	RecordMsgFlag flag; flag.all = g_flags;
+	new_msg->SetFlags(flag);
+
+	comp_output_list->Append(new_msg);
+
 
 }
 
@@ -1212,14 +1535,63 @@ void STRAIGHT_TRAVERSE(int line_number,
                        double a, double b, double c,
                        double u, double v, double w)
 {
+	if(comp_output_list == nullptr){
+		printf("out put msg list not initialized3.\n");
+		return;
+	}
 
+	DPointChn source(temp_point[0], temp_point[1], temp_point[2]);
+	DPointChn target(x, y, z);
+	temp_point[0] = x;
+	temp_point[1] = y;
+	temp_point[2] = z;
+	RecordMsg *new_msg = new RapidMsg(source, target, 7);
+	if(new_msg == nullptr){
+		//TODO 内存分配失败，告警
+		CreateError(ERR_MEMORY_NEW, FATAL_LEVEL, CLEAR_BY_RESET_POWER);
+		return;
+	}
+
+	RecordMsgFlag flag; flag.all = g_flags;
+	new_msg->SetFlags(flag);
+
+	new_msg->SetLineNo(line_number);  //设置当前行号
+
+	comp_output_list->Append(new_msg);
+}
+
+void STRAIGHT_FEED(int line_number,
+                   double x, double y, double z,
+                   double a, double b, double c,
+                   double u, double v, double w)
+{
+	if(comp_output_list == nullptr){
+		printf("out put msg list not initialized2.\n");
+		return;
+	}
+
+	DPointChn source(temp_point[0], temp_point[1], temp_point[2]);
+	DPointChn target(x, y, z);
+	temp_point[0] = x;
+	temp_point[1] = y;
+	temp_point[2] = z;
+
+
+	RecordMsg *new_msg = new LineMsg(source, target, feed_rate, 7);
+	if(new_msg == nullptr){
+		//TODO 内存分配失败，告警
+		CreateError(ERR_MEMORY_NEW, FATAL_LEVEL, CLEAR_BY_RESET_POWER);
+		return;
+	}
+	new_msg->SetLineNo(line_number);  //设置当前行号
+
+	RecordMsgFlag flag; flag.all = g_flags;
+	new_msg->SetFlags(flag);
+
+	comp_output_list->Append(new_msg);
 }
 
 void set_endpoint(double x, double y) {
     endpoint[0] = x; endpoint[1] = y;
     endpoint_valid = 1;
 }
-
-
-
-

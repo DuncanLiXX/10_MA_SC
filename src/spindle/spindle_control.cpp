@@ -1,5 +1,6 @@
 #include <future>
 #include <functional>
+#include <unistd.h>
 #include "spindle_control.h"
 #include "trace.h"
 #include "mc_communication.h"
@@ -8,6 +9,10 @@
 #include "global_include.h"
 #include "channel_control.h"
 #include "channel_engine.h"
+#include "global_definition.h"
+#include "pmc_register.h"
+#include "variable.h"
+#include "channel_data.h"
 
 using namespace Spindle;
 
@@ -18,12 +23,14 @@ SpindleControl::SpindleControl()
 void SpindleControl::SetComponent(MICommunication *mi,
                                   MCCommunication *mc,
                                   FRegBits *f_reg,
-                                  const GRegBits *g_reg)
+                                  const GRegBits *g_reg,
+                                  Variable *variable)
 {
     this->mi = mi;
     this->mc = mc;
     this->F = f_reg;
     this->G = g_reg;
+    this->variable = variable;
     InputSSTP(G->_SSTP);
     InputSOR(G->SOR);
     InputSOV(G->SOV);
@@ -31,6 +38,7 @@ void SpindleControl::SetComponent(MICommunication *mi,
     InputSGN(G->SGN);
     InputSSIN(G->SSIN);
     InputSIND(G->SIND);
+    LoadTapState(tap_state);
 }
 
 void SpindleControl::SetSpindleParams(SCAxisConfig *spindle,
@@ -51,6 +59,7 @@ void SpindleControl::Reset()
         return;
     wait_sar = false;
     wait_off = false;
+    running_rtnt = false;
 
     UpdateParams();
 }
@@ -174,15 +183,36 @@ void SpindleControl::StartRigidTap(double feed)
     tap_enable = true;
     std::this_thread::sleep_for(std::chrono::microseconds(100*1000));
     F->RGSPP = 1;
+
+    tap_state.tap_flag = true;
+    tap_state.F = feed;
+    tap_state.s = cnc_speed;
+    tap_state.polar = cnc_polar;
+    tap_state.phy_axis = phy_axis;
+    tap_state.z_axis = z_axis;
+    double R = 0.0;
+    bool inited = false;
+    if(variable->GetVarValue(188,R,inited)){
+        tap_state.R = R;
+    }else{
+        return;
+    }
+    SaveTapState();
 }
 
 void SpindleControl::CancelRigidTap()
 {
     if(!spindle || spindle->axis_interface == 0)
         return;
+    ChannelEngine *engine = ChannelEngine::GetInstance();
+    ChannelControl *control = engine->GetChnControl(0);
+    ChannelRealtimeStatus status = control->GetRealtimeStatus();
     SendMcRigidTapFlag(false);
     mi->SendTapStateCmd(chn, false);
     mi->SendTapRatioCmd(chn, 0);
+    std::this_thread::sleep_for(std::chrono::microseconds(100*1000));
+    double pos = status.cur_pos_machine.GetAxisValue(phy_axis);
+    mi->SetAxisRefCur(phy_axis+1,pos);
 
     tap_enable = false;
 
@@ -190,6 +220,12 @@ void SpindleControl::CancelRigidTap()
     // 给信号梯图来取消攻丝
     if(F->RGSPP)
         F->RGSPP = 0;
+}
+
+void SpindleControl::ResetTapFlag()
+{
+    tap_state.tap_flag = false;
+    SaveTapState();
 }
 
 // _SSTP信号输入 低有效
@@ -315,6 +351,35 @@ void SpindleControl::InputRGMD(bool RGMD)
         SetMode(Speed);
 }
 
+void SpindleControl::InputRTNT(bool RTNT)
+{
+    static std::future<void> ans;
+    if(!RTNT)
+        return;
+
+    // 加载攻丝状态
+    if(SSIN == 1 || SIND == 1 || _SSTP == 0 ||
+            !LoadTapState(tap_state) || !tap_state.tap_flag)
+    {
+        CreateError(ERR_SPD_RTNT_INVALID,
+                    ERROR_LEVEL,
+                    CLEAR_BY_MCP_RESET);
+        return;
+    }
+    ChannelEngine *engine = ChannelEngine::GetInstance();
+    ChannelControl *control = engine->GetChnControl(0);
+    if(control->GetChnStatus().chn_work_mode == AUTO_MODE){
+        CreateError(ERR_SPD_RTNT_IN_AUTO,
+                    ERROR_LEVEL,
+                    CLEAR_BY_MCP_RESET);
+        return;
+    }
+
+    auto func = std::bind(&SpindleControl::ProcessRTNT,
+                          this);
+    ans = std::async(std::launch::async, func);
+}
+
 void SpindleControl::RspORCMA(bool success)
 {
     if(!spindle)
@@ -328,13 +393,14 @@ void SpindleControl::RspORCMA(bool success)
 
 void SpindleControl::RspCtrlMode(uint8_t axis, Spindle::Mode mode)
 {
+    static std::future<void> ans;
     if(!spindle)
         return;
     printf("RspCtrlMode:axis = %d,mode = %d\n",axis,mode);
     if(axis == phy_axis + 1){
         auto func = std::bind(&SpindleControl::ProcessModeChanged,
                               this, std::placeholders::_1);
-        std::async(std::launch::async, func, mode);
+        ans = std::async(std::launch::async, func, mode);
     }
 }
 
@@ -524,6 +590,7 @@ int32_t SpindleControl::CalDaOutput()
 
 bool SpindleControl::UpdateSpindleLevel(uint16_t speed)
 {
+    static std::future<void> ans;
     if(!spindle)
         return false;
     // 获取方向
@@ -552,7 +619,7 @@ bool SpindleControl::UpdateSpindleLevel(uint16_t speed)
             //异步处理换挡逻辑
             auto func = std::bind(&SpindleControl::ProcessSwitchLevel,
                                   this);
-            std::async(std::launch::async, func, TMF);
+            ans = std::async(std::launch::async, func, TMF);
 
             return true;
         }
@@ -623,12 +690,12 @@ void SpindleControl::SendSpdSpeedToMi()
     CncPolar polar;
     int32_t output;
     // 攻丝状态下禁止修改转速
-    if(RGTAP){
-        CreateError(ERR_SPD_RUN_IN_TAP,
-                    ERROR_LEVEL,
-                    CLEAR_BY_MCP_RESET);
-        return;
-    }
+//    if(RGTAP){
+//        CreateError(ERR_SPD_RUN_IN_TAP,
+//                    ERROR_LEVEL,
+//                    CLEAR_BY_MCP_RESET);
+//        return;
+//    }
 
     // 获取方向
     polar = CalPolar();
@@ -742,4 +809,87 @@ void SpindleControl::SendMcRigidTapFlag(bool enable)
     cmd.data.cmd = CMD_MC_SET_G84_INTP_MODE;
     cmd.data.data[0] = enable?1:0;
     mc->WriteCmd(cmd);
+}
+
+void SpindleControl::SaveTapState()
+{
+   printf("SaveTapState\n");
+    int fp = open(PATH_TAP_STATE, O_CREAT | O_RDWR);
+    if(fp < 0){         //文件打开失败
+        printf("Open tap state fail!");
+        return;
+    }
+
+    ssize_t res = write(fp, &tap_state, sizeof(TapState));
+    if(res == -1){      //写入失败
+        close(fp);
+        printf("Write tap state fail!");
+        return;
+    }
+    fsync(fp);
+    close(fp);
+}
+
+bool SpindleControl::LoadTapState(TapState &state)
+{
+    printf("LoadTapState\n");
+    TapState tmp;
+    int fp = open(PATH_TAP_STATE, O_RDWR);
+    if(fp < 0){         //文件打开失败
+        printf("Read tap state fail!");
+        return false;
+    }
+
+    uint16_t read_size = read(fp, &tmp, sizeof (tmp));
+    if(read_size != sizeof(tmp)){
+        close(fp);
+        printf("Tap state size error!");
+        return false;
+    }
+
+    state = tmp;
+    close(fp);
+    return true;
+}
+
+void SpindleControl::ProcessRTNT()
+{
+    // 恢复攻丝状态
+    double R = tap_state.R + spindle->spd_rtnt_distance;
+    variable->SetVarValue(188, R);
+    variable->SetVarValue(179, tap_state.F);
+    if(this->cnc_polar != tap_state.polar){
+        InputPolar(tap_state.polar);
+    }
+    if(this->cnc_speed != tap_state.s){
+        InputSCode(tap_state.s);
+    }
+    tap_feed = tap_state.F;
+    ChannelEngine *engine = ChannelEngine::GetInstance();
+    ChannelControl *control = engine->GetChnControl(0);
+    if(!control->CallMacroProgram(6100))
+    {
+        CreateError(ERR_SPD_RTNT_FAIL,
+                    ERROR_LEVEL,
+                    CLEAR_BY_MCP_RESET);
+        return;
+    }
+    std::this_thread::sleep_for(std::chrono::microseconds(500 * 1000));
+
+    // 等待回退到位
+    DPointChn pos_work = control->GetRealtimeStatus().cur_pos_work;
+    running_rtnt = true;
+    while(fabs(pos_work.GetAxisValue(z_axis) - R) > 0.005){
+        std::this_thread::sleep_for(std::chrono::microseconds(50 * 1000));
+        pos_work = control->GetRealtimeStatus().cur_pos_work;
+        if(!running_rtnt)
+            break;
+    }
+    running_rtnt = false;
+    // 没回退到位
+    if(fabs(pos_work.GetAxisValue(z_axis) - R) > 0.005){
+        return;
+    }
+    F->RTPT = 1;
+    ResetTapFlag();
 }

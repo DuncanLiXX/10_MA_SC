@@ -1,10 +1,13 @@
 #ifndef SPINDLE_CONTROL_H_
 #define SPINDLE_CONTROL_H_
 
-#include "pmc_register.h"
+#include <stdint.h>
 
 class MCCommunication;
 class MICommunication;
+class Variable;
+class FRegBits;
+class GRegBits;
 
 struct SCAxisConfig;
 
@@ -31,7 +34,22 @@ enum Mode
     Speed,
     Position
 };
+
+typedef struct
+{
+    bool tap_flag{false};       // 攻丝标记
+    CncPolar polar{Stop};       // 主轴方向
+    double F{0.0};              // 攻丝进给
+    uint16_t s{0};              // 主轴转速
+    uint8_t phy_axis{0};        // 主轴轴号
+    uint8_t z_axis{0};          // z轴轴号
+    double R{0.0};              // R平面
+}TapState;
 }
+
+// M27
+// M29
+// G01 Z[#188]
 
 class SpindleControl
 {
@@ -42,7 +60,8 @@ public:
     void SetComponent(MICommunication *mi,
                     MCCommunication *mc,
                     FRegBits *f_reg,
-                    const GRegBits *g_reg);
+                    const GRegBits *g_reg,
+                    Variable *variable);
     // 设置主轴相关配置
     void SetSpindleParams(SCAxisConfig *spindle,
                           uint32_t da_prec,
@@ -71,8 +90,9 @@ public:
     bool isTapEnable();     // 刚性攻丝是否使能
 
     void SetTapFeed(double feed);       // 设置攻丝进给
-    void StartRigidTap(double feed);    // 开始刚性攻丝 G84
-    void CancelRigidTap();              // 取消刚性攻丝 G80
+    void StartRigidTap(double feed);    // 建立同步
+    void CancelRigidTap();              // 取消同步
+    void ResetTapFlag();
 
     void InputSSTP(bool _SSTP);     // _SSTP信号输入 低有效
     void InputSOR(bool SOR);        // SOR信号输入
@@ -84,10 +104,11 @@ public:
     void InputORCMA(bool ORCMA);    // 定位信号信号输入
     void InputRGTAP(bool RGTAP);    // 刚性攻丝信号输入
     void InputRGMD(bool RGMD);      // 刚性攻丝模式切换
+    void InputRTNT(bool RTNT);      // 攻丝回退
     void RspORCMA(bool success);    // 定位信号命令回复
-    void RspCtrlMode(uint8_t axis,Spindle::Mode mode);  // 模式切换回复
-    void RspAxisEnable(uint8_t axis,bool enable);       // 轴使能回复
-    void RspSpindleSpeed(uint8_t axis,bool success);    // 0:速度未到达  1:速度到达
+    void RspCtrlMode(uint8_t axis, Spindle::Mode mode);  // 模式切换回复
+    void RspAxisEnable(uint8_t axis, bool enable);       // 轴使能回复
+    void RspSpindleSpeed(uint8_t axis, bool success);    // 0:速度未到达  1:速度到达
 
     void InputFIN(bool FIN);
 
@@ -118,6 +139,13 @@ private:
     // 向MC发送刚性攻丝状态命令，MC会切换到刚性攻丝的速度规划参数
     void SendMcRigidTapFlag(bool enable);
 
+    // 保存/加载攻丝状态
+    void SaveTapState();
+    bool LoadTapState(Spindle::TapState &state);
+
+    // 异步处理攻丝回退
+    void ProcessRTNT();
+
 public:
     MICommunication *mi{nullptr};
     MCCommunication *mc{nullptr};
@@ -129,6 +157,8 @@ public:
 
     FRegBits *F{nullptr};            // F寄存器
     const GRegBits *G{nullptr};            // F寄存器
+
+    Variable *variable;
 
     Spindle::Level to_level{Spindle::Low};        // 目标档位
     Spindle::Level level{Spindle::Low};           // 当前档位
@@ -167,6 +197,9 @@ public:
 
     uint16_t TM{16000};    //SF信号输出延时 单位:us
     uint16_t TMF{16000};   //SF选通信号打开后，数据的输出延时 单位:us
+
+    Spindle::TapState tap_state;    // 攻丝数据记录
+    bool running_rtnt{false};
 };
 
 #endif

@@ -198,7 +198,7 @@ struct FRegBits{
 	//F65
     uint8_t RGSPP:1;            //进入攻丝状态反馈 F65.0
     uint8_t :1;
-    uint8_t RGMP:1;
+    uint8_t RGMP:1;             //主轴模式切换
     uint8_t :5;
 	//F66
     uint8_t :1;
@@ -790,7 +790,7 @@ struct GRegBits{
 	uint8_t _SUCPF:1;   //主轴松开完成信号    低有效     G28.4
 	uint8_t _SCPF:1;    //主轴夹紧完成信号    低有效     G28.5
 	uint8_t SPSTP:1;    //主轴停止完成信号         G28.6
-	uint8_t :1;
+    uint8_t :1;
 	//G29
 	uint8_t GR21:1;     //齿轮选择信号（输入）     G29.0
     uint8_t :4;

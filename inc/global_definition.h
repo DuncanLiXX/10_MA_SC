@@ -97,7 +97,7 @@
 #define PATH_BACK_DISK_CMD "/cnc/disk/scripts/scback.sh" //一键备份SC脚本
 
 #define PATH_SIMULATE_DATA "/cnc/tmp/simulate_data.dat"   //仿真数据文件
-
+#define PATH_TAP_STATE "/cnc/config/tap_state.dat"      //攻丝状态数据文件
 
 //配置文件路径
 #define SYS_CONFIG_FILE "/cnc/config/sys_config.ini"   //系统配置文件

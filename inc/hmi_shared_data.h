@@ -13,6 +13,7 @@
 #define INC_HMI_SHARED_DATA_H_
 
 #include <stdint.h>
+#include "global_definition.h"
 
 //HMI命令包相关常量
 const int kMaxHmiDataLen = 1024;   //HMI命令包中固定数据区的长度
@@ -456,6 +457,9 @@ enum ErrorType {
     ERR_SPD_SW_LEVEL_FAIL = 1704,       //主轴换挡超时
     ERR_SPD_TAP_POS_ERROR = 1705,       //刚攻位置错误
     ERR_SPD_RESET_IN_TAP = 1706,        //刚性攻丝中不能复位
+    ERR_SPD_RTNT_INVALID = 1707,        //刚性攻丝回退无效
+    ERR_SPD_RTNT_FAIL = 1708,           //刚性攻丝回退失败
+    ERR_SPD_RTNT_IN_AUTO = 1709,        //自动模式禁止攻丝回退
 
 	//PMC轴告警
 	ERR_PMC_AXIS_CTRL_CHANGE = 1900,   //PMC轴控制状态切换
@@ -1166,7 +1170,6 @@ struct HmiChnConfig{
 	uint8_t g31_sig_level;          //G31跳转信号有效电平    0--低电平    1--高电平
     uint16_t rst_hold_time;         //复位时间 单位:ms
     uint8_t rst_mode;               //复位时运行数据是否保留  0:不保留 1：保留
-    uint32_t g00_max_speed;         //G00最高进给速度 单位：mm/min
     uint32_t g01_max_speed;         //G01最高进给速度 单位：mm/min
     uint16_t mpg_level3_step;       //手轮3档的自定义步长 单位：um
     uint16_t mpg_level4_step;       //手轮4档的自定义步长 单位：um
@@ -1310,7 +1313,7 @@ struct HmiAxisConfig{
     uint32_t spd_pos_ratio_gain;                    //轴位置比例增益 范围0~200000，默认为100000
     uint8_t spd_rtnt_rate_on;                   //攻丝回退期间，倍率是否有效 0：强制100%  1：有效
     uint8_t spd_rtnt_rate;                      //攻丝回退倍率 单位：1%
-    uint32_t spd_rtnt_distance;                 //攻丝回退的额外回退值 单位：um
+    int32_t spd_rtnt_distance;                 //攻丝回退的额外回退值 单位：um
 
 	//旋转轴相关参数
 	uint8_t fast_locate;							//快速定位    0--关闭   1--打开

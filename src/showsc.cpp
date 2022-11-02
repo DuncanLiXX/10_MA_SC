@@ -120,13 +120,6 @@ void ShowSc::AddPair(string &s, string key, int8_t value)
 {
     s = s + key + "\t\t" + to_string(value) + "\n";
 }
-void ShowSc::AddPair(string &s, string key, bool value)
-{
-    if(value)
-        s = s + key + "\t\ttrue\n";
-    else
-        s = s + key + "\t\tfalse\n";
-}
 
 void ShowSc::AddPair(string &s, string key, double value)
 {
@@ -364,6 +357,7 @@ void ShowSc::PrintSpindle()
     AddPair(s,"SIND",spindle->SIND);
     AddPair(s,"ORCMA",spindle->ORCMA);
     AddPair(s,"RGTAP",spindle->RGTAP);
+    AddPair(s,"tap_feed",spindle->tap_feed);
 
     SCAxisConfig *cfg = &axis_config[spindle->phy_axis];
     AddPair(s,"move_pr",cfg->move_pr);
@@ -403,6 +397,9 @@ void ShowSc::PrintSpindle()
     AddPair(s,"spd_rtnt_rate",cfg->spd_rtnt_rate);
     AddPair(s,"spd_rtnt_distance",cfg->spd_rtnt_distance);
 
+    AddPair(s,"tap_flag",spindle->tap_state.tap_flag);
+    AddPair(s,"tap_f",spindle->tap_state.F);
+    AddPair(s,"tap_R",spindle->tap_state.R);
     SendMsg(s);
 }
 
@@ -520,7 +517,6 @@ void ShowSc::PrintChnConfig()
     AddPair(s,"g31_sig_level",cfg->g31_sig_level);
     AddPair(s,"rst_hold_time",cfg->rst_hold_time);
     AddPair(s,"rst_mode",cfg->rst_mode);
-    AddPair(s,"g00_max_speed",cfg->g00_max_speed);
     AddPair(s,"g01_max_speed",cfg->g01_max_speed);
     AddPair(s,"mpg_level3_step",cfg->mpg_level3_step);
     AddPair(s,"mpg_level4_step",cfg->mpg_level4_step);

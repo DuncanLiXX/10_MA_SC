@@ -7700,13 +7700,13 @@ void ChannelEngine::SystemReset(){
     printf("system reset\n");
     //各通道复位
     for(int i = 0; i < this->m_p_general_config->chn_count; i++){
-        // 攻丝状态禁止复位
-        if(this->m_p_channel_control[0].GetSpdCtrl()->isTapEnable()){
-            CreateError(ERR_SPD_TAP_RATIO_FAULT,
-                        WARNING_LEVEL,
-                        CLEAR_BY_MCP_RESET);
-            return;
-        }
+//        // 攻丝状态禁止复位
+//        if(this->m_p_channel_control[0].GetSpdCtrl()->isTapEnable()){
+//            CreateError(ERR_SPD_RESET_IN_TAP,
+//                        WARNING_LEVEL,
+//                        CLEAR_BY_MCP_RESET);
+//            return;
+//        }
 
         this->m_p_pmc_reg->FReg().bits[i].RST = 1;  //复位信号
         this->m_p_channel_control[i].Reset();
@@ -8314,9 +8314,13 @@ void ChannelEngine::ProcessPmcSignal(){
         if(g_reg->ORCMA != g_reg_last->ORCMA){
             ctrl->GetSpdCtrl()->InputORCMA(g_reg->ORCMA);
         }
-
+        // 主轴选通信号
         if(f_reg->SF == 1 && g_reg->FIN == 1){
             f_reg->SF = 0;
+        }
+        // 攻丝回退
+        if(g_reg->RTNT != g_reg_last->RTNT){
+            ctrl->GetSpdCtrl()->InputRTNT(g_reg->RTNT);
         }
 
         //通知类型的信号，只保留一个周期
@@ -8329,6 +8333,9 @@ void ChannelEngine::ProcessPmcSignal(){
 
             if(f_reg_last->SST == 1)    // 复位零速信号
                 f_reg->SST = 0;
+
+            if(f_reg_last->RTPT == 1)   // 攻丝回退结束信号
+                f_reg->RTPT = 0;
 
         }
 

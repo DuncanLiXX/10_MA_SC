@@ -597,8 +597,7 @@ bool ParmManager::ReadChnConfig(){
             m_sc_channel_config[i].g31_sig_level = m_ini_chn->GetIntValueOrDefault(sname, "g31_sig_level", 0);
             m_sc_channel_config[i].rst_hold_time = m_ini_chn->GetIntValueOrDefault(sname, "rst_hold_time", 16);
             m_sc_channel_config[i].rst_mode = m_ini_chn->GetIntValueOrDefault(sname, "rst_mode", 0);
-            m_sc_channel_config[i].g00_max_speed = m_ini_chn->GetIntValueOrDefault(sname, "g00_max_speed", 30000);
-            m_sc_channel_config[i].g01_max_speed = m_ini_chn->GetIntValueOrDefault(sname, "g01_max_speed", 30000);
+            m_sc_channel_config[i].g01_max_speed = m_ini_chn->GetIntValueOrDefault(sname, "g01_max_speed", 15000);
             m_sc_channel_config[i].mpg_level3_step = m_ini_chn->GetIntValueOrDefault(sname, "mpg_level3_step", 100);
             m_sc_channel_config[i].mpg_level4_step = m_ini_chn->GetIntValueOrDefault(sname, "mpg_level4_step", 1000);
 
@@ -688,8 +687,7 @@ bool ParmManager::ReadChnConfig(){
             m_sc_channel_config[i].g31_sig_level = 0;
             m_sc_channel_config[i].rst_hold_time = 16;
             m_sc_channel_config[i].rst_mode = 0;
-            m_sc_channel_config[i].g00_max_speed = 30000;
-            m_sc_channel_config[i].g01_max_speed = 30000;
+            m_sc_channel_config[i].g01_max_speed = 15000;
             m_sc_channel_config[i].mpg_level3_step = 100;
             m_sc_channel_config[i].mpg_level4_step = 1000;
 #ifdef USES_WOOD_MACHINE
@@ -779,8 +777,7 @@ bool ParmManager::ReadChnConfig(){
             m_ini_chn->AddKeyValuePair(string("g31_sig_level"), string("0"), ns);
             m_ini_chn->AddKeyValuePair(string("rst_hold_time"), string("16"), ns);
             m_ini_chn->AddKeyValuePair(string("rst_mode"), string("0"), ns);
-            m_ini_chn->AddKeyValuePair(string("g00_max_speed"), string("30000"), ns);
-            m_ini_chn->AddKeyValuePair(string("g01_max_speed"), string("30000"), ns);
+            m_ini_chn->AddKeyValuePair(string("g01_max_speed"), string("15000"), ns);
             m_ini_chn->AddKeyValuePair(string("mpg_level3_step"), string("100"), ns);
             m_ini_chn->AddKeyValuePair(string("mpg_level4_step"), string("1000"), ns);
 
@@ -4117,19 +4114,15 @@ bool ParmManager::UpdateChnParam(uint8_t chn_index, uint32_t param_no, ParamValu
         sprintf(kname, "rst_mode");
         m_ini_chn->SetIntValue(sname, kname, value.value_uint8);
         break;
-    case 514:   //G00最高进给速度
-        sprintf(kname, "g00_max_speed");
-        m_ini_chn->SetIntValue(sname, kname, value.value_uint32);
-        break;
-    case 515:   //G01最高进给速度
+    case 514:   //G01最高进给速度
         sprintf(kname, "g01_max_speed");
         m_ini_chn->SetIntValue(sname, kname, value.value_uint32);
         break;
-    case 516:   //手轮3档的自定义步长
+    case 515:   //手轮3档的自定义步长
         sprintf(kname, "mpg_level3_step");
         m_ini_chn->SetIntValue(sname, kname, value.value_uint16);
         break;
-    case 517:   //手轮4档的自定义步长
+    case 516:   //手轮4档的自定义步长
         sprintf(kname, "mpg_level4_step");
         m_ini_chn->SetIntValue(sname, kname, value.value_uint16);
         break;
@@ -4613,7 +4606,7 @@ bool ParmManager::UpdateAxisParam(uint8_t axis_index, uint32_t param_no, ParamVa
         break;
     case 1678:	//攻丝回退的额外回退值
         sprintf(kname, "spd_rtnt_distance");
-        m_ini_axis->SetIntValue(sname, kname,value.value_uint32);
+        m_ini_axis->SetIntValue(sname, kname,value.value_int32);
         break;
 
 	default:
@@ -5527,16 +5520,13 @@ void ParmManager::ActiveChnParam(uint8_t chn_index, uint32_t param_no, ParamValu
     case 513:   //复位是否保留运行时间
         this->m_sc_channel_config[chn_index].rst_mode = value.value_uint8;
         break;
-    case 514:   //G00最高进给速度
-        this->m_sc_channel_config[chn_index].g00_max_speed = value.value_uint32;
-        break;
-    case 515:   //G01最高进给速度
+    case 514:   //G01最高进给速度
         this->m_sc_channel_config[chn_index].g01_max_speed = value.value_uint32;
         break;
-    case 516:   //手轮3档的自定义步长
+    case 515:   //手轮3档的自定义步长
         this->m_sc_channel_config[chn_index].mpg_level3_step = value.value_uint16;
         break;
-    case 517:   //手轮4档的自定义步长
+    case 516:   //手轮4档的自定义步长
         this->m_sc_channel_config[chn_index].mpg_level4_step = value.value_uint16;
         break;
 #ifdef USES_WOOD_MACHINE
@@ -6021,7 +6011,7 @@ void ParmManager::ActiveAxisParam(uint8_t axis_index, uint32_t param_no, ParamVa
         this->m_sc_axis_config[axis_index].spd_rtnt_rate = value.value_uint8;
         break;
     case 1678:	//攻丝回退的额外回退值
-        this->m_sc_axis_config[axis_index].spd_rtnt_distance = value.value_uint32;
+        this->m_sc_axis_config[axis_index].spd_rtnt_distance = value.value_int32;
         break;
 	default:
 		g_ptr_trace->PrintLog(LOG_ALARM, "轴参数激活，参数号非法：%d", param_no);

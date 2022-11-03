@@ -1397,7 +1397,11 @@ bool ParmManager::ReadAxisConfig(){
 			m_sc_axis_config[i].disp_coord = m_ini_axis->GetIntValueOrDefault(sname, "disp_coord", 0);
 			m_sc_axis_config[i].benchmark_offset = m_ini_axis->GetDoubleValueOrDefault(sname, "benchmark_offset", 0);
 			m_sc_axis_config[i].sync_err_max = m_ini_axis->GetIntValueOrDefault(sname, "sync_err_max", 0);
-			m_sc_axis_config[i].auto_sync = m_ini_axis->GetIntValueOrDefault(sname, "auto_sync", 0);
+            m_sc_axis_config[i].auto_sync = m_ini_axis->GetIntValueOrDefault(sname, "auto_sync", 0);
+
+            m_sc_axis_config[i].pmc_g00_by_EIFg = m_ini_axis->GetIntValueOrDefault(sname, "pmc_g00_by_EIFg", 0);
+            m_sc_axis_config[i].pmc_min_speed = m_ini_axis->GetIntValueOrDefault(sname, "pmc_min_speed", 5);
+            m_sc_axis_config[i].pmc_max_speed = m_ini_axis->GetIntValueOrDefault(sname, "pmc_max_speed", 15000);
 
 
 			for(j = 0; j < 10; j++){
@@ -1539,7 +1543,11 @@ bool ParmManager::ReadAxisConfig(){
 			m_sc_axis_config[i].disp_coord = 0;
 			m_sc_axis_config[i].benchmark_offset = 0;
 			m_sc_axis_config[i].sync_err_max = 0;
-			m_sc_axis_config[i].auto_sync = 0;
+            m_sc_axis_config[i].auto_sync = 0;
+
+            m_sc_axis_config[i].pmc_g00_by_EIFg = 0;
+            m_sc_axis_config[i].pmc_min_speed = 5;
+            m_sc_axis_config[i].pmc_max_speed = 15000;
 
 			for(j = 0; j < 10; j++){
 				m_sc_axis_config[i].axis_home_pos[j] = 0.0;
@@ -1672,7 +1680,9 @@ bool ParmManager::ReadAxisConfig(){
 			m_ini_axis->AddKeyValuePair(string("sync_err_max"), string("0"), ns);
 			m_ini_axis->AddKeyValuePair(string("auto_sync"), string("0"), ns);
 
-
+            m_ini_axis->AddKeyValuePair(string("pmc_g00_by_EIFg"), string("0"), ns);
+            m_ini_axis->AddKeyValuePair(string("pmc_min_speed"), string("5"), ns);
+            m_ini_axis->AddKeyValuePair(string("pmc_max_speed"), string("15000"), ns);
 
 			for(j = 0; j < 10; j++){
 				memset(kname, 0x00, sizeof(kname));
@@ -4199,6 +4209,18 @@ bool ParmManager::UpdateAxisParam(uint8_t axis_index, uint32_t param_no, ParamVa
 		sprintf(kname, "axis_pmc");
 		m_ini_axis->SetIntValue(sname, kname, value.value_uint8);
 		break;
+    case 1007:	//PMC轴快移速度来源
+        sprintf(kname, "pmc_g00_by_EIFg");
+        m_ini_axis->SetIntValue(sname, kname,value.value_uint8);
+        break;
+    case 1008:	//最小PMC移动速度
+        sprintf(kname, "pmc_min_speed");
+        m_ini_axis->SetIntValue(sname, kname,value.value_uint16);
+        break;
+    case 1009:	//最大PMC移动速度
+        sprintf(kname, "pmc_max_speed");
+        m_ini_axis->SetIntValue(sname, kname,value.value_uint16);
+        break;
 	case 1100:	//自动比例参数
 		sprintf(kname, "kp1");
 		m_ini_axis->SetDoubleValue(sname, kname, value.value_double);
@@ -5607,6 +5629,9 @@ void ParmManager::ActiveAxisParam(uint8_t axis_index, uint32_t param_no, ParamVa
 	case 1006:	//是否PMC轴
 		this->m_sc_axis_config[axis_index].axis_pmc = value.value_uint8;
 		break;
+    case 1007:	//攻丝回退的额外回退值
+        this->m_sc_axis_config[axis_index].spd_rtnt_distance = value.value_int32;
+        break;
 	case 1100:	//自动比例参数
 		printf("update axis[%hhu] kp1: %lf\n", axis_index, value.value_double);
 		this->m_sc_axis_config[axis_index].kp1 = value.value_double;

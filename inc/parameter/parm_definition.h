@@ -305,6 +305,10 @@ struct SCAxisConfig{
 	double axis_home_pos[10];				//参考点位置  单位：mm
 	double ref_mark_err;                   //参考点基准误差   单位：mm    有效范围：0~10.0
 	uint32_t spd_min_speed;                 //主轴最低转速   单位：rpm   0~100000
+
+    uint8_t pmc_g00_by_EIFg;                //PMC轴快移速度来源 0：定位速度 1：EIFg信号
+    uint16_t pmc_min_speed;                 //最小PMC移动速度
+    uint16_t pmc_max_speed;                 //最大PMC移动速度
 };
 
 /**

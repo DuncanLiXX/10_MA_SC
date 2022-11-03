@@ -8875,7 +8875,7 @@ void ChannelEngine::ProcessPmcAxisCtrl(){
         int32_t dis[4] = {greg->EIDA, greg->EIDB, greg->EIDC, greg->EIDD};
         uint16_t spd[4] = {greg->EIFA, greg->EIFB, greg->EIFC, greg->EIFD};
         for(uint8_t j = 0; j < 4; j++){
-            if(m_pmc_axis_ctrl[i*4+j].m_n_phy_axis == 0xff)
+            if(m_pmc_axis_ctrl[i*4+j].axis_list.size() == 0)
                 continue;
             if(!m_pmc_axis_ctrl[i*4+j].Active(eax[j])){//×ª»»Ê§°Ü£¬¸æ¾¯
                 this->m_error_code = ERR_PMC_AXIS_CTRL_CHANGE;

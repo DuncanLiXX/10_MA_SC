@@ -462,7 +462,8 @@ enum ErrorType {
     ERR_SPD_RTNT_IN_AUTO = 1709,        //自动模式禁止攻丝回退
 
 	//PMC轴告警
-	ERR_PMC_AXIS_CTRL_CHANGE = 1900,   //PMC轴控制状态切换
+    ERR_PMC_AXIS_CTRL_CHANGE = 1900,    //PMC轴控制状态下切换
+    ERR_PMC_SPEED_ERROR = 1901,         //PMC轴速度异常
 
 #ifdef USES_GRIND_MACHINE
 	//玻璃磨边机定制M指令告警
@@ -1331,7 +1332,10 @@ struct HmiAxisConfig{
 	double axis_home_pos[10];				//参考点位置  单位：mm
 	double ref_mark_err;                   //参考点基准误差   单位：mm    有效范围：0~10.0
 
-	uint32_t spd_min_speed;                 //主轴最低转速   单位：rpm   0~100000
+    uint32_t spd_min_speed;                 //主轴最低转速   单位：rpm   0~100000
+    uint8_t pmc_g00_by_EIFg;                //PMC轴快移速度来源 0：定位速度 1：EIFg信号
+    uint16_t pmc_min_speed;                 //最小PMC移动速度
+    uint16_t pmc_max_speed;                 //最大PMC移动速度
 };
 
 /**

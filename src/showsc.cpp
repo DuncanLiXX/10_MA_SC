@@ -541,6 +541,9 @@ void ShowSc::PrintAxisConfig(int axis)
     AddPair(s,"axis_port",cfg->axis_port);
     AddPair(s,"axis_linear_type",cfg->axis_linear_type);
     AddPair(s,"axis_pmc",cfg->axis_pmc);
+    AddPair(s,"pmc_g00_by_EIFg",cfg->pmc_g00_by_EIFg);
+    AddPair(s,"pmc_min_speed",cfg->pmc_min_speed);
+    AddPair(s,"pmc_max_speed",cfg->pmc_max_speed);
 
     AddPair(s,"kp1",cfg->kp1);
     AddPair(s,"kp2",cfg->kp2);
@@ -794,7 +797,12 @@ void ShowSc::PrintPmcAxisCtrl()
         sprintf(title,"[Group-%d]",i);
         AddPair(s,title,"");
         AddPair(s,"m_n_group_index",cfg->m_n_group_index);
-        AddPair(s,"m_n_phy_axis",cfg->m_n_phy_axis);
+        string axis_indexs = "[ ";
+        for(unsigned int j = 0; j<cfg->axis_list.size(); j++){
+            axis_indexs = axis_indexs + to_string(cfg->axis_list.at(i)->axis_index) + " ";
+        }
+        axis_indexs = axis_indexs + "]";
+        AddPair(s,"axis_list",axis_indexs);
         AddPair(s,"m_b_active",cfg->m_b_active);
         AddPair(s,"m_b_buffer",cfg->m_b_buffer);
         AddPair(s,"m_b_step_stop",cfg->m_b_step_stop);

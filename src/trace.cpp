@@ -109,7 +109,6 @@ TraceInfo::TraceInfo() :
     GetHostAddressFrmFile();
     mosqpp::lib_init();
     m_topic_mosq.connect(m_topic_dest.c_str());
-    std::cout << "--------------------" << m_topic_dest << std::endl;
     m_topic_mosq.loop_start();
 }
 

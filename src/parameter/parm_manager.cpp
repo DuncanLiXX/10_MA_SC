@@ -1303,6 +1303,9 @@ bool ParmManager::ReadAxisConfig(){
 			m_sc_axis_config[i].rapid_speed = m_ini_axis->GetDoubleValueOrDefault(sname, "rapid_speed", 8000);
 			m_sc_axis_config[i].reset_speed = m_ini_axis->GetDoubleValueOrDefault(sname, "reset_speed", 2000);
 			m_sc_axis_config[i].ret_ref_speed = m_ini_axis->GetDoubleValueOrDefault(sname, "ret_ref_speed", 500);
+            m_sc_axis_config[i].ret_ref_speed_second = m_ini_axis->GetDoubleValueOrDefault(sname, "ret_ref_speed_second", 100);
+            m_sc_axis_config[i].ref_offset_pos = m_ini_axis->GetDoubleValueOrDefault(sname, "ref_offset_pos", 0);
+            m_sc_axis_config[i].ref_z_distance_max = m_ini_axis->GetDoubleValueOrDefault(sname, "ref_z_distance_max", 0);
 
 			m_sc_axis_config[i].rapid_acc = m_ini_axis->GetDoubleValueOrDefault(sname, "rapid_acc", 1500);
 			m_sc_axis_config[i].manual_acc = m_ini_axis->GetDoubleValueOrDefault(sname, "manual_acc", 2000);
@@ -1448,6 +1451,9 @@ bool ParmManager::ReadAxisConfig(){
 			m_sc_axis_config[i].rapid_speed = 8000;
 			m_sc_axis_config[i].reset_speed = 2000;
 			m_sc_axis_config[i].ret_ref_speed = 500;
+            m_sc_axis_config[i].ret_ref_speed_second = 100;
+            m_sc_axis_config[i].ref_offset_pos = 0;
+            m_sc_axis_config[i].ref_z_distance_max = 0;
 
 			m_sc_axis_config[i].rapid_acc = 1500;
 			m_sc_axis_config[i].manual_acc = 2000;
@@ -1577,6 +1583,11 @@ bool ParmManager::ReadAxisConfig(){
 			m_ini_axis->AddKeyValuePair(string("rapid_speed"), string("8000"), ns);
 			m_ini_axis->AddKeyValuePair(string("reset_speed"), string("2000"), ns);
 			m_ini_axis->AddKeyValuePair(string("ret_ref_speed"), string("500"), ns);
+
+            m_ini_axis->AddKeyValuePair(string("ret_ref_speed_second"), string("100"), ns);
+            m_ini_axis->AddKeyValuePair(string("ref_offset_pos"), string("0"), ns);
+            m_ini_axis->AddKeyValuePair(string("ref_z_distance_max"), string("0"), ns);
+
 			m_ini_axis->AddKeyValuePair(string("rapid_acc"), string("1500"), ns);
 			m_ini_axis->AddKeyValuePair(string("manual_acc"), string("2000"), ns);
 			m_ini_axis->AddKeyValuePair(string("start_acc"), string("500"), ns);
@@ -4331,6 +4342,19 @@ bool ParmManager::UpdateAxisParam(uint8_t axis_index, uint32_t param_no, ParamVa
 		sprintf(kname, "ref_encoder");
 		m_ini_axis->SetInt64Value(sname, kname, value.value_int64);  //64位整型
 		break;
+    case 1315:  //回参考点低速
+        sprintf(kname, "ret_ref_speed_second");
+        m_ini_axis->SetDoubleValue(sname, kname, value.value_double);
+        break;
+    case 1316:  //回参考点后的偏移量
+        sprintf(kname, "ref_offset_pos");
+        m_ini_axis->SetDoubleValue(sname, kname, value.value_uint32);
+        break;
+    case 1317:  //搜索Z脉冲最大移动距离
+        sprintf(kname, "ref_z_distance_max");
+        m_ini_axis->SetDoubleValue(sname, kname, value.value_uint32);
+        break;
+
 	case 1350:	//手动速度
 		sprintf(kname, "manual_speed");
 		m_ini_axis->SetDoubleValue(sname, kname, value.value_double);
@@ -5747,6 +5771,15 @@ void ParmManager::ActiveAxisParam(uint8_t axis_index, uint32_t param_no, ParamVa
 	case 1312:   //粗精基准位置偏差
 		this->m_sc_axis_config[axis_index].ref_base_diff = value.value_double;
 		break;
+    case 1315:   //回参考点低速
+        this->m_sc_axis_config[axis_index].ret_ref_speed_second = value.value_double;
+        break;
+    case 1316:  //回参考点后的偏移量
+        this->m_sc_axis_config[axis_index].ref_offset_pos = value.value_double;
+        break;
+    case 1317:  //搜索Z脉冲最大移动距离
+        this->m_sc_axis_config[axis_index].ref_z_distance_max = value.value_double;
+        break;
 	case 1350:	//手动速度
 		this->m_sc_axis_config[axis_index].manual_speed = value.value_double;
 		break;

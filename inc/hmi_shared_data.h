@@ -413,6 +413,7 @@ enum ErrorType {
 	ERR_RET_REF_NOT_RUN,        //系统处于错误状态，禁止回零
 	ERR_NC_FILE_NOT_EXIST,      //文件不存在
 	ERR_SWITCH_MODE_IN_RET_REF, //回零中禁止切换工作模式
+    ERR_RET_REF_Z_ERR,          //搜索Z脉冲位置超限，原点建立失败
 
 
 	//加工告警	1000~1999

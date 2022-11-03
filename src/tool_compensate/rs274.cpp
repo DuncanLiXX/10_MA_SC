@@ -19,10 +19,10 @@ static double endpoint[2];
 
 static int endpoint_valid = 0;
 
-static double temp_point[3] = {0,0,0};
+static double temp_point[3] = {0,0,0};  // 进入MC的当前段运动终点
 
-static double feed_rate = 0;
-static uint16_t g_flags = 0;
+static double feed_rate = 0;   // 运动消息进给速度
+static uint16_t g_flags = 0;   // 对应消息指令中的 RecordFlags
 
 std::vector<queued_canon>& qc(void) {
     static std::vector<queued_canon> c;
@@ -72,12 +72,14 @@ int Interp::arc_data_comp_ijk(int move,
 	radius2 = hypot((*center_x - end_x), (*center_y - end_y));
 
 	if((arc_radius < radius_tolerance) || (radius2 < radius_tolerance)){
+
 		printf("Zero-radius arc: "
 		   "start=(%c%.4f,%c%.4f) center=(%c%.4f,%c%.4f) end=(%c%.4f,%c%.4f) r1=%.4f r2=%.4f",
 		   a, current_x, b, current_y,
 		   a, *center_x, b, *center_y,
 		   a, end_x, b, end_y, arc_radius, radius2);
 
+		CreateError(ARC_RADIUS_TOO_SMALL, ERROR_LEVEL, CLEAR_BY_MCP_RESET);
 		return 0;
 	}
 
@@ -94,11 +96,14 @@ int Interp::arc_data_comp_ijk(int move,
 				   a, *center_x, b, *center_y,
 				   a, end_x, b, end_y, arc_radius, radius2,
 				   abs_err, rel_err*100);
+		CreateError(ARC_NOT_VALID, ERROR_LEVEL, CLEAR_BY_MCP_RESET);
+		return 0;
 	}
 
 	if((arc_radius <= tool_radius and side == LEFT and move == 30) or (side == RIGHT and move == 20 and arc_radius <= tool_radius))
 	{
 		printf("TOOL_RADIUS_NOT_LESS_THAN_ARC_RADIUS_WITH_COMP");
+		CreateError(TOOL_RADIUS_BIGGER_THAN_ARC, ERROR_LEVEL, CLEAR_BY_MCP_RESET);
 		return 0;
 	}
 
@@ -132,6 +137,7 @@ int Interp::arc_data_comp_r(int move,
 
 	if((abs_radius <= tool_radius) and ((side == LEFT && move == 30) or (side == LEFT && move == 20))){
 		printf("tool radius not less than arc radius with comp\n");
+		CreateError(TOOL_RADIUS_BIGGER_THAN_ARC, ERROR_LEVEL, CLEAR_BY_MCP_RESET);
 		return 0;
 	}
 
@@ -173,6 +179,7 @@ int Interp::arc_data_ijk(int move,
 	  radius2 = hypot((*center_x - end_x), (*center_y - end_y));
 
 	  if(radius < radius_tolerance or radius2 < radius_tolerance){
+		  CreateError(ARC_RADIUS_TOO_SMALL, ERROR_LEVEL, CLEAR_BY_MCP_RESET);
 		  printf("arc radius too small canot move\n");
 		  return 0;
 	  }
@@ -190,6 +197,8 @@ int Interp::arc_data_ijk(int move,
 		  	       a, *center_x, b, *center_y,
 		  	       a, end_x, b, end_y, radius, radius2,
 		  	       abs_err, rel_err*100);
+		  CreateError(ARC_NOT_VALID, ERROR_LEVEL, CLEAR_BY_MCP_RESET);
+
 	  }
 
 	  if (move == 20)
@@ -225,6 +234,7 @@ int Interp::arc_data_r(int move,
 
 	  if((end_x == current_x) && (end_y == current_y)){
 		  printf("arc current point same as end point\n");
+		  CreateError(ARC_NOT_VALID, ERROR_LEVEL, CLEAR_BY_MCP_RESET);
 		  return 0;
 	  }
 
@@ -235,12 +245,13 @@ int Interp::arc_data_r(int move,
 
 	  if((half_length - abs_radius) > tolerance){
 		  printf("radius too small to reach end point\n");
+		  CreateError(ARC_RADIUS_TOO_SMALL, ERROR_LEVEL, CLEAR_BY_MCP_RESET);
 		  return 0;
 	  }
 
 	  if ((half_length / abs_radius) > (1 - TINY))
 	    half_length = abs_radius;   /* allow a small error for semicircle */
-	  /* check needed before calling asin   */
+	  /* check needed before calling asin */
 	  if (((move == 20) && (radius > 0)) || ((move == 30) && (radius < 0)))
 	    theta = atan2((end_y - current_y), (end_x - current_x)) - M_PI_2l;
 	  else
@@ -308,6 +319,7 @@ int Interp::convert_arc(int move, block_pointer block, setup_pointer settings)
 
 	if(settings->arc_not_allowed){
 		printf("arc not allowed 退出刀补第一段不能是圆弧移动 \n");
+		CreateError(ARC_NOT_ALLOWED, ERROR_LEVEL, CLEAR_BY_MCP_RESET);
 		return 0;
 	}
 
@@ -428,6 +440,7 @@ int Interp::convert_arc_comp1(int move,
 
     if(hypot((end_x - cx), (end_y - cy)) <= tool_radius){
     	printf("Radius of cutter compensation entry arc is not greater than the tool radius\n");
+    	CreateError(TOOL_RADIUS_BIGGER_THAN_ARC, ERROR_LEVEL, CLEAR_BY_MCP_RESET);
     	return 0;
     }
 
@@ -473,6 +486,7 @@ int Interp::convert_arc_comp1(int move,
 
     if(fabs(cos(A_ang)) < TOLERANCE_EQUAL){
     	printf("tool radius not less than arc radius with comp\n");
+    	CreateError(TOOL_RADIUS_BIGGER_THAN_ARC, ERROR_LEVEL, CLEAR_BY_MCP_RESET);
     	return 0;
     }
 
@@ -486,6 +500,7 @@ int Interp::convert_arc_comp1(int move,
     if((fabs(hypot(center_x-end_x,center_y-end_y) -
             hypot(center_x-cx,center_y-cy))) > spiral_abs_tolerance){
     	printf("bug in tool radius comp\n");
+    	CreateError(TOOL_RADIUS_COMP_BUG, ERROR_LEVEL, CLEAR_BY_MCP_RESET);
     	return 0;
     }
 
@@ -566,6 +581,7 @@ int Interp::convert_arc_comp2(int move,
 
         if(arc_radius <= tool_radius){
         	printf("TOOL_RADIUS_NOT_LESS_THAN_ARC_RADIUS_WITH_COMP\n");
+        	CreateError(TOOL_RADIUS_BIGGER_THAN_ARC, ERROR_LEVEL, CLEAR_BY_MCP_RESET);
         	return 0;
         }
 
@@ -610,6 +626,7 @@ int Interp::convert_arc_comp2(int move,
 
                 if(l > 1.0 || l < -1.0){
                 	printf("Arc move in concave corner cannot be reached by the tool without gouging\n");
+                	CreateError(CONCAVE_CORNER_ERROR, ERROR_LEVEL, CLEAR_BY_MCP_RESET);
                 	return 0;
                 }
 
@@ -640,6 +657,7 @@ int Interp::convert_arc_comp2(int move,
 
             if(oldrad == 0 || arc_cc == 0){
             	printf("Arc to arc motion is invalid because the arcs have the same center\n");
+            	CreateError(CONCAVE_CORNER_ERROR, ERROR_LEVEL, CLEAR_BY_MCP_RESET);
             	return 0;
             }
 
@@ -647,6 +665,7 @@ int Interp::convert_arc_comp2(int move,
 
             if(a > 1.0 || a < -1.0){
             	printf("Arc to arc motion makes a corner the compensated tool can't fit in without gouging\n");
+            	CreateError(ARC_TO_ARC_SAME_CENTER, ERROR_LEVEL, CLEAR_BY_MCP_RESET);
             	return 0;
             }
 
@@ -809,6 +828,7 @@ int Interp::convert_straight_comp1(int move,
 
 	if(distance <= radius){
 		printf("Length of cutter compensation entry move is not greater than the tool radius");
+		CreateError(MOVE_SMALLER_THAN_CMPRADIUS, ERROR_LEVEL, CLEAR_BY_MCP_RESET);
 		return 0;
 	}
 
@@ -1192,8 +1212,9 @@ int Interp::move_endpoint_and_flush(setup_pointer settings, double x, double y)
                            x, y);
             printf("moving endpoint of arc lineno %d old sweep %f new sweep %f\n", q.data.arc_feed.line_number, l1, l2);
 
-            if(fabs(r1-r2) > .01)
+            if(fabs(r1-r2) > .01){
                 printf("BUG: cutter compensation has generated an invalid arc with mismatched radii r1 %f r2 %f\n", r1, r2);
+            }
             if(l1 != 0.0 && endpoint_valid && fabs(l2) > fabs(l1) + 0.254) {
                 printf("Arc move in concave corner cannot be reached by the tool without gouging\n");
             }
@@ -1479,6 +1500,7 @@ void ARC_FEED(int line_number,
 {
 	if(comp_output_list == nullptr){
 		printf("out put msg list not initialized1.\n");
+		CreateError(COMP_LIST_NOT_INIT, ERROR_LEVEL, CLEAR_BY_MCP_RESET);
 		return;
 	}
 
@@ -1537,6 +1559,7 @@ void STRAIGHT_TRAVERSE(int line_number,
 {
 	if(comp_output_list == nullptr){
 		printf("out put msg list not initialized3.\n");
+		CreateError(COMP_LIST_NOT_INIT, ERROR_LEVEL, CLEAR_BY_MCP_RESET);
 		return;
 	}
 
@@ -1567,6 +1590,7 @@ void STRAIGHT_FEED(int line_number,
 {
 	if(comp_output_list == nullptr){
 		printf("out put msg list not initialized2.\n");
+		CreateError(COMP_LIST_NOT_INIT, ERROR_LEVEL, CLEAR_BY_MCP_RESET);
 		return;
 	}
 

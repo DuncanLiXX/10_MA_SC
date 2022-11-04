@@ -10,133 +10,336 @@
 
 #include <stdint.h>
 #include <stdio.h>
+#include <vector>
+#include "compile_message.h"
+
+void setOutputMsgList(OutputMsgList * output_msg_list);
+
+enum queued_canon_type {
+	QSTRAIGHT_TRAVERSE,
+	QSTRAIGHT_FEED,
+	QARC_FEED
+};
+
+enum CUTTER_COMP_DIRECTION {
+    RIGHT = 1,
+    LEFT = 2,
+};
+
+enum CANON_PLANE{
+	CANON_PLANE_XY,
+	CANON_PLANE_XZ,
+	CANON_PLANE_YZ
+};
+
 
 typedef struct block_struct
 {
- bool     a_flag;
- double   a_number;
- bool     b_flag;
- double   b_number;
- bool     c_flag;
- double   c_number;
+	bool     a_flag;
+	double   a_number;
+	bool     b_flag;
+	double   b_number;
+	bool     c_flag;
+	double   c_number;
+	bool     x_flag;
+	double   x_number;
+	bool     y_flag;
+	double   y_number;
+	bool     z_flag;
+	double   z_number;
+	bool     i_flag;
+	double   i_number;
+	bool     j_flag;
+	double   j_number;
+	bool     k_flag;
+	double   k_number;
+	bool     r_flag;
+	double   r_number;
+	int      d_number;
+	double   f_number;
+	double   s_number;
+	int      t_number;
 
- char     comment[256];
- int      d_number;
- double   f_number;
- int      g_modes[14];
+	int      l_number;
+	int      line_number;
+	double   p_number;
+	double   q_number;
 
- bool     i_flag;
- double   i_number;
- bool     j_flag;
- double   j_number;
- bool     k_flag;
- double   k_number;
- int      l_number;
- int      line_number;
- int      motion_to_be;
- int      m_count;
- int      m_modes[10];
- double   p_number;
- double   q_number;
- bool     r_flag;
- double   r_number;
- double   s_number;
- int      t_number;
- bool     x_flag;
- double   x_number;
- bool     y_flag;
- double   y_number;
- bool     z_flag;
- double   z_number;
+	char     comment[256];
+	int      g_modes[14];
+	int      motion_to_be;
+	int      m_count;
+	int      m_modes[10];
+
+	uint16_t flags;
+
 } block;
 
 typedef block * block_pointer;
 
 typedef struct setup_struct
 {
- double AA_axis_offset;                        // A-axis g92 offset
- double AA_current;                            // current A-axis position
- double AA_origin_offset;                      // A-axis origin offset
+	double current_x;                             // current X-axis position
+	double current_y;                             // current Y-axis position
+	double current_z;                             // current Z-axis position
 
- double BB_axis_offset;                        // B-axis g92offset
- double BB_current;                            // current B-axis position
- double BB_origin_offset;                      // B-axis origin offset
+	double program_x;                             // program x, used when cutter comp on
+	double program_y;                             // program y, used when cutter comp on
+	double program_z;
 
+	double origin_offset_x;                       // origin offset x
+	double origin_offset_y;                       // origin offset y
+	double origin_offset_z;                       // origin offset z
 
- double CC_axis_offset;                        // C-axis g92offset
- double CC_current;                            // current C-axis position
- double CC_origin_offset;                      // C-axis origin offset
+	block _block;                                 // parsed next block
 
- int active_g_codes [12];                // array of active G codes
- int active_m_codes [7];                // array of active M codes
- double active_settings [3];               // array of feed, speed, etc.
- double axis_offset_x;                         // X-axis g92 offset
- double axis_offset_y;                         // Y-axis g92 offset
- double axis_offset_z;                         // Z-axis g92 offset
- double current_x;                             // current X-axis position
- double current_y;                             // current Y-axis position
- double current_z;                             // current Z-axis position
- double origin_offset_x;                       // origin offset x
- double origin_offset_y;                       // origin offset y
- double origin_offset_z;                       // origin offset z
+	bool cutter_comp_firstmove = true; // this is the first comp move
+	double cutter_comp_radius;                    // current cutter compensation radius
+	int cutter_comp_side;                         // current cutter compensation side
+	bool arc_not_allowed;
+	double feed_rate;                             // feed rate in current units/min
+	int plane;                            // active plane, XY-, YZ-, or XZ-plane
+	bool percent_flag;                          // ON means first line was percent sign
+	int sequence_number;                          // sequence number of line last read
+	double tool_length_offset;                    // current tool length offset
 
- block block1;                                 // parsed next block
- char blocktext[256];           // linetext downcased, white space gone
- int control_mode;               // exact path or cutting mode
- int current_slot;                             // carousel slot number of current tool
-
- double cutter_comp_radius;                    // current cutter compensation radius
- int cutter_comp_side;                         // current cutter compensation side
- double cycle_cc;                              // cc-value (normal) for canned cycles
- double cycle_i;                               // i-value for canned cycles
- double cycle_j;                               // j-value for canned cycles
- double cycle_k;                               // k-value for canned cycles
- int cycle_l;                                  // l-value for canned cycles
- double cycle_p;                               // p-value (dwell) for canned cycles
- double cycle_q;                               // q-value for canned cycles
- double cycle_r;                               // r-value for canned cycles
- int distance_mode;                  // absolute or incremental
- int feed_mode;                                // G_93 (inverse time) or G_94 units/min
- bool feed_override;                         // whether feed override is enabled
- double feed_rate;                             // feed rate in current units/min
- char filename[128];            // name of currently open NC code file
- FILE * file_pointer;                          // file pointer for open NC code file
- bool flood;                                 // whether flood coolant is on
- int length_offset_index;                      // for use with tool length offsets
- int length_units;                     // millimeters or inches
- int line_length;                              // length of line last read
- char linetext[256];            // text of most recent line read
- bool mist;                                  // whether mist coolant is on
- int motion_mode;                              // active G-code for motion
- int origin_index;                             // active origin (1=G54 to 9=G59.3)
-
- double parameters[5400];                // system parameters
- int parameter_occurrence;                     // parameter buffer index
- int parameter_numbers[50];                    // parameter number buffer
- double parameter_values[50];                  // parameter value buffer
-
- int plane;                            // active plane, XY-, YZ-, or XZ-plane
- bool percent_flag;                          // ON means first line was percent sign
- bool probe_flag;                            // flag indicating probing done
- double program_x;                             // program x, used when cutter comp on
- double program_y;                             // program y, used when cutter comp on
- int retract_mode;                    // for cycles, old_z or r_plane
- int selected_tool_slot;                       // tool slot selected but not active
- int sequence_number;                          // sequence number of line last read
- double speed;                                 // current spindle speed in rpm
- int speed_feed_mode;        // independent or synched
- bool speed_override;                        // whether speed override is enabled
- int spindle_turning;              // direction spindle is turning
- char stack[50][80];                           // stack of calls for error reporting
- int stack_index;                              // index into the stack
- double tool_length_offset;                    // current tool length offset
- int tool_max;                                 // highest number tool slot in carousel
- int tool_table_index;                         // tool index used with cutter comp
- double traverse_rate;                         // rate for traverse motions
+	int motion_mode;
 } setup;
 
 typedef setup * setup_pointer;
+/*******************************************************/
 
+struct straight_traverse {
+    int line_number;
+    double dx, dy, dz;          // direction of original motion
+    double x,y,z, a,b,c, u,v,w;
+    uint16_t flags;
+};
+
+struct straight_feed {
+    int line_number;
+    double dx, dy, dz;          // direction of original motion
+    double x,y,z, a,b,c, u,v,w; // target
+    uint16_t flags;
+    double feedrate;
+};
+
+struct arc_feed {
+    int line_number;
+    double original_turns;
+    double end1, end2, center1, center2;
+    int turn;
+    double end3, a,b,c, u,v,w;
+    uint16_t flags;
+    double feedrate;
+};
+
+struct queued_canon {
+    queued_canon_type type;
+    union {
+        struct straight_traverse straight_traverse;
+        struct straight_feed straight_feed;
+        struct arc_feed arc_feed;
+    } data;
+};
+
+void dequeue_canons(setup_pointer settings);
+
+int enqueue_STRAIGHT_FEED(setup_pointer settings, int l,
+                          double dx, double dy, double dz,
+                          double x, double y, double z,
+						  double a, double b, double c,
+						  double u, double v, double w);
+
+int enqueue_STRAIGHT_TRAVERSE(setup_pointer settings, int l,
+                              double dx, double dy, double dz,
+                              double x, double y, double z,
+							  double a, double b, double c,
+							  double u, double v, double w);
+
+void enqueue_ARC_FEED(setup_pointer settings, int l,
+                      double original_arclen,
+                      double end1, double end2,
+					  double center1, double center2,
+                      int turn,
+                      double end3,
+					  double a, double b, double c,
+					  double u, double v, double w);
+
+void set_endpoint(double x, double y);
+
+class Interp{
+
+public:
+	Interp(){}
+	~Interp(){}
+
+
+	void flush_comp(){
+		dequeue_canons(&_setup);
+	}
+
+	int move_endpoint_and_flush(setup_pointer s, double x, double y);
+
+	int arc_data_comp_ijk(int move,
+	         int plane,
+	         int side,
+	         double tool_radius,
+	         double current_x,
+	         double current_y,
+	         double end_x,
+	         double end_y,
+	         int ij_absolute,
+	         double i_number,
+	         double j_number,
+	         int p_number,
+	         double *center_x,
+	         double *center_y,
+	         int *turn,
+	         double radius_tolerance,
+	         double spiral_abs_tolerance,
+	         double spiral_rel_tolerance);
+
+	 int arc_data_comp_r(int move,
+	         int plane,
+	         int side,
+	         double tool_radius,
+	         double current_x,
+	         double current_y,
+	         double end_x,
+	         double end_y,
+	         double big_radius,
+	         int p_number,
+	         double *center_x,
+	         double *center_y,
+	         int *turn,
+	         double radius_tolerance);
+
+	 int arc_data_ijk(int move,
+	         int plane,
+	         double current_x,
+	         double current_y,
+	         double end_x,
+	         double end_y,
+	         int ij_absolute,
+	         double i_number,
+	         double j_number,
+	         int p_number,
+	         double *center_x,
+	         double *center_y,
+	         int *turn,
+	         double radius_tolerance,
+	         double spiral_abs_tolerance,
+	         double spiral_rel_tolerance);
+
+	 int arc_data_r(int move,
+	         int plane,
+	         double current_x,
+	         double current_y,
+	         double end_x,
+	         double end_y,
+	         double radius,
+	         int p_number,
+	         double *center_x,
+	         double *center_y,
+	         int *turn,
+	         double radius_tolerance);
+
+	 int comp_get_current(setup_pointer settings, double *x, double *y, double *z);
+	 int comp_set_current(setup_pointer settings, double x, double y, double z);
+	 int comp_get_programmed(setup_pointer settings, double *x, double *y, double *z);
+	 int comp_set_programmed(setup_pointer settings, double x, double y, double z);
+	 int convert_arc(int move, block_pointer block, setup_pointer settings);
+	 int convert_arc2(int move, block_pointer block,
+				      setup_pointer settings,
+				      double *current1, double *current2, double *current3,
+				      double end1, double end2, double end3,
+				      double AA_end, double BB_end, double CC_end,
+				      double u_end, double v_end, double w_end,
+				      double offset1, double offset2);
+
+	 int convert_arc_comp1(int move, block_pointer block,
+	                       setup_pointer settings,
+	                       double end_x, double end_y, double end_z,
+	                       double offset_x, double offset_y,
+	                       double AA_end, double BB_end, double CC_end,
+	                       double u_end, double v_end, double w_end);
+
+	 int convert_arc_comp2(int move, block_pointer block,
+	                       setup_pointer settings,
+	                       double end_x, double end_y, double end_z,
+	                       double offset_x, double offset_y,
+	                       double AA_end, double BB_end, double CC_end,
+	                       double u_end, double v_end, double w_end);
+
+	 int convert_cutter_compensation_off(setup_pointer settings);
+
+	 int convert_cutter_compensation_on(int side, double radius, setup_pointer settings);
+
+	 int convert_straight(int move, block_pointer block,
+	                             setup_pointer settings);
+
+	 int convert_straight_comp1(int move, block_pointer block,
+	                             setup_pointer settings,
+	                             double px, double py, double end_z,
+	                             double AA_end, double BB_end, double CC_end,
+	                             double u_end, double v_end, double w_end);
+
+	 int convert_straight_comp2(int move, block_pointer block,
+	                             setup_pointer settings,
+	                             double px, double py, double end_z,
+	                             double AA_end, double BB_end, double CC_end,
+	                             double u_end, double v_end, double w_end);
+
+	 double find_arc_length(double x1, double y1, double z1,
+	                              double center_x, double center_y, int turn,
+	                              double x2, double y2, double z2);
+
+	 int find_ends(block_pointer block, setup_pointer settings,
+	               double *px, double *py, double *pz);
+
+	 int find_relative(double x1, double y1, double z1,
+	                   double *x2, double *y2, double *z2,
+	                   setup_pointer settings);
+
+	 double find_straight_length(double x2, double y2, double z2,
+	                             double x1, double y1, double z1);
+
+	 double find_turn(double x1, double y1, double center_x,
+	                        double center_y, int turn, double x2, double y2);
+
+	 int init_block(block_pointer block);
+
+	 block* interp_block(){return &_setup._block;}
+
+	 setup _setup;
+
+	 bool isCompOn = false;
+};
+
+void ARC_FEED(int line_number,
+              double first_end,
+			  double second_end,
+			  double first_axis,
+			  double second_axis,
+			  int rotation,
+			  double axis_end_point,
+              double a_position,
+			  double b_position,
+			  double c_position,
+              double u_position,
+			  double v_position,
+			  double w_position);
+
+void STRAIGHT_FEED(int line_number,
+                   double x, double y, double z,
+                   double a, double b, double c,
+                   double u, double v, double w);
+
+void STRAIGHT_TRAVERSE(int line_number,
+                       double x, double y, double z,
+                       double a, double b, double c,
+                       double u, double v, double w);
 
 
 

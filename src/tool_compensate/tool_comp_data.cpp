@@ -27,3 +27,17 @@ int32_t   r_C2;   //  圆心
 //  系统报警寄存器
 uint8_t   f_AlmBf;      //  报警标志
 uint8_t   r_PsNo;       //  报警号
+
+
+ADRSREG_DEF CompBuffer[2];
+
+ADRSREG_DEF * pBar;
+ADRSREG_DEF * pCar;
+
+static bool first_comp = true;
+static int index = 0;
+
+void pushComp(ADRSREG_DEF block)
+{
+
+}

@@ -414,6 +414,7 @@ enum ErrorType {
 	ERR_RET_REF_NOT_RUN,        //系统处于错误状态，禁止回零
 	ERR_NC_FILE_NOT_EXIST,      //文件不存在
 	ERR_SWITCH_MODE_IN_RET_REF, //回零中禁止切换工作模式
+    ERR_RET_REF_Z_ERR,          //搜索Z脉冲位置超限，原点建立失败
 
 
 	//加工告警	1000~1999
@@ -525,8 +526,16 @@ enum ErrorType {
 	ERR_M_EXP_NULL,                 //M指令表达式为空值
 	ERR_T_EXP_NULL,                 //T指令表达式为空值
 
-
-	IF_ELSE_MATCH_FAILED,           // if else 匹配失败 栈中没有if 却碰到了 else
+	IF_ELSE_MATCH_FAILED = 2049,           // if else 匹配失败 栈中没有if 却碰到了 else
+	COMP_LIST_NOT_INIT,             // 刀补模块 输出消息队列指针未初始化
+	ARC_RADIUS_TOO_SMALL,           // 圆弧半径过小 无法计算刀补
+	ARC_NOT_VALID,                  // 圆弧数据错误
+	TOOL_RADIUS_BIGGER_THAN_ARC,    // 刀补半径大于圆弧半径
+	ARC_NOT_ALLOWED,				// 关闭刀补后第一段移动不能是圆弧
+	TOOL_RADIUS_COMP_BUG,
+	CONCAVE_CORNER_ERROR,
+	ARC_TO_ARC_SAME_CENTER,         //圆弧接圆弧刀补不能计算同心圆弧
+	MOVE_SMALLER_THAN_CMPRADIUS,    //移动距离小于刀补半径 无法计算刀补
 
 
 	//刀补告警	5000~6999
@@ -1229,13 +1238,14 @@ struct HmiAxisConfig{
 	uint8_t ref_base_diff_check;			//粗精基准位置偏差检测		0--关闭   1--打开
 	double ref_base_diff;					//粗精基准位置偏差		单位：mm（deg）此值为检测值，不可更改
 	int64_t ref_encoder;					//零点编码器值，绝对式编码器有效
-
-
+    double ref_offset_pos;                  //回参考点后的偏移量 单位:mm
+    double ref_z_distance_max;              //搜索Z脉冲最大移动距离
 
 	double manual_speed;					//手动进给速度，单位:mm/min
 	double rapid_speed;						//定位速度，单位:mm/min
 	double reset_speed;						//复位速度，单位：mm/min
 	double ret_ref_speed;					//回参考点速度，单位：mm/min
+    double ret_ref_speed_second;            //回参考点低速度，单位：mm/min
 
 	double rapid_acc;   					//定位加速度，单位:mm/s^2
 	double manual_acc;						//手动加速度，单位:mm/s^2

@@ -5824,204 +5824,202 @@ bool ChannelControl::ExecuteAuxMsg(RecordMsg *msg){
 
         printf("mcode : %d\n", mcode);
 
-        if(mcode == 2 || mcode == 30){
-            ResetMcLineNo();//复位MC模块当前行号
-            this->SetCurLineNo(1);
+		if(mcode == 2 || mcode == 30){
+			ResetMcLineNo();//复位MC模块当前行号
+			this->SetCurLineNo(1);
 
-            this->m_p_f_reg->STL = 0;
-            this->m_p_f_reg->SPL = 0;
-            this->m_p_f_reg->OP = 0;
+			this->m_p_f_reg->STL = 0;
+			this->m_p_f_reg->SPL = 0;
+			this->m_p_f_reg->OP = 0;
 
-            CompileOver();
+			CompileOver();
 #ifdef 	USES_SIMULATION_TEST
-            if(this->m_file_sim_data > 0){
-                close(this->m_file_sim_data);
-                m_file_sim_data = -1;
-            }
+			if(this->m_file_sim_data > 0){
+				close(this->m_file_sim_data);
+				m_file_sim_data = -1;
+			}
 #endif
-        }else if(mcode == 99){
-            if(m_n_subprog_count > 0){
-                m_n_subprog_count--;
-                m_b_ret_from_macroprog = false;
+		}else if(mcode == 99){
+			if(m_n_subprog_count > 0){
+				m_n_subprog_count--;
+				m_b_ret_from_macroprog = false;
 
-                this->m_n_run_thread_state = RUN;
-            }
-            else{
-                ResetMcLineNo();//复位MC模块当前行号
-                this->SetCurLineNo(1);
+				this->m_n_run_thread_state = RUN;
+			}
+			else{
+				ResetMcLineNo();//复位MC模块当前行号
+				this->SetCurLineNo(1);
 
-                this->m_p_f_reg->STL = 0;
-                this->m_p_f_reg->SPL = 0;
-                this->m_p_f_reg->OP = 0;
+				this->m_p_f_reg->STL = 0;
+				this->m_p_f_reg->SPL = 0;
+				this->m_p_f_reg->OP = 0;
 
-                this->m_n_run_thread_state = STOP;
-                CompileOver();
+				this->m_n_run_thread_state = STOP;
+				CompileOver();
 #ifdef 	USES_SIMULATION_TEST
-                if(this->m_file_sim_data > 0){
-                    close(this->m_file_sim_data);
-                    m_file_sim_data = -1;
-                }
+				if(this->m_file_sim_data > 0){
+					close(this->m_file_sim_data);
+					m_file_sim_data = -1;
+				}
 #endif
-            }
-        }
-        return true;
-    }
+			}
+		}
+		return true;
+	}
 
 
-    if(tmp->IsFirstExec()){
-        //首先将缓冲中的所有待发送指令发送给MC
-        //		if(!OutputLastBlockItem()){
-        //			//PL中的FIFO已满，发送失败
-        //			return false;
-        //		}
+	if(tmp->IsFirstExec()){
+		//首先将缓冲中的所有待发送指令发送给MC
+//		if(!OutputLastBlockItem()){
+//			//PL中的FIFO已满，发送失败
+//			return false;
+//		}
+
+		int limit = 3;
+		if(this->IsStepMode())
+			limit = 5;	//单步模式需要多次验证，因为状态切换有延时
+
+		//等待MC分块的插补到位信号，以及MI的运行到位信号
+		int count = 0;
+		bool block_over = false;
+		while(1){
+			block_over = CheckBlockOverFlag();
+			if(this->ReadMcMoveDataCount() > 0 || !block_over ||
+					m_channel_status.machining_state == MS_PAUSED ||
+					m_channel_status.machining_state == MS_WARNING){ //未达到执行条件
+				//printf("aux exec return: 0x%x\n", m_p_mc_comm->ReadRunOverValue());
+				return false;    //还未运行到位
+			}
+			else if(++count < limit){
+				usleep(5000);   //等待5ms，因为MC状态更新周期为5ms，需要等待状态确认
+				//printf("execute aus msg: blockflag=%d, count = %d\n",  block_over, count);
+
+			}else
+				break;
+		}
+
+		if(this->IsStepMode() && this->m_b_need_change_to_pause){//单段，切换暂停状态
+			this->m_b_need_change_to_pause = false;
+			m_n_run_thread_state = PAUSE;
+			SetMachineState(MS_PAUSED);
+			return false;
+		}
 
 
-        int limit = 3;
-        if(this->IsStepMode())
-            limit = 5;	//单步模式需要多次验证，因为状态切换有延时
+		//设置当前行号
+		if(tmp->GetMCode(0) != 99 && !m_b_ret_from_macroprog)
+			SetCurLineNo(msg->GetLineNo());
 
-        //等待MC分块的插补到位信号，以及MI的运行到位信号
-        int count = 0;
-        bool block_over = false;
-        while(1){
-            block_over = CheckBlockOverFlag();
-            if(this->ReadMcMoveDataCount() > 0 || !block_over ||
-                    m_channel_status.machining_state == MS_PAUSED ||
-                    m_channel_status.machining_state == MS_WARNING){ //未达到执行条件
-                //printf("aux exec return: 0x%x\n", m_p_mc_comm->ReadRunOverValue());
-                return false;    //还未运行到位
-            }
-            else if(++count < limit){
-                usleep(5000);   //等待5ms，因为MC状态更新周期为5ms，需要等待状态确认
-                //printf("execute aus msg: blockflag=%d, count = %d\n",  block_over, count);
+	}
 
-            }else
-                break;
-        }
+	bool bRet = true;
+	struct timeval time_now;
+	unsigned int time_elpase = 0;
+//	uint64_t mask = 0;
+	for(m_index = 0; m_index < m_count; m_index++){
+		if(tmp->GetExecStep(m_index) == 0xFF)
+			continue;       //已执行完成则直接跳过
 
-        if(this->IsStepMode() && this->m_b_need_change_to_pause){//单段，切换暂停状态
-            this->m_b_need_change_to_pause = false;
-            m_n_run_thread_state = PAUSE;
-            SetMachineState(MS_PAUSED);
-            return false;
-        }
+		mcode = tmp->GetMCode(m_index);
 
+		NotifyHmiMCode(mcode);
 
-        //设置当前行号
-        if(tmp->GetMCode(0) != 99 && !m_b_ret_from_macroprog)
-            SetCurLineNo(msg->GetLineNo());
+		switch(mcode){
+		case 30:  	//M30
+		case 2:		//M02
+			if(tmp->GetExecStep(m_index) == 0){
+				printf("execute M30\n");
 
-    }
+				//TODO 将代码发送给PMC
+				this->SendMCodeToPmc(mcode, m_index);
+				if(mcode == 30)
+					this->m_p_f_reg->DM30 = 1;  //置位DM30
+				else
+					this->m_p_f_reg->DM02 = 1;  //置位DM02
 
-    bool bRet = true;
-    struct timeval time_now;
-    unsigned int time_elpase = 0;
-    //	uint64_t mask = 0;
-    for(m_index = 0; m_index < m_count; m_index++){
-        if(tmp->GetExecStep(m_index) == 0xFF)
-            continue;       //已执行完成则直接跳过
-
-        mcode = tmp->GetMCode(m_index);
-
-        printf("-----> %d\n", mcode);
-        NotifyHmiMCode(mcode);
-
-        switch(mcode){
-        case 30:  	//M30
-        case 2:		//M02
-            if(tmp->GetExecStep(m_index) == 0){
-                printf("execute M30\n");
-
-                //TODO 将代码发送给PMC
-                this->SendMCodeToPmc(mcode, m_index);
-                if(mcode == 30)
-                    this->m_p_f_reg->DM30 = 1;  //置位DM30
-                else
-                    this->m_p_f_reg->DM02 = 1;  //置位DM02
-
-                gettimeofday(&m_time_m_start[m_index], NULL);   //
+				gettimeofday(&m_time_m_start[m_index], NULL);   //
 
 
-                //五轴机床需要对无限旋转轴清整数圈
-                //#ifdef USES_FIVE_AXIS_FUNC
-                //			if(this->m_p_chn_5axis_config->five_axis_type != NO_FIVEAXIS){
-                //				//向MI发送清整数圈位置指令
-                //				m_n_mask_clear_pos = 0;
-                //
-                //				for(int i = 0; i < this->m_p_channel_config->chn_axis_count; i++){
-                //					if(((m_mask_5axis_rot_nolimit>>i) & 0x01) == 0){
-                //
-                //						continue;
-                //					}
-                //					this->SendMiClearPosCmd(GetPhyAxis(i)+1, 360*1000);
-                //				}
-                //			}
-                //#endif
+				//五轴机床需要对无限旋转轴清整数圈
+	//#ifdef USES_FIVE_AXIS_FUNC
+	//			if(this->m_p_chn_5axis_config->five_axis_type != NO_FIVEAXIS){
+	//				//向MI发送清整数圈位置指令
+	//				m_n_mask_clear_pos = 0;
+	//
+	//				for(int i = 0; i < this->m_p_channel_config->chn_axis_count; i++){
+	//					if(((m_mask_5axis_rot_nolimit>>i) & 0x01) == 0){
+	//
+	//						continue;
+	//					}
+	//					this->SendMiClearPosCmd(GetPhyAxis(i)+1, 360*1000);
+	//				}
+	//			}
+	//#endif
 
-                tmp->IncreaseExecStep(m_index);
+				tmp->IncreaseExecStep(m_index);
 
-            }else if(tmp->GetExecStep(m_index) == 1){
-                //等待TMF延时，置位MF选通信号
-                gettimeofday(&time_now, NULL);
-                time_elpase = (time_now.tv_sec-m_time_m_start[m_index].tv_sec)*1000000+time_now.tv_usec-m_time_m_start[m_index].tv_usec;
-                if(time_elpase < 16000)
-                    break;		//未到延时时间
+			}else if(tmp->GetExecStep(m_index) == 1){
+				//等待TMF延时，置位MF选通信号
+				gettimeofday(&time_now, NULL);
+				time_elpase = (time_now.tv_sec-m_time_m_start[m_index].tv_sec)*1000000+time_now.tv_usec-m_time_m_start[m_index].tv_usec;
+				if(time_elpase < 16000)
+					break;		//未到延时时间
 
-                this->SetMFSig(m_index, true);    //置位选通信号
+				this->SetMFSig(m_index, true);    //置位选通信号
 
-                gettimeofday(&m_time_m_start[m_index], NULL);
-                tmp->IncreaseExecStep(m_index);
-            }else if(tmp->GetExecStep(m_index) == 2){
-                //等待FIN信号
-                if(this->m_p_g_reg->FIN == 1 || this->GetMFINSig(m_index))
-                    gettimeofday(&m_time_m_start[m_index], NULL);   //开始计时
-                else{
-                    gettimeofday(&time_now, NULL);
-                    time_elpase = (time_now.tv_sec-m_time_m_start[m_index].tv_sec)*1000000+time_now.tv_usec-m_time_m_start[m_index].tv_usec;
-                    if(time_elpase > kMCodeTimeout && !this->GetMExcSig(m_index)){//超过200ms任未进入执行状态，则告警“不支持的M代码”
-                        CreateError(ERR_M_CODE, ERROR_LEVEL, CLEAR_BY_MCP_RESET, mcode, m_n_channel_index);
-                        this->m_error_code = ERR_M_CODE;
-                    }else
-                        break;
-                }
-                tmp->IncreaseExecStep(m_index);
-            }else if(tmp->GetExecStep(m_index) == 3){
-                if(this->m_p_g_reg->FIN == 0 && !this->GetMFINSig(m_index)){
-                    tmp->SetExecStep(m_index, 2);
-                    break;
-                }
+				gettimeofday(&m_time_m_start[m_index], NULL);
+				tmp->IncreaseExecStep(m_index);
+			}else if(tmp->GetExecStep(m_index) == 2){
+				//等待FIN信号
+				if(this->m_p_g_reg->FIN == 1 || this->GetMFINSig(m_index))
+					gettimeofday(&m_time_m_start[m_index], NULL);   //开始计时
+				else{
+					gettimeofday(&time_now, NULL);
+					time_elpase = (time_now.tv_sec-m_time_m_start[m_index].tv_sec)*1000000+time_now.tv_usec-m_time_m_start[m_index].tv_usec;
+					if(time_elpase > kMCodeTimeout && !this->GetMExcSig(m_index)){//超过200ms任未进入执行状态，则告警“不支持的M代码”
+						CreateError(ERR_M_CODE, ERROR_LEVEL, CLEAR_BY_MCP_RESET, mcode, m_n_channel_index);
+						this->m_error_code = ERR_M_CODE;
+					}else
+						break;
+				}
+				tmp->IncreaseExecStep(m_index);
+			}else if(tmp->GetExecStep(m_index) == 3){
+				if(this->m_p_g_reg->FIN == 0 && !this->GetMFINSig(m_index)){
+					tmp->SetExecStep(m_index, 2);
+					break;
+				}
 
-                //等待TFIN延时，复位MF信号
-                gettimeofday(&time_now, NULL);
-                time_elpase = (time_now.tv_sec-m_time_m_start[m_index].tv_sec)*1000000+time_now.tv_usec-m_time_m_start[m_index].tv_usec;
-                if(time_elpase < 16000)
-                    break;		//未到延时时间
+				//等待TFIN延时，复位MF信号
+				gettimeofday(&time_now, NULL);
+				time_elpase = (time_now.tv_sec-m_time_m_start[m_index].tv_sec)*1000000+time_now.tv_usec-m_time_m_start[m_index].tv_usec;
+				if(time_elpase < 16000)
+					break;		//未到延时时间
 
-                //#ifdef USES_FIVE_AXIS_FUNC
-                //			//等待MI设置完成
-                //			if(this->m_p_chn_5axis_config->five_axis_type != NO_FIVEAXIS &&
-                //					m_mask_5axis_rot_nolimit != 0){
-                //				if(m_mask_5axis_rot_nolimit != m_n_mask_clear_pos){
-                //					break;
-                //				}
-                //			}
-                //#endif
+	//#ifdef USES_FIVE_AXIS_FUNC
+	//			//等待MI设置完成
+	//			if(this->m_p_chn_5axis_config->five_axis_type != NO_FIVEAXIS &&
+	//					m_mask_5axis_rot_nolimit != 0){
+	//				if(m_mask_5axis_rot_nolimit != m_n_mask_clear_pos){
+	//					break;
+	//				}
+	//			}
+	//#endif
 
-                this->SetMFSig(m_index, false);    //复位选通信号
+				this->SetMFSig(m_index, false);    //复位选通信号
 
-                if(mcode == 30)
-                    this->m_p_f_reg->DM30 = 0;  //复位DM30
-                else
-                    this->m_p_f_reg->DM02 = 0;  //复位DM02
+				if(mcode == 30)
+					this->m_p_f_reg->DM30 = 0;  //复位DM30
+				else
+					this->m_p_f_reg->DM02 = 0;  //复位DM02
 
-                tmp->IncreaseExecStep(m_index);
-            }else if(tmp->GetExecStep(m_index) == 4){
-                //等待FIN信号复位
-                if(this->m_p_g_reg->FIN == 1 || this->GetMFINSig(m_index))
-                    break;
+				tmp->IncreaseExecStep(m_index);
+			}else if(tmp->GetExecStep(m_index) == 4){
+				//等待FIN信号复位
+				if(this->m_p_g_reg->FIN == 1 || this->GetMFINSig(m_index))
+					break;
 
-                //复位辅助指令信号和DEN信号
-                this->SendMCodeToPmc(0, m_index);
+				//复位辅助指令信号和DEN信号
+				this->SendMCodeToPmc(0, m_index);
 
 #ifdef USES_ADDITIONAL_PROGRAM
                 if(this->m_n_add_prog_type == NONE_ADD){

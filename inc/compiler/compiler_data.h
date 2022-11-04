@@ -115,7 +115,7 @@ enum CodeMsgType{
 	FEED_MSG,      		//11 进给速度消息
 	SPEED_MSG,          //12 主轴转速消息
 
-	TOOL_MSG = 14,      		//14 刀具消息
+	TOOL_MSG = 14,      //14 刀具消息
 	CBS_MSG,        	//15 样条消息
 	MODE_MSG,			//16 模式消息
 	AUX_MSG,			//17 M指令消息

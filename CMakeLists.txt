@@ -60,6 +60,7 @@ set(PMC_SRC
 )
 
 set(TOOL_COMPENSATE_SRC
+        src/tool_compensate/rs274.cpp
         src/tool_compensate/tool_comp_data.cpp;
         src/tool_compensate/tool_compensate.cpp;
 )

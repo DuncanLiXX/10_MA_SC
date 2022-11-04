@@ -432,6 +432,7 @@ private:	//私有成员函数
 
     void SetMcAutoBufMax(uint16_t count);     //设置MC单通道自动数据缓冲数量
 
+    void SendMiAxisZCaptureCmd(uint8_t phy_axis, bool active);  // 向MI发送激活捕获Z信号命令
 	void ReturnRefPoint();      //回参考点执行函数
 	void PulseAxisFindRefWithZeroSignal(uint8_t phy_axis);      // 脉冲输出有基准轴回参考点，根据粗基准 精基准回参考点
 	void PulseAxisFindRefNoZeroSignal(uint8_t phy_axis);         // 脉冲输出无基准轴回参考点，仅根据精基准回参考点
@@ -440,6 +441,9 @@ private:	//私有成员函数
 	void EcatAxisFindRefWithZeroSignal2(uint8_t phy_axis);     //ethcat轴有基准回参考点，粗基准与精基准均为IO信号，直线电机
 	void AxisFindRefWithZeroSignal(uint8_t phy_axis);            // 仅根据原点信号设置参考点 包括步进电机根据原点信号设置参考点
 	void AxisFindRefNoZeroSignal(uint8_t phy_axis);              // 当前位置设置为参考点   虚拟轴回参考点  步进电机设置参考点
+    void EcatIncAxisFindRefWithZeroSignal(uint8_t phy_axis);     // 总线增量式轴有基准回参考点，根据Z信号作为精基准
+    void EcatIncAxisFindRefNoZeroSignal(uint8_t phy_axis);       // 总线增量式无基准回参考点，仅根据Z信号作为精基准回零
+
 
 	void PmcAxisRunOver(MiCmdFrame &cmd);    //PMC轴运行到位
 
@@ -453,6 +457,7 @@ private:	//私有成员函数
     void ProcessMiOperateCmdRsp(MiCmdFrame &cmd);  //处理MI操作指令
     void ProcessMiAxisCtrlModeRsp(MiCmdFrame &cmd);     //处理MI轴模式切换响应
     void ProcessMiSpindleSpeedRsp(MiCmdFrame &cmd);     //处理MI DA输出的响应
+    void ProcessMiActiveAxisZCaptureRsp(MiCmdFrame &cmd);   //处理MI捕获Z信号指令响应
 	
 	void ProcessSetAxisCurMachPosRsp(MiCmdFrame &cmd);   //处理MI对设置轴当前位置机械坐标命令的响应
 

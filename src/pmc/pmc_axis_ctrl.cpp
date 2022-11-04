@@ -109,6 +109,7 @@ bool PmcAxisCtrl::Active(bool flag){
     this->m_b_active = flag;
 
     if(flag){
+        // 状态
         switch(this->m_n_group_index%4){
         case 0:
             this->m_p_f_reg->EADEN1 = 1;
@@ -481,11 +482,10 @@ void PmcAxisCtrl::ExecuteCmd(){
         SCAxisConfig *axis = axis_list.at(i);
         uint8_t cmd = m_pmc_cmd_buffer[this->m_n_buf_exec].cmd;   //指令
         if(cmd == 0x00 || cmd == 0x01 || cmd == 0x10 || cmd == 0x11){  //快速定位、切削进给
-            uint32_t speed = m_pmc_cmd_buffer[this->m_n_buf_exec].speed*1000/60;   //速度，单位转换：mm/min-->um/s
+            uint32_t speed = m_pmc_cmd_buffer[this->m_n_buf_exec].speed;        //速度，单位转换
             int64_t dis = m_pmc_cmd_buffer[this->m_n_buf_exec].distance*1e4;       //移动距离，单位转换：um-->0.1nm
             if(cmd == 0x00 && !axis->pmc_g00_by_EIFg){ // 使用定位速度作为快移速度
-                speed = this->m_p_channel_engine->GetPmcAxisRapidSpeed(axis->axis_index);
-                speed = speed*1000/60;  //单位转换：mm/min-->um/s
+                speed = axis->rapid_speed;
             }
             if(cmd == 0x00 || cmd == 0x01){
                 if(speed < axis->pmc_min_speed || speed > axis->pmc_max_speed){
@@ -496,6 +496,8 @@ void PmcAxisCtrl::ExecuteCmd(){
                     break;
                 }
             }
+
+            speed = speed * 1000/60; // 单位转换：mm/min-->um/s
 
             PmcCmdFrame pmc_cmd;
             pmc_cmd.data.cmd = 0x0100;   //增量坐标模式

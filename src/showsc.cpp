@@ -757,7 +757,7 @@ void ShowSc::PrintFRegState()
         string reg_name_s = "F" + to_string(i) + "\t";
         string reg_value_s = "";
         for(int bit = 7; bit >= 0; bit--){
-            reg_value_s = reg_value_s + to_string(F[i] & (0x01 << bit))+"\t";
+            reg_value_s = reg_value_s + to_string((F[i] & (0x01 << bit)))+"\t";
         }
         AddPair(s,reg_name_s,reg_value_s);
     }
@@ -777,7 +777,7 @@ void ShowSc::PrintGRegState()
         string reg_name_s = "G" + to_string(i) + "\t";
         string reg_value_s = "";
         for(int bit = 7; bit >= 0; bit--){
-            reg_value_s = reg_value_s + to_string(G[i] & (0x01 << bit))+"\t";
+            reg_value_s = reg_value_s + to_string((G[i] & (0x01 << bit)))+"\t";
         }
         AddPair(s,reg_name_s,reg_value_s);
     }
@@ -799,7 +799,7 @@ void ShowSc::PrintPmcAxisCtrl()
         AddPair(s,"m_n_group_index",cfg->m_n_group_index);
         string axis_indexs = "[ ";
         for(unsigned int j = 0; j<cfg->axis_list.size(); j++){
-            axis_indexs = axis_indexs + to_string(cfg->axis_list.at(i)->axis_index) + " ";
+            axis_indexs = axis_indexs + to_string(cfg->axis_list.at(j)->axis_index) + " ";
         }
         axis_indexs = axis_indexs + "]";
         AddPair(s,"axis_list",axis_indexs);
@@ -825,5 +825,5 @@ void ShowSc::PrintPmcAxisCtrl()
 
 void ShowSc::SendMsg(string &s)
 {
-    trace->SendMsg(PrintTopic,s);
+    trace->SendMsg(PrintTopic,"\n" + s);
 }

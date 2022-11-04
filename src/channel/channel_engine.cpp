@@ -8877,7 +8877,18 @@ void ChannelEngine::ProcessPmcAxisCtrl(){
         for(uint8_t j = 0; j < 4; j++){
             if(m_pmc_axis_ctrl[i*4+j].axis_list.size() == 0)
                 continue;
-            if(!m_pmc_axis_ctrl[i*4+j].Active(eax[j])){//转换失败，告警
+
+            // 当前存在待读入的命令
+            // 避免选通信号一打开就直接执行命令，需要报警
+            if(ebuf[j] != ebsy[j] && !m_pmc_axis_ctrl[4*i+j].IsActive()
+                    && eax[j]){
+                this->m_error_code = ERR_PMC_AXIS_CTRL_CHANGE;
+                CreateError(ERR_PMC_AXIS_CTRL_CHANGE, ERROR_LEVEL, CLEAR_BY_MCP_RESET, i*4+j+1, CHANNEL_ENGINE_INDEX);
+                return;
+            }
+
+            // 轴正在移动的状态下打开选通信号，报警
+            if(!m_pmc_axis_ctrl[i*4+j].Active(eax[j])){
                 this->m_error_code = ERR_PMC_AXIS_CTRL_CHANGE;
                 CreateError(ERR_PMC_AXIS_CTRL_CHANGE, ERROR_LEVEL, CLEAR_BY_MCP_RESET, i*4+j+1, CHANNEL_ENGINE_INDEX);
                 return;

@@ -2734,7 +2734,7 @@ int LineMsg::GetOutputData(GCodeFrame *data, uint32_t mask, bool flag){
 	data->data.pos6 = MM2NM0_1(pos.a7);
 	data->data.pos7 = MM2NM0_1(pos.a8);
 
-	printf("-----------------------> LineMsg pos %lf -- %lf -- %lf \n", pos.x, pos.y, pos.z);
+	printf("-----------------------> LineMsg pos %lf -- %lf -- %lf mask: %d\n", pos.x, pos.y, pos.z, mask);
 	//printf("posnm %lld -- %lld -- %lld \n", data->data.pos0, data->data.pos1, data->data.pos2);
 
 	data->data.reserved = this->m_io_data;   //IOÊý¾Ý
@@ -3071,6 +3071,13 @@ int ArcMsg::GetSimulateData(CompilerSimData &data){
 void ArcMsg::PrintString(){
 	printf("[%lld]ArcMsg, radius = %lf, dir = %d, major_flag = %d, circle_flag = %d\n",
 			m_n_line_no, m_df_radius, m_flag_direct, m_flag_major, m_flag_circle);
+
+	double *tar = m_point_target.m_df_point;
+	double *src = m_point_source.m_df_point;
+	double *cen = m_point_center.m_df_point;
+
+	printf("target: %lf %lf src %lf %lf center: %lf %lf\n",
+			*tar, *(tar+1), *src, *(src+1), *cen, *(cen+1));
 }
 
 /**

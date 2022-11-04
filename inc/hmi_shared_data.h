@@ -521,8 +521,16 @@ enum ErrorType {
 	ERR_M_EXP_NULL,                 //M指令表达式为空值
 	ERR_T_EXP_NULL,                 //T指令表达式为空值
 
-
-	IF_ELSE_MATCH_FAILED,           // if else 匹配失败 栈中没有if 却碰到了 else
+	IF_ELSE_MATCH_FAILED = 2049,           // if else 匹配失败 栈中没有if 却碰到了 else
+	COMP_LIST_NOT_INIT,             // 刀补模块 输出消息队列指针未初始化
+	ARC_RADIUS_TOO_SMALL,           // 圆弧半径过小 无法计算刀补
+	ARC_NOT_VALID,                  // 圆弧数据错误
+	TOOL_RADIUS_BIGGER_THAN_ARC,    // 刀补半径大于圆弧半径
+	ARC_NOT_ALLOWED,				// 关闭刀补后第一段移动不能是圆弧
+	TOOL_RADIUS_COMP_BUG,
+	CONCAVE_CORNER_ERROR,
+	ARC_TO_ARC_SAME_CENTER,         //圆弧接圆弧刀补不能计算同心圆弧
+	MOVE_SMALLER_THAN_CMPRADIUS,    //移动距离小于刀补半径 无法计算刀补
 
 
 	//刀补告警	5000~6999

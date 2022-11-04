@@ -259,6 +259,7 @@ typedef struct ADDRESS_REGISTER_STRUCT_DEF
 	FAD_DEF		FM3;		//	地址M3标志		1	289
 	uint8_t		FB;			//	地址B标志		1	290
 	uint16_t	FG;			//	地址G标志		4	291
+	uint16_t    line_number;
 
 }ADRSREG_DEF;
 
@@ -272,7 +273,7 @@ typedef struct ADDRESS_REGISTER_STRUCT_DEF
 		HIG BYTE --- INTERANL DATA
 *******************************************************************
 */
-uint16_t	const TGCDROM[] =
+uint16_t  const TGCDROM[] =
 {
 		0x0001,		// G00-GGA
 		0x0101,		// G01-GGA
@@ -402,5 +403,7 @@ uint16_t	const TGCDROM[] =
 		0x000a,		// G98-GGJ
 		0x010a,		// G99-GGJ
 };
+
+void pushComp(ADRSREG_DEF block);
 
 #endif

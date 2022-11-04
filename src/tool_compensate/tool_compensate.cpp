@@ -15,6 +15,7 @@
 #include "tool_compensate.h"
 #include "rs274.h"
 
+Interp interp;
 
 /**
  * @brief 构造函数
@@ -40,6 +41,11 @@ ToolCompensate::~ToolCompensate() {
 	// TODO Auto-generated destructor stub
 }
 
+void ToolCompensate::SetOutputMsgList(OutputMsgList *output_msg){
+	m_p_output_msg_list = output_msg;
+	setOutputMsgList(output_msg);
+}
+
 /**
  * @brief 设置通道号
  * @param chn_index : 通道号
@@ -60,7 +66,208 @@ void ToolCompensate::Reset(){}
 void ToolCompensate::ProcessData(ListNode<RecordMsg *> *node){
 
 	msg = node->data;
-    this->m_p_output_msg_list->Append(node);
+
+	/*switch(msg->GetMsgType()){
+		case LINE_MSG:{  // G01
+			LineMsg * tmsg = (LineMsg *)msg;
+
+			ADRSREG_DEF block;
+			memset(&block, 0, sizeof(block));
+
+			block.GA.All = TGCDROM[1]; // G模态组
+			// 位置 x y z
+			block.A1 = tmsg->GetTargetPos().GetAxisValue(0)*1000; // 转换未 um 整数
+			block.A2 = tmsg->GetTargetPos().GetAxisValue(1)*1000;
+			block.A3 = tmsg->GetTargetPos().GetAxisValue(2)*1000;
+			// x y z 输入标志
+			block.FA1.inp = 1;
+			block.FA2.inp = 1;
+			block.FA3.inp = 1;
+
+			block.F = tmsg->GetFeed();
+			block.FF.inp = 1;
+			block.line_number = tmsg->GetLineNo();
+			pushComp(block);
+
+			break;
+		}
+		case RAPID_MSG:{ // G00
+			RapidMsg * tmsg = (RapidMsg *)msg;
+
+			ADRSREG_DEF block;
+			memset(&block, 0, sizeof(block));
+
+			block.GA.All = TGCDROM[0]; // G模态组
+			// 位置 x y z
+			block.A1 = tmsg->GetTargetPos().GetAxisValue(0)*1000; // 转换未 um 整数
+			block.A2 = tmsg->GetTargetPos().GetAxisValue(1)*1000;
+			block.A3 = tmsg->GetTargetPos().GetAxisValue(2)*1000;
+			// x y z 输入标志
+			block.FA1.inp = 1;
+			block.FA2.inp = 1;
+			block.FA3.inp = 1;
+			block.line_number = tmsg->GetLineNo();
+			pushComp(block);
+			break;
+		}
+		case ARC_MSG:{   // G02 G03
+			ArcMsg * tmsg = (ArcMsg *)msg;
+
+			ADRSREG_DEF block;
+			memset(&block, 0, sizeof(block));
+
+			if(tmsg->GetGCode() == 20){
+				block.GA.All = TGCDROM[2]; // G模态组
+			}else{
+				block.GA.All = TGCDROM[3]; // G模态组
+			}
+
+			// 位置 x y z
+			block.A1 = tmsg->GetTargetPos().GetAxisValue(0)*1000; // 转换未 um 整数
+			block.A2 = tmsg->GetTargetPos().GetAxisValue(1)*1000;
+			block.A3 = tmsg->GetTargetPos().GetAxisValue(2)*1000;
+			// x y z 输入标志
+			block.FA1.inp = 1;
+			block.FA2.inp = 1;
+			block.FA3.inp = 1;
+
+			// IJR
+			if(tmsg->getR() != 0){
+				block.R = tmsg->getR();
+				block.FR.inp = 1;
+			}else{
+				block.I = tmsg->getI();
+				block.J = tmsg->getJ();
+				block.FI.inp = 1;
+				block.FJ.inp = 1;
+			}
+
+			block.F = tmsg->GetFeed();
+			block.FF.inp = 1;
+			block.line_number = tmsg->GetLineNo();
+			pushComp(block);
+			break;
+		}
+		case COMPENSATE_MSG: // G40 G41 G42
+		{
+			CompensateMsg *tmsg = (CompensateMsg *) msg;
+
+			ADRSREG_DEF block;
+			memset(&block, 0, sizeof(block));
+			block.GG.All = TGCDROM[tmsg->GetGCode()/10];
+			block.line_number = tmsg->GetLineNo();
+			pushComp(block);
+			break;
+		}
+	}*/
+
+
+	switch(msg->GetMsgType()){
+
+		case RAPID_MSG:{
+			RapidMsg * tmsg = (RapidMsg *)msg;
+			block * pblock = interp.interp_block();
+			interp.init_block(pblock);
+			pblock->x_flag = true;
+			pblock->y_flag = true;
+			pblock->z_flag = true;
+			pblock->x_number = tmsg->GetTargetPos().GetAxisValue(0);
+			pblock->y_number = tmsg->GetTargetPos().GetAxisValue(1);
+			pblock->z_number = tmsg->GetTargetPos().GetAxisValue(2);
+			pblock->line_number = tmsg->GetLineNo();
+			pblock->flags = tmsg->GetFlags().all;
+			printf("convert rapid ... \n");
+			interp.convert_straight(0, &interp._setup._block, &interp._setup);
+			break;
+		}
+		case LINE_MSG:{
+			LineMsg * tmsg = (LineMsg *) msg;
+			block * pblock = interp.interp_block();
+			interp.init_block(pblock);
+			pblock->x_flag = true;
+			pblock->y_flag = true;
+			pblock->z_flag = true;
+			pblock->x_number = tmsg->GetTargetPos().GetAxisValue(0);
+			pblock->y_number = tmsg->GetTargetPos().GetAxisValue(1);
+			pblock->z_number = tmsg->GetTargetPos().GetAxisValue(2);
+			pblock->flags = tmsg->GetFlags().all;
+			pblock->f_number = tmsg->GetFeed();
+			pblock->line_number = tmsg->GetLineNo();
+			printf("convert line ... \n");
+			interp.convert_straight(10, &interp._setup._block, &interp._setup);
+			break;
+		}
+		case ARC_MSG:{
+			ArcMsg * tmsg = (ArcMsg *) msg;
+			block * pblock = interp.interp_block();
+			interp.init_block(pblock);
+			pblock->x_flag = true;
+			pblock->y_flag = true;
+			pblock->z_flag = true;
+			pblock->x_number = tmsg->GetTargetPos().GetAxisValue(0);
+			pblock->y_number = tmsg->GetTargetPos().GetAxisValue(1);
+			pblock->z_number = tmsg->GetTargetPos().GetAxisValue(2);
+			pblock->flags = tmsg->GetFlags().all;
+			pblock->f_number = tmsg->GetFeed();
+			pblock->line_number = tmsg->GetLineNo();
+
+			if(tmsg->getR() != 0){
+				pblock->r_flag = true;
+				pblock->r_number = tmsg->getR();
+			}else{
+				pblock->i_flag = true;
+				pblock->j_flag = true;
+				pblock->i_number = tmsg->getI();
+				pblock->j_number = tmsg->getJ();
+			}
+
+			printf("convert arc ... \n");
+			if(tmsg->getDirect() == -1){
+				interp.convert_arc(20, &interp._setup._block, &interp._setup);
+			}else{
+				interp.convert_arc(30, &interp._setup._block, &interp._setup);
+			}
+
+			break;
+		}
+		case COMPENSATE_MSG:{
+			CompensateMsg * tmsg = (CompensateMsg *)msg;
+
+			printf("compensate gcode %d\n", tmsg->GetGCode());
+
+			if(tmsg->GetGCode() == G40_CMD){
+
+				interp.convert_cutter_compensation_off(&interp._setup);
+
+			}else if(tmsg->GetGCode() == G41_CMD){
+
+				interp.convert_cutter_compensation_on(LEFT,this->comp_radius,&interp._setup);
+
+			}else if(tmsg->GetGCode() == G42_CMD){
+
+				interp.convert_cutter_compensation_on(RIGHT,this->comp_radius,&interp._setup);
+			}
+
+			break;
+		}
+		default:{
+
+			if(interp.isCompOn){
+				uint16_t flags = msg->GetFlags().all;
+
+				// 遇到 M30 或 等待移动到位标志  压空刀补队列 完成运动
+				if((flags & FLAG_BLOCK_OVER) or (flags & FLAG_WAIT_MOVE_OVER) or (flags & FLAG_EOF))
+				{
+					interp.flush_comp();
+				}
+			}
+
+			this->m_p_output_msg_list->Append(node);
+		}
+	}
+
+	//this->m_p_output_msg_list->Append(node);
+
 }
 
 void ToolCompensate::ResetAllDatas(){

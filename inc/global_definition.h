@@ -407,11 +407,11 @@ enum AxisInterfaceType{
 };
 
 enum MotorFeedBackMode{
-	INCREMENTAL_ENCODER = 0,   //增量式编码器
-	ABSOLUTE_ENCODER_YASAKAWA,	//绝对式编码器，安川，ABZ反馈
-	ABSOLUTE_ENCODER_PANASONIC, //绝对式编码器，松下,U485反馈
-	LINEAR_ENCODER,				//光栅尺
-	NO_ENCODER                  //无反馈
+    INCREMENTAL_ENCODER = 0,   //增量式编码器（增量式，单圈绝对式）
+    ABSOLUTE_ENCODER_PANASONIC, //绝对式编码器，松下,U485反馈（绝对式）
+    ABSOLUTE_ENCODER_YASAKAWA,	//绝对式编码器，安川，ABZ反馈(删除)
+    LINEAR_ENCODER,				//光栅尺（删除）
+    NO_ENCODER                  //无反馈（删除）
 };
 
 

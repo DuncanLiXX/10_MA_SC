@@ -1200,108 +1200,110 @@ struct HmiChnConfig{
  * @brief HMI模块轴配置数据
  */
 struct HmiAxisConfig{
-	uint8_t axis_index;						//轴索引号	1-12，系统自动生成
-	uint8_t axis_type;						//轴类型,    0--直线轴     1--旋转轴     2--主轴
-	uint8_t axis_interface;					//轴接口类型	0--虚拟轴    1-总线轴    2--非总线轴
-	uint8_t axis_port;						//从站号（总线轴）/对应轴口号（非总线轴）1~12
-	uint8_t axis_linear_type;				//直线轴类型
-	uint8_t axis_pmc;						//是否PMC轴
+    uint8_t axis_index;						//轴索引号	0-11，系统自动生成
+    uint8_t axis_type;						//轴类型,    0--直线轴     1--旋转轴     2--主轴/速度轴    3--力矩轴
+    uint8_t axis_interface;					//轴接口类型	0--虚拟轴    1-总线轴    2--非总线轴
+    uint8_t axis_port;						//从站号（总线轴）/对应轴口号（非总线轴）1~12
+    uint8_t axis_linear_type;				//直线轴类型
+    uint8_t axis_pmc;						//是否PMC轴
 
 
-	double kp1;								//自动比例参数
-	double kp2;								//手动比例参数
-	double ki;								//积分参数
-	double kd;								//微分参数
-	double kil;								//积分饱和限
-	uint16_t kvff;							//速度前馈系数
-	uint16_t kaff;							//加速度前馈系数
+    double kp1;								//自动比例参数
+    double kp2;								//手动比例参数
+    double ki;								//积分参数
+    double kd;								//微分参数
+    double kil;								//积分饱和限
+    uint16_t kvff;							//速度前馈系数
+    uint16_t kaff;							//加速度前馈系数
 
-	uint32_t track_err_limit;				//跟随误差限制 单位：um
-	uint16_t location_err_limit;			//定位误差限制 单位：um
+    uint32_t track_err_limit;				//跟随误差限制 单位：um
+    uint16_t location_err_limit;			//定位误差限制 单位：um
 
 //	uint8_t soft_limit_check;				//软限位检测	0--关闭   1--打开
-	uint8_t save_pos_poweroff;				//掉电坐标记忆		0--关闭   1--打开
+    uint8_t save_pos_poweroff;				//掉电坐标记忆		0--关闭   1--打开
 //	uint8_t axis_alarm_level;               //轴告警信号电平    0--低电平  1--高电平
 
 
-	uint32_t motor_count_pr;				//电机每转计数
-	uint32_t motor_speed_max;				//电机最大转速   单位：rpm
-	double move_pr;						    //每转移动量，即丝杆螺距    单位：mm(deg)
-	uint8_t motor_dir;						//电机旋转方向    0--正转    1--反转
-	uint8_t feedback_mode;					//电机反馈类型    0--增量式    1--绝对式(安川)     2--绝对式(松下)    3--光栅尺        4--无反馈
+    uint32_t motor_count_pr;				//电机每转计数
+    uint32_t motor_speed_max;					//电机最大转速   单位：rpm
+    double move_pr;							//每转移动量，即丝杆螺距    单位：mm(deg)
+    uint8_t motor_dir;						//电机旋转方向    0--正转    1--反转
+    uint8_t feedback_mode;					//电机反馈类型    0--增量式    1--绝对式(安川)     2--绝对式(松下)    3--光栅尺
 
-	uint8_t ret_ref_mode;					//回参考点方式      0--禁止   1--有基准    2--无基准     3--驱动回零
-	uint8_t ret_ref_dir;					//回参考点方向		0--负向    1--正向
-	uint8_t ret_ref_change_dir;				//回参考点换向      0--反向    1--同向
-	uint8_t ref_signal;						//参考点信号类型    0--零信号    1--Z信号
-	uint8_t ret_ref_index;					//回参考点顺序		0-11:第一~第十二
-	uint8_t ref_base_diff_check;			//粗精基准位置偏差检测		0--关闭   1--打开
-	double ref_base_diff;					//粗精基准位置偏差		单位：mm（deg）此值为检测值，不可更改
-	int64_t ref_encoder;					//零点编码器值，绝对式编码器有效
-    double ref_offset_pos;                  //回参考点后的偏移量 单位:mm
-    double ref_z_distance_max;              //搜索Z脉冲最大移动距离
+    uint8_t ret_ref_mode;					//回参考点方式      0--禁止   1--有基准    2--无基准     3--驱动回零     4-双基准
+    uint8_t ret_ref_dir;					//回参考点方向		0--负向    1--正向
+    uint8_t ret_ref_change_dir;				//回参考点换向      0--反向    1--同向
+    uint8_t ref_signal;						//参考点信号类型     0--零信号    1--Z信号
+    uint8_t ret_ref_index;					//回参考点顺序		0-11:第一~第十二
+    uint8_t ref_base_diff_check;			//粗精基准位置偏差检测		0--关闭   1--打开
+    double ref_base_diff;					//粗精基准位置偏差		单位：mm（deg）
+    int64_t ref_encoder;					//零点编码器值，绝对式编码器有效
+    double ref_offset_pos;                //回参考点后的偏移量 单位:mm
+    double ref_z_distance_max;            //搜索Z脉冲最大移动距离
 
-	double manual_speed;					//手动进给速度，单位:mm/min
-	double rapid_speed;						//定位速度，单位:mm/min
-	double reset_speed;						//复位速度，单位：mm/min
-	double ret_ref_speed;					//回参考点速度，单位：mm/min
+
+    double manual_speed;					//手动进给速度，单位:mm/min
+    double rapid_speed;						//定位速度，单位:mm/min
+    double reset_speed;						//复位速度，单位：mm/min
+    double ret_ref_speed;					//回参考点速度，单位：mm/min
     double ret_ref_speed_second;            //回参考点低速度，单位：mm/min
 
-	double rapid_acc;   					//定位加速度，单位:mm/s^2
-	double manual_acc;						//手动加速度，单位:mm/s^2
-	double start_acc;						//起步加速度，单位:mm/s^2
+    double rapid_acc;   					//定位加速度，单位:mm/s^2
+    double manual_acc;						//手动加速度，单位:mm/s^2
+    double start_acc;						//起步加速度，单位:mm/s^2
 
-	double corner_acc_limit;				//拐角速度差限制，单位：mm/min
+    double corner_acc_limit;				//拐角速度差限制，单位：mm/min
 
-	uint16_t rapid_s_plan_filter_time;			//G00 S型速度规划时间常数
+    uint16_t rapid_s_plan_filter_time;			//G00 S型速度规划时间常数
 
-	uint8_t post_filter_type;		//插补后滤波器类型		0--关闭    1--平滑滤波     2--均值滤波     3--S型均值滤波器
-	uint16_t post_filter_time_1;		//插补后滤波器一级时间常数  单位：ms
-	uint16_t post_filter_time_2;        //插补后滤波器二级时间常数  单位：ms
+    uint8_t post_filter_type;		    //插补后滤波器类型		0--关闭    1--平滑滤波     2--均值滤波     3--S型均值滤波器
+    uint16_t post_filter_time_1;		//插补后滤波器一级时间常数  单位：ms
+    uint16_t post_filter_time_2;        //插补后滤波器二级时间常数  单位：ms
 
-	uint8_t backlash_enable;
-	int16_t backlash_forward;					//正向反向间隙，单位：um(deg)
-	int16_t backlash_negative;					//负向反向间隙，单位：um(deg)
+    uint8_t backlash_enable;					//反向间隙是否生效
+    int16_t backlash_forward;					//正向反向间隙，单位：um(deg)
+    int16_t backlash_negative;					//负向反向间隙，单位：um(deg)
 
-	uint8_t  pc_type;							//螺补类型  0 单向螺补  1 双向螺补
-	uint8_t  pc_enable;							//螺补是否生效
-	uint16_t pc_offset;                         //螺补起始点   1-10000
-	uint16_t pc_count;							//螺距误差补偿点数  0-10000
-	uint16_t pc_ref_index;						//参考点补偿位置 1-10000
-	double pc_inter_dist;						//螺距补偿间隔，单位：mm(deg)
+    uint8_t  pc_type;							//螺补类型  0 单向螺补  1 双向螺补
+    uint8_t  pc_enable;							//螺补是否生效
+    uint16_t pc_offset;                         //螺补起始点   1-10000
+    uint16_t pc_count;							//螺距误差补偿点数  0-10000
+    uint16_t pc_ref_index;						//参考点补偿位置 1-10000
+    double pc_inter_dist;						//螺距补偿间隔，单位：mm(deg)
 
-	double soft_limit_max_1;					//正向软限位1
-	double soft_limit_min_1;					//负向软限位1
-	uint8_t soft_limit_check_1;					//软限位1有效
-	double soft_limit_max_2;					//正向软限位2
-	double soft_limit_min_2;					//负向软限位2
-	uint8_t soft_limit_check_2;					//软限位2有效
-	double soft_limit_max_3;					//正向软限位3
-	double soft_limit_min_3;					//负向软限位3
-	uint8_t soft_limit_check_3;					//软限位3有效
+    double soft_limit_max_1;					//正向软限位1
+    double soft_limit_min_1;					//负向软限位1
+    uint8_t soft_limit_check_1;					//软限位1有效
+    double soft_limit_max_2;					//正向软限位2
+    double soft_limit_min_2;					//负向软限位2
+    uint8_t soft_limit_check_2;					//软限位2有效
+    double soft_limit_max_3;					//正向软限位3
+    double soft_limit_min_3;					//负向软限位3
+    uint8_t soft_limit_check_3;					//软限位3有效
 
 
 
-	uint8_t off_line_check;						//轴断线检测       0--关闭   1--打开
+    uint8_t off_line_check;						//轴断线检测       0--关闭   1--打开
 
-	uint8_t ctrl_mode;							//轴控制方式	   0--脉冲方向    1--正交脉冲    2--CW/CCW    3--模拟量
-	uint32_t pulse_count_pr;					//每转输出脉冲数
-	uint8_t encoder_lines;						//编码器单圈线数   10~31
-	uint16_t encoder_max_cycle;					//编码器整圈最大值
+    uint8_t ctrl_mode;							//轴控制方式	   0--脉冲方向    1--正交脉冲    2--CW/CCW    3--模拟量
+    uint32_t pulse_count_pr;					//每转输出脉冲数
+    uint8_t encoder_lines;						//编码器单圈线数   10~31
+    uint16_t encoder_max_cycle;					//编码器整圈最大值
 
-	//主轴相关参数
-	int16_t zero_compensation;					//零漂补偿		单位：rpm
-	uint8_t spd_gear_ratio;						//主轴变速比
-	uint32_t spd_max_speed;						//主轴最高转速	单位：rpm
-	uint16_t spd_start_time;					//主轴启动时间  单位：0.1s
-	uint16_t spd_stop_time;						//主轴制动时间  单位：0.1s
-	uint8_t spd_vctrl_mode;						//主轴模拟电压控制方式    0--禁止    1 -- 0V~10V     2-- -10V~10V
+
+    //主轴相关参数
+    int16_t zero_compensation;					//零漂补偿(DA电平值) 0~4095
+    uint8_t spd_gear_ratio;						//主轴变速比
+    uint32_t spd_max_speed;						//主轴最高转速	单位：rpm
+    uint16_t spd_start_time;					//主轴启动时间  单位：0.1s
+    uint16_t spd_stop_time;						//主轴制动时间  单位：0.1s
+    uint8_t spd_vctrl_mode;						//主轴模拟电压控制方式    0--禁止    1 -- 0V~10V     2-- -10V~10V
 //	uint8_t spd_set_dir;						//主轴设置方向    0--反转    1--正转  //使用电机旋转方向替代
-	uint32_t spd_set_speed;						//主轴设置转速  单位：rpm
-	uint8_t spd_speed_check;					//主轴转速检测   0--关闭   1--打开
-	uint8_t spd_speed_match;					//转速匹配检测   0--关闭   1--打开
-	uint8_t spd_speed_diff_limit;				//转速误差允许比例   0~100
-	uint8_t spd_encoder_location;				//编码器位置     0--电机端     1--主轴端
+    uint32_t spd_set_speed;						//主轴设置转速  单位：rpm
+    uint8_t spd_speed_check;					//主轴转速检测   0--关闭   1--打开
+    uint8_t spd_speed_match;					//转速匹配检测   0--关闭   1--打开
+    uint8_t spd_speed_diff_limit;				//转速误差允许比例   0~100
+    uint8_t spd_encoder_location;				//编码器位置     0--电机端     1--主轴端
 
     uint8_t spd_ctrl_GST;                       //SOR信号用途  0：主轴定向  1：齿轮换挡
     uint8_t spd_ctrl_SGB;                       //主轴换挡方式 0：A方式  1：B方式
@@ -1311,7 +1313,7 @@ struct HmiAxisConfig{
     uint8_t spd_ctrl_CWM;                       //主轴转向取反 0：否  1：是
     uint8_t spd_ctrl_TSO;                       //螺纹切削和刚性攻丝时，主轴倍率设置  0：强制100%  1：有效
     uint16_t spd_analog_gain;                   //模拟输出增益 700-1250 单位：0.1%
-    uint16_t spd_sor_speed;                     //主轴齿轮换档/定向时的主轴转速
+    uint16_t spd_sor_speed;                     //主轴齿轮换档/定向时的主轴转速 rpm
     uint16_t spd_motor_min_speed;               //主轴电机最小钳制速度
     uint16_t spd_motor_max_speed;               //主轴电机最大钳制速度
     uint16_t spd_gear_speed_low;                //齿轮低档位最高转速 rpm
@@ -1319,30 +1321,31 @@ struct HmiAxisConfig{
     uint16_t spd_gear_speed_high;               //齿轮高档位最高转速 rpm
     uint16_t spd_gear_switch_speed1;            //B方式档1->档2电机转速
     uint16_t spd_gear_switch_speed2;            //B方式档2->档3电机转速
-    uint32_t spd_sync_error_gain;                    //同步误差增益  范围为0~1000，默认为200
-    uint32_t spd_speed_feed_gain;                    //轴速度前馈增益 范围为0~100000，默认为60000
-    uint32_t spd_pos_ratio_gain;                    //轴位置比例增益 范围0~200000，默认为100000
+    uint32_t spd_sync_error_gain;               //同步误差增益  范围为0~1000，默认为200
+    uint32_t spd_speed_feed_gain;               //轴速度前馈增益 范围为0~100000，默认为60000
+    uint32_t spd_pos_ratio_gain;                //轴位置比例增益 范围0~200000，默认为100000
     uint8_t spd_rtnt_rate_on;                   //攻丝回退期间，倍率是否有效 0：强制100%  1：有效
     uint8_t spd_rtnt_rate;                      //攻丝回退倍率 单位：1%
     int32_t spd_rtnt_distance;                 //攻丝回退的额外回退值 单位：um
 
-	//旋转轴相关参数
-	uint8_t fast_locate;							//快速定位    0--关闭   1--打开
-	uint8_t pos_disp_mode;						//位置显示模式   0--循环模式（0~360）    1--非循环模式
+    //旋转轴相关参数
+    uint8_t fast_locate;							//快速定位    0--关闭   1--打开
+    uint8_t pos_disp_mode;						//位置显示模式   0--循环模式（0~360）    1--非循环模式
 
 
-	//同步轴相关参数
-	uint8_t sync_axis;							//是否同步轴  0--否   1--是
-	uint8_t master_axis_no;						//主动轴号
-	uint8_t disp_coord;							//是否显示坐标  0--否   1--是
-	uint8_t auto_sync;							//从动轴回参考点后自动同步校准   0--否   1--是
-	uint32_t sync_err_max;						//位置同步最大误差	  单位：um
-	double benchmark_offset;					//主从轴基准位置偏差  单位：mm
+    //同步轴相关参数
+    uint8_t sync_axis;							//是否同步轴  0--否   1--是
+    uint8_t master_axis_no;						//主动轴号
+    uint8_t disp_coord;							//是否显示坐标  0--否   1--是
+    uint8_t auto_sync;							//从动轴回参考点后自动同步校准   0--否   1--是
+    uint32_t sync_err_max;						//位置同步最大误差	  单位：um
+    double benchmark_offset;					//主从轴基准位置偏差  单位：mm
 
-	double axis_home_pos[10];				//参考点位置  单位：mm
-	double ref_mark_err;                   //参考点基准误差   单位：mm    有效范围：0~10.0
 
+    double axis_home_pos[10];				//参考点位置  单位：mm
+    double ref_mark_err;                   //参考点基准误差   单位：mm    有效范围：0~10.0
     uint32_t spd_min_speed;                 //主轴最低转速   单位：rpm   0~100000
+
     uint8_t pmc_g00_by_EIFg;                //PMC轴快移速度来源 0：定位速度 1：EIFg信号
     uint16_t pmc_min_speed;                 //最小PMC移动速度
     uint16_t pmc_max_speed;                 //最大PMC移动速度

@@ -1223,29 +1223,28 @@ struct HmiAxisConfig{
     uint8_t save_pos_poweroff;				//掉电坐标记忆		0--关闭   1--打开
 //	uint8_t axis_alarm_level;               //轴告警信号电平    0--低电平  1--高电平
 
+	uint32_t motor_count_pr;				//电机每转计数
+	uint32_t motor_speed_max;				//电机最大转速   单位：rpm
+	double move_pr;						    //每转移动量，即丝杆螺距    单位：mm(deg)
+	uint8_t motor_dir;						//电机旋转方向    0--正转    1--反转
+	uint8_t feedback_mode;					//电机反馈类型    0--增量式    1--绝对式(安川)     2--绝对式(松下)    3--光栅尺        4--无反馈
 
-    uint32_t motor_count_pr;				//电机每转计数
-    uint32_t motor_speed_max;					//电机最大转速   单位：rpm
-    double move_pr;							//每转移动量，即丝杆螺距    单位：mm(deg)
-    uint8_t motor_dir;						//电机旋转方向    0--正转    1--反转
-    uint8_t feedback_mode;					//电机反馈类型    0--增量式    1--绝对式(安川)     2--绝对式(松下)    3--光栅尺
-
-    uint8_t ret_ref_mode;					//回参考点方式      0--禁止   1--有基准    2--无基准     3--驱动回零     4-双基准
+	uint8_t ret_ref_mode;					//回参考点方式      0--禁止   1--有基准    2--无基准     3--驱动回零
+    uint8_t absolute_ref_mode;             //绝对式电机回零方式 0--回零标记点设定方式    1--无挡块回零方式
     uint8_t ret_ref_dir;					//回参考点方向		0--负向    1--正向
-    uint8_t ret_ref_change_dir;				//回参考点换向      0--反向    1--同向
-    uint8_t ref_signal;						//参考点信号类型     0--零信号    1--Z信号
-    uint8_t ret_ref_index;					//回参考点顺序		0-11:第一~第十二
-    uint8_t ref_base_diff_check;			//粗精基准位置偏差检测		0--关闭   1--打开
-    double ref_base_diff;					//粗精基准位置偏差		单位：mm（deg）
-    int64_t ref_encoder;					//零点编码器值，绝对式编码器有效
-    double ref_offset_pos;                //回参考点后的偏移量 单位:mm
-    double ref_z_distance_max;            //搜索Z脉冲最大移动距离
+	uint8_t ret_ref_change_dir;				//回参考点换向      0--反向    1--同向
+	uint8_t ref_signal;						//参考点信号类型    0--零信号    1--Z信号
+	uint8_t ret_ref_index;					//回参考点顺序		0-11:第一~第十二
+	uint8_t ref_base_diff_check;			//粗精基准位置偏差检测		0--关闭   1--打开
+	double ref_base_diff;					//粗精基准位置偏差		单位：mm（deg）此值为检测值，不可更改
+	int64_t ref_encoder;					//零点编码器值，绝对式编码器有效
+    double ref_offset_pos;                  //回参考点后的偏移量 单位:mm
+    double ref_z_distance_max;              //搜索Z脉冲最大移动距离
 
-
-    double manual_speed;					//手动进给速度，单位:mm/min
-    double rapid_speed;						//定位速度，单位:mm/min
-    double reset_speed;						//复位速度，单位：mm/min
-    double ret_ref_speed;					//回参考点速度，单位：mm/min
+	double manual_speed;					//手动进给速度，单位:mm/min
+	double rapid_speed;						//定位速度，单位:mm/min
+	double reset_speed;						//复位速度，单位：mm/min
+	double ret_ref_speed;					//回参考点速度，单位：mm/min
     double ret_ref_speed_second;            //回参考点低速度，单位：mm/min
 
     double rapid_acc;   					//定位加速度，单位:mm/s^2

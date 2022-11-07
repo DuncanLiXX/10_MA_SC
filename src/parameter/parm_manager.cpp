@@ -405,7 +405,7 @@ bool ParmManager::ReadSysConfig(){
 		m_sc_system_config->free_space_limit = m_ini_system->GetIntValueOrDefault("system", "free_space_limit", 10240);	//KB
 		m_sc_system_config->backlight_delay_time = m_ini_system->GetIntValueOrDefault("system", "backlight_delay_time", 0);	//秒
 		m_sc_system_config->save_lineno_poweroff = m_ini_system->GetIntValueOrDefault("system", "save_lineno_poweroff", 0);
-		m_sc_system_config->manual_ret_ref_mode = m_ini_system->GetIntValueOrDefault("system", "manual_ret_ref_mode", 0);
+        m_sc_system_config->manual_ret_ref_mode = m_ini_system->GetIntValueOrDefault("system", "manual_ret_ref_mode", 0);
 		m_sc_system_config->beep_time = m_ini_system->GetIntValueOrDefault("system", "beep_time", 15);		//s
 		m_sc_system_config->da_ocp = m_ini_system->GetIntValueOrDefault("system", "da_ocp", 0);
 		m_sc_system_config->da_prec = m_ini_system->GetIntValueOrDefault("system", "da_prec", 16);
@@ -1292,9 +1292,12 @@ bool ParmManager::ReadAxisConfig(){
 
 			m_sc_axis_config[i].motor_dir = m_ini_axis->GetIntValueOrDefault(sname, "motor_dir", 1);
 			m_sc_axis_config[i].feedback_mode = m_ini_axis->GetIntValueOrDefault(sname, "feedback_mode", 0);
-			m_sc_axis_config[i].ret_ref_mode = m_ini_axis->GetIntValueOrDefault(sname, "ret_ref_mode", 0);
+            //m_sc_axis_config[i].ret_ref_mode = m_ini_axis->GetIntValueOrDefault(sname, "ret_ref_mode", 0);
+            m_sc_axis_config[i].ret_ref_mode = 1;
+            m_sc_axis_config[i].absolute_ref_mode = m_ini_axis->GetIntValueOrDefault(sname, "absolute_ref_mode", 0);
 			m_sc_axis_config[i].ret_ref_dir = m_ini_axis->GetIntValueOrDefault(sname, "ret_ref_dir", 0);
-			m_sc_axis_config[i].ret_ref_change_dir = m_ini_axis->GetIntValueOrDefault(sname, "ret_ref_change_dir", 0);
+            //m_sc_axis_config[i].ret_ref_change_dir = m_ini_axis->GetIntValueOrDefault(sname, "ret_ref_change_dir", 0);
+            m_sc_axis_config[i].ret_ref_change_dir = 0;
 			m_sc_axis_config[i].ref_mark_err = m_ini_axis->GetDoubleValueOrDefault(sname, "ref_mark_err", 0);
 
 			m_sc_axis_config[i].ref_signal = m_ini_axis->GetIntValueOrDefault(sname, "ref_signal", 0);
@@ -1447,8 +1450,9 @@ bool ParmManager::ReadAxisConfig(){
 
 			m_sc_axis_config[i].motor_dir = 1;
 			m_sc_axis_config[i].feedback_mode = 0;
-			m_sc_axis_config[i].ret_ref_mode = 0;
+            m_sc_axis_config[i].ret_ref_mode = 1;
 			m_sc_axis_config[i].ret_ref_dir = 0;
+            m_sc_axis_config[i].absolute_ref_mode = 0;
 			m_sc_axis_config[i].ret_ref_change_dir = 0;
 			m_sc_axis_config[i].ref_mark_err = 0;
 
@@ -4392,6 +4396,10 @@ bool ParmManager::UpdateAxisParam(uint8_t axis_index, uint32_t param_no, ParamVa
         sprintf(kname, "ref_z_distance_max");
         m_ini_axis->SetDoubleValue(sname, kname, value.value_double);
         break;
+    case 1318:
+        sprintf(kname, "absolute_ref_mode");
+        m_ini_axis->SetIntValue(sname, kname, value.value_int8);
+        break;
 
 	case 1350:	//手动速度
 		sprintf(kname, "manual_speed");
@@ -5841,6 +5849,9 @@ void ParmManager::ActiveAxisParam(uint8_t axis_index, uint32_t param_no, ParamVa
         break;
     case 1317:  //搜索Z脉冲最大移动距离
         this->m_sc_axis_config[axis_index].ref_z_distance_max = value.value_double;
+        break;
+    case 1318:  //绝对式电机回零方式
+        this->m_sc_axis_config[axis_index].absolute_ref_mode = value.value_int8;
         break;
 	case 1350:	//手动速度
 		this->m_sc_axis_config[axis_index].manual_speed = value.value_double;

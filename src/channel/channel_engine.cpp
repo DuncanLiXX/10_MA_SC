@@ -11099,12 +11099,12 @@ void ChannelEngine::ReturnRefPoint(){
                 }else{
                     this->AxisFindRefNoZeroSignal(i);  // 直接设置零点
                 }
-            }else if(this->m_p_axis_config[i].feedback_mode == INCREMENTAL_ENCODER) {   //增量式编码器
-                if(this->m_p_axis_config[i].ret_ref_mode == 1){//  总线有基准回零
-                    this->EcatIncAxisFindRefWithZeroSignal(i);
-                }else if(this->m_p_axis_config[i].ret_ref_mode == 2){//  总线无基准回零
-                    this->EcatIncAxisFindRefNoZeroSignal(i);
-                }
+            /*}else if(this->m_p_axis_config[i].feedback_mode == INCREMENTAL_ENCODER) {   //增量式编码器
+                //if(this->m_p_axis_config[i].ret_ref_mode == 1){//  总线有基准回零
+                    this->EcatIncAxisFindRefWithZeroSignal(i);                          //增量式编码器只支持有挡块回零
+                //}else if(this->m_p_axis_config[i].ret_ref_mode == 2){//  总线无基准回零
+                //    this->EcatIncAxisFindRefNoZeroSignal(i);
+                //}
             }else if(this->m_p_axis_config[i].ret_ref_mode == 1){
                 this->EcatAxisFindRefWithZeroSignal(i);    //  总线有基准回零
             }else if(this->m_p_axis_config[i].ret_ref_mode == 2){
@@ -11114,6 +11114,18 @@ void ChannelEngine::ReturnRefPoint(){
             }else if(this->m_p_axis_config[i].ret_ref_mode == 0 &&
                     (this->m_p_axis_config[i].feedback_mode == ABSOLUTE_ENCODER_YASAKAWA || this->m_p_axis_config[i].feedback_mode == ABSOLUTE_ENCODER_PANASONIC)){  //绝对值编码器并且禁止回零
                 this->AxisFindRefNoZeroSignal(i);   // 直接设置零点
+            }*/
+            }else if(this->m_p_axis_config[i].feedback_mode == INCREMENTAL_ENCODER) {   //增量式编码器
+                this->EcatIncAxisFindRefWithZeroSignal(i);//增量式编码器只支持有挡块回零
+
+            }
+            else if (this->m_p_axis_config[i].absolute_ref_mode == 0) //回零标记点设定方式
+            {
+                this->AxisFindRefNoZeroSignal(i);
+            }
+            else if (this->m_p_axis_config[i].absolute_ref_mode == 1) //无挡块回零方式
+            {
+                this->EcatAxisFindRefNoZeroSignal(i);
             }
         }else if(this->m_p_axis_config[i].axis_interface == ANALOG_AXIS){   // 非总线轴
             //设置回零标志

@@ -66,7 +66,7 @@
 
 
 //版本信息
-#define ADX_SC_VERSION "P0.3.03" //SC模块软件版本号
+#define ADX_SC_VERSION "P0.3.04" //SC模块软件版本号
 
 //文件目录定义
 #define PATH_NC_FILE "/cnc/nc_files/"    //NC加工文件目录0

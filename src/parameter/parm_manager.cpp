@@ -5653,8 +5653,14 @@ void ParmManager::ActiveAxisParam(uint8_t axis_index, uint32_t param_no, ParamVa
 	case 1006:	//是否PMC轴
 		this->m_sc_axis_config[axis_index].axis_pmc = value.value_uint8;
 		break;
-    case 1007:	//攻丝回退的额外回退值
-        this->m_sc_axis_config[axis_index].spd_rtnt_distance = value.value_int32;
+    case 1007:	//PMC轴快移速度来源
+        this->m_sc_axis_config[axis_index].pmc_g00_by_EIFg = value.value_uint8;
+        break;
+    case 1008:	//最小PMC移动速度
+        this->m_sc_axis_config[axis_index].pmc_min_speed = value.value_uint16;
+        break;
+    case 1009:	//最大PMC移动速度
+        this->m_sc_axis_config[axis_index].pmc_max_speed = value.value_uint16;
         break;
 	case 1100:	//自动比例参数
 		printf("update axis[%hhu] kp1: %lf\n", axis_index, value.value_double);

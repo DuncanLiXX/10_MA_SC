@@ -12591,6 +12591,14 @@ void ChannelControl::SetMcRatio(){
 	cmd.data.data[1] = this->m_channel_status.auto_ratio;
 	cmd.data.data[2] = this->m_channel_status.manual_ratio;
 
+
+	cmd.data.data[1] = 120;
+	// @test zk
+	printf("rapid %d auto %d manual %d \n",
+			this->m_channel_status.rapid_ratio,
+			this->m_channel_status.auto_ratio,
+			this->m_channel_status.manual_ratio);
+
 	if(!this->m_b_mc_on_arm)
 		m_p_mc_comm->WriteCmd(cmd);
 	else

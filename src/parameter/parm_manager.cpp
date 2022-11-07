@@ -4348,11 +4348,11 @@ bool ParmManager::UpdateAxisParam(uint8_t axis_index, uint32_t param_no, ParamVa
         break;
     case 1316:  //回参考点后的偏移量
         sprintf(kname, "ref_offset_pos");
-        m_ini_axis->SetDoubleValue(sname, kname, value.value_uint32);
+        m_ini_axis->SetDoubleValue(sname, kname, value.value_double);
         break;
     case 1317:  //搜索Z脉冲最大移动距离
         sprintf(kname, "ref_z_distance_max");
-        m_ini_axis->SetDoubleValue(sname, kname, value.value_uint32);
+        m_ini_axis->SetDoubleValue(sname, kname, value.value_double);
         break;
 
 	case 1350:	//手动速度

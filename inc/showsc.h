@@ -16,6 +16,7 @@ class FiveAxisConfig;
 class FRegBits;
 class GRegBits;
 class TraceInfo;
+class PmcAxisCtrl;
 
 struct ChannelStatusCollect;
 struct ChannelRealtimeStatus;
@@ -58,6 +59,10 @@ public:
     void AddComponent(FiveAxisConfig *p){fiveaxis_config = p;}
     void AddComponent(FRegBits *p){F = p;}
     void AddComponent(const GRegBits *p){G = p;}
+    void AddComponent(PmcAxisCtrl *p){pmc_axis_ctrl = p;}
+
+    // 发送信息
+    void SendMsg(string &s);
 
 private:
     // 打印处理线程
@@ -93,9 +98,7 @@ private:
     void PrintWarning();    // 打印警告
     void PrintFRegState();  // 打印F寄存器
     void PrintGRegState();  // 打印G寄存器
-
-    // 发送信息
-    void SendMsg(string &s);
+    void PrintPmcAxisCtrl();    // 打印PMC轴信息
 
 private:
     PrintType print_type{TypeNone};
@@ -118,6 +121,7 @@ private:
     FiveAxisConfig *fiveaxis_config{nullptr}; // 五轴配置
     const FRegBits *F; // F寄存器
     const GRegBits *G; //G寄存器
+    PmcAxisCtrl *pmc_axis_ctrl{nullptr};
 
     bool exit_flag{false};
 };

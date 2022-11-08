@@ -222,6 +222,9 @@ public:
     // axis: 轴号，从1开始
     // type: 0—直线型位置控制输出；1—旋转型位置控制输出；2—速度指令输出；3—力矩指令输出
     void SendAxisCtrlModeSwitchCmd(uint8_t axis,uint8_t type);
+    // enable: 0:MI使用默认的步长逻辑  1:自定义手轮步长
+    // step: 手轮步长 单位:um
+    void SendMpgStep(uint8_t chn,bool enable,uint16_t step);
 
 	bool ReadEncoderWarn(uint64_t &value);		//读取轴编码器告警标志
 	bool ReadServoHLimitFlag(bool pos_flag, uint64_t &value);   //读取伺服限位告警信息

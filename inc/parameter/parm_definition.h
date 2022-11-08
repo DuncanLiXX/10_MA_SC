@@ -143,8 +143,9 @@ struct SCChannelConfig{
 	uint8_t g31_sig_level;          //G31跳转信号有效电平    0--低电平    1--高电平
     uint16_t rst_hold_time;         //复位时间 单位:ms
     uint8_t rst_mode;             //复位时是否保留运行数据  0:不保留 1:保留
-    uint32_t g00_max_speed;         //G00最高转速
-    uint32_t g01_max_speed;         //G01最高转速
+    uint32_t g01_max_speed;         //G01最高进给速度 单位：mm/min
+    uint16_t mpg_level3_step;       //手轮3档的自定义步长 单位：um
+    uint16_t mpg_level4_step;       //手轮4档的自定义步长 单位：um
 
 #ifdef USES_WOOD_MACHINE
 	int debug_param_1;             //调试参数1
@@ -287,6 +288,9 @@ struct SCAxisConfig{
     uint32_t spd_sync_error_gain;               //同步误差增益  范围为0~1000，默认为200
     uint32_t spd_speed_feed_gain;               //轴速度前馈增益 范围为0~100000，默认为60000
     uint32_t spd_pos_ratio_gain;                //轴位置比例增益 范围0~200000，默认为100000
+    uint8_t spd_rtnt_rate_on;                   //攻丝回退期间，倍率是否有效 0：强制100%  1：有效
+    uint8_t spd_rtnt_rate;                      //攻丝回退倍率 单位：1%
+    int32_t spd_rtnt_distance;                 //攻丝回退的额外回退值 单位：um
 
 	//旋转轴相关参数
 	uint8_t fast_locate;							//快速定位    0--关闭   1--打开
@@ -305,6 +309,10 @@ struct SCAxisConfig{
 	double axis_home_pos[10];				//参考点位置  单位：mm
 	double ref_mark_err;                   //参考点基准误差   单位：mm    有效范围：0~10.0
 	uint32_t spd_min_speed;                 //主轴最低转速   单位：rpm   0~100000
+
+    uint8_t pmc_g00_by_EIFg;                //PMC轴快移速度来源 0：定位速度 1：EIFg信号
+    uint16_t pmc_min_speed;                 //最小PMC移动速度
+    uint16_t pmc_max_speed;                 //最大PMC移动速度
 };
 
 /**

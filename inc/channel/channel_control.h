@@ -332,7 +332,7 @@ public:
 	void ProcessMiHWTraceStateChanged(MiCmdFrame &cmd);   //处理MI发送的手轮跟踪状态切换指令
 	bool ChangeHwTraceState(HWTraceState state);    //切换手轮跟踪状态
 
-	void CallMacroProgram(uint16_t macro_index);      //调用宏程序
+    bool CallMacroProgram(uint16_t macro_index);      //调用宏程序
 
 	uint8_t GetCurProcParamIndex(){return this->m_n_cur_proc_group;}   //返回当前工艺参数组号
 	bool SetCurProcParamIndex(uint8_t index);  //设置当前工艺参数组号
@@ -353,7 +353,6 @@ public:
 	void StraightTraverse(int chn, double x, double y, double z);
 	void g73_func();
 	// @ add zk
-
 private:
 	void InitialChannelStatus();		//初始化通道状态
     static void *CompileThread(void *args);  //G代码运行线程函数

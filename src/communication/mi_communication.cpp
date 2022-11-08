@@ -332,6 +332,19 @@ void MICommunication::SendAxisCtrlModeSwitchCmd(uint8_t axis, uint8_t type)
     WriteCmd(cmd);
 }
 
+void MICommunication::SendMpgStep(uint8_t chn, bool enable, uint16_t step)
+{
+    MiCmdFrame cmd;
+    memset(&cmd, 0x00, sizeof(cmd));
+    cmd.data.cmd = CMD_MI_SET_MPG_STEP;
+    cmd.data.axis_index = 0xff;
+    cmd.data.reserved = chn;
+    cmd.data.data[0] = enable;
+    cmd.data.data[1] = step;
+
+    WriteCmd(cmd);
+}
+
 /**
  * @brief 初始化上下行命令通道，将所有命令帧的读写标志位置0
  */

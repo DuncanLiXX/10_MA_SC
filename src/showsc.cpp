@@ -7,6 +7,7 @@
 #include <future>
 #include <string>
 #include "spindle_control.h"
+#include "pmc_axis_ctrl.h"
 
 ShowSc::ShowSc()
 {
@@ -26,6 +27,9 @@ void ScPrintf(const char *__format, va_list args)
 {
     char s[128];
     sprintf(s,__format,args);
+    string str = s;
+    ShowSc &showSc = Singleton<ShowSc>::instance();
+    showSc.SendMsg(str);
 }
 
 void ShowSc::ProcessPrintThread()
@@ -73,6 +77,8 @@ void ShowSc::ProcessPrintThread()
             PrintFRegState();break;
         case TypeGRegState:
             PrintGRegState();break;
+        case TypePmcAxis:
+            PrintPmcAxisCtrl();break;
         default:break;
         }
 
@@ -354,6 +360,7 @@ void ShowSc::PrintSpindle()
     AddPair(s,"SIND",spindle->SIND);
     AddPair(s,"ORCMA",spindle->ORCMA);
     AddPair(s,"RGTAP",spindle->RGTAP);
+    AddPair(s,"tap_feed",spindle->tap_feed);
 
     SCAxisConfig *cfg = &axis_config[spindle->phy_axis];
     AddPair(s,"move_pr",cfg->move_pr);
@@ -389,6 +396,13 @@ void ShowSc::PrintSpindle()
     AddPair(s,"spd_speed_feed_gain",cfg->spd_speed_feed_gain);
     AddPair(s,"spd_pos_ratio_gain",cfg->spd_pos_ratio_gain);
 
+    AddPair(s,"spd_rtnt_rate_on",cfg->spd_rtnt_rate_on);
+    AddPair(s,"spd_rtnt_rate",cfg->spd_rtnt_rate);
+    AddPair(s,"spd_rtnt_distance",cfg->spd_rtnt_distance);
+
+    AddPair(s,"tap_flag",spindle->tap_state.tap_flag);
+    AddPair(s,"tap_f",spindle->tap_state.F);
+    AddPair(s,"tap_R",spindle->tap_state.R);
     SendMsg(s);
 }
 
@@ -506,8 +520,9 @@ void ShowSc::PrintChnConfig()
     AddPair(s,"g31_sig_level",cfg->g31_sig_level);
     AddPair(s,"rst_hold_time",cfg->rst_hold_time);
     AddPair(s,"rst_mode",cfg->rst_mode);
-    AddPair(s,"g00_max_speed",cfg->g00_max_speed);
     AddPair(s,"g01_max_speed",cfg->g01_max_speed);
+    AddPair(s,"mpg_level3_step",cfg->mpg_level3_step);
+    AddPair(s,"mpg_level4_step",cfg->mpg_level4_step);
 
     SendMsg(s);
 }
@@ -526,6 +541,9 @@ void ShowSc::PrintAxisConfig(int axis)
     AddPair(s,"axis_port",cfg->axis_port);
     AddPair(s,"axis_linear_type",cfg->axis_linear_type);
     AddPair(s,"axis_pmc",cfg->axis_pmc);
+    AddPair(s,"pmc_g00_by_EIFg",cfg->pmc_g00_by_EIFg);
+    AddPair(s,"pmc_min_speed",cfg->pmc_min_speed);
+    AddPair(s,"pmc_max_speed",cfg->pmc_max_speed);
 
     AddPair(s,"kp1",cfg->kp1);
     AddPair(s,"kp2",cfg->kp2);
@@ -742,7 +760,7 @@ void ShowSc::PrintFRegState()
         string reg_name_s = "F" + to_string(i) + "\t";
         string reg_value_s = "";
         for(int bit = 7; bit >= 0; bit--){
-            reg_value_s = reg_value_s + to_string(F[i] & (0x01 << bit))+"\t";
+            reg_value_s = reg_value_s + to_string((F[i] & (0x01 << bit)))+"\t";
         }
         AddPair(s,reg_name_s,reg_value_s);
     }
@@ -762,7 +780,7 @@ void ShowSc::PrintGRegState()
         string reg_name_s = "G" + to_string(i) + "\t";
         string reg_value_s = "";
         for(int bit = 7; bit >= 0; bit--){
-            reg_value_s = reg_value_s + to_string(G[i] & (0x01 << bit))+"\t";
+            reg_value_s = reg_value_s + to_string((G[i] & (0x01 << bit)))+"\t";
         }
         AddPair(s,reg_name_s,reg_value_s);
     }
@@ -770,7 +788,45 @@ void ShowSc::PrintGRegState()
     SendMsg(s);
 }
 
+void ShowSc::PrintPmcAxisCtrl()
+{
+    if(!pmc_axis_ctrl)
+        return;
+
+    string s = "";
+    for(int i = 0; i < 4; i++){
+        PmcAxisCtrl *cfg = &pmc_axis_ctrl[i];
+        char title[20];
+        sprintf(title,"[Group-%d]",i);
+        AddPair(s,title,"");
+        AddPair(s,"m_n_group_index",cfg->m_n_group_index);
+        string axis_indexs = "[ ";
+        for(unsigned int j = 0; j<cfg->axis_list.size(); j++){
+            axis_indexs = axis_indexs + to_string(cfg->axis_list.at(j)->axis_index) + " ";
+        }
+        axis_indexs = axis_indexs + "]";
+        AddPair(s,"axis_list",axis_indexs);
+        AddPair(s,"m_b_active",cfg->m_b_active);
+        AddPair(s,"m_b_buffer",cfg->m_b_buffer);
+        AddPair(s,"m_b_step_stop",cfg->m_b_step_stop);
+        AddPair(s,"m_b_pause",cfg->m_b_pause);
+        AddPair(s,"m_n_cmd_count",cfg->m_n_cmd_count);
+        AddPair(s,"m_n_buf_exec",cfg->m_n_buf_exec);
+        AddPair(s,"cmd[0].cmd",cfg->m_pmc_cmd_buffer[0].cmd);
+        AddPair(s,"cmd[0].speed",cfg->m_pmc_cmd_buffer[0].speed);
+        AddPair(s,"cmd[0].distance",cfg->m_pmc_cmd_buffer[0].distance);
+        AddPair(s,"cmd[1].cmd",cfg->m_pmc_cmd_buffer[1].cmd);
+        AddPair(s,"cmd[1].speed",cfg->m_pmc_cmd_buffer[1].speed);
+        AddPair(s,"cmd[1].distance",cfg->m_pmc_cmd_buffer[1].distance);
+        AddPair(s,"cmd[2].cmd",cfg->m_pmc_cmd_buffer[2].cmd);
+        AddPair(s,"cmd[2].speed",cfg->m_pmc_cmd_buffer[2].speed);
+        AddPair(s,"cmd[2].distance",cfg->m_pmc_cmd_buffer[2].distance);
+        s.append("\n");
+    }
+    SendMsg(s);
+}
+
 void ShowSc::SendMsg(string &s)
 {
-    trace->SendMsg(PrintTopic,s);
+    trace->SendMsg(PrintTopic,"\n" + s);
 }

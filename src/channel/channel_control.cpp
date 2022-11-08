@@ -17305,6 +17305,38 @@ void ChannelControl::UpdateExCoord(uint8_t index, HmiCoordConfig &cfg){
 }
 
 /**
+ * @brief 更新所有工件坐标系为设定值
+ * @param val
+ * @return
+ */
+bool ChannelControl::UpdateAllCoord(double val)
+{
+    if(m_channel_status.machining_state == MS_READY || m_channel_status.machining_state == MS_WARNING){//非运行状态，直接生效
+        //常规坐标系 基本坐标系+G54-G59
+        g_ptr_parm_manager->UpdateAllCoordConfig(m_n_channel_index, val, true);
+        return true;
+    }
+    return false;
+
+}
+
+/**
+ * @brief 更新所有扩展工件坐标系为设定值
+ * @param val
+ * @return
+ */
+bool ChannelControl::UpdateAllExCoord(double val, int count)
+{
+    if(m_channel_status.machining_state == MS_READY || m_channel_status.machining_state == MS_WARNING){//非运行状态，直接生效
+        //扩展坐标系
+        std::cout << "count: " << count << std::endl;
+        g_ptr_parm_manager->UpdateAllExCoordConfig(m_n_channel_index, val, true, count);
+        return true;
+    }
+    return false;
+}
+
+/**
  * @brief 更新刀具偏置
  * @param index : 刀偏编号，从0开始
  * @param cfg

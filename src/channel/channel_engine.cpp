@@ -2815,6 +2815,9 @@ void ChannelEngine::ProcessHmiCmd(HMICmdFrame &cmd){
     case CMD_HMI_GET_ERROR_INFO:
         this->ProcessHmiGetErrorCmd(cmd);
         break;
+    case CMD_HMI_SET_ALL_COORD: //设置当前通道的所有工件坐标系
+        ProcessHmiSetAllCoordCmd(cmd);
+        break;
     default:
         g_ptr_trace->PrintTrace(TRACE_WARNING, CHANNEL_ENGINE_SC, "不支持的HMI指令[%d]", cmd.cmd);
         break;
@@ -3289,6 +3292,29 @@ void ChannelEngine::ProcessHmiHandWheelCmd(HMICmdFrame &cmd)
     this->m_p_hmi_comm->SendCmd(cmd);
 }
 
+/**
+ * @brief HMI向SC设置当前通道的所有工件坐标系
+ * @param cmd : HMI指令包
+ */
+void ChannelEngine::ProcessHmiSetAllCoordCmd(HMICmdFrame &cmd)
+{
+    if(cmd.channel_index < this->m_p_general_config->chn_count)
+    {
+        cmd.frame_number |= 0x8000;
+        double dVal;
+        memcpy(&dVal, cmd.data, cmd.data_len);
+
+        bool ret1, ret2;
+        ret1 = m_p_channel_control[cmd.channel_index].UpdateAllCoord(dVal);
+        ret2 = m_p_channel_control[cmd.channel_index].UpdateAllExCoord(dVal, m_p_channel_config[cmd.channel_index].ex_coord_count);
+        m_p_channel_control[cmd.channel_index].SetMcCoord(true);
+        if (ret1 && ret2)
+            this->m_p_hmi_comm->SendCmd(cmd);
+    }
+    else
+        g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "命令[%d]通道号非法！%d", cmd.cmd, cmd.channel_index);
+
+}
 
 /**
  * @brief 处理HMI轴移动指令
@@ -11062,7 +11088,6 @@ void ChannelEngine::ReturnRefPoint(){
                 continue;
             count++;
         }
-
         if(this->m_p_axis_config[i].axis_interface == VIRTUAL_AXIS){// 虚拟轴
             this->AxisFindRefNoZeroSignal(i);   // 直接设置零点
 
@@ -11077,11 +11102,11 @@ void ChannelEngine::ReturnRefPoint(){
                     this->AxisFindRefNoZeroSignal(i);  // 直接设置零点
                 }
             /*}else if(this->m_p_axis_config[i].feedback_mode == INCREMENTAL_ENCODER) {   //增量式编码器
-                //if(this->m_p_axis_config[i].ret_ref_mode == 1){//  总线有基准回零
+                if(this->m_p_axis_config[i].ret_ref_mode == 1){//  总线有基准回零
                     this->EcatIncAxisFindRefWithZeroSignal(i);                          //增量式编码器只支持有挡块回零
-                //}else if(this->m_p_axis_config[i].ret_ref_mode == 2){//  总线无基准回零
-                //    this->EcatIncAxisFindRefNoZeroSignal(i);
-                //}
+                }else if(this->m_p_axis_config[i].ret_ref_mode == 2){//  总线无基准回零
+                    this->EcatIncAxisFindRefNoZeroSignal(i);
+                }
             }else if(this->m_p_axis_config[i].ret_ref_mode == 1){
                 this->EcatAxisFindRefWithZeroSignal(i);    //  总线有基准回零
             }else if(this->m_p_axis_config[i].ret_ref_mode == 2){
@@ -11094,7 +11119,6 @@ void ChannelEngine::ReturnRefPoint(){
             }*/
             }else if(this->m_p_axis_config[i].feedback_mode == INCREMENTAL_ENCODER) {   //增量式编码器
                 this->EcatIncAxisFindRefWithZeroSignal(i);//增量式编码器只支持有挡块回零
-
             }
             else if (this->m_p_axis_config[i].absolute_ref_mode == 0) //回零标记点设定方式
             {

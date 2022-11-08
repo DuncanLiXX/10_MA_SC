@@ -222,6 +222,8 @@ public:
 
 	void UpdateCoord(uint8_t index, HmiCoordConfig &cfg);  //更新工件坐标系
 	void UpdateExCoord(uint8_t index, HmiCoordConfig &cfg);  //更新扩展工件坐标系
+    bool UpdateAllCoord(double val);//更新所有工件坐标系为设定值
+    bool UpdateAllExCoord(double val, int count);//更新所有的扩展工件坐标系设定值
 
 	void UpdateToolOffset(uint8_t index, HmiToolOffsetConfig &cfg);   //更新刀具偏置
 

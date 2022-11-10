@@ -1,19 +1,19 @@
 CMAKE_MINIMUM_REQUIRED(VERSION 3.10)
 
-# CMAKE_MODULE_PATH, è®¾ç½® Module æ–‡ä»¶æŸ¥æ‰¾è·¯å¾„ 
+# CMAKE_MODULE_PATH, ÉèÖÃ Module ÎÄ¼ş²éÕÒÂ·¾¶ 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake/")
 
-# arm_linux_setup ä¸ºè‡ªå®šä¹‰çš„ Module æ–‡ä»¶
-# ç”¨äº Arm v7 çš„äº¤å‰ç¼–è¯‘
+# arm_linux_setup Îª×Ô¶¨ÒåµÄ Module ÎÄ¼ş
+# ÓÃÓÚ Arm v7 µÄ½»²æ±àÒë
 include(arm_linux_setup)
 
-# è®¾ç½®é¡¹ç›®åç§°
+# ÉèÖÃÏîÄ¿Ãû³Æ
 project(10MA_SC)
 
-# è®¾ç½®ç”Ÿæˆçš„ç›®æ ‡æ–‡ä»¶çš„åç§°
+# ÉèÖÃÉú³ÉµÄÄ¿±êÎÄ¼şµÄÃû³Æ
 set(TARGET_NAME 10MA_SC_Module.elf)
 
-# è®¾ç½®é¡¹ç›®ç›¸å…³æºç æ–‡ä»¶
+# ÉèÖÃÏîÄ¿Ïà¹ØÔ´ÂëÎÄ¼ş
 set(SC_SRC 
         src/geometry_data.cpp;
         src/global_structure.cpp;
@@ -26,6 +26,7 @@ set(SC_SRC
         src/Algorithm/coord_processor.cpp;
         src/spindle/spindle_control.cpp
         src/showsc.cpp
+        src/sync_axis_ctrl.cpp
 )
 
 set(CHANNEL_SRC
@@ -69,11 +70,11 @@ set(TOOL_COMPENSATE_SRC
 set (SC_SRC ${SC_SRC} ${COMMUNICATION_SRC} ${COMPILER_SRC} ${CHANNEL_SRC}
                         ${PARAMETER_SRC} ${PMC_SRC} ${TOOL_COMPENSATE_SRC})
 
-# ç”Ÿæˆåç§°ä¸º ${TARGET_NAME} çš„å¯æ‰§è¡Œæ–‡ä»¶
+# Éú³ÉÃû³ÆÎª ${TARGET_NAME} µÄ¿ÉÖ´ĞĞÎÄ¼ş
 add_executable(${TARGET_NAME} ${SC_SRC})
 
 
-# è®¾ç½®å¤´æ–‡ä»¶çš„æŸ¥æ‰¾è·¯å¾„
+# ÉèÖÃÍ·ÎÄ¼şµÄ²éÕÒÂ·¾¶
 target_include_directories(${TARGET_NAME} PRIVATE inc)
 target_include_directories(${TARGET_NAME} PRIVATE inc/alarm_processor)
 target_include_directories(${TARGET_NAME} PRIVATE inc/Algorithm)
@@ -87,19 +88,19 @@ target_include_directories(${TARGET_NAME} PRIVATE inc/spindle)
 target_include_directories(${TARGET_NAME} PRIVATE inc/mem_share)
 target_include_directories(${TARGET_NAME} PRIVATE lib/inc)
 
-# è®¾ç½®åº“æ–‡ä»¶çš„æŸ¥æ‰¾è·¯å¾„
+# ÉèÖÃ¿âÎÄ¼şµÄ²éÕÒÂ·¾¶
 link_directories(${CMAKE_SOURCE_DIR}/lib/release)
 
-# å¯¼å…¥é™æ€é“¾æ¥åº“
+# µ¼Èë¾²Ì¬Á´½Ó¿â
 add_library(LibLicense STATIC IMPORTED)
 set_property(TARGET LibLicense PROPERTY IMPORTED_LOCATION ${CMAKE_SOURCE_DIR}/lib/release/libLitronucLicense.a)
 add_library(LibMosquitpp STATIC IMPORTED)
 set_property(TARGET LibMosquitpp PROPERTY IMPORTED_LOCATION ${CMAKE_SOURCE_DIR}/lib/release/libmosquittopp_static.a)
 
-# é“¾æ¥åº“æ–‡ä»¶
+# Á´½Ó¿âÎÄ¼ş
 target_link_libraries(${TARGET_NAME} PRIVATE pthread LibLicense LibMosquitpp)
 
-# è®¾ç½®ç¼–è¯‘é€‰é¡¹
+# ÉèÖÃ±àÒëÑ¡Ïî
 target_compile_options(${TARGET_NAME} PRIVATE
                             -Wall
                             -O2

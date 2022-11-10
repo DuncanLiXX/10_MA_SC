@@ -345,6 +345,31 @@ void MICommunication::SendMpgStep(uint8_t chn, bool enable, uint16_t step)
     WriteCmd(cmd);
 }
 
+void MICommunication::SendSyncAxis(int64_t mask)
+{
+    MiCmdFrame cmd;
+    memset(&cmd, 0x00, sizeof(cmd));
+    cmd.data.cmd = CMD_MI_DO_SYNC_AXIS;
+
+    cmd.data.axis_index = 0xFF;
+
+    memcpy(cmd.data.data, &mask, sizeof(int64_t));
+    printf("SendSyncAxis:mask = %lld\n",mask);
+
+    WriteCmd(cmd);
+}
+
+void MICommunication::SendEnSyncAxis(uint8_t master, uint8_t slave, bool enable)
+{
+    MiCmdFrame cmd;
+    memset(&cmd, 0x00, sizeof(cmd));
+    cmd.data.cmd = CMD_MI_EN_SYNC_AXIS;
+    cmd.data.axis_index = slave;
+    cmd.data.data[0] = master;
+    cmd.data.data[1] = enable;
+    WriteCmd(cmd);
+}
+
 /**
  * @brief 初始化上下行命令通道，将所有命令帧的读写标志位置0
  */
@@ -504,6 +529,26 @@ bool MICommunication::WriteAxisHLimitFlag(bool pos_flag, const uint64_t value){
 	return res;
 }
 
+/**
+ * @brief 发送MI参数
+ * @param axis : 轴号， MI的轴号从1开始, 0xFF表示系统参数
+ * @param para_no : 参数号
+ * @param data ：数据指针
+ * @param size ：参数数据所占的字节数
+ */
+//template<typename T>
+//void MICommunication::SendMiParam(uint8_t axis, uint32_t para_no, T data){
+//    MiCmdFrame cmd;
+//    memset(&cmd, 0x00, sizeof(cmd));
+//    cmd.data.cmd = CMD_MI_SET_PARAM;
+
+//    cmd.data.axis_index = axis;
+
+//    memcpy(cmd.data.data, &para_no, 4);
+//    memcpy(&cmd.data.data[2], &data, sizeof(T));
+
+//    WriteCmd(cmd);
+//}
 
 /**
  * @brief 读取指定轴的伺服告警码
@@ -584,6 +629,29 @@ bool MICommunication::ReadIntpPosErr(uint64_t &value){
 	ReadRegister64_M(SHARED_MEM_MI_STATUS_SVO_INTP_POS_ERR, value);
 
 	return res;
+}
+
+/**
+ * @brief 读取同步轴力矩偏差过大告警
+ * @param value
+ * @return
+ */
+bool MICommunication::ReadSyncTorqueErr(uint64_t &value){
+    bool res = true;
+    ReadRegister64_M(SHARED_MEM_MI_STATUS_SVO_SYNC_TORQUE_ERR, value);
+    return res;
+}
+
+/**
+ * @brief 读取同步轴机床坐标偏差过大告警
+ * @param value
+ * @return
+ */
+bool MICommunication::ReadSyncMachErr(uint64_t &value)
+{
+    bool res = true;
+    ReadRegister64_M(SHARED_MEM_MI_STATUS_SVO_SYNC_MACH_ERR, value);
+    return res;
 }
 
 /**

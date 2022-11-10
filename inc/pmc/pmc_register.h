@@ -1033,12 +1033,12 @@ struct GRegBits{
 	//G137
 	uint8_t :8;
 	//G138
-	uint8_t :8;
-	//G139
+    uint8_t SYNC:8;                //同步控制功能可在自动和MDI方式下运行
+    //G139
 	uint8_t :8;
 	//G140
-	uint8_t :8;
-	//G141
+    uint8_t SYNCJ:8;                //在JOG、手轮或增量进给方式下执行同步控制
+    //G141
 	uint8_t :8;
 	//G142
 	uint8_t EFINA:1;                //辅助功能结束信号（PMC轴控制，第一组）    G142.0

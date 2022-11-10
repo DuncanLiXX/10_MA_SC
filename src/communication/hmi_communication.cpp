@@ -979,7 +979,6 @@ int HMICommunication::ProcessHmiCmd(){
 			case CMD_HMI_GET_PROC_GROUP:          //HMI向SC获取当前工艺参数组号  0x31
 			case CMD_HMI_SET_CUR_MACH_POS:        //HMI向SC重设指定轴的机械坐标  0x32
 			case CMD_HMI_CLEAR_MSG:               //HMI通知SC清除消息  0x33
-			case CMD_HMI_SYNC_AXIS_OPT:           //HMI通知HMI进行同步轴使能操作 0x34
 			case CMD_HMI_NOTIFY_GRAPH:            //HMI通知SC进入图形模式    0x35
 			case CMD_HMI_CHECK_SYNC_EN:           //HMI向SC查询同步轴状态 0x37
             case CMD_HMI_CLEAR_MACHINETIME_TOTAL: //HMI向SC请求清除累计时间

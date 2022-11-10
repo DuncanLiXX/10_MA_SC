@@ -22,6 +22,7 @@
 #include "channel_mode_group.h"
 #include "spindle_control.h"
 #include "showsc.h"
+#include "sync_axis_ctrl.h"
 
 
 //#include <unistd.h>
@@ -61,10 +62,10 @@ ChannelEngine::ChannelEngine() {
 
     this->m_p_io_remap = nullptr;
 
-//#ifdef USES_SPEED_TORQUE_CTRL
+    //#ifdef USES_SPEED_TORQUE_CTRL
     m_df_phy_axis_speed_feedback = nullptr;
     m_df_phy_axis_torque_feedback = nullptr;
-//#endif
+    //#endif
 
     m_p_pmc_reg = nullptr;
 
@@ -100,7 +101,7 @@ ChannelEngine::ChannelEngine() {
 
     m_mask_import_param = 0;    //初始化导入参数标志
 
-//	m_n_mc_auto_buf_max = 200;   //默认200
+    //	m_n_mc_auto_buf_max = 200;   //默认200
 
     //初始化回参考点变量
     this->m_b_ret_ref = false;
@@ -225,55 +226,6 @@ void ChannelEngine::InitPhyAxisChn(){
     }
 }
 
-/**
- * @brief 初始化同步轴相关变量
- */
-void ChannelEngine::InitSyncAxis(){
-    this->m_n_sync_axis_mask = 0;
-    this->m_n_sync_over = 0;
-    this->m_n_sync_axis_enable_mask = 0;
-    m_b_send_sync_cmd = false;
-    int64_t flag = 0x01;
-    for(uint8_t i = 0; i < this->m_p_general_config->axis_count; i++){
-        if(this->m_p_axis_config[i].sync_axis == 1 && this->m_p_axis_config[i].master_axis_no != 0){
-            m_n_sync_axis_mask |= (flag<<i);
-        }
-    }
-
-    this->m_n_sync_axis_enable_mask = this->m_n_sync_axis_mask;  //默认同步轴都上使能
-
-    g_ptr_trace->PrintTrace(TRACE_INFO, CHANNEL_ENGINE_SC, "Init syn axis mask :0x%llx\n", m_n_sync_axis_mask);
-}
-
-/**
- * @brief 同步轴执行同步
- */
-void ChannelEngine::DoSyncAxis(){
-    if(this->m_b_send_sync_cmd)
-        return;
-    int64_t mask = ((m_n_sync_axis_mask & m_n_sync_axis_enable_mask) ^ this->m_n_sync_over);  //异或计算出未同步完成轴
-    if(mask == 0)
-        return;
-
-    if((mask & this->m_n_phy_axis_svo_on) != mask)  //等待上伺服完成
-        return;
-
-    MiCmdFrame cmd;
-    memset(&cmd, 0x00, sizeof(cmd));
-    cmd.data.cmd = CMD_MI_DO_SYNC_AXIS;
-
-    cmd.data.axis_index = 0xFF;
-
-    memcpy(cmd.data.data, &mask, sizeof(int64_t));
-
-    this->m_p_mi_comm->WriteCmd(cmd);
-
-    this->m_b_send_sync_cmd = true;
-
-    printf("send sync cmd\n");
-
-}
-
 #ifdef USES_PMC_2_0
 /**
  * @brief PMC2.0版本，读取SD_LINK从站设备配置
@@ -292,20 +244,20 @@ void ChannelEngine::ReadIoDev_pmc2(){
             char ch = ifs.get();
             if (ch == '#')
             {
-               ifs.read(&readChar[0], 10);
-               if (!strcmp(readChar, "SDLINKIO@#"))
-                   break;
+                ifs.read(&readChar[0], 10);
+                if (!strcmp(readChar, "SDLINKIO@#"))
+                    break;
             }
         }
 
         if (!ifs.eof())
         {
             auto ReadSequenceValue = [&]()->int {//从梯图中读取数据
-                int val = 0;
-                ifs.read(reinterpret_cast<char *>(&val), sizeof(val));
-                val = BigLittleSwitch32(val);
-                return val;
-            };
+                    int val = 0;
+                    ifs.read(reinterpret_cast<char *>(&val), sizeof(val));
+                    val = BigLittleSwitch32(val);
+                    return val;
+        };
             HandWheelMapInfoVec infoVec;
             bool selectedHandWheel = false;
 
@@ -383,20 +335,20 @@ void ChannelEngine::ReadIoDev_pmc2(){
         ListNode<BdioDevInfo> *node = this->m_list_bdio_dev.HeadNode();
         while(node != nullptr)
         {
-              std::cout << "info_name " << node->data.info_name << std::endl;
-              std::cout << "device_type " << static_cast<int>(node->data.device_type) << std::endl;
-              std::cout << "group " << static_cast<int>(node->data.group_index) << std::endl;
-              std::cout << "base " << static_cast<int>(node->data.base_index) << std::endl;
-              std::cout << "slot " << static_cast<int>(node->data.slot_index) << std::endl;
-              std::cout << "inBytes " << static_cast<int>(node->data.in_bytes) << std::endl;
-              std::cout << "outBytes " << static_cast<int>(node->data.out_bytes) << std::endl;
-              std::cout << "inAddr " << static_cast<int>(node->data.input_start) << std::endl;
-              std::cout << "outAddr " << static_cast<int>(node->data.output_start) << std::endl;
-              std::cout << "handwheel_map " << static_cast<int>(node->data.handwheel_map) << std::endl;
+            std::cout << "info_name " << node->data.info_name << std::endl;
+            std::cout << "device_type " << static_cast<int>(node->data.device_type) << std::endl;
+            std::cout << "group " << static_cast<int>(node->data.group_index) << std::endl;
+            std::cout << "base " << static_cast<int>(node->data.base_index) << std::endl;
+            std::cout << "slot " << static_cast<int>(node->data.slot_index) << std::endl;
+            std::cout << "inBytes " << static_cast<int>(node->data.in_bytes) << std::endl;
+            std::cout << "outBytes " << static_cast<int>(node->data.out_bytes) << std::endl;
+            std::cout << "inAddr " << static_cast<int>(node->data.input_start) << std::endl;
+            std::cout << "outAddr " << static_cast<int>(node->data.output_start) << std::endl;
+            std::cout << "handwheel_map " << static_cast<int>(node->data.handwheel_map) << std::endl;
 
-              std::cout << std::endl;
+            std::cout << std::endl;
 
-              node = node->next;
+            node = node->next;
         }
         ifs.close();
     }
@@ -417,8 +369,8 @@ bool ChannelEngine::CheckIoDev_pmc2(const BdioDevInfo &info)
     // 设备类型检查
     if (m_SDLINK_MAP.find(info.device_type) == m_SDLINK_MAP.end())
     {
-       std::cout << info.group_index << " config error, device_type: " << static_cast<int>(info.device_type) << std::endl;
-       return false;
+        std::cout << info.group_index << " config error, device_type: " << static_cast<int>(info.device_type) << std::endl;
+        return false;
     }
 
     SDLINK_SPEC sdLink_spec = m_SDLINK_MAP.at(info.device_type);
@@ -509,7 +461,7 @@ bool ChannelEngine::SelectHandleWheel(int indexId, int channelId)
         if (node->data.group_index == indexId)
         {
             if ( m_SDLINK_MAP.at(node->data.device_type).withHandWheel
-                && node->data.in_bytes != 0)
+                 && node->data.in_bytes != 0)
             {
                 findIndex = true;
             }
@@ -556,10 +508,10 @@ void ChannelEngine::ReadIoDev_pmc1(){
         return;
     }
 
-//	//首先读取文件大小
-//	uint64_t file_size = lseek(fd, 0, SEEK_END);
-//
-//	lseek(fd, 0, SEEK_SET);  //跳回文件头
+    //	//首先读取文件大小
+    //	uint64_t file_size = lseek(fd, 0, SEEK_END);
+    //
+    //	lseek(fd, 0, SEEK_SET);  //跳回文件头
 
     int doc_ver;  //文档版本
     char uuid[17];  //16字节长度的UUID
@@ -679,7 +631,7 @@ void ChannelEngine::ReadIoDev_pmc1(){
         this->m_list_bdio_dev.Append(dev_info);
     }
 
-    END:
+END:
     close(fd);   //关闭文件
 }
 #endif
@@ -758,7 +710,7 @@ void ChannelEngine::SendMiPhyAxisEncoder(){
  * @param value : 工作模式表示， 0x00--自动模式    0x10--进入手轮模式     0x20--手动模式
  */
 void ChannelEngine::SetMiWorkMode(uint8_t value){
-//	printf("SetMiWorkMode: %hhu\n", value);
+    //	printf("SetMiWorkMode: %hhu\n", value);
     MiCmdFrame cmd;
     memset(&cmd, 0x00, sizeof(cmd));
     cmd.data.cmd = CMD_MI_SET_WORK_MODE;
@@ -798,17 +750,17 @@ void ChannelEngine::SetMiHandwheelTrace(bool flag, uint8_t chn){
 
     this->m_p_mi_comm->WriteCmd(cmd);
 
-//	uint8_t chn_count = this->m_p_channel_mode_group[this->m_n_cur_chn_group_index].GetChannelCount();
-//	for(uint i = 0; i < chn_count; i++){
-//		cmd.data.axis_index = NO_AXIS;
-//		cmd.data.reserved = this->m_p_channel_mode_group[this->m_n_cur_chn_group_index].GetChannel(i);    //通道，从0开始
-//
-//		if(cmd.data.reserved == 0xFF)
-//			continue;
-//
-//		this->m_p_mi_comm->WriteCmd(cmd);
-////		printf("SetMiHandwheelTrace 2 : %hhu\n", cmd.data.reserved);
-//	}
+    //	uint8_t chn_count = this->m_p_channel_mode_group[this->m_n_cur_chn_group_index].GetChannelCount();
+    //	for(uint i = 0; i < chn_count; i++){
+    //		cmd.data.axis_index = NO_AXIS;
+    //		cmd.data.reserved = this->m_p_channel_mode_group[this->m_n_cur_chn_group_index].GetChannel(i);    //通道，从0开始
+    //
+    //		if(cmd.data.reserved == 0xFF)
+    //			continue;
+    //
+    //		this->m_p_mi_comm->WriteCmd(cmd);
+    ////		printf("SetMiHandwheelTrace 2 : %hhu\n", cmd.data.reserved);
+    //	}
 
 }
 
@@ -835,7 +787,7 @@ void ChannelEngine::SetMiCurChannel(){
  * @param parm ：参数访问接口
  */
 void ChannelEngine::Initialize(HMICommunication *hmi_comm, MICommunication *mi_comm,
-        MCCommunication *mc_comm, ParmManager *parm){
+                               MCCommunication *mc_comm, ParmManager *parm){
     printf("start to initialize channel engine\n");
     if(hmi_comm == nullptr ||
             mi_comm == nullptr ||
@@ -845,29 +797,30 @@ void ChannelEngine::Initialize(HMICommunication *hmi_comm, MICommunication *mi_c
         return;
     }
 
-	this->m_n_update_state = MODULE_UPDATE_NONE;  //默认非升级状态
+    this->m_n_update_state = MODULE_UPDATE_NONE;  //默认非升级状态
 
-	this->m_p_hmi_comm = hmi_comm;
-	this->m_p_mi_comm = mi_comm;
-	this->m_p_mc_comm = mc_comm;
-	this->m_p_general_config = parm->GetSystemConfig();
-	this->m_p_channel_config = parm->GetChannelConfig();
-	this->m_p_axis_config = parm->GetAxisConfig();
-	this->m_p_pc_table = parm->GetPitchCompData();
-	this->m_p_io_remap = parm->GetIoRemapList();
-	this->m_p_chn_proc_param = parm->GetChnProcParam();
-	this->m_p_axis_proc_param = parm->GetAxisProcParam();
+    this->m_p_hmi_comm = hmi_comm;
+    this->m_p_mi_comm = mi_comm;
+    this->m_p_mc_comm = mc_comm;
+    this->m_p_general_config = parm->GetSystemConfig();
+    this->m_p_channel_config = parm->GetChannelConfig();
+    this->m_p_axis_config = parm->GetAxisConfig();
+    this->m_p_pc_table = parm->GetPitchCompData();
+    this->m_p_io_remap = parm->GetIoRemapList();
+    this->m_p_chn_proc_param = parm->GetChnProcParam();
+    this->m_p_axis_proc_param = parm->GetAxisProcParam();
 
-	this->m_n_pmc_axis_count = parm->GetPmcAxisCount();
+    this->m_n_pmc_axis_count = parm->GetPmcAxisCount();
+    this->m_sync_axis_ctrl = new SyncAxisCtrl;
 
-	//创建PMC寄存器类对象
-	this->m_p_pmc_reg = new PmcRegister();
-	if(m_p_pmc_reg == nullptr){
-		g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "通道引擎创建PMC寄存器对象失败!");
-		m_error_code = ERR_MEMORY_NEW;  //初始化失败
-		return;
-	}
-	memset(m_g_reg_last.all, 0x00, sizeof(m_g_reg_last.all));
+    //创建PMC寄存器类对象
+    this->m_p_pmc_reg = new PmcRegister();
+    if(m_p_pmc_reg == nullptr){
+        g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "通道引擎创建PMC寄存器对象失败!");
+        m_error_code = ERR_MEMORY_NEW;  //初始化失败
+        return;
+    }
+    memset(m_g_reg_last.all, 0x00, sizeof(m_g_reg_last.all));
     memset(m_f_reg_last.all, 0x00, sizeof(m_f_reg_last.all));
 
 #ifdef USES_FIVE_AXIS_FUNC
@@ -879,8 +832,6 @@ void ChannelEngine::Initialize(HMICommunication *hmi_comm, MICommunication *mi_c
     this->InitPhyAxisChn();
 
     this->InitPcAllocList();
-
-    InitSyncAxis();  //初始化同步轴
 
     this->m_n_da_prec = pow(2, this->m_p_general_config->da_prec-1);
 
@@ -913,7 +864,7 @@ void ChannelEngine::Initialize(HMICommunication *hmi_comm, MICommunication *mi_c
         return;
     }
 
-//	printf("channel count :%d\n", m_p_general_config->chn_count);
+    //	printf("channel count :%d\n", m_p_general_config->chn_count);
     for(uint8_t i = 0; i < m_p_general_config->chn_count; i++){
         if(true == m_mc_run_on_arm[i])
             m_mc_run_mi_flag = true;
@@ -940,10 +891,10 @@ void ChannelEngine::Initialize(HMICommunication *hmi_comm, MICommunication *mi_c
     this->m_n_mask_ret_ref_over = 0;
     for(int i = 0; i < this->m_p_general_config->axis_count; i++){
         if(m_p_axis_config[i].axis_interface == VIRTUAL_AXIS || m_p_axis_config[i].axis_type == AXIS_SPINDLE	//主轴和虚拟轴不用回参考点
-            || (m_p_axis_config[i].feedback_mode == NO_ENCODER && m_p_axis_config[i].ret_ref_mode == 0)    //无反馈，并且禁止回参考点
-            || (m_p_axis_config[i].feedback_mode != INCREMENTAL_ENCODER && m_p_axis_config[i].feedback_mode != NO_ENCODER && m_p_axis_config[i].ref_encoder != kAxisRefNoDef)    //绝对值编码器，已设定参考点
-            || (m_p_axis_config[i].feedback_mode == INCREMENTAL_ENCODER && m_p_axis_config[i].ret_ref_mode == 0)){  //增量编码器，禁止回参考点
-//			m_n_mask_ret_ref_over |= (0x01<<i);
+                || (m_p_axis_config[i].feedback_mode == NO_ENCODER && m_p_axis_config[i].ret_ref_mode == 0)    //无反馈，并且禁止回参考点
+                || (m_p_axis_config[i].feedback_mode != INCREMENTAL_ENCODER && m_p_axis_config[i].feedback_mode != NO_ENCODER && m_p_axis_config[i].ref_encoder != kAxisRefNoDef)    //绝对值编码器，已设定参考点
+                || (m_p_axis_config[i].feedback_mode == INCREMENTAL_ENCODER && m_p_axis_config[i].ret_ref_mode == 0)){  //增量编码器，禁止回参考点
+            //			m_n_mask_ret_ref_over |= (0x01<<i);
             this->SetRetRefFlag(i, true);
         }
     }
@@ -987,7 +938,7 @@ void ChannelEngine::Initialize(HMICommunication *hmi_comm, MICommunication *mi_c
     }
 
     printf("license info: flag = %c, deadline=%04d-%02d-%02d\n", this->m_lic_info.licflag, this->m_lic_info.dead_line.year,
-            this->m_lic_info.dead_line.month, this->m_lic_info.dead_line.day);
+           this->m_lic_info.dead_line.month, this->m_lic_info.dead_line.day);
 #endif
 
 
@@ -1003,7 +954,7 @@ void ChannelEngine::Initialize(HMICommunication *hmi_comm, MICommunication *mi_c
     }
 
     res = pthread_create(&m_thread_refresh_mi_status, &attr,
-            ChannelEngine::RefreshMiStatusThread, this);    //开启通道状态刷新线程
+                         ChannelEngine::RefreshMiStatusThread, this);    //开启通道状态刷新线程
     if (res != 0) {
         g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "通道引擎创建MI状态刷新线程失败！");
         m_error_code = ERR_SC_INIT;
@@ -1134,22 +1085,22 @@ const GRegBits *ChannelEngine::GetChnGRegBits(uint8_t chn_index){
 void ChannelEngine::DoIdle(){
     uint8_t i = 0;
     this->m_n_idle_count++;
-//
-//	//空闲时保存PMC寄存器数据
-//	if(m_n_idle_count%100 == 0){
-//		bool idle = true;
-//		for(i = 0; i < this->m_p_general_config->chn_count; i++){
-//			if(this->m_p_channel_control[i].IsMachinRunning()){
-//				idle = false;
-//				break;
-//			}
-//		}
-//		if(idle && this->m_p_pmc_reg->IsKeepRegChanged()){//保存寄存器数据
-//			this->m_p_pmc_reg->SaveRegData();
-//		}
-//	}
-//
-//
+    //
+    //	//空闲时保存PMC寄存器数据
+    //	if(m_n_idle_count%100 == 0){
+    //		bool idle = true;
+    //		for(i = 0; i < this->m_p_general_config->chn_count; i++){
+    //			if(this->m_p_channel_control[i].IsMachinRunning()){
+    //				idle = false;
+    //				break;
+    //			}
+    //		}
+    //		if(idle && this->m_p_pmc_reg->IsKeepRegChanged()){//保存寄存器数据
+    //			this->m_p_pmc_reg->SaveRegData();
+    //		}
+    //	}
+    //
+    //
     //调用通道的空闲函数
     for(i = 0; i < this->m_p_general_config->chn_count; i++){
         this->m_p_channel_control[i].DoIdle(m_n_idle_count);
@@ -1193,10 +1144,10 @@ void ChannelEngine::InitPoweroffHandler(){
 void ChannelEngine::PoweroffHandler(int signo, siginfo_t *info, void *context){
     printf("IN\n");
 
-//	static bool power_off_flag = false;
-//	if(power_off_flag)
-//		return;
-//	power_off_flag = true;
+    //	static bool power_off_flag = false;
+    //	if(power_off_flag)
+    //		return;
+    //	power_off_flag = true;
 
     ChannelEngine *p_chn_engine = ChannelEngine::GetInstance();
     if(p_chn_engine == nullptr)
@@ -1205,7 +1156,7 @@ void ChannelEngine::PoweroffHandler(int signo, siginfo_t *info, void *context){
 
     p_chn_engine->SaveDataPoweroff();
 
-//	power_off_flag = false;
+    //	power_off_flag = false;
 
     printf("OUT\n");
 }
@@ -1225,7 +1176,7 @@ void ChannelEngine::SaveDataPoweroff(){
 
 
     //保存各通道当前需保存的状态
-//	g_ptr_parm_manager->SaveParm(CHN_STATE_SCENE);    //注释原因：此为低频操作，改为在通道状态修改时即时保存，不再掉电时增加耗时
+    //	g_ptr_parm_manager->SaveParm(CHN_STATE_SCENE);    //注释原因：此为低频操作，改为在通道状态修改时即时保存，不再掉电时增加耗时
 
     //保存各轴当前位置
     this->SaveCurPhyAxisEncoder();
@@ -1347,9 +1298,9 @@ void ChannelEngine::SendIntepolateCycle(){
     cmd.data.channel_index = CHANNEL_ENGINE_INDEX;
 
     cmd.data.cmd = CMD_MC_SET_INIT_PARAM;
-//	cmd.data.data[0] = 0x0001;   	//250us周期
+    //	cmd.data.data[0] = 0x0001;   	//250us周期
     cmd.data.data[0] = this->m_p_general_config->bus_cycle; // this->m_p_channel_config[0].intep_cycle;   //插补周期
-//	cmd.data.data[1] = 0x0002;		//-T模式
+    //	cmd.data.data[1] = 0x0002;		//-T模式
 
 
     if(true == this->m_mc_run_dsp_flag)
@@ -1550,11 +1501,11 @@ void ChannelEngine::SendPmcAxisToHmi(){
 void ChannelEngine::SendMonitorData(bool bAxis, bool btime){
     //从MI读取所有轴的位置
     this->m_p_mi_comm->ReadPhyAxisCurFedBckPos(m_df_phy_axis_pos_feedback, m_df_phy_axis_pos_intp,m_df_phy_axis_speed_feedback,
-            m_df_phy_axis_torque_feedback, m_p_general_config->axis_count);
+                                               m_df_phy_axis_torque_feedback, m_p_general_config->axis_count);
 
-//#ifdef USES_SPEED_TORQUE_CTRL
-//	this->m_p_mi_comm->ReadPhyAxisCurFedBckSpeedTorque(m_df_phy_axis_speed_feedback, m_df_phy_axis_torque_feedback, m_p_general_config->axis_count);
-//#endif
+    //#ifdef USES_SPEED_TORQUE_CTRL
+    //	this->m_p_mi_comm->ReadPhyAxisCurFedBckSpeedTorque(m_df_phy_axis_speed_feedback, m_df_phy_axis_torque_feedback, m_p_general_config->axis_count);
+    //#endif
 
     if(m_n_pmc_axis_count > 0)
         this->m_p_mi_comm->ReadPmcAxisRemainDis(m_df_pmc_axis_remain, m_n_pmc_axis_count);   // 读取余移动量
@@ -1564,7 +1515,7 @@ void ChannelEngine::SendMonitorData(bool bAxis, bool btime){
     }
 
     this->SendPmcAxisToHmi();   //发送PMC轴数据
-//	printf("send monitor data\n");
+    //	printf("send monitor data\n");
 }
 
 /**
@@ -1572,7 +1523,7 @@ void ChannelEngine::SendMonitorData(bool bAxis, bool btime){
  * @param rsp
  */
 void ChannelEngine::ProcessMcCmdRsp(McCmdFrame &rsp){
-//TODO
+    //TODO
     switch(rsp.data.cmd){
     case CMD_MC_SHAKEHANDS:
         if(rsp.data.data[0] == 0x1234 && rsp.data.data[1] == 0x5678){
@@ -1582,17 +1533,17 @@ void ChannelEngine::ProcessMcCmdRsp(McCmdFrame &rsp){
 
             this->SetMcAutoBufMax(rsp.data.data[2]);   //设置MC自动运动数据缓冲大小
 
-//			SendIntepolateCycle();
-//
-//			//初始化自动与MDA的数据缓冲
-//			InitMcDataBuffer();
-//
-//			//初始化工件坐标系
-//			InitMcCoord();
-//
-//			//初始化软限位
-//			for(uint8_t i = 0; i < this->m_p_general_config->axis_count; i++)
-//				this->SetAxisSoftLimit(i, 0);
+            //			SendIntepolateCycle();
+            //
+            //			//初始化自动与MDA的数据缓冲
+            //			InitMcDataBuffer();
+            //
+            //			//初始化工件坐标系
+            //			InitMcCoord();
+            //
+            //			//初始化软限位
+            //			for(uint8_t i = 0; i < this->m_p_general_config->axis_count; i++)
+            //				this->SetAxisSoftLimit(i, 0);
             InitMcParam();
 
             this->SendGetMcVersionCmd();//发送获取版本指令
@@ -1618,7 +1569,7 @@ void ChannelEngine::ProcessMcCmdRsp(McCmdFrame &rsp){
         }
         break;
     case CMD_MC_GET_UPDATE_STATE:
-//		this->m_n_mc_update_status = rsp.data_crc[1]&0x00FF;	//老版本返回值放在axis_index上
+        //		this->m_n_mc_update_status = rsp.data_crc[1]&0x00FF;	//老版本返回值放在axis_index上
         this->m_n_mc_update_status = rsp.data.data[0]&0x00FF;
         this->m_b_get_mc_update_status = true;
         printf("get CMD_MC_GET_UPDATE_STATE rsp, %hu\n", m_n_mc_update_status);
@@ -1669,7 +1620,7 @@ void ChannelEngine::ProcessMiVersionCmd(MiCmdFrame &cmd){
 void ChannelEngine::ProcessMiCmd(MiCmdFrame &cmd){
     uint16_t cmd_no = cmd.data.cmd;
 
-//	bool rsp = (cmd_no & 0x8000) == 0 ? false:true;  //是否响应包
+    //	bool rsp = (cmd_no & 0x8000) == 0 ? false:true;  //是否响应包
 
     cmd_no &= 0x7FFF;
 
@@ -1678,9 +1629,9 @@ void ChannelEngine::ProcessMiCmd(MiCmdFrame &cmd){
         this->ProcessMiShakehand(cmd);
 
         break;
-//	case CMD_MI_GET_VERSION:
-//		this->ProcessMiVersionCmd(cmd);
-//		break;
+        //	case CMD_MI_GET_VERSION:
+        //		this->ProcessMiVersionCmd(cmd);
+        //		break;
     case CMD_MI_PMC_CODE_REQ:
         this->ProcessMiPmcLadderReq(cmd);
         break;
@@ -1695,79 +1646,79 @@ void ChannelEngine::ProcessMiCmd(MiCmdFrame &cmd){
             this->ServoOn();
         }
 
-		this->SetWorkMode(this->m_p_channel_control[0].GetChnWorkMode());
-		this->SetMiCurChannel();
+        this->SetWorkMode(this->m_p_channel_control[0].GetChnWorkMode());
+        this->SetMiCurChannel();
 
-		break;
-	case CMD_MI_ALARM:	//MI告警
-		this->ProcessMiAlarm(cmd);
-		break;
-	case CMD_MI_BUS_ALARM:		//总线告警
-		ProcessMiBusError(cmd);
-		break;
-	case CMD_MI_HEARTBEAT:	//MI心跳
-		cmd.data.cmd |= 0x8000;
-		this->m_p_mi_comm->WriteCmd(cmd);
-		if(!m_b_recv_mi_heartbeat){
-			m_b_recv_mi_heartbeat = true;
-			this->InitMiParam();
-		}
-		break;
+        break;
+    case CMD_MI_ALARM:	//MI告警
+        this->ProcessMiAlarm(cmd);
+        break;
+    case CMD_MI_BUS_ALARM:		//总线告警
+        ProcessMiBusError(cmd);
+        break;
+    case CMD_MI_HEARTBEAT:	//MI心跳
+        cmd.data.cmd |= 0x8000;
+        this->m_p_mi_comm->WriteCmd(cmd);
+        if(!m_b_recv_mi_heartbeat){
+            m_b_recv_mi_heartbeat = true;
+            this->InitMiParam();
+        }
+        break;
     case CMD_MI_OPERATE:
         this->ProcessMiOperateCmdRsp(cmd); // 轴操作指令回复
         break;
-	case CMD_MI_SET_REF_CUR:	//返回了编码器值
-		this->ProcessMiSetRefCurRsp(cmd);
-		break;
-	case CMD_MI_CLEAR_ROT_AXIS_POS:		//处理位置清整数圈指令回复
-		this->ProcessMiClearPosRsp(cmd);
-		break;
+    case CMD_MI_SET_REF_CUR:	//返回了编码器值
+        this->ProcessMiSetRefCurRsp(cmd);
+        break;
+    case CMD_MI_CLEAR_ROT_AXIS_POS:		//处理位置清整数圈指令回复
+        this->ProcessMiClearPosRsp(cmd);
+        break;
     case CMD_MI_SET_SPD_SPEED:
         this->ProcessMiSpindleSpeedRsp(cmd); // 设置主轴转速指令回复
         break;
-	case CMD_MI_DO_SYNC_AXIS:		//处理同步轴同步结果消息
-		this->ProcessMiSyncAxis(cmd);
-		break;
-	case CMD_MI_PMC_AXIS_RUNOVER:   //PMC轴运行到位
-		this->PmcAxisRunOver(cmd);
-		break;
-	case CMD_MI_REFRESH_AXIS_ZERO:  //刷新指定轴的机械零点编码器值
-		this->ProcessRefreshAxisZeroEncoder(cmd);
-		break;
+    case CMD_MI_DO_SYNC_AXIS:		//处理同步轴同步结果消息
+        this->ProcessMiSyncAxis(cmd);
+        break;
+    case CMD_MI_PMC_AXIS_RUNOVER:   //PMC轴运行到位
+        this->PmcAxisRunOver(cmd);
+        break;
+    case CMD_MI_REFRESH_AXIS_ZERO:  //刷新指定轴的机械零点编码器值
+        this->ProcessRefreshAxisZeroEncoder(cmd);
+        break;
     case CMD_MI_GET_CUR_ENCODER:   //获取当前编码器反馈单圈绝对值的反馈
-		this->ProcessGetCurAxisEncodeRsp(cmd);
-		break;
+        this->ProcessGetCurAxisEncodeRsp(cmd);
+        break;
     case CMD_MI_SET_REF_POINT:   //设置参考点命令，回复
-		this->ProcessSetAxisRefRsp(cmd);
-		break;
-	case CMD_MI_GET_ZERO_ENCODER:  //获取指定轴机械零点对应的编码器值
-		this->ProcessGetAxisZeroEncoderRsp(cmd);
-		break;
-	case CMD_MI_ACTIVE_SKIP:    //G31跳转
-		this->ProcessSkipCmdRsp(cmd);
-		break;
-	case CMD_MI_HW_TRACE_STATE_CHANGED:  //手轮跟踪状态切换
-		this->ProcessMiHWTraceStateChanged(cmd);
-		break;
+        this->ProcessSetAxisRefRsp(cmd);
+        break;
+    case CMD_MI_GET_ZERO_ENCODER:  //获取指定轴机械零点对应的编码器值
+        this->ProcessGetAxisZeroEncoderRsp(cmd);
+        break;
+    case CMD_MI_ACTIVE_SKIP:    //G31跳转
+        this->ProcessSkipCmdRsp(cmd);
+        break;
+    case CMD_MI_HW_TRACE_STATE_CHANGED:  //手轮跟踪状态切换
+        this->ProcessMiHWTraceStateChanged(cmd);
+        break;
     case CMD_MI_SET_AXIS_CTRL_MODE:
         this->ProcessMiAxisCtrlModeRsp(cmd); //修改轴控制模式回复
         break;
-	case CMD_MI_SET_AXIS_MACH_POS:   //设置轴当前机械坐标
-		this->ProcessSetAxisCurMachPosRsp(cmd);
+    case CMD_MI_SET_AXIS_MACH_POS:   //设置轴当前机械坐标
+        this->ProcessSetAxisCurMachPosRsp(cmd);
         break;
-	case CMD_MI_EN_SYNC_AXIS:    //使能同步轴
+    case CMD_MI_EN_SYNC_AXIS:    //使能同步轴
         this->ProcessMiEnSyncAxisRsp(cmd);
-		break;
+        break;
     case CMD_MI_SPD_LOCATE:
         this->ProcessMiSpdLocateRsp(cmd); // 主轴定位指令回复
         break;
     case CMD_MI_ACTIVE_Z_CAPT:  //SC激活指定轴的Z信号捕获功能
         this->ProcessMiActiveAxisZCaptureRsp(cmd);
         break;
-	default:
-		printf("Get unsupported mi cmd[%hu]\n", cmd_no);
-		break;
-	}
+    default:
+        printf("Get unsupported mi cmd[%hu]\n", cmd_no);
+        break;
+    }
 }
 
 /**
@@ -1784,27 +1735,27 @@ void ChannelEngine::ProcessGetCurAxisEncodeRsp(MiCmdFrame &cmd){
 
     printf("get cur encoder : %llu\n", encoder);
 
-//	if(encoder < this->m_p_axis_config[phy_axis].motor_count_pr)
-//		ref_flag = 0x10;    //取上一个精基准信号位置
+    //	if(encoder < this->m_p_axis_config[phy_axis].motor_count_pr)
+    //		ref_flag = 0x10;    //取上一个精基准信号位置
 
-//	printf("ref_flag = 0x%hx\n", ref_flag);
+    //	printf("ref_flag = 0x%hx\n", ref_flag);
 
-//	m_n_get_cur_encoder_count++;
-//	if(m_n_get_cur_encoder_count == 1){//第一次获取
-//		this->m_n_ret_ref_encoder = encoder;
-//
-//		m_n_ret_ref_step[phy_axis] = 7;   //再获取一次
-//		return;
-//	}else if(m_n_get_cur_encoder_count == 2){ //第二次获取，与第一次比较，相同则进行下一步，不同则获取第三次
-//		if(encoder != m_n_ret_ref_encoder){
-//			printf("###cur encoder not match: 1st=%llu, 2nd=%llu\n", m_n_ret_ref_encoder,
-//					encoder);
-//			m_n_ret_ref_step[phy_axis] = 7;   //再获取一次
-//			return;
-//		}
-//	}else if(m_n_get_cur_encoder_count >= 3){
-//		printf("get 3rd encoder : %llu\n", encoder);
-//	}
+    //	m_n_get_cur_encoder_count++;
+    //	if(m_n_get_cur_encoder_count == 1){//第一次获取
+    //		this->m_n_ret_ref_encoder = encoder;
+    //
+    //		m_n_ret_ref_step[phy_axis] = 7;   //再获取一次
+    //		return;
+    //	}else if(m_n_get_cur_encoder_count == 2){ //第二次获取，与第一次比较，相同则进行下一步，不同则获取第三次
+    //		if(encoder != m_n_ret_ref_encoder){
+    //			printf("###cur encoder not match: 1st=%llu, 2nd=%llu\n", m_n_ret_ref_encoder,
+    //					encoder);
+    //			m_n_ret_ref_step[phy_axis] = 7;   //再获取一次
+    //			return;
+    //		}
+    //	}else if(m_n_get_cur_encoder_count >= 3){
+    //		printf("get 3rd encoder : %llu\n", encoder);
+    //	}
 
     //发送设置参考点命令
     MiCmdFrame send;
@@ -1838,15 +1789,15 @@ void ChannelEngine::ProcessSetAxisRefRsp(MiCmdFrame &cmd){
             m_n_ret_ref_step[axis] = 11;   //跳转到成功结束
         }else{//其它类型都移动到第一参考点位置
             //让轴运动到第一参考点位置
-        //	int64_t pos = 0;
-        //	int8_t dir = DIR_POSITIVE;
-        //	memcpy(&pos, &cmd.data.data[1], 8);
-    //		this->m_df_phy_axis_pos_feedback[axis] = (double)pos*1e-7;   //单位转换：0.1nm --> mm
-    //		double dis = this->m_p_axis_config[axis].axis_home_pos[0]-(double)pos*1e-7;   //移动距离
-    //		if(dis < 0)
-    //			dir = DIR_NEGATIVE;
+            //	int64_t pos = 0;
+            //	int8_t dir = DIR_POSITIVE;
+            //	memcpy(&pos, &cmd.data.data[1], 8);
+            //		this->m_df_phy_axis_pos_feedback[axis] = (double)pos*1e-7;   //单位转换：0.1nm --> mm
+            //		double dis = this->m_p_axis_config[axis].axis_home_pos[0]-(double)pos*1e-7;   //移动距离
+            //		if(dis < 0)
+            //			dir = DIR_NEGATIVE;
 
-    //		printf("axis %hhu dir = %hhd, dis = %lf, curpos = %lld\n", axis, dir, dis, pos);
+            //		printf("axis %hhu dir = %hhd, dis = %lf, curpos = %lld\n", axis, dir, dis, pos);
 
             //计算粗精基准偏差
             if(this->m_p_axis_config[axis].ref_base_diff_check){
@@ -1927,29 +1878,9 @@ void ChannelEngine::ProcessSkipCmdRsp(MiCmdFrame &cmd){
  * @param cmd : MI响应命令包
  */
 void ChannelEngine::ProcessMiEnSyncAxisRsp(MiCmdFrame &cmd){
-    printf("ProcessMiEnSyncAxisRsp, axis=%hhu, enable=%hhu, res=%hhu\n", cmd.data.axis_index, cmd.data.data[1], cmd.data.data[2]);
-    if(cmd.data.data[2] == FAILED){  //失败
-        if(cmd.data.data[1] == 0){  //解除同步
-            this->m_error_code = ERR_DIS_SYNC_AXIS;
-            CreateError(m_error_code, ERROR_LEVEL, CLEAR_BY_MCP_RESET, cmd.data.data[0], CHANNEL_ENGINE_INDEX, cmd.data.axis_index);
-        }else if(cmd.data.data[1] == 1){ //建立同步
-            this->m_error_code = ERR_EN_SYNC_AXIS;
-            CreateError(m_error_code, ERROR_LEVEL, CLEAR_BY_MCP_RESET, cmd.data.data[0], CHANNEL_ENGINE_INDEX, cmd.data.axis_index);
-        }
-        return;
-    }else if(cmd.data.data[2] == SUCCEED){  //成功
-        uint8_t phy_axis = cmd.data.axis_index-1;   //从动轴号，MI返回的值从1开始，因此需要减一
-
-        int64_t mask = 1;
-        if(cmd.data.data[1] == 0){  //解除同步
-            this->m_n_sync_axis_enable_mask &= ~(mask<<phy_axis);
-            this->m_n_sync_over &= ~(mask<<phy_axis);
-
-        }else if(cmd.data.data[1] == 1){ //建立同步
-            this->m_n_sync_axis_enable_mask |= (mask<<phy_axis);
-            this->m_n_sync_over |= (mask<<phy_axis);
-        }
-    }
+    bool enable = cmd.data.data[1];
+    bool success = (cmd.data.data[2]==0);
+    m_sync_axis_ctrl->RspEnSyncAxis(enable,success);
 }
 
 void ChannelEngine::ProcessMiSpdLocateRsp(MiCmdFrame &cmd)
@@ -2014,7 +1945,7 @@ void ChannelEngine::ProcessMiActiveAxisZCaptureRsp(MiCmdFrame &cmd){
         this->m_p_axis_config[axis].ref_encoder = encoder_value;
         g_ptr_parm_manager->UpdateAxisRef(axis, encoder_value); //写入文件
 
-//		this->NotifyHmiAxisRefChanged(axis);
+        //		this->NotifyHmiAxisRefChanged(axis);
         printf("ChannelEngine::ProcessMiActiveAxisZCaptureRsp(), encoder:%lld", encoder_value);
 
         this->m_n_ret_ref_step[axis] = 10;  //回零步骤跳转到第10步
@@ -2154,7 +2085,7 @@ int ChannelEngine::CheckLicense(bool force){
     localtime_r(&now, &nowday);
     long curdaycount = (nowday.tm_year+1900) * 365L + nowday.tm_mon * 30 + nowday.tm_mday;
     long deaddaycount = lpLicInfo->dead_line.year * 365L + (lpLicInfo->dead_line.month - 1) * 30
-                        + lpLicInfo->dead_line.day;
+            + lpLicInfo->dead_line.day;
 
     curdaycount = (curdaycount - 1) * 24 + nowday.tm_hour;   //小时数
     deaddaycount = (deaddaycount - 1) * 24 + 12;
@@ -2217,7 +2148,7 @@ bool ChannelEngine::SendMessageToHmi(uint16_t msg_type, uint32_t msg_id, uint32_
  * @param cmd
  */
 void ChannelEngine::ProcessMiShakehand(MiCmdFrame &cmd){
-//	bool rsp = (cmd.data.cmd & 0x8000) == 0 ? false:true;  //是否响应包
+    //	bool rsp = (cmd.data.cmd & 0x8000) == 0 ? false:true;  //是否响应包
 
     if(cmd.data.data[0] == 0x9696){
         g_ptr_trace->PrintTrace(TRACE_INFO, CHANNEL_ENGINE_SC, "@#@#Get MI Shakehand cmd, module=0x%hhx\n", g_sys_state.module_ready_mask);
@@ -2227,7 +2158,7 @@ void ChannelEngine::ProcessMiShakehand(MiCmdFrame &cmd){
             cmd.data.data[0] = 0x8888;
             cmd.data.data[1] = this->m_p_general_config->bus_cycle+1;  //MI的参数从1开始,1表示125us，2表示250us
             cmd.data.data[2] = (this->m_p_general_config->chn_count << 8) + this->m_p_general_config->axis_count;   //实际物理轴数量         实际通道数量
-//			cmd.data.data[2] = this->m_p_general_config->axis_count;   //实际物理轴数量  // ??????????????????????????????????????????????  二选一  是否加一个宏
+            //			cmd.data.data[2] = this->m_p_general_config->axis_count;   //实际物理轴数量  // ??????????????????????????????????????????????  二选一  是否加一个宏
 
             cmd.data.data[3] = this->GetBusAxisCount();
 
@@ -2290,8 +2221,8 @@ void ChannelEngine::ProcessMiAlarm(MiCmdFrame &cmd){
     alarm_id += cmd.data.data[0];   //低16位
     alarm_level = cmd.data.data[2];
 
-//    if(alarm_level >= WARNING_LEVEL)
-//        clear_type = CLEAR_BY_CLEAR_BUTTON;
+    //    if(alarm_level >= WARNING_LEVEL)
+    //        clear_type = CLEAR_BY_CLEAR_BUTTON;
 
     g_ptr_trace->PrintTrace(TRACE_WARNING, CHANNEL_ENGINE_SC, "ChannelEngine::ProcessMiAlarm, alarm_id=%u, level=%hu", alarm_id, alarm_level);
 
@@ -2351,18 +2282,8 @@ void ChannelEngine::ProcessMiClearPosRsp(MiCmdFrame &cmd){
  */
 void ChannelEngine::ProcessMiSyncAxis(MiCmdFrame &cmd){
     int64_t mask = 0;
-
     memcpy(&mask, cmd.data.data, 8);
-
-    this->m_n_sync_over = mask;
-    if((this->m_n_sync_axis_mask & this->m_n_sync_axis_enable_mask) != mask){
-        mask = (this->m_n_sync_axis_mask & this->m_n_sync_axis_enable_mask)^mask;  //为完成同步的轴
-        this->m_error_code = ERR_INIT_SYNC_AXIS;
-        CreateError(m_error_code, ERROR_LEVEL, CLEAR_BY_MCP_RESET, mask);
-        return;
-    }
-
-    g_ptr_trace->PrintTrace(TRACE_INFO, CHANNEL_ENGINE_SC, "Succeed to sync axis: 0x%llx\n", m_n_sync_over);
+    m_sync_axis_ctrl->RspSyncAxis(mask);
 }
 
 /**
@@ -2396,7 +2317,7 @@ void ChannelEngine::ProcessMiBusError(MiCmdFrame &cmd){
     err_info |= slave_no;
 
     g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "receive Mi Bus err: no=%hhu, sub_idx=%hhu, idx=%hu, code=%hu\n",
-            slave_no, err_sub_index, err_index, err_code);
+                            slave_no, err_sub_index, err_index, err_code);
     this->m_error_code = static_cast<ErrorType>(err_code);
     CreateError(err_code, ERROR_LEVEL, CLEAR_BY_MCP_RESET, err_info, CHANNEL_ENGINE_INDEX, slave_no);
 }
@@ -2589,7 +2510,7 @@ int32_t ChannelEngine::LoadEsbData(uint16_t index, uint16_t &flag){
  */
 void ChannelEngine::ProcessHmiIOCmd(HMICmdFrame &cmd){
 
-//	uint8_t value = 0;
+    //	uint8_t value = 0;
     switch(cmd.cmd_extension){
     default:
         break;
@@ -2754,32 +2675,29 @@ void ChannelEngine::ProcessHmiCmd(HMICmdFrame &cmd){
             g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "命令[%d]通道号非法！%d", cmd.cmd, cmd.channel_index);
         }
         break;
-    case CMD_HMI_SYNC_AXIS_OPT:           //HMI通知HMI进行同步轴使能操作 0x34
-        this->ProcessHmiEnableSyncAxisCmd(cmd);
-        break;
     case CMD_HMI_NOTIFY_GRAPH:            //HMI通知SC进入图形模式    0x35
         this->ProcessHmiNotifyGraphCmd(cmd);
         break;
-    case CMD_HMI_CHECK_SYNC_EN:           //HMI向SC查询同步轴状态 0x37
-        this->ProcessHmiCheckSyncCmd(cmd);
-        break;
+        //    case CMD_HMI_CHECK_SYNC_EN:           //HMI向SC查询同步轴状态 0x37
+        //        this->ProcessHmiCheckSyncCmd(cmd);
+        //        break;
     case CMD_HMI_GET_SYS_INFO:
-        {FILE *stream;
+    {FILE *stream;
         float val;
         float temp_value;
         char buf[20] = "";
-         if ((stream = fopen("/sys/bus/iio/devices/iio:device0/in_temp0_raw", "w+"))== NULL)
-         {
-              fprintf(stderr,"Cannot open output file.\n");
+        if ((stream = fopen("/sys/bus/iio/devices/iio:device0/in_temp0_raw", "w+"))== NULL)
+        {
+            fprintf(stderr,"Cannot open output file.\n");
 
-         }
+        }
 
-         fseek(stream, SEEK_SET, 0);
-         fread(buf, sizeof(char), sizeof(buf), stream);
-         val=atof(buf);
-         temp_value=((val * 503.975)/(1<<12) )-273.15;
-         printf("The cpu temp is %.2f\r\n",temp_value);
-         fclose(stream);
+        fseek(stream, SEEK_SET, 0);
+        fread(buf, sizeof(char), sizeof(buf), stream);
+        val=atof(buf);
+        temp_value=((val * 503.975)/(1<<12) )-273.15;
+        printf("The cpu temp is %.2f\r\n",temp_value);
+        fclose(stream);
         break;}
     case CMD_HMI_CLEAR_MACHINETIME_TOTAL:
         if(cmd.channel_index < this->m_p_general_config->chn_count)
@@ -3001,7 +2919,7 @@ void ChannelEngine::ProcessHmiSetIoRemapInfoCmd(HMICmdFrame &cmd){
  * @param cmd : HMI指令包
  */
 void ChannelEngine::ProcessHmiSetProcParamCmd(HMICmdFrame &cmd){
-//	printf("enter ProcessHmiSetProcParamCmd\n");
+    //	printf("enter ProcessHmiSetProcParamCmd\n");
     cmd.frame_number |= 0x8000;  //设置回复标志
 
     uint8_t active_type = ACTIVE_BY_POWEROFF;	//激活类型
@@ -3015,9 +2933,9 @@ void ChannelEngine::ProcessHmiSetProcParamCmd(HMICmdFrame &cmd){
         memcpy(&update.param_data.param_no, &cmd.data[1], 4);
         active_type = cmd.data[5];
         update.param_data.value_type = cmd.data[6];
-//		printf("value_type:%hhu, %hhu\n", data.value_type, cmd.data[5]);
-//		printf("data: %hhu %hhu %hhu %hhu %hhu %hhu %hhu %hhu \n", cmd.data[0], cmd.data[1], cmd.data[2], cmd.data[3], cmd.data[4],
-//				cmd.data[5], cmd.data[6], cmd.data[7]);
+        //		printf("value_type:%hhu, %hhu\n", data.value_type, cmd.data[5]);
+        //		printf("data: %hhu %hhu %hhu %hhu %hhu %hhu %hhu %hhu \n", cmd.data[0], cmd.data[1], cmd.data[2], cmd.data[3], cmd.data[4],
+        //				cmd.data[5], cmd.data[6], cmd.data[7]);
         this->GetParamValueFromCmd(&update.param_data, &cmd.data[7]);
 
         break;
@@ -3028,7 +2946,7 @@ void ChannelEngine::ProcessHmiSetProcParamCmd(HMICmdFrame &cmd){
         update.param_data.value_type = cmd.data[7];
         this->GetParamValueFromCmd(&update.param_data, &cmd.data[8]);
 
-    //	printf("update axis param, axis = %d\n", data.axis_index);
+        //	printf("update axis param, axis = %d\n", data.axis_index);
         break;
     }
 
@@ -3041,7 +2959,7 @@ void ChannelEngine::ProcessHmiSetProcParamCmd(HMICmdFrame &cmd){
     cmd.data_len = 1;
 
     this->m_p_hmi_comm->SendCmd(cmd);
-//	printf("exit ProcessHmiSetProcParamCmd\n");
+    //	printf("exit ProcessHmiSetProcParamCmd\n");
 }
 
 /**
@@ -3049,13 +2967,13 @@ void ChannelEngine::ProcessHmiSetProcParamCmd(HMICmdFrame &cmd){
  * @param cmd : HMI指令包
  */
 void ChannelEngine::ProcessHmiGetProcParamCmd(HMICmdFrame &cmd){
-//	printf("enter ProcessHmiGetProcParamCmd\n");
+    //	printf("enter ProcessHmiGetProcParamCmd\n");
     uint8_t index = 0;
     uint8_t axis = 0;
     switch(cmd.cmd_extension){
     case CHN_CONFIG:
         index = cmd.data[0];    //工艺参数组号
-//		printf("get chn proc config :chn = %hhu, proc_idx=%hhu\n", cmd.channel_index, index);
+        //		printf("get chn proc config :chn = %hhu, proc_idx=%hhu\n", cmd.channel_index, index);
         if(cmd.channel_index >= m_p_general_config->max_chn_count || index >= kMaxProcParamCount)//通道索引超范围
             cmd.data_len = 0;
         else{
@@ -3067,7 +2985,7 @@ void ChannelEngine::ProcessHmiGetProcParamCmd(HMICmdFrame &cmd){
     case AXIS_CONFIG:
         index = cmd.data[0];
         axis = cmd.data[1];
-//		printf("get axis proc config: axis =  %hhu, idx = %hhu\n", axis, index);
+        //		printf("get axis proc config: axis =  %hhu, idx = %hhu\n", axis, index);
         if(axis >= m_p_general_config->max_axis_count || index >= kMaxProcParamCount){//轴号超范围，支持参数修改后一次重启
             printf("get axis proc config failed, index=%hhu, axis_count:%hhu\n", axis, m_p_general_config->max_axis_count);
             cmd.data_len = 0;
@@ -3076,7 +2994,7 @@ void ChannelEngine::ProcessHmiGetProcParamCmd(HMICmdFrame &cmd){
             cmd.data_len = sizeof(ProcessParamAxis);
             memcpy(cmd.data+2, &this->m_p_axis_proc_param[axis].axis_param[index], cmd.data_len);
             cmd.data_len += 2;   // 数据长度加上组号和轴号
-    //		printf("get axis config succeed, data_len:%hu\n", cmd.data_len);
+            //		printf("get axis config succeed, data_len:%hu\n", cmd.data_len);
         }
 
         break;
@@ -3087,7 +3005,7 @@ void ChannelEngine::ProcessHmiGetProcParamCmd(HMICmdFrame &cmd){
     cmd.frame_number |= 0x8000;
     this->m_p_hmi_comm->SendCmd(cmd);	//发送响应
 
-//	printf("exit ProcessHmiGetProcParamCmd\n");
+    //	printf("exit ProcessHmiGetProcParamCmd\n");
 }
 
 /**
@@ -3095,7 +3013,7 @@ void ChannelEngine::ProcessHmiGetProcParamCmd(HMICmdFrame &cmd){
  * @param cmd : HMI指令包
  */
 void ChannelEngine::ProcessHmiSetCurProcIndex(HMICmdFrame &cmd){
-//	printf("enter ProcessHmiSetCurProcIndex\n");
+    //	printf("enter ProcessHmiSetCurProcIndex\n");
     cmd.frame_number |= 0x8000;
 
     if(cmd.channel_index == CHANNEL_ENGINE_INDEX){
@@ -3123,7 +3041,7 @@ void ChannelEngine::ProcessHmiSetCurProcIndex(HMICmdFrame &cmd){
             cmd.cmd_extension = FAILED;
     }
     this->m_p_hmi_comm->SendCmd(cmd);
-//	printf("exit ProcessHmiSetCurProcIndex\n");
+    //	printf("exit ProcessHmiSetCurProcIndex\n");
 }
 
 /**
@@ -3131,7 +3049,7 @@ void ChannelEngine::ProcessHmiSetCurProcIndex(HMICmdFrame &cmd){
  * @param cmd : HMI指令包
  */
 void ChannelEngine::ProcessHmiGetCurProcIndex(HMICmdFrame &cmd){
-//	printf("enter ProcessHmiGetCurProcIndex\n");
+    //	printf("enter ProcessHmiGetCurProcIndex\n");
     cmd.frame_number |= 0x8000;
 
     if(cmd.channel_index < this->m_p_general_config->chn_count){
@@ -3145,7 +3063,7 @@ void ChannelEngine::ProcessHmiGetCurProcIndex(HMICmdFrame &cmd){
         g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "命令[%d]通道号非法！%d", cmd.cmd, cmd.channel_index);
     }
     this->m_p_hmi_comm->SendCmd(cmd);
-//	printf("exit ProcessHmiGetCurProcIndex\n");
+    //	printf("exit ProcessHmiGetCurProcIndex\n");
 }
 
 /**
@@ -3191,61 +3109,6 @@ void ChannelEngine::ProcessHmiGetErrorCmd(HMICmdFrame &cmd)
 
     std::cout << "Process Hmi cmd, err cnt: " << infolist.size() << std::endl;
 
-    this->m_p_hmi_comm->SendCmd(cmd);
-}
-
-/**
- * @brief 处理HMI使能同步轴命令
- * @param cmd  : HMI指令包
- */
-void ChannelEngine::ProcessHmiEnableSyncAxisCmd(HMICmdFrame &cmd){
-    cmd.frame_number |= 0x8000;
-
-    MiCmdFrame mi_cmd;
-    memset(&mi_cmd, 0x00, sizeof(mi_cmd));
-    mi_cmd.data.cmd = CMD_MI_EN_SYNC_AXIS;
-
-//
-    if(cmd.cmd_extension == 0x00){  //解除同步关系
-        mi_cmd.data.axis_index = cmd.data[0]+1;   //从动轴号，从1开始
-        mi_cmd.data.data[0] = cmd.data[1]+1;      //主动轴号，从1开始
-        mi_cmd.data.data[1] = 0;
-
-        this->m_p_mi_comm->WriteCmd(mi_cmd);
-
-        cmd.data[cmd.data_len] = SUCCEED;
-        cmd.data_len++;
-    }else if(cmd.cmd_extension == 0x01){  //建立同步关系
-        mi_cmd.data.axis_index = cmd.data[0]+1;   //从动轴号，从1开始
-        mi_cmd.data.data[0] = cmd.data[1]+1;      //主动轴号，从1开始
-        mi_cmd.data.data[1] = 1;
-
-        this->m_p_mi_comm->WriteCmd(mi_cmd);
-
-        cmd.data[cmd.data_len] = SUCCEED;
-        cmd.data_len++;
-    }else{
-        cmd.cmd_extension = FAILED;
-    }
-
-    this->m_p_hmi_comm->SendCmd(cmd);
-}
-
-/**
- * @brief 处理HMI查询同步轴使能命令
- * @param cmd : HMI指令包
- */
-void ChannelEngine::ProcessHmiCheckSyncCmd(HMICmdFrame &cmd){
-    cmd.frame_number |= 0x8000;
-
-    uint8_t axis_index = cmd.data[0];
-
-    if(this->m_n_sync_axis_enable_mask & (0x01<<axis_index))
-        cmd.data[1] = 1;
-    else
-        cmd.data[1] = 0;
-
-    cmd.data_len = 2;
     this->m_p_hmi_comm->SendCmd(cmd);
 }
 
@@ -3354,8 +3217,8 @@ void ChannelEngine::ProcessHmiAxisMoveCmd(HMICmdFrame &cmd){
  */
 void ChannelEngine::GetParamValueFromCmd(ParamUpdate *data, char *src){
 
-//	double ff = 66.0;
-//	char *pc = (char *)&ff;
+    //	double ff = 66.0;
+    //	char *pc = (char *)&ff;
     switch(data->value_type){
     case 0:
         memcpy(&data->value.value_uint8, src, 1);
@@ -3383,10 +3246,10 @@ void ChannelEngine::GetParamValueFromCmd(ParamUpdate *data, char *src){
         break;
     case 8:
         memcpy(&data->value.value_double, src, 8);
-//		for(int i = 0; i < 8; i++)
-//			printf("double : %hhx | %hhx\n", src[i], pc[i]);
-//
-//		printf("get param set double value:%f, %f\n", data->value.value_double, ff);
+        //		for(int i = 0; i < 8; i++)
+        //			printf("double : %hhx | %hhx\n", src[i], pc[i]);
+        //
+        //		printf("get param set double value:%f, %f\n", data->value.value_double, ff);
         break;
     default:
         g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "参数设置指令，参数值类型非法：%hhu", data->value_type);
@@ -3399,9 +3262,9 @@ void ChannelEngine::GetParamValueFromCmd(ParamUpdate *data, char *src){
  * @param cmd : 指令
  */
 void ChannelEngine::ProcessHmiSetParam(HMICmdFrame &cmd){
-//	uint32_t param_no = 0;	//参数号
+    //	uint32_t param_no = 0;	//参数号
     uint8_t active_type = ACTIVE_BY_POWEROFF;	//激活类型
-//	uint8_t value_type = VALUE_UINT8;		//值类型
+    //	uint8_t value_type = VALUE_UINT8;		//值类型
     ParamUpdate data;
     data.param_type = cmd.cmd_extension;
     data.chn_index = cmd.channel_index;
@@ -3411,9 +3274,9 @@ void ChannelEngine::ProcessHmiSetParam(HMICmdFrame &cmd){
         memcpy(&data.param_no, cmd.data, 4);
         memcpy(&active_type, &cmd.data[4], 1);
         memcpy(&data.value_type, &cmd.data[5], 1);
-//		printf("value_type:%hhu, %hhu\n", data.value_type, cmd.data[5]);
-//		printf("data: %hhu %hhu %hhu %hhu %hhu %hhu %hhu %hhu \n", cmd.data[0], cmd.data[1], cmd.data[2], cmd.data[3], cmd.data[4],
-//				cmd.data[5], cmd.data[6], cmd.data[7]);
+        //		printf("value_type:%hhu, %hhu\n", data.value_type, cmd.data[5]);
+        //		printf("data: %hhu %hhu %hhu %hhu %hhu %hhu %hhu %hhu \n", cmd.data[0], cmd.data[1], cmd.data[2], cmd.data[3], cmd.data[4],
+        //				cmd.data[5], cmd.data[6], cmd.data[7]);
         this->GetParamValueFromCmd(&data, &cmd.data[6]);
         if(g_ptr_parm_manager->UpdateParameter(&data, active_type))
             cmd.data[0] = SUCCEED;
@@ -3430,7 +3293,7 @@ void ChannelEngine::ProcessHmiSetParam(HMICmdFrame &cmd){
             cmd.data[0] = SUCCEED;
         else
             cmd.data[1] = FAILED;
-    //	printf("update axis param, axis = %d\n", data.axis_index);
+        //	printf("update axis param, axis = %d\n", data.axis_index);
         break;
     case TOOL_OFFSET_CONFIG:	//刀具偏置
         if(cmd.channel_index >= m_p_general_config->chn_count ||     //通道索引超范围
@@ -3467,7 +3330,7 @@ void ChannelEngine::ProcessHmiSetParam(HMICmdFrame &cmd){
 
 
             cmd.data[0] = SUCCEED;
-//			printf("update coord succeed! chn = %hhu, coord=%hhu, datalen=%hu\n", cmd.channel_index, (uint8_t)cmd.data[0], cmd.data_len);
+            //			printf("update coord succeed! chn = %hhu, coord=%hhu, datalen=%hu\n", cmd.channel_index, (uint8_t)cmd.data[0], cmd.data_len);
 
         }
         break;
@@ -3499,8 +3362,8 @@ void ChannelEngine::ProcessHmiSetParam(HMICmdFrame &cmd){
         memcpy(&active_type, &cmd.data[4], 1);
         memcpy(&data.value_type, &cmd.data[5], 1);
         printf("value_type:%hhu, %hhu, id=%u\n", data.value_type, cmd.data[5], data.param_no);
-//		printf("data: %hhu %hhu %hhu %hhu %hhu %hhu %hhu %hhu \n", cmd.data[0], cmd.data[1], cmd.data[2], cmd.data[3], cmd.data[4],
-//				cmd.data[5], cmd.data[6], cmd.data[7]);
+        //		printf("data: %hhu %hhu %hhu %hhu %hhu %hhu %hhu %hhu \n", cmd.data[0], cmd.data[1], cmd.data[2], cmd.data[3], cmd.data[4],
+        //				cmd.data[5], cmd.data[6], cmd.data[7]);
         this->GetParamValueFromCmd(&data, &cmd.data[6]);
         if(g_ptr_parm_manager->UpdateParameter(&data, active_type))
             cmd.data[0] = SUCCEED;
@@ -3548,13 +3411,13 @@ void ChannelEngine::ProcessHmiGetParam(HMICmdFrame &cmd){
             cmd.data_len = sizeof(HmiAxisConfig);
             memcpy(cmd.data+1, &this->m_p_axis_config[index], cmd.data_len);
             cmd.data_len += 1;
-    //		printf("get axis config succeed, data_len:%hu\n", cmd.data_len);
+            //		printf("get axis config succeed, data_len:%hu\n", cmd.data_len);
         }
 
         break;
     case TOOL_OFFSET_CONFIG:{
         index = cmd.data[0];
-//		printf("get cmd TOOL_OFFSET_CONFIG, chn_index =  %hu, tool_index = %hhu\n", cmd.channel_index, index);
+        //		printf("get cmd TOOL_OFFSET_CONFIG, chn_index =  %hu, tool_index = %hhu\n", cmd.channel_index, index);
 
 #ifdef USES_INDEPEND_BASE_TOOL_OFFSET
         if((index != 0xFF && index >= kMaxToolCount) || cmd.channel_index >= m_p_general_config->chn_count){
@@ -3665,7 +3528,7 @@ void ChannelEngine::ProcessHmiGetPcDataCmd(HMICmdFrame &cmd){
     memcpy(&offset, &cmd.data[2], 2);
     memcpy(&count, &cmd.data[4], 2);
 
-//	printf("ProcessHmiGetPcDataCmd, axis_index=%hhu, dir=%hhu, offset=%hu, count=%hu\n", axis_index, dir, offset, count);
+    //	printf("ProcessHmiGetPcDataCmd, axis_index=%hhu, dir=%hhu, offset=%hu, count=%hu\n", axis_index, dir, offset, count);
 
     if(axis_index == 0xFF){//不按轴顺序获取
         uint16_t tmp_count = count, tmp_start = offset-1;
@@ -3723,7 +3586,7 @@ void ChannelEngine::ProcessHmiGetPcDataCmd(HMICmdFrame &cmd){
 
     }else{
         if(axis_index >= this->m_p_general_config->axis_count ||              //轴序号不对
-            offset+count-1 > m_p_axis_config[axis_index].pc_count){  //获取的数量不对
+                offset+count-1 > m_p_axis_config[axis_index].pc_count){  //获取的数量不对
             cmd.data_len = 0;
             printf("ProcessHmiGetPcDataCmd return, axis_index=%hhu, offset=%hu, count=%hu\n", axis_index, offset, count);
             return;
@@ -3740,7 +3603,7 @@ void ChannelEngine::ProcessHmiGetPcDataCmd(HMICmdFrame &cmd){
             return;
         }
 
-    //	printf("read axis %hhu pc data, pos = %lf, neg=%lf\n", axis_index, pp[199], pp[399]);
+        //	printf("read axis %hhu pc data, pos = %lf, neg=%lf\n", axis_index, pp[199], pp[399]);
 
     }
 
@@ -3793,7 +3656,7 @@ bool ChannelEngine::ProcessPcDataImport(){
     read(fd, &pc_type, 1);    //读取螺补类型，0--单向  1--双向  螺补文件读出
     read(fd, &point_count, 2);  //读取螺补点数
     read(fd, &inter_dis, 8);    //读取补偿间隔
-/***********************************************************************/
+    /***********************************************************************/
     if(this->m_p_axis_config[phy_axis].pc_type != pc_type){
         g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "螺补类型与设置不符[%hhu : %hhu]！", m_p_axis_config[phy_axis].pc_type, pc_type);
         CreateError(ERR_IMPORT_PC_DATA, ERROR_LEVEL, CLEAR_BY_MCP_RESET, 4);   //螺补类型不匹配
@@ -3871,11 +3734,11 @@ bool ChannelEngine::ProcessPcDataImport(){
         return false;
     }
 
-//	if(res == -1 || res != read_size){  //read失败
-//		printf("read pmc file failed, errno = %d, block = %d\n", errno, block_total);
-//		close(fp);
-//		return 0;
-//	}
+    //	if(res == -1 || res != read_size){  //read失败
+    //		printf("read pmc file failed, errno = %d, block = %d\n", errno, block_total);
+    //		close(fp);
+    //		return 0;
+    //	}
 
     this->NotifyHmiPitchCompDataChanged();  //通知HMI重新获取螺补数据
 
@@ -4003,7 +3866,7 @@ void ChannelEngine::ProcessHmiGetPmcReg(HMICmdFrame &cmd){
     else
         reg_count = 1;   //兼容老版本协议
 
-//	printf("read pmc reg, sec = %hu, index= %hu, count = %hu\n", reg_sec, reg_index, reg_count);
+    //	printf("read pmc reg, sec = %hu, index= %hu, count = %hu\n", reg_sec, reg_index, reg_count);
     cmd.cmd_extension = SUCCEED;
     switch(reg_sec){
     case PMC_REG_X:
@@ -4026,14 +3889,14 @@ void ChannelEngine::ProcessHmiGetPmcReg(HMICmdFrame &cmd){
             if(cmd.data_len == 4){
                 cmd.data_len = 5;
                 memcpy(&cmd.data[4], reg_value8, reg_count);
-//				if(reg_sec == PMC_REG_K)
-//					printf("read kreg, index= %hu, value = 0x%hhx\n", reg_index, reg_value8[0]);
+                //				if(reg_sec == PMC_REG_K)
+                //					printf("read kreg, index= %hu, value = 0x%hhx\n", reg_index, reg_value8[0]);
             }
             else{
                 cmd.data_len = 0x06+reg_count;
                 memcpy(&cmd.data[6], reg_value8, reg_count);
             }
-//			printf("get pmc reg: sec = %hu, index = %hu, value = 0x%hhx\n", reg_sec, reg_index, reg_value8[0]);
+            //			printf("get pmc reg: sec = %hu, index = %hu, value = 0x%hhx\n", reg_sec, reg_index, reg_value8[0]);
         }
         break;
 
@@ -4056,7 +3919,7 @@ void ChannelEngine::ProcessHmiGetPmcReg(HMICmdFrame &cmd){
                 cmd.data_len = 0x06+reg_count*2;
                 memcpy(&cmd.data[6], reg_value16, 2*reg_count);
             }
-        //	printf("get pmc reg: sec = %hu, index = %hu, value = %hu\n", reg_sec, reg_index, reg_value16);
+            //	printf("get pmc reg: sec = %hu, index = %hu, value = %hu\n", reg_sec, reg_index, reg_value16);
         }
         break;
 #endif
@@ -4190,7 +4053,7 @@ void ChannelEngine::ProcessHmiSetPmcReg(HMICmdFrame &cmd){
                 cmd.cmd_extension = FAILED;
 
             printf("set pmc reg: sec = %hu, index = %hu, value = 0x%hx, data[4] = 0x%hhx, data[5] = 0x%hhx\n", reg_sec, reg_index, reg_value16,
-                    cmd.data[4], cmd.data[5]);
+                   cmd.data[4], cmd.data[5]);
         }else{
             bit_index = cmd.data[4];
             bit_count = cmd.data[5];
@@ -4259,10 +4122,10 @@ void ChannelEngine::ProcessHmiUpdateReq(HMICmdFrame &cmd){
  */
 void ChannelEngine::ProcessPmcAxisFindRef(uint8_t phy_axis){
     if(m_p_axis_config[phy_axis].axis_interface != VIRTUAL_AXIS		//非虚拟轴
-        && m_p_axis_config[phy_axis].axis_type != AXIS_SPINDLE				//非主轴
-        && /*(m_p_axis_config[phy_axis].feedback_mode == INCREMENTAL_ENCODER ||
-                m_p_axis_config[phy_axis].feedback_mode == NO_ENCODER)   //增量式编码器或者无反馈
-        && */m_p_axis_config[phy_axis].ret_ref_mode > 0){	//非禁止回参考点
+            && m_p_axis_config[phy_axis].axis_type != AXIS_SPINDLE				//非主轴
+            && /*(m_p_axis_config[phy_axis].feedback_mode == INCREMENTAL_ENCODER ||
+                        m_p_axis_config[phy_axis].feedback_mode == NO_ENCODER)   //增量式编码器或者无反馈
+                && */m_p_axis_config[phy_axis].ret_ref_mode > 0){	//非禁止回参考点
 
 #ifdef USES_PMC_PROCESS
         if(phy_axis == 5)
@@ -4317,10 +4180,10 @@ void ChannelEngine::ProcessHmiFindRefCmd(HMICmdFrame &cmd){
     }else if(cmd.cmd_extension == 0xFF){  //所有轴回零
         for(int i = 0; i < this->m_p_general_config->axis_count; i++){
             if(m_p_axis_config[i].axis_interface != VIRTUAL_AXIS		//非虚拟轴
-                && m_p_axis_config[i].axis_type != AXIS_SPINDLE				//非主轴
-                && /*(m_p_axis_config[i].feedback_mode == INCREMENTAL_ENCODER ||
-                    m_p_axis_config[i].feedback_mode == NO_ENCODER)//增量式编码器或者无反馈
-                && */m_p_axis_config[i].ret_ref_mode > 0){	 //回参考点方式非禁止
+                    && m_p_axis_config[i].axis_type != AXIS_SPINDLE				//非主轴
+                    && /*(m_p_axis_config[i].feedback_mode == INCREMENTAL_ENCODER ||
+                            m_p_axis_config[i].feedback_mode == NO_ENCODER)//增量式编码器或者无反馈
+                        && */m_p_axis_config[i].ret_ref_mode > 0){	 //回参考点方式非禁止
 
                 this->m_n_mask_ret_ref |= (0x01<<i);
             }
@@ -4367,8 +4230,8 @@ void ChannelEngine::ProcessPmcRefRet(uint8_t phy_axis){
     }
 
     if(m_p_axis_config[phy_axis].axis_interface == VIRTUAL_AXIS || m_p_axis_config[phy_axis].axis_type == AXIS_SPINDLE	//主轴和虚拟轴不用回参考点
-        || (m_p_axis_config[phy_axis].feedback_mode == NO_ENCODER && m_p_axis_config[phy_axis].ret_ref_mode == 0)    //无反馈，并且禁止回参考点
-        || (m_p_axis_config[phy_axis].feedback_mode == INCREMENTAL_ENCODER && m_p_axis_config[phy_axis].ret_ref_mode == 0)){  //增量编码器，禁止回参考点
+            || (m_p_axis_config[phy_axis].feedback_mode == NO_ENCODER && m_p_axis_config[phy_axis].ret_ref_mode == 0)    //无反馈，并且禁止回参考点
+            || (m_p_axis_config[phy_axis].feedback_mode == INCREMENTAL_ENCODER && m_p_axis_config[phy_axis].ret_ref_mode == 0)){  //增量编码器，禁止回参考点
         printf("no ret ref, return\n");
         return;   //不用回参考点的轴禁止将回零标志复位
     }
@@ -4386,9 +4249,9 @@ void ChannelEngine::ProcessPmcRefRet(uint8_t phy_axis){
  */
 void ChannelEngine::SetRetRefMask(uint8_t phy_axis){
     if(m_p_axis_config[phy_axis].axis_interface != VIRTUAL_AXIS		//非虚拟轴
-        && m_p_axis_config[phy_axis].axis_type != AXIS_SPINDLE				//非主轴
-    /*	&& (m_p_axis_config[phy_axis].feedback_mode == INCREMENTAL_ENCODER ||
-                m_p_axis_config[phy_axis].feedback_mode == NO_ENCODER)*/){	//所有反馈类型都支持回参考点
+            && m_p_axis_config[phy_axis].axis_type != AXIS_SPINDLE				//非主轴
+            /*	&& (m_p_axis_config[phy_axis].feedback_mode == INCREMENTAL_ENCODER ||
+                        m_p_axis_config[phy_axis].feedback_mode == NO_ENCODER)*/){	//所有反馈类型都支持回参考点
         this->m_n_mask_ret_ref |= (0x01<<phy_axis);
     }
 }
@@ -4553,12 +4416,6 @@ bool ChannelEngine::Start(){
     }
 #endif
 
-    //检查同步轴状态
-    if((m_n_sync_axis_mask & m_n_sync_axis_enable_mask) != this->m_n_sync_over){
-        CreateError(ERR_SYNC_AXIS, ERROR_LEVEL, CLEAR_BY_MCP_RESET);
-        return false;
-    }
-
     //检查是否导入过配置数据，提示重启
     if(this->m_mask_import_param != 0){
         CreateError(ERR_IMPORT_CONFIG, WARNING_LEVEL, CLEAR_BY_MCP_RESET);
@@ -4568,10 +4425,10 @@ bool ChannelEngine::Start(){
     ChnWorkMode work_mode = (ChnWorkMode)m_p_channel_control[m_n_cur_channle_index].GetChnWorkMode();
 
     if(work_mode == AUTO_MODE){
-//		m_p_channel_control[m_n_cur_channle_index].StartRunGCode();
-//		for(int i = 0; i < this->m_p_general_config->chn_count; i++){
-//			m_p_channel_control[i].StartRunGCode();
-//		}
+        //		m_p_channel_control[m_n_cur_channle_index].StartRunGCode();
+        //		for(int i = 0; i < this->m_p_general_config->chn_count; i++){
+        //			m_p_channel_control[i].StartRunGCode();
+        //		}
 
 
         uint8_t chn = 0;
@@ -4600,10 +4457,10 @@ bool ChannelEngine::Pause(){
     ChnWorkMode work_mode = (ChnWorkMode)m_p_channel_control[m_n_cur_channle_index].GetChnWorkMode();
 
     if(work_mode == AUTO_MODE){
-//		m_p_channel_control[m_n_cur_channle_index].Pause();
-//		for(int i = 0; i < this->m_p_general_config->chn_count; i++){
-//			m_p_channel_control[i].Pause();
-//		}
+        //		m_p_channel_control[m_n_cur_channle_index].Pause();
+        //		for(int i = 0; i < this->m_p_general_config->chn_count; i++){
+        //			m_p_channel_control[i].Pause();
+        //		}
 
         for(uint8_t i = 0; i < m_p_channel_mode_group[m_n_cur_chn_group_index].GetChannelCount(); i++){
             m_p_channel_control[m_p_channel_mode_group[m_n_cur_chn_group_index].GetChannel(i)].Pause();
@@ -4678,9 +4535,9 @@ bool ChannelEngine::SetCurWorkChanl(uint8_t work_chan){
  */
 bool ChannelEngine::SetWorkMode(uint8_t work_mode){
 
-//	int chn_count = this->m_p_general_config->chn_count;
+    //	int chn_count = this->m_p_general_config->chn_count;
 
-/*
+    /*
     for(int i = 0; i < chn_count; i++){
         this->m_p_channel_control[i].SetWorkMode(work_mode);
     }
@@ -4757,12 +4614,12 @@ void ChannelEngine::EnableHWTraceToMi(){
  * @param ratio
  */
 void ChannelEngine::SetAutoRatio(uint8_t ratio){
-//	this->m_p_channel_control[m_n_cur_channle_index].SetAutoRatio(ratio);
+    //	this->m_p_channel_control[m_n_cur_channle_index].SetAutoRatio(ratio);
 
-//	int chn_count = this->m_p_general_config->chn_count;
-//	for(int i = 0; i < chn_count; i++){
-//		this->m_p_channel_control[i].SetAutoRatio(ratio);
-//	}
+    //	int chn_count = this->m_p_general_config->chn_count;
+    //	for(int i = 0; i < chn_count; i++){
+    //		this->m_p_channel_control[i].SetAutoRatio(ratio);
+    //	}
 
     uint8_t chn_count = m_p_channel_mode_group[m_n_cur_chn_group_index].GetChannelCount();
     for(uint8_t i = 0; i < chn_count; i++)
@@ -4785,13 +4642,13 @@ void ChannelEngine::SetAutoRatio(uint8_t chn, uint8_t ratio){
  * @param ratio
  */
 void ChannelEngine::SetManualRatio(uint8_t ratio){
-//	this->m_p_channel_control[m_n_cur_channle_index].SetManualRatio(ratio);
+    //	this->m_p_channel_control[m_n_cur_channle_index].SetManualRatio(ratio);
 
 
-//	int chn_count = this->m_p_general_config->chn_count;
-//	for(int i = 0; i < chn_count; i++){
-//		this->m_p_channel_control[i].SetManualRatio(ratio);
-//	}
+    //	int chn_count = this->m_p_general_config->chn_count;
+    //	for(int i = 0; i < chn_count; i++){
+    //		this->m_p_channel_control[i].SetManualRatio(ratio);
+    //	}
 
     uint8_t chn_count = m_p_channel_mode_group[m_n_cur_chn_group_index].GetChannelCount();
     for(uint8_t i = 0; i < chn_count; i++)
@@ -4815,10 +4672,10 @@ void ChannelEngine::SetManualRatio(uint8_t chn, uint8_t ratio){
  * @param ratio
  */
 void ChannelEngine::SetRapidRatio(uint8_t ratio){
-//	printf("chn_engine set rapid ratio:%d\n", ratio);
-//	this->m_p_channel_control[m_n_cur_channle_index].SetRapidRatio(ratio);
+    //	printf("chn_engine set rapid ratio:%d\n", ratio);
+    //	this->m_p_channel_control[m_n_cur_channle_index].SetRapidRatio(ratio);
 
-/*
+    /*
     int chn_count = this->m_p_general_config->chn_count;
     for(int i = 0; i < chn_count; i++){
         this->m_p_channel_control[i].SetRapidRatio(ratio);
@@ -4836,20 +4693,20 @@ void ChannelEngine::SetRapidRatio(uint8_t ratio){
  */
 void ChannelEngine::SetRapidRatio(uint8_t chn, uint8_t ratio){
     //倍率值映射
-//	switch(ratio){
-//	case 0:
-//		ratio = 100;
-//		break;
-//	case 2:
-//		ratio = 50;
-//		break;
-//	case 1:
-//		ratio = 25;
-//		break;
-//	case 3:
-//		ratio = 0;
-//		break;
-//	}
+    //	switch(ratio){
+    //	case 0:
+    //		ratio = 100;
+    //		break;
+    //	case 2:
+    //		ratio = 50;
+    //		break;
+    //	case 1:
+    //		ratio = 25;
+    //		break;
+    //	case 3:
+    //		ratio = 0;
+    //		break;
+    //	}
     if(this->m_p_channel_control[chn].GetRapidRatio() == ratio)
         return;
     this->m_p_channel_control[chn].SetRapidRatio(ratio);
@@ -4860,7 +4717,7 @@ void ChannelEngine::SetRapidRatio(uint8_t chn, uint8_t ratio){
  * @param step
  */
 void ChannelEngine::SetManualStep(uint16_t step){
-//	int chn_count = this->m_p_general_config->chn_count;
+    //	int chn_count = this->m_p_general_config->chn_count;
     uint8_t tt = 0;
     switch(step){
     case 1:
@@ -4879,10 +4736,10 @@ void ChannelEngine::SetManualStep(uint16_t step){
         tt = MANUAL_STEP_INVALID;
         break;
     }
-//	this->m_p_channel_control[m_n_cur_channle_index].SetManualStep(tt);
-//	for(int i = 0; i < chn_count; i++){
-//		this->m_p_channel_control[i].SetManualStep(tt);
-//	}
+    //	this->m_p_channel_control[m_n_cur_channle_index].SetManualStep(tt);
+    //	for(int i = 0; i < chn_count; i++){
+    //		this->m_p_channel_control[i].SetManualStep(tt);
+    //	}
 
     uint8_t chn_count = m_p_channel_mode_group[m_n_cur_chn_group_index].GetChannelCount();
     for(uint8_t i = 0; i < chn_count; i++)
@@ -4922,8 +4779,8 @@ void ChannelEngine::SetManualStep(uint8_t chn, uint8_t step){
  * @param mode : 状态的开关   0--关闭   1--打开    10--点动（即根据当前状态取反）
  */
 void ChannelEngine::SetManualRapidMove(uint8_t mode){
-//	this->m_p_channel_control[m_n_cur_channle_index].SetManualRapidMove();
-/*
+    //	this->m_p_channel_control[m_n_cur_channle_index].SetManualRapidMove();
+    /*
     int chn_count = this->m_p_general_config->chn_count;
     for(int i = 0; i < chn_count; i++){
         this->m_p_channel_control[i].SetManualRapidMove();
@@ -4939,10 +4796,10 @@ void ChannelEngine::SetManualRapidMove(uint8_t mode){
  * @param axis : 当前通道轴号
  */
 void ChannelEngine::SetCurAxis(uint8_t axis){
-//	int chn_count = this->m_p_general_config->chn_count;
+    //	int chn_count = this->m_p_general_config->chn_count;
 
     this->m_n_cur_pmc_axis = 0xFF;  //取消当前PMC轴
-//	this->m_p_channel_control[m_n_cur_channle_index].SetCurAxis(axis);
+    //	this->m_p_channel_control[m_n_cur_channle_index].SetCurAxis(axis);
     /*
     for(int i = 0; i < chn_count; i++){
         this->m_p_channel_control[i].SetCurAxis(axis);
@@ -4993,7 +4850,7 @@ void ChannelEngine::SetChnMachineState(uint8_t chn, uint8_t mach_state){
  * @brief 设置轴使能，以及插补模式（1--NC轴插补   2--PMC轴插补）
  * @param index : 轴号索引，从0开始
  */
- /*
+/*
 void ChannelEngine::SetAxisOn(uint8_t index){
     McCmdFrame cmd;
     cmd.data.axis_index = index+1;
@@ -5019,7 +4876,7 @@ void ChannelEngine::SetAxisOn(uint8_t index){
  * @brief 设置指定轴的螺距及最大速度等基本信息
  * @param index : 轴索引号, 从0开始
  */
- /*
+/*
 void ChannelEngine::SetAxisBaseParam(uint8_t index){
     McCmdFrame cmd;
     cmd.data.axis_index = index+1;
@@ -5049,7 +4906,7 @@ void ChannelEngine::SetAxisBaseParam(uint8_t index){
  * @brief 设置指定轴的速度相关信息
  * @param index : 轴索引号, 从0开始
  */
- /*
+/*
 void ChannelEngine::SetAxisSpeedParam(uint8_t index){
     McCmdFrame cmd;
     cmd.data.axis_index = index+1;
@@ -5082,7 +4939,7 @@ void ChannelEngine::SetAxisSpeedParam(uint8_t index){
  * @brief 设置指定轴加速度相关信息
  * @param index : 轴索引号, 从0开始
  */
- /*
+/*
 void ChannelEngine::SetAxisAccParam(uint8_t index){
     McCmdFrame cmd;
     cmd.data.axis_index = index+1;
@@ -5179,7 +5036,7 @@ void ChannelEngine::ManualMoveAbs(uint8_t phy_axis, double vel, double pos){
         //设置速度
         uint32_t feed = vel*1000/60;   //转换单位为um/s
 
-    //	memcpy(cmd.data.data, &feed, sizeof(feed));
+        //	memcpy(cmd.data.data, &feed, sizeof(feed));
         cmd.data.data[0] = (feed & 0xFFFF);
         cmd.data.data[1] = ((feed>>16)&0xFFFF);
 
@@ -5195,7 +5052,7 @@ void ChannelEngine::ManualMoveAbs(uint8_t phy_axis, double vel, double pos){
 
                 if(limit_pos < cur_pos){//已经在限位外，告警
                     CreateError(ERR_SOFTLIMIT_POS, WARNING_LEVEL, CLEAR_BY_MCP_RESET, 0, chn, chn_axis);
-                //	this->m_error_code = ERR_SOFTLIMIT_POS;
+                    //	this->m_error_code = ERR_SOFTLIMIT_POS;
                     return;
                 }else if(limit_pos == cur_pos){  //已经到达正限位极限位置
                     CreateError(ERR_SOFTLIMIT_POS, WARNING_LEVEL, CLEAR_BY_MCP_RESET, 0, chn, chn_axis);
@@ -5209,7 +5066,7 @@ void ChannelEngine::ManualMoveAbs(uint8_t phy_axis, double vel, double pos){
 
                 if(limit_pos > cur_pos){//已经在限位外，告警
                     CreateError(ERR_SOFTLIMIT_NEG, WARNING_LEVEL, CLEAR_BY_MCP_RESET, 0, chn, chn_axis);
-                //	this->m_error_code = ERR_SOFTLIMIT_NEG;
+                    //	this->m_error_code = ERR_SOFTLIMIT_NEG;
                     return;
                 }else if(limit_pos == cur_pos){  //已经到达负限位极限位置
                     CreateError(ERR_SOFTLIMIT_NEG, WARNING_LEVEL, CLEAR_BY_MCP_RESET, 0, chn, chn_axis);
@@ -5262,7 +5119,7 @@ void ChannelEngine::ManualMoveAbs(uint8_t phy_axis, double vel, double pos){
 
                 if(limit_pos < cur_pos){//已经在限位外，告警
                     CreateError(ERR_SOFTLIMIT_POS, WARNING_LEVEL, CLEAR_BY_MCP_RESET, 0, CHANNEL_ENGINE_INDEX, phy_axis);
-                //	this->m_error_code = ERR_SOFTLIMIT_POS;
+                    //	this->m_error_code = ERR_SOFTLIMIT_POS;
                     return;
                 }else if(limit_pos == cur_pos){  //已经到达正限位极限位置
                     CreateError(ERR_SOFTLIMIT_POS, WARNING_LEVEL, CLEAR_BY_MCP_RESET, 0, CHANNEL_ENGINE_INDEX, phy_axis);
@@ -5276,7 +5133,7 @@ void ChannelEngine::ManualMoveAbs(uint8_t phy_axis, double vel, double pos){
 
                 if(limit_pos > cur_pos){//已经在限位外，告警
                     CreateError(ERR_SOFTLIMIT_NEG, WARNING_LEVEL, CLEAR_BY_MCP_RESET, 0, CHANNEL_ENGINE_INDEX, phy_axis);
-                //	this->m_error_code = ERR_SOFTLIMIT_NEG;
+                    //	this->m_error_code = ERR_SOFTLIMIT_NEG;
                     return;
                 }else if(limit_pos == cur_pos){  //已经到达负限位极限位置
                     CreateError(ERR_SOFTLIMIT_NEG, WARNING_LEVEL, CLEAR_BY_MCP_RESET, 0, CHANNEL_ENGINE_INDEX, phy_axis);
@@ -5333,7 +5190,7 @@ void ChannelEngine::ManualMove(uint8_t phy_axis, int8_t dir, double vel, double 
         //设置速度
         uint32_t feed = vel*1000/60;   //转换单位为um/s
 
-    //	memcpy(cmd.data.data, &feed, sizeof(feed));
+        //	memcpy(cmd.data.data, &feed, sizeof(feed));
         cmd.data.data[0] = (feed & 0xFFFF);
         cmd.data.data[1] = ((feed>>16)&0xFFFF);
 
@@ -5344,14 +5201,14 @@ void ChannelEngine::ManualMove(uint8_t phy_axis, int8_t dir, double vel, double 
                 && m_p_axis_config[phy_axis].soft_limit_check_1 == 1){//软限位1有效
             int64_t cur_pos = this->m_df_phy_axis_pos_feedback[phy_axis]*1e7;  //当前位置
             int64_t limit_pos = 0;
-        //	int8_t dir = (tar_pos > cur_pos)?DIR_POSITIVE:DIR_NEGATIVE;
+            //	int8_t dir = (tar_pos > cur_pos)?DIR_POSITIVE:DIR_NEGATIVE;
             if(dir == DIR_POSITIVE){//正向
                 limit_pos = m_p_axis_config[phy_axis].soft_limit_max_1*1e7;
 
 
                 if(limit_pos < cur_pos){//已经在限位外，告警
                     CreateError(ERR_SOFTLIMIT_POS, WARNING_LEVEL, CLEAR_BY_MCP_RESET, 0, chn, chn_axis);
-                //	this->m_error_code = ERR_SOFTLIMIT_POS;
+                    //	this->m_error_code = ERR_SOFTLIMIT_POS;
                     return;
                 }else if(limit_pos == cur_pos){  //已经到达正限位极限位置
                     CreateError(ERR_SOFTLIMIT_POS, WARNING_LEVEL, CLEAR_BY_MCP_RESET, 0, chn, chn_axis);
@@ -5365,7 +5222,7 @@ void ChannelEngine::ManualMove(uint8_t phy_axis, int8_t dir, double vel, double 
 
                 if(limit_pos > cur_pos){//已经在限位外，告警
                     CreateError(ERR_SOFTLIMIT_NEG, WARNING_LEVEL, CLEAR_BY_MCP_RESET, 0, chn, chn_axis);
-                //	this->m_error_code = ERR_SOFTLIMIT_NEG;
+                    //	this->m_error_code = ERR_SOFTLIMIT_NEG;
                     return;
                 }else if(limit_pos == cur_pos){  //已经到达负限位极限位置
                     CreateError(ERR_SOFTLIMIT_NEG, WARNING_LEVEL, CLEAR_BY_MCP_RESET, 0, chn, chn_axis);
@@ -5388,7 +5245,7 @@ void ChannelEngine::ManualMove(uint8_t phy_axis, int8_t dir, double vel, double 
         else
             m_p_mc_arm_comm->WriteCmd(cmd);
 
-    //	printf("ChannelEngine::ManualMove: axis = %d, tar_pos = %lld\n", phy_axis, tar_pos);
+        //	printf("ChannelEngine::ManualMove: axis = %d, tar_pos = %lld\n", phy_axis, tar_pos);
     }else if(m_p_axis_config[phy_axis].axis_pmc){  //PMC轴
         PmcCmdFrame cmd;
         memset(&cmd, 0x00, sizeof(PmcCmdFrame));
@@ -5413,7 +5270,7 @@ void ChannelEngine::ManualMove(uint8_t phy_axis, int8_t dir, double vel, double 
 
                 if(limit_pos < cur_pos){//已经在限位外，告警
                     CreateError(ERR_SOFTLIMIT_POS, WARNING_LEVEL, CLEAR_BY_MCP_RESET, 0, CHANNEL_ENGINE_INDEX, phy_axis);
-                //	this->m_error_code = ERR_SOFTLIMIT_POS;
+                    //	this->m_error_code = ERR_SOFTLIMIT_POS;
                     return;
                 }else if(limit_pos == cur_pos){  //已经到达正限位极限位置
                     CreateError(ERR_SOFTLIMIT_POS, WARNING_LEVEL, CLEAR_BY_MCP_RESET, 0, CHANNEL_ENGINE_INDEX, phy_axis);
@@ -5427,7 +5284,7 @@ void ChannelEngine::ManualMove(uint8_t phy_axis, int8_t dir, double vel, double 
 
                 if(limit_pos > cur_pos){//已经在限位外，告警
                     CreateError(ERR_SOFTLIMIT_NEG, WARNING_LEVEL, CLEAR_BY_MCP_RESET, 0, CHANNEL_ENGINE_INDEX, phy_axis);
-                //	this->m_error_code = ERR_SOFTLIMIT_NEG;
+                    //	this->m_error_code = ERR_SOFTLIMIT_NEG;
                     return;
                 }else if(limit_pos == cur_pos){  //已经到达负限位极限位置
                     CreateError(ERR_SOFTLIMIT_NEG, WARNING_LEVEL, CLEAR_BY_MCP_RESET, 0, CHANNEL_ENGINE_INDEX, phy_axis);
@@ -5450,7 +5307,7 @@ void ChannelEngine::ManualMove(uint8_t phy_axis, int8_t dir, double vel, double 
 
         this->m_p_mi_comm->SendPmcCmd(cmd);
 
-//		printf("ChannelEngine::ManualMove_pmc: axis = %d, tar_pos = %lld\n", phy_axis, tar_pos);
+        //		printf("ChannelEngine::ManualMove_pmc: axis = %d, tar_pos = %lld\n", phy_axis, tar_pos);
 
     }
 }
@@ -5467,20 +5324,20 @@ void ChannelEngine::ManualMoveStop(){
     this->ManualMovePmcStop();
 
 
-//	if(this->m_n_run_axis_mask){
-//		MiCmdFrame cmd;
-//		memset(&cmd, 0x00, sizeof(MiCmdFrame));
-//
-//		cmd.data.axis_index = 0xFF;
-//		cmd.data.cmd = CMD_MI_PAUSE_PMC_AXIS;
-//		cmd.data.data[0] = 0x20;   //停止当前轴运动，并抛弃当前运动指令
-//
-//		m_p_mi_comm->WriteCmd(cmd);
-//
-//		this->m_n_run_axis_mask = 0;
-//		this->m_n_runover_axis_mask = 0;
-//		printf("send manual pmc stop : runmask = 0x%x\n", this->m_n_run_axis_mask);
-//	}
+    //	if(this->m_n_run_axis_mask){
+    //		MiCmdFrame cmd;
+    //		memset(&cmd, 0x00, sizeof(MiCmdFrame));
+    //
+    //		cmd.data.axis_index = 0xFF;
+    //		cmd.data.cmd = CMD_MI_PAUSE_PMC_AXIS;
+    //		cmd.data.data[0] = 0x20;   //停止当前轴运动，并抛弃当前运动指令
+    //
+    //		m_p_mi_comm->WriteCmd(cmd);
+    //
+    //		this->m_n_run_axis_mask = 0;
+    //		this->m_n_runover_axis_mask = 0;
+    //		printf("send manual pmc stop : runmask = 0x%x\n", this->m_n_run_axis_mask);
+    //	}
 
 }
 
@@ -5494,7 +5351,7 @@ void ChannelEngine::ManualMovePmc(uint8_t phy_axis, int8_t dir){
         return;
     }
 
-//	m_channel_status.cur_manual_move_dir = dir;   //保存方向
+    //	m_channel_status.cur_manual_move_dir = dir;   //保存方向
 
     PmcCmdFrame cmd;
     memset(&cmd, 0x00, sizeof(PmcCmdFrame));
@@ -5544,12 +5401,12 @@ void ChannelEngine::ManualMovePmc(uint8_t phy_axis, int8_t dir){
 
             if(tar_inc_max > 0){//已经在限位外，告警
                 CreateError(ERR_SOFTLIMIT_NEG, WARNING_LEVEL, CLEAR_BY_MCP_RESET, 0, CHANNEL_ENGINE_INDEX, phy_axis);
-        //		this->m_error_code = ERR_SOFTLIMIT_NEG;
+                //		this->m_error_code = ERR_SOFTLIMIT_NEG;
                 printf("manual move out of soft negative limit\n");
                 return;
             }else if(tar_inc_max == 0){  //已经到达负限位极限位置
                 CreateError(ERR_SOFTLIMIT_NEG, WARNING_LEVEL, CLEAR_BY_MCP_RESET, 0, CHANNEL_ENGINE_INDEX, phy_axis);
-        //		this->m_error_code = ERR_SOFTLIMIT_NEG;
+                //		this->m_error_code = ERR_SOFTLIMIT_NEG;
                 return;
             }else if(tar_pos < tar_inc_max){
                 tar_pos = tar_inc_max;
@@ -5624,7 +5481,7 @@ void ChannelEngine::ManualMovePmc(uint8_t phy_axis, double tar_pos, double vel, 
 
             if(tar_inc_max <= 0){//已经在限位外，告警
                 CreateError(ERR_SOFTLIMIT_POS, WARNING_LEVEL, CLEAR_BY_MCP_RESET, 0, CHANNEL_ENGINE_INDEX, phy_axis);
-    //			this->m_error_code = ERR_SOFTLIMIT_POS;
+                //			this->m_error_code = ERR_SOFTLIMIT_POS;
 
                 return;
             }else if(inc && target > tar_inc_max){
@@ -5637,7 +5494,7 @@ void ChannelEngine::ManualMovePmc(uint8_t phy_axis, double tar_pos, double vel, 
 
             if(tar_inc_max > 0){//已经在限位外，告警
                 CreateError(ERR_SOFTLIMIT_NEG, WARNING_LEVEL, CLEAR_BY_MCP_RESET, 0, CHANNEL_ENGINE_INDEX, phy_axis);
-        //		this->m_error_code = ERR_SOFTLIMIT_NEG;
+                //		this->m_error_code = ERR_SOFTLIMIT_NEG;
 
                 return;
             }else if(inc && target < tar_inc_max){
@@ -5829,7 +5686,7 @@ bool ChannelEngine::CheckAxisHardLimit(uint8_t phy_axis, int8_t dir){
  * @brief 设置指定轴的软限位开关
  * @param axis : 指定轴号，从0开始
  */
- /*
+/*
 void ChannelEngine::SetAxisSoftLimit(uint8_t axis){
     //发送MC轴软限位数据
     McCmdFrame cmd;
@@ -5861,7 +5718,7 @@ void ChannelEngine::SetAxisSoftLimit(uint8_t axis){
  * @param axis : 指定轴号，从0开始
  * @param index : 软限位组号，总共3组，0-2
  */
- /*
+/*
 void ChannelEngine::SetAxisSoftLimitValue(uint8_t axis, uint8_t index){
     //发送MC轴软限位数据
     McCmdFrame cmd;
@@ -5912,14 +5769,14 @@ void ChannelEngine::StartUpdateProcess(){
     pthread_attr_setstacksize(&attr, kThreadStackSize);	//
     param.__sched_priority = 30; //90;
     pthread_attr_setschedparam(&attr, &param);
-//	res = pthread_attr_setinheritsched(&attr, PTHREAD_EXPLICIT_SCHED); //不继承父线程调度方式，否则以上的设置不生效
-//	if (res) {
-//		g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "模块升级处理线程设置线程继承模式失败！");
-//		m_error_code = ERR_INIT_UPDATE;
-//		goto END;
-//	}
+    //	res = pthread_attr_setinheritsched(&attr, PTHREAD_EXPLICIT_SCHED); //不继承父线程调度方式，否则以上的设置不生效
+    //	if (res) {
+    //		g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "模块升级处理线程设置线程继承模式失败！");
+    //		m_error_code = ERR_INIT_UPDATE;
+    //		goto END;
+    //	}
     res = pthread_create(&m_thread_update, &attr,
-            ChannelEngine::UpdateThread, this);    //开启模块升级运行线程
+                         ChannelEngine::UpdateThread, this);    //开启模块升级运行线程
     if (res != 0) {
         g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "模块升级处理线程创建失败!");
         m_error_code = ERR_INIT_UPDATE;
@@ -5983,7 +5840,7 @@ int ChannelEngine::UpdateProcess(){
         goto END;
 
     //升级MI
-//	res = this->UpdateMI();
+    //	res = this->UpdateMI();
     res = this->UpdateMI_2();
     if(res != ERR_NONE)
         goto END;
@@ -6026,7 +5883,7 @@ END:
 int ChannelEngine::UpdateMC(){
     //升级MC模块
     int res = ERR_NONE;
-//	int retry = 0;
+    //	int retry = 0;
     uint32_t i = 0;
 
     struct stat statbuf;
@@ -6759,7 +6616,7 @@ int ChannelEngine::UpdatePMC(){
         read_cur_real = fread(buffer, 1, read_cur_plan, file_src);
         if(read_cur_plan != read_cur_real){	//错误
             g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "PMC模块升级，复制梯形图文件出错1！%llu, %d, %d", file_len, read_cur_plan,
-                    read_cur_real);
+                                    read_cur_real);
             res = ERR_UPDATE_PMC;
             fclose(file_des);
             goto END;
@@ -6835,7 +6692,7 @@ int ChannelEngine::UpdatePMC(){
     this->SendHmiUpdateStatus(3, 2);  //总共分三步骤
 
     printf("Succeed to update pmc module!\n");
-    END:
+END:
     fclose(file_src);
     if(-1 == remove(filepath)){
         //删除升级文件失败
@@ -6944,82 +6801,82 @@ uint16_t ChannelEngine::GetBusAxisCount(){
  */
 void ChannelEngine::InitPmcReg(){
     printf("init pmc register\n");
-//	//打开文件
-//	int fp = open(PATH_PMC_REG, O_RDONLY); //打开文件
-//
-//	if(fp < 0){
-//		g_ptr_trace->PrintTrace(TRACE_ERROR, PMC_REGISTER, "打开pmc寄存器保存文件失败！");
-//		return;//文件打开失败
-//	}
-//	uint16_t size = 0;   //寄存器字节数
-//
-//	//读取K寄存器
-//	ssize_t read_size = read(fp, &size, 2);
-//	if(read_size != 2){ //读取失败
-//		g_ptr_trace->PrintTrace(TRACE_ERROR, PMC_REGISTER, "读取K寄存器字节数失败！");
-//		return;
-//	}
-//
-//	if(size != K_REG_COUNT){
-//		g_ptr_trace->PrintTrace(TRACE_ERROR, PMC_REGISTER, "K寄存器大小数不匹配[%hu,%hu]！", size, K_REG_COUNT);
-//		return;
-//	}
-//	read_size = read(fp, this->m_p_pmc_reg->GetRegPtr8(PMC_REG_K), size);
-//	if(read_size != size){
-//		g_ptr_trace->PrintTrace(TRACE_ERROR, PMC_REGISTER, "读取K寄存器数据失败[%hu,%hu]！", read_size, size);
-//		return;
-//	}
-//
-//	//读取D寄存器
-//	read_size = read(fp, &size, 2);
-//	if(read_size != 2){ //读取失败
-//		g_ptr_trace->PrintTrace(TRACE_ERROR, PMC_REGISTER, "读取D寄存器字节数失败！");
-//		return;
-//	}
-//
-//	if(size != D_REG_COUNT*2){
-//		g_ptr_trace->PrintTrace(TRACE_ERROR, PMC_REGISTER, "K寄存器大小数不匹配[%hu,%hu]！", size, D_REG_COUNT*2);
-//		return;
-//	}
-//	read_size = read(fp, this->m_p_pmc_reg->GetRegPtr16(PMC_REG_D), size);
-//	if(read_size != size){
-//		g_ptr_trace->PrintTrace(TRACE_ERROR, PMC_REGISTER, "读取D寄存器数据失败[%hu,%hu]！", read_size, size);
-//		return;
-//	}
-//
-//	//读取DC寄存器
-//	read_size = read(fp, &size, 2);
-//	if(read_size != 2){ //读取失败
-//		g_ptr_trace->PrintTrace(TRACE_ERROR, PMC_REGISTER, "读取DC寄存器字节数失败！");
-//		return;
-//	}
-//
-//	if(size != C_REG_COUNT*2){
-//		g_ptr_trace->PrintTrace(TRACE_ERROR, PMC_REGISTER, "DC寄存器大小数不匹配[%hu,%hu]！", size, C_REG_COUNT*2);
-//		return;
-//	}
-//	read_size = read(fp, this->m_p_pmc_reg->GetRegPtr16(PMC_REG_DC), size);
-//	if(read_size != size){
-//		g_ptr_trace->PrintTrace(TRACE_ERROR, PMC_REGISTER, "读取DC寄存器数据失败[%hu,%hu]！", read_size, size);
-//		return;
-//	}
-//
-//	//读取DT寄存器
-//	read_size = read(fp, &size, 2);
-//	if(read_size != 2){ //读取失败
-//		g_ptr_trace->PrintTrace(TRACE_ERROR, PMC_REGISTER, "读取DT寄存器字节数失败！");
-//		return;
-//	}
-//
-//	if(size != T_REG_COUNT*2){
-//		g_ptr_trace->PrintTrace(TRACE_ERROR, PMC_REGISTER, "DT寄存器大小数不匹配[%hu,%hu]！", size, T_REG_COUNT*2);
-//		return;
-//	}
-//	read_size = read(fp, this->m_p_pmc_reg->GetRegPtr16(PMC_REG_DT), size);
-//	if(read_size != size){
-//		g_ptr_trace->PrintTrace(TRACE_ERROR, PMC_REGISTER, "读取DT寄存器数据失败[%hu,%hu]！", read_size, size);
-//		return;
-//	}
+    //	//打开文件
+    //	int fp = open(PATH_PMC_REG, O_RDONLY); //打开文件
+    //
+    //	if(fp < 0){
+    //		g_ptr_trace->PrintTrace(TRACE_ERROR, PMC_REGISTER, "打开pmc寄存器保存文件失败！");
+    //		return;//文件打开失败
+    //	}
+    //	uint16_t size = 0;   //寄存器字节数
+    //
+    //	//读取K寄存器
+    //	ssize_t read_size = read(fp, &size, 2);
+    //	if(read_size != 2){ //读取失败
+    //		g_ptr_trace->PrintTrace(TRACE_ERROR, PMC_REGISTER, "读取K寄存器字节数失败！");
+    //		return;
+    //	}
+    //
+    //	if(size != K_REG_COUNT){
+    //		g_ptr_trace->PrintTrace(TRACE_ERROR, PMC_REGISTER, "K寄存器大小数不匹配[%hu,%hu]！", size, K_REG_COUNT);
+    //		return;
+    //	}
+    //	read_size = read(fp, this->m_p_pmc_reg->GetRegPtr8(PMC_REG_K), size);
+    //	if(read_size != size){
+    //		g_ptr_trace->PrintTrace(TRACE_ERROR, PMC_REGISTER, "读取K寄存器数据失败[%hu,%hu]！", read_size, size);
+    //		return;
+    //	}
+    //
+    //	//读取D寄存器
+    //	read_size = read(fp, &size, 2);
+    //	if(read_size != 2){ //读取失败
+    //		g_ptr_trace->PrintTrace(TRACE_ERROR, PMC_REGISTER, "读取D寄存器字节数失败！");
+    //		return;
+    //	}
+    //
+    //	if(size != D_REG_COUNT*2){
+    //		g_ptr_trace->PrintTrace(TRACE_ERROR, PMC_REGISTER, "K寄存器大小数不匹配[%hu,%hu]！", size, D_REG_COUNT*2);
+    //		return;
+    //	}
+    //	read_size = read(fp, this->m_p_pmc_reg->GetRegPtr16(PMC_REG_D), size);
+    //	if(read_size != size){
+    //		g_ptr_trace->PrintTrace(TRACE_ERROR, PMC_REGISTER, "读取D寄存器数据失败[%hu,%hu]！", read_size, size);
+    //		return;
+    //	}
+    //
+    //	//读取DC寄存器
+    //	read_size = read(fp, &size, 2);
+    //	if(read_size != 2){ //读取失败
+    //		g_ptr_trace->PrintTrace(TRACE_ERROR, PMC_REGISTER, "读取DC寄存器字节数失败！");
+    //		return;
+    //	}
+    //
+    //	if(size != C_REG_COUNT*2){
+    //		g_ptr_trace->PrintTrace(TRACE_ERROR, PMC_REGISTER, "DC寄存器大小数不匹配[%hu,%hu]！", size, C_REG_COUNT*2);
+    //		return;
+    //	}
+    //	read_size = read(fp, this->m_p_pmc_reg->GetRegPtr16(PMC_REG_DC), size);
+    //	if(read_size != size){
+    //		g_ptr_trace->PrintTrace(TRACE_ERROR, PMC_REGISTER, "读取DC寄存器数据失败[%hu,%hu]！", read_size, size);
+    //		return;
+    //	}
+    //
+    //	//读取DT寄存器
+    //	read_size = read(fp, &size, 2);
+    //	if(read_size != 2){ //读取失败
+    //		g_ptr_trace->PrintTrace(TRACE_ERROR, PMC_REGISTER, "读取DT寄存器字节数失败！");
+    //		return;
+    //	}
+    //
+    //	if(size != T_REG_COUNT*2){
+    //		g_ptr_trace->PrintTrace(TRACE_ERROR, PMC_REGISTER, "DT寄存器大小数不匹配[%hu,%hu]！", size, T_REG_COUNT*2);
+    //		return;
+    //	}
+    //	read_size = read(fp, this->m_p_pmc_reg->GetRegPtr16(PMC_REG_DT), size);
+    //	if(read_size != size){
+    //		g_ptr_trace->PrintTrace(TRACE_ERROR, PMC_REGISTER, "读取DT寄存器数据失败[%hu,%hu]！", read_size, size);
+    //		return;
+    //	}
 
 
     //将数据发送给MI
@@ -7069,7 +6926,7 @@ void ChannelEngine::InitPmcReg(){
     for(i = 0; i < C_REG_COUNT; i++){
         if(pn16[i] != 0){
             this->SendPmcRegValue(PMC_REG_C, i, pn16[i]);
-        //	printf("Init C reg c%hu = %hu\n", i, pn16[i]);
+            //	printf("Init C reg c%hu = %hu\n", i, pn16[i]);
         }
     }
 #else
@@ -7088,7 +6945,7 @@ void ChannelEngine::InitPmcReg(){
     for(i = 0; i < count; i++){
         if(pn8[i] != 0){
             this->SendPmcRegValue(PMC_REG_C, i, pn8[i]);
-        //	printf("Init C reg c%hu = %hu\n", i, pn8[i]);
+            //	printf("Init C reg c%hu = %hu\n", i, pn8[i]);
         }
     }
 
@@ -7098,7 +6955,7 @@ void ChannelEngine::InitPmcReg(){
     for(i = 0; i < count; i++){
         if(pn8[i] != 0){
             this->SendPmcRegValue(PMC_REG_T, i, pn8[i]);
-        //	printf("Init T reg c%hu = %hu\n", i, pn8[i]);
+            //	printf("Init T reg c%hu = %hu\n", i, pn8[i]);
         }
     }
 
@@ -7107,33 +6964,12 @@ void ChannelEngine::InitPmcReg(){
 }
 
 /**
- * @brief 发送MI参数
- * @param axis : 轴号， MI的轴号从1开始, 0xFF表示系统参数
- * @param para_no : 参数号
- * @param data ：数据指针
- * @param size ：参数数据所占的字节数
- */
-template<typename T>
-void ChannelEngine::SendMiParam(uint8_t axis, uint32_t para_no, T data){
-    MiCmdFrame cmd;
-    memset(&cmd, 0x00, sizeof(cmd));
-    cmd.data.cmd = CMD_MI_SET_PARAM;
-
-    cmd.data.axis_index = axis;
-
-    memcpy(cmd.data.data, &para_no, 4);
-    memcpy(&cmd.data.data[2], &data, sizeof(T));
-
-    this->m_p_mi_comm->WriteCmd(cmd);
-}
-
-/**
  * @brief 给MI发送初始化参数
  */
 void ChannelEngine::InitMiParam(){
 
     printf("start init mi parameters\n");
-//	uint8_t mi_axis_interface[] = {0xFF, 0x10, 0x01};   //虚拟轴、总线轴、非总线轴
+    //	uint8_t mi_axis_interface[] = {0xFF, 0x10, 0x01};   //虚拟轴、总线轴、非总线轴
 
     //初始化PMC寄存器
     this->InitPmcReg();
@@ -7142,7 +6978,7 @@ void ChannelEngine::InitMiParam(){
     SetSlaveInfo();
 
     //发送手轮编码格式
-    this->SendMiParam<uint8_t>(0xFF, 10, this->m_p_general_config->hw_code_type);   //手轮编码类型
+   m_p_mi_comm->SendMiParam<uint8_t>(0xFF, 10, this->m_p_general_config->hw_code_type);   //手轮编码类型
 
     //发送IO重映射数据
     ListNode<IoRemapInfo> *info_node = this->m_p_io_remap->HeadNode();
@@ -7163,53 +6999,53 @@ void ChannelEngine::InitMiParam(){
         index = i+1;   //MI中的轴号从1开始
 
         //发送插补后加减速相关参数
-        this->SendMiParam<uint8_t>(index, 1140, axis_config->post_filter_type);   //滤波器类型
-        this->SendMiParam<uint16_t>(index, 1141, axis_config->post_filter_time_1);   //一级滤波器时间常数
-        this->SendMiParam<uint16_t>(index, 1142, axis_config->post_filter_time_2);   //二级滤波器时间常数
+       m_p_mi_comm->SendMiParam<uint8_t>(index, 1140, axis_config->post_filter_type);   //滤波器类型
+       m_p_mi_comm->SendMiParam<uint16_t>(index, 1141, axis_config->post_filter_time_1);   //一级滤波器时间常数
+       m_p_mi_comm->SendMiParam<uint16_t>(index, 1142, axis_config->post_filter_time_2);   //二级滤波器时间常数
 
-        this->SendMiParam<uint8_t>(index, 1002, axis_config->axis_interface);   //轴接口类型
-        this->SendMiParam<uint8_t>(index, 1001, axis_config->axis_type);		//轴类型
-        this->SendMiParam<uint8_t>(index, 1003, axis_config->axis_port);		//从站号或者对应轴口号
-        this->SendMiParam<uint8_t>(index, 1006, axis_config->axis_pmc);			//是否PMC轴
-        this->SendMiParam<double>(index, 1100, axis_config->kp1);			//kp1
-        this->SendMiParam<double>(index, 1101, axis_config->kp2);			//kp2
-        this->SendMiParam<double>(index, 1102, axis_config->ki);			//ki
-        this->SendMiParam<double>(index, 1103, axis_config->kil);			//kil
-        this->SendMiParam<double>(index, 1104, axis_config->kd);			//kd
+       m_p_mi_comm->SendMiParam<uint8_t>(index, 1002, axis_config->axis_interface);   //轴接口类型
+       m_p_mi_comm->SendMiParam<uint8_t>(index, 1001, axis_config->axis_type);		//轴类型
+       m_p_mi_comm->SendMiParam<uint8_t>(index, 1003, axis_config->axis_port);		//从站号或者对应轴口号
+       m_p_mi_comm->SendMiParam<uint8_t>(index, 1006, axis_config->axis_pmc);			//是否PMC轴
+       m_p_mi_comm->SendMiParam<double>(index, 1100, axis_config->kp1);			//kp1
+       m_p_mi_comm->SendMiParam<double>(index, 1101, axis_config->kp2);			//kp2
+       m_p_mi_comm->SendMiParam<double>(index, 1102, axis_config->ki);			//ki
+       m_p_mi_comm->SendMiParam<double>(index, 1103, axis_config->kil);			//kil
+       m_p_mi_comm->SendMiParam<double>(index, 1104, axis_config->kd);			//kd
         tmp = static_cast<double>(axis_config->kvff);
-        this->SendMiParam<double>(index, 1105, tmp);			//kvff
+       m_p_mi_comm->SendMiParam<double>(index, 1105, tmp);			//kvff
         tmp = static_cast<double>(axis_config->kaff);
-        this->SendMiParam<double>(index, 1106, tmp);			//kaff
+       m_p_mi_comm->SendMiParam<double>(index, 1106, tmp);			//kaff
         tmp_64 = static_cast<uint64_t>(axis_config->track_err_limit) * 1e4;   //转换单位：um-->0.1nm
-        this->SendMiParam<uint64_t>(index, 1107, tmp_64);	//跟踪误差限
+       m_p_mi_comm->SendMiParam<uint64_t>(index, 1107, tmp_64);	//跟踪误差限
         tmp_64 = static_cast<uint64_t>(axis_config->location_err_limit) * 1e4;   //转换单位：um-->0.1nm
-        this->SendMiParam<uint64_t>(index, 1108, tmp_64);			//定位误差限
-        this->SendMiParam<uint32_t>(index, 1200, axis_config->motor_count_pr);	//电机每转计数
-        this->SendMiParam<uint32_t>(index, 1201, axis_config->motor_speed_max);	//电机最大转速
+       m_p_mi_comm->SendMiParam<uint64_t>(index, 1108, tmp_64);			//定位误差限
+       m_p_mi_comm->SendMiParam<uint32_t>(index, 1200, axis_config->motor_count_pr);	//电机每转计数
+       m_p_mi_comm->SendMiParam<uint32_t>(index, 1201, axis_config->motor_speed_max);	//电机最大转速
         tmp_64 = static_cast<uint64_t>(axis_config->move_pr * 1e7);   //转换单位：mm-->0.1nm
-// 		printf("write axis param idx = %d, value = %ld\n", index, tmp_64);
-        this->SendMiParam<uint64_t>(index, 1202, tmp_64);	//每转移动量
-        this->SendMiParam<uint8_t>(index, 1203, axis_config->motor_dir);	//电机旋转方向
+        // 		printf("write axis param idx = %d, value = %ld\n", index, tmp_64);
+       m_p_mi_comm->SendMiParam<uint64_t>(index, 1202, tmp_64);	//每转移动量
+       m_p_mi_comm->SendMiParam<uint8_t>(index, 1203, axis_config->motor_dir);	//电机旋转方向
         tmp_8 = axis_config->feedback_mode;
-//		if(axis_config->axis_interface == VIRTUAL_AXIS)
-//			tmp_8 = 0xFF;    //虚拟轴
-//		else if(axis_config->axis_interface == BUS_AXIS)
-//			tmp_8 = 0x10;   //ethercat
-        this->SendMiParam<uint8_t>(index, 1204, tmp_8);	//反馈类型
-//		printf("send axis[%hhu] feedback_mode %hhu #####\n", index, tmp_8);
+        //		if(axis_config->axis_interface == VIRTUAL_AXIS)
+        //			tmp_8 = 0xFF;    //虚拟轴
+        //		else if(axis_config->axis_interface == BUS_AXIS)
+        //			tmp_8 = 0x10;   //ethercat
+       m_p_mi_comm->SendMiParam<uint8_t>(index, 1204, tmp_8);	//反馈类型
+        //		printf("send axis[%hhu] feedback_mode %hhu #####\n", index, tmp_8);
 
         tmp_8 = axis_config->ctrl_mode;
         if(axis_config->axis_interface == VIRTUAL_AXIS)
             tmp_8 = 0xFF;    //虚拟轴
         else if(axis_config->axis_interface == BUS_AXIS)
             tmp_8 = 0x10;   //ethercat
-        this->SendMiParam<uint8_t>(index, 1205, tmp_8);	//轴控制方式
-        this->SendMiParam<uint32_t>(index, 1206, axis_config->pulse_count_pr);	//控制每转输出脉冲数
-        this->SendMiParam<uint8_t>(index, 1207, axis_config->encoder_lines);	//单圈编码器线数
+       m_p_mi_comm->SendMiParam<uint8_t>(index, 1205, tmp_8);	//轴控制方式
+       m_p_mi_comm->SendMiParam<uint32_t>(index, 1206, axis_config->pulse_count_pr);	//控制每转输出脉冲数
+       m_p_mi_comm->SendMiParam<uint8_t>(index, 1207, axis_config->encoder_lines);	//单圈编码器线数
 
-        this->SendMiParam<uint16_t>(index, 1208, axis_config->encoder_max_cycle);   //旋转轴编码器整圈最大值
+       m_p_mi_comm->SendMiParam<uint16_t>(index, 1208, axis_config->encoder_max_cycle);   //旋转轴编码器整圈最大值
 
-//		this->SendMiParam<uint8_t>(index, 1209, axis_config->axis_alarm_level);	//轴告警电平
+        //		this->SendMiParam<uint8_t>(index, 1209, axis_config->axis_alarm_level);	//轴告警电平
 
         if(axis_config->axis_interface != VIRTUAL_AXIS &&
                 axis_config->feedback_mode != NO_ENCODER &&
@@ -7220,25 +7056,22 @@ void ChannelEngine::InitMiParam(){
         }
 
         //软限位
-        this->SendMiParam<double>(index, 1500, axis_config->soft_limit_max_1);
-        this->SendMiParam<double>(index, 1501, axis_config->soft_limit_min_1);
-        this->SendMiParam<uint8_t>(index, 1502, axis_config->soft_limit_check_1);
-        this->SendMiParam<double>(index, 1503, axis_config->soft_limit_max_2);
-        this->SendMiParam<double>(index, 1504, axis_config->soft_limit_min_2);
-        this->SendMiParam<uint8_t>(index, 1505, axis_config->soft_limit_check_2);
-        this->SendMiParam<double>(index, 1506, axis_config->soft_limit_max_3);
-        this->SendMiParam<double>(index, 1507, axis_config->soft_limit_min_3);
-        this->SendMiParam<uint8_t>(index, 1508, axis_config->soft_limit_check_3);
+       m_p_mi_comm->SendMiParam<double>(index, 1500, axis_config->soft_limit_max_1);
+       m_p_mi_comm->SendMiParam<double>(index, 1501, axis_config->soft_limit_min_1);
+       m_p_mi_comm->SendMiParam<uint8_t>(index, 1502, axis_config->soft_limit_check_1);
+       m_p_mi_comm->SendMiParam<double>(index, 1503, axis_config->soft_limit_max_2);
+       m_p_mi_comm->SendMiParam<double>(index, 1504, axis_config->soft_limit_min_2);
+       m_p_mi_comm->SendMiParam<uint8_t>(index, 1505, axis_config->soft_limit_check_2);
+       m_p_mi_comm->SendMiParam<double>(index, 1506, axis_config->soft_limit_max_3);
+       m_p_mi_comm->SendMiParam<double>(index, 1507, axis_config->soft_limit_min_3);
+       m_p_mi_comm->SendMiParam<uint8_t>(index, 1508, axis_config->soft_limit_check_3);
 
         //发送主轴启动时间、制动时间
-        this->SendMiParam<uint16_t>(index, 1605, axis_config->spd_start_time);
-        this->SendMiParam<uint16_t>(index, 1606, axis_config->spd_stop_time);
+       m_p_mi_comm->SendMiParam<uint16_t>(index, 1605, axis_config->spd_start_time);
+       m_p_mi_comm->SendMiParam<uint16_t>(index, 1606, axis_config->spd_stop_time);
 
         //发送同步轴相关参数
-        this->SendMiParam<uint8_t>(index, 1650, axis_config->sync_axis);   //是否同步轴
-        this->SendMiParam<uint8_t>(index, 1651, axis_config->master_axis_no); 	//主动轴号
-        this->SendMiParam<double>(index, 1653, axis_config->benchmark_offset); 	//基准偏差
-        this->SendMiParam<uint32_t>(index, 1655, axis_config->sync_err_max); 	//允许的同步最大误差
+        m_sync_axis_ctrl->SendMiSyncParams();
 
         //发送反向间隙参数
         this->SendMiBacklash(i);
@@ -7424,9 +7257,9 @@ void ChannelEngine::SendMiIoRemapInfo(IoRemapInfo &info){
  * @param phy_axis : 物理轴号，从0开始
  */
 void ChannelEngine::SendMiAxisFilterParam(uint8_t phy_axis){
-    this->SendMiParam<uint8_t>(phy_axis+1, 1140, m_p_axis_config[phy_axis].post_filter_type);   //滤波器类型
-    this->SendMiParam<uint16_t>(phy_axis+1, 1141, m_p_axis_config[phy_axis].post_filter_time_1);   //一级滤波器时间常数
-    this->SendMiParam<uint16_t>(phy_axis+1, 1142, m_p_axis_config[phy_axis].post_filter_time_2);   //二级滤波器时间常数
+   m_p_mi_comm->SendMiParam<uint8_t>(phy_axis+1, 1140, m_p_axis_config[phy_axis].post_filter_type);   //滤波器类型
+   m_p_mi_comm->SendMiParam<uint16_t>(phy_axis+1, 1141, m_p_axis_config[phy_axis].post_filter_time_1);   //一级滤波器时间常数
+   m_p_mi_comm->SendMiParam<uint16_t>(phy_axis+1, 1142, m_p_axis_config[phy_axis].post_filter_time_2);   //二级滤波器时间常数
 }
 
 /**
@@ -7570,7 +7403,7 @@ void ChannelEngine::SendMiReset(){
  * @param count : 缓冲数量
  */
 void ChannelEngine::SetMcAutoBufMax(uint16_t count){
-//	this->m_n_mc_auto_buf_max = count;
+    //	this->m_n_mc_auto_buf_max = count;
     for(int i = 0; i < this->m_p_general_config->chn_count; i++){
         this->m_p_channel_control[i].SetMcAutoBufMax(count-kMaxGCodeFifoCount-10);   //减少2个，从稳定性考虑，不放满
     }
@@ -7739,20 +7572,20 @@ void ChannelEngine::SystemReset(){
     printf("system reset\n");
     //各通道复位
     for(int i = 0; i < this->m_p_general_config->chn_count; i++){
-//        // 攻丝状态禁止复位
-//        if(this->m_p_channel_control[0].GetSpdCtrl()->isTapEnable()){
-//            CreateError(ERR_SPD_RESET_IN_TAP,
-//                        WARNING_LEVEL,
-//                        CLEAR_BY_MCP_RESET);
-//            return;
-//        }
+        //        // 攻丝状态禁止复位
+        //        if(this->m_p_channel_control[0].GetSpdCtrl()->isTapEnable()){
+        //            CreateError(ERR_SPD_RESET_IN_TAP,
+        //                        WARNING_LEVEL,
+        //                        CLEAR_BY_MCP_RESET);
+        //            return;
+        //        }
 
         this->m_p_pmc_reg->FReg().bits[i].RST = 1;  //复位信号
         this->m_p_channel_control[i].Reset();
     }
 
     //通知MC模块复位
-//	SendMcResetCmd();    //修改为按通道复位
+    //	SendMcResetCmd();    //修改为按通道复位
 
 
     //通知MI模块复位
@@ -7779,18 +7612,12 @@ void ChannelEngine::SystemReset(){
     g_ptr_parm_manager->ActiveResetParam();
     g_ptr_parm_manager->ActiveNewStartParam();
 
-//	for(int i = 0; i < this->m_p_general_config->chn_count; i++){
-//		this->m_p_channel_control[i].SetMcChnPlanMode();
-//		this->m_p_channel_control[i].SetMcChnPlanParam();
-//		this->m_p_channel_control[i].SetMcChnPlanFun();
-//		this->m_p_channel_control[i].SetMcChnCornerStopParam();
-//	}
-
-    //复位同步轴标志
-    if(m_b_emergency){  //急停后才重新同步
-        m_b_send_sync_cmd = false;
-        m_n_sync_over = 0;
-    }
+    //	for(int i = 0; i < this->m_p_general_config->chn_count; i++){
+    //		this->m_p_channel_control[i].SetMcChnPlanMode();
+    //		this->m_p_channel_control[i].SetMcChnPlanParam();
+    //		this->m_p_channel_control[i].SetMcChnPlanFun();
+    //		this->m_p_channel_control[i].SetMcChnCornerStopParam();
+    //	}
 
     m_b_power_off = false;
 
@@ -7812,13 +7639,13 @@ void ChannelEngine::SystemReset(){
     this->m_b_ret_ref = false;
     this->m_b_ret_ref_auto = false;
     this->m_n_mask_ret_ref = 0;
-//	m_n_get_cur_encoder_count = 0;
+    //	m_n_get_cur_encoder_count = 0;
     memset(this->m_n_ret_ref_step, 0x00, kMaxAxisNum*sizeof(int));
 
     this->ClearPmcAxisMoveData();   //清空PMC轴运动数据
 
-//	m_n_run_axis_mask = 0x00;  //当前运行的轴的mask
-//	m_n_runover_axis_mask = 0x00;   //当前运行完成的轴的mask   //ClearPmcAxisMoveData()中清空
+    //	m_n_run_axis_mask = 0x00;  //当前运行的轴的mask
+    //	m_n_runover_axis_mask = 0x00;   //当前运行完成的轴的mask   //ClearPmcAxisMoveData()中清空
 
 
     //记录复位操作结束时间，供RST信号延时后复位
@@ -7856,7 +7683,7 @@ void ChannelEngine::Emergency(uint8_t chn){
     this->m_b_ret_ref = false;
     this->m_b_ret_ref_auto = false;
     this->m_n_mask_ret_ref = 0;
-//	m_n_get_cur_encoder_count = 0;
+    //	m_n_get_cur_encoder_count = 0;
     memset(this->m_n_ret_ref_step, 0x00, kMaxAxisNum*sizeof(int));
 
     this->ClearPmcAxisMoveData();   //清空PMC轴运动数据
@@ -7876,9 +7703,9 @@ void ChannelEngine::Emergency(uint8_t chn){
     for(int i = 0; i < this->m_p_general_config->axis_count; i++){
         if(m_p_axis_config[i].axis_interface != VIRTUAL_AXIS && m_p_axis_config[i].axis_type != AXIS_SPINDLE	//非主轴并且非虚拟轴
                 && (m_p_axis_config[i].feedback_mode == INCREMENTAL_ENCODER ||
-                        m_p_axis_config[i].feedback_mode == NO_ENCODER)   //增量编码器
+                    m_p_axis_config[i].feedback_mode == NO_ENCODER)   //增量编码器
                 && m_p_axis_config[i].ret_ref_mode > 0){
-//			m_n_mask_ret_ref_over &= ~(0x01<<i);   //
+            //			m_n_mask_ret_ref_over &= ~(0x01<<i);   //
             this->SetRetRefFlag(i, false);
         }
     }
@@ -7911,7 +7738,7 @@ void *ChannelEngine::RefreshMiStatusThread(void *args){
     }
 
     while(!g_sys_state.system_ready){  //等待系统启动
-//		printf("ChannelEngine::RefreshMiStatusThread wait system ready[0x%hhx]!\n", g_sys_state.module_ready_mask);
+        //		printf("ChannelEngine::RefreshMiStatusThread wait system ready[0x%hhx]!\n", g_sys_state.module_ready_mask);
         usleep(10000);
     }
 
@@ -7971,12 +7798,12 @@ bool ChannelEngine::RefreshMiStatusFun(){
             return true;
         }
 
-		//更新写入F寄存器， 更新周期8ms
-		this->m_p_mi_comm->WritePmcReg(PMC_REG_F, p_f_reg);
-		memcpy(m_g_reg_last.all, p_g_reg, sizeof(m_g_reg_last.all));  //备份G寄存器
+        //更新写入F寄存器， 更新周期8ms
+        this->m_p_mi_comm->WritePmcReg(PMC_REG_F, p_f_reg);
+        memcpy(m_g_reg_last.all, p_g_reg, sizeof(m_g_reg_last.all));  //备份G寄存器
         memcpy(m_f_reg_last.all, p_f_reg, sizeof(m_f_reg_last.all));
-		this->m_p_mi_comm->ReadPmcReg(PMC_REG_G, p_g_reg);
-		this->m_p_mi_comm->ReadPmcReg(PMC_REG_K, p_k_reg);
+        this->m_p_mi_comm->ReadPmcReg(PMC_REG_G, p_g_reg);
+        this->m_p_mi_comm->ReadPmcReg(PMC_REG_K, p_k_reg);
 
 #ifndef USES_PMC_2_0
         this->m_p_mi_comm->ReadPmcReg(PMC_REG_D, p_d_reg);
@@ -8000,16 +7827,15 @@ bool ChannelEngine::RefreshMiStatusFun(){
             this->m_p_mi_comm->ReadPmcReg(PMC_REG_A, m_p_pmc_reg->GetRegPtr8(PMC_REG_A));
 
 
-//			if(count %200 == 0)
-//				printf("k register : %hhu\n",m_p_pmc_reg->GetRegPtr8(PMC_REG_K)[0]);
-//			if(count %310 == 0)
-//				printf("D register : %hu\n",m_p_pmc_reg->GetRegPtr16(PMC_REG_D)[300]);
+            //			if(count %200 == 0)
+            //				printf("k register : %hhu\n",m_p_pmc_reg->GetRegPtr8(PMC_REG_K)[0]);
+            //			if(count %310 == 0)
+            //				printf("D register : %hu\n",m_p_pmc_reg->GetRegPtr16(PMC_REG_D)[300]);
 
         }
 
 
         this->m_p_mi_comm->ReadServoOnState(this->m_n_phy_axis_svo_on);
-        this->DoSyncAxis();
         this->CheckAxisSrvOn();
 
 
@@ -8019,7 +7845,7 @@ bool ChannelEngine::RefreshMiStatusFun(){
             //首先读取轴告警标志
             this->m_p_mi_comm->ReadAxisWarnFlag(value8);
             if(value8 != 0x00){//有告警，再看具体告警位
-                if(value8 & 0x01){//正限位告警
+                if(value8 & (0x01 << 0)){//正限位告警
                     uint64_t hlimtflag = 0;
                     this->m_p_mi_comm->ReadServoHLimitFlag(true, hlimtflag);   //读取正限位数据
                     if(m_hard_limit_postive == 0){
@@ -8029,7 +7855,7 @@ bool ChannelEngine::RefreshMiStatusFun(){
                         this->m_hard_limit_postive |= hlimtflag;
                     }
                 }
-                if(value8 & 0x02){ //负限位告警
+                if(value8 & (0x01 << 1)){ //负限位告警
                     uint64_t hlimtflag = 0;
                     this->m_p_mi_comm->ReadServoHLimitFlag(false, hlimtflag);   //读取负限位数据
                     if(m_hard_limit_negative == 0){
@@ -8039,7 +7865,7 @@ bool ChannelEngine::RefreshMiStatusFun(){
                         this->m_hard_limit_negative |= hlimtflag;
                     }
                 }
-                if(value8 & 0x04){ //编码器告警
+                if(value8 & (0x01 << 2)){ //编码器告警
                     this->m_p_mi_comm->ReadEncoderWarn(value64);  //读取编码器告警数据
                     if(value64 != 0){
                         //有编码器告警
@@ -8052,7 +7878,7 @@ bool ChannelEngine::RefreshMiStatusFun(){
 
                     }
                 }
-                if(value8 & 0x08){ //伺服告警
+                if(value8 & (0x01 << 3)){ //伺服告警
                     this->m_p_mi_comm->ReadServoWarn(value64);   //读取伺服告警
                     if(value64 != 0){
                         //有伺服告警
@@ -8067,7 +7893,7 @@ bool ChannelEngine::RefreshMiStatusFun(){
                         }
                     }
                 }
-                if(value8 & 0x10){  //跟随误差过大告警
+                if(value8 & (0x01 << 4)){  //跟随误差过大告警
                     this->m_p_mi_comm->ReadTrackErr(value64);
                     if(value64 != 0){
                         //有跟随误差过大告警
@@ -8080,7 +7906,7 @@ bool ChannelEngine::RefreshMiStatusFun(){
                     }
 
                 }
-                if(value8 & 0x20){  //同步轴位置指令偏差过大告警
+                if(value8 & (0x01 << 5)){  //同步轴位置指令偏差过大告警
                     this->m_p_mi_comm->ReadSyncPosErr(value64);
                     if(value64 != 0){
                         //有同步轴位置指令偏差过大告警
@@ -8092,7 +7918,7 @@ bool ChannelEngine::RefreshMiStatusFun(){
                         }
                     }
                 }
-                if(value8 & 0x40){  //轴位置指令过大告警
+                if(value8 & (0x01 << 6)){  //轴位置指令过大告警
                     this->m_p_mi_comm->ReadIntpPosErr(value64);
                     if(value64 != 0){
                         //有轴位置指令过大告警
@@ -8100,6 +7926,28 @@ bool ChannelEngine::RefreshMiStatusFun(){
                         for(uint8_t i = 0; i < this->m_p_general_config->axis_count; i++){
                             if(value64 & flag)
                                 CreateError(ERR_INTP_POS, ERROR_LEVEL, CLEAR_BY_MCP_RESET, 0, CHANNEL_ENGINE_INDEX, i);
+                            flag = flag << 1;
+                        }
+                    }
+                }
+                if(value8 & (0x01 << 7)){  //同步轴力矩偏差过大告警
+                    this->m_p_mi_comm->ReadSyncTorqueErr(value64);
+                    if(value64 != 0){
+                        uint64_t flag = 0x01;
+                        for(uint8_t i = 0; i < this->m_p_general_config->axis_count; i++){
+                            if(value64 & flag)
+                                CreateError(ERR_SYNC_TORQUE, ERROR_LEVEL, CLEAR_BY_MCP_RESET, 0, CHANNEL_ENGINE_INDEX, i);
+                            flag = flag << 1;
+                        }
+                    }
+                }
+                if(value8 & (0x01 << 8)){  //同步轴机床坐标偏差过大告警
+                    this->m_p_mi_comm->ReadSyncMachErr(value64);
+                    if(value64 != 0){
+                        uint64_t flag = 0x01;
+                        for(uint8_t i = 0; i < this->m_p_general_config->axis_count; i++){
+                            if(value64 & flag)
+                                CreateError(ERR_SYNC_MACH, ERROR_LEVEL, CLEAR_BY_MCP_RESET, 0, CHANNEL_ENGINE_INDEX, i);
                             flag = flag << 1;
                         }
                     }
@@ -8174,7 +8022,7 @@ bool ChannelEngine::RefreshMiStatusFun(){
         count++;
     }
 
-//	printf("exit ChannelEngine::RefreshMiStatusFun()\n");
+    //	printf("exit ChannelEngine::RefreshMiStatusFun()\n");
 
     return true;
 }
@@ -8193,7 +8041,7 @@ void ChannelEngine::CheckBattery(){
     }
 
     ioctl(fd, GET_GPIO_VALUE, &value);
-//	printf("Read GPIO value is %x\n", value);
+    //	printf("Read GPIO value is %x\n", value);
 
 
     if(value & 0x01){//欠压
@@ -8226,17 +8074,17 @@ void ChannelEngine::CheckBattery(){
  */
 void ChannelEngine::ProcessPmcSignal(){
 
-	const GRegBits *g_reg = nullptr;
-	GRegBits *g_reg_last = nullptr;
-	FRegBits *f_reg = nullptr;
+    const GRegBits *g_reg = nullptr;
+    GRegBits *g_reg_last = nullptr;
+    FRegBits *f_reg = nullptr;
     FRegBits *f_reg_last = nullptr;
     ChannelControl *ctrl = nullptr;
-	uint64_t flag = 0;
-	uint8_t chn = 0;
-	for(int i = 0; i < this->m_p_general_config->chn_count; i++){
-		g_reg = &m_p_pmc_reg->GReg().bits[i];
-		g_reg_last = &m_g_reg_last.bits[i];
-		f_reg = &m_p_pmc_reg->FReg().bits[i];
+    uint64_t flag = 0;
+    uint8_t chn = 0;
+    for(int i = 0; i < this->m_p_general_config->chn_count; i++){
+        g_reg = &m_p_pmc_reg->GReg().bits[i];
+        g_reg_last = &m_g_reg_last.bits[i];
+        f_reg = &m_p_pmc_reg->FReg().bits[i];
         f_reg_last = &m_f_reg_last.bits[i];
         ctrl = &m_p_channel_control[i];
 
@@ -8267,8 +8115,8 @@ void ChannelEngine::ProcessPmcSignal(){
 
         // @test zk
         if(g_reg->RRW == 1 && g_reg_last->RRW == 0){
-			this->SystemReset();
-		}
+            this->SystemReset();
+        }
         // @test
 
 #else
@@ -8287,31 +8135,43 @@ void ChannelEngine::ProcessPmcSignal(){
 #endif
 
         if(g_reg->ERS == 1 && g_reg_last->ERS == 0){
-        	this->SystemReset();
+            this->SystemReset();
         }
 
-//#ifdef USES_PHYSICAL_MOP
+        //#ifdef USES_PHYSICAL_MOP
         //方式选择信号
         if(g_reg->MD != g_reg_last->MD){
-//			printf("PMC SIGNAL -----> %d\n", g_reg->MD);
-			if(g_reg->MD == 0){  //MDA
-				this->SetWorkMode(MDA_MODE);
-			}else if(g_reg->MD == 1){   //自动
-				this->SetWorkMode(AUTO_MODE);
-			}else if(g_reg->MD == 2){   //手轮
-				this->SetWorkMode(MPG_MODE);
-			}else if(g_reg->MD == 3){   //编辑
-				this->SetWorkMode(EDIT_MODE);
-			}else if(g_reg->MD == 4){   //步进
-				this->SetWorkMode(MANUAL_STEP_MODE);
-			}else if(g_reg->MD == 5){   //JOG
-				this->SetWorkMode(MANUAL_MODE);
-			}else if(g_reg->MD == 6){   //原点模式
-				this->SetWorkMode(REF_MODE);
-			}else{
-				printf("ERROR:Invalid work mode signal:MD=%hhu\n", g_reg->MD);
-			}
-		}
+            //			printf("PMC SIGNAL -----> %d\n", g_reg->MD);
+            ChnWorkMode mode = INVALID_MODE;
+            if(g_reg->MD == 0){  //MDA
+                mode = MDA_MODE;
+            }else if(g_reg->MD == 1){   //自动
+                mode = AUTO_MODE;
+            }else if(g_reg->MD == 2){   //手轮
+                mode = MPG_MODE;
+            }else if(g_reg->MD == 3){   //编辑
+                mode = EDIT_MODE;
+            }else if(g_reg->MD == 4){   //步进
+                mode = MANUAL_STEP_MODE;
+            }else if(g_reg->MD == 5){   //JOG
+                mode = MANUAL_MODE;
+            }else if(g_reg->MD == 6){   //原点模式
+                mode = REF_MODE;
+            }else{
+                printf("ERROR:Invalid work mode signal:MD=%hhu\n", g_reg->MD);
+            }
+            if(mode != INVALID_MODE){
+                this->SetWorkMode(mode);
+                m_sync_axis_ctrl->InputMode(mode);
+            }
+        }
+
+        if(g_reg->SYNC != g_reg_last->SYNC){
+            m_sync_axis_ctrl->InputSync(g_reg->SYNC);
+        }
+        if(g_reg->SYNCJ != g_reg_last->SYNCJ){
+            m_sync_axis_ctrl->InputSyncJ(g_reg->SYNCJ);
+        }
 
         // 主轴正转，主轴反转信号
         if(g_reg->SRV != g_reg_last->SRV || g_reg->SFR != g_reg_last->SFR){
@@ -8433,180 +8293,180 @@ void ChannelEngine::ProcessPmcSignal(){
                 this->SetManualRapidMove(0);
         }
 
-		//倍率信号处理
-		if(g_reg->_JV != g_reg_last->_JV){
-			uint16_t ratio= ~g_reg->_JV;
-			if(g_reg->_JV == 0)
-				ratio = 0;
-			this->SetManualRatio(i, ratio/100);
-		}
-		if(g_reg->_FV != g_reg_last->_FV)
-			this->SetAutoRatio(i, ~g_reg->_FV);
+        //倍率信号处理
+        if(g_reg->_JV != g_reg_last->_JV){
+            uint16_t ratio= ~g_reg->_JV;
+            if(g_reg->_JV == 0)
+                ratio = 0;
+            this->SetManualRatio(i, ratio/100);
+        }
+        if(g_reg->_FV != g_reg_last->_FV)
+            this->SetAutoRatio(i, ~g_reg->_FV);
         if(g_reg->SOV != g_reg_last->SOV)
             ctrl->SetSpindleRatio(g_reg->SOV);
-		if(g_reg->ROV != g_reg_last->ROV)
-			this->SetRapidRatio(i, g_reg->ROV);
+        if(g_reg->ROV != g_reg_last->ROV)
+            this->SetRapidRatio(i, g_reg->ROV);
 
-		//手动轴进给
-		if(g_reg->MD == 4){   //步进
-			//轴1
-			if(g_reg->JP1 && g_reg_last->JP1 == 0){
-				this->SetCurAxis(i, 0);
-				this->ManualMove(DIR_POSITIVE);
-			}
-			if(g_reg->JN1 && g_reg_last->JN1 == 0){
-				this->SetCurAxis(i, 0);
-				this->ManualMove(DIR_NEGATIVE);
-			}
-			//轴2
-			if(g_reg->JP2 && g_reg_last->JP2 == 0){
-				this->SetCurAxis(i, 1);
-				this->ManualMove(DIR_POSITIVE);
-			}
-			if(g_reg->JN2 && g_reg_last->JN2 == 0){
-				this->SetCurAxis(i, 1);
-				this->ManualMove(DIR_NEGATIVE);
-			}
-			//轴3
-			if(g_reg->JP3 && g_reg_last->JP3 == 0){
-				this->SetCurAxis(i, 2);
-				this->ManualMove(DIR_POSITIVE);
-			}
-			if(g_reg->JN3 && g_reg_last->JN3 == 0){
-				this->SetCurAxis(i, 2);
-				this->ManualMove(DIR_NEGATIVE);
-			}
-			//轴4
-			if(g_reg->JP4 && g_reg_last->JP4 == 0){
-				this->SetCurAxis(i, 3);
-				this->ManualMove(DIR_POSITIVE);
-			}
-			if(g_reg->JN4 && g_reg_last->JN4 == 0){
-				this->SetCurAxis(i, 3);
-				this->ManualMove(DIR_NEGATIVE);
-			}
-			//轴5
-			if(g_reg->JP5 && g_reg_last->JP5 == 0){
-				this->SetCurAxis(i, 4);
-				this->ManualMove(DIR_POSITIVE);
-			}
-			if(g_reg->JN5 && g_reg_last->JN5 == 0){
-				this->SetCurAxis(i, 4);
-				this->ManualMove(DIR_NEGATIVE);
-			}
-			//轴6
-			if(g_reg->JP6 && g_reg_last->JP6 == 0){
-				this->SetCurAxis(i, 5);
-				this->ManualMove(DIR_POSITIVE);
-			}
-			if(g_reg->JN6 && g_reg_last->JN6 == 0){
-				this->SetCurAxis(i, 5);
-				this->ManualMove(DIR_NEGATIVE);
-			}
-		}else if(g_reg->MD == 5){  //JOG
-			//轴1
-			if(g_reg->JP1 != g_reg_last->JP1){
-				if(g_reg->JP1){
-					this->SetCurAxis(i, 0);
-					this->ManualMove(DIR_POSITIVE);
-				}else{
-					this->ManualMoveStop();
-				}
-			}
-			if(g_reg->JN1 != g_reg_last->JN1){
-				if(g_reg->JN1){
-					this->SetCurAxis(i, 0);
-					this->ManualMove(DIR_NEGATIVE);
-				}else{
-					this->ManualMoveStop();
-				}
-			}
-			//轴2
-			if(g_reg->JP2 != g_reg_last->JP2){
-				if(g_reg->JP2){
-					this->SetCurAxis(i, 1);
-					this->ManualMove(DIR_POSITIVE);
-				}else{
-					this->ManualMoveStop();
-				}
-			}
-			if(g_reg->JN2 != g_reg_last->JN2){
-				if(g_reg->JN2){
-					this->SetCurAxis(i, 1);
-					this->ManualMove(DIR_NEGATIVE);
-				}else{
-					this->ManualMoveStop();
-				}
-			}
-			//轴3
-			if(g_reg->JP3 != g_reg_last->JP3){
-				if(g_reg->JP3){
-					this->SetCurAxis(i, 2);
-					this->ManualMove(DIR_POSITIVE);
-				}else{
-					this->ManualMoveStop();
-				}
-			}
-			if(g_reg->JN3 != g_reg_last->JN3){
-				if(g_reg->JN3){
-					this->SetCurAxis(i, 2);
-					this->ManualMove(DIR_NEGATIVE);
-				}else{
-					this->ManualMoveStop();
-				}
-			}
-			//轴4
-			if(g_reg->JP4 != g_reg_last->JP4){
-				if(g_reg->JP4){
-					this->SetCurAxis(i, 3);
-					this->ManualMove(DIR_POSITIVE);
-				}else{
-					this->ManualMoveStop();
-				}
-			}
-			if(g_reg->JN4 != g_reg_last->JN4){
-				if(g_reg->JN4){
-					this->SetCurAxis(i, 3);
-					this->ManualMove(DIR_NEGATIVE);
-				}else{
-					this->ManualMoveStop();
-				}
-			}
-			//轴5
-			if(g_reg->JP5 != g_reg_last->JP5){
-				if(g_reg->JP5){
-					this->SetCurAxis(i, 4);
-					this->ManualMove(DIR_POSITIVE);
-				}else{
-					this->ManualMoveStop();
-				}
-			}
-			if(g_reg->JN5 != g_reg_last->JN5){
-				if(g_reg->JN5){
-					this->SetCurAxis(i, 4);
-					this->ManualMove(DIR_NEGATIVE);
-				}else{
-					this->ManualMoveStop();
-				}
-			}
-			//轴6
-			if(g_reg->JP6 != g_reg_last->JP6){
-				if(g_reg->JP6){
-					this->SetCurAxis(i, 5);
-					this->ManualMove(DIR_POSITIVE);
-				}else{
-					this->ManualMoveStop();
-				}
-			}
-			if(g_reg->JN6 != g_reg_last->JN6){
-				if(g_reg->JN6){
-					this->SetCurAxis(i, 5);
-					this->ManualMove(DIR_NEGATIVE);
-				}else{
-					this->ManualMoveStop();
-				}
-			}
-		}else if(g_reg->MD == 6){  //原点模式
+        //手动轴进给
+        if(g_reg->MD == 4){   //步进
+            //轴1
+            if(g_reg->JP1 && g_reg_last->JP1 == 0){
+                this->SetCurAxis(i, 0);
+                this->ManualMove(DIR_POSITIVE);
+            }
+            if(g_reg->JN1 && g_reg_last->JN1 == 0){
+                this->SetCurAxis(i, 0);
+                this->ManualMove(DIR_NEGATIVE);
+            }
+            //轴2
+            if(g_reg->JP2 && g_reg_last->JP2 == 0){
+                this->SetCurAxis(i, 1);
+                this->ManualMove(DIR_POSITIVE);
+            }
+            if(g_reg->JN2 && g_reg_last->JN2 == 0){
+                this->SetCurAxis(i, 1);
+                this->ManualMove(DIR_NEGATIVE);
+            }
+            //轴3
+            if(g_reg->JP3 && g_reg_last->JP3 == 0){
+                this->SetCurAxis(i, 2);
+                this->ManualMove(DIR_POSITIVE);
+            }
+            if(g_reg->JN3 && g_reg_last->JN3 == 0){
+                this->SetCurAxis(i, 2);
+                this->ManualMove(DIR_NEGATIVE);
+            }
+            //轴4
+            if(g_reg->JP4 && g_reg_last->JP4 == 0){
+                this->SetCurAxis(i, 3);
+                this->ManualMove(DIR_POSITIVE);
+            }
+            if(g_reg->JN4 && g_reg_last->JN4 == 0){
+                this->SetCurAxis(i, 3);
+                this->ManualMove(DIR_NEGATIVE);
+            }
+            //轴5
+            if(g_reg->JP5 && g_reg_last->JP5 == 0){
+                this->SetCurAxis(i, 4);
+                this->ManualMove(DIR_POSITIVE);
+            }
+            if(g_reg->JN5 && g_reg_last->JN5 == 0){
+                this->SetCurAxis(i, 4);
+                this->ManualMove(DIR_NEGATIVE);
+            }
+            //轴6
+            if(g_reg->JP6 && g_reg_last->JP6 == 0){
+                this->SetCurAxis(i, 5);
+                this->ManualMove(DIR_POSITIVE);
+            }
+            if(g_reg->JN6 && g_reg_last->JN6 == 0){
+                this->SetCurAxis(i, 5);
+                this->ManualMove(DIR_NEGATIVE);
+            }
+        }else if(g_reg->MD == 5){  //JOG
+            //轴1
+            if(g_reg->JP1 != g_reg_last->JP1){
+                if(g_reg->JP1){
+                    this->SetCurAxis(i, 0);
+                    this->ManualMove(DIR_POSITIVE);
+                }else{
+                    this->ManualMoveStop();
+                }
+            }
+            if(g_reg->JN1 != g_reg_last->JN1){
+                if(g_reg->JN1){
+                    this->SetCurAxis(i, 0);
+                    this->ManualMove(DIR_NEGATIVE);
+                }else{
+                    this->ManualMoveStop();
+                }
+            }
+            //轴2
+            if(g_reg->JP2 != g_reg_last->JP2){
+                if(g_reg->JP2){
+                    this->SetCurAxis(i, 1);
+                    this->ManualMove(DIR_POSITIVE);
+                }else{
+                    this->ManualMoveStop();
+                }
+            }
+            if(g_reg->JN2 != g_reg_last->JN2){
+                if(g_reg->JN2){
+                    this->SetCurAxis(i, 1);
+                    this->ManualMove(DIR_NEGATIVE);
+                }else{
+                    this->ManualMoveStop();
+                }
+            }
+            //轴3
+            if(g_reg->JP3 != g_reg_last->JP3){
+                if(g_reg->JP3){
+                    this->SetCurAxis(i, 2);
+                    this->ManualMove(DIR_POSITIVE);
+                }else{
+                    this->ManualMoveStop();
+                }
+            }
+            if(g_reg->JN3 != g_reg_last->JN3){
+                if(g_reg->JN3){
+                    this->SetCurAxis(i, 2);
+                    this->ManualMove(DIR_NEGATIVE);
+                }else{
+                    this->ManualMoveStop();
+                }
+            }
+            //轴4
+            if(g_reg->JP4 != g_reg_last->JP4){
+                if(g_reg->JP4){
+                    this->SetCurAxis(i, 3);
+                    this->ManualMove(DIR_POSITIVE);
+                }else{
+                    this->ManualMoveStop();
+                }
+            }
+            if(g_reg->JN4 != g_reg_last->JN4){
+                if(g_reg->JN4){
+                    this->SetCurAxis(i, 3);
+                    this->ManualMove(DIR_NEGATIVE);
+                }else{
+                    this->ManualMoveStop();
+                }
+            }
+            //轴5
+            if(g_reg->JP5 != g_reg_last->JP5){
+                if(g_reg->JP5){
+                    this->SetCurAxis(i, 4);
+                    this->ManualMove(DIR_POSITIVE);
+                }else{
+                    this->ManualMoveStop();
+                }
+            }
+            if(g_reg->JN5 != g_reg_last->JN5){
+                if(g_reg->JN5){
+                    this->SetCurAxis(i, 4);
+                    this->ManualMove(DIR_NEGATIVE);
+                }else{
+                    this->ManualMoveStop();
+                }
+            }
+            //轴6
+            if(g_reg->JP6 != g_reg_last->JP6){
+                if(g_reg->JP6){
+                    this->SetCurAxis(i, 5);
+                    this->ManualMove(DIR_POSITIVE);
+                }else{
+                    this->ManualMoveStop();
+                }
+            }
+            if(g_reg->JN6 != g_reg_last->JN6){
+                if(g_reg->JN6){
+                    this->SetCurAxis(i, 5);
+                    this->ManualMove(DIR_NEGATIVE);
+                }else{
+                    this->ManualMoveStop();
+                }
+            }
+        }else if(g_reg->MD == 6){  //原点模式
             for(int j = 0; j < 16; j++){
                 if((g_reg->REFE & (0x01<<j)) != 0 && (g_reg_last->REFE & (0x01<<j)) == 0){// 启动轴回零
                     this->ProcessPmcRefRet(j+16*i);
@@ -8615,7 +8475,7 @@ void ChannelEngine::ProcessPmcSignal(){
         }
 
 
-//#endif
+        //#endif
 
         //处理工艺模式切换
 #ifdef USES_WOOD_MACHINE
@@ -8626,14 +8486,14 @@ void ChannelEngine::ProcessPmcSignal(){
         }
 #endif
 
-		//处理PMC宏调用功能
-		if(g_reg_last->EMPC == 0 && g_reg->EMPC == 1){  //处理PMC宏调用
-			// @test zk
-			printf("PMC CALL SUB PROG : %d\n", g_reg->MPCS);
-			this->m_p_channel_control[i].CallMacroProgram(g_reg->MPCS);
-			f_reg->MPCO = 1;   //调用结束
-		}else if(g_reg_last->EMPC == 1 && g_reg->EMPC == 0){
-			f_reg->MPCO = 0;   //信号复位
+        //处理PMC宏调用功能
+        if(g_reg_last->EMPC == 0 && g_reg->EMPC == 1){  //处理PMC宏调用
+            // @test zk
+            printf("PMC CALL SUB PROG : %d\n", g_reg->MPCS);
+            this->m_p_channel_control[i].CallMacroProgram(g_reg->MPCS);
+            f_reg->MPCO = 1;   //调用结束
+        }else if(g_reg_last->EMPC == 1 && g_reg->EMPC == 0){
+            f_reg->MPCO = 0;   //信号复位
         }
 
 #ifdef USES_WUXI_BLOOD_CHECK
@@ -8670,10 +8530,10 @@ void ChannelEngine::ProcessPmcSignal(){
 
                     this->m_hard_limit_postive |= flag;
                     this->ProcessAxisHardLimit(0);
-            //		printf("positive limit : 0x%llx\n", flag);
+                    //		printf("positive limit : 0x%llx\n", flag);
                 }else{
                     this->m_hard_limit_postive |= flag;
-            //		printf("positive limit22 : 0x%llx\n", flag);
+                    //		printf("positive limit22 : 0x%llx\n", flag);
                 }
 
             }
@@ -8685,16 +8545,16 @@ void ChannelEngine::ProcessPmcSignal(){
                 flag <<= 16*i;
                 if( m_hard_limit_negative == 0){
 
-					this->m_hard_limit_negative |= flag;
-					this->ProcessAxisHardLimit(1);
-			//		printf("negative limit : 0x%llx\n", m_hard_limit_negative);
-				}else{
-					this->m_hard_limit_negative |= flag;
-			//		printf("negative limit222 : 0x%llx\n", m_hard_limit_negative);
-				}
-			}
-		}
-	}
+                    this->m_hard_limit_negative |= flag;
+                    this->ProcessAxisHardLimit(1);
+                    //		printf("negative limit : 0x%llx\n", m_hard_limit_negative);
+                }else{
+                    this->m_hard_limit_negative |= flag;
+                    //		printf("negative limit222 : 0x%llx\n", m_hard_limit_negative);
+                }
+            }
+        }
+    }
 
 
     //复位RST信号
@@ -8706,7 +8566,7 @@ void ChannelEngine::ProcessPmcSignal(){
             for(uint8_t i = 0; i < this->m_p_general_config->chn_count; i++){
                 //延时时间到，复位RST信号
                 this->m_p_pmc_reg->FReg().bits[i].RST = 0;
-            //	this->m_p_channel_control[i].ResetRSTSignal();
+                //	this->m_p_channel_control[i].ResetRSTSignal();
 
             }
             this->m_b_reset_rst_signal = false;
@@ -8831,7 +8691,7 @@ void ChannelEngine::ProcessPmcAlarm(){
     if(alarmreg == nullptr)
         return;
 
-//	uint64_t *pt = (uint64_t *)alarmreg;
+    //	uint64_t *pt = (uint64_t *)alarmreg;
     uint8_t bit = 0;
     uint8_t errtype = INFO_LEVEL;
     uint16_t errorno = 0;
@@ -8867,7 +8727,7 @@ void ChannelEngine::ProcessPmcAlarm(){
     uint64_t value = 0;
     int count = A_REG_COUNT/8;
     for(int i = 0; i < count; i++){
-//		value = *pt;
+        //		value = *pt;
         memcpy(&value, alarmreg, 8);
         if(value != 0){
             bit = 0;
@@ -8882,7 +8742,7 @@ void ChannelEngine::ProcessPmcAlarm(){
                         errtype = ERROR_LEVEL;
                     else
                         errtype = FATAL_LEVEL
-                    CreateError(errorno, errtype, CLEAR_BY_AUTO, 0, CHANNEL_ENGINE_INDEX);
+                                CreateError(errorno, errtype, CLEAR_BY_AUTO, 0, CHANNEL_ENGINE_INDEX);
                 }
 
                 value = value>>1;  //右移一位
@@ -8899,11 +8759,11 @@ void ChannelEngine::ProcessPmcAlarm(){
  * @brief 处理PMC轴控制信号
  */
 void ChannelEngine::ProcessPmcAxisCtrl(){
-//	FRegBits *freg0 = GetChnFRegBits(0);
+    //	FRegBits *freg0 = GetChnFRegBits(0);
 
     FRegBits *freg = nullptr;
     const GRegBits *greg = nullptr;
-//	uint8_t phy_axis = 0xFF;
+    //	uint8_t phy_axis = 0xFF;
     PmcAxisCtrlCmd pmc_cmd;
 
     for(uint8_t i = 0; i < kMaxChnCount; i++){
@@ -8989,23 +8849,23 @@ bool ChannelEngine::CheckAxisRefBaseSignal(uint8_t phy_axis, int8_t dir){
         res = true;
     }
 
-//	if(dir == DIR_POSITIVE){
-//		if(index < 8){
-//			if(g_reg->AXIS_PDEC1 & (0x01<<index)){
-//				res = true;
-//			}
-//		}else if(g_reg->AXIS_PDEC2 & (0x01<<(index-8))){
-//			res = true;
-//		}
-//	}else if(dir == DIR_NEGATIVE){
-//		if(index < 8){
-//			if(g_reg->AXIS_NDEC1 & (0x01<<index)){
-//				res = true;
-//			}
-//		}else if(g_reg->AXIS_NDEC2 & (0x01<<(index-8))){
-//			res = true;
-//		}
-//	}
+    //	if(dir == DIR_POSITIVE){
+    //		if(index < 8){
+    //			if(g_reg->AXIS_PDEC1 & (0x01<<index)){
+    //				res = true;
+    //			}
+    //		}else if(g_reg->AXIS_PDEC2 & (0x01<<(index-8))){
+    //			res = true;
+    //		}
+    //	}else if(dir == DIR_NEGATIVE){
+    //		if(index < 8){
+    //			if(g_reg->AXIS_NDEC1 & (0x01<<index)){
+    //				res = true;
+    //			}
+    //		}else if(g_reg->AXIS_NDEC2 & (0x01<<(index-8))){
+    //			res = true;
+    //		}
+    //	}
 
     return res;
 
@@ -9053,7 +8913,7 @@ void ChannelEngine::ProcessAxisHardLimit(uint8_t dir){
         info = m_hard_limit_negative;
     }
     CreateError(m_error_code, ERROR_LEVEL, CLEAR_BY_MCP_RESET, info);
-//	printf("create axis hard limit error \n");
+    //	printf("create axis hard limit error \n");
 }
 
 /**
@@ -9067,19 +8927,19 @@ void ChannelEngine::SetPmcOutSignal(uint8_t index, uint8_t value){
     uint8_t sec = index/8;
     uint8_t bit = index%8;
 
-//	uint8_t cur_val = this->m_p_pmc_reg->FReg().all[72+sec];
-//	printf("SetPmcOutSignal: index = %hhu, value=0x%hhx\n", index, cur_val);
-//	cur_val ^= (0x01<<bit);  //取反
+    //	uint8_t cur_val = this->m_p_pmc_reg->FReg().all[72+sec];
+    //	printf("SetPmcOutSignal: index = %hhu, value=0x%hhx\n", index, cur_val);
+    //	cur_val ^= (0x01<<bit);  //取反
 
-//	this->m_p_pmc_reg->FReg().all[72+sec] = cur_val;
-//	printf("SetPmcOutSignal new : index = %hhu, value=0x%hhx\n", index, cur_val);
+    //	this->m_p_pmc_reg->FReg().all[72+sec] = cur_val;
+    //	printf("SetPmcOutSignal new : index = %hhu, value=0x%hhx\n", index, cur_val);
     if(value == 1){
         this->m_p_pmc_reg->FReg().all[72+sec] |= (0x01<<bit);
     }else if(value == 2){
         this->m_p_pmc_reg->FReg().all[72+sec] &= ~(0x01<<bit);
     }else if(value == 0){
         uint8_t cur_val = this->m_p_pmc_reg->FReg().all[72+sec];
-    //	printf("SetPmcOutSignal: index = %hhu, value=0x%hhx\n", index, cur_val);
+        //	printf("SetPmcOutSignal: index = %hhu, value=0x%hhx\n", index, cur_val);
         cur_val ^= (0x01<<bit);  //取反
 
         this->m_p_pmc_reg->FReg().all[72+sec] = cur_val;
@@ -9273,7 +9133,7 @@ void ChannelEngine::ResetOPSignal(uint8_t chn_index){
 void ChannelEngine::SetALSignal(uint8_t chn_index, bool value){
 
     if(chn_index != CHANNEL_ENGINE_INDEX){
-            this->m_p_channel_control[chn_index].SetALSignal(value);
+        this->m_p_channel_control[chn_index].SetALSignal(value);
     }else{
         for(uint8_t i = 0; i < this->m_p_general_config->chn_count; i++){
             this->m_p_channel_control[i].SetALSignal(value);
@@ -9314,177 +9174,177 @@ uint8_t ChannelEngine::GetPmcAxis(uint8_t pmc_chn){
 void ChannelEngine::AxisFindRefWithZeroSignal(uint8_t phy_axis){
 
     int8_t dir = 0, dir_opt;   //回参考点方向
-//	uint8_t ret_mode = 0;   //回参考点方式
+    //	uint8_t ret_mode = 0;   //回参考点方式
     uint8_t chn = 0, chn_axis = 0;
 
     dir = this->m_p_axis_config[phy_axis].ret_ref_dir?DIR_POSITIVE:DIR_NEGATIVE;  // 回参考点找粗基准方向
     dir_opt = (m_p_axis_config[phy_axis].ret_ref_change_dir==0)?dir*-1:dir;       //回参考点找精基准方向
 
     switch(this->m_n_ret_ref_step[phy_axis]){
-        case 0://检查原点信号
-            printf("return ref step 0, dir = %hhd, dir_opt=%hhd\n", dir, dir_opt);
-            this->SetRetRefFlag(phy_axis, false);   //复位回参考点完成标志
-            this->m_p_pmc_reg->FReg().bits[0].in_ref_point &= ~(0x01<<phy_axis);
+    case 0://检查原点信号
+        printf("return ref step 0, dir = %hhd, dir_opt=%hhd\n", dir, dir_opt);
+        this->SetRetRefFlag(phy_axis, false);   //复位回参考点完成标志
+        this->m_p_pmc_reg->FReg().bits[0].in_ref_point &= ~(0x01<<phy_axis);
 
-            if(this->CheckAxisRefBaseSignal(phy_axis, dir)){  // 已经触发粗基准信号，直接开开始回退
-                double move_length = this->m_p_axis_config[phy_axis].move_pr*1.2;
-                if(move_length>10.0) {
-                    move_length = 10.0;
-                    }
-                else if(move_length < 1.0){
-                    move_length = 1.0;
-                    }
-                m_df_ret_ref_tar_pos[phy_axis] = this->GetPhyAxisMachPosFeedback(phy_axis)+move_length* dir*-1;
-                this->ManualMove(phy_axis, dir*-1,
-                        this->m_p_axis_config[phy_axis].ret_ref_speed, move_length);
-
-                m_n_ret_ref_step[phy_axis] = 1;
+        if(this->CheckAxisRefBaseSignal(phy_axis, dir)){  // 已经触发粗基准信号，直接开开始回退
+            double move_length = this->m_p_axis_config[phy_axis].move_pr*1.2;
+            if(move_length>10.0) {
+                move_length = 10.0;
             }
-            else{
-                m_n_ret_ref_step[phy_axis] = 2;
+            else if(move_length < 1.0){
+                move_length = 1.0;
             }
+            m_df_ret_ref_tar_pos[phy_axis] = this->GetPhyAxisMachPosFeedback(phy_axis)+move_length* dir*-1;
+            this->ManualMove(phy_axis, dir*-1,
+                             this->m_p_axis_config[phy_axis].ret_ref_speed, move_length);
 
-            break;
-        case 1:{//等待回退到位，并再次检查原点信号
-            printf("return ref step 1\n");
-            chn = this->GetAxisChannel(phy_axis, chn_axis);
-            bool flag = CheckAxisRefBaseSignal(phy_axis, dir);
+            m_n_ret_ref_step[phy_axis] = 1;
+        }
+        else{
+            m_n_ret_ref_step[phy_axis] = 2;
+        }
 
-            if(chn != CHANNEL_ENGINE_INDEX){
-                if(fabs(this->GetPhyAxisMachPosFeedback(phy_axis) - m_df_ret_ref_tar_pos[phy_axis]) <= 0.010){
-                    if(true == flag){
-                        m_n_ret_ref_step[phy_axis] = 0;
-                        break;
-                    }
-                }
-                if(flag == false){
-                        m_n_ret_ref_step[phy_axis] = 2;  //跳转下一步
-                }
+        break;
+    case 1:{//等待回退到位，并再次检查原点信号
+        printf("return ref step 1\n");
+        chn = this->GetAxisChannel(phy_axis, chn_axis);
+        bool flag = CheckAxisRefBaseSignal(phy_axis, dir);
 
-            }else if(this->m_p_axis_config[phy_axis].axis_pmc){  //PMC轴到位
-                if(this->m_n_run_axis_mask == 0 || (this->m_n_runover_axis_mask & (0x01L<<phy_axis))){
-                    if(true == flag){
-                        m_n_ret_ref_step[phy_axis] = 0;
-                        break;
-                    }else{
-                            m_n_ret_ref_step[phy_axis] = 2;  //跳转下一步
-                    }
+        if(chn != CHANNEL_ENGINE_INDEX){
+            if(fabs(this->GetPhyAxisMachPosFeedback(phy_axis) - m_df_ret_ref_tar_pos[phy_axis]) <= 0.010){
+                if(true == flag){
+                    m_n_ret_ref_step[phy_axis] = 0;
+                    break;
                 }
             }
+            if(flag == false){
+                m_n_ret_ref_step[phy_axis] = 2;  //跳转下一步
             }
-            break;
-        case 2:  //以回参考点速度向回参考点方向运动
-    //		printf("return ref step 2\n");
-            this->ManualMove(phy_axis, dir, this->m_p_axis_config[phy_axis].ret_ref_speed, 90000.0);
-            m_n_ret_ref_step[phy_axis] = 3;  //跳转下一步
-            printf("return ref, goto step 3\n");
-            break;
-        case 3:  //触发原点信号，停止
-    //		printf("return ref step 3\n");
-            if(this->CheckAxisRefBaseSignal(phy_axis, dir)){
-                this->ManualMoveStop(phy_axis);
-                gettimeofday(&this->m_time_ret_ref[phy_axis], NULL);   //记录起始时间
-                m_n_ret_ref_step[phy_axis] = 4;  //跳转下一步
-                printf("return ref, goto step 4: pos = %lf\n", this->GetPhyAxisMachPosFeedback(phy_axis));
+
+        }else if(this->m_p_axis_config[phy_axis].axis_pmc){  //PMC轴到位
+            if(this->m_n_run_axis_mask == 0 || (this->m_n_runover_axis_mask & (0x01L<<phy_axis))){
+                if(true == flag){
+                    m_n_ret_ref_step[phy_axis] = 0;
+                    break;
+                }else{
+                    m_n_ret_ref_step[phy_axis] = 2;  //跳转下一步
+                }
             }
-            else{
+        }
+    }
+        break;
+    case 2:  //以回参考点速度向回参考点方向运动
+        //		printf("return ref step 2\n");
+        this->ManualMove(phy_axis, dir, this->m_p_axis_config[phy_axis].ret_ref_speed, 90000.0);
+        m_n_ret_ref_step[phy_axis] = 3;  //跳转下一步
+        printf("return ref, goto step 3\n");
+        break;
+    case 3:  //触发原点信号，停止
+        //		printf("return ref step 3\n");
+        if(this->CheckAxisRefBaseSignal(phy_axis, dir)){
+            this->ManualMoveStop(phy_axis);
+            gettimeofday(&this->m_time_ret_ref[phy_axis], NULL);   //记录起始时间
+            m_n_ret_ref_step[phy_axis] = 4;  //跳转下一步
+            printf("return ref, goto step 4: pos = %lf\n", this->GetPhyAxisMachPosFeedback(phy_axis));
+        }
+        else{
             //	this->ManualMove(phy_axis, dir, this->m_p_axis_config[phy_axis].ret_ref_speed,3.0);
-            }
-            break;
-        case 4:{//等待停止到位
-            struct timeval time_now;
-            gettimeofday(&time_now, NULL);
-            unsigned int time_elpase = (time_now.tv_sec-m_time_ret_ref[phy_axis].tv_sec)*1000000+time_now.tv_usec-m_time_ret_ref[phy_axis].tv_usec;
-            if(time_elpase >= 500000){ //延时500ms
-                m_n_ret_ref_step[phy_axis] = 5;  //跳转下一步
-                printf("return ref, goto step 5: pos = %lf, time=%u\n", this->GetPhyAxisMachPosFeedback(phy_axis), time_elpase);
-            }
-            if(!this->CheckAxisRefBaseSignal(phy_axis, dir)){
-                printf("回参考点过冲了！！！！！！！\n");
-            }
         }
-            break;
-        case 5:  //有基准， 低速回退至原点信号消失,
-            printf("return ref step 5\n");
-            this->ManualMove(phy_axis, dir_opt, this->m_p_axis_config[phy_axis].ret_ref_speed_second, this->m_p_axis_config[phy_axis].move_pr*2);//60
-            m_n_ret_ref_step[phy_axis] = 6;  //跳转下一步
-            printf("return ref, goto step 6\n");
+        break;
+    case 4:{//等待停止到位
+        struct timeval time_now;
+        gettimeofday(&time_now, NULL);
+        unsigned int time_elpase = (time_now.tv_sec-m_time_ret_ref[phy_axis].tv_sec)*1000000+time_now.tv_usec-m_time_ret_ref[phy_axis].tv_usec;
+        if(time_elpase >= 500000){ //延时500ms
+            m_n_ret_ref_step[phy_axis] = 5;  //跳转下一步
+            printf("return ref, goto step 5: pos = %lf, time=%u\n", this->GetPhyAxisMachPosFeedback(phy_axis), time_elpase);
+        }
+        if(!this->CheckAxisRefBaseSignal(phy_axis, dir)){
+            printf("回参考点过冲了！！！！！！！\n");
+        }
+    }
+        break;
+    case 5:  //有基准， 低速回退至原点信号消失,
+        printf("return ref step 5\n");
+        this->ManualMove(phy_axis, dir_opt, this->m_p_axis_config[phy_axis].ret_ref_speed_second, this->m_p_axis_config[phy_axis].move_pr*2);//60
+        m_n_ret_ref_step[phy_axis] = 6;  //跳转下一步
+        printf("return ref, goto step 6\n");
 
-            break;
-        case 6:  //有基准，等待粗基准信号消失
+        break;
+    case 6:  //有基准，等待粗基准信号消失
         //	printf("return ref step 6\n");
-            if(!this->CheckAxisRefBaseSignal(phy_axis, dir)){
-                this->ManualMoveStop(phy_axis);
+        if(!this->CheckAxisRefBaseSignal(phy_axis, dir)){
+            this->ManualMoveStop(phy_axis);
 
-                gettimeofday(&this->m_time_ret_ref[phy_axis], NULL);   //记录起始时间，延时300ms
-
-                m_n_ret_ref_step[phy_axis] = 7;  //跳转下一步
-            }
-            break;
-        case 7:{ //等待停止到位
-            struct timeval time_now;
-            gettimeofday(&time_now, NULL);
-            unsigned int time_elpase = (time_now.tv_sec-m_time_ret_ref[phy_axis].tv_sec)*1000000+time_now.tv_usec-m_time_ret_ref[phy_axis].tv_usec;
-            if(time_elpase >= 500000){ //延时500ms
-//				m_n_get_cur_encoder_count = 0;  //复位获取当前编码器次数
-                m_n_ret_ref_step[phy_axis] = 8;  //跳转下一步
-                printf("return ref, goto step 8\n");
-            }
-        }
-            break;
-
-        case 8:{ //  设置原点
-            printf("return ref step 8: send cmd to mi, set ref point\n");
-            MiCmdFrame cmd;
-            memset(&cmd, 0x00, sizeof(cmd));
-            cmd.data.axis_index = phy_axis+1;
-            cmd.data.cmd = CMD_MI_SET_REF_CUR;
-
-            int64_t pos = m_p_axis_config[phy_axis].axis_home_pos[0] * 1e7;   //单位转换，0.1nm
-            memcpy(cmd.data.data, &pos, sizeof(int64_t));
-            this->m_p_mi_comm->WriteCmd(cmd);
             gettimeofday(&this->m_time_ret_ref[phy_axis], NULL);   //记录起始时间，延时300ms
 
-            m_n_ret_ref_step[phy_axis] = 9;  //跳转下一步
-            printf("return ref, goto step 9\n");
-
+            m_n_ret_ref_step[phy_axis] = 7;  //跳转下一步
         }
-            break;
-        case 9: { //等待设置参考点完成，在Mi指令响应处理函数中处理
-            struct timeval time_now;
-            gettimeofday(&time_now, NULL);
-            unsigned int time_elpase = (time_now.tv_sec-m_time_ret_ref[phy_axis].tv_sec)*1000000+time_now.tv_usec-m_time_ret_ref[phy_axis].tv_usec;
-            if(time_elpase >= 300000){ //延时300ms
-                m_n_ret_ref_step[phy_axis] = 10;  //跳转下一步
-                printf("return ref, goto step 10\n");
-            }
-            }
-            break;
-        case 10:  //回参考点完成
-            printf("axis %u return ref over\n", phy_axis);
-            this->SetRetRefFlag(phy_axis, true);
-            this->m_p_pmc_reg->FReg().bits[0].in_ref_point |= (0x01<<phy_axis);   //置位到参考点标志
-
-
-            this->m_n_mask_ret_ref &= ~(0x01<<phy_axis);
-            m_n_ret_ref_step[phy_axis] = 0;
-
-            break;
-        case 20: //失败处理
-            this->m_n_mask_ret_ref &= ~(0x01<<phy_axis);
-            m_n_ret_ref_step[phy_axis] = 0;
-
-            if(m_n_mask_ret_ref == 0){
-                this->m_b_ret_ref = false;
-                this->m_b_ret_ref_auto = false;
-                m_n_ret_ref_auto_cur = 0;
-            }
-            m_error_code = ERR_RET_REF_FAILED;
-            CreateError(ERR_RET_REF_FAILED, WARNING_LEVEL, CLEAR_BY_MCP_RESET, 0, CHANNEL_ENGINE_INDEX, phy_axis+1);
-            break;
-        default:
-            break;
+        break;
+    case 7:{ //等待停止到位
+        struct timeval time_now;
+        gettimeofday(&time_now, NULL);
+        unsigned int time_elpase = (time_now.tv_sec-m_time_ret_ref[phy_axis].tv_sec)*1000000+time_now.tv_usec-m_time_ret_ref[phy_axis].tv_usec;
+        if(time_elpase >= 500000){ //延时500ms
+            //				m_n_get_cur_encoder_count = 0;  //复位获取当前编码器次数
+            m_n_ret_ref_step[phy_axis] = 8;  //跳转下一步
+            printf("return ref, goto step 8\n");
         }
+    }
+        break;
+
+    case 8:{ //  设置原点
+        printf("return ref step 8: send cmd to mi, set ref point\n");
+        MiCmdFrame cmd;
+        memset(&cmd, 0x00, sizeof(cmd));
+        cmd.data.axis_index = phy_axis+1;
+        cmd.data.cmd = CMD_MI_SET_REF_CUR;
+
+        int64_t pos = m_p_axis_config[phy_axis].axis_home_pos[0] * 1e7;   //单位转换，0.1nm
+        memcpy(cmd.data.data, &pos, sizeof(int64_t));
+        this->m_p_mi_comm->WriteCmd(cmd);
+        gettimeofday(&this->m_time_ret_ref[phy_axis], NULL);   //记录起始时间，延时300ms
+
+        m_n_ret_ref_step[phy_axis] = 9;  //跳转下一步
+        printf("return ref, goto step 9\n");
+
+    }
+        break;
+    case 9: { //等待设置参考点完成，在Mi指令响应处理函数中处理
+        struct timeval time_now;
+        gettimeofday(&time_now, NULL);
+        unsigned int time_elpase = (time_now.tv_sec-m_time_ret_ref[phy_axis].tv_sec)*1000000+time_now.tv_usec-m_time_ret_ref[phy_axis].tv_usec;
+        if(time_elpase >= 300000){ //延时300ms
+            m_n_ret_ref_step[phy_axis] = 10;  //跳转下一步
+            printf("return ref, goto step 10\n");
+        }
+    }
+        break;
+    case 10:  //回参考点完成
+        printf("axis %u return ref over\n", phy_axis);
+        this->SetRetRefFlag(phy_axis, true);
+        this->m_p_pmc_reg->FReg().bits[0].in_ref_point |= (0x01<<phy_axis);   //置位到参考点标志
+
+
+        this->m_n_mask_ret_ref &= ~(0x01<<phy_axis);
+        m_n_ret_ref_step[phy_axis] = 0;
+
+        break;
+    case 20: //失败处理
+        this->m_n_mask_ret_ref &= ~(0x01<<phy_axis);
+        m_n_ret_ref_step[phy_axis] = 0;
+
+        if(m_n_mask_ret_ref == 0){
+            this->m_b_ret_ref = false;
+            this->m_b_ret_ref_auto = false;
+            m_n_ret_ref_auto_cur = 0;
+        }
+        m_error_code = ERR_RET_REF_FAILED;
+        CreateError(ERR_RET_REF_FAILED, WARNING_LEVEL, CLEAR_BY_MCP_RESET, 0, CHANNEL_ENGINE_INDEX, phy_axis+1);
+        break;
+    default:
+        break;
+    }
 }
 
 /**
@@ -9503,60 +9363,60 @@ void ChannelEngine::SetAxisNameEx(bool flag){
 void ChannelEngine::AxisFindRefNoZeroSignal(uint8_t phy_axis){
 
     switch(this->m_n_ret_ref_step[phy_axis]){
-        case 0: {// 设置原点
-            printf("return ref step 0: send cmd to mi, set ref point\n");
-            MiCmdFrame cmd;
-            memset(&cmd, 0x00, sizeof(cmd));
-            cmd.data.axis_index = phy_axis+1;
-            cmd.data.cmd = CMD_MI_SET_REF_CUR;
+    case 0: {// 设置原点
+        printf("return ref step 0: send cmd to mi, set ref point\n");
+        MiCmdFrame cmd;
+        memset(&cmd, 0x00, sizeof(cmd));
+        cmd.data.axis_index = phy_axis+1;
+        cmd.data.cmd = CMD_MI_SET_REF_CUR;
 
-            int64_t pos = m_p_axis_config[phy_axis].axis_home_pos[0] * 1e7;   //单位转换，0.1nm
-            memcpy(cmd.data.data, &pos, sizeof(int64_t));
-            this->m_p_mi_comm->WriteCmd(cmd);
-            gettimeofday(&this->m_time_ret_ref[phy_axis], NULL);   //记录起始时间，延时300ms
+        int64_t pos = m_p_axis_config[phy_axis].axis_home_pos[0] * 1e7;   //单位转换，0.1nm
+        memcpy(cmd.data.data, &pos, sizeof(int64_t));
+        this->m_p_mi_comm->WriteCmd(cmd);
+        gettimeofday(&this->m_time_ret_ref[phy_axis], NULL);   //记录起始时间，延时300ms
 
-            m_n_ret_ref_step[phy_axis] = 1;  //跳转下一步
-            printf("return ref, goto step 1\n");
+        m_n_ret_ref_step[phy_axis] = 1;  //跳转下一步
+        printf("return ref, goto step 1\n");
 
+    }
+        break;
+    case 1: { //等待设置参考点完成，在Mi指令响应处理函数中处理
+        struct timeval time_now;
+        gettimeofday(&time_now, NULL);
+        unsigned int time_elpase = (time_now.tv_sec-m_time_ret_ref[phy_axis].tv_sec)*1000000+time_now.tv_usec-m_time_ret_ref[phy_axis].tv_usec;
+        if(time_elpase >= 300000){ //延时300ms
+            m_n_ret_ref_step[phy_axis] = 2;  //跳转下一步
+            printf("return ref, goto step 2\n");
         }
-            break;
-        case 1: { //等待设置参考点完成，在Mi指令响应处理函数中处理
-            struct timeval time_now;
-            gettimeofday(&time_now, NULL);
-            unsigned int time_elpase = (time_now.tv_sec-m_time_ret_ref[phy_axis].tv_sec)*1000000+time_now.tv_usec-m_time_ret_ref[phy_axis].tv_usec;
-            if(time_elpase >= 300000){ //延时300ms
-                m_n_ret_ref_step[phy_axis] = 2;  //跳转下一步
-                printf("return ref, goto step 2\n");
-            }
-            }
-            break;
-        case 2:  //回参考点完成
-            printf("axis %u return ref over\n", phy_axis);
-            this->SetRetRefFlag(phy_axis, true);
-            this->m_p_pmc_reg->FReg().bits[0].in_ref_point |= (0x01<<phy_axis);   //置位到参考点标志
-//			printf("return ref over flag : 0x%llx, 0x%hhx, 0x%hhx, 0x%hhx, 0x%hhx, 0x%hhx, 0x%hhx, 0x%hhx, 0x%hhx\n", this->m_p_pmc_reg->FReg().bits[0].in_ref_point,
-//					m_p_pmc_reg->FReg().all[200], m_p_pmc_reg->FReg().all[201], m_p_pmc_reg->FReg().all[202], m_p_pmc_reg->FReg().all[203],
-//					m_p_pmc_reg->FReg().all[204], m_p_pmc_reg->FReg().all[205], m_p_pmc_reg->FReg().all[206], m_p_pmc_reg->FReg().all[207]);
-            this->m_n_mask_ret_ref &= ~(0x01<<phy_axis);
-            m_n_ret_ref_step[phy_axis] = 0;
+    }
+        break;
+    case 2:  //回参考点完成
+        printf("axis %u return ref over\n", phy_axis);
+        this->SetRetRefFlag(phy_axis, true);
+        this->m_p_pmc_reg->FReg().bits[0].in_ref_point |= (0x01<<phy_axis);   //置位到参考点标志
+        //			printf("return ref over flag : 0x%llx, 0x%hhx, 0x%hhx, 0x%hhx, 0x%hhx, 0x%hhx, 0x%hhx, 0x%hhx, 0x%hhx\n", this->m_p_pmc_reg->FReg().bits[0].in_ref_point,
+        //					m_p_pmc_reg->FReg().all[200], m_p_pmc_reg->FReg().all[201], m_p_pmc_reg->FReg().all[202], m_p_pmc_reg->FReg().all[203],
+        //					m_p_pmc_reg->FReg().all[204], m_p_pmc_reg->FReg().all[205], m_p_pmc_reg->FReg().all[206], m_p_pmc_reg->FReg().all[207]);
+        this->m_n_mask_ret_ref &= ~(0x01<<phy_axis);
+        m_n_ret_ref_step[phy_axis] = 0;
 
 
-            break;
-        case 20: //失败处理
-            this->m_n_mask_ret_ref &= ~(0x01<<phy_axis);
-            m_n_ret_ref_step[phy_axis] = 0;
+        break;
+    case 20: //失败处理
+        this->m_n_mask_ret_ref &= ~(0x01<<phy_axis);
+        m_n_ret_ref_step[phy_axis] = 0;
 
-            if(m_n_mask_ret_ref == 0){
-                this->m_b_ret_ref = false;
-                this->m_b_ret_ref_auto = false;
-                m_n_ret_ref_auto_cur = 0;
-            }
-            m_error_code = ERR_RET_REF_FAILED;
-            CreateError(ERR_RET_REF_FAILED, WARNING_LEVEL, CLEAR_BY_MCP_RESET, 0, CHANNEL_ENGINE_INDEX, phy_axis+1);
-            break;
-        default:
-            break;
+        if(m_n_mask_ret_ref == 0){
+            this->m_b_ret_ref = false;
+            this->m_b_ret_ref_auto = false;
+            m_n_ret_ref_auto_cur = 0;
         }
+        m_error_code = ERR_RET_REF_FAILED;
+        CreateError(ERR_RET_REF_FAILED, WARNING_LEVEL, CLEAR_BY_MCP_RESET, 0, CHANNEL_ENGINE_INDEX, phy_axis+1);
+        break;
+    default:
+        break;
+    }
 }
 
 /**
@@ -9572,351 +9432,351 @@ void ChannelEngine::EcatIncAxisFindRefWithZeroSignal(uint8_t phy_axis){
     dir_opt = (m_p_axis_config[phy_axis].ret_ref_change_dir==0)?dir*-1:dir;       //回参考点找精基准方向
 
     switch(this->m_n_ret_ref_step[phy_axis]){
-        case 0://检查原点信号
-            this->SetRetRefFlag(phy_axis, false);   //复位回参考点完成标志
-            this->m_p_pmc_reg->FReg().bits[0].in_ref_point &= ~(0x01<<phy_axis);
+    case 0://检查原点信号
+        this->SetRetRefFlag(phy_axis, false);   //复位回参考点完成标志
+        this->m_p_pmc_reg->FReg().bits[0].in_ref_point &= ~(0x01<<phy_axis);
 
-//            if(this->m_n_sync_master_mask & this->m_n_sync_master_enable_mask & (0x01<<phy_axis)){//主动轴相应的从动轴也需要清除回零标志
-//                for(uint8_t i = 0; i < this->m_p_general_config->axis_count; i++){
-//                    if(this->m_p_axis_config[i].sync_axis == 1 && this->m_p_axis_config[i].master_axis_no == (phy_axis+1)){
-//                        if(this->m_n_sync_axis_enable_mask & (0x01<<i)){
-//                            this->SetRetRefFlag(i, false);
-//                            this->m_p_pmc_reg->FReg().bits[0].in_ref_point &= ~(0x01<<i);
+        //            if(this->m_n_sync_master_mask & this->m_n_sync_master_enable_mask & (0x01<<phy_axis)){//主动轴相应的从动轴也需要清除回零标志
+        //                for(uint8_t i = 0; i < this->m_p_general_config->axis_count; i++){
+        //                    if(this->m_p_axis_config[i].sync_axis == 1 && this->m_p_axis_config[i].master_axis_no == (phy_axis+1)){
+        //                        if(this->m_n_sync_axis_enable_mask & (0x01<<i)){
+        //                            this->SetRetRefFlag(i, false);
+        //                            this->m_p_pmc_reg->FReg().bits[0].in_ref_point &= ~(0x01<<i);
 
-//                        //	this->m_p_axis_config[i].benchmark_offset = 0;   //主从基准偏差为0
-//                        }
-//                    }
-//                }
-//            }
+        //                        //	this->m_p_axis_config[i].benchmark_offset = 0;   //主从基准偏差为0
+        //                        }
+        //                    }
+        //                }
+        //            }
 
-            if(this->CheckAxisRefBaseSignal(phy_axis, dir)){  // 已经触发粗基准信号，直接开开始回退
-                double move_length = this->m_p_axis_config[phy_axis].move_pr*1.2;
-                if(move_length>10.0) {
-                    move_length = 10.0;
-                    }
-                else if(move_length < 1.0){
-                    move_length = 1.0;
-                    }
-                m_df_ret_ref_tar_pos[phy_axis] = this->GetPhyAxisMachPosFeedback(phy_axis)+move_length* dir*-1;
-                this->ManualMove(phy_axis, dir*-1,
-                        this->m_p_axis_config[phy_axis].ret_ref_speed, move_length);
-
-                std::cout << "step 0, dir: " << (int)dir << " dir_opt: " << dir_opt << " goto step 1 " << std::endl;
-                m_n_ret_ref_step[phy_axis] = 1;
-            }
-            else{
-                std::cout << "step 0, dir: " << (int)dir << " dir_opt: " << dir_opt << " goto step 2 " << std::endl;
-                m_n_ret_ref_step[phy_axis] = 2;
-            }
-
-            break;
-        case 1:{//等待回退到位，并再次检查原点信号
-            chn = this->GetAxisChannel(phy_axis, chn_axis);
-            bool flag = CheckAxisRefBaseSignal(phy_axis, dir);
-
-            if(chn != CHANNEL_ENGINE_INDEX){
-                if(fabs(this->GetPhyAxisMachPosFeedback(phy_axis) - m_df_ret_ref_tar_pos[phy_axis]) <= 0.010){
-                    if(true == flag){   //回到step0，继续回退
-                        m_n_ret_ref_step[phy_axis] = 0;
-                        std::cout << "step 1, goback 0" << std::endl;
-                        break;
-                    }
-                }
-                if(flag == false){
-                        m_n_ret_ref_step[phy_axis] = 2;  //跳转下一步
-                        std::cout << "step 1" << std::endl;
-                }
-
-            }else if(this->m_p_axis_config[phy_axis].axis_pmc){  //PMC轴到位
-                if(this->m_n_run_axis_mask == 0 || (this->m_n_runover_axis_mask & (0x01L<<phy_axis))){
-                    if(true == flag){
-                        m_n_ret_ref_step[phy_axis] = 0;
-                        break;
-                    }else{
-                            m_n_ret_ref_step[phy_axis] = 2;  //跳转下一步
-                    }
-                }
-            }
-            }
-            break;
-        case 2:  //以回参考点速度向回参考点方向运动
-            this->ManualMove(phy_axis, dir, this->m_p_axis_config[phy_axis].ret_ref_speed, 90000.0);
-            m_n_ret_ref_step[phy_axis] = 3;  //跳转下一步
-            std::cout << "step 2, ret_ref_speed: " << this->m_p_axis_config[phy_axis].ret_ref_speed << "dir: " << (int)dir << std::endl;
-            break;
-        case 3:  //触发粗基准信号，停止
-            if(this->CheckAxisRefBaseSignal(phy_axis, dir)){
-                this->ManualMoveStop(phy_axis);
-                gettimeofday(&this->m_time_ret_ref[phy_axis], NULL);   //记录起始时间
-                m_n_ret_ref_step[phy_axis] = 4;  //跳转下一步
-                this->SendMonitorData(false, false);
-                std::cout << "step 3, axisPos: " << this->GetPhyAxisMachPosIntp(phy_axis) << std::endl;
-            }
-            else{
-            //	this->ManualMove(phy_axis, dir, this->m_p_axis_config[phy_axis].ret_ref_speed,1.0);
-            }
-            break;
-        case 4:{//等待停止到位
-            struct timeval time_now;
-            gettimeofday(&time_now, NULL);
-            unsigned int time_elpase = (time_now.tv_sec-m_time_ret_ref[phy_axis].tv_sec)*1000000+time_now.tv_usec-m_time_ret_ref[phy_axis].tv_usec;
-            if(time_elpase >= 1000000){ //延时1000ms
-                m_n_ret_ref_step[phy_axis] = 5;  //跳转下一步
-                this->SendMonitorData(false, false);
-                std::cout << "step 4, axisPos: " << this->GetPhyAxisMachPosIntp(phy_axis) << std::endl;
-            }
-        }
-            break;
-        case 5:{  //有基准， 低速回退至粗基准信号消失,
-            printf("return ref step 5\n");
-            double move_length = this->m_p_axis_config[phy_axis].move_pr*2;
+        if(this->CheckAxisRefBaseSignal(phy_axis, dir)){  // 已经触发粗基准信号，直接开开始回退
+            double move_length = this->m_p_axis_config[phy_axis].move_pr*1.2;
             if(move_length>10.0) {
                 move_length = 10.0;
-            }else if(move_length < 1.0){
+            }
+            else if(move_length < 1.0){
                 move_length = 1.0;
             }
+            m_df_ret_ref_tar_pos[phy_axis] = this->GetPhyAxisMachPosFeedback(phy_axis)+move_length* dir*-1;
+            this->ManualMove(phy_axis, dir*-1,
+                             this->m_p_axis_config[phy_axis].ret_ref_speed, move_length);
 
-            double val = 60;
-            if (this->m_p_axis_config[phy_axis].ret_ref_speed_second > 0)
-                val = this->m_p_axis_config[phy_axis].ret_ref_speed_second;
-            m_df_ret_ref_tar_pos[phy_axis] = this->GetPhyAxisMachPosFeedback(phy_axis)+move_length* dir_opt;
-            this->ManualMove(phy_axis, dir_opt, val, move_length); //有基准， 低速回退至粗基准信号消失, 速度：60mm/min
-            m_n_ret_ref_step[phy_axis] = 6;  //跳转下一步
-            std::cout << "step 5," << " speed: " << val << std::endl;
-
-            break;
+            std::cout << "step 0, dir: " << (int)dir << " dir_opt: " << dir_opt << " goto step 1 " << std::endl;
+            m_n_ret_ref_step[phy_axis] = 1;
         }
-        case 6:  //有基准，等待粗基准信号消失
+        else{
+            std::cout << "step 0, dir: " << (int)dir << " dir_opt: " << dir_opt << " goto step 2 " << std::endl;
+            m_n_ret_ref_step[phy_axis] = 2;
+        }
+
+        break;
+    case 1:{//等待回退到位，并再次检查原点信号
+        chn = this->GetAxisChannel(phy_axis, chn_axis);
+        bool flag = CheckAxisRefBaseSignal(phy_axis, dir);
+
+        if(chn != CHANNEL_ENGINE_INDEX){
+            if(fabs(this->GetPhyAxisMachPosFeedback(phy_axis) - m_df_ret_ref_tar_pos[phy_axis]) <= 0.010){
+                if(true == flag){   //回到step0，继续回退
+                    m_n_ret_ref_step[phy_axis] = 0;
+                    std::cout << "step 1, goback 0" << std::endl;
+                    break;
+                }
+            }
+            if(flag == false){
+                m_n_ret_ref_step[phy_axis] = 2;  //跳转下一步
+                std::cout << "step 1" << std::endl;
+            }
+
+        }else if(this->m_p_axis_config[phy_axis].axis_pmc){  //PMC轴到位
+            if(this->m_n_run_axis_mask == 0 || (this->m_n_runover_axis_mask & (0x01L<<phy_axis))){
+                if(true == flag){
+                    m_n_ret_ref_step[phy_axis] = 0;
+                    break;
+                }else{
+                    m_n_ret_ref_step[phy_axis] = 2;  //跳转下一步
+                }
+            }
+        }
+    }
+        break;
+    case 2:  //以回参考点速度向回参考点方向运动
+        this->ManualMove(phy_axis, dir, this->m_p_axis_config[phy_axis].ret_ref_speed, 90000.0);
+        m_n_ret_ref_step[phy_axis] = 3;  //跳转下一步
+        std::cout << "step 2, ret_ref_speed: " << this->m_p_axis_config[phy_axis].ret_ref_speed << "dir: " << (int)dir << std::endl;
+        break;
+    case 3:  //触发粗基准信号，停止
+        if(this->CheckAxisRefBaseSignal(phy_axis, dir)){
+            this->ManualMoveStop(phy_axis);
+            gettimeofday(&this->m_time_ret_ref[phy_axis], NULL);   //记录起始时间
+            m_n_ret_ref_step[phy_axis] = 4;  //跳转下一步
+            this->SendMonitorData(false, false);
+            std::cout << "step 3, axisPos: " << this->GetPhyAxisMachPosIntp(phy_axis) << std::endl;
+        }
+        else{
+            //	this->ManualMove(phy_axis, dir, this->m_p_axis_config[phy_axis].ret_ref_speed,1.0);
+        }
+        break;
+    case 4:{//等待停止到位
+        struct timeval time_now;
+        gettimeofday(&time_now, NULL);
+        unsigned int time_elpase = (time_now.tv_sec-m_time_ret_ref[phy_axis].tv_sec)*1000000+time_now.tv_usec-m_time_ret_ref[phy_axis].tv_usec;
+        if(time_elpase >= 1000000){ //延时1000ms
+            m_n_ret_ref_step[phy_axis] = 5;  //跳转下一步
+            this->SendMonitorData(false, false);
+            std::cout << "step 4, axisPos: " << this->GetPhyAxisMachPosIntp(phy_axis) << std::endl;
+        }
+    }
+        break;
+    case 5:{  //有基准， 低速回退至粗基准信号消失,
+        printf("return ref step 5\n");
+        double move_length = this->m_p_axis_config[phy_axis].move_pr*2;
+        if(move_length>10.0) {
+            move_length = 10.0;
+        }else if(move_length < 1.0){
+            move_length = 1.0;
+        }
+
+        double val = 60;
+        if (this->m_p_axis_config[phy_axis].ret_ref_speed_second > 0)
+            val = this->m_p_axis_config[phy_axis].ret_ref_speed_second;
+        m_df_ret_ref_tar_pos[phy_axis] = this->GetPhyAxisMachPosFeedback(phy_axis)+move_length* dir_opt;
+        this->ManualMove(phy_axis, dir_opt, val, move_length); //有基准， 低速回退至粗基准信号消失, 速度：60mm/min
+        m_n_ret_ref_step[phy_axis] = 6;  //跳转下一步
+        std::cout << "step 5," << " speed: " << val << std::endl;
+
+        break;
+    }
+    case 6:  //有基准，等待粗基准信号消失
+        if(!this->CheckAxisRefBaseSignal(phy_axis, dir)){
+            this->ManualMoveStop(phy_axis);
+
+            gettimeofday(&this->m_time_ret_ref[phy_axis], NULL);   //记录起始时间，延时600ms
+
+            m_n_ret_ref_step[phy_axis] = 7;  //跳转下一步
+            std::cout << "step 6, goto 7" << std::endl;
+        }else if(fabs(this->GetPhyAxisMachPosFeedback(phy_axis) - m_df_ret_ref_tar_pos[phy_axis]) <= 0.010){  //接近目标位置，粗基准信号还在，则继续回退
+            m_n_ret_ref_step[phy_axis] = 5;  //跳转第5步
+            std::cout << "step 6, goback 5" << std::endl;
+        }
+        break;
+    case 7:{ //等待停止到位，并向MI发送激活捕获Z信号命令
+        struct timeval time_now;
+        gettimeofday(&time_now, NULL);
+        unsigned int time_elpase = (time_now.tv_sec-m_time_ret_ref[phy_axis].tv_sec)*1000000+time_now.tv_usec-m_time_ret_ref[phy_axis].tv_usec;
+        if(time_elpase >= 600000){ //延时600ms
             if(!this->CheckAxisRefBaseSignal(phy_axis, dir)){
-                this->ManualMoveStop(phy_axis);
-
-                gettimeofday(&this->m_time_ret_ref[phy_axis], NULL);   //记录起始时间，延时600ms
-
-                m_n_ret_ref_step[phy_axis] = 7;  //跳转下一步
-                std::cout << "step 6, goto 7" << std::endl;
-            }else if(fabs(this->GetPhyAxisMachPosFeedback(phy_axis) - m_df_ret_ref_tar_pos[phy_axis]) <= 0.010){  //接近目标位置，粗基准信号还在，则继续回退
-                m_n_ret_ref_step[phy_axis] = 5;  //跳转第5步
-                std::cout << "step 6, goback 5" << std::endl;
+                this->SendMiAxisZCaptureCmd(phy_axis, true);  //激活Z信号捕获
+                m_n_ret_ref_step[phy_axis] = 8;  //跳转下一步
+                std::cout << "step 7" << std::endl;
+            }else{      //如果又发现粗基准有信号，则继续回退
+                m_n_ret_ref_step[phy_axis] = 5;  //回跳至第5步
+                std::cout << "step 7, goback 5" << std::endl;
             }
-            break;
-        case 7:{ //等待停止到位，并向MI发送激活捕获Z信号命令
-            struct timeval time_now;
-            gettimeofday(&time_now, NULL);
-            unsigned int time_elpase = (time_now.tv_sec-m_time_ret_ref[phy_axis].tv_sec)*1000000+time_now.tv_usec-m_time_ret_ref[phy_axis].tv_usec;
-            if(time_elpase >= 600000){ //延时600ms
-                if(!this->CheckAxisRefBaseSignal(phy_axis, dir)){
-                    this->SendMiAxisZCaptureCmd(phy_axis, true);  //激活Z信号捕获
-                    m_n_ret_ref_step[phy_axis] = 8;  //跳转下一步
-                    std::cout << "step 7" << std::endl;
-                }else{      //如果又发现粗基准有信号，则继续回退
-                    m_n_ret_ref_step[phy_axis] = 5;  //回跳至第5步
-                    std::cout << "step 7, goback 5" << std::endl;
-                }
 
-            }
         }
-            break;
-        case 8:{ //向寻找精基准方向运动1.2个螺距，以捕获Z信号
-            double move_length = 0;
-            if (this->m_p_axis_config[phy_axis].ref_z_distance_max == 0)
-                move_length = this->m_p_axis_config[phy_axis].move_pr*1.2;
+    }
+        break;
+    case 8:{ //向寻找精基准方向运动1.2个螺距，以捕获Z信号
+        double move_length = 0;
+        if (this->m_p_axis_config[phy_axis].ref_z_distance_max == 0)
+            move_length = this->m_p_axis_config[phy_axis].move_pr*1.2;
+        else
+            move_length = this->m_p_axis_config[phy_axis].ref_z_distance_max;
+
+        m_df_ret_ref_tar_pos[phy_axis] = this->GetPhyAxisMachPosFeedback(phy_axis)+move_length * dir_opt;
+
+        double val = 60;
+        if (this->m_p_axis_config[phy_axis].ret_ref_speed_second > 0)
+            val = this->m_p_axis_config[phy_axis].ret_ref_speed_second;
+        this->ManualMove(phy_axis, dir_opt, val, move_length);
+
+        m_n_ret_ref_step[phy_axis] = 9;  //跳转下一步
+        std::cout << "step 8, moveLength: " << move_length << " val " << val << std::endl;
+    }
+        break;
+    case 9:{ //等待Z信号捕获完成或者移动到位捕获失败，在Mi指令响应处理函数中处理
+        if(fabs(this->GetPhyAxisMachPosFeedback(phy_axis) - m_df_ret_ref_tar_pos[phy_axis]) <= 0.010){  //运行到位还是未找到Z信号
+            std::cout << "step 9, not find z singal" << std::endl;
+            this->SendMiAxisZCaptureCmd(phy_axis, false);
+            m_n_ret_ref_step[phy_axis] = 20;   //跳转失败处理
+        }
+    }
+        break;
+    case 10:{ //延时300ms，等待停止到位
+        struct timeval time_now;
+        gettimeofday(&time_now, NULL);
+        unsigned int time_elpase = (time_now.tv_sec-m_time_ret_ref[phy_axis].tv_sec)*1000000+time_now.tv_usec-m_time_ret_ref[phy_axis].tv_usec;
+        if(time_elpase >= 300000){ //延时300ms
+            MiCmdFrame cmd;
+            memset(&cmd, 0x00, sizeof(cmd));
+            cmd.data.axis_index = phy_axis+1;
+            cmd.data.cmd = CMD_MI_SET_REF;
+            memcpy(cmd.data.data, &m_p_axis_config[phy_axis].ref_encoder, sizeof(int64_t));
+
+            this->m_p_mi_comm->WriteCmd(cmd);
+            gettimeofday(&this->m_time_ret_ref[phy_axis], NULL);   //记录起始时间
+            m_n_ret_ref_step[phy_axis]++;  //跳转下一步
+            std::cout << "step 10" << std::endl;
+        }
+        break;
+    }
+
+    case 11:{   // 先走偏移量
+        struct timeval time_now;
+        gettimeofday(&time_now, NULL);
+        unsigned int time_elpase = (time_now.tv_sec-m_time_ret_ref[phy_axis].tv_sec)*1000000+time_now.tv_usec-m_time_ret_ref[phy_axis].tv_usec;
+        if(time_elpase >= 100000){ //延时100ms
+            if (this->m_p_axis_config[phy_axis].ref_offset_pos)
+            {
+                double val = 60;
+                if (this->m_p_axis_config[phy_axis].ret_ref_speed_second > 0)
+                    val = this->m_p_axis_config[phy_axis].ret_ref_speed_second;
+                this->ManualMoveAbs(phy_axis, val, this->m_p_axis_config[phy_axis].ref_offset_pos);
+                m_n_ret_ref_step[phy_axis] = 12;  //跳转下一步
+                std::cout << "step 11, ref_offset_pos: " << this->m_p_axis_config[phy_axis].ref_offset_pos << std::endl;
+            }
             else
-                move_length = this->m_p_axis_config[phy_axis].ref_z_distance_max;
-
-            m_df_ret_ref_tar_pos[phy_axis] = this->GetPhyAxisMachPosFeedback(phy_axis)+move_length * dir_opt;
-
-            double val = 60;
-            if (this->m_p_axis_config[phy_axis].ret_ref_speed_second > 0)
-                val = this->m_p_axis_config[phy_axis].ret_ref_speed_second;
-            this->ManualMove(phy_axis, dir_opt, val, move_length);
-
-            m_n_ret_ref_step[phy_axis] = 9;  //跳转下一步
-            std::cout << "step 8, moveLength: " << move_length << " val " << val << std::endl;
-        }
-            break;
-        case 9:{ //等待Z信号捕获完成或者移动到位捕获失败，在Mi指令响应处理函数中处理
-            if(fabs(this->GetPhyAxisMachPosFeedback(phy_axis) - m_df_ret_ref_tar_pos[phy_axis]) <= 0.010){  //运行到位还是未找到Z信号
-                std::cout << "step 9, not find z singal" << std::endl;
-                this->SendMiAxisZCaptureCmd(phy_axis, false);
-                m_n_ret_ref_step[phy_axis] = 20;   //跳转失败处理
-            }
-        }
-            break;
-        case 10:{ //延时300ms，等待停止到位
-            struct timeval time_now;
-            gettimeofday(&time_now, NULL);
-            unsigned int time_elpase = (time_now.tv_sec-m_time_ret_ref[phy_axis].tv_sec)*1000000+time_now.tv_usec-m_time_ret_ref[phy_axis].tv_usec;
-            if(time_elpase >= 300000){ //延时300ms
-                MiCmdFrame cmd;
-                memset(&cmd, 0x00, sizeof(cmd));
-                cmd.data.axis_index = phy_axis+1;
-                cmd.data.cmd = CMD_MI_SET_REF;
-                memcpy(cmd.data.data, &m_p_axis_config[phy_axis].ref_encoder, sizeof(int64_t));
-
-                this->m_p_mi_comm->WriteCmd(cmd);
-                gettimeofday(&this->m_time_ret_ref[phy_axis], NULL);   //记录起始时间
-                m_n_ret_ref_step[phy_axis]++;  //跳转下一步
-                std::cout << "step 10" << std::endl;
-            }
-            break;
-        }
-
-        case 11:{   // 先走偏移量
-            struct timeval time_now;
-            gettimeofday(&time_now, NULL);
-            unsigned int time_elpase = (time_now.tv_sec-m_time_ret_ref[phy_axis].tv_sec)*1000000+time_now.tv_usec-m_time_ret_ref[phy_axis].tv_usec;
-            if(time_elpase >= 100000){ //延时100ms
-                if (this->m_p_axis_config[phy_axis].ref_offset_pos)
-                {
-                    double val = 60;
-                    if (this->m_p_axis_config[phy_axis].ret_ref_speed_second > 0)
-                        val = this->m_p_axis_config[phy_axis].ret_ref_speed_second;
-                     this->ManualMoveAbs(phy_axis, val, this->m_p_axis_config[phy_axis].ref_offset_pos);
-                     m_n_ret_ref_step[phy_axis] = 12;  //跳转下一步
-                     std::cout << "step 11, ref_offset_pos: " << this->m_p_axis_config[phy_axis].ref_offset_pos << std::endl;
-                }
-                else
-                {
-                    this->ManualMoveAbs(phy_axis, m_p_axis_config[phy_axis].ret_ref_speed, m_p_axis_config[phy_axis].axis_home_pos[0]);
-                    //m_n_ret_ref_step[phy_axis]++;  //跳转下一步
-                    m_n_ret_ref_step[phy_axis] = 16;
-                    std::cout << "step 11, axis_home_pos: " << m_p_axis_config[phy_axis].axis_home_pos[0] << std::endl;
-                }
-            }
-            break;
-        }
-
-        case 12: {  // 等待运动停止
-            if(fabs(this->GetPhyAxisMachPosFeedback(phy_axis) - this->m_p_axis_config[phy_axis].ref_offset_pos) <= 0.010){  //到位
-                gettimeofday(&this->m_time_ret_ref[phy_axis], NULL);   //记录起始时间，延时600ms
-                m_n_ret_ref_step[phy_axis]++;
-                std::cout << "step 12 " << std::endl;
-            }
-        }
-            break;
-        case 13: {
-            struct timeval time_now;
-            gettimeofday(&time_now, NULL);
-            unsigned int time_elpase = (time_now.tv_sec-m_time_ret_ref[phy_axis].tv_sec)*1000000+time_now.tv_usec-m_time_ret_ref[phy_axis].tv_usec;
-            if(time_elpase >= 600000){ //延时600ms
-                MiCmdFrame mi_cmd;
-                memset(&mi_cmd, 0x00, sizeof(mi_cmd));
-                mi_cmd.data.cmd = CMD_MI_SET_AXIS_MACH_POS;
-                mi_cmd.data.axis_index = phy_axis+1;
-                mi_cmd.data.data[0] = 0;
-                mi_cmd.data.data[1] = 0;
-                this->m_p_mi_comm->WriteCmd(mi_cmd);
-                gettimeofday(&this->m_time_ret_ref[phy_axis], NULL);   //记录起始时间，延时200ms
-                m_n_ret_ref_step[phy_axis]++;
-                std::cout << "step 13 " << std::endl;
-            }
-        }
-            break;
-
-        case 14: {
-            struct timeval time_now;
-            gettimeofday(&time_now, NULL);
-            unsigned int time_elpase = (time_now.tv_sec-m_time_ret_ref[phy_axis].tv_sec)*1000000+time_now.tv_usec-m_time_ret_ref[phy_axis].tv_usec;
-            if(time_elpase >= 200000) {//延时200ms,等待MI处理
-                m_n_ret_ref_step[phy_axis]++;
-                std::cout << "step 14" << std::endl;
-            }
-        }
-            break;
-
-        case 15:{  //延时100ms，保证机械坐标已更新
-            struct timeval time_now;
-            gettimeofday(&time_now, NULL);
-            unsigned int time_elpase = (time_now.tv_sec-m_time_ret_ref[phy_axis].tv_sec)*1000000+time_now.tv_usec-m_time_ret_ref[phy_axis].tv_usec;
-            if(time_elpase >= 100000){ //延时100ms
-#ifdef USES_RET_REF_TO_MACH_ZERO
-                this->ManualMoveAbs(phy_axis, m_p_axis_config[phy_axis].ret_ref_speed, 0);
-#else
+            {
                 this->ManualMoveAbs(phy_axis, m_p_axis_config[phy_axis].ret_ref_speed, m_p_axis_config[phy_axis].axis_home_pos[0]);
-#endif
-                m_n_ret_ref_step[phy_axis]++;  //跳转下一步
-                std::cout << "step 15, axis_home_pos:" << m_p_axis_config[phy_axis].axis_home_pos[0] << std::endl;
+                //m_n_ret_ref_step[phy_axis]++;  //跳转下一步
+                m_n_ret_ref_step[phy_axis] = 16;
+                std::cout << "step 11, axis_home_pos: " << m_p_axis_config[phy_axis].axis_home_pos[0] << std::endl;
             }
-            break;
         }
-        case 16:
-#ifdef USES_RET_REF_TO_MACH_ZERO
-            dis = 0;    //机械零
-#else
-            dis = this->m_p_axis_config[phy_axis].axis_home_pos[0];   // 原点坐标
-#endif
-            this->SendMonitorData(false, false);  //再次读取实时位置
+        break;
+    }
 
-            if(fabs(this->GetPhyAxisMachPosFeedback(phy_axis)- dis) <= 0.010){  //到位
-                m_n_ret_ref_step[phy_axis]++;  //跳转下一步
-            }
-            std::cout << "step 16" << std::endl;
-            break;
-        case 17:  //回参考点完成
-            printf("axis %u return ref over\n", phy_axis);
-            if(this->m_p_axis_config[phy_axis].feedback_mode == ABSOLUTE_ENCODER_YASAKAWA ||
+    case 12: {  // 等待运动停止
+        if(fabs(this->GetPhyAxisMachPosFeedback(phy_axis) - this->m_p_axis_config[phy_axis].ref_offset_pos) <= 0.010){  //到位
+            gettimeofday(&this->m_time_ret_ref[phy_axis], NULL);   //记录起始时间，延时600ms
+            m_n_ret_ref_step[phy_axis]++;
+            std::cout << "step 12 " << std::endl;
+        }
+    }
+        break;
+    case 13: {
+        struct timeval time_now;
+        gettimeofday(&time_now, NULL);
+        unsigned int time_elpase = (time_now.tv_sec-m_time_ret_ref[phy_axis].tv_sec)*1000000+time_now.tv_usec-m_time_ret_ref[phy_axis].tv_usec;
+        if(time_elpase >= 600000){ //延时600ms
+            MiCmdFrame mi_cmd;
+            memset(&mi_cmd, 0x00, sizeof(mi_cmd));
+            mi_cmd.data.cmd = CMD_MI_SET_AXIS_MACH_POS;
+            mi_cmd.data.axis_index = phy_axis+1;
+            mi_cmd.data.data[0] = 0;
+            mi_cmd.data.data[1] = 0;
+            this->m_p_mi_comm->WriteCmd(mi_cmd);
+            gettimeofday(&this->m_time_ret_ref[phy_axis], NULL);   //记录起始时间，延时200ms
+            m_n_ret_ref_step[phy_axis]++;
+            std::cout << "step 13 " << std::endl;
+        }
+    }
+        break;
+
+    case 14: {
+        struct timeval time_now;
+        gettimeofday(&time_now, NULL);
+        unsigned int time_elpase = (time_now.tv_sec-m_time_ret_ref[phy_axis].tv_sec)*1000000+time_now.tv_usec-m_time_ret_ref[phy_axis].tv_usec;
+        if(time_elpase >= 200000) {//延时200ms,等待MI处理
+            m_n_ret_ref_step[phy_axis]++;
+            std::cout << "step 14" << std::endl;
+        }
+    }
+        break;
+
+    case 15:{  //延时100ms，保证机械坐标已更新
+        struct timeval time_now;
+        gettimeofday(&time_now, NULL);
+        unsigned int time_elpase = (time_now.tv_sec-m_time_ret_ref[phy_axis].tv_sec)*1000000+time_now.tv_usec-m_time_ret_ref[phy_axis].tv_usec;
+        if(time_elpase >= 100000){ //延时100ms
+#ifdef USES_RET_REF_TO_MACH_ZERO
+            this->ManualMoveAbs(phy_axis, m_p_axis_config[phy_axis].ret_ref_speed, 0);
+#else
+            this->ManualMoveAbs(phy_axis, m_p_axis_config[phy_axis].ret_ref_speed, m_p_axis_config[phy_axis].axis_home_pos[0]);
+#endif
+            m_n_ret_ref_step[phy_axis]++;  //跳转下一步
+            std::cout << "step 15, axis_home_pos:" << m_p_axis_config[phy_axis].axis_home_pos[0] << std::endl;
+        }
+        break;
+    }
+    case 16:
+#ifdef USES_RET_REF_TO_MACH_ZERO
+        dis = 0;    //机械零
+#else
+        dis = this->m_p_axis_config[phy_axis].axis_home_pos[0];   // 原点坐标
+#endif
+        this->SendMonitorData(false, false);  //再次读取实时位置
+
+        if(fabs(this->GetPhyAxisMachPosFeedback(phy_axis)- dis) <= 0.010){  //到位
+            m_n_ret_ref_step[phy_axis]++;  //跳转下一步
+        }
+        std::cout << "step 16" << std::endl;
+        break;
+    case 17:  //回参考点完成
+        printf("axis %u return ref over\n", phy_axis);
+        if(this->m_p_axis_config[phy_axis].feedback_mode == ABSOLUTE_ENCODER_YASAKAWA ||
                 this->m_p_axis_config[phy_axis].feedback_mode == ABSOLUTE_ENCODER_PANASONIC ||
                 this->m_p_axis_config[phy_axis].feedback_mode == LINEAR_ENCODER){  //绝对值需获取机械零点的编码器值并保存，方便断点后恢复坐标
-                MiCmdFrame mi_cmd;
-                memset(&mi_cmd, 0x00, sizeof(mi_cmd));
-                mi_cmd.data.cmd = CMD_MI_GET_ZERO_ENCODER;
-                mi_cmd.data.axis_index = phy_axis+1;
+            MiCmdFrame mi_cmd;
+            memset(&mi_cmd, 0x00, sizeof(mi_cmd));
+            mi_cmd.data.cmd = CMD_MI_GET_ZERO_ENCODER;
+            mi_cmd.data.axis_index = phy_axis+1;
 
-                this->m_p_mi_comm->WriteCmd(mi_cmd);
-            }
-            this->SetRetRefFlag(phy_axis, true);
-            this->m_p_pmc_reg->FReg().bits[0].in_ref_point |= (0x01<<phy_axis);   //置位到参考点标志
-
-//            if(this->m_n_sync_master_mask & this->m_n_sync_master_enable_mask & (0x01<<phy_axis)){//主动轴相应的从动轴也需要置位到参考点标志
-//                for(uint8_t i = 0; i < this->m_p_general_config->axis_count; i++){
-//                    if(this->m_p_axis_config[i].sync_axis == 1 && this->m_p_axis_config[i].master_axis_no == (phy_axis+1)){
-//                        if(this->m_n_sync_axis_enable_mask & (0x01<<i)){
-//                            MiCmdFrame mi_cmd;//主动轴相应的从动轴也需要设置当前位置为零点
-//                            memset(&mi_cmd, 0x00, sizeof(mi_cmd));
-//                            mi_cmd.data.cmd = CMD_MI_SET_AXIS_MACH_POS;
-//                            mi_cmd.data.axis_index = i+1;
-
-//                            int64_t pos = m_p_axis_config[i].axis_home_pos[0]*1e7;   //单位转换,0.1nm
-//                            mi_cmd.data.data[0] = pos&0xFFFF;
-//                            mi_cmd.data.data[1] = (pos>>16)&0xFFFF;
-
-//                            this->m_p_mi_comm->WriteCmd(mi_cmd);
-
-//                            this->SetRetRefFlag(i, true);
-//                            this->m_p_pmc_reg->FReg().bits[0].in_ref_point |= (0x01<<i);   //置位到参考点标志
-//                        }
-//                    }
-//                }
-//            }
-
-//			printf("return ref over flag : 0x%llx, 0x%hhx, 0x%hhx, 0x%hhx, 0x%hhx, 0x%hhx, 0x%hhx, 0x%hhx, 0x%hhx\n", this->m_p_pmc_reg->FReg().bits[0].in_ref_point,
-//					m_p_pmc_reg->FReg().all[200], m_p_pmc_reg->FReg().all[201], m_p_pmc_reg->FReg().all[202], m_p_pmc_reg->FReg().all[203],
-//					m_p_pmc_reg->FReg().all[204], m_p_pmc_reg->FReg().all[205], m_p_pmc_reg->FReg().all[206], m_p_pmc_reg->FReg().all[207]);
-            this->m_n_mask_ret_ref &= ~(0x01<<phy_axis);
-            m_n_ret_ref_step[phy_axis] = 0;
-
-            if(m_n_mask_ret_ref == 0){
-                this->m_b_ret_ref = false;
-                this->m_b_ret_ref_auto = false;
-                m_n_ret_ref_auto_cur = 0;
-            }
-            std::cout << "step 17, home over" << std::endl;
-            break;
-        case 20: //失败处理
-            this->m_n_mask_ret_ref &= ~(0x01<<phy_axis);
-            m_n_ret_ref_step[phy_axis] = 0;
-
-            if(m_n_mask_ret_ref == 0){
-                this->m_b_ret_ref = false;
-                this->m_b_ret_ref_auto = false;
-                m_n_ret_ref_auto_cur = 0;
-            }
-            m_error_code = ERR_RET_REF_FAILED;
-            CreateError(ERR_RET_REF_FAILED, WARNING_LEVEL, CLEAR_BY_MCP_RESET, 0, CHANNEL_ENGINE_INDEX, phy_axis+1);
-            break;
-        default:
-            break;
+            this->m_p_mi_comm->WriteCmd(mi_cmd);
         }
+        this->SetRetRefFlag(phy_axis, true);
+        this->m_p_pmc_reg->FReg().bits[0].in_ref_point |= (0x01<<phy_axis);   //置位到参考点标志
+
+        //            if(this->m_n_sync_master_mask & this->m_n_sync_master_enable_mask & (0x01<<phy_axis)){//主动轴相应的从动轴也需要置位到参考点标志
+        //                for(uint8_t i = 0; i < this->m_p_general_config->axis_count; i++){
+        //                    if(this->m_p_axis_config[i].sync_axis == 1 && this->m_p_axis_config[i].master_axis_no == (phy_axis+1)){
+        //                        if(this->m_n_sync_axis_enable_mask & (0x01<<i)){
+        //                            MiCmdFrame mi_cmd;//主动轴相应的从动轴也需要设置当前位置为零点
+        //                            memset(&mi_cmd, 0x00, sizeof(mi_cmd));
+        //                            mi_cmd.data.cmd = CMD_MI_SET_AXIS_MACH_POS;
+        //                            mi_cmd.data.axis_index = i+1;
+
+        //                            int64_t pos = m_p_axis_config[i].axis_home_pos[0]*1e7;   //单位转换,0.1nm
+        //                            mi_cmd.data.data[0] = pos&0xFFFF;
+        //                            mi_cmd.data.data[1] = (pos>>16)&0xFFFF;
+
+        //                            this->m_p_mi_comm->WriteCmd(mi_cmd);
+
+        //                            this->SetRetRefFlag(i, true);
+        //                            this->m_p_pmc_reg->FReg().bits[0].in_ref_point |= (0x01<<i);   //置位到参考点标志
+        //                        }
+        //                    }
+        //                }
+        //            }
+
+        //			printf("return ref over flag : 0x%llx, 0x%hhx, 0x%hhx, 0x%hhx, 0x%hhx, 0x%hhx, 0x%hhx, 0x%hhx, 0x%hhx\n", this->m_p_pmc_reg->FReg().bits[0].in_ref_point,
+        //					m_p_pmc_reg->FReg().all[200], m_p_pmc_reg->FReg().all[201], m_p_pmc_reg->FReg().all[202], m_p_pmc_reg->FReg().all[203],
+        //					m_p_pmc_reg->FReg().all[204], m_p_pmc_reg->FReg().all[205], m_p_pmc_reg->FReg().all[206], m_p_pmc_reg->FReg().all[207]);
+        this->m_n_mask_ret_ref &= ~(0x01<<phy_axis);
+        m_n_ret_ref_step[phy_axis] = 0;
+
+        if(m_n_mask_ret_ref == 0){
+            this->m_b_ret_ref = false;
+            this->m_b_ret_ref_auto = false;
+            m_n_ret_ref_auto_cur = 0;
+        }
+        std::cout << "step 17, home over" << std::endl;
+        break;
+    case 20: //失败处理
+        this->m_n_mask_ret_ref &= ~(0x01<<phy_axis);
+        m_n_ret_ref_step[phy_axis] = 0;
+
+        if(m_n_mask_ret_ref == 0){
+            this->m_b_ret_ref = false;
+            this->m_b_ret_ref_auto = false;
+            m_n_ret_ref_auto_cur = 0;
+        }
+        m_error_code = ERR_RET_REF_FAILED;
+        CreateError(ERR_RET_REF_FAILED, WARNING_LEVEL, CLEAR_BY_MCP_RESET, 0, CHANNEL_ENGINE_INDEX, phy_axis+1);
+        break;
+    default:
+        break;
+    }
 }
 
 /**
@@ -9930,111 +9790,111 @@ void ChannelEngine::EcatIncAxisFindRefNoZeroSignal(uint8_t phy_axis){
     dir = this->m_p_axis_config[phy_axis].ret_ref_dir?DIR_POSITIVE:DIR_NEGATIVE;  // 回参考点方向
 
     switch(this->m_n_ret_ref_step[phy_axis]){
-        case 0: {// 激活Z信号捕获，并向回零方向运动1.2个螺距，以捕获Z信号
-            printf("return ref step 0: send cmd to mi, set ref point\n");
-            this->SendMiAxisZCaptureCmd(phy_axis, true);  //激活Z信号捕获
+    case 0: {// 激活Z信号捕获，并向回零方向运动1.2个螺距，以捕获Z信号
+        printf("return ref step 0: send cmd to mi, set ref point\n");
+        this->SendMiAxisZCaptureCmd(phy_axis, true);  //激活Z信号捕获
 
-            double move_length = this->m_p_axis_config[phy_axis].move_pr*1.2;
+        double move_length = this->m_p_axis_config[phy_axis].move_pr*1.2;
 
-            m_df_ret_ref_tar_pos[phy_axis] = this->GetPhyAxisMachPosFeedback(phy_axis)+move_length* dir;
-            this->ManualMove(phy_axis, dir, 60, move_length);
+        m_df_ret_ref_tar_pos[phy_axis] = this->GetPhyAxisMachPosFeedback(phy_axis)+move_length* dir;
+        this->ManualMove(phy_axis, dir, 60, move_length);
 
-            m_n_ret_ref_step[phy_axis] = 1;  //跳转下一步
-            printf("return ref, goto step 1\n");
+        m_n_ret_ref_step[phy_axis] = 1;  //跳转下一步
+        printf("return ref, goto step 1\n");
 
+    }
+        break;
+    case 1:  //等待Z信号捕获完成或者移动到位捕获失败，在Mi指令响应处理函数中处理
+        if(fabs(this->GetPhyAxisMachPosFeedback(phy_axis) - m_df_ret_ref_tar_pos[phy_axis]) <= 0.010){  //运行到位还是未找到Z信号
+            this->SendMiAxisZCaptureCmd(phy_axis, false);
+            m_n_ret_ref_step[phy_axis] = 20;   //跳转失败处理
         }
-            break;
-        case 1:  //等待Z信号捕获完成或者移动到位捕获失败，在Mi指令响应处理函数中处理
-            if(fabs(this->GetPhyAxisMachPosFeedback(phy_axis) - m_df_ret_ref_tar_pos[phy_axis]) <= 0.010){  //运行到位还是未找到Z信号
-                this->SendMiAxisZCaptureCmd(phy_axis, false);
-                m_n_ret_ref_step[phy_axis] = 20;   //跳转失败处理
-            }
 
-            break;
+        break;
 
-        case 10:{ //延时300ms，等待停止到位
-            struct timeval time_now;
-            gettimeofday(&time_now, NULL);
-            unsigned int time_elpase = (time_now.tv_sec-m_time_ret_ref[phy_axis].tv_sec)*1000000+time_now.tv_usec-m_time_ret_ref[phy_axis].tv_usec;
-            if(time_elpase >= 300000){ //延时300ms
-                MiCmdFrame cmd;
-                memset(&cmd, 0x00, sizeof(cmd));
-                cmd.data.axis_index = phy_axis+1;
-                cmd.data.cmd = CMD_MI_SET_REF;
-                memcpy(cmd.data.data, &m_p_axis_config[phy_axis].ref_encoder, sizeof(int64_t));
+    case 10:{ //延时300ms，等待停止到位
+        struct timeval time_now;
+        gettimeofday(&time_now, NULL);
+        unsigned int time_elpase = (time_now.tv_sec-m_time_ret_ref[phy_axis].tv_sec)*1000000+time_now.tv_usec-m_time_ret_ref[phy_axis].tv_usec;
+        if(time_elpase >= 300000){ //延时300ms
+            MiCmdFrame cmd;
+            memset(&cmd, 0x00, sizeof(cmd));
+            cmd.data.axis_index = phy_axis+1;
+            cmd.data.cmd = CMD_MI_SET_REF;
+            memcpy(cmd.data.data, &m_p_axis_config[phy_axis].ref_encoder, sizeof(int64_t));
 
-                this->m_p_mi_comm->WriteCmd(cmd);
-                gettimeofday(&this->m_time_ret_ref[phy_axis], NULL);   //记录起始时间
-                m_n_ret_ref_step[phy_axis]++;  //跳转下一步
-            }
-            break;
+            this->m_p_mi_comm->WriteCmd(cmd);
+            gettimeofday(&this->m_time_ret_ref[phy_axis], NULL);   //记录起始时间
+            m_n_ret_ref_step[phy_axis]++;  //跳转下一步
         }
-        case 11:{  //延时100ms，保证机械坐标已更新
-            struct timeval time_now;
-            gettimeofday(&time_now, NULL);
-            unsigned int time_elpase = (time_now.tv_sec-m_time_ret_ref[phy_axis].tv_sec)*1000000+time_now.tv_usec-m_time_ret_ref[phy_axis].tv_usec;
-            if(time_elpase >= 100000){ //延时100ms
+        break;
+    }
+    case 11:{  //延时100ms，保证机械坐标已更新
+        struct timeval time_now;
+        gettimeofday(&time_now, NULL);
+        unsigned int time_elpase = (time_now.tv_sec-m_time_ret_ref[phy_axis].tv_sec)*1000000+time_now.tv_usec-m_time_ret_ref[phy_axis].tv_usec;
+        if(time_elpase >= 100000){ //延时100ms
 #ifdef USES_RET_REF_TO_MACH_ZERO
-                this->ManualMoveAbs(phy_axis, m_p_axis_config[phy_axis].ret_ref_speed, 0);
+            this->ManualMoveAbs(phy_axis, m_p_axis_config[phy_axis].ret_ref_speed, 0);
 #else
-                this->ManualMoveAbs(phy_axis, m_p_axis_config[phy_axis].ret_ref_speed, m_p_axis_config[phy_axis].axis_home_pos[0]);
+            this->ManualMoveAbs(phy_axis, m_p_axis_config[phy_axis].ret_ref_speed, m_p_axis_config[phy_axis].axis_home_pos[0]);
 #endif
-                m_n_ret_ref_step[phy_axis]++;  //跳转下一步
-            }
-            break;
+            m_n_ret_ref_step[phy_axis]++;  //跳转下一步
         }
-        case 12:
+        break;
+    }
+    case 12:
 #ifdef USES_RET_REF_TO_MACH_ZERO
-            dis = 0;    //机械零
+        dis = 0;    //机械零
 #else
-            dis = this->m_p_axis_config[phy_axis].axis_home_pos[0];   // 原点坐标
+        dis = this->m_p_axis_config[phy_axis].axis_home_pos[0];   // 原点坐标
 #endif
-            this->SendMonitorData(false, false);  //再次读取实时位置
+        this->SendMonitorData(false, false);  //再次读取实时位置
 
-            if(fabs(this->GetPhyAxisMachPosFeedback(phy_axis)- dis) <= 0.010){  //到位
-                m_n_ret_ref_step[phy_axis]++;  //跳转下一步
-            }
+        if(fabs(this->GetPhyAxisMachPosFeedback(phy_axis)- dis) <= 0.010){  //到位
+            m_n_ret_ref_step[phy_axis]++;  //跳转下一步
+        }
         //	printf("return ref, goto step 11\n");
-            break;
-        case 13:  //回参考点完成
-            printf("axis %u return ref over\n", phy_axis);
-            if(this->m_p_axis_config[phy_axis].feedback_mode == ABSOLUTE_ENCODER_YASAKAWA ||
+        break;
+    case 13:  //回参考点完成
+        printf("axis %u return ref over\n", phy_axis);
+        if(this->m_p_axis_config[phy_axis].feedback_mode == ABSOLUTE_ENCODER_YASAKAWA ||
                 this->m_p_axis_config[phy_axis].feedback_mode == ABSOLUTE_ENCODER_PANASONIC ||
                 this->m_p_axis_config[phy_axis].feedback_mode == LINEAR_ENCODER){  //绝对值需要发送设置参考点指令
-                MiCmdFrame mi_cmd;
-                memset(&mi_cmd, 0x00, sizeof(mi_cmd));
-                mi_cmd.data.cmd = CMD_MI_GET_ZERO_ENCODER;
-                mi_cmd.data.axis_index = phy_axis+1;
+            MiCmdFrame mi_cmd;
+            memset(&mi_cmd, 0x00, sizeof(mi_cmd));
+            mi_cmd.data.cmd = CMD_MI_GET_ZERO_ENCODER;
+            mi_cmd.data.axis_index = phy_axis+1;
 
-                this->m_p_mi_comm->WriteCmd(mi_cmd);
-            }
-            this->SetRetRefFlag(phy_axis, true);
-            this->m_p_pmc_reg->FReg().bits[0].in_ref_point |= (0x01<<phy_axis);   //置位到参考点标志
-
-            this->m_n_mask_ret_ref &= ~(0x01<<phy_axis);
-            m_n_ret_ref_step[phy_axis] = 0;
-
-            if(m_n_mask_ret_ref == 0){
-                this->m_b_ret_ref = false;
-                this->m_b_ret_ref_auto = false;
-                m_n_ret_ref_auto_cur = 0;
-            }
-            break;
-        case 20: //失败处理
-            this->m_n_mask_ret_ref &= ~(0x01<<phy_axis);
-            m_n_ret_ref_step[phy_axis] = 0;
-
-            if(m_n_mask_ret_ref == 0){
-                this->m_b_ret_ref = false;
-                this->m_b_ret_ref_auto = false;
-                m_n_ret_ref_auto_cur = 0;
-            }
-            m_error_code = ERR_RET_REF_FAILED;
-            CreateError(ERR_RET_REF_FAILED, WARNING_LEVEL, CLEAR_BY_MCP_RESET, 0, CHANNEL_ENGINE_INDEX, phy_axis+1);
-            break;
-        default:
-            break;
+            this->m_p_mi_comm->WriteCmd(mi_cmd);
         }
+        this->SetRetRefFlag(phy_axis, true);
+        this->m_p_pmc_reg->FReg().bits[0].in_ref_point |= (0x01<<phy_axis);   //置位到参考点标志
+
+        this->m_n_mask_ret_ref &= ~(0x01<<phy_axis);
+        m_n_ret_ref_step[phy_axis] = 0;
+
+        if(m_n_mask_ret_ref == 0){
+            this->m_b_ret_ref = false;
+            this->m_b_ret_ref_auto = false;
+            m_n_ret_ref_auto_cur = 0;
+        }
+        break;
+    case 20: //失败处理
+        this->m_n_mask_ret_ref &= ~(0x01<<phy_axis);
+        m_n_ret_ref_step[phy_axis] = 0;
+
+        if(m_n_mask_ret_ref == 0){
+            this->m_b_ret_ref = false;
+            this->m_b_ret_ref_auto = false;
+            m_n_ret_ref_auto_cur = 0;
+        }
+        m_error_code = ERR_RET_REF_FAILED;
+        CreateError(ERR_RET_REF_FAILED, WARNING_LEVEL, CLEAR_BY_MCP_RESET, 0, CHANNEL_ENGINE_INDEX, phy_axis+1);
+        break;
+    default:
+        break;
+    }
 }
 
 /**
@@ -10064,267 +9924,267 @@ void ChannelEngine::SendMiAxisZCaptureCmd(uint8_t phy_axis, bool active){
 void ChannelEngine::PulseAxisFindRefWithZeroSignal(uint8_t phy_axis){
 
     int8_t dir = 0, dir_opt;   //回参考点方向
-//	uint8_t ret_mode = 0;   //回参考点方式
+    //	uint8_t ret_mode = 0;   //回参考点方式
     uint8_t chn = 0, chn_axis = 0;
     double dis = 0;      //移动距离
     static double ret_ref_record_pos[kMaxAxisNum];
 
-//	ret_mode = m_p_axis_config[phy_axis].ret_ref_mode;
+    //	ret_mode = m_p_axis_config[phy_axis].ret_ref_mode;
     dir = this->m_p_axis_config[phy_axis].ret_ref_dir?DIR_POSITIVE:DIR_NEGATIVE;  // 回参考点找粗基准方向
     dir_opt = (m_p_axis_config[phy_axis].ret_ref_change_dir==0)?dir*-1:dir;       //回参考点找精基准方向
 
     switch(this->m_n_ret_ref_step[phy_axis]){
-        case 0://检查原点信号
-            printf("return ref step 0, dir = %hhd, dir_opt=%hhd\n", dir, dir_opt);
-            this->SetRetRefFlag(phy_axis, false);   //复位回参考点完成标志
-            this->m_p_pmc_reg->FReg().bits[0].in_ref_point &= ~(0x01<<phy_axis);
+    case 0://检查原点信号
+        printf("return ref step 0, dir = %hhd, dir_opt=%hhd\n", dir, dir_opt);
+        this->SetRetRefFlag(phy_axis, false);   //复位回参考点完成标志
+        this->m_p_pmc_reg->FReg().bits[0].in_ref_point &= ~(0x01<<phy_axis);
 
-            if(this->CheckAxisRefBaseSignal(phy_axis, dir)){  // 已经触发粗基准信号，直接开开始回退
-                double move_length = this->m_p_axis_config[phy_axis].move_pr*1.2;
-                if(move_length>5.0) {
-                    move_length = 5.0;
-                    }
-                else if(move_length < 1.0){
-                    move_length = 1.0;
-                    }
-                ret_ref_record_pos[phy_axis] = this->GetPhyAxisMachPosFeedback(phy_axis)+move_length* dir*-1;
-                this->ManualMove(phy_axis, dir*-1,
-                        this->m_p_axis_config[phy_axis].ret_ref_speed, move_length);
-
-                m_n_ret_ref_step[phy_axis] = 1;
-            }
-            else{
-                m_n_ret_ref_step[phy_axis] = 2;
-            }
-
-            break;
-        case 1:{//等待回退到位，并再次检查原点信号
-            printf("return ref step 1\n");
-            chn = this->GetAxisChannel(phy_axis, chn_axis);
-            bool flag = CheckAxisRefBaseSignal(phy_axis, dir);
-
-            if(chn != CHANNEL_ENGINE_INDEX){
-                if(fabs(this->GetPhyAxisMachPosFeedback(phy_axis) - ret_ref_record_pos[phy_axis]) <= 0.010){
-                    if(true == flag){
-                        m_n_ret_ref_step[phy_axis] = 0;
-                        break;
-                    }
-                    else{
-                        m_n_ret_ref_step[phy_axis] = 2;  //跳转下一步
-                    }
-                }
-
-            }else if(this->m_p_axis_config[phy_axis].axis_pmc){  //PMC轴到位
-                if(this->m_n_run_axis_mask == 0 || (this->m_n_runover_axis_mask & (0x01L<<phy_axis))){
-                    if(true == flag){
-                        m_n_ret_ref_step[phy_axis] = 0;
-                        break;
-                    }else{
-                            m_n_ret_ref_step[phy_axis] = 2;  //跳转下一步
-                    }
-                }
-            }
-            }
-            break;
-        case 2:  //以回参考点速度向回参考点方向运动
-    //		printf("return ref step 2\n");
-            this->ManualMove(phy_axis, dir, this->m_p_axis_config[phy_axis].ret_ref_speed, 900.0);
-            m_n_ret_ref_step[phy_axis] = 3;  //跳转下一步
-            printf("return ref, goto step 3\n");
-            break;
-        case 3:  //触发粗基准信号，停止
-    //		printf("return ref step 3\n");
-            if(this->CheckAxisRefBaseSignal(phy_axis, dir)){
-                this->ManualMoveStop(phy_axis);
-                gettimeofday(&this->m_time_ret_ref[phy_axis], NULL);   //记录起始时间
-                m_n_ret_ref_step[phy_axis] = 4;  //跳转下一步
-                printf("return ref, goto step 4\n");
-            }
-            else{
-                this->ManualMove(phy_axis, dir, this->m_p_axis_config[phy_axis].ret_ref_speed,3.0);
-            }
-            break;
-        case 4:{//等待停止到位
-            struct timeval time_now;
-            gettimeofday(&time_now, NULL);
-            unsigned int time_elpase = (time_now.tv_sec-m_time_ret_ref[phy_axis].tv_sec)*1000000+time_now.tv_usec-m_time_ret_ref[phy_axis].tv_usec;
-            if(time_elpase >= 300000){ //延时300ms
-                m_n_ret_ref_step[phy_axis] = 5;  //跳转下一步
-                printf("return ref, goto step 5\n");
-            }
-        }
-            break;
-        case 5:  //有基准， 低速回退至粗基准信号消失,
-            printf("return ref step 5\n");
-            this->ManualMove(phy_axis, dir_opt, 100, this->m_p_axis_config[phy_axis].move_pr*2); //有基准， 低速回退至粗基准信号消失, 速度：100mm/min
-            m_n_ret_ref_step[phy_axis] = 6;  //跳转下一步
-            printf("return ref, goto step 6\n");
-
-            break;
-        case 6:  //有基准，等待粗基准信号消失
-        //	printf("return ref step 6\n");
-            if(!this->CheckAxisRefBaseSignal(phy_axis, dir)){
-                this->ManualMoveStop(phy_axis);
-
-                gettimeofday(&this->m_time_ret_ref[phy_axis], NULL);   //记录起始时间，延时300ms
-
-                m_n_ret_ref_step[phy_axis] = 7;  //跳转下一步
-            }
-            break;
-        case 7:{ //等待停止到位
-            struct timeval time_now;
-            gettimeofday(&time_now, NULL);
-            unsigned int time_elpase = (time_now.tv_sec-m_time_ret_ref[phy_axis].tv_sec)*1000000+time_now.tv_usec-m_time_ret_ref[phy_axis].tv_usec;
-            if(time_elpase >= 200000){ //延时500ms
-//				m_n_get_cur_encoder_count = 0;  //复位获取当前编码器次数
-                m_n_ret_ref_step[phy_axis] = 8;  //跳转下一步
-                printf("return ref, goto step 8\n");
-            }
-        }
-            break;
-        case 8:{ //  发送开始捕获精基准信号的命令
-            printf("return ref step 8: send cmd to mi, set ref point\n");
-
-            MiCmdFrame cmd;
-            memset(&cmd, 0x00, sizeof(cmd));
-            cmd.data.axis_index = phy_axis+1;
-            cmd.data.cmd = CMD_MI_ACTIVE_Z_CAPT;
-            this->m_p_mi_comm->WriteCmd(cmd);
-
-            m_n_ret_ref_step[phy_axis] = 9;  //跳转下一步
-            printf("return ref, goto step 9\n");
-
-        }
-            break;
-
-        case 9:{ //  缓慢移动，并检测精基准
-            printf("return ref step 9: move to index pos\n");
-
+        if(this->CheckAxisRefBaseSignal(phy_axis, dir)){  // 已经触发粗基准信号，直接开开始回退
             double move_length = this->m_p_axis_config[phy_axis].move_pr*1.2;
-            ret_ref_record_pos[phy_axis] = this->GetPhyAxisMachPosFeedback(phy_axis)+move_length* dir_opt;
-            this->ManualMove(phy_axis, dir_opt,
-                        this->m_p_axis_config[phy_axis].ret_ref_speed, move_length);
+            if(move_length>5.0) {
+                move_length = 5.0;
+            }
+            else if(move_length < 1.0){
+                move_length = 1.0;
+            }
+            ret_ref_record_pos[phy_axis] = this->GetPhyAxisMachPosFeedback(phy_axis)+move_length* dir*-1;
+            this->ManualMove(phy_axis, dir*-1,
+                             this->m_p_axis_config[phy_axis].ret_ref_speed, move_length);
 
-            m_n_ret_ref_step[phy_axis] = 10;  //跳转下一步
-            printf("return ref, goto step 10\n");
-
+            m_n_ret_ref_step[phy_axis] = 1;
         }
-            break;
+        else{
+            m_n_ret_ref_step[phy_axis] = 2;
+        }
 
-        case 10:{
-            printf("return ref step 1\n");
-            chn = this->GetAxisChannel(phy_axis, chn_axis);
-            bool flag = CheckAxisRefBaseSignal(phy_axis, dir);  // 查询是否已经捕获到精基准    ?????????????????????????
+        break;
+    case 1:{//等待回退到位，并再次检查原点信号
+        printf("return ref step 1\n");
+        chn = this->GetAxisChannel(phy_axis, chn_axis);
+        bool flag = CheckAxisRefBaseSignal(phy_axis, dir);
 
-            if(chn != CHANNEL_ENGINE_INDEX){
-                if(fabs(this->GetPhyAxisMachPosFeedback(phy_axis) - ret_ref_record_pos[phy_axis]) <= 0.010){
-                    if(false == flag){
-                        m_n_ret_ref_step[phy_axis] = 20;
-                        break;
-                    }
-                }
+        if(chn != CHANNEL_ENGINE_INDEX){
+            if(fabs(this->GetPhyAxisMachPosFeedback(phy_axis) - ret_ref_record_pos[phy_axis]) <= 0.010){
                 if(true == flag){
+                    m_n_ret_ref_step[phy_axis] = 0;
+                    break;
+                }
+                else{
+                    m_n_ret_ref_step[phy_axis] = 2;  //跳转下一步
+                }
+            }
+
+        }else if(this->m_p_axis_config[phy_axis].axis_pmc){  //PMC轴到位
+            if(this->m_n_run_axis_mask == 0 || (this->m_n_runover_axis_mask & (0x01L<<phy_axis))){
+                if(true == flag){
+                    m_n_ret_ref_step[phy_axis] = 0;
+                    break;
+                }else{
+                    m_n_ret_ref_step[phy_axis] = 2;  //跳转下一步
+                }
+            }
+        }
+    }
+        break;
+    case 2:  //以回参考点速度向回参考点方向运动
+        //		printf("return ref step 2\n");
+        this->ManualMove(phy_axis, dir, this->m_p_axis_config[phy_axis].ret_ref_speed, 900.0);
+        m_n_ret_ref_step[phy_axis] = 3;  //跳转下一步
+        printf("return ref, goto step 3\n");
+        break;
+    case 3:  //触发粗基准信号，停止
+        //		printf("return ref step 3\n");
+        if(this->CheckAxisRefBaseSignal(phy_axis, dir)){
+            this->ManualMoveStop(phy_axis);
+            gettimeofday(&this->m_time_ret_ref[phy_axis], NULL);   //记录起始时间
+            m_n_ret_ref_step[phy_axis] = 4;  //跳转下一步
+            printf("return ref, goto step 4\n");
+        }
+        else{
+            this->ManualMove(phy_axis, dir, this->m_p_axis_config[phy_axis].ret_ref_speed,3.0);
+        }
+        break;
+    case 4:{//等待停止到位
+        struct timeval time_now;
+        gettimeofday(&time_now, NULL);
+        unsigned int time_elpase = (time_now.tv_sec-m_time_ret_ref[phy_axis].tv_sec)*1000000+time_now.tv_usec-m_time_ret_ref[phy_axis].tv_usec;
+        if(time_elpase >= 300000){ //延时300ms
+            m_n_ret_ref_step[phy_axis] = 5;  //跳转下一步
+            printf("return ref, goto step 5\n");
+        }
+    }
+        break;
+    case 5:  //有基准， 低速回退至粗基准信号消失,
+        printf("return ref step 5\n");
+        this->ManualMove(phy_axis, dir_opt, 100, this->m_p_axis_config[phy_axis].move_pr*2); //有基准， 低速回退至粗基准信号消失, 速度：100mm/min
+        m_n_ret_ref_step[phy_axis] = 6;  //跳转下一步
+        printf("return ref, goto step 6\n");
+
+        break;
+    case 6:  //有基准，等待粗基准信号消失
+        //	printf("return ref step 6\n");
+        if(!this->CheckAxisRefBaseSignal(phy_axis, dir)){
+            this->ManualMoveStop(phy_axis);
+
+            gettimeofday(&this->m_time_ret_ref[phy_axis], NULL);   //记录起始时间，延时300ms
+
+            m_n_ret_ref_step[phy_axis] = 7;  //跳转下一步
+        }
+        break;
+    case 7:{ //等待停止到位
+        struct timeval time_now;
+        gettimeofday(&time_now, NULL);
+        unsigned int time_elpase = (time_now.tv_sec-m_time_ret_ref[phy_axis].tv_sec)*1000000+time_now.tv_usec-m_time_ret_ref[phy_axis].tv_usec;
+        if(time_elpase >= 200000){ //延时500ms
+            //				m_n_get_cur_encoder_count = 0;  //复位获取当前编码器次数
+            m_n_ret_ref_step[phy_axis] = 8;  //跳转下一步
+            printf("return ref, goto step 8\n");
+        }
+    }
+        break;
+    case 8:{ //  发送开始捕获精基准信号的命令
+        printf("return ref step 8: send cmd to mi, set ref point\n");
+
+        MiCmdFrame cmd;
+        memset(&cmd, 0x00, sizeof(cmd));
+        cmd.data.axis_index = phy_axis+1;
+        cmd.data.cmd = CMD_MI_ACTIVE_Z_CAPT;
+        this->m_p_mi_comm->WriteCmd(cmd);
+
+        m_n_ret_ref_step[phy_axis] = 9;  //跳转下一步
+        printf("return ref, goto step 9\n");
+
+    }
+        break;
+
+    case 9:{ //  缓慢移动，并检测精基准
+        printf("return ref step 9: move to index pos\n");
+
+        double move_length = this->m_p_axis_config[phy_axis].move_pr*1.2;
+        ret_ref_record_pos[phy_axis] = this->GetPhyAxisMachPosFeedback(phy_axis)+move_length* dir_opt;
+        this->ManualMove(phy_axis, dir_opt,
+                         this->m_p_axis_config[phy_axis].ret_ref_speed, move_length);
+
+        m_n_ret_ref_step[phy_axis] = 10;  //跳转下一步
+        printf("return ref, goto step 10\n");
+
+    }
+        break;
+
+    case 10:{
+        printf("return ref step 1\n");
+        chn = this->GetAxisChannel(phy_axis, chn_axis);
+        bool flag = CheckAxisRefBaseSignal(phy_axis, dir);  // 查询是否已经捕获到精基准    ?????????????????????????
+
+        if(chn != CHANNEL_ENGINE_INDEX){
+            if(fabs(this->GetPhyAxisMachPosFeedback(phy_axis) - ret_ref_record_pos[phy_axis]) <= 0.010){
+                if(false == flag){
+                    m_n_ret_ref_step[phy_axis] = 20;
+                    break;
+                }
+            }
+            if(true == flag){
+                this->ManualMoveStop(phy_axis);
+                gettimeofday(&this->m_time_ret_ref[phy_axis], NULL);
+                m_n_ret_ref_step[phy_axis] = 11;
+            }
+
+        }else if(this->m_p_axis_config[phy_axis].axis_pmc){  //PMC轴到位
+            if(this->m_n_run_axis_mask == 0 || (this->m_n_runover_axis_mask & (0x01L<<phy_axis))){
+                if(false == flag){
+                    m_n_ret_ref_step[phy_axis] = 20;
+                    break;
+                }else{
                     this->ManualMoveStop(phy_axis);
                     gettimeofday(&this->m_time_ret_ref[phy_axis], NULL);
-                    m_n_ret_ref_step[phy_axis] = 11;
-                }
-
-            }else if(this->m_p_axis_config[phy_axis].axis_pmc){  //PMC轴到位
-                if(this->m_n_run_axis_mask == 0 || (this->m_n_runover_axis_mask & (0x01L<<phy_axis))){
-                    if(false == flag){
-                        m_n_ret_ref_step[phy_axis] = 20;
-                        break;
-                    }else{
-                        this->ManualMoveStop(phy_axis);
-                        gettimeofday(&this->m_time_ret_ref[phy_axis], NULL);
-                        m_n_ret_ref_step[phy_axis] = 11;  //跳转下一步
-                    }
+                    m_n_ret_ref_step[phy_axis] = 11;  //跳转下一步
                 }
             }
         }
-            break;
+    }
+        break;
 
 
-        case 11: { //等待设置参考点完成，在Mi指令响应处理函数中处理
-            struct timeval time_now;
-            gettimeofday(&time_now, NULL);
-            unsigned int time_elpase = (time_now.tv_sec-m_time_ret_ref[phy_axis].tv_sec)*1000000+time_now.tv_usec-m_time_ret_ref[phy_axis].tv_usec;
-            if(time_elpase >= 200000){ //延时200ms
-                m_n_ret_ref_step[phy_axis] = 12;  //跳转下一步
-                printf("return ref, goto step 12\n");
-            }
-            }
-            break;
-
-        case 12:       // 设置基准
-            MiCmdFrame cmd;
-            memset(&cmd, 0x00, sizeof(cmd));
-            cmd.data.axis_index = phy_axis+1;
-            cmd.data.cmd = CMD_MI_SET_REF;
-            this->m_p_mi_comm->WriteCmd(cmd);
-            gettimeofday(&this->m_time_ret_ref[phy_axis], NULL);
-            m_n_ret_ref_step[phy_axis] = 13;  //跳转下一步
-
-            break;
-
-        case 13: {
-            struct timeval time_now;
-            gettimeofday(&time_now, NULL);
-            unsigned int time_elpase = (time_now.tv_sec-m_time_ret_ref[phy_axis].tv_sec)*1000000+time_now.tv_usec-m_time_ret_ref[phy_axis].tv_usec;
-            if(time_elpase >= 100000){ //延时100ms
-                m_n_ret_ref_step[phy_axis] = 14;  //跳转下一步
-                printf("return ref, goto step 14\n");
-            }
-            }
-
-            break;
-        case 14: //等待设置完成，移动到轴参考点1
-#ifdef USES_RET_REF_TO_MACH_ZERO
-            dis = 0;   //机械零
-#else
-            dis = this->m_p_axis_config[phy_axis].axis_home_pos[0];   // 原点坐标
-#endif
-            this->ManualMove(phy_axis, dis, m_p_axis_config[phy_axis].ret_ref_speed, 0);
-            m_n_ret_ref_step[phy_axis] = 15;  //跳转下一步
-            printf("return ref, goto step 15\n");
-            break;
-
-        case 15:  //等待轴移动到位,完成！
-#ifdef USES_RET_REF_TO_MACH_ZERO
-            dis = 0;
-#else
-            dis = m_p_axis_config[phy_axis].axis_home_pos[0];
-#endif
-            if(fabs(this->GetPhyAxisMachPosFeedback(phy_axis)- dis) <= 0.010){  //到位
-                m_n_ret_ref_step[phy_axis] = 16;  //跳转下一步
-            }
-            break;
-        case 16:  //回参考点完成
-            printf("axis %u return ref over\n", phy_axis);
-            this->SetRetRefFlag(phy_axis, true);
-            this->m_p_pmc_reg->FReg().bits[0].in_ref_point |= (0x01<<phy_axis);   //置位到参考点标志
-//			printf("return ref over flag : 0x%llx, 0x%hhx, 0x%hhx, 0x%hhx, 0x%hhx, 0x%hhx, 0x%hhx, 0x%hhx, 0x%hhx\n", this->m_p_pmc_reg->FReg().bits[0].in_ref_point,
-//					m_p_pmc_reg->FReg().all[200], m_p_pmc_reg->FReg().all[201], m_p_pmc_reg->FReg().all[202], m_p_pmc_reg->FReg().all[203],
-//					m_p_pmc_reg->FReg().all[204], m_p_pmc_reg->FReg().all[205], m_p_pmc_reg->FReg().all[206], m_p_pmc_reg->FReg().all[207]);
-            this->m_n_mask_ret_ref &= ~(0x01<<phy_axis);
-            m_n_ret_ref_step[phy_axis] = 0;
-            break;
-
-        case 20: //失败处理
-            this->m_n_mask_ret_ref &= ~(0x01<<phy_axis);
-            m_n_ret_ref_step[phy_axis] = 0;
-
-            if(m_n_mask_ret_ref == 0){
-                this->m_b_ret_ref = false;
-                this->m_b_ret_ref_auto = false;
-                m_n_ret_ref_auto_cur = 0;
-            }
-            m_error_code = ERR_RET_REF_FAILED;
-            CreateError(ERR_RET_REF_FAILED, WARNING_LEVEL, CLEAR_BY_MCP_RESET, 0, CHANNEL_ENGINE_INDEX, phy_axis);
-            break;
-        default:
-            break;
+    case 11: { //等待设置参考点完成，在Mi指令响应处理函数中处理
+        struct timeval time_now;
+        gettimeofday(&time_now, NULL);
+        unsigned int time_elpase = (time_now.tv_sec-m_time_ret_ref[phy_axis].tv_sec)*1000000+time_now.tv_usec-m_time_ret_ref[phy_axis].tv_usec;
+        if(time_elpase >= 200000){ //延时200ms
+            m_n_ret_ref_step[phy_axis] = 12;  //跳转下一步
+            printf("return ref, goto step 12\n");
         }
+    }
+        break;
+
+    case 12:       // 设置基准
+        MiCmdFrame cmd;
+        memset(&cmd, 0x00, sizeof(cmd));
+        cmd.data.axis_index = phy_axis+1;
+        cmd.data.cmd = CMD_MI_SET_REF;
+        this->m_p_mi_comm->WriteCmd(cmd);
+        gettimeofday(&this->m_time_ret_ref[phy_axis], NULL);
+        m_n_ret_ref_step[phy_axis] = 13;  //跳转下一步
+
+        break;
+
+    case 13: {
+        struct timeval time_now;
+        gettimeofday(&time_now, NULL);
+        unsigned int time_elpase = (time_now.tv_sec-m_time_ret_ref[phy_axis].tv_sec)*1000000+time_now.tv_usec-m_time_ret_ref[phy_axis].tv_usec;
+        if(time_elpase >= 100000){ //延时100ms
+            m_n_ret_ref_step[phy_axis] = 14;  //跳转下一步
+            printf("return ref, goto step 14\n");
+        }
+    }
+
+        break;
+    case 14: //等待设置完成，移动到轴参考点1
+#ifdef USES_RET_REF_TO_MACH_ZERO
+        dis = 0;   //机械零
+#else
+        dis = this->m_p_axis_config[phy_axis].axis_home_pos[0];   // 原点坐标
+#endif
+        this->ManualMove(phy_axis, dis, m_p_axis_config[phy_axis].ret_ref_speed, 0);
+        m_n_ret_ref_step[phy_axis] = 15;  //跳转下一步
+        printf("return ref, goto step 15\n");
+        break;
+
+    case 15:  //等待轴移动到位,完成！
+#ifdef USES_RET_REF_TO_MACH_ZERO
+        dis = 0;
+#else
+        dis = m_p_axis_config[phy_axis].axis_home_pos[0];
+#endif
+        if(fabs(this->GetPhyAxisMachPosFeedback(phy_axis)- dis) <= 0.010){  //到位
+            m_n_ret_ref_step[phy_axis] = 16;  //跳转下一步
+        }
+        break;
+    case 16:  //回参考点完成
+        printf("axis %u return ref over\n", phy_axis);
+        this->SetRetRefFlag(phy_axis, true);
+        this->m_p_pmc_reg->FReg().bits[0].in_ref_point |= (0x01<<phy_axis);   //置位到参考点标志
+        //			printf("return ref over flag : 0x%llx, 0x%hhx, 0x%hhx, 0x%hhx, 0x%hhx, 0x%hhx, 0x%hhx, 0x%hhx, 0x%hhx\n", this->m_p_pmc_reg->FReg().bits[0].in_ref_point,
+        //					m_p_pmc_reg->FReg().all[200], m_p_pmc_reg->FReg().all[201], m_p_pmc_reg->FReg().all[202], m_p_pmc_reg->FReg().all[203],
+        //					m_p_pmc_reg->FReg().all[204], m_p_pmc_reg->FReg().all[205], m_p_pmc_reg->FReg().all[206], m_p_pmc_reg->FReg().all[207]);
+        this->m_n_mask_ret_ref &= ~(0x01<<phy_axis);
+        m_n_ret_ref_step[phy_axis] = 0;
+        break;
+
+    case 20: //失败处理
+        this->m_n_mask_ret_ref &= ~(0x01<<phy_axis);
+        m_n_ret_ref_step[phy_axis] = 0;
+
+        if(m_n_mask_ret_ref == 0){
+            this->m_b_ret_ref = false;
+            this->m_b_ret_ref_auto = false;
+            m_n_ret_ref_auto_cur = 0;
+        }
+        m_error_code = ERR_RET_REF_FAILED;
+        CreateError(ERR_RET_REF_FAILED, WARNING_LEVEL, CLEAR_BY_MCP_RESET, 0, CHANNEL_ENGINE_INDEX, phy_axis);
+        break;
+    default:
+        break;
+    }
 }
 
 
@@ -10334,174 +10194,174 @@ void ChannelEngine::PulseAxisFindRefWithZeroSignal(uint8_t phy_axis){
 void ChannelEngine::PulseAxisFindRefNoZeroSignal(uint8_t phy_axis){
 
     int8_t dir = 0, dir_opt;   //回参考点方向
-//	uint8_t ret_mode = 0;   //回参考点方式
+    //	uint8_t ret_mode = 0;   //回参考点方式
     uint8_t chn = 0, chn_axis = 0;
     double dis = 0;      //移动距离
     static double ret_ref_record_pos[kMaxAxisNum];
 
-//	ret_mode = m_p_axis_config[phy_axis].ret_ref_mode;
+    //	ret_mode = m_p_axis_config[phy_axis].ret_ref_mode;
     dir = this->m_p_axis_config[phy_axis].ret_ref_dir?DIR_POSITIVE:DIR_NEGATIVE;  // 回参考点找粗基准方向
     dir_opt = (m_p_axis_config[phy_axis].ret_ref_change_dir==0)?dir*-1:dir;       //回参考点找精基准方向
 
     switch(this->m_n_ret_ref_step[phy_axis]){
-        case 0: {//向精基准开始移动
-            printf("return ref step 0, dir = %hhd, dir_opt=%hhd\n", dir, dir_opt);
-            this->SetRetRefFlag(phy_axis, false);   //复位回参考点完成标志
-            this->m_p_pmc_reg->FReg().bits[0].in_ref_point &= ~(0x01<<phy_axis);
+    case 0: {//向精基准开始移动
+        printf("return ref step 0, dir = %hhd, dir_opt=%hhd\n", dir, dir_opt);
+        this->SetRetRefFlag(phy_axis, false);   //复位回参考点完成标志
+        this->m_p_pmc_reg->FReg().bits[0].in_ref_point &= ~(0x01<<phy_axis);
 
-            double move_length = this->m_p_axis_config[phy_axis].move_pr*1.2;
-            ret_ref_record_pos[phy_axis] = this->GetPhyAxisMachPosFeedback(phy_axis)+move_length* dir_opt;
-                this->ManualMove(phy_axis, dir_opt,
-                        this->m_p_axis_config[phy_axis].ret_ref_speed, move_length);
+        double move_length = this->m_p_axis_config[phy_axis].move_pr*1.2;
+        ret_ref_record_pos[phy_axis] = this->GetPhyAxisMachPosFeedback(phy_axis)+move_length* dir_opt;
+        this->ManualMove(phy_axis, dir_opt,
+                         this->m_p_axis_config[phy_axis].ret_ref_speed, move_length);
 
-            m_n_ret_ref_step[phy_axis] = 2;
-            }
-            break;
-        case 2:{ //  发送开始捕获精基准信号的命令
-            printf("return ref step 2: send cmd to mi, set ref point\n");
+        m_n_ret_ref_step[phy_axis] = 2;
+    }
+        break;
+    case 2:{ //  发送开始捕获精基准信号的命令
+        printf("return ref step 2: send cmd to mi, set ref point\n");
 
-            MiCmdFrame cmd;
-            memset(&cmd, 0x00, sizeof(cmd));
-            cmd.data.axis_index = phy_axis+1;
-            cmd.data.cmd = CMD_MI_ACTIVE_Z_CAPT;
-            this->m_p_mi_comm->WriteCmd(cmd);
+        MiCmdFrame cmd;
+        memset(&cmd, 0x00, sizeof(cmd));
+        cmd.data.axis_index = phy_axis+1;
+        cmd.data.cmd = CMD_MI_ACTIVE_Z_CAPT;
+        this->m_p_mi_comm->WriteCmd(cmd);
 
-            gettimeofday(&this->m_time_ret_ref[phy_axis], NULL);   //记录起始时间，延时300ms
+        gettimeofday(&this->m_time_ret_ref[phy_axis], NULL);   //记录起始时间，延时300ms
 
-            m_n_ret_ref_step[phy_axis] = 3;  //跳转下一步
-            printf("return ref, goto step 3\n");
+        m_n_ret_ref_step[phy_axis] = 3;  //跳转下一步
+        printf("return ref, goto step 3\n");
 
-        }
-            break;
+    }
+        break;
 
-        case 3:{ //  缓慢移动，并检测精基准
-            printf("return ref step 3: move to index pos\n");
+    case 3:{ //  缓慢移动，并检测精基准
+        printf("return ref step 3: move to index pos\n");
 
-            double move_length = this->m_p_axis_config[phy_axis].move_pr*1.2;
-            ret_ref_record_pos[phy_axis] = this->GetPhyAxisMachPosFeedback(phy_axis)+move_length* dir_opt;
-            this->ManualMove(phy_axis, dir_opt,
-                        this->m_p_axis_config[phy_axis].ret_ref_speed, move_length);
+        double move_length = this->m_p_axis_config[phy_axis].move_pr*1.2;
+        ret_ref_record_pos[phy_axis] = this->GetPhyAxisMachPosFeedback(phy_axis)+move_length* dir_opt;
+        this->ManualMove(phy_axis, dir_opt,
+                         this->m_p_axis_config[phy_axis].ret_ref_speed, move_length);
 
-            m_n_ret_ref_step[phy_axis] = 4;  //跳转下一步
-            printf("return ref, goto step 4\n");
+        m_n_ret_ref_step[phy_axis] = 4;  //跳转下一步
+        printf("return ref, goto step 4\n");
 
-        }
-            break;
+    }
+        break;
 
-        case 4:{
-            printf("return ref step 4\n");
-            chn = this->GetAxisChannel(phy_axis, chn_axis);
-            bool flag = CheckAxisRefBaseSignal(phy_axis, dir);  // 查询是否已经捕获到精基准    ?????????????????????????
+    case 4:{
+        printf("return ref step 4\n");
+        chn = this->GetAxisChannel(phy_axis, chn_axis);
+        bool flag = CheckAxisRefBaseSignal(phy_axis, dir);  // 查询是否已经捕获到精基准    ?????????????????????????
 
-            if(chn != CHANNEL_ENGINE_INDEX){
-                if(fabs(this->GetPhyAxisMachPosFeedback(phy_axis) - ret_ref_record_pos[phy_axis]) <= 0.010){
-                    if(false == flag){
-                        m_n_ret_ref_step[phy_axis] = 20;
-                        break;
-                    }
+        if(chn != CHANNEL_ENGINE_INDEX){
+            if(fabs(this->GetPhyAxisMachPosFeedback(phy_axis) - ret_ref_record_pos[phy_axis]) <= 0.010){
+                if(false == flag){
+                    m_n_ret_ref_step[phy_axis] = 20;
+                    break;
                 }
-                if(true == flag){
+            }
+            if(true == flag){
+                this->ManualMoveStop(phy_axis);
+                gettimeofday(&this->m_time_ret_ref[phy_axis], NULL);
+                m_n_ret_ref_step[phy_axis] = 5;
+            }
+
+        }else if(this->m_p_axis_config[phy_axis].axis_pmc){  //PMC轴到位
+            if(this->m_n_run_axis_mask == 0 || (this->m_n_runover_axis_mask & (0x01L<<phy_axis))){
+                if(false == flag){
+                    m_n_ret_ref_step[phy_axis] = 20;
+                    break;
+                }else{
                     this->ManualMoveStop(phy_axis);
                     gettimeofday(&this->m_time_ret_ref[phy_axis], NULL);
-                    m_n_ret_ref_step[phy_axis] = 5;
-                }
-
-            }else if(this->m_p_axis_config[phy_axis].axis_pmc){  //PMC轴到位
-                if(this->m_n_run_axis_mask == 0 || (this->m_n_runover_axis_mask & (0x01L<<phy_axis))){
-                    if(false == flag){
-                        m_n_ret_ref_step[phy_axis] = 20;
-                        break;
-                    }else{
-                            this->ManualMoveStop(phy_axis);
-                            gettimeofday(&this->m_time_ret_ref[phy_axis], NULL);
-                            m_n_ret_ref_step[phy_axis] = 5;  //跳转下一步
-                    }
+                    m_n_ret_ref_step[phy_axis] = 5;  //跳转下一步
                 }
             }
         }
-            break;
+    }
+        break;
 
 
-        case 5: { //等待设置参考点完成，在Mi指令响应处理函数中处理
-            struct timeval time_now;
-            gettimeofday(&time_now, NULL);
-            unsigned int time_elpase = (time_now.tv_sec-m_time_ret_ref[phy_axis].tv_sec)*1000000+time_now.tv_usec-m_time_ret_ref[phy_axis].tv_usec;
-            if(time_elpase >= 200000){ //延时200ms
-                m_n_ret_ref_step[phy_axis] = 6;  //跳转下一步
-                printf("return ref, goto step 6\n");
-            }
-            }
-            break;
-
-        case 6:       // 设置基准
-            MiCmdFrame cmd;
-            memset(&cmd, 0x00, sizeof(cmd));
-            cmd.data.axis_index = phy_axis+1;
-            cmd.data.cmd = CMD_MI_SET_REF;
-            this->m_p_mi_comm->WriteCmd(cmd);
-            gettimeofday(&this->m_time_ret_ref[phy_axis], NULL);
-            m_n_ret_ref_step[phy_axis] = 7;  //跳转下一步
-
-            break;
-
-        case 7: {
-            struct timeval time_now;
-            gettimeofday(&time_now, NULL);
-            unsigned int time_elpase = (time_now.tv_sec-m_time_ret_ref[phy_axis].tv_sec)*1000000+time_now.tv_usec-m_time_ret_ref[phy_axis].tv_usec;
-            if(time_elpase >= 100000){ //延时100ms
-                m_n_ret_ref_step[phy_axis] = 8;  //跳转下一步
-                printf("return ref, goto step 8\n");
-            }
-            }
-            break;
-
-        case 8: //等待设置完成，移动到轴参考点1
-#ifdef USES_RET_REF_TO_MACH_ZERO
-            dis = 0;    //机械零
-#else
-            dis = this->m_p_axis_config[phy_axis].axis_home_pos[0];   // 原点坐标
-#endif
-            this->ManualMove(phy_axis, dis, m_p_axis_config[phy_axis].ret_ref_speed, 0);
-            m_n_ret_ref_step[phy_axis] = 9;  //跳转下一步
-            printf("return ref, goto step 9\n");
-            break;
-
-        case 9:  //等待轴移动到位,完成！
-#ifdef USES_RET_REF_TO_MACH_ZERO
-            dis = 0;    //机械零
-#else
-            dis = this->m_p_axis_config[phy_axis].axis_home_pos[0];   // 原点坐标
-#endif
-            if(fabs(this->GetPhyAxisMachPosFeedback(phy_axis)- dis) <= 0.010){  //到位
-                m_n_ret_ref_step[phy_axis] = 10;  //跳转下一步
-            }
-            break;
-        case 11:  //回参考点完成
-            printf("axis %u return ref over\n", phy_axis);
-            this->SetRetRefFlag(phy_axis, true);
-            this->m_p_pmc_reg->FReg().bits[0].in_ref_point |= (0x01<<phy_axis);   //置位到参考点标志
-//			printf("return ref over flag : 0x%llx, 0x%hhx, 0x%hhx, 0x%hhx, 0x%hhx, 0x%hhx, 0x%hhx, 0x%hhx, 0x%hhx\n", this->m_p_pmc_reg->FReg().bits[0].in_ref_point,
-//					m_p_pmc_reg->FReg().all[200], m_p_pmc_reg->FReg().all[201], m_p_pmc_reg->FReg().all[202], m_p_pmc_reg->FReg().all[203],
-//					m_p_pmc_reg->FReg().all[204], m_p_pmc_reg->FReg().all[205], m_p_pmc_reg->FReg().all[206], m_p_pmc_reg->FReg().all[207]);
-            this->m_n_mask_ret_ref &= ~(0x01<<phy_axis);
-            m_n_ret_ref_step[phy_axis] = 0;
-            break;
-
-        case 20: //失败处理
-            this->m_n_mask_ret_ref &= ~(0x01<<phy_axis);
-            m_n_ret_ref_step[phy_axis] = 0;
-
-            if(m_n_mask_ret_ref == 0){
-                this->m_b_ret_ref = false;
-                this->m_b_ret_ref_auto = false;
-                m_n_ret_ref_auto_cur = 0;
-            }
-            m_error_code = ERR_RET_REF_FAILED;
-            CreateError(ERR_RET_REF_FAILED, WARNING_LEVEL, CLEAR_BY_MCP_RESET, 0, CHANNEL_ENGINE_INDEX, phy_axis);
-            break;
-        default:
-            break;
+    case 5: { //等待设置参考点完成，在Mi指令响应处理函数中处理
+        struct timeval time_now;
+        gettimeofday(&time_now, NULL);
+        unsigned int time_elpase = (time_now.tv_sec-m_time_ret_ref[phy_axis].tv_sec)*1000000+time_now.tv_usec-m_time_ret_ref[phy_axis].tv_usec;
+        if(time_elpase >= 200000){ //延时200ms
+            m_n_ret_ref_step[phy_axis] = 6;  //跳转下一步
+            printf("return ref, goto step 6\n");
         }
+    }
+        break;
+
+    case 6:       // 设置基准
+        MiCmdFrame cmd;
+        memset(&cmd, 0x00, sizeof(cmd));
+        cmd.data.axis_index = phy_axis+1;
+        cmd.data.cmd = CMD_MI_SET_REF;
+        this->m_p_mi_comm->WriteCmd(cmd);
+        gettimeofday(&this->m_time_ret_ref[phy_axis], NULL);
+        m_n_ret_ref_step[phy_axis] = 7;  //跳转下一步
+
+        break;
+
+    case 7: {
+        struct timeval time_now;
+        gettimeofday(&time_now, NULL);
+        unsigned int time_elpase = (time_now.tv_sec-m_time_ret_ref[phy_axis].tv_sec)*1000000+time_now.tv_usec-m_time_ret_ref[phy_axis].tv_usec;
+        if(time_elpase >= 100000){ //延时100ms
+            m_n_ret_ref_step[phy_axis] = 8;  //跳转下一步
+            printf("return ref, goto step 8\n");
+        }
+    }
+        break;
+
+    case 8: //等待设置完成，移动到轴参考点1
+#ifdef USES_RET_REF_TO_MACH_ZERO
+        dis = 0;    //机械零
+#else
+        dis = this->m_p_axis_config[phy_axis].axis_home_pos[0];   // 原点坐标
+#endif
+        this->ManualMove(phy_axis, dis, m_p_axis_config[phy_axis].ret_ref_speed, 0);
+        m_n_ret_ref_step[phy_axis] = 9;  //跳转下一步
+        printf("return ref, goto step 9\n");
+        break;
+
+    case 9:  //等待轴移动到位,完成！
+#ifdef USES_RET_REF_TO_MACH_ZERO
+        dis = 0;    //机械零
+#else
+        dis = this->m_p_axis_config[phy_axis].axis_home_pos[0];   // 原点坐标
+#endif
+        if(fabs(this->GetPhyAxisMachPosFeedback(phy_axis)- dis) <= 0.010){  //到位
+            m_n_ret_ref_step[phy_axis] = 10;  //跳转下一步
+        }
+        break;
+    case 11:  //回参考点完成
+        printf("axis %u return ref over\n", phy_axis);
+        this->SetRetRefFlag(phy_axis, true);
+        this->m_p_pmc_reg->FReg().bits[0].in_ref_point |= (0x01<<phy_axis);   //置位到参考点标志
+        //			printf("return ref over flag : 0x%llx, 0x%hhx, 0x%hhx, 0x%hhx, 0x%hhx, 0x%hhx, 0x%hhx, 0x%hhx, 0x%hhx\n", this->m_p_pmc_reg->FReg().bits[0].in_ref_point,
+        //					m_p_pmc_reg->FReg().all[200], m_p_pmc_reg->FReg().all[201], m_p_pmc_reg->FReg().all[202], m_p_pmc_reg->FReg().all[203],
+        //					m_p_pmc_reg->FReg().all[204], m_p_pmc_reg->FReg().all[205], m_p_pmc_reg->FReg().all[206], m_p_pmc_reg->FReg().all[207]);
+        this->m_n_mask_ret_ref &= ~(0x01<<phy_axis);
+        m_n_ret_ref_step[phy_axis] = 0;
+        break;
+
+    case 20: //失败处理
+        this->m_n_mask_ret_ref &= ~(0x01<<phy_axis);
+        m_n_ret_ref_step[phy_axis] = 0;
+
+        if(m_n_mask_ret_ref == 0){
+            this->m_b_ret_ref = false;
+            this->m_b_ret_ref_auto = false;
+            m_n_ret_ref_auto_cur = 0;
+        }
+        m_error_code = ERR_RET_REF_FAILED;
+        CreateError(ERR_RET_REF_FAILED, WARNING_LEVEL, CLEAR_BY_MCP_RESET, 0, CHANNEL_ENGINE_INDEX, phy_axis);
+        break;
+    default:
+        break;
+    }
 }
 
 
@@ -10511,283 +10371,283 @@ void ChannelEngine::PulseAxisFindRefNoZeroSignal(uint8_t phy_axis){
 void ChannelEngine::EcatAxisFindRefWithZeroSignal(uint8_t phy_axis){
 
     int8_t dir = 0, dir_opt;   //回参考点方向
-//	uint8_t ret_mode = 0;   //回参考点方式
+    //	uint8_t ret_mode = 0;   //回参考点方式
     uint8_t chn = 0, chn_axis = 0;
     double dis = 0;      //移动距离
-//	static double ret_ref_start_pos[kMaxAxisNum];
+    //	static double ret_ref_start_pos[kMaxAxisNum];
 
-//	ret_mode = m_p_axis_config[phy_axis].ret_ref_mode;
+    //	ret_mode = m_p_axis_config[phy_axis].ret_ref_mode;
     dir = this->m_p_axis_config[phy_axis].ret_ref_dir?DIR_POSITIVE:DIR_NEGATIVE;  // 回参考点找粗基准方向
     dir_opt = (m_p_axis_config[phy_axis].ret_ref_change_dir==0)?dir*-1:dir;       //回参考点找精基准方向
     switch(this->m_n_ret_ref_step[phy_axis]){
-        case 0://检查原点信号
-            std::cout << "step 0, dir: " << (int)dir << " dir_opt: " << dir_opt << std::endl;
-            this->SetRetRefFlag(phy_axis, false);   //复位回参考点完成标志
-            this->m_p_pmc_reg->FReg().bits[0].in_ref_point &= ~(0x01<<phy_axis);
+    case 0://检查原点信号
+        std::cout << "step 0, dir: " << (int)dir << " dir_opt: " << dir_opt << std::endl;
+        this->SetRetRefFlag(phy_axis, false);   //复位回参考点完成标志
+        this->m_p_pmc_reg->FReg().bits[0].in_ref_point &= ~(0x01<<phy_axis);
 
-            if(this->CheckAxisRefBaseSignal(phy_axis, dir)){  // 已经触发粗基准信号，直接开开始回退
-                double move_length = this->m_p_axis_config[phy_axis].move_pr*1.2;
-                if(move_length>10.0) {
-                    move_length = 10.0;
-                    }
-                else if(move_length < 1.0){
-                    move_length = 1.0;
-                    }
-                m_df_ret_ref_tar_pos[phy_axis] = this->GetPhyAxisMachPosFeedback(phy_axis)+move_length* dir*-1;
-                this->ManualMove(phy_axis, dir*-1,
-                        this->m_p_axis_config[phy_axis].ret_ref_speed, move_length);
-
-                std::cout << "step 0, dir: " << (int)dir << " dir_opt: " << dir_opt << " goto step 1 " << std::endl;
-                m_n_ret_ref_step[phy_axis] = 1;
-            }
-            else{
-                std::cout << "step 0, dir: " << (int)dir << " dir_opt: " << dir_opt << " goto step 2 " << std::endl;
-                m_n_ret_ref_step[phy_axis] = 2;
-            }
-
-            break;
-        case 1:{//等待回退到位，并再次检查原点信号
-            chn = this->GetAxisChannel(phy_axis, chn_axis);
-            bool flag = CheckAxisRefBaseSignal(phy_axis, dir);
-
-            if(chn != CHANNEL_ENGINE_INDEX){
-                if(fabs(this->GetPhyAxisMachPosFeedback(phy_axis) - m_df_ret_ref_tar_pos[phy_axis]) <= 0.010){
-                    if(true == flag){   //回到step0，继续回退
-                        m_n_ret_ref_step[phy_axis] = 0;
-                        std::cout << "step 1, goback 0" << std::endl;
-                        break;
-                    }
-                }
-                if(flag == false){
-                        m_n_ret_ref_step[phy_axis] = 2;  //跳转下一步
-                        std::cout << "step 1" << std::endl;
-                }
-
-            }else if(this->m_p_axis_config[phy_axis].axis_pmc){  //PMC轴到位
-                if(this->m_n_run_axis_mask == 0 || (this->m_n_runover_axis_mask & (0x01L<<phy_axis))){
-                    if(true == flag){
-                        m_n_ret_ref_step[phy_axis] = 0;
-                        break;
-                    }else{
-                            m_n_ret_ref_step[phy_axis] = 2;  //跳转下一步
-                    }
-                }
-            }
-            }
-            break;
-        case 2:  //以回参考点速度向回参考点方向运动
-            this->ManualMove(phy_axis, dir, this->m_p_axis_config[phy_axis].ret_ref_speed, 90000.0);
-            m_n_ret_ref_step[phy_axis] = 3;  //跳转下一步
-            std::cout << "step 2, ret_ref_speed: " << this->m_p_axis_config[phy_axis].ret_ref_speed << "dir: " << (int)dir << std::endl;
-            break;
-        case 3:  //触发粗基准信号，停止
-            if(this->CheckAxisRefBaseSignal(phy_axis, dir)){
-                this->ManualMoveStop(phy_axis);
-                gettimeofday(&this->m_time_ret_ref[phy_axis], NULL);   //记录起始时间
-                m_n_ret_ref_step[phy_axis] = 4;  //跳转下一步
-                this->SendMonitorData(false, false);
-                std::cout << "step 3, axisPos: " << this->GetPhyAxisMachPosIntp(phy_axis) << std::endl;
-            }
-            else{
-            //	this->ManualMove(phy_axis, dir, this->m_p_axis_config[phy_axis].ret_ref_speed,1.0);
-            }
-            break;
-        case 4:{//等待停止到位
-            struct timeval time_now;
-            gettimeofday(&time_now, NULL);
-            unsigned int time_elpase = (time_now.tv_sec-m_time_ret_ref[phy_axis].tv_sec)*1000000+time_now.tv_usec-m_time_ret_ref[phy_axis].tv_usec;
-            if(time_elpase >= 1000000){ //延时1000ms
-                m_n_ret_ref_step[phy_axis] = 5;  //跳转下一步
-                this->SendMonitorData(false, false);
-                std::cout << "step 4, axisPos: " << this->GetPhyAxisMachPosIntp(phy_axis) << std::endl;
-            }
-        }
-            break;
-        case 5:{  //有基准， 低速回退至粗基准信号消失,
-        //	printf("return ref step 5\n");
-            double move_length = this->m_p_axis_config[phy_axis].move_pr*2;
+        if(this->CheckAxisRefBaseSignal(phy_axis, dir)){  // 已经触发粗基准信号，直接开开始回退
+            double move_length = this->m_p_axis_config[phy_axis].move_pr*1.2;
             if(move_length>10.0) {
                 move_length = 10.0;
-            }else if(move_length < 1.0){
+            }
+            else if(move_length < 1.0){
                 move_length = 1.0;
             }
-            double val = 60;
-            if (this->m_p_axis_config[phy_axis].ret_ref_speed_second > 0)
-                val = this->m_p_axis_config[phy_axis].ret_ref_speed_second;
-            m_df_ret_ref_tar_pos[phy_axis] = this->GetPhyAxisMachPosFeedback(phy_axis)+move_length* dir_opt;
-            this->ManualMove(phy_axis, dir_opt, val, move_length); //有基准， 低速回退至粗基准信号消失//60
-            m_n_ret_ref_step[phy_axis] = 6;  //跳转下一步
-            std::cout << "step 5," << " speed: " << val << std::endl;
+            m_df_ret_ref_tar_pos[phy_axis] = this->GetPhyAxisMachPosFeedback(phy_axis)+move_length* dir*-1;
+            this->ManualMove(phy_axis, dir*-1,
+                             this->m_p_axis_config[phy_axis].ret_ref_speed, move_length);
 
-            break;
+            std::cout << "step 0, dir: " << (int)dir << " dir_opt: " << dir_opt << " goto step 1 " << std::endl;
+            m_n_ret_ref_step[phy_axis] = 1;
         }
-        case 6:  //有基准，等待粗基准信号消失
+        else{
+            std::cout << "step 0, dir: " << (int)dir << " dir_opt: " << dir_opt << " goto step 2 " << std::endl;
+            m_n_ret_ref_step[phy_axis] = 2;
+        }
+
+        break;
+    case 1:{//等待回退到位，并再次检查原点信号
+        chn = this->GetAxisChannel(phy_axis, chn_axis);
+        bool flag = CheckAxisRefBaseSignal(phy_axis, dir);
+
+        if(chn != CHANNEL_ENGINE_INDEX){
+            if(fabs(this->GetPhyAxisMachPosFeedback(phy_axis) - m_df_ret_ref_tar_pos[phy_axis]) <= 0.010){
+                if(true == flag){   //回到step0，继续回退
+                    m_n_ret_ref_step[phy_axis] = 0;
+                    std::cout << "step 1, goback 0" << std::endl;
+                    break;
+                }
+            }
+            if(flag == false){
+                m_n_ret_ref_step[phy_axis] = 2;  //跳转下一步
+                std::cout << "step 1" << std::endl;
+            }
+
+        }else if(this->m_p_axis_config[phy_axis].axis_pmc){  //PMC轴到位
+            if(this->m_n_run_axis_mask == 0 || (this->m_n_runover_axis_mask & (0x01L<<phy_axis))){
+                if(true == flag){
+                    m_n_ret_ref_step[phy_axis] = 0;
+                    break;
+                }else{
+                    m_n_ret_ref_step[phy_axis] = 2;  //跳转下一步
+                }
+            }
+        }
+    }
+        break;
+    case 2:  //以回参考点速度向回参考点方向运动
+        this->ManualMove(phy_axis, dir, this->m_p_axis_config[phy_axis].ret_ref_speed, 90000.0);
+        m_n_ret_ref_step[phy_axis] = 3;  //跳转下一步
+        std::cout << "step 2, ret_ref_speed: " << this->m_p_axis_config[phy_axis].ret_ref_speed << "dir: " << (int)dir << std::endl;
+        break;
+    case 3:  //触发粗基准信号，停止
+        if(this->CheckAxisRefBaseSignal(phy_axis, dir)){
+            this->ManualMoveStop(phy_axis);
+            gettimeofday(&this->m_time_ret_ref[phy_axis], NULL);   //记录起始时间
+            m_n_ret_ref_step[phy_axis] = 4;  //跳转下一步
+            this->SendMonitorData(false, false);
+            std::cout << "step 3, axisPos: " << this->GetPhyAxisMachPosIntp(phy_axis) << std::endl;
+        }
+        else{
+            //	this->ManualMove(phy_axis, dir, this->m_p_axis_config[phy_axis].ret_ref_speed,1.0);
+        }
+        break;
+    case 4:{//等待停止到位
+        struct timeval time_now;
+        gettimeofday(&time_now, NULL);
+        unsigned int time_elpase = (time_now.tv_sec-m_time_ret_ref[phy_axis].tv_sec)*1000000+time_now.tv_usec-m_time_ret_ref[phy_axis].tv_usec;
+        if(time_elpase >= 1000000){ //延时1000ms
+            m_n_ret_ref_step[phy_axis] = 5;  //跳转下一步
+            this->SendMonitorData(false, false);
+            std::cout << "step 4, axisPos: " << this->GetPhyAxisMachPosIntp(phy_axis) << std::endl;
+        }
+    }
+        break;
+    case 5:{  //有基准， 低速回退至粗基准信号消失,
+        //	printf("return ref step 5\n");
+        double move_length = this->m_p_axis_config[phy_axis].move_pr*2;
+        if(move_length>10.0) {
+            move_length = 10.0;
+        }else if(move_length < 1.0){
+            move_length = 1.0;
+        }
+        double val = 60;
+        if (this->m_p_axis_config[phy_axis].ret_ref_speed_second > 0)
+            val = this->m_p_axis_config[phy_axis].ret_ref_speed_second;
+        m_df_ret_ref_tar_pos[phy_axis] = this->GetPhyAxisMachPosFeedback(phy_axis)+move_length* dir_opt;
+        this->ManualMove(phy_axis, dir_opt, val, move_length); //有基准， 低速回退至粗基准信号消失//60
+        m_n_ret_ref_step[phy_axis] = 6;  //跳转下一步
+        std::cout << "step 5," << " speed: " << val << std::endl;
+
+        break;
+    }
+    case 6:  //有基准，等待粗基准信号消失
+        if(!this->CheckAxisRefBaseSignal(phy_axis, dir)){
+            this->ManualMoveStop(phy_axis);
+
+            gettimeofday(&this->m_time_ret_ref[phy_axis], NULL);   //记录起始时间，延时600ms
+
+            m_n_ret_ref_step[phy_axis] = 7;  //跳转下一步
+            std::cout << "step 6, goto 7" << std::endl;
+        }else if(fabs(this->GetPhyAxisMachPosFeedback(phy_axis) - m_df_ret_ref_tar_pos[phy_axis]) <= 0.010){  //接近目标位置，粗基准信号还在，则继续回退
+            m_n_ret_ref_step[phy_axis] = 5;  //跳转第5步
+            std::cout << "step 6, goback 5" << std::endl;
+        }
+        break;
+    case 7:{ //等待停止到位
+        struct timeval time_now;
+        gettimeofday(&time_now, NULL);
+        unsigned int time_elpase = (time_now.tv_sec-m_time_ret_ref[phy_axis].tv_sec)*1000000+time_now.tv_usec-m_time_ret_ref[phy_axis].tv_usec;
+        if(time_elpase >= 600000){ //延时600ms
+            //				m_n_get_cur_encoder_count = 0;  //复位获取当前编码器次数
             if(!this->CheckAxisRefBaseSignal(phy_axis, dir)){
-                this->ManualMoveStop(phy_axis);
-
-                gettimeofday(&this->m_time_ret_ref[phy_axis], NULL);   //记录起始时间，延时600ms
-
-                m_n_ret_ref_step[phy_axis] = 7;  //跳转下一步
-                std::cout << "step 6, goto 7" << std::endl;
-            }else if(fabs(this->GetPhyAxisMachPosFeedback(phy_axis) - m_df_ret_ref_tar_pos[phy_axis]) <= 0.010){  //接近目标位置，粗基准信号还在，则继续回退
-                m_n_ret_ref_step[phy_axis] = 5;  //跳转第5步
-                std::cout << "step 6, goback 5" << std::endl;
+                m_n_ret_ref_step[phy_axis] = 8;  //跳转下一步
+                std::cout << "step 7" << std::endl;
+            }else{      //如果又发现粗基准有信号，则继续回退
+                m_n_ret_ref_step[phy_axis] = 5;  //回跳至第5步
+                std::cout << "step 7, goback 5" << std::endl;
             }
-            break;
-        case 7:{ //等待停止到位
-            struct timeval time_now;
-            gettimeofday(&time_now, NULL);
-            unsigned int time_elpase = (time_now.tv_sec-m_time_ret_ref[phy_axis].tv_sec)*1000000+time_now.tv_usec-m_time_ret_ref[phy_axis].tv_usec;
-            if(time_elpase >= 600000){ //延时600ms
-//				m_n_get_cur_encoder_count = 0;  //复位获取当前编码器次数
-                if(!this->CheckAxisRefBaseSignal(phy_axis, dir)){
-                    m_n_ret_ref_step[phy_axis] = 8;  //跳转下一步
-                    std::cout << "step 7" << std::endl;
-                }else{      //如果又发现粗基准有信号，则继续回退
-                    m_n_ret_ref_step[phy_axis] = 5;  //回跳至第5步
-                    std::cout << "step 7, goback 5" << std::endl;
-                }
 
-            }
         }
-            break;
-        case 8:{ // 设置原点
-            MiCmdFrame cmd;
-            memset(&cmd, 0x00, sizeof(cmd));
-            cmd.data.axis_index = phy_axis+1;
-            cmd.data.cmd = CMD_MI_SET_REF_POINT;
+    }
+        break;
+    case 8:{ // 设置原点
+        MiCmdFrame cmd;
+        memset(&cmd, 0x00, sizeof(cmd));
+        cmd.data.axis_index = phy_axis+1;
+        cmd.data.cmd = CMD_MI_SET_REF_POINT;
 
-            uint16_t err = m_p_axis_config[phy_axis].ref_mark_err * 1e3;     //单位转换， mm->um
-            cmd.data.data[0] = err;    //参考点基准误差
-            int64_t pos = m_p_axis_config[phy_axis].axis_home_pos[0]*1e7;   //单位转换,0.1nm
-            memcpy(&cmd.data.data[1], &pos, sizeof(int64_t));
-            cmd.data.data[5] = this->m_p_axis_config[phy_axis].ref_signal;
-            cmd.data.data[6] = this->m_p_axis_config[phy_axis].ret_ref_dir;
+        uint16_t err = m_p_axis_config[phy_axis].ref_mark_err * 1e3;     //单位转换， mm->um
+        cmd.data.data[0] = err;    //参考点基准误差
+        int64_t pos = m_p_axis_config[phy_axis].axis_home_pos[0]*1e7;   //单位转换,0.1nm
+        memcpy(&cmd.data.data[1], &pos, sizeof(int64_t));
+        cmd.data.data[5] = this->m_p_axis_config[phy_axis].ref_signal;
+        cmd.data.data[6] = this->m_p_axis_config[phy_axis].ret_ref_dir;
 
 
-            this->m_p_mi_comm->WriteCmd(cmd);
-//			gettimeofday(&this->m_time_ret_ref[phy_axis], nullptr);   //记录起始时间，延时300ms
+        this->m_p_mi_comm->WriteCmd(cmd);
+        //			gettimeofday(&this->m_time_ret_ref[phy_axis], nullptr);   //记录起始时间，延时300ms
 
-            m_n_ret_ref_step[phy_axis] = 9;  //跳转下一步
-            std::cout << "step 9, CMD_MI_SET_REF_POINT" << std::endl;
-        }
-            break;
-        case 9: //等待设置参考点完成，在Mi指令响应处理函数中处理
+        m_n_ret_ref_step[phy_axis] = 9;  //跳转下一步
+        std::cout << "step 9, CMD_MI_SET_REF_POINT" << std::endl;
+    }
+        break;
+    case 9: //等待设置参考点完成，在Mi指令响应处理函数中处理
 
-            break;
-        case 10: //等待轴移动到位,完成
+        break;
+    case 10: //等待轴移动到位,完成
 #ifdef USES_RET_REF_TO_MACH_ZERO
-            dis = 0;    //机械零
+        dis = 0;    //机械零
 #else
-            dis = this->m_p_axis_config[phy_axis].axis_home_pos[0];   // 原点坐标
+        dis = this->m_p_axis_config[phy_axis].axis_home_pos[0];   // 原点坐标
 #endif
-            this->SendMonitorData(false, false);  //再次读取实时位置
+        this->SendMonitorData(false, false);  //再次读取实时位置
 
-            if(fabs(this->GetPhyAxisMachPosFeedback(phy_axis)- dis) <= 0.010){  //到位
-                if (m_p_axis_config[phy_axis].ref_z_distance_max == 0
-                        || m_p_axis_config[phy_axis].ref_z_distance_max > this->m_p_axis_config[phy_axis].ref_base_diff)
-                {
-                    m_n_ret_ref_step[phy_axis] = 11;  //跳转下一步
-                    std::cout << "step 10 " << std::endl;
-                }
-                else
-                {
-                    m_error_code = ERR_RET_REF_Z_ERR;
-                    m_n_ret_ref_step[phy_axis] = 20;
-                    std::cout << "step 10, goto 20. z_distance_max " << m_p_axis_config[phy_axis].ref_z_distance_max << std::endl;
-                }
-            }
-
-            break;
-        case 11:  //回参考点完成
-            if (this->m_p_axis_config[phy_axis].ref_offset_pos)
+        if(fabs(this->GetPhyAxisMachPosFeedback(phy_axis)- dis) <= 0.010){  //到位
+            if (m_p_axis_config[phy_axis].ref_z_distance_max == 0
+                    || m_p_axis_config[phy_axis].ref_z_distance_max > this->m_p_axis_config[phy_axis].ref_base_diff)
             {
-                this->ManualMoveAbs(phy_axis, this->m_p_axis_config[phy_axis].ret_ref_speed, this->m_p_axis_config[phy_axis].ref_offset_pos); //有基准，
-                std::cout << "step 11, ref_offset_pos: " << m_p_axis_config[phy_axis].ref_offset_pos << std::endl;
-                m_n_ret_ref_step[phy_axis] = 12;
+                m_n_ret_ref_step[phy_axis] = 11;  //跳转下一步
+                std::cout << "step 10 " << std::endl;
             }
             else
             {
-                std::cout << "step 11, goto 15" << std::endl;
-                m_n_ret_ref_step[phy_axis] = 15;
-            }
-        break;
-        case 12://运动停止
-            if(fabs(this->GetPhyAxisMachPosFeedback(phy_axis) - this->m_p_axis_config[phy_axis].ref_offset_pos) <= 0.010){  //到位
-                gettimeofday(&this->m_time_ret_ref[phy_axis], NULL);   //记录起始时间，延时600ms
-                m_n_ret_ref_step[phy_axis] = 13;
-                std::cout << "step 12" << std::endl;
-            }
-            break;
-        case 13: {
-            struct timeval time_now;
-            gettimeofday(&time_now, NULL);
-            unsigned int time_elpase = (time_now.tv_sec-m_time_ret_ref[phy_axis].tv_sec)*1000000+time_now.tv_usec-m_time_ret_ref[phy_axis].tv_usec;
-            if(time_elpase >= 600000){ //延时600ms
-                MiCmdFrame mi_cmd;
-                memset(&mi_cmd, 0x00, sizeof(mi_cmd));
-                mi_cmd.data.cmd = CMD_MI_SET_AXIS_MACH_POS;
-                mi_cmd.data.axis_index = phy_axis+1;
-                mi_cmd.data.data[0] = 0;
-                mi_cmd.data.data[1] = 0;
-                this->m_p_mi_comm->WriteCmd(mi_cmd);
-                gettimeofday(&this->m_time_ret_ref[phy_axis], NULL);   //记录起始时间，延时200ms
-                m_n_ret_ref_step[phy_axis] = 14;
-                std::cout << "step 13 CMD_MI_SET_AXIS_MACH_POS" << std::endl;
+                m_error_code = ERR_RET_REF_Z_ERR;
+                m_n_ret_ref_step[phy_axis] = 20;
+                std::cout << "step 10, goto 20. z_distance_max " << m_p_axis_config[phy_axis].ref_z_distance_max << std::endl;
             }
         }
-            break;
-        case 14: {
-            struct timeval time_now;
-            gettimeofday(&time_now, NULL);
-            unsigned int time_elpase = (time_now.tv_sec-m_time_ret_ref[phy_axis].tv_sec)*1000000+time_now.tv_usec-m_time_ret_ref[phy_axis].tv_usec;
-            if(time_elpase >= 200000) {//延时200ms,等待MI处理
-                m_n_ret_ref_step[phy_axis] = 15;
-                std::cout << "step 14" << std::endl;
-            }
-        }
-        break;
-        case 15:
-            this->SetRetRefFlag(phy_axis, true);
-            this->m_p_pmc_reg->FReg().bits[0].in_ref_point |= (0x01<<phy_axis);   //置位到参考点标志
 
-            if(this->m_p_axis_config[phy_axis].feedback_mode == ABSOLUTE_ENCODER_YASAKAWA ||
+        break;
+    case 11:  //回参考点完成
+        if (this->m_p_axis_config[phy_axis].ref_offset_pos)
+        {
+            this->ManualMoveAbs(phy_axis, this->m_p_axis_config[phy_axis].ret_ref_speed, this->m_p_axis_config[phy_axis].ref_offset_pos); //有基准，
+            std::cout << "step 11, ref_offset_pos: " << m_p_axis_config[phy_axis].ref_offset_pos << std::endl;
+            m_n_ret_ref_step[phy_axis] = 12;
+        }
+        else
+        {
+            std::cout << "step 11, goto 15" << std::endl;
+            m_n_ret_ref_step[phy_axis] = 15;
+        }
+        break;
+    case 12://运动停止
+        if(fabs(this->GetPhyAxisMachPosFeedback(phy_axis) - this->m_p_axis_config[phy_axis].ref_offset_pos) <= 0.010){  //到位
+            gettimeofday(&this->m_time_ret_ref[phy_axis], NULL);   //记录起始时间，延时600ms
+            m_n_ret_ref_step[phy_axis] = 13;
+            std::cout << "step 12" << std::endl;
+        }
+        break;
+    case 13: {
+        struct timeval time_now;
+        gettimeofday(&time_now, NULL);
+        unsigned int time_elpase = (time_now.tv_sec-m_time_ret_ref[phy_axis].tv_sec)*1000000+time_now.tv_usec-m_time_ret_ref[phy_axis].tv_usec;
+        if(time_elpase >= 600000){ //延时600ms
+            MiCmdFrame mi_cmd;
+            memset(&mi_cmd, 0x00, sizeof(mi_cmd));
+            mi_cmd.data.cmd = CMD_MI_SET_AXIS_MACH_POS;
+            mi_cmd.data.axis_index = phy_axis+1;
+            mi_cmd.data.data[0] = 0;
+            mi_cmd.data.data[1] = 0;
+            this->m_p_mi_comm->WriteCmd(mi_cmd);
+            gettimeofday(&this->m_time_ret_ref[phy_axis], NULL);   //记录起始时间，延时200ms
+            m_n_ret_ref_step[phy_axis] = 14;
+            std::cout << "step 13 CMD_MI_SET_AXIS_MACH_POS" << std::endl;
+        }
+    }
+        break;
+    case 14: {
+        struct timeval time_now;
+        gettimeofday(&time_now, NULL);
+        unsigned int time_elpase = (time_now.tv_sec-m_time_ret_ref[phy_axis].tv_sec)*1000000+time_now.tv_usec-m_time_ret_ref[phy_axis].tv_usec;
+        if(time_elpase >= 200000) {//延时200ms,等待MI处理
+            m_n_ret_ref_step[phy_axis] = 15;
+            std::cout << "step 14" << std::endl;
+        }
+    }
+        break;
+    case 15:
+        this->SetRetRefFlag(phy_axis, true);
+        this->m_p_pmc_reg->FReg().bits[0].in_ref_point |= (0x01<<phy_axis);   //置位到参考点标志
+
+        if(this->m_p_axis_config[phy_axis].feedback_mode == ABSOLUTE_ENCODER_YASAKAWA ||
                 this->m_p_axis_config[phy_axis].feedback_mode == ABSOLUTE_ENCODER_PANASONIC ||
                 this->m_p_axis_config[phy_axis].feedback_mode == LINEAR_ENCODER){  //绝对值需获取机械零点的编码器值并保存，方便断点后恢复坐标
-                MiCmdFrame mi_cmd;
-                memset(&mi_cmd, 0x00, sizeof(mi_cmd));
-                mi_cmd.data.cmd = CMD_MI_GET_ZERO_ENCODER;
-                mi_cmd.data.axis_index = phy_axis+1;
+            MiCmdFrame mi_cmd;
+            memset(&mi_cmd, 0x00, sizeof(mi_cmd));
+            mi_cmd.data.cmd = CMD_MI_GET_ZERO_ENCODER;
+            mi_cmd.data.axis_index = phy_axis+1;
 
-                this->m_p_mi_comm->WriteCmd(mi_cmd);
-            }
-    //			printf("return ref over flag : 0x%llx, 0x%hhx, 0x%hhx, 0x%hhx, 0x%hhx, 0x%hhx, 0x%hhx, 0x%hhx, 0x%hhx\n", this->m_p_pmc_reg->FReg().bits[0].in_ref_point,
-    //					m_p_pmc_reg->FReg().all[200], m_p_pmc_reg->FReg().all[201], m_p_pmc_reg->FReg().all[202], m_p_pmc_reg->FReg().all[203],
-    //					m_p_pmc_reg->FReg().all[204], m_p_pmc_reg->FReg().all[205], m_p_pmc_reg->FReg().all[206], m_p_pmc_reg->FReg().all[207]);
-            this->m_n_mask_ret_ref &= ~(0x01<<phy_axis);
-            m_n_ret_ref_step[phy_axis] = 0;
-
-            if(m_n_mask_ret_ref == 0){
-                this->m_b_ret_ref = false;
-                this->m_b_ret_ref_auto = false;
-                m_n_ret_ref_auto_cur = 0;
-            }
-            std::cout << "step 15, home over" << std::endl;
-        break;
-        case 20: //失败处理
-            this->m_n_mask_ret_ref &= ~(0x01<<phy_axis);
-            m_n_ret_ref_step[phy_axis] = 0;
-
-            if(m_n_mask_ret_ref == 0){
-                this->m_b_ret_ref = false;
-                this->m_b_ret_ref_auto = false;
-                m_n_ret_ref_auto_cur = 0;
-            }
-            CreateError(m_error_code, WARNING_LEVEL, CLEAR_BY_MCP_RESET, 0, CHANNEL_ENGINE_INDEX, phy_axis);
-            break;
-        default:
-            break;
+            this->m_p_mi_comm->WriteCmd(mi_cmd);
         }
+        //			printf("return ref over flag : 0x%llx, 0x%hhx, 0x%hhx, 0x%hhx, 0x%hhx, 0x%hhx, 0x%hhx, 0x%hhx, 0x%hhx\n", this->m_p_pmc_reg->FReg().bits[0].in_ref_point,
+        //					m_p_pmc_reg->FReg().all[200], m_p_pmc_reg->FReg().all[201], m_p_pmc_reg->FReg().all[202], m_p_pmc_reg->FReg().all[203],
+        //					m_p_pmc_reg->FReg().all[204], m_p_pmc_reg->FReg().all[205], m_p_pmc_reg->FReg().all[206], m_p_pmc_reg->FReg().all[207]);
+        this->m_n_mask_ret_ref &= ~(0x01<<phy_axis);
+        m_n_ret_ref_step[phy_axis] = 0;
+
+        if(m_n_mask_ret_ref == 0){
+            this->m_b_ret_ref = false;
+            this->m_b_ret_ref_auto = false;
+            m_n_ret_ref_auto_cur = 0;
+        }
+        std::cout << "step 15, home over" << std::endl;
+        break;
+    case 20: //失败处理
+        this->m_n_mask_ret_ref &= ~(0x01<<phy_axis);
+        m_n_ret_ref_step[phy_axis] = 0;
+
+        if(m_n_mask_ret_ref == 0){
+            this->m_b_ret_ref = false;
+            this->m_b_ret_ref_auto = false;
+            m_n_ret_ref_auto_cur = 0;
+        }
+        CreateError(m_error_code, WARNING_LEVEL, CLEAR_BY_MCP_RESET, 0, CHANNEL_ENGINE_INDEX, phy_axis);
+        break;
+    default:
+        break;
+    }
 }
 
 /**
@@ -10796,185 +10656,185 @@ void ChannelEngine::EcatAxisFindRefWithZeroSignal(uint8_t phy_axis){
  */
 void ChannelEngine::EcatAxisFindRefWithZeroSignal2(uint8_t phy_axis){
     int8_t dir = 0, dir_opt;   //回参考点方向
-//	uint8_t ret_mode = 0;   //回参考点方式
+    //	uint8_t ret_mode = 0;   //回参考点方式
     uint8_t chn = 0, chn_axis = 0;
-//	double dis = 0;      //移动距离
-//	static double ret_ref_start_pos[kMaxAxisNum];
+    //	double dis = 0;      //移动距离
+    //	static double ret_ref_start_pos[kMaxAxisNum];
 
-//	ret_mode = m_p_axis_config[phy_axis].ret_ref_mode;
+    //	ret_mode = m_p_axis_config[phy_axis].ret_ref_mode;
     dir = this->m_p_axis_config[phy_axis].ret_ref_dir?DIR_POSITIVE:DIR_NEGATIVE;  // 回参考点找粗基准方向
     dir_opt = (m_p_axis_config[phy_axis].ret_ref_change_dir==0)?dir*-1:dir;       //回参考点找精基准方向
 
     switch(this->m_n_ret_ref_step[phy_axis]){
-        case 0://检查原点信号
-            printf("return ref step 0, dir = %hhd, dir_opt=%hhd\n", dir, dir_opt);
-            this->SetRetRefFlag(phy_axis, false);   //复位回参考点完成标志
-            this->m_p_pmc_reg->FReg().bits[0].in_ref_point &= ~(0x01<<phy_axis);
+    case 0://检查原点信号
+        printf("return ref step 0, dir = %hhd, dir_opt=%hhd\n", dir, dir_opt);
+        this->SetRetRefFlag(phy_axis, false);   //复位回参考点完成标志
+        this->m_p_pmc_reg->FReg().bits[0].in_ref_point &= ~(0x01<<phy_axis);
 
-            if(this->CheckAxisRefBaseSignal(phy_axis, dir)){  // 已经触发粗基准信号，直接开始回退
-                double move_length = this->m_p_axis_config[phy_axis].move_pr*1.2;
-                if(move_length>10.0){
-                    move_length = 10.0;
-                }else if(move_length < 1.0){
-                    move_length = 1.0;
-                }
-                m_df_ret_ref_tar_pos[phy_axis] = this->GetPhyAxisMachPosFeedback(phy_axis)+move_length* dir*-1;
-                this->ManualMove(phy_axis, dir*-1,
-                        this->m_p_axis_config[phy_axis].ret_ref_speed, move_length);
-
-                m_n_ret_ref_step[phy_axis] = 1;
+        if(this->CheckAxisRefBaseSignal(phy_axis, dir)){  // 已经触发粗基准信号，直接开始回退
+            double move_length = this->m_p_axis_config[phy_axis].move_pr*1.2;
+            if(move_length>10.0){
+                move_length = 10.0;
+            }else if(move_length < 1.0){
+                move_length = 1.0;
             }
-            else{
-                m_n_ret_ref_step[phy_axis] = 2;
+            m_df_ret_ref_tar_pos[phy_axis] = this->GetPhyAxisMachPosFeedback(phy_axis)+move_length* dir*-1;
+            this->ManualMove(phy_axis, dir*-1,
+                             this->m_p_axis_config[phy_axis].ret_ref_speed, move_length);
+
+            m_n_ret_ref_step[phy_axis] = 1;
+        }
+        else{
+            m_n_ret_ref_step[phy_axis] = 2;
+        }
+
+        break;
+    case 1:{//等待回退到位，并再次检查原点信号
+        printf("return ref step 1\n");
+        chn = this->GetAxisChannel(phy_axis, chn_axis);
+        bool flag = CheckAxisRefBaseSignal(phy_axis, dir);
+
+        if(chn != CHANNEL_ENGINE_INDEX){
+            if(fabs(this->GetPhyAxisMachPosFeedback(phy_axis) - m_df_ret_ref_tar_pos[phy_axis]) <= 0.010){
+                if(true == flag){
+                    m_n_ret_ref_step[phy_axis] = 0;
+                    break;
+                }
+            }
+            if(flag == false){
+                m_n_ret_ref_step[phy_axis] = 2;  //跳转下一步
             }
 
-            break;
-        case 1:{//等待回退到位，并再次检查原点信号
-            printf("return ref step 1\n");
-            chn = this->GetAxisChannel(phy_axis, chn_axis);
-            bool flag = CheckAxisRefBaseSignal(phy_axis, dir);
-
-            if(chn != CHANNEL_ENGINE_INDEX){
-                if(fabs(this->GetPhyAxisMachPosFeedback(phy_axis) - m_df_ret_ref_tar_pos[phy_axis]) <= 0.010){
-                    if(true == flag){
-                        m_n_ret_ref_step[phy_axis] = 0;
-                        break;
-                    }
-                }
-                if(flag == false){
+        }else if(this->m_p_axis_config[phy_axis].axis_pmc){  //PMC轴到位
+            if(this->m_n_run_axis_mask == 0 || (this->m_n_runover_axis_mask & (0x01L<<phy_axis))){
+                if(true == flag){
+                    m_n_ret_ref_step[phy_axis] = 0;
+                    break;
+                }else{
                     m_n_ret_ref_step[phy_axis] = 2;  //跳转下一步
                 }
-
-            }else if(this->m_p_axis_config[phy_axis].axis_pmc){  //PMC轴到位
-                if(this->m_n_run_axis_mask == 0 || (this->m_n_runover_axis_mask & (0x01L<<phy_axis))){
-                    if(true == flag){
-                        m_n_ret_ref_step[phy_axis] = 0;
-                        break;
-                    }else{
-                        m_n_ret_ref_step[phy_axis] = 2;  //跳转下一步
-                    }
-                }
-            }
-            }
-            break;
-        case 2:  //以回参考点速度向回参考点方向运动
-    //		printf("return ref step 2\n");
-            this->ManualMove(phy_axis, dir, this->m_p_axis_config[phy_axis].ret_ref_speed, 90000.0);
-            m_n_ret_ref_step[phy_axis] = 3;  //跳转下一步
-            printf("return ref, goto step 3\n");
-            break;
-        case 3:  //触发粗基准信号，停止
-    //		printf("return ref step 3\n");
-            if(this->CheckAxisRefBaseSignal(phy_axis, dir)){  //触发粗基准
-                if(m_p_axis_config[phy_axis].ret_ref_change_dir){  //反向寻找精基准，则先停止到位
-                    this->ManualMoveStop(phy_axis);
-                    gettimeofday(&this->m_time_ret_ref[phy_axis], NULL);   //记录起始时间
-                    m_n_ret_ref_step[phy_axis] = 4;  //跳转下一步
-                    printf("return ref, goto step 4\n");
-                }else{  //同向减速寻找精基准
-                    this->ManualMove(phy_axis, dir_opt, this->m_p_axis_config[phy_axis].ret_ref_speed_second,3.0);//20
-                    m_n_ret_ref_step[phy_axis] = 5;  //跳转下一步
-                }
-            }
-            else{
-            //	this->ManualMove(phy_axis, dir, this->m_p_axis_config[phy_axis].ret_ref_speed,3.0);
-            }
-            break;
-        case 4:{//等待停止到位
-            struct timeval time_now;
-            gettimeofday(&time_now, NULL);
-            unsigned int time_elpase = (time_now.tv_sec-m_time_ret_ref[phy_axis].tv_sec)*1000000+time_now.tv_usec-m_time_ret_ref[phy_axis].tv_usec;
-            if(time_elpase >= 300000){ //延时300ms
-                m_n_ret_ref_step[phy_axis] = 5;  //跳转下一步
-                printf("return ref, goto step 5\n");
             }
         }
-            break;
-        case 5:  //低速寻找精基准运动
-            printf("return ref step 5\n");
-            this->ManualMove(phy_axis, dir_opt, this->m_p_axis_config[phy_axis].ret_ref_speed_second, 3); //低速寻找精基准//20
-            m_n_ret_ref_step[phy_axis] = 6;  //跳转下一步
-            printf("return ref, goto step 6\n");
-
-            break;
-        case 6:  //等待精基准信号
-        //	printf("return ref step 6\n");
-            if(this->CheckAxisRefSignal(phy_axis)){
+    }
+        break;
+    case 2:  //以回参考点速度向回参考点方向运动
+        //		printf("return ref step 2\n");
+        this->ManualMove(phy_axis, dir, this->m_p_axis_config[phy_axis].ret_ref_speed, 90000.0);
+        m_n_ret_ref_step[phy_axis] = 3;  //跳转下一步
+        printf("return ref, goto step 3\n");
+        break;
+    case 3:  //触发粗基准信号，停止
+        //		printf("return ref step 3\n");
+        if(this->CheckAxisRefBaseSignal(phy_axis, dir)){  //触发粗基准
+            if(m_p_axis_config[phy_axis].ret_ref_change_dir){  //反向寻找精基准，则先停止到位
                 this->ManualMoveStop(phy_axis);
-                gettimeofday(&this->m_time_ret_ref[phy_axis], NULL);   //记录起始时间，延时300ms
-                m_n_ret_ref_step[phy_axis] = 7;  //跳转下一步
-            }else{
-                this->ManualMove(phy_axis, dir_opt, this->m_p_axis_config[phy_axis].ret_ref_speed_second, 3); //低速寻找精基准//20
-            }
-            break;
-        case 7:{ //等待停止到位
-            struct timeval time_now;
-            gettimeofday(&time_now, NULL);
-            unsigned int time_elpase = (time_now.tv_sec-m_time_ret_ref[phy_axis].tv_sec)*1000000+time_now.tv_usec-m_time_ret_ref[phy_axis].tv_usec;
-            if(time_elpase >= 200000){ //延时200ms
-//				m_n_get_cur_encoder_count = 0;  //复位获取当前编码器次数
-                m_n_ret_ref_step[phy_axis] = 8;  //跳转下一步
-                printf("return ref, goto step 8\n");
+                gettimeofday(&this->m_time_ret_ref[phy_axis], NULL);   //记录起始时间
+                m_n_ret_ref_step[phy_axis] = 4;  //跳转下一步
+                printf("return ref, goto step 4\n");
+            }else{  //同向减速寻找精基准
+                this->ManualMove(phy_axis, dir_opt, this->m_p_axis_config[phy_axis].ret_ref_speed_second,3.0);//20
+                m_n_ret_ref_step[phy_axis] = 5;  //跳转下一步
             }
         }
-            break;
-        case 8:{ // 设置当前位置为参考点
-            printf("return ref step 8: send cmd to mi, set ref point\n");
-            MiCmdFrame cmd;
-            memset(&cmd, 0x00, sizeof(cmd));
-            cmd.data.axis_index = phy_axis+1;
-            cmd.data.cmd = CMD_MI_SET_REF_CUR;
+        else{
+            //	this->ManualMove(phy_axis, dir, this->m_p_axis_config[phy_axis].ret_ref_speed,3.0);
+        }
+        break;
+    case 4:{//等待停止到位
+        struct timeval time_now;
+        gettimeofday(&time_now, NULL);
+        unsigned int time_elpase = (time_now.tv_sec-m_time_ret_ref[phy_axis].tv_sec)*1000000+time_now.tv_usec-m_time_ret_ref[phy_axis].tv_usec;
+        if(time_elpase >= 300000){ //延时300ms
+            m_n_ret_ref_step[phy_axis] = 5;  //跳转下一步
+            printf("return ref, goto step 5\n");
+        }
+    }
+        break;
+    case 5:  //低速寻找精基准运动
+        printf("return ref step 5\n");
+        this->ManualMove(phy_axis, dir_opt, this->m_p_axis_config[phy_axis].ret_ref_speed_second, 3); //低速寻找精基准//20
+        m_n_ret_ref_step[phy_axis] = 6;  //跳转下一步
+        printf("return ref, goto step 6\n");
 
-            int64_t pos = m_p_axis_config[phy_axis].axis_home_pos[0] * 1e7;   //单位转换，0.1nm
-            memcpy(cmd.data.data, &pos, sizeof(int64_t));
-            this->m_p_mi_comm->WriteCmd(cmd);
+        break;
+    case 6:  //等待精基准信号
+        //	printf("return ref step 6\n");
+        if(this->CheckAxisRefSignal(phy_axis)){
+            this->ManualMoveStop(phy_axis);
             gettimeofday(&this->m_time_ret_ref[phy_axis], NULL);   //记录起始时间，延时300ms
-
-            m_n_ret_ref_step[phy_axis] = 9;  //跳转下一步
-            printf("return ref, goto step 9\n");
-
+            m_n_ret_ref_step[phy_axis] = 7;  //跳转下一步
+        }else{
+            this->ManualMove(phy_axis, dir_opt, this->m_p_axis_config[phy_axis].ret_ref_speed_second, 3); //低速寻找精基准//20
         }
-            break;
-        case 9: { //等待设置参考点完成，在Mi指令响应处理函数中处理
-            struct timeval time_now;
-            gettimeofday(&time_now, NULL);
-            unsigned int time_elpase = (time_now.tv_sec-m_time_ret_ref[phy_axis].tv_sec)*1000000+time_now.tv_usec-m_time_ret_ref[phy_axis].tv_usec;
-            if(time_elpase >= 200000){ //延时200ms
-                m_n_ret_ref_step[phy_axis] = 10;  //跳转下一步
-                printf("return ref, goto step 8\n");
-            }
-            }
-            break;
-        case 10:  //回参考点完成
-            printf("axis %u return ref over\n", phy_axis);
-
-            this->SetRetRefFlag(phy_axis, true);
-            this->m_p_pmc_reg->FReg().bits[0].in_ref_point |= (0x01<<phy_axis);   //置位到参考点标志
-
-            this->m_n_mask_ret_ref &= ~(0x01<<phy_axis);
-            m_n_ret_ref_step[phy_axis] = 0;
-
-            if(m_n_mask_ret_ref == 0){
-                this->m_b_ret_ref = false;
-                this->m_b_ret_ref_auto = false;
-                m_n_ret_ref_auto_cur = 0;
-            }
-            break;
-        case 20: //失败处理
-            this->m_n_mask_ret_ref &= ~(0x01<<phy_axis);
-            m_n_ret_ref_step[phy_axis] = 0;
-
-            if(m_n_mask_ret_ref == 0){
-                this->m_b_ret_ref = false;
-                this->m_b_ret_ref_auto = false;
-                m_n_ret_ref_auto_cur = 0;
-            }
-            m_error_code = ERR_RET_REF_FAILED;
-            CreateError(ERR_RET_REF_FAILED, WARNING_LEVEL, CLEAR_BY_MCP_RESET, 0, CHANNEL_ENGINE_INDEX, phy_axis);
-            break;
-        default:
-            break;
+        break;
+    case 7:{ //等待停止到位
+        struct timeval time_now;
+        gettimeofday(&time_now, NULL);
+        unsigned int time_elpase = (time_now.tv_sec-m_time_ret_ref[phy_axis].tv_sec)*1000000+time_now.tv_usec-m_time_ret_ref[phy_axis].tv_usec;
+        if(time_elpase >= 200000){ //延时200ms
+            //				m_n_get_cur_encoder_count = 0;  //复位获取当前编码器次数
+            m_n_ret_ref_step[phy_axis] = 8;  //跳转下一步
+            printf("return ref, goto step 8\n");
         }
+    }
+        break;
+    case 8:{ // 设置当前位置为参考点
+        printf("return ref step 8: send cmd to mi, set ref point\n");
+        MiCmdFrame cmd;
+        memset(&cmd, 0x00, sizeof(cmd));
+        cmd.data.axis_index = phy_axis+1;
+        cmd.data.cmd = CMD_MI_SET_REF_CUR;
+
+        int64_t pos = m_p_axis_config[phy_axis].axis_home_pos[0] * 1e7;   //单位转换，0.1nm
+        memcpy(cmd.data.data, &pos, sizeof(int64_t));
+        this->m_p_mi_comm->WriteCmd(cmd);
+        gettimeofday(&this->m_time_ret_ref[phy_axis], NULL);   //记录起始时间，延时300ms
+
+        m_n_ret_ref_step[phy_axis] = 9;  //跳转下一步
+        printf("return ref, goto step 9\n");
+
+    }
+        break;
+    case 9: { //等待设置参考点完成，在Mi指令响应处理函数中处理
+        struct timeval time_now;
+        gettimeofday(&time_now, NULL);
+        unsigned int time_elpase = (time_now.tv_sec-m_time_ret_ref[phy_axis].tv_sec)*1000000+time_now.tv_usec-m_time_ret_ref[phy_axis].tv_usec;
+        if(time_elpase >= 200000){ //延时200ms
+            m_n_ret_ref_step[phy_axis] = 10;  //跳转下一步
+            printf("return ref, goto step 8\n");
+        }
+    }
+        break;
+    case 10:  //回参考点完成
+        printf("axis %u return ref over\n", phy_axis);
+
+        this->SetRetRefFlag(phy_axis, true);
+        this->m_p_pmc_reg->FReg().bits[0].in_ref_point |= (0x01<<phy_axis);   //置位到参考点标志
+
+        this->m_n_mask_ret_ref &= ~(0x01<<phy_axis);
+        m_n_ret_ref_step[phy_axis] = 0;
+
+        if(m_n_mask_ret_ref == 0){
+            this->m_b_ret_ref = false;
+            this->m_b_ret_ref_auto = false;
+            m_n_ret_ref_auto_cur = 0;
+        }
+        break;
+    case 20: //失败处理
+        this->m_n_mask_ret_ref &= ~(0x01<<phy_axis);
+        m_n_ret_ref_step[phy_axis] = 0;
+
+        if(m_n_mask_ret_ref == 0){
+            this->m_b_ret_ref = false;
+            this->m_b_ret_ref_auto = false;
+            m_n_ret_ref_auto_cur = 0;
+        }
+        m_error_code = ERR_RET_REF_FAILED;
+        CreateError(ERR_RET_REF_FAILED, WARNING_LEVEL, CLEAR_BY_MCP_RESET, 0, CHANNEL_ENGINE_INDEX, phy_axis);
+        break;
+    default:
+        break;
+    }
 }
 
 
@@ -10983,83 +10843,83 @@ void ChannelEngine::EcatAxisFindRefWithZeroSignal2(uint8_t phy_axis){
  */
 void ChannelEngine::EcatAxisFindRefNoZeroSignal(uint8_t phy_axis){
     switch(this->m_n_ret_ref_step[phy_axis]){
-        case 0: {// 计算原点偏移，设置原点
-            printf("return ref step 0: send cmd to mi, set ref point\n");
-            MiCmdFrame cmd;
-            memset(&cmd, 0x00, sizeof(cmd));
-            cmd.data.axis_index = phy_axis+1;
-            cmd.data.cmd = CMD_MI_SET_REF_POINT;
+    case 0: {// 计算原点偏移，设置原点
+        printf("return ref step 0: send cmd to mi, set ref point\n");
+        MiCmdFrame cmd;
+        memset(&cmd, 0x00, sizeof(cmd));
+        cmd.data.axis_index = phy_axis+1;
+        cmd.data.cmd = CMD_MI_SET_REF_POINT;
 
-            cmd.data.data[0] = 0x01;    //当前精基准
-            int64_t pos = m_p_axis_config[phy_axis].axis_home_pos[0]*1e7;   //单位转换,0.1nm
-            memcpy(&cmd.data.data[1], &pos, sizeof(int64_t));
-            cmd.data.data[5] = this->m_p_axis_config[phy_axis].ref_signal;
-            cmd.data.data[6] = this->m_p_axis_config[phy_axis].ret_ref_dir;
+        cmd.data.data[0] = 0x01;    //当前精基准
+        int64_t pos = m_p_axis_config[phy_axis].axis_home_pos[0]*1e7;   //单位转换,0.1nm
+        memcpy(&cmd.data.data[1], &pos, sizeof(int64_t));
+        cmd.data.data[5] = this->m_p_axis_config[phy_axis].ref_signal;
+        cmd.data.data[6] = this->m_p_axis_config[phy_axis].ret_ref_dir;
 
-            this->m_p_mi_comm->WriteCmd(cmd);
+        this->m_p_mi_comm->WriteCmd(cmd);
 
 
-            m_n_ret_ref_step[phy_axis] = 1;  //跳转下一步
-            printf("return ref, goto step 1\n");
+        m_n_ret_ref_step[phy_axis] = 1;  //跳转下一步
+        printf("return ref, goto step 1\n");
 
-        }
-            break;
-        case 1:  //等待设置参考点完成，在Mi指令响应处理函数中处理
+    }
+        break;
+    case 1:  //等待设置参考点完成，在Mi指令响应处理函数中处理
 
-            break;
+        break;
 
-        case 10:{  //等待轴移动到位,完成！
+    case 10:{  //等待轴移动到位,完成！
 #ifdef USES_RET_REF_TO_MACH_ZERO
-            double dis = 0;    //机械零
+        double dis = 0;    //机械零
 #else
-            double dis = this->m_p_axis_config[phy_axis].axis_home_pos[0];   // 原点坐标
+        double dis = this->m_p_axis_config[phy_axis].axis_home_pos[0];   // 原点坐标
 #endif
-            this->SendMonitorData(false, false);  //再次读取实时位置
-            if(fabs(this->GetPhyAxisMachPosFeedback(phy_axis)- dis) <= 0.010){  //到位
-                m_n_ret_ref_step[phy_axis] = 11;  //跳转下一步
-                printf("return ref[%hhu, %lf, %lf], goto step 11\n", phy_axis, this->GetPhyAxisMachPosFeedback(phy_axis), dis);
-            }
-            break;
+        this->SendMonitorData(false, false);  //再次读取实时位置
+        if(fabs(this->GetPhyAxisMachPosFeedback(phy_axis)- dis) <= 0.010){  //到位
+            m_n_ret_ref_step[phy_axis] = 11;  //跳转下一步
+            printf("return ref[%hhu, %lf, %lf], goto step 11\n", phy_axis, this->GetPhyAxisMachPosFeedback(phy_axis), dis);
         }
-        case 11:  //回参考点完成
-            printf("axis %u return ref over\n", phy_axis);
-            if(this->m_p_axis_config[phy_axis].feedback_mode == ABSOLUTE_ENCODER_YASAKAWA ||
+        break;
+    }
+    case 11:  //回参考点完成
+        printf("axis %u return ref over\n", phy_axis);
+        if(this->m_p_axis_config[phy_axis].feedback_mode == ABSOLUTE_ENCODER_YASAKAWA ||
                 this->m_p_axis_config[phy_axis].feedback_mode == ABSOLUTE_ENCODER_PANASONIC ||
                 this->m_p_axis_config[phy_axis].feedback_mode == LINEAR_ENCODER){  //绝对值需要发送设置参考点指令
-                MiCmdFrame mi_cmd;
-                memset(&mi_cmd, 0x00, sizeof(mi_cmd));
-                mi_cmd.data.cmd = CMD_MI_GET_ZERO_ENCODER;
-                mi_cmd.data.axis_index = phy_axis+1;
+            MiCmdFrame mi_cmd;
+            memset(&mi_cmd, 0x00, sizeof(mi_cmd));
+            mi_cmd.data.cmd = CMD_MI_GET_ZERO_ENCODER;
+            mi_cmd.data.axis_index = phy_axis+1;
 
-                this->m_p_mi_comm->WriteCmd(mi_cmd);
-            }
-            this->SetRetRefFlag(phy_axis, true);
-            this->m_p_pmc_reg->FReg().bits[0].in_ref_point |= (0x01<<phy_axis);   //置位到参考点标志
-
-            this->m_n_mask_ret_ref &= ~(0x01<<phy_axis);
-            m_n_ret_ref_step[phy_axis] = 0;
-
-            if(m_n_mask_ret_ref == 0){
-                this->m_b_ret_ref = false;
-                this->m_b_ret_ref_auto = false;
-                m_n_ret_ref_auto_cur = 0;
-            }
-            break;
-        case 20: //失败处理
-            this->m_n_mask_ret_ref &= ~(0x01<<phy_axis);
-            m_n_ret_ref_step[phy_axis] = 0;
-
-            if(m_n_mask_ret_ref == 0){
-                this->m_b_ret_ref = false;
-                this->m_b_ret_ref_auto = false;
-                m_n_ret_ref_auto_cur = 0;
-            }
-            m_error_code = ERR_RET_REF_FAILED;
-            CreateError(ERR_RET_REF_FAILED, WARNING_LEVEL, CLEAR_BY_MCP_RESET, 0, CHANNEL_ENGINE_INDEX, phy_axis);
-            break;
-        default:
-            break;
+            this->m_p_mi_comm->WriteCmd(mi_cmd);
         }
+        this->SetRetRefFlag(phy_axis, true);
+        this->m_p_pmc_reg->FReg().bits[0].in_ref_point |= (0x01<<phy_axis);   //置位到参考点标志
+
+        this->m_n_mask_ret_ref &= ~(0x01<<phy_axis);
+        m_n_ret_ref_step[phy_axis] = 0;
+
+        if(m_n_mask_ret_ref == 0){
+            this->m_b_ret_ref = false;
+            this->m_b_ret_ref_auto = false;
+            m_n_ret_ref_auto_cur = 0;
+        }
+        break;
+    case 20: //失败处理
+        this->m_n_mask_ret_ref &= ~(0x01<<phy_axis);
+        m_n_ret_ref_step[phy_axis] = 0;
+
+        if(m_n_mask_ret_ref == 0){
+            this->m_b_ret_ref = false;
+            this->m_b_ret_ref_auto = false;
+            m_n_ret_ref_auto_cur = 0;
+        }
+        m_error_code = ERR_RET_REF_FAILED;
+        CreateError(ERR_RET_REF_FAILED, WARNING_LEVEL, CLEAR_BY_MCP_RESET, 0, CHANNEL_ENGINE_INDEX, phy_axis);
+        break;
+    default:
+        break;
+    }
 }
 
 
@@ -11068,12 +10928,12 @@ void ChannelEngine::EcatAxisFindRefNoZeroSignal(uint8_t phy_axis){
  */
 void ChannelEngine::ReturnRefPoint(){
 
-//	int8_t dir = 0, dir_opt;   //回参考点方向
-//	uint8_t ret_mode = 0;   //回参考点方式
-//	uint8_t chn = 0, chn_axis = 0;
-//	double dis = 0;      //移动距离
-//	static double ret_ref_start_pos[kMaxAxisNum];
-//	static uint8_t ret_ref_auto_cur = 0;    //自动回参考点时，当前顺序号
+    //	int8_t dir = 0, dir_opt;   //回参考点方向
+    //	uint8_t ret_mode = 0;   //回参考点方式
+    //	uint8_t chn = 0, chn_axis = 0;
+    //	double dis = 0;      //移动距离
+    //	static double ret_ref_start_pos[kMaxAxisNum];
+    //	static uint8_t ret_ref_auto_cur = 0;    //自动回参考点时，当前顺序号
     int count = 0;
     for(uint i = 0; i < this->m_p_general_config->axis_count; i++){
         if((m_n_mask_ret_ref & (0x01<<i)) == 0 ||
@@ -11095,11 +10955,11 @@ void ChannelEngine::ReturnRefPoint(){
 
             if(this->m_p_axis_config[i].feedback_mode == NO_ENCODER) {   // 步进电机，无反馈
                 if(this->m_p_axis_config[i].ret_ref_mode == 1){
-                     this->AxisFindRefWithZeroSignal(i); // 根据零点信号设置零点
+                    this->AxisFindRefWithZeroSignal(i); // 根据零点信号设置零点
                 }else{
                     this->AxisFindRefNoZeroSignal(i);  // 直接设置零点
                 }
-            /*}else if(this->m_p_axis_config[i].feedback_mode == INCREMENTAL_ENCODER) {   //增量式编码器
+                /*}else if(this->m_p_axis_config[i].feedback_mode == INCREMENTAL_ENCODER) {   //增量式编码器
                 //if(this->m_p_axis_config[i].ret_ref_mode == 1){//  总线有基准回零
                     this->EcatIncAxisFindRefWithZeroSignal(i);                          //增量式编码器只支持有挡块回零
                 //}else if(this->m_p_axis_config[i].ret_ref_mode == 2){//  总线无基准回零
@@ -11133,10 +10993,10 @@ void ChannelEngine::ReturnRefPoint(){
 
             if(this->m_p_axis_config[i].feedback_mode == NO_ENCODER){   // 步进电机，无反馈
                 if(this->m_p_axis_config[i].ret_ref_mode == 1){
-                     this->AxisFindRefWithZeroSignal(i); // 根据零点信号设置零点
+                    this->AxisFindRefWithZeroSignal(i); // 根据零点信号设置零点
                 }
                 else{
-                     this->AxisFindRefNoZeroSignal(i);  // 直接设置零点
+                    this->AxisFindRefNoZeroSignal(i);  // 直接设置零点
                 }
             }
             else if(this->m_p_axis_config[i].ret_ref_mode == 1){
@@ -11147,7 +11007,7 @@ void ChannelEngine::ReturnRefPoint(){
             }
         }
 
-/*
+        /*
         ret_mode = m_p_axis_config[i].ret_ref_mode;
         dir = this->m_p_axis_config[i].ret_ref_dir?DIR_POSITIVE:DIR_NEGATIVE;
         dir_opt = (m_p_axis_config[i].ret_ref_change_dir==0)?dir*-1:dir;  //回参考点方向相反的方向
@@ -11404,9 +11264,9 @@ void ChannelEngine::ReturnRefPoint(){
     }
 
     if(m_n_mask_ret_ref == 0){
-            this->m_b_ret_ref = false;
-            this->m_b_ret_ref_auto = false;
-            m_n_ret_ref_auto_cur = 0;
+        this->m_b_ret_ref = false;
+        this->m_b_ret_ref_auto = false;
+        m_n_ret_ref_auto_cur = 0;
     }
 
     if(this->m_b_ret_ref_auto && count==0){
@@ -11425,7 +11285,7 @@ void ChannelEngine::ReturnRefPoint(){
  * @param flag ： true--设置完成标志    false--取消完成标志
  */
 void ChannelEngine::SetRetRefFlag(uint8_t phy_axis, bool flag){
-//	printf("SetRetRefFlag: axis=%hhu, flag =%hhu\n", phy_axis, flag);
+    //	printf("SetRetRefFlag: axis=%hhu, flag =%hhu\n", phy_axis, flag);
     uint8_t chn = phy_axis/16;
     uint8_t sec = phy_axis%16;
     uint8_t bit = phy_axis%8;
@@ -11441,9 +11301,9 @@ void ChannelEngine::SetRetRefFlag(uint8_t phy_axis, bool flag){
 
     }else{
         if(m_p_axis_config[phy_axis].axis_interface == VIRTUAL_AXIS || m_p_axis_config[phy_axis].axis_type == AXIS_SPINDLE	//主轴和虚拟轴不用回参考点
-            || (m_p_axis_config[phy_axis].feedback_mode == NO_ENCODER && m_p_axis_config[phy_axis].ret_ref_mode == 0)    //无反馈，并且禁止回参考点
-            || (m_p_axis_config[phy_axis].feedback_mode != INCREMENTAL_ENCODER && m_p_axis_config[phy_axis].feedback_mode != NO_ENCODER && m_p_axis_config[phy_axis].ref_encoder != kAxisRefNoDef)    //绝对值编码器，已设定参考点
-            || (m_p_axis_config[phy_axis].feedback_mode == INCREMENTAL_ENCODER && m_p_axis_config[phy_axis].ret_ref_mode == 0)){  //增量编码器，禁止回参考点
+                || (m_p_axis_config[phy_axis].feedback_mode == NO_ENCODER && m_p_axis_config[phy_axis].ret_ref_mode == 0)    //无反馈，并且禁止回参考点
+                || (m_p_axis_config[phy_axis].feedback_mode != INCREMENTAL_ENCODER && m_p_axis_config[phy_axis].feedback_mode != NO_ENCODER && m_p_axis_config[phy_axis].ref_encoder != kAxisRefNoDef)    //绝对值编码器，已设定参考点
+                || (m_p_axis_config[phy_axis].feedback_mode == INCREMENTAL_ENCODER && m_p_axis_config[phy_axis].ret_ref_mode == 0)){  //增量编码器，禁止回参考点
             return;   //不用回参考点的轴禁止将回零标志复位
         }
         this->m_n_mask_ret_ref_over &= ~(0x01<<phy_axis);
@@ -11454,14 +11314,14 @@ void ChannelEngine::SetRetRefFlag(uint8_t phy_axis, bool flag){
             m_p_pmc_reg->FReg().bits[chn].ZRF2 &= ~(0x01<<bit);
     }
 
-//	if(this->m_p_axis_config[phy_axis].axis_pmc == 0){//非PMC轴    //PMC轴也能加载到通道
-        uint8_t chn_axis = 0;
-        chn = this->GetAxisChannel(phy_axis, chn_axis);
-        if(chn != CHANNEL_ENGINE_INDEX){
-            if(this->m_p_channel_control != nullptr)
-                this->m_p_channel_control[chn].SetRefPointFlag(chn_axis, flag);
-        }
-//	}
+    //	if(this->m_p_axis_config[phy_axis].axis_pmc == 0){//非PMC轴    //PMC轴也能加载到通道
+    uint8_t chn_axis = 0;
+    chn = this->GetAxisChannel(phy_axis, chn_axis);
+    if(chn != CHANNEL_ENGINE_INDEX){
+        if(this->m_p_channel_control != nullptr)
+            this->m_p_channel_control[chn].SetRefPointFlag(chn_axis, flag);
+    }
+    //	}
 
     this->SetAxisRetRefFlag();
 }

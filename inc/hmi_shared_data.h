@@ -185,8 +185,7 @@ enum HMICmdCode {
 	CMD_HMI_GET_PROC_GROUP,          //HMI向SC获取当前工艺参数组号  0x31
 	CMD_HMI_SET_CUR_MACH_POS,        //HMI向SC重设指定轴的机械坐标   0x32
 	CMD_HMI_CLEAR_MSG,               //HMI通知SC清除消息（包括错误、警告和提示)0x33
-	CMD_HMI_SYNC_AXIS_OPT,           //HMI通知HMI进行同步轴使能操作 0x34
-	CMD_HMI_NOTIFY_GRAPH,            //HMI通知SC进入图形模式    0x35
+    CMD_HMI_NOTIFY_GRAPH = 0x35,      //HMI通知SC进入图形模式    0x35
 	CMD_HMI_SYNC_TIME,               //HMI向SC查询当前系统时间  0x36
 	CMD_HMI_CHECK_SYNC_EN,           //HMI向SC查询同步轴状态 0x37
 	CMD_HMI_GET_SYS_INFO,
@@ -409,46 +408,51 @@ enum ErrorType {
 
 
 
-	ERR_RET_REF_FAILED = 600,   //回参考点失败
-	ERR_AXIS_REF_NONE,          //轴未回参考点
-	ERR_RET_REF_NOT_RUN,        //系统处于错误状态，禁止回零
-	ERR_NC_FILE_NOT_EXIST,      //文件不存在
-	ERR_SWITCH_MODE_IN_RET_REF, //回零中禁止切换工作模式
-    ERR_RET_REF_Z_ERR,          //搜索Z脉冲位置超限，原点建立失败
+    ERR_RET_REF_FAILED = 600,           //回参考点失败
+    ERR_AXIS_REF_NONE = 601,            //轴未回参考点
+    ERR_RET_REF_NOT_RUN = 602,          //系统处于错误状态，禁止回零
+    ERR_NC_FILE_NOT_EXIST = 603,        //文件不存在
+    ERR_SWITCH_MODE_IN_RET_REF = 604,   //回零中禁止切换工作模式
+    ERR_RET_REF_Z_ERR = 605,            //搜索Z脉冲位置超限，原点建立失败
 
 
 	//加工告警	1000~1999
-	ERR_EMERGENCY = 1000,		//紧急停止
-	ERR_HARDLIMIT_POS,          //轴正限位告警
-	ERR_HARDLIMIT_NEG,			//轴负限位告警
-	ERR_ENCODER,				//编码器错误
-	ERR_SERVO,					//伺服告警
-	ERR_SYNC_AXIS,				//同步轴尚未同步
-	ERR_SOFTLIMIT_POS,			//轴正向软限位告警
-	ERR_SOFTLIMIT_NEG,			//轴负向软限位告警
-	ERR_TRACK_LIMIT,            //轴跟随误差过大告警
-	ERR_SYNC_POS,               //同步轴位置指令偏差过大告警
-	ERR_INTP_POS,               //轴位置指令过大告警
+    ERR_EMERGENCY = 1000,               //紧急停止
+    ERR_HARDLIMIT_POS = 1001,           //轴正限位告警
+    ERR_HARDLIMIT_NEG = 1002,			//轴负限位告警
+    ERR_ENCODER = 1003,                 //编码器错误
+    ERR_SERVO = 1004,					//伺服告警
+    ERR_SYNC_AXIS = 1005,				//同步轴尚未同步
+    ERR_SOFTLIMIT_POS = 1006,			//轴正向软限位告警
+    ERR_SOFTLIMIT_NEG = 1007,			//轴负向软限位告警
+    ERR_TRACK_LIMIT = 1008,             //轴跟随误差过大告警
+    ERR_SYNC_POS = 1009,                //同步轴位置指令偏差过大告警
+    ERR_INTP_POS = 1010,                //轴位置指令过大告警
 
-	ERR_AXIS_CTRL_MODE_SWITCH,  //轴控制模式切换超时
-	ERR_AXIS_TORQUE_OVERTIME,   //轴力矩控制超时
+    ERR_AXIS_CTRL_MODE_SWITCH = 1011,   //轴控制模式切换超时
+    ERR_AXIS_TORQUE_OVERTIME = 1012,    //轴力矩控制超时
 
-	ERR_M_CODE,                 //不支持的M指令
-	ERR_SPD_PRESTART_M05,       //主轴预启动期间不能调用M05
-	ERR_NO_SPD_Z_AXIS,		    //系统未指定主轴或Z轴
+    ERR_M_CODE = 1013,                  //不支持的M指令
+    ERR_SPD_PRESTART_M05 = 1014,        //主轴预启动期间不能调用M05
+    ERR_NO_SPD_Z_AXIS = 1015,		    //系统未指定主轴或Z轴
 
-	ERR_EXEC_FORWARD_PROG = 1100,   //执行前置程序失败
-	ERR_EXEC_BACKWARD_PROG,		    //执行后置程序失败
+    ERR_SYNC_TORQUE = 1016,             //同步轴力矩偏差过大告警
+    ERR_SYNC_MACH = 1017,               //同步轴机床坐标偏差过大告警
 
-	ERR_NO_CUR_RUN_DATA = 1500,  //找不到当前运行数据
+    ERR_SYNC_INVALID_OPT = 1018,        //同步轴非法操作
 
-	ERR_TOOL_MEAS_POS = 1600,    //对刀位置未设置
-	ERR_AUTO_TOOL_MEASURE,       //自动对刀失败
+    ERR_EXEC_FORWARD_PROG = 1100,       //执行前置程序失败
+    ERR_EXEC_BACKWARD_PROG = 1101,      //执行后置程序失败
 
-	ERR_HW_REV_OVER = 1650,      //手轮反向跟踪无更多数据   级别：警告
+    ERR_NO_CUR_RUN_DATA = 1500,         //找不到当前运行数据
 
-    ERR_TOOL_LIFE_OVER = 1660,  //刀具寿命到达
-	ERR_TOOL_LIFE_COMING,       //刀具寿命即将到达     级别：警告
+    ERR_TOOL_MEAS_POS = 1600,           //对刀位置未设置
+    ERR_AUTO_TOOL_MEASURE = 1601,       //自动对刀失败
+
+    ERR_HW_REV_OVER = 1650,             //手轮反向跟踪无更多数据   级别：警告
+
+    ERR_TOOL_LIFE_OVER = 1660,          //刀具寿命到达
+    ERR_TOOL_LIFE_COMING = 1661,        //刀具寿命即将到达     级别：警告
 
     //主轴告警
     ERR_SPD_TAP_START_FAIL = 1700,      //刚性攻丝失败(没有进入位置模式)
@@ -1334,12 +1338,18 @@ struct HmiAxisConfig{
 
     //同步轴相关参数
     uint8_t sync_axis;							//是否同步轴  0--否   1--是
+    uint8_t series_ctrl_axis;                   //是否串联控制 0--否   1--是
     uint8_t master_axis_no;						//主动轴号
     uint8_t disp_coord;							//是否显示坐标  0--否   1--是
     uint8_t auto_sync;							//从动轴回参考点后自动同步校准   0--否   1--是
-    uint32_t sync_err_max;						//位置同步最大误差	  单位：um
+    uint32_t sync_err_max_pos;					//位置同步误差报警阈值	 单位：um
     double benchmark_offset;					//主从轴基准位置偏差  单位：mm
-
+    uint8_t sync_pre_load_torque;               //预载电流偏置 单位：1%
+    uint8_t sync_err_max_torque;                //扭矩同步误差报警阈值 单位：1%
+    uint32_t sync_err_max_mach;                 //坐标同步误差报警阈值 单位：um
+    uint8_t sync_pos_detect;                    //是否进行位置同步误差检测 0--否   1：是
+    uint8_t sync_mach_detect;                   //是否进行坐标同步误差检测 0--否   1：是
+    uint8_t sync_torque_detect;                 //是否进行扭矩同步误差检测 0--否   1：是
 
     double axis_home_pos[10];				//参考点位置  单位：mm
     double ref_mark_err;                   //参考点基准误差   单位：mm    有效范围：0~10.0

@@ -78,8 +78,10 @@ class ChannelEngine;   //通道引擎
 
 #define SHARED_MEM_MI_STATUS_SVO_ON     (SHARED_MEM_MI_STATUS_BASE + 0x28)              //轴使能标志，uint64_t类型，一个bit代表一个轴
 #define SHARED_MEM_MI_STATUS_SVO_TRACK_ERR (SHARED_MEM_MI_STATUS_BASE + 0x30)      //轴跟随误差超限告警
-#define SHARED_MEM_MI_STATUS_SVO_SYNC_POS_ERR   (SHARED_MEM_MI_STATUS_BASE + 0x38)      //同步轴指令偏差过大
+#define SHARED_MEM_MI_STATUS_SVO_SYNC_POS_ERR   (SHARED_MEM_MI_STATUS_BASE + 0x38)      //同步轴位置偏差过大告警
 #define SHARED_MEM_MI_STATUS_SVO_INTP_POS_ERR  (SHARED_MEM_MI_STATUS_BASE + 0x40)      //位置指令过大告警
+#define SHARED_MEM_MI_STATUS_SVO_SYNC_TORQUE_ERR  (SHARED_MEM_MI_STATUS_BASE + 0x48)    //同步轴力矩偏差过大告警
+#define SHARED_MEM_MI_STATUS_SVO_SYNC_MACH_ERR  (SHARED_MEM_MI_STATUS_BASE + 0x50)      //同步轴机床坐标偏差过大告警
 
 #define SHARED_MEM_MI_STATUS_SVO_WARN_CODE(n)  (SHARED_MEM_MI_STATUS_BASE + 0x100 + 0x04*n)       //第n轴的伺服告警码
 
@@ -225,6 +227,12 @@ public:
     // enable: 0:MI使用默认的步长逻辑  1:自定义手轮步长
     // step: 手轮步长 单位:um
     void SendMpgStep(uint8_t chn,bool enable,uint16_t step);
+    // mask: 64bit对应最多64个轴,需要同步的轴对应位置1
+    void SendSyncAxis(int64_t mask);
+    // master: 主动轴号，从1开始
+    // slave: 从动轴号，从1开始
+    // enable: 0:同步无效  1:同步有效
+    void SendEnSyncAxis(uint8_t master, uint8_t slave, bool enable);
 
 	bool ReadEncoderWarn(uint64_t &value);		//读取轴编码器告警标志
 	bool ReadServoHLimitFlag(bool pos_flag, uint64_t &value);   //读取伺服限位告警信息
@@ -235,8 +243,25 @@ public:
     bool ReadTrackErr(uint64_t &value);        //读取轴跟踪误差过大告警
     bool ReadSyncPosErr(uint64_t &value);     //读取同步轴指令偏差过大告警
     bool ReadIntpPosErr(uint64_t &value);      //读取轴位置指令过大告警
+    bool ReadSyncTorqueErr(uint64_t &value);   //读取同步轴力矩偏差报警
+    bool ReadSyncMachErr(uint64_t &value);     //读取同步轴机床坐标偏差报警
 
     bool WriteAxisHLimitFlag(bool pos_flag, const uint64_t value);   //写入物理轴硬限位标志
+
+    template<typename T>
+    void SendMiParam(uint8_t axis, uint32_t para_no, T data)  //发送MI参数
+    {
+        MiCmdFrame cmd;
+        memset(&cmd, 0x00, sizeof(cmd));
+        cmd.data.cmd = CMD_MI_SET_PARAM;
+
+        cmd.data.axis_index = axis;
+
+        memcpy(cmd.data.data, &para_no, 4);
+        memcpy(&cmd.data.data[2], &data, sizeof(T));
+
+        WriteCmd(cmd);
+    }
 
 
 private://私有接口

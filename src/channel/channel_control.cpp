@@ -376,6 +376,7 @@ bool ChannelControl::Initialize(uint8_t chn_index, ChannelEngine *engine, HMICom
     showSc.AddComponent(m_p_f_reg);
     showSc.AddComponent(m_p_g_reg);
     showSc.AddComponent(m_p_channel_engine->GetPmcAxisCtrl());
+    showSc.AddComponent(m_p_channel_engine->GetSyncAxisCtrl());
 
     this->m_macro_variable.SetChnIndex(m_n_channel_index);
 

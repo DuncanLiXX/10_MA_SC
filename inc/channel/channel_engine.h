@@ -40,6 +40,7 @@ class MCArmCommunication;  //MC-ARMÍ¨Ñ¶Àà
 class ParmManager;      //ÅäÖÃ¹ÜÀíÀà
 class PmcRegister;		//PMC¼Ä´æÆ÷Àà
 class ChannelModeGroup;   //Í¨µÀ·½Ê½×éÀà
+class SyncAxisCtrl;     //Í¬²½Öá¿ØÖÆÀà
 struct SCSystemConfig; //SCÍ¨µÀÅäÖÃ
 struct SCChannelConfig;  //SCÍ¨µÀÅäÖÃ
 struct SCAxisConfig;	//SCÖáÅäÖÃ
@@ -290,6 +291,7 @@ void SetMcArmComm(MCArmCommunication *comm){this->m_p_mc_arm_comm = comm;}   //É
     void PrintDebugInfo();		//Êä³öµ÷ÊÔÊı¾İ
 
     PmcAxisCtrl *GetPmcAxisCtrl(){return m_pmc_axis_ctrl;}
+    SyncAxisCtrl *GetSyncAxisCtrl(){return  m_sync_axis_ctrl;}
 
 private:	//Ë½ÓĞ³ÉÔ±º¯Êı
 	ChannelEngine();   //¹¹Ôìº¯Êı
@@ -361,9 +363,6 @@ private:	//Ë½ÓĞ³ÉÔ±º¯Êı
 	void ProcessHmiClearMsgCmd(HMICmdFrame &cmd);     //´¦ÀíHMIÇå³ıÏûÏ¢ÃüÁî
     void ProcessHmiGetErrorCmd(HMICmdFrame &cmd);       //´¦ÀíHMI»ñÈ¡SC´íÎóÃüÁî
 	
-	void ProcessHmiEnableSyncAxisCmd(HMICmdFrame &cmd);   //´¦ÀíHMIÊ¹ÄÜÍ¬²½ÖáÃüÁî
-	void ProcessHmiCheckSyncCmd(HMICmdFrame &cmd);      //´¦ÀíHMI²éÑ¯Í¬²½ÖáÊ¹ÄÜÃüÁî
-
 	void ProcessHmiNotifyGraphCmd(HMICmdFrame &cmd);    //´¦ÀíHMIÍ¨ÖªÍ¼ĞÎÄ£Ê½ÃüÁî
     void ProcessHmiHandWheelCmd(HMICmdFrame &cmd);
 
@@ -411,8 +410,8 @@ private:	//Ë½ÓĞ³ÉÔ±º¯Êı
     void SendMiReset();		//·¢ËÍMI¸´Î»Ö¸Áî
  //   void SendMiGetVerCmd();		//·¢ËÍ»ñÈ¡MI°æ±¾Ö¸Áî
 
-	template<typename T>
-	void SendMiParam(uint8_t axis, uint32_t para_no, T data);  //·¢ËÍMI²ÎÊı
+//    template<typename T>
+//    void SendMiParam(uint8_t axis, uint32_t para_no, T data);  //·¢ËÍMI²ÎÊı
 
     void CheckBattery();		//µçÑ¹Ïà¹Ø¸æ¾¯¼ì²é
 
@@ -422,9 +421,6 @@ private:	//Ë½ÓĞ³ÉÔ±º¯Êı
 
     void SaveCurPhyAxisEncoder();  //µôµç±£´æµ±Ç°ËùÓĞÎïÀíÖáµÄ±àÂëÆ÷·´À¡
     void SaveKeepMacroVar();		//µôµç±£´æ·ÇÒ×Ê§ĞÔºê±äÁ¿
-
-    void InitSyncAxis();		//³õÊ¼»¯Í¬²½ÖáÏà¹Ø±äÁ¿
-    void DoSyncAxis();		//Í¬²½ÖáÖ´ĞĞÍ¬²½
 
     void CheckAxisSrvOn();     //¼ì²éÖáÉÏËÅ·şĞÅºÅ
 
@@ -557,11 +553,7 @@ private:  //Ë½ÓĞ³ÉÔ±±äÁ¿
 	uint32_t m_n_idle_count;      //¿ÕÏĞÖÜÆÚ¼ÆÊı
 
 	//Í¬²½Öá±äÁ¿
-	int64_t m_n_sync_axis_mask;   //Í¬²½Öámask
-	int64_t m_n_sync_over;			//Í¬²½ÖáÍ¬²½Íê³É±êÖ¾
-	int64_t m_n_sync_axis_enable_mask;   //Í¬²½ÖáÊ¹ÄÜmask
-	bool m_b_send_sync_cmd;			//ÊÇ·ñ·¢ËÍÍ¬²½ÃüÁî
-
+    SyncAxisCtrl *m_sync_axis_ctrl;
 
 	BdioDevList m_list_bdio_dev;    //SD-LINKÉè±¸¶ÓÁĞ
 

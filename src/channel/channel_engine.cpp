@@ -7070,9 +7070,6 @@ void ChannelEngine::InitMiParam(){
        m_p_mi_comm->SendMiParam<uint16_t>(index, 1605, axis_config->spd_start_time);
        m_p_mi_comm->SendMiParam<uint16_t>(index, 1606, axis_config->spd_stop_time);
 
-        //发送同步轴相关参数
-        m_sync_axis_ctrl->SendMiSyncParams();
-
         //发送反向间隙参数
         this->SendMiBacklash(i);
 
@@ -7086,6 +7083,9 @@ void ChannelEngine::InitMiParam(){
         //发送轴参考点对应的机械坐标
         this->SendMiRefMachPos(i);
     }
+
+    //发送同步轴相关参数
+    m_sync_axis_ctrl->SendMiSyncParams();
 
     for(int i = 0; i < this->m_p_general_config->chn_count; i++){
         this->m_p_channel_control[i].SendMiChnAxisMap();  //发送通道轴物理轴映射关系信息
@@ -7465,28 +7465,28 @@ void ChannelEngine::SetSlaveInfo(){
 
             node = node->next;
         }
-
-        //扩展IO板卡配置完成命令
-        memset(&cmd, 0x00, sizeof(cmd));
-        cmd.data.axis_index = NO_AXIS;
-        cmd.data.cmd = CMD_MI_SET_SDLINK_COMPLETE;
-        cmd.data.data[0] = dev_count;
-        cmd.data.data[1] = total_in;
-        cmd.data.data[2] = total_out;
-        cmd.data.data[3] = handwheel_count;
-
-        //test
-        printf("node data0 %d------------------\n", cmd.data.data[0]);
-        printf("node data1 %d------------------\n", cmd.data.data[1]);
-        printf("node data2 %d------------------\n", cmd.data.data[2]);
-        printf("node data3 %d------------------\n", cmd.data.data[3]);
-        printf("node data4 %d------------------\n", cmd.data.data[4]);
-        printf("node data5 %d------------------\n", cmd.data.data[5]);
-        printf("node data6 %d------------------\n", cmd.data.data[6]);
-        printf("\n");
-
-        this->m_p_mi_comm->WriteCmd(cmd);
     }
+
+    //扩展IO板卡配置完成命令
+    memset(&cmd, 0x00, sizeof(cmd));
+    cmd.data.axis_index = NO_AXIS;
+    cmd.data.cmd = CMD_MI_SET_SDLINK_COMPLETE;
+    cmd.data.data[0] = dev_count;
+    cmd.data.data[1] = total_in;
+    cmd.data.data[2] = total_out;
+    cmd.data.data[3] = handwheel_count;
+
+    //test
+    printf("node data0 %d------------------\n", cmd.data.data[0]);
+    printf("node data1 %d------------------\n", cmd.data.data[1]);
+    printf("node data2 %d------------------\n", cmd.data.data[2]);
+    printf("node data3 %d------------------\n", cmd.data.data[3]);
+    printf("node data4 %d------------------\n", cmd.data.data[4]);
+    printf("node data5 %d------------------\n", cmd.data.data[5]);
+    printf("node data6 %d------------------\n", cmd.data.data[6]);
+    printf("\n");
+
+    this->m_p_mi_comm->WriteCmd(cmd);
 
 #else
     MiCmdFrame cmd;

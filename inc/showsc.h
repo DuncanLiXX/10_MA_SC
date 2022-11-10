@@ -105,7 +105,7 @@ private:
     void PrintSyncAxisCtrl();   // 打印同步轴信息
 
 private:
-    PrintType print_type{TypeNone};
+    PrintType print_type{TypePrintOutput};
     int interval{1000};
 
     TraceInfo *trace;

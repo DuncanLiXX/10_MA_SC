@@ -26,14 +26,15 @@ ShowSc::~ShowSc()
 
 void ScPrintf(const char * fmt,...)
 {
-    ShowSc &showSc = Singleton<ShowSc>::instance();
-    if(showSc.GetPrintType() != TypePrintOutput)
-        return;
     char printf_buf[1024];
     va_list args;
     va_start(args,fmt);
     vsprintf(printf_buf, fmt, args);
     va_end(args);
+    puts(printf_buf);
+    ShowSc &showSc = Singleton<ShowSc>::instance();
+    if(showSc.GetPrintType() != TypePrintOutput)
+        return;
     std::string s = printf_buf;
     showSc.SendMsg(s);
 }

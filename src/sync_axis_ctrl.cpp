@@ -16,17 +16,17 @@ void SyncAxisCtrl::SendMiSyncParams()
     if(!chn_config || !axis_config)
         return;
     for(int i = 0; i < chn_config->chn_axis_count; i++){
-        mi->SendMiParam<uint8_t>(i+1, 1650, axis_config->sync_axis);   //是否同步轴
-        mi->SendMiParam<uint8_t>(i+1, 1651, axis_config->master_axis_no); 	//主动轴号
-        mi->SendMiParam<double>(i+1, 1653, axis_config->benchmark_offset); 	//基准偏差
-        mi->SendMiParam<uint8_t>(i+1, 1654, axis_config->series_ctrl_axis); //是否串联控制
-        mi->SendMiParam<uint32_t>(i+1, 1655, axis_config->sync_err_max_pos); 	//位置同步误差报警阈值
-        mi->SendMiParam<uint8_t>(i+1, 1657, axis_config->sync_pre_load_torque); //预载电流偏置
-        mi->SendMiParam<uint8_t>(i+1, 1658, axis_config->sync_err_max_torque); 	//扭矩同步误差报警阈值
-        mi->SendMiParam<uint32_t>(i+1, 1659, axis_config->sync_err_max_mach); 	//坐标同步误差报警阈值
-        mi->SendMiParam<uint8_t>(i+1, 1660, axis_config->sync_pos_detect);      //是否进行位置同步误差检测
-        mi->SendMiParam<uint8_t>(i+1, 1661, axis_config->sync_mach_detect); 	//是否进行坐标同步误差检测
-        mi->SendMiParam<uint8_t>(i+1, 1662, axis_config->sync_torque_detect); 	//是否进行扭矩同步误差检测
+        mi->SendMiParam<uint8_t>(i+1, 1650, axis_config[i].sync_axis);   //是否同步轴
+        mi->SendMiParam<uint8_t>(i+1, 1651, axis_config[i].master_axis_no); 	//主动轴号
+        mi->SendMiParam<double>(i+1, 1653, axis_config[i].benchmark_offset); 	//基准偏差
+        mi->SendMiParam<uint8_t>(i+1, 1654, axis_config[i].series_ctrl_axis); //是否串联控制
+        mi->SendMiParam<uint32_t>(i+1, 1655, axis_config[i].sync_err_max_pos); 	//位置同步误差报警阈值
+        mi->SendMiParam<uint8_t>(i+1, 1657, axis_config[i].sync_pre_load_torque); //预载电流偏置
+        mi->SendMiParam<uint8_t>(i+1, 1658, axis_config[i].sync_err_max_torque); 	//扭矩同步误差报警阈值
+        mi->SendMiParam<uint32_t>(i+1, 1659, axis_config[i].sync_err_max_mach); 	//坐标同步误差报警阈值
+        mi->SendMiParam<uint8_t>(i+1, 1660, axis_config[i].sync_pos_detect);      //是否进行位置同步误差检测
+        mi->SendMiParam<uint8_t>(i+1, 1661, axis_config[i].sync_mach_detect); 	//是否进行坐标同步误差检测
+        mi->SendMiParam<uint8_t>(i+1, 1662, axis_config[i].sync_torque_detect); 	//是否进行扭矩同步误差检测
 
     }
 }
@@ -70,6 +70,7 @@ void SyncAxisCtrl::UpdateMask(int64_t mask){
         if(!is_sync && need_sync){
             CreateError(ERR_SYNC_INVALID_OPT, ERROR_LEVEL, CLEAR_BY_MCP_RESET,
                         0, CHANNEL_ENGINE_INDEX, i);
+            return;
         }
     }
 
@@ -90,20 +91,20 @@ void SyncAxisCtrl::RspSyncAxis(int64_t mask)
     for(int i = 0; i < chn_config->chn_axis_count; i++){
         bool sync_now = (mask & (0x01<<i));
         bool sync_last = (sync_mask & (0x01<<i));
-        bool sync_wait = (wait_sync_mask & (0x01<<1));
+        bool sync_wait = (wait_sync_mask & (0x01<<i));
 
-        // 建立同步失败
-        if(sync_wait != sync_now && sync_wait){
-            CreateError(ERR_EN_SYNC_AXIS, ERROR_LEVEL, CLEAR_BY_MCP_RESET,
-                        0, CHANNEL_ENGINE_INDEX, i);
-            return;
-        }
-        // 取消同步失败
-        if(sync_wait != sync_now && !sync_wait){
-            CreateError(ERR_DIS_SYNC_AXIS, ERROR_LEVEL, CLEAR_BY_MCP_RESET,
-                        0, CHANNEL_ENGINE_INDEX, i);
-            return;
-        }
+//        // 建立同步失败
+//        if(sync_wait != sync_now && sync_wait){
+//            CreateError(ERR_EN_SYNC_AXIS, ERROR_LEVEL, CLEAR_BY_MCP_RESET,
+//                        0, CHANNEL_ENGINE_INDEX, i);
+//            return;
+//        }
+//        // 取消同步失败
+//        if(sync_wait != sync_now && !sync_wait){
+//            CreateError(ERR_DIS_SYNC_AXIS, ERROR_LEVEL, CLEAR_BY_MCP_RESET,
+//                        0, CHANNEL_ENGINE_INDEX, i);
+//            return;
+//        }
 
         // 同步状态发生了改变，还要改变使能状态
         if(sync_now ^ sync_last){

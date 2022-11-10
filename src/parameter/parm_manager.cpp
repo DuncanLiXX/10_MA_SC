@@ -6050,7 +6050,7 @@ void ParmManager::ActiveAxisParam(uint8_t axis_index, uint32_t param_no, ParamVa
 		break;
 	case 1650:  //是否同步轴
 		this->m_sc_axis_config[axis_index].sync_axis = value.value_uint8;
-		UpdateMiParam<uint8_t>(axis_index+1, param_no, value.value_uint8);
+        UpdateMiParam<uint8_t>(axis_index+1, param_no, value.value_uint8);
         break;
     case 1651:	//主动轴号
 		this->m_sc_axis_config[axis_index].master_axis_no = value.value_uint8;

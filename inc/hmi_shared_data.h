@@ -1338,7 +1338,7 @@ struct HmiAxisConfig{
 
     //同步轴相关参数
     uint8_t sync_axis;							//是否同步轴  0--否   1--是
-    uint8_t series_ctrl_axis;                   //是否串联控制 0--否   1--是
+    uint8_t series_ctrl_axis;                   //是否串联控制 0--否   1--同向   2--反向
     uint8_t master_axis_no;						//主动轴号
     uint8_t disp_coord;							//是否显示坐标  0--否   1--是
     uint8_t auto_sync;							//从动轴回参考点后自动同步校准   0--否   1--是

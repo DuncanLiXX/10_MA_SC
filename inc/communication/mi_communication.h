@@ -208,7 +208,8 @@ public:
     // axis:轴号，从1开始
     // enable: 0:功能关 1:功能开
     void SendOperateCmd(uint16_t opt, uint8_t axis, uint16_t enable);   //发送轴操作指令
-    void SendAxisEnableCmd(uint8_t axis,bool enable);   // 轴上使能
+    void SendAxisEnableCmd(uint8_t axis, bool enable);   // 轴上使能
+    void SendAxisMLK(uint8_t axis, bool MLK);    // 轴机械锁住
 
     // spd_aixs: 主轴轴号，从1开始
     // z_axis: z轴轴号，从1开始

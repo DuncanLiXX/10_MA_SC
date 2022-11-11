@@ -255,6 +255,14 @@ void MICommunication::SendAxisEnableCmd(uint8_t axis, bool enable)
     SendOperateCmd(1,axis,enable);
 }
 
+void MICommunication::SendAxisMLK(uint8_t axis, bool MLK)
+{
+    printf("SendAxisMLK:axis = %d, enable = %d\n",axis,true);
+
+    // opt为7，代表是机械锁住使能操作
+    SendOperateCmd(7,axis,MLK);
+}
+
 void MICommunication::SendTapAxisCmd(uint8_t chn, uint8_t spd_axis, uint8_t z_axis)
 {
     MiCmdFrame cmd;

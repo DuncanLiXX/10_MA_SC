@@ -418,6 +418,8 @@ private:	//私有成员函数
     void InitPhyAxisChn();		//初始化物理轴与通道的映射
     void SendMiPhyAxisEncoder();     //向MI发送物理轴的反馈
     void SetAxisRetRefFlag();    //向MI发送各轴回参考点结束标志
+    void SetServoState(uint8_t SVF);  //向MI发送各轴使能状态
+    void SetMLKState(uint8_t MLK); //向MI发送各轴机械锁住状态
 
     void SaveCurPhyAxisEncoder();  //掉电保存当前所有物理轴的编码器反馈
     void SaveKeepMacroVar();		//掉电保存非易失性宏变量

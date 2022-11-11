@@ -50,7 +50,8 @@ struct FRegBits{
 	uint8_t :1;
 	//F4
 	uint8_t MBDT1:1;				//跳段选择检测信号   F4.0
-	uint8_t :2;
+    uint8_t MMLK:1;                 //所有轴机床锁住检测信号 F4.1
+    uint8_t :1;
 	uint8_t MSBK:1;					//单段选择检测信号   F4.3
 	uint8_t :4;
 	//F5
@@ -829,7 +830,8 @@ struct GRegBits{
 	uint8_t :5;
 	//G44
 	uint8_t BDT1:1;     //跳段信号    G44.0
-	uint8_t :7;
+    uint8_t MLK:1;      //所有轴机床锁住信号 G44.1
+    uint8_t :6;
 	//G45
 	uint8_t :8;
 	//G46
@@ -982,8 +984,8 @@ struct GRegBits{
 	//G107
 	uint8_t :8;
 	//G108
-	uint8_t :8;
-	//G109
+    uint8_t MLKI:8;
+    //G109
 	uint8_t :8;
 	//G110
 	uint8_t :8;
@@ -1018,7 +1020,7 @@ struct GRegBits{
 	//G125
 	uint8_t :8;
 	//G126
-	uint8_t :8;
+    uint8_t SVF:8;                 //伺服关断信号 每一位表示一个轴 1代表下使能
 	//G127
 	uint8_t :8;
 

@@ -8,6 +8,11 @@ class MICommunication;
 struct SCAxisConfig;
 struct SCChannelConfig;
 
+/*
+ *@date 2022/11/7
+ *@brief:实现同步轴功能逻辑
+ */
+
 class SyncAxisCtrl
 {
 public:

@@ -674,6 +674,40 @@ void ChannelEngine::SetAxisRetRefFlag(){
 }
 
 /**
+ * @brief 向MI发送各轴使能状态
+ */
+void ChannelEngine::SetServoState(uint8_t SVF){
+    static uint8_t last_SVF = 0x00;
+    for(int i = 0; i < m_p_channel_config->chn_axis_count; i++){
+        bool now = (SVF & (0x01 << i));
+        bool last = (last_SVF & (0x01 << i));
+        if(now == last)
+            continue;
+
+        // 关断信号，需要取反
+        m_p_mi_comm->SendAxisEnableCmd(i+1, !now);
+    }
+    last_SVF = SVF;
+}
+
+/**
+ * @brief 向MI发送各轴机械锁住状态
+ */
+void ChannelEngine::SetMLKState(uint8_t MLK)
+{
+    static uint8_t last_MLK = 0x00;
+    for(int i = 0; i < m_p_channel_config->chn_axis_count; i++){
+        bool en_now = (MLK & (0x01 << i));
+        bool en_last = (last_MLK & (0x01 << i));
+        if(en_now == en_last)
+            continue;
+
+        m_p_mi_comm->SendAxisMLK(i+1, en_now);
+    }
+    last_MLK = MLK;
+}
+
+/**
  * @brief 向MI发送物理轴的反馈
  */
 void ChannelEngine::SendMiPhyAxisEncoder(){
@@ -7315,7 +7349,7 @@ void ChannelEngine::ServoOn(){
     MiCmdFrame cmd;
     memset(&cmd, 0x00, sizeof(cmd));
     cmd.data.cmd = CMD_MI_OPERATE;
-    cmd.data.data[0] = AXIS_ON_FLAG;
+    cmd.data.data[0] = MOTOR_ON_FLAG;
     cmd.data.data[1] = 1;
 
     for(int i = 0; i < this->m_p_general_config->axis_count; i++){
@@ -7336,7 +7370,7 @@ void ChannelEngine::ServoOff(){
     MiCmdFrame cmd;
     memset(&cmd, 0x00, sizeof(cmd));
     cmd.data.cmd = CMD_MI_OPERATE;
-    cmd.data.data[0] = AXIS_ON_FLAG;
+    cmd.data.data[0] = MOTOR_ON_FLAG;
     cmd.data.data[1] = 0;
 
     this->m_p_mi_comm->WriteCmd(cmd);
@@ -8098,6 +8132,11 @@ void ChannelEngine::ProcessPmcSignal(){
             f_reg->RST = 0;
         }
 
+        // 伺服关断信号
+        if(g_reg_last->SVF != g_reg->SVF){
+            SetServoState(g_reg->SVF);
+        }
+
         // 处理G信号 切换当前通道
         if(g_reg_last->CHNC != g_reg->CHNC)
         {
@@ -8136,6 +8175,19 @@ void ChannelEngine::ProcessPmcSignal(){
 
         if(g_reg->ERS == 1 && g_reg_last->ERS == 0){
             this->SystemReset();
+        }
+
+        // 所有轴机械锁住信号发生了改变
+        if(g_reg->MLK != g_reg_last->MLK){
+            f_reg->MMLK = g_reg->MLK;
+            if(g_reg->MLK){
+                SetMLKState(0xFF);
+            }
+        }
+
+        // 某个轴机械锁住信号发生了改变
+        if(g_reg->MLKI != g_reg_last->MLKI && !g_reg->MLK){
+            SetMLKState(g_reg->MLKI);
         }
 
         //#ifdef USES_PHYSICAL_MOP

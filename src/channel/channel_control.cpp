@@ -84,9 +84,9 @@ ChannelControl::ChannelControl() {
     this->InitMcModeStatus();
     m_channel_rt_status.cur_pos_machine = 0.0;
 
-#ifdef USES_SPEED_TORQUE_CTRL	
     m_channel_rt_status.cur_feedbck_velocity = 0.0;
     m_channel_rt_status.cur_feedbck_torque= 0.0;
+#ifdef USES_SPEED_TORQUE_CTRL	
     m_n_need_reset_axis_ctrlmode = 0;
 #endif
 
@@ -2336,19 +2336,15 @@ void ChannelControl::SendMonitorData(bool bAxis, bool btime){
 
     //更新通道轴位置
     double *pos = m_channel_rt_status.cur_pos_machine.m_df_point;
-#ifdef USES_SPEED_TORQUE_CTRL	
     double *speed = m_channel_rt_status.cur_feedbck_velocity.m_df_point;
     double *torque = m_channel_rt_status.cur_feedbck_torque.m_df_point;
-#endif	
     uint8_t phy_axis = 0; //通道轴所对应的物理轴
     for(uint8_t i =0; i < this->m_p_channel_config->chn_axis_count; i++){
         phy_axis = this->m_p_channel_config->chn_axis_phy[i]; // phy_axis = this->m_channel_status.cur_chn_axis_phy[i];
         if(phy_axis > 0){
             pos[i] = this->m_p_channel_engine->GetPhyAxisMachPosFeedback(phy_axis-1);
-#ifdef USES_SPEED_TORQUE_CTRL			
             speed[i] = this->m_p_channel_engine->GetPhyAxisMachSpeedFeedback(phy_axis-1);
             torque[i] = this->m_p_channel_engine->GetPhyAxisMachTorqueFeedback(phy_axis-1);
-#endif			
         }
     }
 
@@ -12523,7 +12519,6 @@ void ChannelControl::DelayToServoOff(){
 }
 #endif
 
-#ifdef USES_SPEED_TORQUE_CTRL
 /**
  * @brief 获取单轴的当前运行速度
  * @param axis_index : 通道轴号，从0开始
@@ -12549,7 +12544,6 @@ double ChannelControl::GetAxisCurFedBckAxisTorque(uint8_t axis_index){
 
     return m_channel_rt_status.cur_feedbck_torque.GetAxisValue(axis_index);
 }
-#endif
 
 /**
  * @brief 获取单轴的当前插补目标位置

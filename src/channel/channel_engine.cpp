@@ -183,7 +183,6 @@ ChannelEngine::~ChannelEngine(){
         m_df_pmc_axis_remain = nullptr;
     }
 
-#ifdef USES_SPEED_TORQUE_CTRL
     if(m_df_phy_axis_speed_feedback){
         delete []m_df_phy_axis_speed_feedback;
         m_df_phy_axis_speed_feedback = nullptr;
@@ -193,7 +192,6 @@ ChannelEngine::~ChannelEngine(){
         delete []m_df_phy_axis_torque_feedback;
         m_df_phy_axis_torque_feedback = nullptr;
     }
-#endif
 
     //释放PMC寄存器对象
     if(this->m_p_pmc_reg){
@@ -881,13 +879,11 @@ void ChannelEngine::Initialize(HMICommunication *hmi_comm, MICommunication *mi_c
     this->m_df_pmc_axis_remain = new double[m_p_general_config->axis_count];  //分配PMC轴当前余移动量存储区
     memset(m_df_pmc_axis_remain, 0, sizeof(double)*m_p_general_config->axis_count);
 
-#ifdef USES_SPEED_TORQUE_CTRL
     this->m_df_phy_axis_speed_feedback = new double[m_p_general_config->axis_count];  //分配物理轴当前反馈机械坐标存储区
     memset(m_df_phy_axis_speed_feedback, 0, sizeof(double)*m_p_general_config->axis_count);
 
     this->m_df_phy_axis_torque_feedback = new double[m_p_general_config->axis_count];  //分配物理轴当前反馈机械坐标存储区
     memset(m_df_phy_axis_torque_feedback, 0, sizeof(double)*m_p_general_config->axis_count);
-#endif
 
     //创建通道对象
     this->m_p_channel_control = new ChannelControl[m_p_general_config->chn_count];
@@ -8422,7 +8418,7 @@ void ChannelEngine::ProcessPmcSignal(){
                     this->SetCurAxis(i, 0);
                     this->ManualMove(DIR_POSITIVE);
                 }else{
-                    this->ManualMoveStop();
+                    this->ManualMoveStop(0);
                 }
             }
             if(g_reg->JN1 != g_reg_last->JN1){
@@ -8430,7 +8426,7 @@ void ChannelEngine::ProcessPmcSignal(){
                     this->SetCurAxis(i, 0);
                     this->ManualMove(DIR_NEGATIVE);
                 }else{
-                    this->ManualMoveStop();
+                    this->ManualMoveStop(0);
                 }
             }
             //轴2
@@ -8439,7 +8435,7 @@ void ChannelEngine::ProcessPmcSignal(){
                     this->SetCurAxis(i, 1);
                     this->ManualMove(DIR_POSITIVE);
                 }else{
-                    this->ManualMoveStop();
+                    this->ManualMoveStop(1);
                 }
             }
             if(g_reg->JN2 != g_reg_last->JN2){
@@ -8447,7 +8443,7 @@ void ChannelEngine::ProcessPmcSignal(){
                     this->SetCurAxis(i, 1);
                     this->ManualMove(DIR_NEGATIVE);
                 }else{
-                    this->ManualMoveStop();
+                    this->ManualMoveStop(1);
                 }
             }
             //轴3
@@ -8456,7 +8452,7 @@ void ChannelEngine::ProcessPmcSignal(){
                     this->SetCurAxis(i, 2);
                     this->ManualMove(DIR_POSITIVE);
                 }else{
-                    this->ManualMoveStop();
+                    this->ManualMoveStop(2);
                 }
             }
             if(g_reg->JN3 != g_reg_last->JN3){
@@ -8464,7 +8460,7 @@ void ChannelEngine::ProcessPmcSignal(){
                     this->SetCurAxis(i, 2);
                     this->ManualMove(DIR_NEGATIVE);
                 }else{
-                    this->ManualMoveStop();
+                    this->ManualMoveStop(2);
                 }
             }
             //轴4
@@ -8473,7 +8469,7 @@ void ChannelEngine::ProcessPmcSignal(){
                     this->SetCurAxis(i, 3);
                     this->ManualMove(DIR_POSITIVE);
                 }else{
-                    this->ManualMoveStop();
+                    this->ManualMoveStop(3);
                 }
             }
             if(g_reg->JN4 != g_reg_last->JN4){
@@ -8481,7 +8477,7 @@ void ChannelEngine::ProcessPmcSignal(){
                     this->SetCurAxis(i, 3);
                     this->ManualMove(DIR_NEGATIVE);
                 }else{
-                    this->ManualMoveStop();
+                    this->ManualMoveStop(3);
                 }
             }
             //轴5
@@ -8490,7 +8486,7 @@ void ChannelEngine::ProcessPmcSignal(){
                     this->SetCurAxis(i, 4);
                     this->ManualMove(DIR_POSITIVE);
                 }else{
-                    this->ManualMoveStop();
+                    this->ManualMoveStop(4);
                 }
             }
             if(g_reg->JN5 != g_reg_last->JN5){
@@ -8498,7 +8494,7 @@ void ChannelEngine::ProcessPmcSignal(){
                     this->SetCurAxis(i, 4);
                     this->ManualMove(DIR_NEGATIVE);
                 }else{
-                    this->ManualMoveStop();
+                    this->ManualMoveStop(4);
                 }
             }
             //轴6
@@ -8507,7 +8503,7 @@ void ChannelEngine::ProcessPmcSignal(){
                     this->SetCurAxis(i, 5);
                     this->ManualMove(DIR_POSITIVE);
                 }else{
-                    this->ManualMoveStop();
+                    this->ManualMoveStop(5);
                 }
             }
             if(g_reg->JN6 != g_reg_last->JN6){
@@ -8515,7 +8511,7 @@ void ChannelEngine::ProcessPmcSignal(){
                     this->SetCurAxis(i, 5);
                     this->ManualMove(DIR_NEGATIVE);
                 }else{
-                    this->ManualMoveStop();
+                    this->ManualMoveStop(5);
                 }
             }
         }else if(g_reg->MD == 6){  //原点模式

@@ -949,8 +949,8 @@ struct HmiChannelRealtimeStatus {
 	uint32_t line_no;						//当前行号
 
 //#ifdef USES_SPEED_TORQUE_CTRL
-//	double cur_feedbck_velocity[kMaxAxisChn];			//当前各轴实际速度，单位：mm/min
-//    double cur_feedbck_torque[kMaxAxisChn];			//当前各轴实际力矩，单位：0.001额定力矩
+    double cur_feedbck_velocity[kMaxAxisChn];			//当前各轴实际速度，单位：mm/min
+    double cur_feedbck_torque[kMaxAxisChn];			//当前各轴实际力矩，单位：0.001额定力矩
 //#endif
 };
 

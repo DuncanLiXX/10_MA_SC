@@ -149,10 +149,8 @@ void SetMcArmComm(MCArmCommunication *comm){this->m_p_mc_arm_comm = comm;}   //É
 
 	double GetPhyAxisMachPosFeedback(uint8_t index){return m_df_phy_axis_pos_feedback[index];}  //»ñÈ¡Ö¸¶¨ÎïÀíÖáµÄµ±Ç°·´À¡»úĞµ×ø±ê
 
-#ifdef USES_SPEED_TORQUE_CTRL
 	double GetPhyAxisMachSpeedFeedback(uint8_t index){return m_df_phy_axis_speed_feedback[index];}  //»ñÈ¡Ö¸¶¨ÎïÀíÖáµÄµ±Ç°·´À¡ËÙ¶È
 	double GetPhyAxisMachTorqueFeedback(uint8_t index){return m_df_phy_axis_torque_feedback[index];}  //»ñÈ¡Ö¸¶¨ÎïÀíÖáµÄµ±Ç°·´À¡Á¦¾Ø
-#endif
 	
 	double GetPhyAxisMachPosIntp(uint8_t index){return m_df_phy_axis_pos_intp[index];}   //·µ»ØÖ¸¶¨ÎïÀíÖáµÄµ±Ç°²å²¹»úĞµ×ø±ê
 	void StartUpdateProcess();		//¿ªÊ¼Ä£¿éÉı¼¶²Ù×÷

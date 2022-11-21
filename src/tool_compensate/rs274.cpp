@@ -38,6 +38,10 @@ void setOutputMsgList(OutputMsgList * output_msg_list){
 }
 
 
+void Interp::reset(){
+	this->convert_cutter_compensation_off(&_setup);
+}
+
 int Interp::arc_data_comp_ijk(int move,
 							  int plane,
 							  int side,
@@ -79,7 +83,8 @@ int Interp::arc_data_comp_ijk(int move,
 		   a, *center_x, b, *center_y,
 		   a, end_x, b, end_y, arc_radius, radius2);
 
-		CreateError(ARC_RADIUS_TOO_SMALL, ERROR_LEVEL, CLEAR_BY_MCP_RESET);
+		//CreateError(ARC_RADIUS_TOO_SMALL, ERROR_LEVEL, CLEAR_BY_MCP_RESET);
+		err_code = ARC_RADIUS_TOO_SMALL;
 		return 0;
 	}
 
@@ -96,14 +101,16 @@ int Interp::arc_data_comp_ijk(int move,
 				   a, *center_x, b, *center_y,
 				   a, end_x, b, end_y, arc_radius, radius2,
 				   abs_err, rel_err*100);
-		CreateError(ARC_NOT_VALID, ERROR_LEVEL, CLEAR_BY_MCP_RESET);
+		//CreateError(ARC_NOT_VALID, ERROR_LEVEL, CLEAR_BY_MCP_RESET);
+		err_code = ARC_NOT_VALID;
 		return 0;
 	}
 
 	if((arc_radius <= tool_radius and side == LEFT and move == 30) or (side == RIGHT and move == 20 and arc_radius <= tool_radius))
 	{
 		printf("TOOL_RADIUS_NOT_LESS_THAN_ARC_RADIUS_WITH_COMP");
-		CreateError(TOOL_RADIUS_BIGGER_THAN_ARC, ERROR_LEVEL, CLEAR_BY_MCP_RESET);
+		//CreateError(TOOL_RADIUS_BIGGER_THAN_ARC, ERROR_LEVEL, CLEAR_BY_MCP_RESET);
+		err_code = TOOL_RADIUS_BIGGER_THAN_ARC;
 		return 0;
 	}
 
@@ -137,7 +144,8 @@ int Interp::arc_data_comp_r(int move,
 
 	if((abs_radius <= tool_radius) and ((side == LEFT && move == 30) or (side == LEFT && move == 20))){
 		printf("tool radius not less than arc radius with comp\n");
-		CreateError(TOOL_RADIUS_BIGGER_THAN_ARC, ERROR_LEVEL, CLEAR_BY_MCP_RESET);
+		//CreateError(TOOL_RADIUS_BIGGER_THAN_ARC, ERROR_LEVEL, CLEAR_BY_MCP_RESET);
+		err_code = TOOL_RADIUS_BIGGER_THAN_ARC;
 		return 0;
 	}
 
@@ -179,8 +187,9 @@ int Interp::arc_data_ijk(int move,
 	  radius2 = hypot((*center_x - end_x), (*center_y - end_y));
 
 	  if(radius < radius_tolerance or radius2 < radius_tolerance){
-		  CreateError(ARC_RADIUS_TOO_SMALL, ERROR_LEVEL, CLEAR_BY_MCP_RESET);
+		  //CreateError(ARC_RADIUS_TOO_SMALL, ERROR_LEVEL, CLEAR_BY_MCP_RESET);
 		  printf("arc radius too small canot move\n");
+		  err_code = ARC_RADIUS_TOO_SMALL;
 		  return 0;
 	  }
 
@@ -197,7 +206,8 @@ int Interp::arc_data_ijk(int move,
 		  	       a, *center_x, b, *center_y,
 		  	       a, end_x, b, end_y, radius, radius2,
 		  	       abs_err, rel_err*100);
-		  CreateError(ARC_NOT_VALID, ERROR_LEVEL, CLEAR_BY_MCP_RESET);
+		  //CreateError(ARC_NOT_VALID, ERROR_LEVEL, CLEAR_BY_MCP_RESET);
+		  err_code = ARC_NOT_VALID;
 
 	  }
 
@@ -234,7 +244,8 @@ int Interp::arc_data_r(int move,
 
 	  if((end_x == current_x) && (end_y == current_y)){
 		  printf("arc current point same as end point\n");
-		  CreateError(ARC_NOT_VALID, ERROR_LEVEL, CLEAR_BY_MCP_RESET);
+		  //CreateError(ARC_NOT_VALID, ERROR_LEVEL, CLEAR_BY_MCP_RESET);
+		  err_code = ARC_NOT_VALID;
 		  return 0;
 	  }
 
@@ -245,7 +256,8 @@ int Interp::arc_data_r(int move,
 
 	  if((half_length - abs_radius) > tolerance){
 		  printf("radius too small to reach end point\n");
-		  CreateError(ARC_RADIUS_TOO_SMALL, ERROR_LEVEL, CLEAR_BY_MCP_RESET);
+		  //CreateError(ARC_RADIUS_TOO_SMALL, ERROR_LEVEL, CLEAR_BY_MCP_RESET);
+		  err_code = ARC_RADIUS_TOO_SMALL;
 		  return 0;
 	  }
 
@@ -312,14 +324,17 @@ int Interp::convert_arc(int move, block_pointer block, setup_pointer settings)
 	double end_x;
 	double end_y;
 	double end_z;
-	double AA_end;
-	double BB_end;
-	double CC_end;
-	double u_end, v_end, w_end;
+	double AA_end = block->a_number;
+	double BB_end = block->b_number;
+	double CC_end = block->c_number;
+	double u_end = block->u_number;;
+	double v_end = block->v_number;;
+	double w_end;
 
 	if(settings->arc_not_allowed){
 		printf("arc not allowed 退出刀补第一段不能是圆弧移动 \n");
-		CreateError(ARC_NOT_ALLOWED, ERROR_LEVEL, CLEAR_BY_MCP_RESET);
+		//CreateError(ARC_NOT_ALLOWED, ERROR_LEVEL, CLEAR_BY_MCP_RESET);
+		err_code = ARC_NOT_ALLOWED;
 		return 0;
 	}
 
@@ -440,7 +455,8 @@ int Interp::convert_arc_comp1(int move,
 
     if(hypot((end_x - cx), (end_y - cy)) <= tool_radius){
     	printf("Radius of cutter compensation entry arc is not greater than the tool radius\n");
-    	CreateError(TOOL_RADIUS_BIGGER_THAN_ARC, ERROR_LEVEL, CLEAR_BY_MCP_RESET);
+    	//CreateError(TOOL_RADIUS_BIGGER_THAN_ARC, ERROR_LEVEL, CLEAR_BY_MCP_RESET);
+    	err_code = TOOL_RADIUS_BIGGER_THAN_ARC;
     	return 0;
     }
 
@@ -486,7 +502,8 @@ int Interp::convert_arc_comp1(int move,
 
     if(fabs(cos(A_ang)) < TOLERANCE_EQUAL){
     	printf("tool radius not less than arc radius with comp\n");
-    	CreateError(TOOL_RADIUS_BIGGER_THAN_ARC, ERROR_LEVEL, CLEAR_BY_MCP_RESET);
+    	//CreateError(TOOL_RADIUS_BIGGER_THAN_ARC, ERROR_LEVEL, CLEAR_BY_MCP_RESET);
+    	err_code = TOOL_RADIUS_BIGGER_THAN_ARC;
     	return 0;
     }
 
@@ -500,7 +517,8 @@ int Interp::convert_arc_comp1(int move,
     if((fabs(hypot(center_x-end_x,center_y-end_y) -
             hypot(center_x-cx,center_y-cy))) > spiral_abs_tolerance){
     	printf("bug in tool radius comp\n");
-    	CreateError(TOOL_RADIUS_COMP_BUG, ERROR_LEVEL, CLEAR_BY_MCP_RESET);
+    	//CreateError(TOOL_RADIUS_COMP_BUG, ERROR_LEVEL, CLEAR_BY_MCP_RESET);
+    	err_code = TOOL_RADIUS_COMP_BUG;
     	return 0;
     }
 
@@ -567,7 +585,7 @@ int Interp::convert_arc_comp2(int move,
     tool_radius = settings->cutter_comp_radius;   /* always is positive */
     arc_radius = hypot((centerx - end_x), (centery - end_y));
     theta = atan2(cy - opy, cx - opx);
-    theta = (side == LEFT) ? (theta - M_PI_2l) : (theta + M_PI_2l);
+	theta = (side == LEFT) ? (theta - M_PI_2l) : (theta + M_PI_2l);
     delta = atan2(centery - opy, centerx - opx);
     alpha = (move == 30) ? (delta - M_PI_2l) : (delta + M_PI_2l);
     beta = (side == LEFT) ? (theta - alpha) : (alpha - theta);
@@ -581,7 +599,8 @@ int Interp::convert_arc_comp2(int move,
 
         if(arc_radius <= tool_radius){
         	printf("TOOL_RADIUS_NOT_LESS_THAN_ARC_RADIUS_WITH_COMP\n");
-        	CreateError(TOOL_RADIUS_BIGGER_THAN_ARC, ERROR_LEVEL, CLEAR_BY_MCP_RESET);
+        	//CreateError(TOOL_RADIUS_BIGGER_THAN_ARC, ERROR_LEVEL, CLEAR_BY_MCP_RESET);
+        	err_code = TOOL_RADIUS_BIGGER_THAN_ARC;
         	return 0;
         }
 
@@ -614,6 +633,13 @@ int Interp::convert_arc_comp2(int move,
                 toward_nominal = cy + tool_radius;
                 double l = toward_nominal / dist_from_center;
                 //CHKS((l > 1.0 || l < -1.0), _("Arc move in concave corner cannot be reached by the tool without gouging"));
+                if(l > 1.0 || l < -1.0){
+                	printf("Arc move in concave corner cannot be reached by the tool without gouging\n");
+                	err_code = CONCAVE_CORNER_ERROR;
+                	// CONCAVE_CORNER_ERROR
+                	return 0;
+                }
+
                 if(turn > 0) {
                     angle_from_center = theta + asin(l);
                 } else {
@@ -626,7 +652,9 @@ int Interp::convert_arc_comp2(int move,
 
                 if(l > 1.0 || l < -1.0){
                 	printf("Arc move in concave corner cannot be reached by the tool without gouging\n");
-                	CreateError(CONCAVE_CORNER_ERROR, ERROR_LEVEL, CLEAR_BY_MCP_RESET);
+                	//CreateError(CONCAVE_CORNER_ERROR, ERROR_LEVEL, CLEAR_BY_MCP_RESET);
+                	err_code = CONCAVE_CORNER_ERROR;
+                	// CONCAVE_CORNER_ERROR
                 	return 0;
                 }
 
@@ -639,7 +667,8 @@ int Interp::convert_arc_comp2(int move,
 
             midx = centerx + dist_from_center * cos(angle_from_center);
             midy = centery + dist_from_center * sin(angle_from_center);
-
+            printf("cenx: %f, ceny: %f dist: %f angle: %f\n", centerx, centery, dist_from_center, angle_from_center);
+            printf("midx: %f, midy: %f\n", midx, midy);
             move_endpoint_and_flush(settings, midx, midy);
         } else {
             // arc->arc
@@ -657,7 +686,8 @@ int Interp::convert_arc_comp2(int move,
 
             if(oldrad == 0 || arc_cc == 0){
             	printf("Arc to arc motion is invalid because the arcs have the same center\n");
-            	CreateError(CONCAVE_CORNER_ERROR, ERROR_LEVEL, CLEAR_BY_MCP_RESET);
+            	//CreateError(CONCAVE_CORNER_ERROR, ERROR_LEVEL, CLEAR_BY_MCP_RESET);
+            	err_code = CONCAVE_CORNER_ERROR;
             	return 0;
             }
 
@@ -665,7 +695,8 @@ int Interp::convert_arc_comp2(int move,
 
             if(a > 1.0 || a < -1.0){
             	printf("Arc to arc motion makes a corner the compensated tool can't fit in without gouging\n");
-            	CreateError(ARC_TO_ARC_SAME_CENTER, ERROR_LEVEL, CLEAR_BY_MCP_RESET);
+            	//CreateError(ARC_TO_ARC_SAME_CENTER, ERROR_LEVEL, CLEAR_BY_MCP_RESET);
+            	err_code = ARC_TO_ARC_SAME_CENTER;
             	return 0;
             }
 
@@ -761,10 +792,13 @@ int Interp::convert_straight(int move,
 	double end_z;
 	settings->arc_not_allowed = false;
 
-	double AA_end;
-	double BB_end;
-	double CC_end;
-	double u_end, v_end, w_end;
+	double AA_end = block->a_number;
+	double BB_end = block->b_number;
+	double CC_end = block->v_number;
+	double u_end = block->u_number;
+	double v_end = block->v_number;
+	double w_end;
+
 	int status;
 
 	find_ends(block, settings, &end_x, &end_y, &end_z);
@@ -828,7 +862,8 @@ int Interp::convert_straight_comp1(int move,
 
 	if(distance <= radius){
 		printf("Length of cutter compensation entry move is not greater than the tool radius");
-		CreateError(MOVE_SMALLER_THAN_CMPRADIUS, ERROR_LEVEL, CLEAR_BY_MCP_RESET);
+		//CreateError(MOVE_SMALLER_THAN_CMPRADIUS, ERROR_LEVEL, CLEAR_BY_MCP_RESET);
+		err_code = MOVE_SMALLER_THAN_CMPRADIUS;
 		return 0;
 	}
 
@@ -861,12 +896,12 @@ int Interp::convert_straight_comp1(int move,
 	settings->cutter_comp_firstmove = false;
 
 	comp_set_current(settings, end_x, end_y, pz);
-	//settings->AA_current = AA_end;
-	//settings->BB_current = BB_end;
-	//settings->CC_current = CC_end;
-	//settings->u_current = u_end;
-	//settings->v_current = v_end;
-	//settings->w_current = w_end;
+	settings->AA_current = AA_end;
+	settings->BB_current = BB_end;
+	settings->CC_current = CC_end;
+	settings->u_current = u_end;
+	settings->v_current = v_end;
+	settings->w_current = w_end;
 	comp_set_programmed(settings, px, py, pz);
 	return 0;
 }
@@ -1177,7 +1212,6 @@ int Interp::init_block(block_pointer block)
 	return 0;
 }
 
-
 int Interp::move_endpoint_and_flush(setup_pointer settings, double x, double y)
 {
     double x1;
@@ -1196,6 +1230,8 @@ int Interp::move_endpoint_and_flush(setup_pointer settings, double x, double y)
 
         queued_canon &q = qc()[i];
 
+        printf("type: %d, x: %f y: %f z: %f\n", q.type, q.data.straight_feed.x, q.data.straight_feed.y, q.data.straight_feed.z);
+        printf("begin ----> x: %f, y: %f\n", x, y);
         switch(q.type) {
         case QARC_FEED:
             double r1, r2, l1, l2;
@@ -1217,6 +1253,7 @@ int Interp::move_endpoint_and_flush(setup_pointer settings, double x, double y)
             }
             if(l1 != 0.0 && endpoint_valid && fabs(l2) > fabs(l1) + 0.254) {
                 printf("Arc move in concave corner cannot be reached by the tool without gouging\n");
+                err_code = CONCAVE_CORNER_ERROR;
             }
             q.data.arc_feed.end1 = x;
             q.data.arc_feed.end2 = y;
@@ -1287,10 +1324,12 @@ int Interp::move_endpoint_and_flush(setup_pointer settings, double x, double y)
                 // path has crossed because we backed up further
                 // than the line is long.  this will gouge.
                 printf("Straight feed in concave corner cannot be reached by the tool without gouging\n");
+                err_code = CONCAVE_CORNER_ERROR;
             }
             switch(settings->plane) {
             case CANON_PLANE_XY:
-                q.data.straight_feed.x = x;
+                printf("-------> x: %f, y: %f\n", x, y);
+            	q.data.straight_feed.x = x;
                 q.data.straight_feed.y = y;
                 break;
             case CANON_PLANE_XZ:
@@ -1337,7 +1376,9 @@ void dequeue_canons(setup_pointer settings)
 			break;
 		case QSTRAIGHT_FEED:
 			printf("issuing straight feed lineno %d\n", q.data.straight_feed.line_number);
-
+			printf("%lf %lf %lf\n", q.data.straight_feed.x,
+					  q.data.straight_feed.y,
+					  q.data.straight_feed.z);
 			feed_rate = q.data.straight_feed.feedrate;
 			g_flags = q.data.straight_feed.flags;
 
@@ -1405,7 +1446,9 @@ int enqueue_STRAIGHT_FEED(setup_pointer settings, int l,
     q.data.straight_feed.flags = settings->_block.flags;
 
     qc().push_back(q);
-    printf("enqueue straight feed lineno %d to %f %f %f direction %f %f %f\n", l, x,y,z, dx, dy, dz);
+    printf("enqueue straight feed lineno %d to %f %f %f direction %f %f %f\n", l, q.data.straight_feed.x,
+    																			q.data.straight_feed.y,
+																				q.data.straight_feed.z, dx, dy, dz);
     return 0;
 }
 
@@ -1500,13 +1543,20 @@ void ARC_FEED(int line_number,
 {
 	if(comp_output_list == nullptr){
 		printf("out put msg list not initialized1.\n");
-		CreateError(COMP_LIST_NOT_INIT, ERROR_LEVEL, CLEAR_BY_MCP_RESET);
+		//CreateError(COMP_LIST_NOT_INIT, ERROR_LEVEL, CLEAR_BY_MCP_RESET);
+		//err_code = COMP_LIST_NOT_INIT;
 		return;
 	}
 
 	DPointChn source(temp_point[0], temp_point[1], temp_point[2]);
 	DPointChn target(first_end, second_end, temp_point[2]);
 	DPointChn center(first_axis, second_axis, temp_point[2]);
+
+	target.SetAxisValue(3, a_position);
+	target.SetAxisValue(4, b_position);
+	target.SetAxisValue(5, c_position);
+	target.SetAxisValue(6, u_position);
+	target.SetAxisValue(7, v_position);
 
 	int8_t major_flag = 1;  //优弧标志， 1--劣弧    -1--优弧
 	int8_t circle_flag = 0;	//整圆标志， 0--圆弧    1--整圆
@@ -1542,14 +1592,22 @@ void ARC_FEED(int line_number,
 			new ArcMsg(gcode, source, target, center, radius,
 					   feed_rate, 7, dir_flag, major_flag, circle_flag);
 
+	static int arc_line = 0;
+
+	/*
+	if(line_number != arc_line){
+		arc_line = line_number;
+	}else{
+		arc_line = line_number;
+		line_number -= 1;
+	}*/
+
 	new_msg->SetLineNo(line_number);
 
 	RecordMsgFlag flag; flag.all = g_flags;
 	new_msg->SetFlags(flag);
-
+	printf("ARC_FEED line no: %d\n", line_number);
 	comp_output_list->Append(new_msg);
-
-
 }
 
 void STRAIGHT_TRAVERSE(int line_number,
@@ -1559,7 +1617,8 @@ void STRAIGHT_TRAVERSE(int line_number,
 {
 	if(comp_output_list == nullptr){
 		printf("out put msg list not initialized3.\n");
-		CreateError(COMP_LIST_NOT_INIT, ERROR_LEVEL, CLEAR_BY_MCP_RESET);
+		//CreateError(COMP_LIST_NOT_INIT, ERROR_LEVEL, CLEAR_BY_MCP_RESET);
+		//err_code = COMP_LIST_NOT_INIT;
 		return;
 	}
 
@@ -1568,10 +1627,17 @@ void STRAIGHT_TRAVERSE(int line_number,
 	temp_point[0] = x;
 	temp_point[1] = y;
 	temp_point[2] = z;
+	target.SetAxisValue(3, a);
+	target.SetAxisValue(4, b);
+	target.SetAxisValue(5, c);
+	target.SetAxisValue(6, u);
+	target.SetAxisValue(7, v);
+
 	RecordMsg *new_msg = new RapidMsg(source, target, 7);
 	if(new_msg == nullptr){
 		//TODO 内存分配失败，告警
-		CreateError(ERR_MEMORY_NEW, FATAL_LEVEL, CLEAR_BY_RESET_POWER);
+		//CreateError(ERR_MEMORY_NEW, FATAL_LEVEL, CLEAR_BY_RESET_POWER);
+		//err_code = ERR_MEMORY_NEW;
 		return;
 	}
 
@@ -1579,7 +1645,7 @@ void STRAIGHT_TRAVERSE(int line_number,
 	new_msg->SetFlags(flag);
 
 	new_msg->SetLineNo(line_number);  //设置当前行号
-
+	printf("STRAIGHT_TRAVERSE line no: %d\n", line_number);
 	comp_output_list->Append(new_msg);
 }
 
@@ -1590,7 +1656,8 @@ void STRAIGHT_FEED(int line_number,
 {
 	if(comp_output_list == nullptr){
 		printf("out put msg list not initialized2.\n");
-		CreateError(COMP_LIST_NOT_INIT, ERROR_LEVEL, CLEAR_BY_MCP_RESET);
+		//CreateError(COMP_LIST_NOT_INIT, ERROR_LEVEL, CLEAR_BY_MCP_RESET);
+		//err_code = COMP_LIST_NOT_INIT;
 		return;
 	}
 
@@ -1600,18 +1667,25 @@ void STRAIGHT_FEED(int line_number,
 	temp_point[1] = y;
 	temp_point[2] = z;
 
+	target.SetAxisValue(3, a);
+	target.SetAxisValue(4, b);
+	target.SetAxisValue(5, c);
+	target.SetAxisValue(6, u);
+	target.SetAxisValue(7, v);
+
 
 	RecordMsg *new_msg = new LineMsg(source, target, feed_rate, 7);
 	if(new_msg == nullptr){
 		//TODO 内存分配失败，告警
 		CreateError(ERR_MEMORY_NEW, FATAL_LEVEL, CLEAR_BY_RESET_POWER);
+		//err_code = ERR_MEMORY_NEW;
 		return;
 	}
 	new_msg->SetLineNo(line_number);  //设置当前行号
 
 	RecordMsgFlag flag; flag.all = g_flags;
 	new_msg->SetFlags(flag);
-
+	printf("STRAIGHT_FEED line no: %d\n", line_number);
 	comp_output_list->Append(new_msg);
 }
 

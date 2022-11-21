@@ -594,7 +594,7 @@ void ChannelControl::InitialChannelStatus(){
  * @brief 通道复位函数
  */
 void ChannelControl::Reset(){
-    if(m_p_spindle->isTapEnable()){
+	if(m_p_spindle->isTapEnable()){
         CreateError(ERR_SPD_RESET_IN_TAP,
                     WARNING_LEVEL,
                     CLEAR_BY_MCP_RESET);
@@ -1663,8 +1663,12 @@ void ChannelControl::ResetMode(){
  * @brief 开始G代码运行
  */
 void ChannelControl::StartRunGCode(){
+
+	printf("start run g code \n");
+
 	g_ptr_trace->PrintTrace(TRACE_INFO, CHANNEL_CONTROL_SC,"@#@#Enter ChannelControl::StartRunGCode(), m_n_run_thread_state = %d, chn_work_mode = %hhu, machine_mode = %hhu, mc_mode=%hu\n", m_n_run_thread_state,
 			m_channel_status.chn_work_mode, m_channel_status.machining_state, m_channel_mc_status.cur_mode);
+
 
 	if(m_channel_status.chn_work_mode != AUTO_MODE &&
 			m_channel_status.chn_work_mode != MDA_MODE)
@@ -1712,6 +1716,7 @@ void ChannelControl::StartRunGCode(){
 	//当前正处于停止或暂停过程中，则返回
 	if(m_channel_status.machining_state == MS_PAUSING || m_channel_status.machining_state == MS_STOPPING){
 		g_ptr_trace->PrintTrace(TRACE_WARNING, CHANNEL_CONTROL_SC, "machine state is %hhu, return\n", m_channel_status.machining_state);
+		printf("***********************************\n");
 		return;
 	}
 
@@ -2143,6 +2148,9 @@ void ChannelControl::PauseMc(){
 	else
 		this->m_p_mc_arm_comm->ReadWorkMode(m_n_channel_index, m_channel_mc_status.cur_mode);
 
+	// @test
+	printf("pausemc m_channel_mc_status.cur_mode: %d\n", m_channel_mc_status.cur_mode);
+
 //	printf("pausemc, mc_mode = %hu\n", m_channel_mc_status.cur_mode);
 	if(m_channel_mc_status.cur_mode == MC_MODE_MANUAL ){//停止所有轴
 		uint16_t mask = 0;
@@ -2151,6 +2159,7 @@ void ChannelControl::PauseMc(){
 		}
 		this->ManualMoveStop(mask);
 	}else
+		// @bug  部分SC这个指令发送无效 导致 SC假死  PMC能亮 但无法动作
 		this->SendIntpModeCmdToMc(MC_MODE_MANUAL);
 }
 
@@ -4254,6 +4263,7 @@ int ChannelControl::Run(){
 				}
 			}else if(m_p_compiler->GetErrorCode() != ERR_NONE)
 			{
+				//m_n_run_thread_state = STOP;  仍然无法停止
 				//编译器出错，但需要继续执行已编译指令
 				if(m_p_compiler->RunMessage()){
 					if(!ExecuteMessage()){
@@ -4531,7 +4541,8 @@ bool ChannelControl::RefreshStatusFun(){
 
 			//更新当前MC告警标志
 			this->m_p_mc_arm_comm->ReadMcErrFlag(m_n_channel_index, m_channel_mc_status.mc_error.all);			
-			
+
+
 			if(m_channel_mc_status.cur_mode == MC_MODE_AUTO &&
 #ifdef USES_ADDITIONAL_PROGRAM
 				m_n_add_prog_type == NONE_ADD &&
@@ -4541,6 +4552,8 @@ bool ChannelControl::RefreshStatusFun(){
 		    }
 
 		}
+
+		//printf("m_channel_mc_status.cur_mode : %d\n", m_channel_mc_status.cur_mode);
 		//更新系统状态
 		step_mode_flag = IsStepMode();
 		if(step_mode_flag){
@@ -4550,6 +4563,7 @@ bool ChannelControl::RefreshStatusFun(){
 			check_count = 10;    //1;   //增加延时，等待轴运行到位
 		}
 		if(m_channel_mc_status.cur_mode ==MC_MODE_MANUAL){
+
 			if(m_channel_status.machining_state == MS_PAUSING ||		//暂停中并且MC已切换至手动模式
 					m_channel_status.machining_state == MS_STOPPING ||
 					(m_channel_status.machining_state == MS_RUNNING &&
@@ -7265,7 +7279,7 @@ bool ChannelControl::ExecuteCoordMsg(RecordMsg *msg){
 
 		int gcode = coordmsg->GetGCode();
 		if ((gcode >= G54_CMD && gcode <= G59_CMD)
-				|| (gcode >= G5401_CMD && gcode <= G5499_CMD)){
+				|| (gcode >= G5401_CMD && gcode <= G5499_CMD) || gcode == 541){
 			this->m_mode_restart.gmode[14] = gcode;//更新模态
 		}
 		return true;
@@ -7297,7 +7311,6 @@ bool ChannelControl::ExecuteCoordMsg(RecordMsg *msg){
 			break;
 	}
 
-
 	if(this->IsStepMode() && this->m_b_need_change_to_pause){//单段，切换暂停状态
 		this->m_b_need_change_to_pause = false;
 		m_n_run_thread_state = PAUSE;
@@ -7314,9 +7327,10 @@ bool ChannelControl::ExecuteCoordMsg(RecordMsg *msg){
 	//更新模态
 	int gcode = flag?coordmsg->GetLastGCode():coordmsg->GetGCode();
 
+
 	// @add zk
 	if(gcode == G92_CMD){ //设定工件坐标系
-		//TODO  待完善
+
 		DPointChn point = coordmsg->GetTargetPos();
 		for(int i=0; i<kMaxAxisChn; i++){
 			double offset = GetAxisCurMachPos(i) - point.GetAxisValue(i);
@@ -7326,7 +7340,6 @@ bool ChannelControl::ExecuteCoordMsg(RecordMsg *msg){
 	// @add zk
 
 	if(gcode == G52_CMD){//局部坐标系
-		//TODO  待完善
 
 		// @add  zk
 		DPointChn point = coordmsg->GetTargetPos();
@@ -12587,17 +12600,10 @@ void ChannelControl::SetMcRatio(){
 	cmd.data.channel_index = m_n_channel_index;
 	cmd.data.axis_index = NO_AXIS;
 	cmd.data.cmd = CMD_MC_SET_CHN_RATIO;
+
 	cmd.data.data[0] = this->m_channel_status.rapid_ratio;
 	cmd.data.data[1] = this->m_channel_status.auto_ratio;
 	cmd.data.data[2] = this->m_channel_status.manual_ratio;
-
-
-	cmd.data.data[1] = 120;
-	// @test zk
-	printf("rapid %d auto %d manual %d \n",
-			this->m_channel_status.rapid_ratio,
-			this->m_channel_status.auto_ratio,
-			this->m_channel_status.manual_ratio);
 
 	if(!this->m_b_mc_on_arm)
 		m_p_mc_comm->WriteCmd(cmd);

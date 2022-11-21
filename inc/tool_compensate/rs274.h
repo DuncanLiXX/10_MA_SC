@@ -41,6 +41,8 @@ typedef struct block_struct
 	double   b_number;
 	bool     c_flag;
 	double   c_number;
+	double   u_number;
+	double 	 v_number;
 	bool     x_flag;
 	double   x_number;
 	bool     y_flag;
@@ -87,9 +89,18 @@ typedef struct setup_struct
 	double program_y;                             // program y, used when cutter comp on
 	double program_z;
 
+	/*
 	double origin_offset_x;                       // origin offset x
 	double origin_offset_y;                       // origin offset y
 	double origin_offset_z;                       // origin offset z
+	*/
+
+	double AA_current;
+	double BB_current;
+	double CC_current;
+	double u_current;
+	double v_current;
+	double w_current;
 
 	block _block;                                 // parsed next block
 
@@ -98,9 +109,11 @@ typedef struct setup_struct
 	int cutter_comp_side;                         // current cutter compensation side
 	bool arc_not_allowed;
 	double feed_rate;                             // feed rate in current units/min
+	int sequence_number;                          // sequence number of line last read
+
+	// ******************
 	int plane;                            // active plane, XY-, YZ-, or XZ-plane
 	bool percent_flag;                          // ON means first line was percent sign
-	int sequence_number;                          // sequence number of line last read
 	double tool_length_offset;                    // current tool length offset
 
 	int motion_mode;
@@ -174,6 +187,8 @@ public:
 	Interp(){}
 	~Interp(){}
 
+
+	void reset();
 
 	void flush_comp(){
 		dequeue_canons(&_setup);
@@ -315,6 +330,8 @@ public:
 	 setup _setup;
 
 	 bool isCompOn = false;
+
+	 ErrorType err_code = ERR_NONE;
 };
 
 void ARC_FEED(int line_number,

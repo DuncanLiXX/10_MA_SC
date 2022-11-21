@@ -307,6 +307,7 @@ bool AsFileMapInfo::ResetFile(){
 	this->ptr_map_file = (char *)mmap(nullptr, ln_map_blocksize, PROT_READ,MAP_SHARED, fp_cur, ln_map_start);
 	if(ptr_map_file == (char *)MAP_FAILED && errno != 0){
 		g_ptr_trace->PrintLog(LOG_ALARM, "复位映射文件[%s]失败！size=%hld, errno=%d", str_file_name, ln_map_blocksize, errno);
+		printf("复位映射文件  失败!\n");
 		return false;  //映射失败
 	}
 

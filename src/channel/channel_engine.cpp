@@ -1695,7 +1695,7 @@ void ChannelEngine::ProcessMiCmd(MiCmdFrame &cmd){
             this->ServoOn();
         }
 
-		this->SetWorkMode(this->m_p_channel_control[0].GetChnWorkMode());
+        this->SetWorkMode(this->m_p_channel_control[0].GetChnWorkMode());
 		this->SetMiCurChannel();
 
 		break;

@@ -2566,7 +2566,7 @@ void HMICommunication::ProcessHmiVirtualMOPCmd(HMICmdFrame &cmd){
 		break;
 	case MOP_KEY_FEED_RATIO:
         // lidianqiang: 去掉倍率控制的接口，进给倍率只由PMC信号_FV来控制
-        // m_p_channel_engine->SetAutoRatio(cmd.data[0]);
+        m_p_channel_engine->SetAutoRatio(cmd.data[0]);
         // todo: 手动倍率也应该由pmc信号_JV来控制
 		m_p_channel_engine->SetManualRatio(cmd.data[0]);
 		break;

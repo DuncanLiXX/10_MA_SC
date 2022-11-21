@@ -1895,6 +1895,7 @@ void Compiler::Reset(){
 			}
 
 		}
+		this->m_p_tool_compensate_mda->Reset();
 		this->m_n_compile_state = FILE_MAIN;
 
 	} else if (m_work_mode == AUTO_COMPILER) {
@@ -1911,7 +1912,7 @@ void Compiler::Reset(){
 		}
 
 		printf("scene reset finished!!!\n");
-
+		this->m_p_tool_compensate_auto->Reset();
 		this->m_n_compile_state = FILE_HEAD;
 	}
 
@@ -2468,6 +2469,15 @@ bool Compiler::RunMessage() {
 //			this->m_p_output_msg_list->Append(node);   //压入待发送队列
 			this->m_p_tool_compensate->ProcessData(node);  //压入刀补数据缓冲
 
+			if(m_p_tool_compensate->err_code != ERR_NONE){
+				m_error_code = m_p_tool_compensate->err_code;
+				CreateError(m_p_tool_compensate->err_code, ERROR_LEVEL, CLEAR_BY_MCP_RESET, 0,
+						m_n_channel_index);
+				m_p_tool_compensate->clearError();
+
+				res = false;
+			}
+
 		}
 
 		node = this->m_p_block_msg_list->HeadNode();  //取下一个消息
@@ -2503,7 +2513,7 @@ bool Compiler::RunAuxMsg(RecordMsg *msg) {
 			} else {
 				this->m_b_compile_over = true;
 				printf("compiler run M30\n");
-				m_p_tool_compensate->Reset();
+
 			}
 
 			break;

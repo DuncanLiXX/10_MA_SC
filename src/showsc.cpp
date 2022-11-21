@@ -375,6 +375,7 @@ void ShowSc::PrintRealtimeData()
     AddPair(s,"machining_time_total",chn_rt_status->machining_time_total);
     AddPair(s,"line_no",chn_rt_status->line_no);
     AddPair(s,"tap_err",chn_rt_status->tap_err);
+    AddPair(s,"tap_err_now",chn_rt_status->tap_err_now);
 
     SendMsg(s);
 }

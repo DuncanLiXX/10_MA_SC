@@ -846,20 +846,46 @@ void MICommunication::ReadPmcAxisRemainDis(double *pos, uint8_t count){
  * @param err:返回的误差
  * @param group ：攻丝组 0-7
  */
-void MICommunication::ReadTapErr(int32_t &err, uint8_t group)
+void MICommunication::ReadTapErr(int32_t *err, int32_t *err_now, uint8_t cnt)
 {
     //判断写完成标志
     int32_t flag = 0;
     ReadRegister32_M(SHARED_MEM_TAP_WRITE_OVER, flag);
     if(flag == 0){
+        //ScPrintf("$$$$ReadTapErr : write flag = 0, return \n");
         return;   //MI未更新，直接返回
     }
 
-
-    ReadRegister32_M(SHARED_MEM_TAP_ERR(group), err);
-    ScPrintf("SHARED_MEM_TAP_ERR(group) = %x, value = %d",SHARED_MEM_TAP_ERR(group),err);
+    int32_t var_err = 0;
+    int32_t var_err_now = 0;
+    for(int i=0; i<cnt; i++){
+        ReadRegister32_M(SHARED_MEM_TAP_ERR(i), var_err);
+        ReadRegister32_M(SHARED_MEM_TAP_ERR_NOW(i), var_err_now);
+        err[i] = var_err;
+        err_now[i] = var_err_now;
+    }
     WriteRegister32_M(SHARED_MEM_TAP_READ_OVER, 1);  //置位读取完成标志
 }
+
+///**
+// * @brief 读取刚性攻丝误差(当前值)
+// * @param err:返回的误差
+// * @param group ：攻丝组 0-7
+// */
+//void MICommunication::ReadTapErrNow(int32_t &err, uint8_t group)
+//{
+//    //判断写完成标志
+//    int32_t flag = 0;
+//    ReadRegister32_M(SHARED_MEM_TAP_WRITE_OVER, flag);
+//    if(flag == 0){
+//        return;   //MI未更新，直接返回
+//    }
+
+
+//    ReadRegister32_M(SHARED_MEM_TAP_ERR_NOW(group), err);
+//    ScPrintf("SHARED_MEM_TAP_ERR_NEW(group) = %x, value = %d",SHARED_MEM_TAP_ERR_NOW(group),err);
+//    WriteRegister32_M(SHARED_MEM_TAP_READ_OVER, 1);  //置位读取完成标志
+//}
 
 /**
  * @brief 读取指定物理轴速度

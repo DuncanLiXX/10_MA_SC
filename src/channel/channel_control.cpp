@@ -2407,8 +2407,19 @@ void ChannelControl::SendMonitorData(bool bAxis, bool btime){
 
     //处于刚攻状态需要读取刚攻误差
     if(m_p_g_reg->RGTAP == 1){
-        int32_t err = 0;
-        m_p_mi_comm->ReadTapErr(err);
+        static int cnt = 0;
+        if(cnt++ %10 == 0){
+            //for(int i=0 ;i<4; i++){
+                m_p_mi_comm->ReadTapErr(&m_channel_rt_status.tap_err,
+                                        &m_channel_rt_status.tap_err_now,
+                                        1);
+                ScPrintf("tap_err = %d tap_err_now = %d",m_channel_rt_status.tap_err,
+                         m_channel_rt_status.tap_err_now);
+                //m_p_mi_comm->ReadTapErrNow(err,i);
+                //m_channel_rt_status.tap_err_now = err;
+                //ScPrintf("tap_err_now = %d",err);
+            //}
+        }
     }
 
     //	printf("axis pos %lf, %lf, %lf\n", pos[0], pos[1], pos[2]);
@@ -14100,7 +14111,7 @@ void ChannelControl::RunM66_slave(){
 
         //料盘是否已经放满,提醒换料
         if(m_p_mech_arm_state->cur_index[GRIND_SLAVE_CHN] == m_p_mech_arm_state->total_count /*&&
-                                        m_p_mech_arm_state->cur_finished_count[GRIND_SLAVE_CHN] >= m_p_mech_arm_state->total_count-1*/){//成品已放满
+                                                        m_p_mech_arm_state->cur_finished_count[GRIND_SLAVE_CHN] >= m_p_mech_arm_state->total_count-1*/){//成品已放满
             if(this->m_p_f_reg->change_tray_right == 0){
                 this->m_p_f_reg->change_tray_right = 1;   //提醒换料盘
                 //				this->m_p_channel_engine->SendHMIMechArmException(ERR_NEW_TRAY_REQ);  //向HMI请求更换料盘
@@ -15056,7 +15067,7 @@ void ChannelControl::ProcessGrindM66(AuxMsg *msg){
 
         //料盘是否已经放满,提醒换料
         if(m_p_mech_arm_state->cur_index[GRIND_MAIN_CHN] >= m_p_mech_arm_state->total_count /*&&
-                                        m_p_mech_arm_state->cur_finished_count[GRIND_MAIN_CHN] >= (m_p_mech_arm_state->total_count-1)*/){//成品已放满
+                                                        m_p_mech_arm_state->cur_finished_count[GRIND_MAIN_CHN] >= (m_p_mech_arm_state->total_count-1)*/){//成品已放满
             if(this->m_p_f_reg->change_tray_left == 0){
                 this->m_p_f_reg->change_tray_left = 1;   //提醒换料盘
                 this->m_p_channel_engine->SendHMIMechArmException(ERR_NEW_TRAY_REQ);  //向HMI请求更换料盘

@@ -65,6 +65,7 @@ class ChannelEngine;   //通道引擎
 #define SHARED_MEM_AXIS_READ_OVER (SHARED_MEM_AXIS_STATUS_BASE+0x1000)   					//轴数据的读取完成标志
 #define SHARED_MEM_AXIS_WRITE_OVER (SHARED_MEM_AXIS_STATUS_BASE+0x1004)   				    //轴数据的写入完成标志
 #define SHARED_MEM_TAP_ERR(n) (SHARED_MEM_AXIS_MAC_POS_INTP(n)+0x1040)                  //第n个攻丝组的刚性攻丝误差
+#define SHARED_MEM_TAP_ERR_NOW(n) (SHARED_MEM_AXIS_MAC_POS_INTP(n)+0x1044)                  //第n个攻丝组的刚性攻丝误差
 #define SHARED_MEM_TAP_READ_OVER (SHARED_MEM_AXIS_STATUS_BASE+0x1240)                  //第n个攻丝组的刚性攻丝误差
 #define SHARED_MEM_TAP_WRITE_OVER (SHARED_MEM_AXIS_STATUS_BASE+0x1244)                  //第n个攻丝组的刚性攻丝误差
 
@@ -188,7 +189,7 @@ public:
 	bool ReadPhyAxisSpeed(int32_t *speed, uint8_t index);  	//读取指定物理轴速度
     void ReadPhyAxisEncoder(int64_t *encoder, uint8_t count);   //读取物理轴当前编码器反馈
 	void ReadPmcAxisRemainDis(double *pos, uint8_t count);    //读取PMC轴余移动量
-    void ReadTapErr(int32_t &err,uint8_t group = 0);  // 读取特定攻丝组的攻丝误差
+    void ReadTapErr(int32_t *err, int32_t *err_now,uint8_t cnt = 8);  // 读取特定攻丝组的攻丝误差(最大值)
 	bool ReadCmd(MiCmdFrame &data);    //读取指令
 	bool WriteCmd(MiCmdFrame &data, bool resend = false);   //发送指令
 

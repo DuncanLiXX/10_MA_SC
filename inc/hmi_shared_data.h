@@ -951,7 +951,9 @@ struct HmiChannelRealtimeStatus {
     double cur_feedbck_velocity[kMaxAxisChn];			//当前各轴实际速度，单位：mm/min
     double cur_feedbck_torque[kMaxAxisChn];			//当前各轴实际力矩，单位：0.001额定力矩
 
-    int32_t tap_err;                        //刚性攻丝误差 单位：um
+    int32_t tap_err;                        //刚性攻丝误差(最大值) 单位：um
+    int32_t tap_err_now;                    //刚性攻丝误差(当前值) 单位：um
+
 };
 
 

@@ -80,7 +80,8 @@ struct ChannelRealtimeStatus{
 	DPointChn cur_feedbck_velocity;			//当前各轴实际速度，单位：mm/min
     DPointChn cur_feedbck_torque;			    //当前各轴实际力矩，单位：0.001额定力矩
 
-    int32_t tap_err;                        // 刚性攻丝误差 单位：um
+    int32_t tap_err;                        //刚性攻丝误差(最大值) 单位：um
+    int32_t tap_err_now;                    //刚性攻丝误差(当前值) 单位：um
 };
 
 //传递给MC的模态位结构

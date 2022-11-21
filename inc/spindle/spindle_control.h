@@ -85,7 +85,8 @@ public:
     void SetMode(Spindle::Mode mode);
     Spindle::Mode GetMode();             // 获取主轴控制模式
 
-    bool IsValid();
+    uint8_t Type();  // 0:没有主轴  1：主轴为虚拟轴 2：主轴为总线轴
+    uint8_t GetPhyAxis(){return phy_axis;}
 
     bool isTapEnable();     // 刚性攻丝是否使能
 

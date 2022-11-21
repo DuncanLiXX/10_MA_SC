@@ -23,6 +23,8 @@
 #include "spindle_control.h"
 #include "showsc.h"
 #include "sync_axis_ctrl.h"
+#include <future>
+#include <functional>
 
 
 //#include <unistd.h>
@@ -652,7 +654,11 @@ void ChannelEngine::InitBdioDev(){
  */
 void ChannelEngine::CheckAxisSrvOn(){
     for(uint8_t i = 0; i < this->m_p_general_config->chn_count; i++){
-        this->m_p_channel_control[i].CheckAxisSrvOn(m_n_phy_axis_svo_on);
+        bool svo_on = this->m_p_channel_control[i].CheckAxisSrvOn(m_n_phy_axis_svo_on);
+        if(svo_on && !m_servo_ready){
+            ScPrintf("servo ready");
+            m_servo_ready = true;
+        }
     }
 }
 
@@ -674,18 +680,22 @@ void ChannelEngine::SetAxisRetRefFlag(){
 /**
  * @brief 向MI发送各轴使能状态
  */
-void ChannelEngine::SetServoState(uint8_t SVF){
-    static uint8_t last_SVF = 0x00;
+void ChannelEngine::SetServoState(uint8_t SVF, uint8_t pos_req){
+
     for(int i = 0; i < m_p_channel_config->chn_axis_count; i++){
-        bool now = (SVF & (0x01 << i));
-        bool last = (last_SVF & (0x01 << i));
-        if(now == last)
+        if(m_p_axis_config[i].axis_type == AXIS_SPINDLE)
             continue;
+        // 关断信号，需要取反
+        bool enable = !(SVF & (0x01 << i));
+        //bool now = (SVF & (0x01 << i));
+        //bool last = (last_SVF & (0x01 << i));
+//        if(now == last)
+//            continue;
 
         // 关断信号，需要取反
-        m_p_mi_comm->SendAxisEnableCmd(i+1, !now);
+        m_p_mi_comm->SendAxisEnableCmd(i+1, enable, pos_req);
     }
-    last_SVF = SVF;
+
 }
 
 /**
@@ -694,15 +704,44 @@ void ChannelEngine::SetServoState(uint8_t SVF){
 void ChannelEngine::SetMLKState(uint8_t MLK)
 {
     static uint8_t last_MLK = 0x00;
+    static double pos_record[kMaxAxisChn] = {0.0};
+    static std::future<void> ans;
+
     for(int i = 0; i < m_p_channel_config->chn_axis_count; i++){
+
         bool en_now = (MLK & (0x01 << i));
         bool en_last = (last_MLK & (0x01 << i));
         if(en_now == en_last)
             continue;
 
-        m_p_mi_comm->SendAxisMLK(i+1, en_now);
+        if(en_now){
+            this->m_p_mi_comm->ReadPhyAxisCurFedBckPos(m_df_phy_axis_pos_feedback,
+                                                       m_df_phy_axis_pos_intp,
+                                                       m_df_phy_axis_speed_feedback,
+                                                       m_df_phy_axis_torque_feedback,
+                                                       m_p_general_config->axis_count);
+           pos_record[i] = m_df_phy_axis_pos_feedback[i];
+           m_p_mi_comm->SendAxisMLK(i+1, en_now);
+        }else{
+            //ManualMoveAbs(i, 3000, pos_record[i]);
+            auto func = std::bind(&ChannelEngine::ProcessRecoverMLK,
+                                  this, std::placeholders::_1, std::placeholders::_2);
+            ans = std::async(std::launch::async, func, i,pos_record[i]);
+        }
+
     }
     last_MLK = MLK;
+}
+
+void ChannelEngine::ProcessRecoverMLK(uint8_t phy_axis, double mach_pos)
+{
+    ManualMoveAbs(phy_axis, 3000, mach_pos);
+    while(fabs(this->GetPhyAxisMachPosFeedback(phy_axis) - mach_pos) >= 0.010){
+        std::this_thread::sleep_for(std::chrono::microseconds(100 * 1000));
+        ScPrintf("RecoverMLK: axis = %u,fabs = %lf", phy_axis,
+                 fabs(this->GetPhyAxisMachPosFeedback(phy_axis) - mach_pos));
+    }
+    m_p_mi_comm->SendAxisMLK(phy_axis+1, 0);
 }
 
 /**
@@ -775,6 +814,7 @@ void ChannelEngine::SetMiHandwheelTrace(bool flag, uint8_t chn){
 
     cmd.data.data[0] = flag?0x10:0x00;
     cmd.data.data[1] = this->m_p_general_config->hw_rev_trace;   //手轮反向引导使能
+    cmd.data.data[2] = 0;
 
     cmd.data.axis_index = NO_AXIS;
     cmd.data.reserved = chn;   //通道，从0开始
@@ -794,6 +834,23 @@ void ChannelEngine::SetMiHandwheelTrace(bool flag, uint8_t chn){
     ////		printf("SetMiHandwheelTrace 2 : %hhu\n", cmd.data.reserved);
     //	}
 
+}
+
+void ChannelEngine::SetMiHandwheelInsert(bool flag, uint8_t chn){
+    g_ptr_trace->PrintTrace(TRACE_INFO, CHANNEL_ENGINE_SC, "SetMiHandwheelTrace: %hhu， curgroup=%hhu\n", flag, m_n_cur_chn_group_index);
+    MiCmdFrame cmd;
+    memset(&cmd, 0x00, sizeof(cmd));
+    cmd.data.cmd = CMD_MI_SET_HANDWHEEL_TRACE;
+
+    cmd.data.data[0] = 0x00;
+    cmd.data.data[1] = this->m_p_general_config->hw_rev_trace;
+    cmd.data.data[2] = flag?0x10:0x00;
+
+    cmd.data.axis_index = NO_AXIS;
+    cmd.data.reserved = chn;   //通道，从0开始
+
+
+    this->m_p_mi_comm->WriteCmd(cmd);
 }
 
 /**
@@ -1669,11 +1726,11 @@ void ChannelEngine::ProcessMiCmd(MiCmdFrame &cmd){
         this->ProcessMiGetESBCmd(cmd);
         break;
     case CMD_MI_READY:	//MI准备好
-        printf("get CMD_MI_READY, module_mask=0x%hhu\n", g_sys_state.module_ready_mask);
+        ScPrintf("get CMD_MI_READY, module_mask=0x%hhu\n", g_sys_state.module_ready_mask);
         g_sys_state.module_ready_mask |= MI_READY;
         if((g_sys_state.module_ready_mask & NC_READY) == NC_READY){
             g_sys_state.system_ready = true;
-            this->ServoOn();
+            SetServoState(m_cur_svf);
         }
 
         this->SetWorkMode(this->m_p_channel_control[0].GetChnWorkMode());
@@ -1808,7 +1865,7 @@ void ChannelEngine::ProcessGetCurAxisEncodeRsp(MiCmdFrame &cmd){
  * @param cmd : mi指令包
  */
 void ChannelEngine::ProcessSetAxisRefRsp(MiCmdFrame &cmd){
-    uint8_t axis = cmd.data.axis_index-1;
+    uint8_t  axis = cmd.data.axis_index-1;
     printf("ChannelEngine::ProcessSetAxisRefRsp, axis = 0x%hu\n", axis);
     if(cmd.data.data[0] == FAILED){
         printf("axis [%hhu] set ref point failed!\n", cmd.data.axis_index);
@@ -5020,6 +5077,48 @@ uint32_t ChannelEngine::GetPmcAxisRapidSpeed(uint8_t axis){
     return this->m_p_axis_config[axis].rapid_speed;
 }
 
+void ChannelEngine::SetJPState(uint8_t chn, uint8_t JP, uint8_t last_JP, ChnWorkMode mode){
+
+    for(int i = 0; i < m_p_channel_config[chn].chn_axis_count; i++){
+        bool flag_now = (JP & (0x01 << i));
+        bool flag_last = (last_JP & (0x01 << i));
+        if(flag_now == flag_last)
+            continue;
+
+        uint8_t chn_axis;
+        GetAxisChannel(m_p_channel_config[chn].chn_axis_phy[i]-1,chn_axis);
+        // 轴正向移动按下
+        if(flag_now){
+            SetCurAxis(chn, chn_axis);
+            ManualMove(DIR_POSITIVE);
+
+            if(mode == MANUAL_MODE){
+            }
+        }else if(mode == MANUAL_MODE){ // 轴正向移动松开，并且为手动连续模式
+            ManualMoveStop(m_p_channel_config[chn].chn_axis_phy[i]-1);
+        }
+    }
+}
+
+void ChannelEngine::SetJNState(uint8_t chn, uint8_t JN, uint8_t last_JN, ChnWorkMode mode){
+    for(int i = 0; i < m_p_channel_config[chn].chn_axis_count; i++){
+        bool flag_now = (JN & (0x01 << i));
+        bool flag_last = (last_JN & (0x01 << i));
+        if(flag_now == flag_last)
+            continue;
+
+        uint8_t chn_axis;
+        GetAxisChannel(m_p_channel_config[chn].chn_axis_phy[i]-1,chn_axis);
+        // 轴负向移动按下
+        if(flag_now){
+            SetCurAxis(chn, chn_axis);
+            ManualMove(DIR_NEGATIVE);
+        }else if(mode == MANUAL_MODE){ // 轴正向移动松开，并且为手动连续模式
+            ManualMoveStop(m_p_channel_config[chn].chn_axis_phy[i]-1);
+        }
+    }
+}
+
 /**
  * @brief 手动移动
  * @param dir : 运动方向
@@ -7342,19 +7441,20 @@ void ChannelEngine::SendPmcRegValue(PmcRegSection sec, uint16_t index, uint16_t 
  */
 void ChannelEngine::ServoOn(){
     // 对除主轴外的所有轴上使能
-    MiCmdFrame cmd;
-    memset(&cmd, 0x00, sizeof(cmd));
-    cmd.data.cmd = CMD_MI_OPERATE;
-    cmd.data.data[0] = MOTOR_ON_FLAG;
-    cmd.data.data[1] = 1;
+    SetServoState(m_cur_svf);
+//    MiCmdFrame cmd;
+//    memset(&cmd, 0x00, sizeof(cmd));
+//    cmd.data.cmd = CMD_MI_OPERATE;
+//    cmd.data.data[0] = MOTOR_ON_FLAG;
+//    cmd.data.data[1] = 1;
 
-    for(int i = 0; i < this->m_p_general_config->axis_count; i++){
-        if(m_p_axis_config[i].axis_type == AXIS_SPINDLE)
-            continue;
-        cmd.data.axis_index = i+1;
-        this->m_p_mi_comm->WriteCmd(cmd);
+//    for(int i = 0; i < this->m_p_general_config->axis_count; i++){
+//        if(m_p_axis_config[i].axis_type == AXIS_SPINDLE)
+//            continue;
+//        cmd.data.axis_index = i+1;
+//        this->m_p_mi_comm->WriteCmd(cmd);
 
-    }
+//    }
 }
 
 /**
@@ -7362,21 +7462,21 @@ void ChannelEngine::ServoOn(){
  */
 void ChannelEngine::ServoOff(){
     //对除主轴外的所有轴下使能
+    SetServoState(0xFF);
+//    MiCmdFrame cmd;
+//    memset(&cmd, 0x00, sizeof(cmd));
+//    cmd.data.cmd = CMD_MI_OPERATE;
+//    cmd.data.data[0] = MOTOR_ON_FLAG;
+//    cmd.data.data[1] = 0;
 
-    MiCmdFrame cmd;
-    memset(&cmd, 0x00, sizeof(cmd));
-    cmd.data.cmd = CMD_MI_OPERATE;
-    cmd.data.data[0] = MOTOR_ON_FLAG;
-    cmd.data.data[1] = 0;
+//    this->m_p_mi_comm->WriteCmd(cmd);
 
-    this->m_p_mi_comm->WriteCmd(cmd);
-
-    for(int i = 0; i < this->m_p_general_config->axis_count; i++){
-        if(m_p_axis_config[i].axis_type == AXIS_SPINDLE)
-            continue;
-        cmd.data.axis_index = i+1;
-        this->m_p_mi_comm->WriteCmd(cmd);
-    }
+//    for(int i = 0; i < this->m_p_general_config->axis_count; i++){
+//        if(m_p_axis_config[i].axis_type == AXIS_SPINDLE)
+//            continue;
+//        cmd.data.axis_index = i+1;
+//        this->m_p_mi_comm->WriteCmd(cmd);
+//    }
 }
 
 
@@ -7694,7 +7794,7 @@ void ChannelEngine::Emergency(uint8_t chn){
 
 #ifndef USES_WOOD_MACHINE
     //通知MI下伺服
-    this->ServoOff();
+    SetServoState(0xFF);
 #endif
 
     //急停处理
@@ -7867,7 +7967,10 @@ bool ChannelEngine::RefreshMiStatusFun(){
 
         this->m_p_mi_comm->ReadServoOnState(this->m_n_phy_axis_svo_on);
         this->CheckAxisSrvOn();
-
+//        if(!m_servo_ready){
+//            usleep(8000);
+//            continue;
+//        }
 
         if(!this->m_b_power_off){  //掉电后不处理
             this->ProcessPmcSignal();
@@ -8040,7 +8143,7 @@ bool ChannelEngine::RefreshMiStatusFun(){
 #ifdef USES_EMERGENCY_DEC_STOP
         if(this->m_b_delay_servo_off){
             if(this->m_mask_delay_svo_off == this->m_mask_delay_svo_off_over){
-                this->ServoOff();
+                this->SetServoState(0xFF);
                 this->m_b_delay_servo_off = false;
                 this->m_mask_delay_svo_off = 0;
                 this->m_mask_delay_svo_off_over = 0;
@@ -8118,6 +8221,32 @@ void ChannelEngine::ProcessPmcSignal(){
         f_reg_last = &m_f_reg_last.bits[i];
         ctrl = &m_p_channel_control[i];
 
+        ChnWorkMode mode = INVALID_MODE;
+        if(g_reg->MD == 0){  //MDA
+            mode = MDA_MODE;
+        }else if(g_reg->MD == 1){   //自动
+            mode = AUTO_MODE;
+        }else if(g_reg->MD == 2){   //手轮
+            mode = MPG_MODE;
+        }else if(g_reg->MD == 3){   //编辑
+            mode = EDIT_MODE;
+        }else if(g_reg->MD == 4){   //步进
+            mode = MANUAL_STEP_MODE;
+        }else if(g_reg->MD == 5){   //JOG
+            mode = MANUAL_MODE;
+        }else if(g_reg->MD == 6){   //原点模式
+            mode = REF_MODE;
+        }else{
+            printf("ERROR:Invalid work mode signal:MD=%hhu\n", g_reg->MD);
+        }
+        //方式选择信号
+        if(g_reg->MD != g_reg_last->MD){
+            if(mode != INVALID_MODE){
+                this->SetWorkMode(mode);
+                m_sync_axis_ctrl->InputMode(mode);
+            }
+        }
+
 #ifdef USES_PHYSICAL_MOP
         if(g_reg->_ESP == 0 && !m_b_emergency){ //进入急停
             f_reg->RST = 1;
@@ -8129,8 +8258,10 @@ void ChannelEngine::ProcessPmcSignal(){
         }
 
         // 伺服关断信号
+
         if(g_reg_last->SVF != g_reg->SVF){
-            SetServoState(g_reg->SVF);
+            SetServoState(g_reg->SVF, 1);
+            m_cur_svf = g_reg->SVF;
         }
 
         // 处理G信号 切换当前通道
@@ -8184,34 +8315,6 @@ void ChannelEngine::ProcessPmcSignal(){
         // 某个轴机械锁住信号发生了改变
         if(g_reg->MLKI != g_reg_last->MLKI && !g_reg->MLK){
             SetMLKState(g_reg->MLKI);
-        }
-
-        //#ifdef USES_PHYSICAL_MOP
-        //方式选择信号
-        if(g_reg->MD != g_reg_last->MD){
-            //			printf("PMC SIGNAL -----> %d\n", g_reg->MD);
-            ChnWorkMode mode = INVALID_MODE;
-            if(g_reg->MD == 0){  //MDA
-                mode = MDA_MODE;
-            }else if(g_reg->MD == 1){   //自动
-                mode = AUTO_MODE;
-            }else if(g_reg->MD == 2){   //手轮
-                mode = MPG_MODE;
-            }else if(g_reg->MD == 3){   //编辑
-                mode = EDIT_MODE;
-            }else if(g_reg->MD == 4){   //步进
-                mode = MANUAL_STEP_MODE;
-            }else if(g_reg->MD == 5){   //JOG
-                mode = MANUAL_MODE;
-            }else if(g_reg->MD == 6){   //原点模式
-                mode = REF_MODE;
-            }else{
-                printf("ERROR:Invalid work mode signal:MD=%hhu\n", g_reg->MD);
-            }
-            if(mode != INVALID_MODE){
-                this->SetWorkMode(mode);
-                m_sync_axis_ctrl->InputMode(mode);
-            }
         }
 
         if(g_reg->SYNC != g_reg_last->SYNC){
@@ -8327,6 +8430,15 @@ void ChannelEngine::ProcessPmcSignal(){
                 this->SetFuncState(i, FS_HANDWHEEL_CONTOUR, 0);
         }
 
+        if(g_reg->HSIA != g_reg_last->HSIA){
+            if(g_reg->HSIA == 0){
+                this->SetMiHandwheelInsert(false, i);
+            }else if(g_reg->HSIA == 1){
+                this->SetMiHandwheelInsert(true, i);
+            }else
+                SetMiHandwheelTrace(true, i);
+        }
+
 
         //手动步长信号  MP
         if(g_reg->MP != g_reg_last->MP){
@@ -8355,166 +8467,16 @@ void ChannelEngine::ProcessPmcSignal(){
         if(g_reg->ROV != g_reg_last->ROV)
             this->SetRapidRatio(i, g_reg->ROV);
 
-        //手动轴进给
-        if(g_reg->MD == 4){   //步进
-            //轴1
-            if(g_reg->JP1 && g_reg_last->JP1 == 0){
-                this->SetCurAxis(i, 0);
-                this->ManualMove(DIR_POSITIVE);
-            }
-            if(g_reg->JN1 && g_reg_last->JN1 == 0){
-                this->SetCurAxis(i, 0);
-                this->ManualMove(DIR_NEGATIVE);
-            }
-            //轴2
-            if(g_reg->JP2 && g_reg_last->JP2 == 0){
-                this->SetCurAxis(i, 1);
-                this->ManualMove(DIR_POSITIVE);
-            }
-            if(g_reg->JN2 && g_reg_last->JN2 == 0){
-                this->SetCurAxis(i, 1);
-                this->ManualMove(DIR_NEGATIVE);
-            }
-            //轴3
-            if(g_reg->JP3 && g_reg_last->JP3 == 0){
-                this->SetCurAxis(i, 2);
-                this->ManualMove(DIR_POSITIVE);
-            }
-            if(g_reg->JN3 && g_reg_last->JN3 == 0){
-                this->SetCurAxis(i, 2);
-                this->ManualMove(DIR_NEGATIVE);
-            }
-            //轴4
-            if(g_reg->JP4 && g_reg_last->JP4 == 0){
-                this->SetCurAxis(i, 3);
-                this->ManualMove(DIR_POSITIVE);
-            }
-            if(g_reg->JN4 && g_reg_last->JN4 == 0){
-                this->SetCurAxis(i, 3);
-                this->ManualMove(DIR_NEGATIVE);
-            }
-            //轴5
-            if(g_reg->JP5 && g_reg_last->JP5 == 0){
-                this->SetCurAxis(i, 4);
-                this->ManualMove(DIR_POSITIVE);
-            }
-            if(g_reg->JN5 && g_reg_last->JN5 == 0){
-                this->SetCurAxis(i, 4);
-                this->ManualMove(DIR_NEGATIVE);
-            }
-            //轴6
-            if(g_reg->JP6 && g_reg_last->JP6 == 0){
-                this->SetCurAxis(i, 5);
-                this->ManualMove(DIR_POSITIVE);
-            }
-            if(g_reg->JN6 && g_reg_last->JN6 == 0){
-                this->SetCurAxis(i, 5);
-                this->ManualMove(DIR_NEGATIVE);
-            }
-        }else if(g_reg->MD == 5){  //JOG
-            //轴1
-            if(g_reg->JP1 != g_reg_last->JP1){
-                if(g_reg->JP1){
-                    this->SetCurAxis(i, 0);
-                    this->ManualMove(DIR_POSITIVE);
-                }else{
-                    this->ManualMoveStop(0);
-                }
-            }
-            if(g_reg->JN1 != g_reg_last->JN1){
-                if(g_reg->JN1){
-                    this->SetCurAxis(i, 0);
-                    this->ManualMove(DIR_NEGATIVE);
-                }else{
-                    this->ManualMoveStop(0);
-                }
-            }
-            //轴2
-            if(g_reg->JP2 != g_reg_last->JP2){
-                if(g_reg->JP2){
-                    this->SetCurAxis(i, 1);
-                    this->ManualMove(DIR_POSITIVE);
-                }else{
-                    this->ManualMoveStop(1);
-                }
-            }
-            if(g_reg->JN2 != g_reg_last->JN2){
-                if(g_reg->JN2){
-                    this->SetCurAxis(i, 1);
-                    this->ManualMove(DIR_NEGATIVE);
-                }else{
-                    this->ManualMoveStop(1);
-                }
-            }
-            //轴3
-            if(g_reg->JP3 != g_reg_last->JP3){
-                if(g_reg->JP3){
-                    this->SetCurAxis(i, 2);
-                    this->ManualMove(DIR_POSITIVE);
-                }else{
-                    this->ManualMoveStop(2);
-                }
-            }
-            if(g_reg->JN3 != g_reg_last->JN3){
-                if(g_reg->JN3){
-                    this->SetCurAxis(i, 2);
-                    this->ManualMove(DIR_NEGATIVE);
-                }else{
-                    this->ManualMoveStop(2);
-                }
-            }
-            //轴4
-            if(g_reg->JP4 != g_reg_last->JP4){
-                if(g_reg->JP4){
-                    this->SetCurAxis(i, 3);
-                    this->ManualMove(DIR_POSITIVE);
-                }else{
-                    this->ManualMoveStop(3);
-                }
-            }
-            if(g_reg->JN4 != g_reg_last->JN4){
-                if(g_reg->JN4){
-                    this->SetCurAxis(i, 3);
-                    this->ManualMove(DIR_NEGATIVE);
-                }else{
-                    this->ManualMoveStop(3);
-                }
-            }
-            //轴5
-            if(g_reg->JP5 != g_reg_last->JP5){
-                if(g_reg->JP5){
-                    this->SetCurAxis(i, 4);
-                    this->ManualMove(DIR_POSITIVE);
-                }else{
-                    this->ManualMoveStop(4);
-                }
-            }
-            if(g_reg->JN5 != g_reg_last->JN5){
-                if(g_reg->JN5){
-                    this->SetCurAxis(i, 4);
-                    this->ManualMove(DIR_NEGATIVE);
-                }else{
-                    this->ManualMoveStop(4);
-                }
-            }
-            //轴6
-            if(g_reg->JP6 != g_reg_last->JP6){
-                if(g_reg->JP6){
-                    this->SetCurAxis(i, 5);
-                    this->ManualMove(DIR_POSITIVE);
-                }else{
-                    this->ManualMoveStop(5);
-                }
-            }
-            if(g_reg->JN6 != g_reg_last->JN6){
-                if(g_reg->JN6){
-                    this->SetCurAxis(i, 5);
-                    this->ManualMove(DIR_NEGATIVE);
-                }else{
-                    this->ManualMoveStop(5);
-                }
-            }
-        }else if(g_reg->MD == 6){  //原点模式
+
+
+        if(g_reg->JP != g_reg_last->JP){
+            SetJPState(i, g_reg->JP, g_reg_last->JP, mode);
+        }
+        if(g_reg->JN != g_reg_last->JN){
+            SetJNState(i, g_reg->JN, g_reg_last->JN, mode);
+        }
+
+        if(g_reg->MD == 6){  //原点模式
             for(int j = 0; j < 16; j++){
                 if((g_reg->REFE & (0x01<<j)) != 0 && (g_reg_last->REFE & (0x01<<j)) == 0){// 启动轴回零
                     this->ProcessPmcRefRet(j+16*i);

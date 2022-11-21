@@ -64,6 +64,11 @@ class ChannelEngine;   //通道引擎
 #define SHARED_MEM_AXIS_TORQUE(n) (SHARED_MEM_AXIS_MAC_POS_INTP(n)+0x30)   			    //第n轴的实时力矩反馈
 #define SHARED_MEM_AXIS_READ_OVER (SHARED_MEM_AXIS_STATUS_BASE+0x1000)   					//轴数据的读取完成标志
 #define SHARED_MEM_AXIS_WRITE_OVER (SHARED_MEM_AXIS_STATUS_BASE+0x1004)   				    //轴数据的写入完成标志
+#define SHARED_MEM_TAP_ERR(n) (SHARED_MEM_AXIS_MAC_POS_INTP(n)+0x1040)                  //第n个攻丝组的刚性攻丝误差
+#define SHARED_MEM_TAP_READ_OVER (SHARED_MEM_AXIS_STATUS_BASE+0x1240)                  //第n个攻丝组的刚性攻丝误差
+#define SHARED_MEM_TAP_WRITE_OVER (SHARED_MEM_AXIS_STATUS_BASE+0x1244)                  //第n个攻丝组的刚性攻丝误差
+
+
 
 //通道状态寄存器
 
@@ -183,6 +188,7 @@ public:
 	bool ReadPhyAxisSpeed(int32_t *speed, uint8_t index);  	//读取指定物理轴速度
     void ReadPhyAxisEncoder(int64_t *encoder, uint8_t count);   //读取物理轴当前编码器反馈
 	void ReadPmcAxisRemainDis(double *pos, uint8_t count);    //读取PMC轴余移动量
+    void ReadTapErr(int32_t &err,uint8_t group = 0);  // 读取特定攻丝组的攻丝误差
 	bool ReadCmd(MiCmdFrame &data);    //读取指令
 	bool WriteCmd(MiCmdFrame &data, bool resend = false);   //发送指令
 
@@ -208,7 +214,7 @@ public:
     // axis:轴号，从1开始
     // enable: 0:功能关 1:功能开
     void SendOperateCmd(uint16_t opt, uint8_t axis, uint16_t enable);   //发送轴操作指令
-    void SendAxisEnableCmd(uint8_t axis, bool enable);   // 轴上使能
+    void SendAxisEnableCmd(uint8_t axis, bool enable, uint8_t pos_req = 0);   // 轴上使能
     void SendAxisMLK(uint8_t axis, bool MLK);    // 轴机械锁住
 
     // spd_aixs: 主轴轴号，从1开始
@@ -240,7 +246,7 @@ public:
     bool ReadServoWarn(uint64_t &value);			//读取轴伺服告警标志
     bool ReadServoWarnCode(uint8_t axis, uint32_t &value); 	//读取指定轴的伺服告警码
     bool ReadAxisWarnFlag(int8_t &warn);        //读取轴告警标志
-    bool ReadServoOnState(int64_t &value);		//读取轴使能状态
+    bool ReadServoOnState(uint64_t &value);		//读取轴使能状态
     bool ReadTrackErr(uint64_t &value);        //读取轴跟踪误差过大告警
     bool ReadSyncPosErr(uint64_t &value);     //读取同步轴指令偏差过大告警
     bool ReadIntpPosErr(uint64_t &value);      //读取轴位置指令过大告警

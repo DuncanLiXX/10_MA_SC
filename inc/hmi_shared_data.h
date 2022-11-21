@@ -948,10 +948,10 @@ struct HmiChannelRealtimeStatus {
     uint32_t machining_time_total;          //累计加工时间，单位：秒
 	uint32_t line_no;						//当前行号
 
-//#ifdef USES_SPEED_TORQUE_CTRL
     double cur_feedbck_velocity[kMaxAxisChn];			//当前各轴实际速度，单位：mm/min
     double cur_feedbck_torque[kMaxAxisChn];			//当前各轴实际力矩，单位：0.001额定力矩
-//#endif
+
+    int32_t tap_err;                        //刚性攻丝误差 单位：um
 };
 
 
@@ -1557,7 +1557,6 @@ enum FuncStateMask{
 	FS_MACHINE_LOCKED,			//机床锁
 	FS_AUXILIARY_LOCKED, 		//机床辅助锁
 	FS_MANUAL_RAPID				//手动快速
-
 };
 
 

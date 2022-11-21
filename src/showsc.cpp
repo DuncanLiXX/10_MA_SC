@@ -98,49 +98,75 @@ void ShowSc::ProcessPrintThread()
     }
 }
 
+void ShowSc::KeyFormat(string &key)
+{
+    if(key.length() > 25)
+        key = key.substr(0,25);
+    else if(key.length() < 25)
+    {
+        while(key.length() < 25)
+            key.insert(0," ");
+    }
+}
+
+void ShowSc::AddPair(string &s, string key, uint64_t value)
+{
+    KeyFormat(key);
+    s = s + key + "    " + to_string(value) + "\n";
+}
+
 void ShowSc::AddPair(string &s, string key, int64_t value)
 {
-    s = s + key + "\t\t" + to_string(value) + "\n";
+    KeyFormat(key);
+    s = s + key + "    " + to_string(value) + "\n";
 }
 
 void ShowSc::AddPair(string &s, string key, uint32_t value)
 {
-    s = s + key + "\t\t" + to_string(value) + "\n";
+    KeyFormat(key);
+    s = s + key + "    " + to_string(value) + "\n";
 }
 
 void ShowSc::AddPair(string &s, string key, int32_t value)
 {
-    s = s + key + "\t\t" + to_string(value) + "\n";
+    KeyFormat(key);
+    s = s + key + "    " + to_string(value) + "\n";
 }
 
 void ShowSc::AddPair(string &s, string key, uint16_t value)
 {
-    s = s + key + "\t\t" + to_string(value) + "\n";
+    KeyFormat(key);
+    s = s + key + "    " + to_string(value) + "\n";
 }
 
 void ShowSc::AddPair(string &s, string key, int16_t value)
 {
-    s = s + key + "\t\t" + to_string(value) + "\n";
+    KeyFormat(key);
+    s = s + key + "    " + to_string(value) + "\n";
 }
 
 void ShowSc::AddPair(string &s, string key, uint8_t value)
 {
-    s = s + key + "\t\t" + to_string(value) + "\n";
+    KeyFormat(key);
+    s = s + key + "    " + to_string(value) + "\n";
 }
 
 void ShowSc::AddPair(string &s, string key, int8_t value)
 {
-    s = s + key + "\t\t" + to_string(value) + "\n";
+    KeyFormat(key);
+    s = s + key + "    " + to_string(value) + "\n";
 }
 
 void ShowSc::AddPair(string &s, string key, double value)
 {
-    s = s + key + "\t\t" + to_string(value) + "\n";
+    KeyFormat(key);
+    s = s + key + "    " + to_string(value) + "\n";
 }
 
 void ShowSc::AddPair(string &s, string key, string value)
 {
-    s = s + key + "\t\t" + value + "\n";
+    KeyFormat(key);
+    s = s + key + "    " + value + "\n";
 }
 
 void ShowSc::PrintChnStatus()
@@ -325,8 +351,22 @@ void ShowSc::PrintRealtimeData()
         tar_pos_work_s = tar_pos_work_s +
                 to_string(chn_rt_status->tar_pos_work.GetAxisValue(axis)) + " ";
     }
-    tar_pos_work_s = tar_pos_work_s + "]";
-    AddPair(s,"tar_pos_work",tar_pos_work_s);
+
+    string cur_feedbck_velocity_s = "[ ";
+    for(int axis = 0; axis < kMaxAxisChn; axis++){
+        cur_feedbck_velocity_s = cur_feedbck_velocity_s +
+                to_string(chn_rt_status->cur_feedbck_velocity.GetAxisValue(axis)) + " ";
+    }
+    cur_feedbck_velocity_s = cur_feedbck_velocity_s + "]";
+    AddPair(s,"cur_feedbck_velocity",cur_feedbck_velocity_s);
+
+    string cur_feedbck_torque_s = "[ ";
+    for(int axis = 0; axis < kMaxAxisChn; axis++){
+        cur_feedbck_torque_s = cur_feedbck_torque_s +
+                to_string(chn_rt_status->cur_feedbck_torque.GetAxisValue(axis)) + " ";
+    }
+    cur_feedbck_torque_s = cur_feedbck_torque_s + "]";
+    AddPair(s,"cur_feedbck_torque",cur_feedbck_torque_s);
 
     AddPair(s,"spindle_cur_speed",chn_rt_status->spindle_cur_speed);
     AddPair(s,"cur_feed",chn_rt_status->cur_feed);
@@ -334,6 +374,7 @@ void ShowSc::PrintRealtimeData()
     AddPair(s,"machining_time_remains",chn_rt_status->machining_time_remains);
     AddPair(s,"machining_time_total",chn_rt_status->machining_time_total);
     AddPair(s,"line_no",chn_rt_status->line_no);
+    AddPair(s,"tap_err",chn_rt_status->tap_err);
 
     SendMsg(s);
 }
@@ -776,7 +817,7 @@ void ShowSc::PrintFRegState()
         string reg_name_s = "F" + to_string(i) + "\t";
         string reg_value_s = "";
         for(int bit = 7; bit >= 0; bit--){
-            reg_value_s = reg_value_s + to_string((F[i] & (0x01 << bit)))+"\t";
+            reg_value_s = reg_value_s + to_string(bool(F[i] & (0x01 << bit)))+"\t";
         }
         AddPair(s,reg_name_s,reg_value_s);
     }
@@ -796,7 +837,7 @@ void ShowSc::PrintGRegState()
         string reg_name_s = "G" + to_string(i) + "\t";
         string reg_value_s = "";
         for(int bit = 7; bit >= 0; bit--){
-            reg_value_s = reg_value_s + to_string((G[i] & (0x01 << bit)))+"\t";
+            reg_value_s = reg_value_s + to_string(bool(G[i] & (0x01 << bit)))+"\t";
         }
         AddPair(s,reg_name_s,reg_value_s);
     }

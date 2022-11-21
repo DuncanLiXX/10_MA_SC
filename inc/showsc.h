@@ -71,7 +71,10 @@ private:
     // 打印处理线程
     void ProcessPrintThread();
 
+    // key长度修整
+    void KeyFormat(string &key);
     // 根据key和value，格式化后追加到s中
+    void AddPair(string &s,string key,uint64_t value);
     void AddPair(string &s,string key,int64_t value);
     void AddPair(string &s,string key,uint32_t value);
     void AddPair(string &s,string key,int32_t value);
@@ -108,7 +111,7 @@ private:
     PrintType print_type{TypePrintOutput};
     int interval{1000};
 
-    TraceInfo *trace;
+    TraceInfo *trace{nullptr};
 
     ChannelStatusCollect *chn_status{nullptr};  // 通道状态
     ChannelRealtimeStatus *chn_rt_status{nullptr}; // 实时数据
@@ -123,8 +126,8 @@ private:
     SCToolOffsetConfig *tool_offset{nullptr}; // 刀具偏置配置
     SCToolPotConfig *tool_pot{nullptr}; // 刀具信息配置
     FiveAxisConfig *fiveaxis_config{nullptr}; // 五轴配置
-    const FRegBits *F; // F寄存器
-    const GRegBits *G; //G寄存器
+    const FRegBits *F{nullptr}; // F寄存器
+    const GRegBits *G{nullptr}; //G寄存器
     PmcAxisCtrl *pmc_axis_ctrl{nullptr};
     SyncAxisCtrl *sync_axis_ctrl{nullptr};
 

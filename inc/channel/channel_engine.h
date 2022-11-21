@@ -289,6 +289,8 @@ void SetMcArmComm(MCArmCommunication *comm){this->m_p_mc_arm_comm = comm;}   //É
 
     void PrintDebugInfo();		//Êä³öµ÷ÊÔÊı¾İ
 
+    PmcAxisCtrl *GetPmcAxisCtrl(){return m_pmc_axis_ctrl;}
+
 private:	//Ë½ÓĞ³ÉÔ±º¯Êı
 	ChannelEngine();   //¹¹Ôìº¯Êı
 
@@ -364,6 +366,8 @@ private:	//Ë½ÓĞ³ÉÔ±º¯Êı
 
 	void ProcessHmiNotifyGraphCmd(HMICmdFrame &cmd);    //´¦ÀíHMIÍ¨ÖªÍ¼ĞÎÄ£Ê½ÃüÁî
     void ProcessHmiHandWheelCmd(HMICmdFrame &cmd);
+
+    void ProcessHmiSetAllCoordCmd(HMICmdFrame &cmd);    //HMIÏòSCÉèÖÃµ±Ç°Í¨µÀµÄËùÓĞ¹¤¼ş×ø±êÏµ
 
 	void SendHmiUpdateStatus(uint8_t total_step, uint8_t cur_step);  //¸øHMI·¢ËÍÉı¼¶×´Ì¬
 

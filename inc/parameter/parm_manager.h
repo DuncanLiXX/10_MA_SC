@@ -77,7 +77,11 @@ public:
 	void UpdateToolPotConfig(uint16_t chn_index, bool save = true);    //更新刀具信息
 	void UpdateCoordConfig(uint16_t chn_index, uint8_t index, HmiCoordConfig &cfg, bool active);    //更新工件坐标系
 	void UpdateExCoordConfig(uint16_t chn_index, uint8_t index, HmiCoordConfig &cfg, bool active);	//更新扩展工件坐标系
-	bool ActiveCoordParam(uint8_t chn_index);   //激活待生效的工件坐标系更改
+
+    void UpdateAllCoordConfig(uint16_t chn_index, double val, bool active); //更新所有工件坐标系
+    void UpdateAllExCoordConfig(uint16_t chn_index, double val, bool active, int count);    //更新所有扩展工件坐标系
+
+    bool ActiveCoordParam(uint8_t chn_index);   //激活待生效的工件坐标系更改
 	bool ActiveToolOffsetParam(uint8_t chn_index);   //激活待生效的刀具偏置
 
 	bool UpdateAxisParam(uint8_t axis_index, uint32_t param_no, ParamValue &value);	//更新轴参数

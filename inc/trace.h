@@ -97,7 +97,8 @@ enum PrintType{
     TypeWarning =               15,//警告
     TypeFRegState =             16,//F寄存器
     TypeGRegState =             17,//G寄存器
-    TypePrintOutput =           18,//print函数的打印输出
+    TypePrintOutput =           18,//print输出
+    TypePmcAxis =               19,//PMC轴状态
 };
 
 namespace mosqpp {

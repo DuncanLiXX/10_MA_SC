@@ -2936,7 +2936,10 @@ bool Compiler::RunLineMsg(RecordMsg *msg) {
 		return true;
 	LineMsg *tmp = (LineMsg *) msg;
 
-	tmp->SetFeed(m_compiler_status.mode.f_mode);  //设置进给速度
+    double feed = m_compiler_status.mode.f_mode;
+    if(feed > m_p_channel_config->g01_max_speed)
+        feed = m_p_channel_config->g01_max_speed;
+    tmp->SetFeed(feed);  //设置进给速度
 
 	//处理增量编程指令
 	if(m_compiler_status.mode.gmode[3] == G91_CMD){  //增量编程模式

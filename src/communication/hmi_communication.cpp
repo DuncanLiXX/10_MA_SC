@@ -986,6 +986,7 @@ int HMICommunication::ProcessHmiCmd(){
             case CMD_HMI_GET_HANDWHEEL_INFO:      //HMI向SC获取手轮信息
             case CMD_HMI_SET_HANDWHEEL_INFO:      //HMI向SC设置手轮信息
             case CMD_HMI_GET_ERROR_INFO:          //HMI向SC获取错误信息
+            case CMD_HMI_SET_ALL_COORD:           //HMI向SC设置当前通道的所有工件坐标系
 #ifdef USES_GRIND_MACHINE
 			case CMD_SC_MECH_ARM_ERR:         //HMI响应机械手告警指令
 #endif

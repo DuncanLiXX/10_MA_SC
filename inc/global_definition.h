@@ -66,7 +66,7 @@
 
 
 //版本信息
-#define ADX_SC_VERSION "P0.3.03" //SC模块软件版本号
+#define ADX_SC_VERSION "P0.3.04" //SC模块软件版本号
 
 //文件目录定义
 #define PATH_NC_FILE "/cnc/nc_files/"    //NC加工文件目录0
@@ -97,7 +97,7 @@
 #define PATH_BACK_DISK_CMD "/cnc/disk/scripts/scback.sh" //一键备份SC脚本
 
 #define PATH_SIMULATE_DATA "/cnc/tmp/simulate_data.dat"   //仿真数据文件
-
+#define PATH_TAP_STATE "/cnc/config/tap_state.dat"      //攻丝状态数据文件
 
 //配置文件路径
 #define SYS_CONFIG_FILE "/cnc/config/sys_config.ini"   //系统配置文件
@@ -407,11 +407,11 @@ enum AxisInterfaceType{
 };
 
 enum MotorFeedBackMode{
-	INCREMENTAL_ENCODER = 0,   //增量式编码器
-	ABSOLUTE_ENCODER_YASAKAWA,	//绝对式编码器，安川，ABZ反馈
-	ABSOLUTE_ENCODER_PANASONIC, //绝对式编码器，松下,U485反馈
-	LINEAR_ENCODER,				//光栅尺
-	NO_ENCODER                  //无反馈
+    INCREMENTAL_ENCODER = 0,   //增量式编码器（增量式，单圈绝对式）
+    ABSOLUTE_ENCODER_PANASONIC, //绝对式编码器，松下,U485反馈（绝对式）
+    ABSOLUTE_ENCODER_YASAKAWA,	//绝对式编码器，安川，ABZ反馈(删除)
+    LINEAR_ENCODER,				//光栅尺（删除）
+    NO_ENCODER                  //无反馈（删除）
 };
 
 

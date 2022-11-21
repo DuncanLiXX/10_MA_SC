@@ -2815,6 +2815,9 @@ void ChannelEngine::ProcessHmiCmd(HMICmdFrame &cmd){
     case CMD_HMI_GET_ERROR_INFO:
         this->ProcessHmiGetErrorCmd(cmd);
         break;
+    case CMD_HMI_SET_ALL_COORD: //设置当前通道的所有工件坐标系
+        ProcessHmiSetAllCoordCmd(cmd);
+        break;
     default:
         g_ptr_trace->PrintTrace(TRACE_WARNING, CHANNEL_ENGINE_SC, "不支持的HMI指令[%d]", cmd.cmd);
         break;
@@ -3289,6 +3292,29 @@ void ChannelEngine::ProcessHmiHandWheelCmd(HMICmdFrame &cmd)
     this->m_p_hmi_comm->SendCmd(cmd);
 }
 
+/**
+ * @brief HMI向SC设置当前通道的所有工件坐标系
+ * @param cmd : HMI指令包
+ */
+void ChannelEngine::ProcessHmiSetAllCoordCmd(HMICmdFrame &cmd)
+{
+    if(cmd.channel_index < this->m_p_general_config->chn_count)
+    {
+        cmd.frame_number |= 0x8000;
+        double dVal;
+        memcpy(&dVal, cmd.data, cmd.data_len);
+
+        bool ret1, ret2;
+        ret1 = m_p_channel_control[cmd.channel_index].UpdateAllCoord(dVal);
+        ret2 = m_p_channel_control[cmd.channel_index].UpdateAllExCoord(dVal, m_p_channel_config[cmd.channel_index].ex_coord_count);
+        m_p_channel_control[cmd.channel_index].SetMcCoord(true);
+        if (ret1 && ret2)
+            this->m_p_hmi_comm->SendCmd(cmd);
+    }
+    else
+        g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "命令[%d]通道号非法！%d", cmd.cmd, cmd.channel_index);
+
+}
 
 /**
  * @brief 处理HMI轴移动指令
@@ -4898,15 +4924,19 @@ void ChannelEngine::SetManualStep(uint8_t chn, uint8_t step){
     switch(step){
     case 0:
         step = MANUAL_STEP_1;
+        m_p_mi_comm->SendMpgStep(chn,true,1);
         break;
     case 1:
         step = MANUAL_STEP_10;
+        m_p_mi_comm->SendMpgStep(chn,true,10);
         break;
     case 2:
         step = MANUAL_STEP_100;
+        m_p_mi_comm->SendMpgStep(chn,true,m_p_channel_config[chn].mpg_level3_step);
         break;
     case 3:
         step = MANUAL_STEP_1000;
+        m_p_mi_comm->SendMpgStep(chn,true,m_p_channel_config[chn].mpg_level4_step);
         break;
     }
 
@@ -7735,13 +7765,13 @@ void ChannelEngine::SystemReset(){
     printf("system reset\n");
     //各通道复位
     for(int i = 0; i < this->m_p_general_config->chn_count; i++){
-        // 攻丝状态禁止复位
-        if(this->m_p_channel_control[0].GetSpdCtrl()->isTapEnable()){
-            CreateError(ERR_SPD_TAP_RATIO_FAULT,
-                        WARNING_LEVEL,
-                        CLEAR_BY_MCP_RESET);
-            return;
-        }
+//        // 攻丝状态禁止复位
+//        if(this->m_p_channel_control[0].GetSpdCtrl()->isTapEnable()){
+//            CreateError(ERR_SPD_RESET_IN_TAP,
+//                        WARNING_LEVEL,
+//                        CLEAR_BY_MCP_RESET);
+//            return;
+//        }
 
         this->m_p_pmc_reg->FReg().bits[i].RST = 1;  //复位信号
         this->m_p_channel_control[i].Reset();
@@ -8356,9 +8386,13 @@ void ChannelEngine::ProcessPmcSignal(){
         if(g_reg->ORCMA != g_reg_last->ORCMA){
             ctrl->GetSpdCtrl()->InputORCMA(g_reg->ORCMA);
         }
-
+        // 主轴选通信号
         if(f_reg->SF == 1 && g_reg->FIN == 1){
             f_reg->SF = 0;
+        }
+        // 攻丝回退
+        if(g_reg->RTNT != g_reg_last->RTNT){
+            ctrl->GetSpdCtrl()->InputRTNT(g_reg->RTNT);
         }
 
         //通知类型的信号，只保留一个周期
@@ -8371,6 +8405,9 @@ void ChannelEngine::ProcessPmcSignal(){
 
             if(f_reg_last->SST == 1)    // 复位零速信号
                 f_reg->SST = 0;
+
+            if(f_reg_last->RTPT == 1)   // 攻丝回退结束信号
+                f_reg->RTPT = 0;
 
         }
 
@@ -8910,8 +8947,20 @@ void ChannelEngine::ProcessPmcAxisCtrl(){
         int32_t dis[4] = {greg->EIDA, greg->EIDB, greg->EIDC, greg->EIDD};
         uint16_t spd[4] = {greg->EIFA, greg->EIFB, greg->EIFC, greg->EIFD};
         for(uint8_t j = 0; j < 4; j++){
+            if(m_pmc_axis_ctrl[i*4+j].axis_list.size() == 0)
+                continue;
 
-            if(!m_pmc_axis_ctrl[i*4+j].Active(eax[j])){//转换失败，告警
+            // 当前存在待读入的命令
+            // 避免选通信号一打开就直接执行命令，需要报警
+            if(ebuf[j] != ebsy[j] && !m_pmc_axis_ctrl[4*i+j].IsActive()
+                    && eax[j]){
+                this->m_error_code = ERR_PMC_AXIS_CTRL_CHANGE;
+                CreateError(ERR_PMC_AXIS_CTRL_CHANGE, ERROR_LEVEL, CLEAR_BY_MCP_RESET, i*4+j+1, CHANNEL_ENGINE_INDEX);
+                return;
+            }
+
+            // 轴正在移动的状态下打开选通信号，报警
+            if(!m_pmc_axis_ctrl[i*4+j].Active(eax[j])){
                 this->m_error_code = ERR_PMC_AXIS_CTRL_CHANGE;
                 CreateError(ERR_PMC_AXIS_CTRL_CHANGE, ERROR_LEVEL, CLEAR_BY_MCP_RESET, i*4+j+1, CHANNEL_ENGINE_INDEX);
                 return;
@@ -11062,7 +11111,6 @@ void ChannelEngine::ReturnRefPoint(){
                 continue;
             count++;
         }
-
         if(this->m_p_axis_config[i].axis_interface == VIRTUAL_AXIS){// 虚拟轴
             this->AxisFindRefNoZeroSignal(i);   // 直接设置零点
 
@@ -11076,9 +11124,9 @@ void ChannelEngine::ReturnRefPoint(){
                 }else{
                     this->AxisFindRefNoZeroSignal(i);  // 直接设置零点
                 }
-            }else if(this->m_p_axis_config[i].feedback_mode == INCREMENTAL_ENCODER) {   //增量式编码器
+            /*}else if(this->m_p_axis_config[i].feedback_mode == INCREMENTAL_ENCODER) {   //增量式编码器
                 if(this->m_p_axis_config[i].ret_ref_mode == 1){//  总线有基准回零
-                    this->EcatIncAxisFindRefWithZeroSignal(i);
+                    this->EcatIncAxisFindRefWithZeroSignal(i);                          //增量式编码器只支持有挡块回零
                 }else if(this->m_p_axis_config[i].ret_ref_mode == 2){//  总线无基准回零
                     this->EcatIncAxisFindRefNoZeroSignal(i);
                 }
@@ -11091,6 +11139,17 @@ void ChannelEngine::ReturnRefPoint(){
             }else if(this->m_p_axis_config[i].ret_ref_mode == 0 &&
                     (this->m_p_axis_config[i].feedback_mode == ABSOLUTE_ENCODER_YASAKAWA || this->m_p_axis_config[i].feedback_mode == ABSOLUTE_ENCODER_PANASONIC)){  //绝对值编码器并且禁止回零
                 this->AxisFindRefNoZeroSignal(i);   // 直接设置零点
+            }*/
+            }else if(this->m_p_axis_config[i].feedback_mode == INCREMENTAL_ENCODER) {   //增量式编码器
+                this->EcatIncAxisFindRefWithZeroSignal(i);//增量式编码器只支持有挡块回零
+            }
+            else if (this->m_p_axis_config[i].absolute_ref_mode == 0) //回零标记点设定方式
+            {
+                this->AxisFindRefNoZeroSignal(i);
+            }
+            else if (this->m_p_axis_config[i].absolute_ref_mode == 1) //无挡块回零方式
+            {
+                this->EcatAxisFindRefNoZeroSignal(i);
             }
         }else if(this->m_p_axis_config[i].axis_interface == ANALOG_AXIS){   // 非总线轴
             //设置回零标志

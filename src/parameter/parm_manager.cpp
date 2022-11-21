@@ -1292,8 +1292,7 @@ bool ParmManager::ReadAxisConfig(){
 
 			m_sc_axis_config[i].motor_dir = m_ini_axis->GetIntValueOrDefault(sname, "motor_dir", 1);
 			m_sc_axis_config[i].feedback_mode = m_ini_axis->GetIntValueOrDefault(sname, "feedback_mode", 0);
-            //m_sc_axis_config[i].ret_ref_mode = m_ini_axis->GetIntValueOrDefault(sname, "ret_ref_mode", 0);
-            m_sc_axis_config[i].ret_ref_mode = 1;
+            m_sc_axis_config[i].ret_ref_mode = m_ini_axis->GetIntValueOrDefault(sname, "ret_ref_mode", 0);
             m_sc_axis_config[i].absolute_ref_mode = m_ini_axis->GetIntValueOrDefault(sname, "absolute_ref_mode", 0);
 			m_sc_axis_config[i].ret_ref_dir = m_ini_axis->GetIntValueOrDefault(sname, "ret_ref_dir", 0);
             //m_sc_axis_config[i].ret_ref_change_dir = m_ini_axis->GetIntValueOrDefault(sname, "ret_ref_change_dir", 0);
@@ -3327,6 +3326,95 @@ void ParmManager::UpdateExCoordConfig(uint16_t chn_index, uint8_t index, HmiCoor
 
 	this->m_ini_ex_coord->Save();
 }
+
+/**
+ * @brief 更新所有工件坐标系
+ * @param chn_index ： 通道索引号
+ * @param val : 设定值
+ * @param active : true--更新    false--放入待更新队列
+ */
+void ParmManager::UpdateAllCoordConfig(uint16_t chn_index, double val, bool active)
+{
+    char sname[32];	//section name
+    char kname[64];	//key name
+
+
+    memset(sname, 0x00, sizeof(sname));
+    memset(kname, 0x00, sizeof(kname));
+
+    sprintf(sname, "channel_%hu", chn_index);
+
+    HmiCoordConfig cfg;
+    for (int i = 0; i < kMaxAxisChn; ++i)
+    {
+        cfg.offset[i] = val;
+    }
+    for(int index = 0; index < kWorkCoordCount; ++index) {
+        if(active){
+            memcpy(&m_sc_coord_config[chn_index*kWorkCoordCount+index], &cfg, sizeof(SCCoordConfig));		//更新当前参数
+        }
+        else
+        {//加入待生效队列
+            CoordUpdate data;
+            data.chn_index = chn_index;
+            data.coord_index = index;
+            memcpy(&data.value, &cfg, sizeof(SCCoordConfig));
+            this->m_list_coord->Append(data);
+        }
+        for(int i = 0; i < kMaxAxisChn; i++){
+            sprintf(kname, "offset_%d_%d", index, i);
+            m_ini_coord->SetDoubleValue(sname, kname, cfg.offset[i]);
+        }
+    }
+    this->m_ini_coord->Save();
+}
+
+/**
+ * @brief 更新指定个数扩展工件坐标系
+ * @param chn_index ： 通道索引号
+ * @param val : 设定值
+ * @param active : true--更新    false--放入待更新队列
+ * @param count : 指定坐标系个数
+ */
+void ParmManager::UpdateAllExCoordConfig(uint16_t chn_index, double val, bool active, int count)
+{
+    char sname[32];	//section name
+    char kname[64];	//key name
+
+    memset(sname, 0x00, sizeof(sname));
+    memset(kname, 0x00, sizeof(kname));
+
+    sprintf(sname, "channel_%hu", chn_index);
+
+    HmiCoordConfig cfg;
+    for (int i = 0; i < kMaxAxisChn; ++i)
+    {
+        cfg.offset[i] = val;
+    }
+
+    for(int index = 0; index < count; ++index) {
+
+        if(active){
+            memcpy(&m_sc_ex_coord_config[chn_index][index], &cfg, sizeof(SCCoordConfig));		//更新当前参数
+        }
+        else
+        {//加入待生效队列
+            CoordUpdate data;
+            data.chn_index = chn_index;
+            data.coord_index = index;
+            memcpy(&data.value, &cfg, sizeof(SCCoordConfig));
+            this->m_list_coord->Append(data);
+        }
+
+        for(int i = 0; i < kMaxAxisChn; i++){
+            sprintf(kname, "offset_%d_%d", index, i);
+            m_ini_ex_coord->SetDoubleValue(sname, kname, cfg.offset[i]);
+        }
+    }
+    this->m_ini_ex_coord->Save();
+}
+
+void UpdateAllExCoordConfig(uint16_t chn_index, double val);
 
 /**
  * @brief 激活指定通道待生效的工件坐标系更改

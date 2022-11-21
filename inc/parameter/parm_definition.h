@@ -193,7 +193,7 @@ struct SCAxisConfig{
 	uint8_t motor_dir;						//电机旋转方向    0--正转    1--反转
 	uint8_t feedback_mode;					//电机反馈类型    0--增量式    1--绝对式(安川)     2--绝对式(松下)    3--光栅尺
 
-    uint8_t ret_ref_mode;					//回参考点方式      0--禁止   1--有基准    2--无基准     3--驱动回零     4-双基准 //已禁用参数
+    uint8_t ret_ref_mode;					//回参考点方式      0--禁止   1--有基准    2--无基准     3--驱动回零     4-双基准
     uint8_t absolute_ref_mode;              //绝对式电机回零方式 0--回零标记点设定方式    1--无挡块回零方式
 	uint8_t ret_ref_dir;					//回参考点方向		0--负向    1--正向
 	uint8_t ret_ref_change_dir;				//回参考点换向      0--反向    1--同向

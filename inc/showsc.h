@@ -17,12 +17,13 @@ class FRegBits;
 class GRegBits;
 class TraceInfo;
 class PmcAxisCtrl;
+class SyncAxisCtrl;
 
 struct ChannelStatusCollect;
 struct ChannelRealtimeStatus;
 struct ChannelMcStatus;
 
-void ScPrintf(const char *__format,va_list args);
+void ScPrintf(const char * fmt,...);
 
 const std::string SwitchTopic = "/sc/switch";  // 打印类型选择
 const std::string PrintTopic = "/sc/print";    // 打印输出
@@ -38,6 +39,7 @@ public:
 
     // 设置需要打印的数据类型，打印线程会根据类型来打印
     void SetPrintType(PrintType type){print_type = type;}
+    PrintType GetPrintType(){return print_type;}
 
     // 添加各部件
     void AddComponent(ChannelStatusCollect *p){chn_status = p;}
@@ -60,6 +62,7 @@ public:
     void AddComponent(FRegBits *p){F = p;}
     void AddComponent(const GRegBits *p){G = p;}
     void AddComponent(PmcAxisCtrl *p){pmc_axis_ctrl = p;}
+    void AddComponent(SyncAxisCtrl *p){sync_axis_ctrl = p;}
 
     // 发送信息
     void SendMsg(string &s);
@@ -68,7 +71,10 @@ private:
     // 打印处理线程
     void ProcessPrintThread();
 
+    // key长度修整
+    void KeyFormat(string &key);
     // 根据key和value，格式化后追加到s中
+    void AddPair(string &s,string key,uint64_t value);
     void AddPair(string &s,string key,int64_t value);
     void AddPair(string &s,string key,uint32_t value);
     void AddPair(string &s,string key,int32_t value);
@@ -99,12 +105,13 @@ private:
     void PrintFRegState();  // 打印F寄存器
     void PrintGRegState();  // 打印G寄存器
     void PrintPmcAxisCtrl();    // 打印PMC轴信息
+    void PrintSyncAxisCtrl();   // 打印同步轴信息
 
 private:
-    PrintType print_type{TypeNone};
+    PrintType print_type{TypePrintOutput};
     int interval{1000};
 
-    TraceInfo *trace;
+    TraceInfo *trace{nullptr};
 
     ChannelStatusCollect *chn_status{nullptr};  // 通道状态
     ChannelRealtimeStatus *chn_rt_status{nullptr}; // 实时数据
@@ -119,9 +126,10 @@ private:
     SCToolOffsetConfig *tool_offset{nullptr}; // 刀具偏置配置
     SCToolPotConfig *tool_pot{nullptr}; // 刀具信息配置
     FiveAxisConfig *fiveaxis_config{nullptr}; // 五轴配置
-    const FRegBits *F; // F寄存器
-    const GRegBits *G; //G寄存器
+    const FRegBits *F{nullptr}; // F寄存器
+    const GRegBits *G{nullptr}; //G寄存器
     PmcAxisCtrl *pmc_axis_ctrl{nullptr};
+    SyncAxisCtrl *sync_axis_ctrl{nullptr};
 
     bool exit_flag{false};
 };

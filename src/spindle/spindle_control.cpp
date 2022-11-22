@@ -68,7 +68,7 @@ void SpindleControl::InputSCode(uint32_t s_code)
 {
     if(!spindle)
         return;
-    printf("SpindleControl::InputSCode s_code = %d\n");
+    ScPrintf("SpindleControl::InputSCode s_code = %d\n", s_code);
     F->scode_0 = (s_code&0xFF);
     F->scode_1 = ((s_code>>8)&0xFF);
     F->scode_2 = ((s_code>>16)&0xFF);
@@ -93,7 +93,7 @@ void SpindleControl::InputPolar(Spindle::CncPolar polar)
 {
     if(!spindle)
         return;
-    printf("SpindleControl::InputPolar %d\n",polar);
+    ScPrintf("SpindleControl::InputPolar %d\n",polar);
     if(polar == Positive || polar == Negative){
         // 收到正/反转信号
         wait_on = true;
@@ -125,13 +125,14 @@ Mode SpindleControl::GetMode()
     return mode;
 }
 
-bool SpindleControl::IsValid()
+uint8_t SpindleControl::Type()
 {
-    if(!spindle || spindle->axis_interface == 0){
-        return false;
-    }else{
-        return true;
-    }
+    if(!spindle)
+        return 0;
+    else if(spindle->axis_interface == 0)
+        return 1;
+    else
+        return 2;
 }
 
 bool SpindleControl::isTapEnable()
@@ -233,6 +234,8 @@ void SpindleControl::InputSSTP(bool _SSTP)
 {
     if(!spindle)
         return;
+    ScPrintf("SpindleControl::InputSSTP _SSTP = %d\n", _SSTP);
+
     this->_SSTP = _SSTP;
     // 修改主轴使能状态
     if(!_SSTP && SOR)
@@ -250,7 +253,7 @@ void SpindleControl::InputSOR(bool SOR)
 {
     if(!spindle)
         return;
-    printf("InputSOR:SOR = %d\n");
+    ScPrintf("InputSOR:SOR = %d\n",SOR);
     this->SOR = SOR;
     // 修改主轴使能状态
     if(!_SSTP && SOR)
@@ -262,6 +265,7 @@ void SpindleControl::InputSOV(uint8_t SOV)
 {
     if(!spindle)
         return;
+    ScPrintf("SpindleControl::InputSOV SOV = %d\n", SOV);
     this->SOV = SOV;
     UpdateSpindleState();
 }
@@ -270,6 +274,8 @@ void SpindleControl::InputRI(uint16_t RI)
 {
     if(!spindle)
         return;
+    ScPrintf("SpindleControl::InputRI RI = %d\n", RI);
+
     this->RI = RI;
     if(SIND == 1) // 主轴速度由PMC确定时，才需要更新速度
     {
@@ -281,6 +287,8 @@ void SpindleControl::InputSGN(bool SGN)
 {
     if(!spindle)
         return;
+    ScPrintf("SpindleControl::InputSGN SGN = %d\n", SGN);
+
     this->SGN = SGN;
     if(SSIN == 1) // 主轴极性由PMC确定时，才需要更新速度
     {
@@ -292,6 +300,8 @@ void SpindleControl::InputSSIN(bool SSIN)
 {
     if(!spindle)
         return;
+    ScPrintf("SpindleControl::InputSSIN SSIN = %d\n", SSIN);
+
     this->SSIN = SSIN;
     UpdateSpindleState();
 }
@@ -300,6 +310,8 @@ void SpindleControl::InputSIND(bool SIND)
 {
     if(!spindle)
         return;
+    ScPrintf("SpindleControl::InputSIND SIND = %d\n", SIND);
+
     this->SIND = SIND;
     UpdateSpindleState();
 }
@@ -308,6 +320,7 @@ void SpindleControl::InputORCMA(bool ORCMA)
 {
     if(!spindle)
         return;
+    ScPrintf("SpindleControl::InputORCMA ORCMA = %d\n", ORCMA);
 
     // 收到定位信号，向MI发送主轴定位指令
     this->ORCMA = ORCMA;
@@ -332,6 +345,8 @@ void SpindleControl::InputRGTAP(bool RGTAP)
 {
     if(!spindle)
         return;
+    ScPrintf("SpindleControl::InputRGTAP RGTAP = %d\n", RGTAP);
+
     this->RGTAP = RGTAP;
     if(RGTAP)
         StartRigidTap(tap_feed);
@@ -343,6 +358,8 @@ void SpindleControl::InputRGMD(bool RGMD)
 {
     if(!spindle)
         return;
+    ScPrintf("SpindleControl::InputRGMD RGMD = %d\n", RGMD);
+
     this->RGMD = RGMD;
 
     if(RGMD)
@@ -356,6 +373,7 @@ void SpindleControl::InputRTNT(bool RTNT)
     static std::future<void> ans;
     if(!RTNT)
         return;
+    ScPrintf("SpindleControl::InputRTNT RTNT = %d\n", RTNT);
 
     // 加载攻丝状态
     if(SSIN == 1 || SIND == 1 || _SSTP == 0 ||
@@ -384,7 +402,7 @@ void SpindleControl::RspORCMA(bool success)
 {
     if(!spindle)
         return;
-    printf("SpindleControl::RspORCMA : success = %d\n",success);
+    ScPrintf("SpindleControl::RspORCMA : success = %d\n",success);
     // 定位成功，将ORAR置为1，通知PMC定位动作完成
     if(success && ORCMA){
         F->ORAR = 1;
@@ -396,7 +414,7 @@ void SpindleControl::RspCtrlMode(uint8_t axis, Spindle::Mode mode)
     static std::future<void> ans;
     if(!spindle)
         return;
-    printf("RspCtrlMode:axis = %d,mode = %d\n",axis,mode);
+    ScPrintf("RspCtrlMode:axis = %d,mode = %d\n",axis,mode);
     if(axis == phy_axis + 1){
         auto func = std::bind(&SpindleControl::ProcessModeChanged,
                               this, std::placeholders::_1);
@@ -408,7 +426,7 @@ void SpindleControl::RspAxisEnable(uint8_t axis, bool enable)
 {
     if(!spindle)
         return;
-    printf("RspAxisEnable:axis = %d,enable = %d\n",axis,enable);
+    ScPrintf("RspAxisEnable:axis = %d,enable = %d\n",axis,enable);
 
     if(axis == phy_axis+1){
         // 正在等待下使能，并且收到了回复
@@ -725,7 +743,7 @@ void SpindleControl::SendSpdSpeedToMi()
     cmd.data.cmd = CMD_MI_SET_SPD_SPEED;
     cmd.data.axis_index = phy_axis+1;
     cmd.data.data[0] = (int16_t)output;
-    printf("send spindle DA output: %d\n",output);
+    ScPrintf("send spindle DA output: %d\n",output);
     mi->WriteCmd(cmd);
 }
 

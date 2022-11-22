@@ -99,6 +99,7 @@ enum PrintType{
     TypeGRegState =             17,//G¼Ä´æÆ÷
     TypePrintOutput =           18,//printÊä³ö
     TypePmcAxis =               19,//PMCÖá×´Ì¬
+    TypeSyncAxis =              20,//Í¬²½Öá×´Ì¬
 };
 
 namespace mosqpp {

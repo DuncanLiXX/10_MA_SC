@@ -8,6 +8,7 @@
 #include <string>
 #include "spindle_control.h"
 #include "pmc_axis_ctrl.h"
+#include "sync_axis_ctrl.h"
 
 ShowSc::ShowSc()
 {
@@ -23,13 +24,19 @@ ShowSc::~ShowSc()
 
 }
 
-void ScPrintf(const char *__format, va_list args)
+void ScPrintf(const char * fmt,...)
 {
-    char s[128];
-    sprintf(s,__format,args);
-    string str = s;
+    char printf_buf[1024];
+    va_list args;
+    va_start(args,fmt);
+    vsprintf(printf_buf, fmt, args);
+    va_end(args);
+    puts(printf_buf);
     ShowSc &showSc = Singleton<ShowSc>::instance();
-    showSc.SendMsg(str);
+    if(showSc.GetPrintType() != TypePrintOutput)
+        return;
+    std::string s = printf_buf;
+    showSc.SendMsg(s);
 }
 
 void ShowSc::ProcessPrintThread()
@@ -79,6 +86,8 @@ void ShowSc::ProcessPrintThread()
             PrintGRegState();break;
         case TypePmcAxis:
             PrintPmcAxisCtrl();break;
+        case TypeSyncAxis:
+            PrintSyncAxisCtrl();break;
         default:break;
         }
 
@@ -89,49 +98,75 @@ void ShowSc::ProcessPrintThread()
     }
 }
 
+void ShowSc::KeyFormat(string &key)
+{
+    if(key.length() > 25)
+        key = key.substr(0,25);
+    else if(key.length() < 25)
+    {
+        while(key.length() < 25)
+            key.insert(0," ");
+    }
+}
+
+void ShowSc::AddPair(string &s, string key, uint64_t value)
+{
+    KeyFormat(key);
+    s = s + key + "    " + to_string(value) + "\n";
+}
+
 void ShowSc::AddPair(string &s, string key, int64_t value)
 {
-    s = s + key + "\t\t" + to_string(value) + "\n";
+    KeyFormat(key);
+    s = s + key + "    " + to_string(value) + "\n";
 }
 
 void ShowSc::AddPair(string &s, string key, uint32_t value)
 {
-    s = s + key + "\t\t" + to_string(value) + "\n";
+    KeyFormat(key);
+    s = s + key + "    " + to_string(value) + "\n";
 }
 
 void ShowSc::AddPair(string &s, string key, int32_t value)
 {
-    s = s + key + "\t\t" + to_string(value) + "\n";
+    KeyFormat(key);
+    s = s + key + "    " + to_string(value) + "\n";
 }
 
 void ShowSc::AddPair(string &s, string key, uint16_t value)
 {
-    s = s + key + "\t\t" + to_string(value) + "\n";
+    KeyFormat(key);
+    s = s + key + "    " + to_string(value) + "\n";
 }
 
 void ShowSc::AddPair(string &s, string key, int16_t value)
 {
-    s = s + key + "\t\t" + to_string(value) + "\n";
+    KeyFormat(key);
+    s = s + key + "    " + to_string(value) + "\n";
 }
 
 void ShowSc::AddPair(string &s, string key, uint8_t value)
 {
-    s = s + key + "\t\t" + to_string(value) + "\n";
+    KeyFormat(key);
+    s = s + key + "    " + to_string(value) + "\n";
 }
 
 void ShowSc::AddPair(string &s, string key, int8_t value)
 {
-    s = s + key + "\t\t" + to_string(value) + "\n";
+    KeyFormat(key);
+    s = s + key + "    " + to_string(value) + "\n";
 }
 
 void ShowSc::AddPair(string &s, string key, double value)
 {
-    s = s + key + "\t\t" + to_string(value) + "\n";
+    KeyFormat(key);
+    s = s + key + "    " + to_string(value) + "\n";
 }
 
 void ShowSc::AddPair(string &s, string key, string value)
 {
-    s = s + key + "\t\t" + value + "\n";
+    KeyFormat(key);
+    s = s + key + "    " + value + "\n";
 }
 
 void ShowSc::PrintChnStatus()
@@ -316,8 +351,22 @@ void ShowSc::PrintRealtimeData()
         tar_pos_work_s = tar_pos_work_s +
                 to_string(chn_rt_status->tar_pos_work.GetAxisValue(axis)) + " ";
     }
-    tar_pos_work_s = tar_pos_work_s + "]";
-    AddPair(s,"tar_pos_work",tar_pos_work_s);
+
+    string cur_feedbck_velocity_s = "[ ";
+    for(int axis = 0; axis < kMaxAxisChn; axis++){
+        cur_feedbck_velocity_s = cur_feedbck_velocity_s +
+                to_string(chn_rt_status->cur_feedbck_velocity.GetAxisValue(axis)) + " ";
+    }
+    cur_feedbck_velocity_s = cur_feedbck_velocity_s + "]";
+    AddPair(s,"cur_feedbck_velocity",cur_feedbck_velocity_s);
+
+    string cur_feedbck_torque_s = "[ ";
+    for(int axis = 0; axis < kMaxAxisChn; axis++){
+        cur_feedbck_torque_s = cur_feedbck_torque_s +
+                to_string(chn_rt_status->cur_feedbck_torque.GetAxisValue(axis)) + " ";
+    }
+    cur_feedbck_torque_s = cur_feedbck_torque_s + "]";
+    AddPair(s,"cur_feedbck_torque",cur_feedbck_torque_s);
 
     AddPair(s,"spindle_cur_speed",chn_rt_status->spindle_cur_speed);
     AddPair(s,"cur_feed",chn_rt_status->cur_feed);
@@ -325,6 +374,8 @@ void ShowSc::PrintRealtimeData()
     AddPair(s,"machining_time_remains",chn_rt_status->machining_time_remains);
     AddPair(s,"machining_time_total",chn_rt_status->machining_time_total);
     AddPair(s,"line_no",chn_rt_status->line_no);
+    AddPair(s,"tap_err",chn_rt_status->tap_err);
+    AddPair(s,"tap_err_now",chn_rt_status->tap_err_now);
 
     SendMsg(s);
 }
@@ -625,11 +676,18 @@ void ShowSc::PrintAxisConfig(int axis)
     AddPair(s,"pos_disp_mode",cfg->pos_disp_mode);
 
     AddPair(s,"sync_axis",cfg->sync_axis);
+    AddPair(s,"series_ctrl_axis",cfg->series_ctrl_axis);
     AddPair(s,"master_axis_no",cfg->master_axis_no);
     AddPair(s,"disp_coord",cfg->disp_coord);
     AddPair(s,"auto_sync",cfg->auto_sync);
-    AddPair(s,"sync_err_max",cfg->sync_err_max);
+    AddPair(s,"sync_err_max_pos",cfg->sync_err_max_pos);
     AddPair(s,"benchmark_offset",cfg->benchmark_offset);
+    AddPair(s,"sync_pre_load_torque",cfg->sync_pre_load_torque);
+    AddPair(s,"sync_err_max_torque",cfg->sync_err_max_torque);
+    AddPair(s,"sync_err_max_mach",cfg->sync_err_max_mach);
+    AddPair(s,"sync_pos_detect",cfg->sync_pos_detect);
+    AddPair(s,"sync_mach_detect",cfg->sync_mach_detect);
+    AddPair(s,"sync_torque_detect",cfg->sync_torque_detect);
 
     for(int i = 0; i < 10; i++){
         string axis_home_pos_s = "axis_home_pos[" + to_string(i) + "]";
@@ -760,7 +818,7 @@ void ShowSc::PrintFRegState()
         string reg_name_s = "F" + to_string(i) + "\t";
         string reg_value_s = "";
         for(int bit = 7; bit >= 0; bit--){
-            reg_value_s = reg_value_s + to_string((F[i] & (0x01 << bit)))+"\t";
+            reg_value_s = reg_value_s + to_string(bool(F[i] & (0x01 << bit)))+"\t";
         }
         AddPair(s,reg_name_s,reg_value_s);
     }
@@ -780,7 +838,7 @@ void ShowSc::PrintGRegState()
         string reg_name_s = "G" + to_string(i) + "\t";
         string reg_value_s = "";
         for(int bit = 7; bit >= 0; bit--){
-            reg_value_s = reg_value_s + to_string((G[i] & (0x01 << bit)))+"\t";
+            reg_value_s = reg_value_s + to_string(bool(G[i] & (0x01 << bit)))+"\t";
         }
         AddPair(s,reg_name_s,reg_value_s);
     }
@@ -826,7 +884,62 @@ void ShowSc::PrintPmcAxisCtrl()
     SendMsg(s);
 }
 
+void ShowSc::PrintSyncAxisCtrl()
+{
+    if(!sync_axis_ctrl)
+        return;
+    string s = "";
+    string sync_mask = "[ ";
+    for(int i = 0; i < chn_config->chn_axis_count; i++){
+        sync_mask = sync_mask + to_string(bool(sync_axis_ctrl->sync_mask & (0x01 << i))) + " ";
+    }
+    sync_mask = sync_mask + "]";
+    AddPair(s,"sync_mask",sync_mask);
+    string sync_en = "[ ";
+    for(int i = 0; i < chn_config->chn_axis_count; i++){
+        sync_en = sync_en + to_string(bool(sync_axis_ctrl->sync_en & (0x01 << i))) + " ";
+    }
+    sync_en = sync_en + "]";
+    AddPair(s,"sync_en",sync_en);
+
+    string SYNC = "[ ";
+    for(int i = 0; i < chn_config->chn_axis_count; i++){
+        SYNC = SYNC + to_string(bool(sync_axis_ctrl->SYNC & (0x01 << i))) + " ";
+    }
+    SYNC = SYNC + "]";
+    AddPair(s,"SYNC",SYNC);
+
+    string SYNCJ = "[ ";
+    for(int i = 0; i < chn_config->chn_axis_count; i++){
+        SYNCJ = SYNCJ + to_string(bool(sync_axis_ctrl->SYNCJ & (0x01 << i))) + " ";
+    }
+    SYNCJ = SYNCJ + "]";
+    AddPair(s,"SYNCJ",SYNCJ);
+    if(sync_axis_ctrl->mode == AUTO_MODE){
+        AddPair(s,"mode",sync_axis_ctrl->mode);
+    }
+    if(sync_axis_ctrl->mode == AUTO_MODE)
+        AddPair(s,"work mode","AUTO_MODE");
+    else if(sync_axis_ctrl->mode == MDA_MODE)
+        AddPair(s,"work mode","MDA_MODE");
+    else if(sync_axis_ctrl->mode == MANUAL_STEP_MODE)
+        AddPair(s,"work mode","MANUAL_STEP_MODE");
+    else if(sync_axis_ctrl->mode == MANUAL_MODE)
+        AddPair(s,"work mode","MANUAL_MODE");
+    else if(sync_axis_ctrl->mode == MPG_MODE)
+        AddPair(s,"work mode","MPG_MODE");
+    else if(sync_axis_ctrl->mode == EDIT_MODE)
+        AddPair(s,"work mode","EDIT_MODE");
+    else if(sync_axis_ctrl->mode == REF_MODE)
+        AddPair(s,"work mode","REF_MODE");
+    else
+        AddPair(s,"work mode","INVALID_MODE");
+    AddPair(s,"wait_en_index",sync_axis_ctrl->wait_en_index);
+
+    SendMsg(s);
+}
+
 void ShowSc::SendMsg(string &s)
 {
-    trace->SendMsg(PrintTopic,"\n" + s);
+    trace->SendMsg(PrintTopic,s);
 }

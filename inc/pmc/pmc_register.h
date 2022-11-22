@@ -50,7 +50,8 @@ struct FRegBits{
 	uint8_t :1;
 	//F4
 	uint8_t MBDT1:1;				//跳段选择检测信号   F4.0
-	uint8_t :2;
+    uint8_t MMLK:1;                 //所有轴机床锁住检测信号 F4.1
+    uint8_t :1;
 	uint8_t MSBK:1;					//单段选择检测信号   F4.3
 	uint8_t :4;
 	//F5
@@ -821,7 +822,7 @@ struct GRegBits{
 	//G40
 	uint8_t :8;
 	//G41
-	uint8_t :8;
+    uint8_t HSIA:8;
 	//G42
 	uint8_t :8;
 	//G43
@@ -829,7 +830,8 @@ struct GRegBits{
 	uint8_t :5;
 	//G44
 	uint8_t BDT1:1;     //跳段信号    G44.0
-	uint8_t :7;
+    uint8_t MLK:1;      //所有轴机床锁住信号 G44.1
+    uint8_t :6;
 	//G45
 	uint8_t :8;
 	//G46
@@ -954,25 +956,25 @@ struct GRegBits{
 	//G99
 	uint8_t :8;
 	//G100
-	uint8_t JP1:1;				//进给轴和方向选择信号  +J1    轴1正向
-	uint8_t JP2:1;				//进给轴和方向选择信号  +J2    轴2正向
-	uint8_t JP3:1;				//进给轴和方向选择信号  +J3    轴3正向
-	uint8_t JP4:1;				//进给轴和方向选择信号  +J4    轴4正向
-	uint8_t JP5:1;				//进给轴和方向选择信号  +J5    轴5正向
-	uint8_t JP6:1;				//进给轴和方向选择信号  +J6    轴6正向
-	uint8_t JP7:1;				//进给轴和方向选择信号  +J7    轴7正向
-	uint8_t JP8:1;				//进给轴和方向选择信号  +J8    轴8正向
+    uint8_t JP:8;				//进给轴和方向选择信号  +J1    轴1正向
+//	uint8_t JP2:1;				//进给轴和方向选择信号  +J2    轴2正向
+//	uint8_t JP3:1;				//进给轴和方向选择信号  +J3    轴3正向
+//	uint8_t JP4:1;				//进给轴和方向选择信号  +J4    轴4正向
+//	uint8_t JP5:1;				//进给轴和方向选择信号  +J5    轴5正向
+//	uint8_t JP6:1;				//进给轴和方向选择信号  +J6    轴6正向
+//	uint8_t JP7:1;				//进给轴和方向选择信号  +J7    轴7正向
+//	uint8_t JP8:1;				//进给轴和方向选择信号  +J8    轴8正向
 	//G101
 	uint8_t :8;
 	//G102
-	uint8_t JN1:1;				//进给轴和方向选择信号  -J1    轴1负向
-	uint8_t JN2:1;				//进给轴和方向选择信号  -J2    轴2负向
-	uint8_t JN3:1;				//进给轴和方向选择信号  -J3    轴3负向
-	uint8_t JN4:1;				//进给轴和方向选择信号  -J4    轴4负向
-	uint8_t JN5:1;				//进给轴和方向选择信号  -J5    轴5负向
-	uint8_t JN6:1;				//进给轴和方向选择信号  -J6    轴6负向
-	uint8_t JN7:1;				//进给轴和方向选择信号  -J7    轴7负向
-	uint8_t JN8:1;				//进给轴和方向选择信号  -J8    轴8负向
+    uint8_t JN:8;				//进给轴和方向选择信号  -J1    轴1负向
+//	uint8_t JN2:1;				//进给轴和方向选择信号  -J2    轴2负向
+//	uint8_t JN3:1;				//进给轴和方向选择信号  -J3    轴3负向
+//	uint8_t JN4:1;				//进给轴和方向选择信号  -J4    轴4负向
+//	uint8_t JN5:1;				//进给轴和方向选择信号  -J5    轴5负向
+//	uint8_t JN6:1;				//进给轴和方向选择信号  -J6    轴6负向
+//	uint8_t JN7:1;				//进给轴和方向选择信号  -J7    轴7负向
+//	uint8_t JN8:1;				//进给轴和方向选择信号  -J8    轴8负向
 	//G103
 	uint8_t :8;
 	//G104~G105
@@ -982,8 +984,8 @@ struct GRegBits{
 	//G107
 	uint8_t :8;
 	//G108
-	uint8_t :8;
-	//G109
+    uint8_t MLKI:8;
+    //G109
 	uint8_t :8;
 	//G110
 	uint8_t :8;
@@ -1018,7 +1020,7 @@ struct GRegBits{
 	//G125
 	uint8_t :8;
 	//G126
-	uint8_t :8;
+    uint8_t SVF:8;                 //伺服关断信号 每一位表示一个轴 1代表下使能
 	//G127
 	uint8_t :8;
 
@@ -1033,12 +1035,12 @@ struct GRegBits{
 	//G137
 	uint8_t :8;
 	//G138
-	uint8_t :8;
-	//G139
+    uint8_t SYNC:8;                //同步控制功能可在自动和MDI方式下运行
+    //G139
 	uint8_t :8;
 	//G140
-	uint8_t :8;
-	//G141
+    uint8_t SYNCJ:8;                //在JOG、手轮或增量进给方式下执行同步控制
+    //G141
 	uint8_t :8;
 	//G142
 	uint8_t EFINA:1;                //辅助功能结束信号（PMC轴控制，第一组）    G142.0

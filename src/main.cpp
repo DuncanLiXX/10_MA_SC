@@ -800,7 +800,6 @@ void Clean(){
     printf("Exit Clean function\n");
 }
 
-
 /**
  * @brief Ö÷³ÌÐòÈë¿Úº¯Êý
  * @return
@@ -941,6 +940,7 @@ int main()
 //		}
 
 //		CheckNetState("eth0");  //¼ì²âÍøÂç×´Ì¬
+
 
         g_ptr_chn_engine->DoIdle();
 

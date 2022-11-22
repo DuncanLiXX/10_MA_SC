@@ -195,6 +195,8 @@ enum HMICmdCode {
     CMD_HMI_SET_HANDWHEEL_INFO,      //HMI向SC设置手轮信息 0x3B
     CMD_HMI_GET_ERROR_INFO,          //HMI向SC获取错误信息 0x3C
     CMD_HMI_SET_ALL_COORD,           //HMI向SC设置当前通道的所有工件坐标系 0x3D
+    CMD_HMI_BACKUP_REQUEST,          //HMI向SC请求备份 0x3E
+    CMD_HMI_RECOVER_REQUEST,         //HMI向SC请求恢复 0x3F
 
 
 	//SC-->HMI
@@ -224,6 +226,7 @@ enum HMICmdCode {
 	CMD_SC_NOTIFY_MACH_OVER,        //SC通知HMI加工完成       0x7B
     CMD_SC_NOTIFY_MCODE,			//SC通知HMI M代码执行
     CMD_SC_NOTIFY_ALARM_CHANGE,     //SC通知HMI报警信息改变
+    CMD_SC_BACKUP_STATUS,           //SC通知HMI当前备份状态     0x7E
 
 
 	CMD_HMI_GUARD = 255       //HMI命令字卫兵 0xFF
@@ -801,6 +804,7 @@ enum FileTransType{
 	FILE_ESB_DEV = 0x10,         //ESB设备描述文件
 	FILE_PC_DATA,                //螺补数据文件
 	FILE_BACK_DISK,				//一键备份文件
+    FILE_BACKUP_CNC,            //全盘备份
 };
 
 /**
@@ -1659,6 +1663,44 @@ enum ToolPotLifeType {
     ToolPot_Close,      //关闭计次
     ToolPot_Cnt,        //换刀次数计次
 };
+
+enum SysUpdateType {
+    BackUp_System_Param  = 0x01,        //系统参数
+    Backup_Tool_Param    = 0x02,        //刀具信息
+    Backup_Coord_Param   = 0x04,        //工件坐标系
+    Backup_Pmc_Data      = 0x08,        //梯形图
+    Backup_Macro_Param   = 0x10,        //宏变量
+    Backup_Esb_Data      = 0x20,        //Esb文件
+    Backup_Gcode_Data    = 0x40,        //G代码
+    Backup_IO_Remap      = 0x80,        //IO重映射
+    Backup_All           = 0xFFFF,      //全盘备份
+};
+
+// 备份/恢复当前状态
+struct SysUpdateStatus {
+    enum Status {
+        Idle            = 0,    //未开始
+        Backupping,             //开始备份
+        Recovering,             //开始恢复
+        FileTransing,           //文件传输
+    };
+    enum Type {
+        Unkown,                 //未指定
+        Backup,                 //备份
+        Recover,                //恢复
+    };
+    SysUpdateStatus() = default;
+    SysUpdateStatus(int cur_step, int total_step, Status status, Type type)
+        : m_cur_step(cur_step), m_total_step(total_step), m_status(status), m_type(type)
+    { }
+
+    int m_cur_step = 0;
+    int m_total_step = 0;
+    int m_err_code = 0;
+    Status m_status = Idle;
+    Type m_type = Unkown;
+};
+
 
 #endif /* INC_HMI_SHARED_DATA_H_ */
 

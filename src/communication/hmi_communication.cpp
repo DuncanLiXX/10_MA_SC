@@ -21,6 +21,7 @@
 #include "channel_control.h"
 #include "alarm_processor.h"
 #include "license_interface.h"
+#include "backup_info.h"
 
 struct timeval tv_hmi_heart1, tv_hmi_heart2, tv_hmi_heart3, tv_hmi_cmd1, tv_hmi_cmd2;
 
@@ -227,6 +228,7 @@ int HMICommunication::Initialize(){
 	sem_init(&m_sem_udp_recv, 0, 0);
 	sem_init(&m_sem_tcp_file, 0, 0);
 //	sem_init(&m_sem_tcp_send_test, 0, 0);
+    sem_init(&m_sem_background, 0, 0);
 
 	this->m_thread_saveas = 0;  //另存为线程初始化为0
 
@@ -299,13 +301,26 @@ int HMICommunication::Initialize(){
 //		m_error_code = ERR_SC_INIT;
 //		goto END;
 //	}
-	res = pthread_create(&m_thread_trans_file, &attr,
+    res = pthread_create(&m_thread_trans_file, &attr,
 			HMICommunication::TcpTransFileThread, this);    //开启文件传输线程
 	if (res != 0) {
 		g_ptr_trace->PrintLog(LOG_ALARM, "HMI通讯接口文件传输线程启动失败！");
 		res = ERR_SC_INIT;
 		goto END;
 	}
+
+    pthread_attr_init(&attr);
+    pthread_attr_setschedpolicy(&attr, SCHED_RR);
+    pthread_attr_setstacksize(&attr, kThreadStackSize);	//
+    param.__sched_priority = 29; //90;
+    pthread_attr_setschedparam(&attr, &param);
+    res = pthread_create(&m_thread_background, &attr,
+            HMICommunication::BackgroundThread, this);    //开启文件传输线程
+    if (res != 0) {
+        g_ptr_trace->PrintLog(LOG_ALARM, "HMI通讯接口文件传输线程启动失败！");
+        res = ERR_SC_INIT;
+        goto END;
+    }
 END:
 	pthread_attr_destroy(&attr);
 	return res;
@@ -782,7 +797,7 @@ void HMICommunication::RecvHmiCmd(){
 
 
 
-		if(data.cmd == CMD_HMI_HEART_BEAT){  //在此处处理心跳，保证优先处理，不会因为处理耗时命令而误发心跳丢失
+        if(data.cmd == CMD_HMI_HEART_BEAT){  //在此处处理心跳，保证优先处理，不会因为处理耗时命令而误发心跳丢失
 
 			if(g_sys_state.hmi_comm_ready){
 				if(strcmp(g_sys_state.hmi_host_addr, inet_ntoa(cmd_node.ip_addr.sin_addr)) == 0){
@@ -846,10 +861,8 @@ int HMICommunication::ProcessHmiCmd(){
 		}
 
 		//接收udp数据
-		this->RecvHmiCmd();
-
+        this->RecvHmiCmd();
 		tv_hmi_cmd2 = tv_hmi_cmd1;
-
 
 		//遍历HMI命令接收队列
 		while(m_list_recv->ReadData(&cmd_node, 1) > 0){
@@ -871,6 +884,7 @@ int HMICommunication::ProcessHmiCmd(){
 				frame_index = (cmd.frame_number & 0x7FFF);
 				this->DelCmd(frame_index);
 			}
+
 //			printf("receive hmi cmd[%04X %02X %02X %02X %s]\n", cmd.frame_number, cmd.cmd, cmd.cmd_extension,cmd.data_len, cmd.data);
 			//对命令进行处理
 			switch(cmd.cmd){
@@ -1021,19 +1035,26 @@ int HMICommunication::ProcessHmiCmd(){
 			case CMD_SC_PARAM_CHANGED:
 			case CMD_SC_NOTIFY_MACH_OVER:     //加工结束通知消息的响应
             case CMD_SC_NOTIFY_ALARM_CHANGE:
+            case CMD_SC_BACKUP_STATUS:        //SC通知HMI当前备份状态
 				break;
 			case CMD_HMI_GET_SYS_INFO:
 				m_p_channel_engine->ProcessHmiCmd(cmd);
 				break;
 			case CMD_SC_NOTIFY_MCODE:
 				break;
+            case CMD_HMI_BACKUP_REQUEST:
+                ProcessHmiSysBackupCmd(cmd);
+                break;
+            case CMD_HMI_RECOVER_REQUEST:
+                ProcessHmiSysRecoverCmd(cmd);
+                break;
 			default:
 				g_ptr_trace->PrintLog(LOG_ALARM, "收到不支持的HMI指令cmd=%d", cmd.cmd);
 				break;
 			}
 		}
 
-		usleep(10000);   //休眠10ms
+        usleep(10000);   //休眠10ms
 	}
 
 
@@ -1586,7 +1607,37 @@ void *HMICommunication::SaveAsFileThread(void *args){
 
 	m_thread_run_flag &= (~THREAD_FILE_SAVEAS);
 	printf("Quit HMICommunication::SaveAsFileThread!\n");
-	pthread_exit(NULL);
+    pthread_exit(NULL);
+}
+
+/**
+ * @brief 用于处理耗时命令
+ * @param void *args: HMICommunication对象指针
+ */
+void *HMICommunication::BackgroundThread(void *args)
+{
+    printf("Start HMICommunication::BackgroundThread!id = %ld\n", syscall(SYS_gettid));
+    HMICommunication *hmi_comm = static_cast<HMICommunication *>(args);
+
+    int res = ERR_NONE;
+    res = pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL); //设置线程为可退出模式
+    if (res != ERR_NONE) {
+        printf("Quit HMICommunication::BackgroundThread with error 1!\n");
+        pthread_exit((void*) EXIT_FAILURE);
+    }
+    res = pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL);  //线程退出方式为异步退出，不用等到cancellation point
+    if (res != ERR_NONE) {
+        printf("Quit HMICommunication::SaveAsFileThread with error 2!\n");
+        pthread_exit((void*) EXIT_FAILURE);
+    }
+
+    m_thread_run_flag |= (THREAD_BACKGROUND);
+
+    hmi_comm->BackgroundFunc();
+
+    m_thread_run_flag &= (~THREAD_BACKGROUND);
+    printf("Quit HMICommunication::BackgroundThread!\n");
+    pthread_exit(NULL);
 }
 
 /**
@@ -1652,6 +1703,33 @@ int HMICommunication::SaveasFileFunc(const char *path_old, const char *path_new)
 
 	return ret;
 
+}
+
+/**
+ * @brief 耗时命令后台处理
+ * @return
+ */
+void HMICommunication::BackgroundFunc()
+{
+    while(!g_sys_state.system_quit){
+
+        sem_wait(&m_sem_background);//等待tcp文件传输信号
+        std::cout << "HMICommunication::BackgroundFunc()" << std::endl;
+        if(g_sys_state.eth0_running && g_sys_state.hmi_comm_ready){
+            switch (m_background_type) {
+            case Background_None:
+                std::cout << "Warning: HMICommunication::BackgroundFunc Background_None" << std::endl;
+                break;
+            case Background_Pack:
+                PackageSysBackupFile();
+                break;
+            case Background_UnPack:
+                UnPackageBackupFile();
+                break;
+            }
+            m_background_type = Background_None;
+        }
+    }
 }
 
 
@@ -1824,15 +1902,15 @@ void HMICommunication::ProcessHmiGetFileCmd(HMICmdFrame &cmd){
 //			printf("\n");
 		}else if(m_file_type == FILE_CONFIG_PACK){  //配置文件打包文件
 			memcpy(&this->m_mask_config_pack, cmd.data, cmd.data_len);   //参数mask
-			printf("pack config: mask = 0x%x\n", m_mask_config_pack);
-
+            printf("pack config: mask = 0x%x\n", m_mask_config_pack);
 		}else if(m_file_type == FILE_WARN_HISTORY){  //告警历史文件
 //			this->m_n_alarm_file_type = cmd.data[0];
 //			printf("HMI get alarm file, type = %hhu\n", m_n_alarm_file_type);
 		}else if(cmd.cmd_extension == FILE_ESB_DEV){ //请求伺服描述文件
 			memset(m_str_file_name, 0x00, kMaxFileNameLen);
 			strcpy(m_str_file_name, cmd.data);
-		}
+        }
+
 		sem_post(&m_sem_tcp_file);  //发送信号，激活文件传输线程
 
 	}
@@ -2507,7 +2585,69 @@ void HMICommunication::ProcessHmiSyncTimeCmd(HMICmdFrame &cmd){
 	cmd.frame_number |= 0x8000;
 	cmd.data_len = 7;
 
-	this->SendCmd(cmd);
+    this->SendCmd(cmd);
+}
+
+/**
+ * @brief 处理HMI备份命令
+ * @param cmd : 命令数据
+ */
+void HMICommunication::ProcessHmiSysBackupCmd(HMICmdFrame &cmd)
+{
+    cmd.frame_number |= 0x8000;
+    if (m_background_type != Background_None || m_b_trans_file)
+    {
+        std::cout << "busy backup" << std::endl;
+        cmd.cmd_extension = -1;
+        SendCmd(cmd);
+    }
+    else
+    {
+        std::cout << "begin backup" << std::endl;
+        m_sysbackup_status = SysUpdateStatus();
+        m_sysbackup_status.m_type = SysUpdateStatus::Backup;
+        memcpy(&m_maks_sys_backup, cmd.data, cmd.data_len);
+
+        cmd.data_len = sizeof(SysUpdateStatus);
+        cmd.cmd_extension = 0;
+        memset(cmd.data, 0x00, kMaxHmiDataLen);
+        memcpy(cmd.data, &m_sysbackup_status, cmd.data_len);
+
+        SendCmd(cmd);
+
+        m_background_type = Background_Pack;
+        sem_post(&m_sem_background);//通知执行后台程序
+    }
+}
+
+/**
+ * @brief 处理HMI恢复命令
+ * @param cmd : 命令数据
+ */
+void HMICommunication::ProcessHmiSysRecoverCmd(HMICmdFrame &cmd)
+{
+    cmd.frame_number |= 0x8000;
+    if (m_background_type != Background_None || m_b_trans_file)
+    {
+        std::cout << "busy recover" << std::endl;
+        cmd.cmd_extension = -1;
+        SendCmd(cmd);
+    }
+    else
+    {
+        std::cout << "begin recover" << std::endl;
+        m_sysbackup_status = SysUpdateStatus();
+        m_sysbackup_status.m_type = SysUpdateStatus::Recover;
+        memcpy(&m_maks_sys_backup, cmd.data, cmd.data_len);
+
+        cmd.data_len = sizeof(SysUpdateStatus);
+        cmd.cmd_extension = 0;
+
+        memset(cmd.data, 0x00, kMaxHmiDataLen);
+        memcpy(cmd.data, &m_sysbackup_status, cmd.data_len);
+
+        SendCmd(cmd);
+    }
 }
 
 /**
@@ -2963,8 +3103,8 @@ bool HMICommunication::SaveasNcFile(const char *old_name, const char *new_name){
 //		pthread_attr_destroy(&attr);
 //		return false;
 //	}
-	res = pthread_create(&m_thread_saveas, &attr,
-			HMICommunication::SaveAsFileThread, pParam);    //开启文件另存为处理线程
+    res = pthread_create(&m_thread_saveas, &attr,
+            HMICommunication::SaveAsFileThread, pParam);    //开启文件另存为处理线程
 
 	pthread_attr_destroy(&attr);
 	if (res != 0) {
@@ -3164,7 +3304,9 @@ int HMICommunication::SendFile(){
 			res = ERR_FILE_TRANS;
 			goto END;
 		}
-	}
+    }else if(file_type == FILE_BACKUP_CNC) { //备份
+        strcpy(filepath, BACKUP_DIR.c_str());
+    }
 //	else if(file_type == FILE_SYSTEM_CONFIG){
 //
 //	}else if(file_type == FILE_CHANNEL_CONFIG){
@@ -3265,13 +3407,17 @@ TRAN:
 		goto TRAN;
 	}
 
-
 	gettimeofday(&tvNow, NULL);
 	nTimeDelay = (tvNow.tv_sec-tvStart.tv_sec)*1000000+tvNow.tv_usec-tvStart.tv_usec;
 	printf("total time = %u us, filesize = %lld\n", nTimeDelay, file_size);
 
 	printf("send file over, sendsize = %lld, filesize = %lld\n", send_total, file_size);
 
+
+    if(file_type == FILE_BACKUP_CNC && m_sysbackup_status.m_type == SysUpdateStatus::Backup) { //备份
+        m_sysbackup_status.m_status = SysUpdateStatus::Idle;
+        SendHMIBackupStatus(m_sysbackup_status);
+    }
 	END:
 #ifndef USES_TCP_FILE_TRANS_KEEP
 	if(m_soc_file_send > 0){
@@ -3327,26 +3473,26 @@ uint64_t HMICommunication::GetFileLength(const char *path){
 bool HMICommunication::GetConfigFilePath(char *path, uint8_t type){
 	bool res = true;
 	switch(type){
-	case CONFIG_SYSTEM:
+    case CONFIG_SYSTEM:
 		strcpy(path, SYS_CONFIG_FILE);
 		break;
-	case CONFIG_CHANNEL:
+    case CONFIG_CHANNEL:
 		strcpy(path, CHN_CONFIG_FILE);
 		break;
-	case CONFIG_AXIS:
+    case CONFIG_AXIS:
 		strcpy(path, AXIS_CONFIG_FILE);
 		break;
-	case CONFIG_COORD:
+    case CONFIG_COORD:
 		strcpy(path, WORK_COORD_FILE);
 		break;
-	case CONFIG_EX_COORD:
+    case CONFIG_EX_COORD:
 		strcpy(path, EX_WORK_COORD_FILE);
 		break;
-	case CONFIG_TOOL_INFO:
+    case CONFIG_TOOL_INFO:
 		strcpy(path, TOOL_CONFIG_FILE);
 		break;
 #ifdef USES_FIVE_AXIS_FUNC
-	case CONFIG_FIVE_AXIS:
+    case CONFIG_FIVE_AXIS:
 		strcpy(path, FIVE_AXIS_CONFIG_FILE);
 		break;
 #endif
@@ -3455,7 +3601,153 @@ uint64_t HMICommunication::GetConfigPackFileSize(){
 		total_size += 10;   //1字节分隔符‘#’+ 1字节参数类型 + 8字节数据长度
 		total_size += this->GetFileLength(IO_REMAP_FILE); //加上文件大小
 	}
-	return total_size;
+    return total_size;
+}
+
+/**
+ * @brief 压缩备份文件
+ * @return
+ */
+void HMICommunication::PackageSysBackupFile()
+{
+    BackUp_Manager manager;
+    manager.Init_Pack_Info(m_maks_sys_backup);
+    m_sysbackup_status.m_cur_step = 0;
+    m_sysbackup_status.m_total_step = manager.Info_Cnt();
+    m_sysbackup_status.m_status = SysUpdateStatus::Backupping;
+    SendHMIBackupStatus(m_sysbackup_status);
+    struct zip_t *zip = zip_open(BACKUP_DIR.c_str(), 1, 'w');
+    if (!zip)
+    {
+        m_sysbackup_status.m_err_code = -1;
+        SendHMIBackupStatus(m_sysbackup_status);
+        return;
+    }
+
+    bool ret = true;
+    auto now = chrono::steady_clock::now();
+    for (auto itr = manager.begin(); itr != manager.end(); ++itr)
+    {
+        if (!(*itr)->Package(zip))
+        {
+            ret = false;
+            break;
+        }
+        m_sysbackup_status.m_cur_step++;
+        if (chrono::duration_cast<chrono::milliseconds>(chrono::steady_clock::now() - now).count() > 300)
+        {//300ms向HMI更新压缩状态
+            SendHMIBackupStatus(m_sysbackup_status);
+            now = chrono::steady_clock::now();
+        }
+    }
+    zip_close(zip);
+
+    if (!ret)
+    {
+        m_sysbackup_status.m_err_code = -2;
+        SendHMIBackupStatus(m_sysbackup_status);
+        return;
+    }
+
+    m_sysbackup_status.m_status = SysUpdateStatus::FileTransing;//通知hmi准备开始文件传输
+    SendHMIBackupStatus(m_sysbackup_status);
+}
+
+/**
+ * @brief 解压备份文件
+ * @return
+ */
+void HMICommunication::UnPackageBackupFile()
+{
+    m_sysbackup_status.m_status = SysUpdateStatus::Recovering;
+    m_sysbackup_status.m_type = SysUpdateStatus::Recover;
+    m_sysbackup_status.m_err_code = 0;
+
+    if (access((RECOVER_FILE).c_str(), F_OK))
+    {
+        m_sysbackup_status.m_err_code = -1;
+        SendHMIBackupStatus(m_sysbackup_status);
+        return;
+    }
+
+    string command;
+    if (!access(RECOVER_TEMP.c_str(), F_OK))
+    {//存在就先删除目录
+        command = "rm -rf " + RECOVER_TEMP;
+        system(command.c_str());
+    }
+    command = "mkdir " + RECOVER_TEMP;
+    system(command.c_str());
+
+    struct zip_t *zip = zip_open(RECOVER_FILE.c_str(), 0, 'r');
+    m_sysbackup_status.m_cur_step = 0;
+    m_sysbackup_status.m_total_step = zip_entries_total(zip);
+
+    bool ret = true;
+    BackUp_Manager manager;
+    manager.Init_UnPack_Info(m_maks_sys_backup, zip);
+    auto now = chrono::steady_clock::now();
+    for (auto itr = manager.begin(); itr != manager.end(); ++itr)
+    {
+        if (!(*itr)->UnPackage(zip, RECOVER_TEMP+'/'))
+        {
+            ret = false;
+            break;
+        }
+        m_sysbackup_status.m_cur_step++;
+        if (chrono::duration_cast<chrono::milliseconds>(chrono::steady_clock::now() - now).count() > 300)
+        {//300ms向HMI更新压缩状态
+            SendHMIBackupStatus(m_sysbackup_status);
+            now = chrono::steady_clock::now();
+        }
+     }
+     zip_close(zip);
+
+
+    //提取出现错误，删除恢复文件
+    if (!ret)
+    {
+        command = "rm -rf " + RECOVER_TEMP;
+        system(command.c_str());
+        m_sysbackup_status.m_err_code = -2;
+        SendHMIBackupStatus(m_sysbackup_status);
+        return;
+    }
+
+    //SC
+    string scPath = RECOVER_TEMP + SC_DIR;
+    if (!access(scPath.c_str(), F_OK))
+    {
+        std::cout << "sc chmod" << std::endl;
+        command = "chmod +x " + scPath;
+        system(command.c_str());
+    }
+
+    //PL
+
+    //MC
+
+    std::cout << "UnPack Finished" << std::endl;
+
+    m_sysbackup_status.m_status = SysUpdateStatus::Idle;
+    SendHMIBackupStatus(m_sysbackup_status);
+}
+
+/**
+ * @brief 向HMI发送当前备份/恢复状态
+ * @return
+ */
+void HMICommunication::SendHMIBackupStatus(SysUpdateStatus status)
+{
+    HMICmdFrame cmd;
+    cmd.channel_index = CHANNEL_ENGINE_INDEX;
+    cmd.cmd = CMD_SC_BACKUP_STATUS;
+
+    cmd.data_len = sizeof(status);
+    std::cout << "cur " << status.m_cur_step << " total " << status.m_total_step
+              << " status " << status.m_status<< " error " << status.m_err_code << std::endl;
+    memcpy(cmd.data, &status, cmd.data_len);
+    SendCmd(cmd);
 }
 
 /**
@@ -4078,7 +4370,12 @@ int HMICommunication::RecvFile(){
 		strcat(filepath, buffer);  //组合出文件绝对路径
 
 		printf("ESB file path = %s\n", filepath);
-	}
+    }else if (file_type == FILE_BACKUP_CNC) {
+        m_sysbackup_status.m_status = SysUpdateStatus::FileTransing;
+        SendHMIBackupStatus(m_sysbackup_status);
+        bzero(filepath, kMaxPathLen);
+        strcpy(filepath, RECOVER_FILE.c_str());
+    }
 //	else if(file_type == FILE_SYSTEM_CONFIG){
 //
 //	}else if(file_type == FILE_CHANNEL_CONFIG){
@@ -4208,6 +4505,12 @@ int HMICommunication::RecvFile(){
 		}
 		goto READFILE;
 	}
+
+    if (file_type == FILE_BACKUP_CNC) {
+        std::cout << "notify unpack background" << std::endl;
+        m_background_type = Background_UnPack;
+        sem_post(&m_sem_background);//通知执行后台程序
+    }
 
 	END:
 #ifdef USES_TCP_FILE_TRANS_KEEP

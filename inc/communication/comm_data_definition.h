@@ -302,7 +302,8 @@ enum ThreadRunFlag{
 	THREAD_CMD_RESEND = 0x02,	//命令重发线程
 	THREAD_FILE_TRANS = 0x04,	//文件传输线程
 	THREAD_MONITOR = 0x08,		//监控线程
-	THREAD_FILE_SAVEAS = 0x10	//文件另存为线程
+    THREAD_FILE_SAVEAS = 0x10,	//文件另存为线程
+    THREAD_BACKGROUND =  0x20,  //处理耗时命令
 };
 
 #endif /* INC_COMMUNICATION_COMM_DATA_DEFINITION_H_ */

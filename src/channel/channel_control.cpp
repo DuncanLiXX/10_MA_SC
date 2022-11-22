@@ -2731,6 +2731,7 @@ void ChannelControl::ProcessHmiRestartCmd(HMICmdFrame &cmd){
         this->m_n_restart_step = 1;
         this->m_n_restart_mode = NORMAL_RESTART;
 
+        m_channel_rt_status.line_no = m_n_restart_line;
     }
 
 }
@@ -4484,7 +4485,8 @@ bool ChannelControl::RefreshStatusFun(){
                     m_n_add_prog_type == NONE_ADD &&
         #endif
                     m_b_lineno_from_mc && m_channel_mc_status.cur_line_no > 0){  //即刻更新实时状态行号
-                m_channel_rt_status.line_no = m_channel_mc_status.cur_line_no;
+                if (!(m_n_restart_mode != NOT_RESTART && m_channel_mc_status.cur_line_no < m_n_restart_line))
+                    m_channel_rt_status.line_no = m_channel_mc_status.cur_line_no;
             }
 
         }else{
@@ -4532,7 +4534,9 @@ bool ChannelControl::RefreshStatusFun(){
                     m_n_add_prog_type == NONE_ADD &&
         #endif
                     m_b_lineno_from_mc && m_channel_mc_status.cur_line_no > 0){  //即刻更新实时状态行号
-                m_channel_rt_status.line_no = m_channel_mc_status.cur_line_no;
+                //m_channel_rt_status.line_no = m_channel_mc_status.cur_line_no;
+                if (!(m_n_restart_mode != NOT_RESTART && m_channel_mc_status.cur_line_no < m_n_restart_line))
+                    m_channel_rt_status.line_no = m_channel_mc_status.cur_line_no;
             }
 
         }

@@ -5977,9 +5977,7 @@ void *ChannelEngine::UpdateThread(void *args){
         pthread_exit((void*) EXIT_FAILURE);
     }
 
-
     res = p_chn_engine->UpdateProcess();
-
 
     printf("Exit ChannelEngine::UpdateThread!\n");
     pthread_exit(NULL);
@@ -7658,28 +7656,28 @@ void ChannelEngine::SetSlaveInfo(){
 
             node = node->next;
         }
-
-        //À©Õ¹IO°å¿¨ÅäÖÃÍê³ÉÃüÁî
-        memset(&cmd, 0x00, sizeof(cmd));
-        cmd.data.axis_index = NO_AXIS;
-        cmd.data.cmd = CMD_MI_SET_SDLINK_COMPLETE;
-        cmd.data.data[0] = dev_count;
-        cmd.data.data[1] = total_in;
-        cmd.data.data[2] = total_out;
-        cmd.data.data[3] = handwheel_count;
-
-        //test
-        printf("node data0 %d------------------\n", cmd.data.data[0]);
-        printf("node data1 %d------------------\n", cmd.data.data[1]);
-        printf("node data2 %d------------------\n", cmd.data.data[2]);
-        printf("node data3 %d------------------\n", cmd.data.data[3]);
-        printf("node data4 %d------------------\n", cmd.data.data[4]);
-        printf("node data5 %d------------------\n", cmd.data.data[5]);
-        printf("node data6 %d------------------\n", cmd.data.data[6]);
-        printf("\n");
-
-        this->m_p_mi_comm->WriteCmd(cmd);
     }
+
+    //À©Õ¹IO°å¿¨ÅäÖÃÍê³ÉÃüÁî
+    memset(&cmd, 0x00, sizeof(cmd));
+    cmd.data.axis_index = NO_AXIS;
+    cmd.data.cmd = CMD_MI_SET_SDLINK_COMPLETE;
+    cmd.data.data[0] = dev_count;
+    cmd.data.data[1] = total_in;
+    cmd.data.data[2] = total_out;
+    cmd.data.data[3] = handwheel_count;
+
+    //test
+    printf("node data0 %d------------------\n", cmd.data.data[0]);
+    printf("node data1 %d------------------\n", cmd.data.data[1]);
+    printf("node data2 %d------------------\n", cmd.data.data[2]);
+    printf("node data3 %d------------------\n", cmd.data.data[3]);
+    printf("node data4 %d------------------\n", cmd.data.data[4]);
+    printf("node data5 %d------------------\n", cmd.data.data[5]);
+    printf("node data6 %d------------------\n", cmd.data.data[6]);
+    printf("\n");
+
+    this->m_p_mi_comm->WriteCmd(cmd);
 
 #else
     MiCmdFrame cmd;

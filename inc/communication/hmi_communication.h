@@ -63,6 +63,12 @@ typedef struct CPUPACKED         //定义一个cpu occupy的结构体
     unsigned int softirq;
 }CPU_OCCUPY;
 
+enum BackgroundTask {
+    Background_None,        //空闲
+    Background_Pack,        //压缩
+    Background_UnPack,      //解压
+};
+
 
 void get_memoccupy(MEM_OCCUPY *mem); //对无类型get函数含有一个形参结构体类弄的指针O
 
@@ -109,6 +115,7 @@ private:
 	static void *TcpTransFileThread(void *args);   //TCP文件传输线程函数
 //	static void SendMonitorData(int sig);     //发送监控数据
 	static void *SaveAsFileThread(void *args);   //文件另存为线程函数
+    static void *BackgroundThread(void *args);      //用于处理HMI下发的耗时命令
 
 	int Clean();     //处理善后事宜
 
@@ -119,13 +126,16 @@ private:
 	int Monitor();                       //监控数据发送
 	int TransFile();                     //传输文件
 	int SaveasFileFunc(const char *path_old, const char *path_new);             //文件另存为
-
+    void BackgroundFunc();               //耗时命令后台处理
 
 //	void SendTestFunc();   //自发自收测试
 	int SendFile();                      //发送文件
 	int RecvFile();                       //接收文件
 	int SendConfigPackFile();             //发送配置打包文件
 	uint64_t GetConfigPackFileSize();             //计算配置打包文件总字节数
+    void PackageSysBackupFile();             //压缩备份文件
+    void UnPackageBackupFile();              //解压备份文件
+    void SendHMIBackupStatus(SysUpdateStatus status);   //向HMI发送当前备份/恢复状态
 
 	int ResendCmd(HMICmdFrame &cmd);        //重发UDP命令，不加入发送队列
 
@@ -154,6 +164,8 @@ private:
 	void ProcessHmiFileSignatureCmd(HMICmdRecvNode &cmd_node);		//处理HMI获取NC文件签名的命令
 	void ProcessHmiVirtualMOPCmd(HMICmdFrame &cmd);			//处理HMI虚拟MOP按键命令
 	void ProcessHmiSyncTimeCmd(HMICmdFrame &cmd);          //处理HMI同步系统时间命令
+    void ProcessHmiSysBackupCmd(HMICmdFrame &cmd);         //处理HMI备份命令
+    void ProcessHmiSysRecoverCmd(HMICmdFrame &cmd);        //处理HMI恢复命令
 
 	uint16_t GetFrameNumber(){return  (++m_n_frame_number&0x8000) ? (m_n_frame_number=0) : m_n_frame_number;}   //获取最新帧号
 
@@ -184,6 +196,8 @@ private:
 	static HMICommunication *m_p_instance;    //单实例对象
 	static sem_t m_sem_udp_recv;     //接收到UDP命令的信号
 	sem_t m_sem_tcp_file;             //开启tcp文件传输信号
+
+    sem_t m_sem_background;           //后台线程工作信号
 //	sem_t m_sem_tcp_send_test;        //tcp传输测试信号
 
 	ChannelEngine *m_p_channel_engine;   //通道引擎指针
@@ -219,6 +233,7 @@ private:
 	pthread_t m_thread_monitor;        //TCP监控数据发送线程
 	pthread_t m_thread_trans_file;     //TCP文件传输线程，包括参数文件、加工文件，升级文件等
 	pthread_t m_thread_saveas;         //NC文件另存为线程
+    pthread_t m_thread_background;     //出来HMI发来的耗时命令
 
 	uint16_t m_n_frame_number;         //当前帧号
 	bool m_b_trans_file;              //当前是否在传输文件
@@ -226,6 +241,9 @@ private:
 	char m_str_file_name[kMaxFileNameLen];             //待传输文件名称
 	bool m_b_recv_file;              //标志文件传输类型是发送还是接收，true表示接收文件，false表示发送文件
 	uint32_t m_mask_config_pack;      //配置文件打包mask
+    int m_maks_sys_backup = 0;                      //系统备份mask
+    int m_background_type = Background_None;        //后台任务类型
+    SysUpdateStatus m_sysbackup_status = SysUpdateStatus(); //备份/恢复状态
 //	uint8_t m_n_alarm_file_type;      //待发送的告警历史文件类型
 
 	ErrorType m_error_code;           //错误码

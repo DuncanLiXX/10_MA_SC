@@ -52,6 +52,8 @@ set(COMPILER_SRC
 
 set(PARAMETER_SRC
         src/parameter/parm_manager.cpp;
+        src/parameter/zip.cpp
+        src/parameter/backup_info.cpp
 )
 
 set(PMC_SRC

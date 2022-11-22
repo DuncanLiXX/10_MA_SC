@@ -168,6 +168,7 @@ enum HMICmdCode {
 	CMD_HMI_GET_MACRO_VAR,			 //HMI向SC请求宏变量的值
 	CMD_HMI_SET_MACRO_VAR,			 //HMI向SC设置宏变量寄存器的值
     CMD_HMI_CLEAR_TOTAL_PIECE,       //HMI请求清空总共件数
+    CMD_HMI_SET_REQUIRE_PIECE,       //HMI请求设置需求件数
 
 //	CMD_HMI_SET_CUR_PMC_AXIS,        //HMI设置当前PMC轴  0x20
 	CMD_HMI_SET_CALIBRATION = 35,	 //HMI向SC发出激光调高器标定指令  0x23
@@ -965,6 +966,7 @@ struct HmiChannelRealtimeStatus {
 struct HmiChannelStatus{
 	double rated_manual_speed; 		//手动速度，单位：mm/s
 	uint32_t workpiece_count;       //工件计数，最大99999999
+    uint32_t workpiece_require;     //需求件数
     uint32_t workpiece_count_total; //总共件数
     uint32_t machinetime_total;         //累计加工时间
     Mask32 func_state_flags;        //系统功能状态标志，包括单段、跳段、选停、空运行、手轮跟踪、机床锁，辅助锁

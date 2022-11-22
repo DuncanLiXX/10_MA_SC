@@ -6379,6 +6379,45 @@ void ParmManager::SetTotalWorkPiece(uint8_t chn_index, uint32_t piece)
 }
 
 /**
+ * @brief 获取需求件数
+ * @param chn_index : 通道号
+ * @return piece : 需求件数
+ */
+uint32_t ParmManager::GetCurRequirePiece(uint8_t chn_index)
+{
+    char sname[32];
+    char kname[64];
+
+    memset(sname, 0x00, sizeof(sname));
+    sprintf(sname, "channel_%hhu", chn_index);
+    memset(kname, 0x00, sizeof(kname));
+    sprintf(kname, "cur_require_piece");
+    uint32_t value = 0;
+    value = m_ini_chn_scene->GetIntValueOrDefault(sname, kname, 0);
+
+    return value;
+}
+
+/**
+ * @brief 设置需求件数
+ * @param chn_index : 通道号
+ * @param requriePiece : 需求件数
+ */
+void ParmManager::SetCurRequirePiece(uint8_t chn_index, uint32_t requriePiece)
+{
+    char sname[32];
+    char kname[64];
+
+    memset(sname, 0x00, sizeof(sname));
+    sprintf(sname, "channel_%hhu", chn_index);
+    memset(kname, 0x00, sizeof(kname));
+    sprintf(kname, "cur_require_piece");
+    this->m_ini_chn_scene->SetIntValue(sname, kname, requriePiece);
+
+    this->m_ini_chn_scene->Save();
+}
+
+/**
  * @brief 设置指定通道的累计加工时间
  * @param chn_index : 通道号
  * @param piece : 累计加工时间
@@ -6411,8 +6450,8 @@ uint32_t ParmManager::GetCurTotalMachingTime(uint8_t chn_index)
     sprintf(sname, "channel_%hhu", chn_index);
     memset(kname, 0x00, sizeof(kname));
     sprintf(kname, "cur_total_machinetime");
-    uint32_t value, def_value = 0;
-    value = m_ini_chn_scene->GetIntValueOrDefault(sname, kname, def_value);
+    uint32_t value = 0 ;
+    value = m_ini_chn_scene->GetIntValueOrDefault(sname, kname, 0);
 
     return value;
 }

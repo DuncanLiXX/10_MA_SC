@@ -108,6 +108,8 @@ public:
     void SetCurTotalMachiningTime(uint8_t chn_index, uint32_t totalTime);//设置指定通道的累计加工时间
     uint32_t GetTotalWorkPiece(uint8_t chn_index); //获取指定通道的总共件数
     void SetTotalWorkPiece(uint8_t chn_index, uint32_t piece); //设置指定通道的总共件数
+    uint32_t GetCurRequirePiece(uint8_t chn_index);         //获取需求件数
+    void SetCurRequirePiece(uint8_t chn_index, uint32_t requriePiece);//设置当前需求件数
     uint32_t GetCurTotalMachingTime(uint8_t chn_index);    //获取指定通道的累计加工时间
 	uint8_t GetCurTool(uint8_t chn_index);                 //获取指定通道的当前刀号
 	void SetCurTool(uint8_t chn_index, uint8_t tool);     //设置指定通道的当前刀号

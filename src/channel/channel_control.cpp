@@ -573,6 +573,7 @@ void ChannelControl::InitialChannelStatus(){
     m_channel_status.spindle_ratio = 100;
     m_channel_status.manual_ratio = 100;
     m_channel_status.workpiece_count = g_ptr_parm_manager->GetCurWorkPiece(m_n_channel_index);
+    m_channel_status.workpiece_require = g_ptr_parm_manager->GetCurRequirePiece(m_n_channel_index);
     m_channel_status.workpiece_count_total = g_ptr_parm_manager->GetTotalWorkPiece(m_n_channel_index);
     m_channel_status.machinetime_total = g_ptr_parm_manager->GetCurTotalMachingTime(m_n_channel_index);
     m_channel_status.cur_tool = g_ptr_parm_manager->GetCurTool(m_n_channel_index);
@@ -2561,6 +2562,9 @@ void ChannelControl::ProcessHmiCmd(HMICmdFrame &cmd){
         this->ProcessHmiClearTotalPieceCmd(cmd);
         this->SendWorkCountToHmi(m_channel_status.workpiece_count, m_channel_status.workpiece_count_total);   //通知HMI加工计数变更
         break;
+    case CMD_HMI_SET_REQUIRE_PIECE:     //设置需求件数
+        this->ProcessHmiSetRequirePieceCmd(cmd);
+        break;
     case CMD_HMI_AXIS_MANUAL_MOVE:     //HMI指令轴移动
         break;
     case CMD_HMI_MANUAL_TOOL_MEASURE:     //HMI向SC发起手动对刀操作  0x29
@@ -2759,6 +2763,21 @@ void ChannelControl::ProcessHmiRestartCmd(HMICmdFrame &cmd){
         m_channel_rt_status.line_no = m_n_restart_line;
     }
 
+}
+
+/**
+ * @brief 设置需求件数个数
+ * @param cmd : HMI命令包
+ */
+void ChannelControl::ProcessHmiSetRequirePieceCmd(HMICmdFrame &cmd)
+{
+    cmd.frame_number |= 0x8000;
+
+    memcpy(&m_channel_status.workpiece_require, cmd.data, cmd.data_len);
+    std::cout << "setCurRequired piece " << m_channel_status.workpiece_require << std::endl;
+    g_ptr_parm_manager->SetCurRequirePiece(m_n_channel_index, m_channel_status.workpiece_require);
+
+    this->m_p_hmi_comm->SendCmd(cmd);
 }
 
 /**

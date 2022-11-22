@@ -4525,88 +4525,9 @@ bool ChannelControl::RefreshStatusFun(){
 			//更新当前MC告警标志
 			this->m_p_mc_comm->ReadMcErrFlag(m_n_channel_index, m_channel_mc_status.mc_error.all);
 
-
-            if(m_channel_mc_status.cur_mode == MC_MODE_AUTO &&
-        #ifdef USES_ADDITIONAL_PROGRAM
-                    m_n_add_prog_type == NONE_ADD &&
-        #endif
-                    m_b_lineno_from_mc && m_channel_mc_status.cur_line_no > 0){  //即刻更新实时状态行号
-                if (!(m_n_restart_mode != NOT_RESTART && m_channel_mc_status.cur_line_no < m_n_restart_line))
-                    m_channel_rt_status.line_no = m_channel_mc_status.cur_line_no;
-            }
-
-        }else{
-            //更新当前MC的运行模式
-            this->m_p_mc_arm_comm->ReadWorkMode(m_n_channel_index, m_channel_mc_status.cur_mode);
-
-            //更新当前行号
-            this->m_p_mc_arm_comm->ReadCurLineNo(m_n_channel_index, m_channel_mc_status.cur_line_no);
-
-            //更新当前进给速度
-            this->m_p_mc_arm_comm->ReadCurFeed(m_n_channel_index, m_channel_mc_status.cur_feed);
-
-            //更新当前给定进给速度
-            this->m_p_mc_arm_comm->ReadRatedFeed(m_n_channel_index, m_channel_mc_status.rated_feed);
-
-            //更新当前运行指令`
-            this->m_p_mc_arm_comm->ReadCurCmd(m_n_channel_index, m_channel_mc_status.cur_cmd);
-
-            //更新MC当前缓冲数据量
-            this->m_p_mc_arm_comm->ReadAutoBufDataCount(m_n_channel_index, m_channel_mc_status.buf_data_count);
-
-            //更新MDA缓冲数据量
-            this->m_p_mc_arm_comm->ReadMdaBufDataCount(m_n_channel_index, m_channel_mc_status.mda_data_count);
-
-            //更新当前轴插补位置
-            this->m_p_mc_arm_comm->ReadAxisIntpPos(m_n_channel_index, m_channel_mc_status.intp_pos, m_channel_mc_status.intp_tar_pos);
-
-            //更新AUTO分块到位标志
-            m_channel_mc_status.auto_block_over = m_p_mc_arm_comm->ReadAutoBlockRunOverFlag(m_n_channel_index);
-
-            //更新MDA分块到位标志
-            m_channel_mc_status.mda_block_over = m_p_mc_arm_comm->ReadMdaBlockRunOverFlag(m_n_channel_index);
-
-            //更新单段到位标志
-            m_channel_mc_status.step_over = m_p_mc_arm_comm->ReadStepRunOverFlag(m_n_channel_index);
-
-            //更新当前轴到位标志
-            this->m_p_mc_arm_comm->ReadChnAxisRunoverMask(m_n_channel_index, m_channel_mc_status.axis_over_mask);
-
-            //更新当前MC告警标志
-            this->m_p_mc_arm_comm->ReadMcErrFlag(m_n_channel_index, m_channel_mc_status.mc_error.all);
-
-            if(m_channel_mc_status.cur_mode == MC_MODE_AUTO &&
-        #ifdef USES_ADDITIONAL_PROGRAM
-                    m_n_add_prog_type == NONE_ADD &&
-        #endif
-                    m_b_lineno_from_mc && m_channel_mc_status.cur_line_no > 0){  //即刻更新实时状态行号
-                //m_channel_rt_status.line_no = m_channel_mc_status.cur_line_no;
-                if (!(m_n_restart_mode != NOT_RESTART && m_channel_mc_status.cur_line_no < m_n_restart_line))
-                    m_channel_rt_status.line_no = m_channel_mc_status.cur_line_no;
-            }
-
-        }
-        //更新系统状态
-        step_mode_flag = IsStepMode();
-        if(step_mode_flag){
-            check_count = 10;    //2;
-        }
-        else{
-            check_count = 10;    //1;   //增加延时，等待轴运行到位
-        }
-        if(m_channel_mc_status.cur_mode ==MC_MODE_MANUAL){
-            if(m_channel_status.machining_state == MS_PAUSING ||		//暂停中并且MC已切换至手动模式
-                    m_channel_status.machining_state == MS_STOPPING ||
-                    (m_channel_status.machining_state == MS_RUNNING &&
-                     step_mode_flag && m_channel_mc_status.step_over && !m_b_mc_need_start)){//单段模式下，单段到位
-
-                if(++m_n_step_change_mode_count > check_count){
-                    if(m_channel_status.machining_state == MS_STOPPING){
-#ifdef USES_EMERGENCY_DEC_STOP
-                        if(this->m_b_delay_servo_off){
-                            this->m_p_channel_engine->SetChnStoppedMask(this->m_n_channel_index);
-                            this->m_b_delay_servo_off = false;
-                        }
+			if(m_channel_mc_status.cur_mode == MC_MODE_AUTO &&
+#ifdef USES_ADDITIONAL_PROGRAM
+				m_n_add_prog_type == NONE_ADD &&
 #endif
 				m_b_lineno_from_mc && m_channel_mc_status.cur_line_no > 0){  //即刻更新实时状态行号
 			m_channel_rt_status.line_no = m_channel_mc_status.cur_line_no;

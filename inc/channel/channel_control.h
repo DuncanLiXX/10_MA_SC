@@ -425,6 +425,7 @@ private:
 	void ProcessHmiClearWorkPieceCmd(HMICmdFrame &cmd);  //处理加工计数清零命令
     void ProcessHmiClearTotalPieceCmd(HMICmdFrame &cmd); //处理总共件数清零命令
 	void ProcessHmiRestartCmd(HMICmdFrame &cmd);    //处理加工复位命令
+    void ProcessHmiSetRequirePieceCmd(HMICmdFrame &cmd);    //处理
 
 	void ProcessHmiSetCurMachPosCmd(HMICmdFrame &cmd);      //处理HMI设置轴当前位置的机械坐标命令
 

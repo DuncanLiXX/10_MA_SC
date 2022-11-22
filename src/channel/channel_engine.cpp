@@ -2678,6 +2678,7 @@ void ChannelEngine::ProcessHmiCmd(HMICmdFrame &cmd){
         break;
     case CMD_HMI_CLEAR_WORKPIECE:      //HMI请求SC将加工计数清零,临时计数(区分白夜班)
     case CMD_HMI_CLEAR_TOTAL_PIECE:    //总共计数清零
+    case CMD_HMI_SET_REQUIRE_PIECE:    //设置需求件数
         if(cmd.channel_index < this->m_p_general_config->chn_count)
             m_p_channel_control[cmd.channel_index].ProcessHmiCmd(cmd);
         else if(cmd.channel_index == CHANNEL_ENGINE_INDEX){
@@ -2788,10 +2789,14 @@ void ChannelEngine::ProcessHmiCmd(HMICmdFrame &cmd){
         break;}
     case CMD_HMI_CLEAR_MACHINETIME_TOTAL:
         if(cmd.channel_index < this->m_p_general_config->chn_count)
+        {
             m_p_channel_control[cmd.channel_index].ClearMachineTimeTotal();
+            g_ptr_parm_manager->SetCurTotalMachiningTime(cmd.channel_index, 0);
+        }
         else if(cmd.channel_index == CHANNEL_ENGINE_INDEX){
             for(int i = 0; i < this->m_p_general_config->chn_count; i++){
                 this->m_p_channel_control[i].ClearMachineTimeTotal();
+                g_ptr_parm_manager->SetCurTotalMachiningTime(i, 0);
             }
         }
         break;

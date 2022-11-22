@@ -1000,6 +1000,7 @@ int HMICommunication::ProcessHmiCmd(){
             case CMD_HMI_SET_HANDWHEEL_INFO:      //HMI向SC设置手轮信息
             case CMD_HMI_GET_ERROR_INFO:          //HMI向SC获取错误信息
             case CMD_HMI_SET_ALL_COORD:           //HMI向SC设置当前通道的所有工件坐标系
+            case CMD_HMI_SET_REQUIRE_PIECE:       //HMI向SC请求当前需求件数
 #ifdef USES_GRIND_MACHINE
 			case CMD_SC_MECH_ARM_ERR:         //HMI响应机械手告警指令
 #endif
@@ -2596,7 +2597,7 @@ void HMICommunication::ProcessHmiSysBackupCmd(HMICmdFrame &cmd)
     cmd.frame_number |= 0x8000;
     if (m_background_type != Background_None || m_b_trans_file)
     {
-        std::cout << "busy backup" << std::endl;
+        std::cout << "busy backup"  << " background: " << m_background_type << " file_trans: " << m_b_recv_file << std::endl;
         cmd.cmd_extension = -1;
         SendCmd(cmd);
     }
@@ -2628,7 +2629,7 @@ void HMICommunication::ProcessHmiSysRecoverCmd(HMICmdFrame &cmd)
     cmd.frame_number |= 0x8000;
     if (m_background_type != Background_None || m_b_trans_file)
     {
-        std::cout << "busy recover" << std::endl;
+        std::cout << "busy recover" << " background: " << m_background_type << " file_trans: " << m_b_recv_file << std::endl;
         cmd.cmd_extension = -1;
         SendCmd(cmd);
     }

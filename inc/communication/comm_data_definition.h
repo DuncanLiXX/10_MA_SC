@@ -219,7 +219,7 @@ enum MiCmdCode{
 	CMD_MI_OPERATE = 0x104,					//SC指令MI执行某个动作，例如上伺服，断伺服等等
 	CMD_MI_INIT_COMPLETE = 0x0105,			//SC向MI初始化参数完成
 	CMD_MI_RESET = 0x0106,					//SC通知MI进行复位
-	CMD_MI_SET_REF = 0x0107,				//SC设置指定轴的参考点,用于绝对值编码器在初始化时设置轴零点
+    CMD_MI_SET_REF = 0x0107,				//SC设置指定轴的参考点,用于绝对值编码器在初始化时设置轴零点
 	CMD_MI_SET_REF_CUR = 0x0108,			//SC指令MI将指定轴的当前编码器值设为参考点, 绝对值编码器和无反馈的轴用此命令
 	CMD_MI_ACTIVE_Z_CAPT = 0x0109,			//SC激活指定轴的Z信号捕获功能
 	CMD_MI_SET_SPD_SPEED = 0x010A,			//SC设置主轴转速
@@ -302,7 +302,8 @@ enum ThreadRunFlag{
 	THREAD_CMD_RESEND = 0x02,	//命令重发线程
 	THREAD_FILE_TRANS = 0x04,	//文件传输线程
 	THREAD_MONITOR = 0x08,		//监控线程
-	THREAD_FILE_SAVEAS = 0x10	//文件另存为线程
+    THREAD_FILE_SAVEAS = 0x10,	//文件另存为线程
+    THREAD_BACKGROUND =  0x20,  //处理耗时命令
 };
 
 #endif /* INC_COMMUNICATION_COMM_DATA_DEFINITION_H_ */

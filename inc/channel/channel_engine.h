@@ -40,6 +40,7 @@ class MCArmCommunication;  //MC-ARMÍ¨Ñ¶Àà
 class ParmManager;      //ÅäÖÃ¹ÜÀíÀà
 class PmcRegister;		//PMC¼Ä´æÆ÷Àà
 class ChannelModeGroup;   //Í¨µÀ·½Ê½×éÀà
+class SyncAxisCtrl;     //Í¬²½Öá¿ØÖÆÀà
 struct SCSystemConfig; //SCÍ¨µÀÅäÖÃ
 struct SCChannelConfig;  //SCÍ¨µÀÅäÖÃ
 struct SCAxisConfig;	//SCÖáÅäÖÃ
@@ -130,6 +131,8 @@ void SetMcArmComm(MCArmCommunication *comm){this->m_p_mc_arm_comm = comm;}   //É
 //	void SetAxisSpeedParam(uint8_t index);		//ÉèÖÃÖ¸¶¨ÖáµÄËÙ¶ÈÏà¹ØĞÅÏ¢
 //	void SetAxisAccParam(uint8_t index);			//ÉèÖÃÖ¸¶¨Öá¼ÓËÙ¶ÈÏà¹ØĞÅÏ¢
 
+    void SetJPState(uint8_t chn, uint8_t JP, uint8_t last_JP, ChnWorkMode mode);
+    void SetJNState(uint8_t chn, uint8_t JN, uint8_t last_JN, ChnWorkMode mode);
 
 	void ManualMove(int8_t dir);		//ÊÖ¶¯ÒÆ¶¯
 	void ManualMoveStop();			//ÊÖ¶¯Í£Ö¹
@@ -148,10 +151,8 @@ void SetMcArmComm(MCArmCommunication *comm){this->m_p_mc_arm_comm = comm;}   //É
 
 	double GetPhyAxisMachPosFeedback(uint8_t index){return m_df_phy_axis_pos_feedback[index];}  //»ñÈ¡Ö¸¶¨ÎïÀíÖáµÄµ±Ç°·´À¡»úĞµ×ø±ê
 
-#ifdef USES_SPEED_TORQUE_CTRL
 	double GetPhyAxisMachSpeedFeedback(uint8_t index){return m_df_phy_axis_speed_feedback[index];}  //»ñÈ¡Ö¸¶¨ÎïÀíÖáµÄµ±Ç°·´À¡ËÙ¶È
 	double GetPhyAxisMachTorqueFeedback(uint8_t index){return m_df_phy_axis_torque_feedback[index];}  //»ñÈ¡Ö¸¶¨ÎïÀíÖáµÄµ±Ç°·´À¡Á¦¾Ø
-#endif
 	
 	double GetPhyAxisMachPosIntp(uint8_t index){return m_df_phy_axis_pos_intp[index];}   //·µ»ØÖ¸¶¨ÎïÀíÖáµÄµ±Ç°²å²¹»úĞµ×ø±ê
 	void StartUpdateProcess();		//¿ªÊ¼Ä£¿éÉı¼¶²Ù×÷
@@ -201,6 +202,7 @@ void SetMcArmComm(MCArmCommunication *comm){this->m_p_mc_arm_comm = comm;}   //É
 
     void SetMiWorkMode(uint8_t value);   //ÉèÖÃMIÄ£¿é¹¤×÷Ä£Ê½
     void SetMiHandwheelTrace(bool flag, uint8_t chn);   //ÉèÖÃMIÄ£¿éÊÖÂÖ¸ú×ÙÄ£Ê½
+    void SetMiHandwheelInsert(bool flag, uint8_t chn);  //ÉèÖÃMIÄ£¿éÊÖÂÖ²åÈëÄ£Ê½
     void SetMiCurChannel();   //ÉèÖÃMIµ±Ç°Í¨µÀºÅ
 
     bool CheckAxisRefBaseSignal(uint8_t phy_axis, int8_t dir);   //¼ì²éÖáÔ­µã´Ö»ù×¼ĞÅºÅ
@@ -290,6 +292,7 @@ void SetMcArmComm(MCArmCommunication *comm){this->m_p_mc_arm_comm = comm;}   //É
     void PrintDebugInfo();		//Êä³öµ÷ÊÔÊı¾İ
 
     PmcAxisCtrl *GetPmcAxisCtrl(){return m_pmc_axis_ctrl;}
+    SyncAxisCtrl *GetSyncAxisCtrl(){return  m_sync_axis_ctrl;}
 
 private:	//Ë½ÓĞ³ÉÔ±º¯Êı
 	ChannelEngine();   //¹¹Ôìº¯Êı
@@ -361,9 +364,6 @@ private:	//Ë½ÓĞ³ÉÔ±º¯Êı
 	void ProcessHmiClearMsgCmd(HMICmdFrame &cmd);     //´¦ÀíHMIÇå³ıÏûÏ¢ÃüÁî
     void ProcessHmiGetErrorCmd(HMICmdFrame &cmd);       //´¦ÀíHMI»ñÈ¡SC´íÎóÃüÁî
 	
-	void ProcessHmiEnableSyncAxisCmd(HMICmdFrame &cmd);   //´¦ÀíHMIÊ¹ÄÜÍ¬²½ÖáÃüÁî
-	void ProcessHmiCheckSyncCmd(HMICmdFrame &cmd);      //´¦ÀíHMI²éÑ¯Í¬²½ÖáÊ¹ÄÜÃüÁî
-
 	void ProcessHmiNotifyGraphCmd(HMICmdFrame &cmd);    //´¦ÀíHMIÍ¨ÖªÍ¼ĞÎÄ£Ê½ÃüÁî
     void ProcessHmiHandWheelCmd(HMICmdFrame &cmd);
 
@@ -413,20 +413,20 @@ private:	//Ë½ÓĞ³ÉÔ±º¯Êı
     void SendMiReset();		//·¢ËÍMI¸´Î»Ö¸Áî
  //   void SendMiGetVerCmd();		//·¢ËÍ»ñÈ¡MI°æ±¾Ö¸Áî
 
-	template<typename T>
-	void SendMiParam(uint8_t axis, uint32_t para_no, T data);  //·¢ËÍMI²ÎÊı
+//    template<typename T>
+//    void SendMiParam(uint8_t axis, uint32_t para_no, T data);  //·¢ËÍMI²ÎÊı
 
     void CheckBattery();		//µçÑ¹Ïà¹Ø¸æ¾¯¼ì²é
 
     void InitPhyAxisChn();		//³õÊ¼»¯ÎïÀíÖáÓëÍ¨µÀµÄÓ³Éä
     void SendMiPhyAxisEncoder();     //ÏòMI·¢ËÍÎïÀíÖáµÄ·´À¡
     void SetAxisRetRefFlag();    //ÏòMI·¢ËÍ¸÷Öá»Ø²Î¿¼µã½áÊø±êÖ¾
+    void SetServoState(uint8_t SVF, uint8_t pos_req = 0);  //ÏòMI·¢ËÍ¸÷ÖáÊ¹ÄÜ×´Ì¬£¬µÍµçÆ½ÓĞĞ§
+    void SetMLKState(uint8_t MLK); //ÏòMI·¢ËÍ¸÷Öá»úĞµËø×¡×´Ì¬
+    void ProcessRecoverMLK(uint8_t phy_axis, double mach_pos); // Òì²½´¦ÀíMLK»Ö¸´Á÷³Ì
 
     void SaveCurPhyAxisEncoder();  //µôµç±£´æµ±Ç°ËùÓĞÎïÀíÖáµÄ±àÂëÆ÷·´À¡
     void SaveKeepMacroVar();		//µôµç±£´æ·ÇÒ×Ê§ĞÔºê±äÁ¿
-
-    void InitSyncAxis();		//³õÊ¼»¯Í¬²½ÖáÏà¹Ø±äÁ¿
-    void DoSyncAxis();		//Í¬²½ÖáÖ´ĞĞÍ¬²½
 
     void CheckAxisSrvOn();     //¼ì²éÖáÉÏËÅ·şĞÅºÅ
 
@@ -525,7 +525,7 @@ private:  //Ë½ÓĞ³ÉÔ±±äÁ¿
 	double *m_df_phy_axis_torque_feedback;        //ÎïÀíÖáµ±Ç°·´À¡Á¦¾Ø
 //#endif	
 
-	int64_t m_n_phy_axis_svo_on;		//ÎïÀíÖáÊ¹ÄÜ±êÖ¾
+    uint64_t m_n_phy_axis_svo_on;		//ÎïÀíÖáÊ¹ÄÜ±êÖ¾
 
 	uint8_t m_n_pmc_axis_count;     //PMCÖáÊıÁ¿
 
@@ -559,11 +559,7 @@ private:  //Ë½ÓĞ³ÉÔ±±äÁ¿
 	uint32_t m_n_idle_count;      //¿ÕÏĞÖÜÆÚ¼ÆÊı
 
 	//Í¬²½Öá±äÁ¿
-	int64_t m_n_sync_axis_mask;   //Í¬²½Öámask
-	int64_t m_n_sync_over;			//Í¬²½ÖáÍ¬²½Íê³É±êÖ¾
-	int64_t m_n_sync_axis_enable_mask;   //Í¬²½ÖáÊ¹ÄÜmask
-	bool m_b_send_sync_cmd;			//ÊÇ·ñ·¢ËÍÍ¬²½ÃüÁî
-
+    SyncAxisCtrl *m_sync_axis_ctrl;
 
 	BdioDevList m_list_bdio_dev;    //SD-LINKÉè±¸¶ÓÁĞ
 
@@ -601,6 +597,10 @@ private:  //Ë½ÓĞ³ÉÔ±±äÁ¿
     const int HANDWHEEL_BYTES = 3;
     const static map<int, SDLINK_SPEC> m_SDLINK_MAP;
 
+    bool m_servo_ready{false};     //ËÅ·şÊÇ·ñ³õÊ¼»¯Íê³É£¨È«²¿ÖáÉÏÊ¹ÄÜ¾ÍËãÍê³É£©
+    uint8_t m_cur_svf{0x00};      //µ±Ç°µÄËÅ·ş¹Ø¶Ï±ê¼Ç
+
+    uint8_t MLK_recover_mask;       //»úĞµËø×¡»Ö¸´ÖĞ±ê¼Ç
 };
 
 #endif /* INC_CHANNEL_CHANNEL_ENGINE_H_ */

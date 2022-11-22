@@ -299,12 +299,18 @@ struct SCAxisConfig{
 
 	//同步轴相关参数
 	uint8_t sync_axis;							//是否同步轴  0--否   1--是
-	uint8_t master_axis_no;						//主动轴号
+    uint8_t series_ctrl_axis;                   //是否串联控制 0--否   1--同向   2--反向
+    uint8_t master_axis_no;						//主动轴号
 	uint8_t disp_coord;							//是否显示坐标  0--否   1--是
 	uint8_t auto_sync;							//从动轴回参考点后自动同步校准   0--否   1--是
-	uint32_t sync_err_max;						//位置同步最大误差	  单位：um
-	double benchmark_offset;					//主从轴基准位置偏差  单位：mm
-
+    uint32_t sync_err_max_pos;					//位置同步误差报警阈值	单位：um
+	double benchmark_offset;					//主从轴基准位置偏差  单位：mm    
+    uint8_t sync_pre_load_torque;               //预载电流偏置 单位：1%
+    uint8_t sync_err_max_torque;                //扭矩同步误差报警阈值 单位：1%
+    uint32_t sync_err_max_mach;                 //坐标同步误差报警阈值 单位：um
+    uint8_t sync_pos_detect;                    //是否进行位置同步误差检测 0--否   1：是
+    uint8_t sync_mach_detect;                   //是否进行坐标同步误差检测 0--否   1：是
+    uint8_t sync_torque_detect;                 //是否进行扭矩同步误差检测 0--否   1：是
 
 	double axis_home_pos[10];				//参考点位置  单位：mm
 	double ref_mark_err;                   //参考点基准误差   单位：mm    有效范围：0~10.0

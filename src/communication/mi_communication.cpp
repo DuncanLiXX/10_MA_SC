@@ -14,6 +14,7 @@
 #include "mi_communication.h"
 #include "channel_engine.h"
 #include "pmc_register.h"
+#include "showsc.h"
 
 
 const uint32_t kSharedMemMapSize = (uint32_t) 1024*1024;   	//映射区大小 1M
@@ -247,12 +248,27 @@ void MICommunication::SendOperateCmd(uint16_t opt, uint8_t axis, uint16_t enable
     WriteCmd(cmd);
 }
 
-void MICommunication::SendAxisEnableCmd(uint8_t axis, bool enable)
+void MICommunication::SendAxisEnableCmd(uint8_t axis, bool enable, uint8_t pos_req)
 {
     printf("SendAxisEnable:axis = %d, enable = %d\n",axis,true);
 
     // opt为1，代表是轴使能操作
-    SendOperateCmd(1,axis,enable);
+    MiCmdFrame cmd;
+    memset(&cmd, 0x00, sizeof(cmd));
+    cmd.data.cmd = CMD_MI_OPERATE;
+    cmd.data.axis_index = axis;
+    cmd.data.data[0] = 1;
+    cmd.data.data[1] = enable;
+    cmd.data.data[2] = pos_req;
+    WriteCmd(cmd);
+}
+
+void MICommunication::SendAxisMLK(uint8_t axis, bool MLK)
+{
+    printf("SendAxisMLK:axis = %d, enable = %d\n",axis,true);
+
+    // opt为7，代表是机械锁住使能操作
+    SendOperateCmd(2,axis,MLK);
 }
 
 void MICommunication::SendTapAxisCmd(uint8_t chn, uint8_t spd_axis, uint8_t z_axis)
@@ -342,6 +358,31 @@ void MICommunication::SendMpgStep(uint8_t chn, bool enable, uint16_t step)
     cmd.data.data[0] = enable;
     cmd.data.data[1] = step;
 
+    WriteCmd(cmd);
+}
+
+void MICommunication::SendSyncAxis(int64_t mask)
+{
+    MiCmdFrame cmd;
+    memset(&cmd, 0x00, sizeof(cmd));
+    cmd.data.cmd = CMD_MI_DO_SYNC_AXIS;
+
+    cmd.data.axis_index = 0xFF;
+
+    memcpy(cmd.data.data, &mask, sizeof(int64_t));
+    printf("SendSyncAxis:mask = %lld\n",mask);
+
+    WriteCmd(cmd);
+}
+
+void MICommunication::SendEnSyncAxis(uint8_t master, uint8_t slave, bool enable)
+{
+    MiCmdFrame cmd;
+    memset(&cmd, 0x00, sizeof(cmd));
+    cmd.data.cmd = CMD_MI_EN_SYNC_AXIS;
+    cmd.data.axis_index = slave;
+    cmd.data.data[0] = master;
+    cmd.data.data[1] = enable;
     WriteCmd(cmd);
 }
 
@@ -504,6 +545,26 @@ bool MICommunication::WriteAxisHLimitFlag(bool pos_flag, const uint64_t value){
 	return res;
 }
 
+/**
+ * @brief 发送MI参数
+ * @param axis : 轴号， MI的轴号从1开始, 0xFF表示系统参数
+ * @param para_no : 参数号
+ * @param data ：数据指针
+ * @param size ：参数数据所占的字节数
+ */
+//template<typename T>
+//void MICommunication::SendMiParam(uint8_t axis, uint32_t para_no, T data){
+//    MiCmdFrame cmd;
+//    memset(&cmd, 0x00, sizeof(cmd));
+//    cmd.data.cmd = CMD_MI_SET_PARAM;
+
+//    cmd.data.axis_index = axis;
+
+//    memcpy(cmd.data.data, &para_no, 4);
+//    memcpy(&cmd.data.data[2], &data, sizeof(T));
+
+//    WriteCmd(cmd);
+//}
 
 /**
  * @brief 读取指定轴的伺服告警码
@@ -539,7 +600,7 @@ bool MICommunication::ReadAxisWarnFlag(int8_t &warn){
  * @param value
  * @return
  */
-bool MICommunication::ReadServoOnState(int64_t &value){
+bool MICommunication::ReadServoOnState(uint64_t &value){
 	bool res = true;
 
 	ReadRegister64_M(SHARED_MEM_MI_STATUS_SVO_ON, value);
@@ -587,6 +648,29 @@ bool MICommunication::ReadIntpPosErr(uint64_t &value){
 }
 
 /**
+ * @brief 读取同步轴力矩偏差过大告警
+ * @param value
+ * @return
+ */
+bool MICommunication::ReadSyncTorqueErr(uint64_t &value){
+    bool res = true;
+    ReadRegister64_M(SHARED_MEM_MI_STATUS_SVO_SYNC_TORQUE_ERR, value);
+    return res;
+}
+
+/**
+ * @brief 读取同步轴机床坐标偏差过大告警
+ * @param value
+ * @return
+ */
+bool MICommunication::ReadSyncMachErr(uint64_t &value)
+{
+    bool res = true;
+    ReadRegister64_M(SHARED_MEM_MI_STATUS_SVO_SYNC_MACH_ERR, value);
+    return res;
+}
+
+/**
  * @brief 读取通道轴位置
  * @param pos_fb[out] : 数组，返回轴位置反馈
  * @param pos_intp[out] : 数组，返回轴位置插补
@@ -614,6 +698,7 @@ void MICommunication::ReadPhyAxisCurFedBckPos(double *pos_fb, double *pos_intp,d
 	double df = 0;
 	int64_t pos_tmp;
 	int32_t val_tmp;
+    int16_t torque_tmp;
 	for(int i = 0; i < count; i++){
 		ReadRegister64_M(SHARED_MEM_AXIS_MAC_POS_FB(i), pos_tmp);  //读反馈位置
 		df = pos_tmp;
@@ -626,14 +711,12 @@ void MICommunication::ReadPhyAxisCurFedBckPos(double *pos_fb, double *pos_intp,d
 
 		if(speed != nullptr){
 			ReadRegister32_M(SHARED_MEM_AXIS_SPEED(i), val_tmp);  //读反馈速度值
-			df = val_tmp;
-			speed[i] = df;
+            speed[i] = val_tmp;
 		}
 
 		if(torque != nullptr){
-			ReadRegister32_M(SHARED_MEM_AXIS_TORQUE(i), val_tmp); //读反馈力矩值
-			df = val_tmp;
-			torque[i] = df;
+            ReadRegister16_M(SHARED_MEM_AXIS_TORQUE(i), torque_tmp); //读反馈力矩值
+            torque[i] = torque_tmp;
 		}
 	}
 
@@ -757,6 +840,52 @@ void MICommunication::ReadPmcAxisRemainDis(double *pos, uint8_t count){
 
 	WriteRegister32_M(SHARED_MEM_AXIS_READ_OVER, 1);  //置位读取完成标志
 }
+
+/**
+ * @brief 读取刚性攻丝误差
+ * @param err:返回的误差
+ * @param group ：攻丝组 0-7
+ */
+void MICommunication::ReadTapErr(int32_t *err, int32_t *err_now, uint8_t cnt)
+{
+    //判断写完成标志
+    int32_t flag = 0;
+    ReadRegister32_M(SHARED_MEM_TAP_WRITE_OVER, flag);
+    if(flag == 0){
+        //ScPrintf("$$$$ReadTapErr : write flag = 0, return \n");
+        return;   //MI未更新，直接返回
+    }
+
+    int32_t var_err = 0;
+    int32_t var_err_now = 0;
+    for(int i=0; i<cnt; i++){
+        ReadRegister32_M(SHARED_MEM_TAP_ERR(i), var_err);
+        ReadRegister32_M(SHARED_MEM_TAP_ERR_NOW(i), var_err_now);
+        err[i] = var_err;
+        err_now[i] = var_err_now;
+    }
+    WriteRegister32_M(SHARED_MEM_TAP_READ_OVER, 1);  //置位读取完成标志
+}
+
+///**
+// * @brief 读取刚性攻丝误差(当前值)
+// * @param err:返回的误差
+// * @param group ：攻丝组 0-7
+// */
+//void MICommunication::ReadTapErrNow(int32_t &err, uint8_t group)
+//{
+//    //判断写完成标志
+//    int32_t flag = 0;
+//    ReadRegister32_M(SHARED_MEM_TAP_WRITE_OVER, flag);
+//    if(flag == 0){
+//        return;   //MI未更新，直接返回
+//    }
+
+
+//    ReadRegister32_M(SHARED_MEM_TAP_ERR_NOW(group), err);
+//    ScPrintf("SHARED_MEM_TAP_ERR_NEW(group) = %x, value = %d",SHARED_MEM_TAP_ERR_NOW(group),err);
+//    WriteRegister32_M(SHARED_MEM_TAP_READ_OVER, 1);  //置位读取完成标志
+//}
 
 /**
  * @brief 读取指定物理轴速度

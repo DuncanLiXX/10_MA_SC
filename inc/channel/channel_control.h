@@ -241,7 +241,7 @@ public:
 
 	void SaveKeepMacroVar();      //保存非易失性宏变量
 
-	void CheckAxisSrvOn(int64_t &flag);   //检查轴上伺服状态
+    bool CheckAxisSrvOn(uint64_t &flag);   //检查轴上伺服状态
 
 	void ResetOPSignal();   //复位OP信号
 	void ResetRSTSignal();	//复位RST信号
@@ -650,7 +650,7 @@ private://私有成员变量
 
 	uint16_t m_n_mc_auto_buf_max;     //MC中自动模式运动数据缓冲大小
 
-	int64_t m_n_real_phy_axis;          //通道内实际物理轴Mask
+    uint64_t m_n_real_phy_axis;          //通道内实际物理轴Mask
 
 	uint32_t m_mask_intp_axis;      //通道插补轴mask，按通道轴顺序
 	uint8_t m_n_intp_axis_count;    //通道插补轴个数

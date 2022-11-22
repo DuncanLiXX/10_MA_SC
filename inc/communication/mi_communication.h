@@ -64,6 +64,12 @@ class ChannelEngine;   //通道引擎
 #define SHARED_MEM_AXIS_TORQUE(n) (SHARED_MEM_AXIS_MAC_POS_INTP(n)+0x30)   			    //第n轴的实时力矩反馈
 #define SHARED_MEM_AXIS_READ_OVER (SHARED_MEM_AXIS_STATUS_BASE+0x1000)   					//轴数据的读取完成标志
 #define SHARED_MEM_AXIS_WRITE_OVER (SHARED_MEM_AXIS_STATUS_BASE+0x1004)   				    //轴数据的写入完成标志
+#define SHARED_MEM_TAP_ERR(n) (SHARED_MEM_AXIS_MAC_POS_INTP(n)+0x1040)                  //第n个攻丝组的刚性攻丝误差
+#define SHARED_MEM_TAP_ERR_NOW(n) (SHARED_MEM_AXIS_MAC_POS_INTP(n)+0x1044)                  //第n个攻丝组的刚性攻丝误差
+#define SHARED_MEM_TAP_READ_OVER (SHARED_MEM_AXIS_STATUS_BASE+0x1240)                  //第n个攻丝组的刚性攻丝误差
+#define SHARED_MEM_TAP_WRITE_OVER (SHARED_MEM_AXIS_STATUS_BASE+0x1244)                  //第n个攻丝组的刚性攻丝误差
+
+
 
 //通道状态寄存器
 
@@ -78,8 +84,10 @@ class ChannelEngine;   //通道引擎
 
 #define SHARED_MEM_MI_STATUS_SVO_ON     (SHARED_MEM_MI_STATUS_BASE + 0x28)              //轴使能标志，uint64_t类型，一个bit代表一个轴
 #define SHARED_MEM_MI_STATUS_SVO_TRACK_ERR (SHARED_MEM_MI_STATUS_BASE + 0x30)      //轴跟随误差超限告警
-#define SHARED_MEM_MI_STATUS_SVO_SYNC_POS_ERR   (SHARED_MEM_MI_STATUS_BASE + 0x38)      //同步轴指令偏差过大
+#define SHARED_MEM_MI_STATUS_SVO_SYNC_POS_ERR   (SHARED_MEM_MI_STATUS_BASE + 0x38)      //同步轴位置偏差过大告警
 #define SHARED_MEM_MI_STATUS_SVO_INTP_POS_ERR  (SHARED_MEM_MI_STATUS_BASE + 0x40)      //位置指令过大告警
+#define SHARED_MEM_MI_STATUS_SVO_SYNC_TORQUE_ERR  (SHARED_MEM_MI_STATUS_BASE + 0x48)    //同步轴力矩偏差过大告警
+#define SHARED_MEM_MI_STATUS_SVO_SYNC_MACH_ERR  (SHARED_MEM_MI_STATUS_BASE + 0x50)      //同步轴机床坐标偏差过大告警
 
 #define SHARED_MEM_MI_STATUS_SVO_WARN_CODE(n)  (SHARED_MEM_MI_STATUS_BASE + 0x100 + 0x04*n)       //第n轴的伺服告警码
 
@@ -181,6 +189,7 @@ public:
 	bool ReadPhyAxisSpeed(int32_t *speed, uint8_t index);  	//读取指定物理轴速度
     void ReadPhyAxisEncoder(int64_t *encoder, uint8_t count);   //读取物理轴当前编码器反馈
 	void ReadPmcAxisRemainDis(double *pos, uint8_t count);    //读取PMC轴余移动量
+    void ReadTapErr(int32_t *err, int32_t *err_now,uint8_t cnt = 8);  // 读取特定攻丝组的攻丝误差(最大值)
 	bool ReadCmd(MiCmdFrame &data);    //读取指令
 	bool WriteCmd(MiCmdFrame &data, bool resend = false);   //发送指令
 
@@ -206,7 +215,8 @@ public:
     // axis:轴号，从1开始
     // enable: 0:功能关 1:功能开
     void SendOperateCmd(uint16_t opt, uint8_t axis, uint16_t enable);   //发送轴操作指令
-    void SendAxisEnableCmd(uint8_t axis,bool enable);   // 轴上使能
+    void SendAxisEnableCmd(uint8_t axis, bool enable, uint8_t pos_req = 0);   // 轴上使能
+    void SendAxisMLK(uint8_t axis, bool MLK);    // 轴机械锁住
 
     // spd_aixs: 主轴轴号，从1开始
     // z_axis: z轴轴号，从1开始
@@ -225,18 +235,41 @@ public:
     // enable: 0:MI使用默认的步长逻辑  1:自定义手轮步长
     // step: 手轮步长 单位:um
     void SendMpgStep(uint8_t chn,bool enable,uint16_t step);
+    // mask: 64bit对应最多64个轴,需要同步的轴对应位置1
+    void SendSyncAxis(int64_t mask);
+    // master: 主动轴号，从1开始
+    // slave: 从动轴号，从1开始
+    // enable: 0:同步无效  1:同步有效
+    void SendEnSyncAxis(uint8_t master, uint8_t slave, bool enable);
 
 	bool ReadEncoderWarn(uint64_t &value);		//读取轴编码器告警标志
 	bool ReadServoHLimitFlag(bool pos_flag, uint64_t &value);   //读取伺服限位告警信息
     bool ReadServoWarn(uint64_t &value);			//读取轴伺服告警标志
     bool ReadServoWarnCode(uint8_t axis, uint32_t &value); 	//读取指定轴的伺服告警码
     bool ReadAxisWarnFlag(int8_t &warn);        //读取轴告警标志
-    bool ReadServoOnState(int64_t &value);		//读取轴使能状态
+    bool ReadServoOnState(uint64_t &value);		//读取轴使能状态
     bool ReadTrackErr(uint64_t &value);        //读取轴跟踪误差过大告警
     bool ReadSyncPosErr(uint64_t &value);     //读取同步轴指令偏差过大告警
     bool ReadIntpPosErr(uint64_t &value);      //读取轴位置指令过大告警
+    bool ReadSyncTorqueErr(uint64_t &value);   //读取同步轴力矩偏差报警
+    bool ReadSyncMachErr(uint64_t &value);     //读取同步轴机床坐标偏差报警
 
     bool WriteAxisHLimitFlag(bool pos_flag, const uint64_t value);   //写入物理轴硬限位标志
+
+    template<typename T>
+    void SendMiParam(uint8_t axis, uint32_t para_no, T data)  //发送MI参数
+    {
+        MiCmdFrame cmd;
+        memset(&cmd, 0x00, sizeof(cmd));
+        cmd.data.cmd = CMD_MI_SET_PARAM;
+
+        cmd.data.axis_index = axis;
+
+        memcpy(cmd.data.data, &para_no, 4);
+        memcpy(&cmd.data.data[2], &data, sizeof(T));
+
+        WriteCmd(cmd);
+    }
 
 
 private://私有接口

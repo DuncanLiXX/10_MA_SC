@@ -3101,11 +3101,13 @@ void ParmManager::UpdateToolMeasure(uint16_t chn_index, uint8_t index, const dou
 		sprintf(kname, "geo_comp_basic_z");
 	}else{
 #else
-	if(index > 0){
+	//if(index > 0){
 #endif
 		this->m_sc_tool_config[chn_index].geometry_compensation[index-1][2] = value;
-		sprintf(kname, "geo_comp_z_%hhu", index-1);
-	}
+		sprintf(kname, "geo_comp_z_%hhu", index);
+		// @modify  为什么 这里 index -1 ?
+		// sprintf(kname, "geo_comp_z_%hhu", index-1);
+	//}
 
 	m_ini_tool->SetDoubleValue(sname, kname, value);
 

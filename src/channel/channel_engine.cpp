@@ -6261,7 +6261,6 @@ int ChannelEngine::UpdateMI(){
         this->SendHmiUpdateStatus(3, 2);
         printf("SUCCEED TO UPDATE MI MODULE\n");
 
-
     }
 
 END:
@@ -7272,10 +7271,10 @@ void ChannelEngine::InitMiParam(){
 void ChannelEngine::SendMiPcData(uint8_t axis){
     if(this->m_p_pc_table == nullptr)
         return;
+
     MiCmdFrame cmd;
     memset(&cmd, 0x00, sizeof(cmd));
     cmd.data.cmd = CMD_MI_SET_AXIS_PC_DATA;
-
     cmd.data.axis_index = NO_AXIS;
 
     //放置数据
@@ -8483,6 +8482,7 @@ void ChannelEngine::ProcessPmcSignal(){
         }
 
         //倍率信号处理
+
         if(g_reg->_JV != g_reg_last->_JV){
             uint16_t ratio= ~g_reg->_JV;
             if(g_reg->_JV == 0)

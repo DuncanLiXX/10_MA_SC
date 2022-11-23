@@ -1319,7 +1319,9 @@ bool ChannelControl::SetSysVarValue(const int index, const double &value){
         int id = index - 2201;
         if(id < kMaxToolCount){
             this->m_p_chn_tool_config->geometry_compensation[id][2] = value;
-            g_ptr_parm_manager->UpdateToolMeasure(this->m_n_channel_index, id+1, value);
+            // @modify 为什么就这个 id + 1  其他的Update 没有 id + 1
+            g_ptr_parm_manager->UpdateToolMeasure(this->m_n_channel_index, id, value);
+            //g_ptr_parm_manager->UpdateToolMeasure(this->m_n_channel_index, id+1, value);
             this->NotifyHmiToolOffsetChanged(id+1);   //通知HMI刀偏值更改
         }else
             return false;
@@ -10554,11 +10556,13 @@ bool ChannelControl::ExecuteInputMsg(RecordMsg * msg){
     int tool_number = input_msg->PData;
     int plane = this->m_mc_mode_exec.bits.mode_g17;
 
-    if(tool_number <= 0 or tool_number > kMaxToolCount){
-        // @TODO 刀具号超出范围
-        CreateError(ERR_NO_CUR_RUN_DATA, ERROR_LEVEL, CLEAR_BY_MCP_RESET, 0, m_n_channel_index);
-        this->m_error_code = ERR_NO_CUR_RUN_DATA;
-        return false;
+    if(input_type < 20){
+        if(tool_number <= 0 or tool_number > kMaxToolCount){
+            // @TODO 刀具号超出范围
+            CreateError(ERR_NO_CUR_RUN_DATA, ERROR_LEVEL, CLEAR_BY_MCP_RESET, 0, m_n_channel_index);
+            this->m_error_code = ERR_NO_CUR_RUN_DATA;
+            return false;
+        }
     }
 
     switch(input_type){
@@ -10571,32 +10575,38 @@ bool ChannelControl::ExecuteInputMsg(RecordMsg * msg){
         else if(plane == 3)
             this->m_p_chn_tool_config->geometry_compensation[tool_number-1][0] = input_msg->RData;
 
-        g_ptr_parm_manager->UpdateToolMeasure(this->m_n_channel_index, tool_number, input_msg->RData);
+        g_ptr_parm_manager->UpdateToolMeasure(this->m_n_channel_index, tool_number-1, input_msg->RData);
         this->NotifyHmiToolOffsetChanged(tool_number);   //通知HMI刀偏值更改
         break;
     }
     case 11:{
         this->m_p_chn_tool_config->radius_compensation[tool_number-1] = input_msg->RData;
+        g_ptr_parm_manager->UpdateToolRadiusGeo(this->m_n_channel_index, tool_number-1, input_msg->RData);
         this->NotifyHmiToolOffsetChanged(tool_number);   //通知HMI刀偏值更改
         break;
     }
     case 12:{
         this->m_p_chn_tool_config->geometry_wear[tool_number-1] = input_msg->RData;
+        g_ptr_parm_manager->UpdateToolWear(this->m_n_channel_index, tool_number-1, input_msg->RData);
         this->NotifyHmiToolOffsetChanged(tool_number);   //通知HMI刀偏值更改
         break;
     }
     case 13:{
         this->m_p_chn_tool_config->radius_wear[tool_number-1] = input_msg->RData;
+        g_ptr_parm_manager->UpdateToolRadiusWear(this->m_n_channel_index, tool_number-1, input_msg->RData);
         this->NotifyHmiToolOffsetChanged(tool_number);   //通知HMI刀偏值更改
         break;
     }
     case 20:{
         int param = input_msg->PData;
 
-        if(SetSysVarValue(param, input_msg->RData))
-            break;
+        if(SetSysVarValue(param, input_msg->RData)){
+        	printf("param: %d - value: %lf\n", param, input_msg->RData);
+        	break;
+        }
         else{
-            CreateError(ERR_NO_CUR_RUN_DATA, ERROR_LEVEL, CLEAR_BY_MCP_RESET, 0, m_n_channel_index);
+        	printf("param: %d - value: %lf\n", param, input_msg->RData);
+        	CreateError(ERR_NO_CUR_RUN_DATA, ERROR_LEVEL, CLEAR_BY_MCP_RESET, 0, m_n_channel_index);
             this->m_error_code = ERR_NO_CUR_RUN_DATA;
             return false;
         }
@@ -12628,6 +12638,10 @@ void ChannelControl::SetMcRatio(){
 	cmd.data.data[1] = this->m_channel_status.auto_ratio;
 	cmd.data.data[2] = this->m_channel_status.manual_ratio;
 
+	printf("rapid: %d auto: %d manual: %d\n",
+			this->m_channel_status.rapid_ratio,
+			this->m_channel_status.auto_ratio,
+			this->m_channel_status.manual_ratio);
 
     if(!this->m_b_mc_on_arm)
         m_p_mc_comm->WriteCmd(cmd);

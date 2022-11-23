@@ -36,6 +36,10 @@ public:
 
     void Reset();
 
+    void clearError();
+
+    ErrorType err_code = ERR_NONE;
+
 private:
 	uint8_t m_n_channel_index;     //所属通道号
 	ChannelControl *m_p_channel_control;    //通道控制对象

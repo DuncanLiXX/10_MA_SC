@@ -495,7 +495,7 @@ enum ErrorType {
 	ERR_TOO_MANY_G_CODE, 			//单行NC代码中G指令个数超限
 	ERR_TOO_MANY_M_CODE, 			//单行NC代码中M指令个数超限
 	ERR_TOO_MANY_MACRO_EXP, 		//单行NC代码中宏表达式个数超限
-	ERR_BRACKET_NOT_MATCH,  		//括号不匹配
+	ERR_BRACKET_NOT_MATCH = 2010,  		//括号不匹配
 	ERR_INVALID_MACRO_EXP,  		//非法的宏表达式
 	ERR_MACRO_OPT_VALUE,            //非法的宏函数操作数
 	ERR_MACRO_EXP_CAL,				//宏表达式计算错误
@@ -505,7 +505,7 @@ enum ErrorType {
 	ERR_NOT_IN_ONE_LINE,            //存在不可同行的指令
 	ERR_ARC_NO_DATA,                //圆弧指令缺少参数
 	ERR_ARC_INVALID_DATA,			//圆弧数据错误，无法自洽
-	ERR_NO_D_DATA,					//缺少D值指定
+	ERR_NO_D_DATA = 2020,			//缺少D值指定
 	ERR_NO_H_DATA,					//缺少H值指定
 	ERR_NO_F_DATA,					//G01、G02、G03缺少F值指定
 	ERR_SUB_BACK,                   //子程序返回，恢复现场异常
@@ -515,7 +515,7 @@ enum ErrorType {
 	ERR_NO_SUB_PROG_P,              //无P字段指定子程序号
 	ERR_MCODE_SEPARATED,			//存在不能同行的M指令     注：部分M指令（需要NC内部处理的M指令）不能与其它M指令同行
 	ERR_PRE_SCAN,					//预扫描执行失败
-	ERR_QUIT_PRESCAN,				//取消预扫描失败
+	ERR_QUIT_PRESCAN = 2030,		//取消预扫描失败
 	ERR_SAME_SUB_INDEX,				//子程序同名
 	ERR_SAME_SEQ_NO,				//重复的顺序号
 	ERR_NO_SUB_PROG,				//找不到指定的子程序
@@ -525,7 +525,7 @@ enum ErrorType {
 	ERR_JUMP_GOTO,					//执行GOTO指令，跳转失败
 	ERR_JUMP_END,                   //END指令执行失败
 	ERR_LACK_OF_PARAM,				//指令缺少参数
-	ERR_JUMP_GOTO_ILLIGAL,			//非法跳转
+	ERR_JUMP_GOTO_ILLIGAL = 2040,	//非法跳转
 	ERR_NO_P_DATA,                  //缺少P值指定
 	ERR_INVALID_L_DATA,             //非法L值指定
 	ERR_TOO_MANY_T_CODE, 			//单行NC代码中T指令个数超限
@@ -534,7 +534,6 @@ enum ErrorType {
 	ERR_G_EXP_NULL,                 //G指令表达式为空值
 	ERR_M_EXP_NULL,                 //M指令表达式为空值
 	ERR_T_EXP_NULL,                 //T指令表达式为空值
-
 	IF_ELSE_MATCH_FAILED = 2049,           // if else 匹配失败 栈中没有if 却碰到了 else
 	COMP_LIST_NOT_INIT,             // 刀补模块 输出消息队列指针未初始化
 	ARC_RADIUS_TOO_SMALL,           // 圆弧半径过小 无法计算刀补
@@ -561,8 +560,6 @@ enum ErrorType {
 	ERR_R_COMP_CHANGE_AFTER_ESTABLISH,			//刀具半径补偿不能在建立后立即改变
 	ERR_R_COMP_UNDER_FIXED_CYCLE,				//固定循环中不能使用刀具半径补偿
 	ERR_R_COMP_GENERATE_FAIL,					//刀补轨迹生成失败
-
-
 
 
 	//通讯告警	7000~7999

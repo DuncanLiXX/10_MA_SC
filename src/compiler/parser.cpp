@@ -279,6 +279,25 @@ bool Parser::CheckGCode(LexerGCode *gcode){
 		}
 		code = gcode->g_value[i]/10;
 
+		// @add zk  新增 对G54.1 P XX 支持
+		if(gcode->g_value[i] == 541){
+			double value = 0.0;
+			if(!GetCodeData(P_DATA, value)){
+				CreateError(ERR_NO_P_DATA, ERROR_LEVEL, CLEAR_BY_MCP_RESET);
+				return false;
+			}
+
+			if(value < 1 or value > 99){
+				CreateError(ERR_NO_P_DATA, ERROR_LEVEL, CLEAR_BY_MCP_RESET);
+				return false;
+			}
+			code = 5400 + value;
+			// 将 G54.1 P XX 转换为 G5401 ~ G5499 处理
+			gcode->g_value[i] = code * 10;
+		}
+
+		// @add zk
+
 
 		if((code >=5401 && code <=5499) &&
 				(0x00 == (mode_mask & (0x01<<14)))){   //特殊处理G5401~G5499
@@ -621,6 +640,8 @@ bool Parser::AnalyzeGCode(LexerGCode *gcode){
 
 	//TODO 处理14组模态指令：G54~G59 工件坐标系选择指令，包括G5401~G5499扩展工件坐标系
 	if(m_mode_mask & GMODE_14){
+
+		printf("create gcode : %d\n", m_mode_code[14]);
 		if(!CreateCoordMsg(m_mode_code[14]))
 			return false;
 	}
@@ -1906,9 +1927,11 @@ bool Parser::CreateLoopMsg(const int gcode){
  * @return true--成功  false--失败
  */
 bool Parser::CreateCoordMsg(const int gcode){
+
 	DPointChn pos;	//终点
 	DPointChn src = this->m_p_compiler_status->cur_pos;   //起点
 	uint32_t axis_mask = 0;   //轴掩码
+	double data = 0;
 
 	if(gcode == G52_CMD || gcode == G53_CMD || gcode == G92_CMD){
 		if(!GetTargetPos(pos, axis_mask))
@@ -1916,6 +1939,7 @@ bool Parser::CreateCoordMsg(const int gcode){
 	}
 
 	RecordMsg *new_msg = new CoordMsg(pos, src, gcode, axis_mask);
+
 	if(new_msg == nullptr){
 		//TODO 内存分配失败，告警
 		CreateError(ERR_MEMORY_NEW, FATAL_LEVEL, CLEAR_BY_RESET_POWER);

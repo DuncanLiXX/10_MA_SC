@@ -55,8 +55,15 @@ void ToolCompensate::SetChannelIndex(uint8_t chn_index){
 	this->m_p_channel_control = g_ptr_chn_engine->GetChnControl(chn_index);
 }
 
+void ToolCompensate::clearError(){
+	err_code = ERR_NONE;
+	interp.err_code = ERR_NONE;
+}
 
-void ToolCompensate::Reset(){}
+
+void ToolCompensate::Reset(){
+	interp.reset();
+}
 
 /**
  * @brief 数据处理入口函数
@@ -67,103 +74,8 @@ void ToolCompensate::ProcessData(ListNode<RecordMsg *> *node){
 
 	msg = node->data;
 
-	/*switch(msg->GetMsgType()){
-		case LINE_MSG:{  // G01
-			LineMsg * tmsg = (LineMsg *)msg;
 
-			ADRSREG_DEF block;
-			memset(&block, 0, sizeof(block));
-
-			block.GA.All = TGCDROM[1]; // G模态组
-			// 位置 x y z
-			block.A1 = tmsg->GetTargetPos().GetAxisValue(0)*1000; // 转换未 um 整数
-			block.A2 = tmsg->GetTargetPos().GetAxisValue(1)*1000;
-			block.A3 = tmsg->GetTargetPos().GetAxisValue(2)*1000;
-			// x y z 输入标志
-			block.FA1.inp = 1;
-			block.FA2.inp = 1;
-			block.FA3.inp = 1;
-
-			block.F = tmsg->GetFeed();
-			block.FF.inp = 1;
-			block.line_number = tmsg->GetLineNo();
-			pushComp(block);
-
-			break;
-		}
-		case RAPID_MSG:{ // G00
-			RapidMsg * tmsg = (RapidMsg *)msg;
-
-			ADRSREG_DEF block;
-			memset(&block, 0, sizeof(block));
-
-			block.GA.All = TGCDROM[0]; // G模态组
-			// 位置 x y z
-			block.A1 = tmsg->GetTargetPos().GetAxisValue(0)*1000; // 转换未 um 整数
-			block.A2 = tmsg->GetTargetPos().GetAxisValue(1)*1000;
-			block.A3 = tmsg->GetTargetPos().GetAxisValue(2)*1000;
-			// x y z 输入标志
-			block.FA1.inp = 1;
-			block.FA2.inp = 1;
-			block.FA3.inp = 1;
-			block.line_number = tmsg->GetLineNo();
-			pushComp(block);
-			break;
-		}
-		case ARC_MSG:{   // G02 G03
-			ArcMsg * tmsg = (ArcMsg *)msg;
-
-			ADRSREG_DEF block;
-			memset(&block, 0, sizeof(block));
-
-			if(tmsg->GetGCode() == 20){
-				block.GA.All = TGCDROM[2]; // G模态组
-			}else{
-				block.GA.All = TGCDROM[3]; // G模态组
-			}
-
-			// 位置 x y z
-			block.A1 = tmsg->GetTargetPos().GetAxisValue(0)*1000; // 转换未 um 整数
-			block.A2 = tmsg->GetTargetPos().GetAxisValue(1)*1000;
-			block.A3 = tmsg->GetTargetPos().GetAxisValue(2)*1000;
-			// x y z 输入标志
-			block.FA1.inp = 1;
-			block.FA2.inp = 1;
-			block.FA3.inp = 1;
-
-			// IJR
-			if(tmsg->getR() != 0){
-				block.R = tmsg->getR();
-				block.FR.inp = 1;
-			}else{
-				block.I = tmsg->getI();
-				block.J = tmsg->getJ();
-				block.FI.inp = 1;
-				block.FJ.inp = 1;
-			}
-
-			block.F = tmsg->GetFeed();
-			block.FF.inp = 1;
-			block.line_number = tmsg->GetLineNo();
-			pushComp(block);
-			break;
-		}
-		case COMPENSATE_MSG: // G40 G41 G42
-		{
-			CompensateMsg *tmsg = (CompensateMsg *) msg;
-
-			ADRSREG_DEF block;
-			memset(&block, 0, sizeof(block));
-			block.GG.All = TGCDROM[tmsg->GetGCode()/10];
-			block.line_number = tmsg->GetLineNo();
-			pushComp(block);
-			break;
-		}
-	}*/
-
-
-    switch(msg->GetMsgType()){
-
+	switch(msg->GetMsgType()){
 		case RAPID_MSG:{
 			RapidMsg * tmsg = (RapidMsg *)msg;
 			block * pblock = interp.interp_block();
@@ -176,7 +88,14 @@ void ToolCompensate::ProcessData(ListNode<RecordMsg *> *node){
 			pblock->z_number = tmsg->GetTargetPos().GetAxisValue(2);
 			pblock->line_number = tmsg->GetLineNo();
 			pblock->flags = tmsg->GetFlags().all;
-			printf("convert rapid ... \n");
+
+			pblock->a_number = tmsg->GetTargetPos().GetAxisValue(3);
+			pblock->b_number = tmsg->GetTargetPos().GetAxisValue(4);
+			pblock->c_number = tmsg->GetTargetPos().GetAxisValue(5);
+			pblock->u_number = tmsg->GetTargetPos().GetAxisValue(6);
+			pblock->v_number = tmsg->GetTargetPos().GetAxisValue(7);
+
+			printf("convert rapid lino:%llu ... \n", tmsg->GetLineNo());
 			interp.convert_straight(0, &interp._setup._block, &interp._setup);
 			break;
 		}
@@ -190,10 +109,17 @@ void ToolCompensate::ProcessData(ListNode<RecordMsg *> *node){
 			pblock->x_number = tmsg->GetTargetPos().GetAxisValue(0);
 			pblock->y_number = tmsg->GetTargetPos().GetAxisValue(1);
 			pblock->z_number = tmsg->GetTargetPos().GetAxisValue(2);
+
+			pblock->a_number = tmsg->GetTargetPos().GetAxisValue(3);
+			pblock->b_number = tmsg->GetTargetPos().GetAxisValue(4);
+			pblock->c_number = tmsg->GetTargetPos().GetAxisValue(5);
+			pblock->u_number = tmsg->GetTargetPos().GetAxisValue(6);
+			pblock->v_number = tmsg->GetTargetPos().GetAxisValue(7);
+
 			pblock->flags = tmsg->GetFlags().all;
 			pblock->f_number = tmsg->GetFeed();
 			pblock->line_number = tmsg->GetLineNo();
-			printf("convert line ... \n");
+			printf("convert line lino:%llu... \n", tmsg->GetLineNo());
 			interp.convert_straight(10, &interp._setup._block, &interp._setup);
 			break;
 		}
@@ -207,6 +133,13 @@ void ToolCompensate::ProcessData(ListNode<RecordMsg *> *node){
 			pblock->x_number = tmsg->GetTargetPos().GetAxisValue(0);
 			pblock->y_number = tmsg->GetTargetPos().GetAxisValue(1);
 			pblock->z_number = tmsg->GetTargetPos().GetAxisValue(2);
+
+			pblock->a_number = tmsg->GetTargetPos().GetAxisValue(3);
+			pblock->b_number = tmsg->GetTargetPos().GetAxisValue(4);
+			pblock->c_number = tmsg->GetTargetPos().GetAxisValue(5);
+			pblock->u_number = tmsg->GetTargetPos().GetAxisValue(6);
+			pblock->v_number = tmsg->GetTargetPos().GetAxisValue(7);
+
 			pblock->flags = tmsg->GetFlags().all;
 			pblock->f_number = tmsg->GetFeed();
 			pblock->line_number = tmsg->GetLineNo();
@@ -221,7 +154,7 @@ void ToolCompensate::ProcessData(ListNode<RecordMsg *> *node){
 				pblock->j_number = tmsg->getJ();
 			}
 
-			printf("convert arc ... \n");
+			printf("convert arc lino: %llu... \n", tmsg->GetLineNo());
 			if(tmsg->getDirect() == -1){
 				interp.convert_arc(20, &interp._setup._block, &interp._setup);
 			}else{
@@ -259,11 +192,17 @@ void ToolCompensate::ProcessData(ListNode<RecordMsg *> *node){
 				if((flags & FLAG_BLOCK_OVER) or (flags & FLAG_WAIT_MOVE_OVER) or (flags & FLAG_EOF))
 				{
 					interp.flush_comp();
+					// 程序结束 关闭刀补
+					if(flags & FLAG_EOF) interp.convert_cutter_compensation_off(&interp._setup);
 				}
 			}
 
 			this->m_p_output_msg_list->Append(node);
 		}
+	}
+
+	if(interp.err_code != 0){
+		err_code = interp.err_code;
 	}
 
 	//this->m_p_output_msg_list->Append(node);

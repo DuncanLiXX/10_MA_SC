@@ -197,6 +197,7 @@ enum HMICmdCode {
     CMD_HMI_SET_ALL_COORD,           //HMI向SC设置当前通道的所有工件坐标系 0x3D
     CMD_HMI_BACKUP_REQUEST,          //HMI向SC请求备份 0x3E
     CMD_HMI_RECOVER_REQUEST,         //HMI向SC请求恢复 0x3F
+    CMD_HMI_CLEAR_ALARMFILE,         //HMI向SC请求清空报警文件 0x40
 
 
 	//SC-->HMI

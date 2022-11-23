@@ -2854,7 +2854,7 @@ void ChannelEngine::ProcessHmiGetLicInfoCmd(HMICmdFrame &cmd){
     }
 
     int remainDays = GetRemainDay();
-    memcpy(cmd.data+SN_COUNT+10+1, (char *)remainDays, sizeof(remainDays));
+    memcpy(cmd.data+SN_COUNT+10+1, (char *)&remainDays, sizeof(remainDays));
 
 
     this->m_p_hmi_comm->SendCmd(cmd);
@@ -11439,6 +11439,13 @@ int ChannelEngine::GetRemainDay()
     std::cout << "startYear: " << startYear << " startMonth: " << startMonth << " startDay: " << startDay << std::endl;
     std::cout << "endYear: "   << endYear   << " endMonth: "   << endMonth   << " endDay:   " << endDay   << std::endl;
 
+//    if (m_lic_info.licflag == 'n' || m_lic_info.licflag == 'o' || m_lic_info.licflag == 'v')
+//        return 0;
+    if (startYear > endYear)
+    {
+        std::cout << "startYear > endYear" << std::endl;
+        return 0;
+    }
 
     int h[13] = { 0, 31, 28, 31, 30, 31, 30 , 31, 31, 30, 31, 30, 31 };
     //一年的总天数
@@ -11470,9 +11477,6 @@ int ChannelEngine::GetRemainDay()
             return elapseSum;
     };
 
-
-    if (startYear > endYear)
-        return -1;
     int remainDay = 0;
     if (startYear != endYear)
     {

@@ -369,6 +369,7 @@ private:	//私有成员函数
 
     void ProcessHmiSetAllCoordCmd(HMICmdFrame &cmd);    //HMI向SC设置当前通道的所有工件坐标系
 
+
 	void SendHmiUpdateStatus(uint8_t total_step, uint8_t cur_step);  //给HMI发送升级状态
 
 
@@ -466,6 +467,8 @@ private:	//私有成员函数
 	void ProcessHmiGetPcDataCmd(HMICmdFrame &cmd);    //处理HMI获取螺补数据指令
 
 	void CheckTmpDir();    //测试tmp目录是否存在，不存在则创建
+
+    int GetRemainDay();     //获取注册剩余时间
 
 
 

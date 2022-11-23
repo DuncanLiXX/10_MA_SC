@@ -1042,11 +1042,14 @@ int HMICommunication::ProcessHmiCmd(){
 				break;
 			case CMD_SC_NOTIFY_MCODE:
 				break;
-            case CMD_HMI_BACKUP_REQUEST:
+            case CMD_HMI_BACKUP_REQUEST://HMI向SC请求备份
                 ProcessHmiSysBackupCmd(cmd);
                 break;
-            case CMD_HMI_RECOVER_REQUEST:
+            case CMD_HMI_RECOVER_REQUEST://HMI向SC请求恢复
                 ProcessHmiSysRecoverCmd(cmd);
+                break;
+            case CMD_HMI_CLEAR_ALARMFILE:         //HMI向SC请求清空报警文件
+                ProcessHmiClearAlarmFile(cmd);
                 break;
 			default:
 				g_ptr_trace->PrintLog(LOG_ALARM, "收到不支持的HMI指令cmd=%d", cmd.cmd);
@@ -2597,16 +2600,16 @@ void HMICommunication::ProcessHmiSysBackupCmd(HMICmdFrame &cmd)
     cmd.frame_number |= 0x8000;
     if (m_background_type != Background_None || m_b_trans_file)
     {
-        std::cout << "busy backup"  << " background: " << m_background_type << " file_trans: " << m_b_recv_file << std::endl;
+        std::cout << "busy backup"  << " background: " << m_background_type << " file_trans: " << m_b_trans_file << std::endl;
         cmd.cmd_extension = -1;
         SendCmd(cmd);
     }
     else
     {
-        std::cout << "begin backup" << std::endl;
         m_sysbackup_status = SysUpdateStatus();
         m_sysbackup_status.m_type = SysUpdateStatus::Backup;
         memcpy(&m_maks_sys_backup, cmd.data, cmd.data_len);
+        std::cout << "begin backup" << m_maks_sys_backup << std::endl;
 
         cmd.data_len = sizeof(SysUpdateStatus);
         cmd.cmd_extension = 0;
@@ -2629,7 +2632,7 @@ void HMICommunication::ProcessHmiSysRecoverCmd(HMICmdFrame &cmd)
     cmd.frame_number |= 0x8000;
     if (m_background_type != Background_None || m_b_trans_file)
     {
-        std::cout << "busy recover" << " background: " << m_background_type << " file_trans: " << m_b_recv_file << std::endl;
+        std::cout << "busy recover" << " background: " << m_background_type << " file_trans: " << m_b_trans_file << std::endl;
         cmd.cmd_extension = -1;
         SendCmd(cmd);
     }
@@ -2648,6 +2651,43 @@ void HMICommunication::ProcessHmiSysRecoverCmd(HMICmdFrame &cmd)
 
         SendCmd(cmd);
     }
+}
+
+/**
+ * @brief 处理HMI清除报警文件命令
+ * @param cmd : 命令数据
+ */
+void HMICommunication::ProcessHmiClearAlarmFile(HMICmdFrame &cmd)
+{
+    cmd.frame_number |= 0x8000;
+    if (m_file_type == FILE_WARN_HISTORY && m_b_trans_file)
+    {
+        std::cout << "clear alram refuse. m_b_trans_file: " << m_b_trans_file << std::endl;
+        cmd.cmd_extension = REFUSE;
+    }
+    else
+    {
+        char filepath[kMaxPathLen] = {0};
+        uint8_t alarm_type = 0x20;   // 初始传送文件alarmfile_bak.txt
+        if(!TraceInfo::IsAlarmFileExist(alarm_type))
+            alarm_type = 0x10;
+        TraceInfo::GetAlarmFilePath(alarm_type, filepath);
+
+        FILE *fp = nullptr;
+        fp = fopen(filepath, "w");
+        if (!fp)
+        {
+            std::cout << "open alram file " << filepath << " error" << std::endl;
+            cmd.cmd_extension = REFUSE;
+        }
+        else
+        {
+            std::cout << "clear alram file " << filepath << std::endl;
+            cmd.cmd_extension = SUCCEED;
+            fclose(fp);
+        }
+    }
+    SendCmd(cmd);
 }
 
 /**

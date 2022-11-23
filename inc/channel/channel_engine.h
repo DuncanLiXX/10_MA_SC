@@ -467,6 +467,8 @@ private:	//私有成员函数
 
 	void CheckTmpDir();    //测试tmp目录是否存在，不存在则创建
 
+    int GetRemainDay();     //获取注册剩余时间
+
 
 
 private:  //私有成员变量

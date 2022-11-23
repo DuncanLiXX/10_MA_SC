@@ -2597,16 +2597,16 @@ void HMICommunication::ProcessHmiSysBackupCmd(HMICmdFrame &cmd)
     cmd.frame_number |= 0x8000;
     if (m_background_type != Background_None || m_b_trans_file)
     {
-        std::cout << "busy backup"  << " background: " << m_background_type << " file_trans: " << m_b_recv_file << std::endl;
+        std::cout << "busy backup"  << " background: " << m_background_type << " file_trans: " << m_b_trans_file << std::endl;
         cmd.cmd_extension = -1;
         SendCmd(cmd);
     }
     else
     {
-        std::cout << "begin backup" << std::endl;
         m_sysbackup_status = SysUpdateStatus();
         m_sysbackup_status.m_type = SysUpdateStatus::Backup;
         memcpy(&m_maks_sys_backup, cmd.data, cmd.data_len);
+        std::cout << "begin backup" << m_maks_sys_backup << std::endl;
 
         cmd.data_len = sizeof(SysUpdateStatus);
         cmd.cmd_extension = 0;
@@ -2629,7 +2629,7 @@ void HMICommunication::ProcessHmiSysRecoverCmd(HMICmdFrame &cmd)
     cmd.frame_number |= 0x8000;
     if (m_background_type != Background_None || m_b_trans_file)
     {
-        std::cout << "busy recover" << " background: " << m_background_type << " file_trans: " << m_b_recv_file << std::endl;
+        std::cout << "busy recover" << " background: " << m_background_type << " file_trans: " << m_b_trans_file << std::endl;
         cmd.cmd_extension = -1;
         SendCmd(cmd);
     }

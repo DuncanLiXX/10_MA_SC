@@ -2842,7 +2842,7 @@ void ChannelEngine::ProcessHmiCmd(HMICmdFrame &cmd){
 void ChannelEngine::ProcessHmiGetLicInfoCmd(HMICmdFrame &cmd){
     cmd.frame_number |= 0x8000;  //设置回复标志
     cmd.cmd_extension = SUCCEED;
-    cmd.data_len = 24;
+    cmd.data_len = 24 + sizeof(int);
 
     memcpy(cmd.data, this->m_device_sn, SN_COUNT);  //13字节长度的设备SN号
     cmd.data[SN_COUNT] = this->m_lic_info.licflag;    //授权状态
@@ -2852,6 +2852,9 @@ void ChannelEngine::ProcessHmiGetLicInfoCmd(HMICmdFrame &cmd){
         sprintf(cmd.data+SN_COUNT+1, "%d-%02d-%02d", this->m_lic_info.dead_line.year, this->m_lic_info.dead_line.month,
                 this->m_lic_info.dead_line.day);    //授权到期时间,10字节长度字符串，格式如“2021-12-21”
     }
+
+    int remainDays = GetRemainDay();
+    memcpy(cmd.data+SN_COUNT+10+1, (char *)remainDays, sizeof(remainDays));
 
 
     this->m_p_hmi_comm->SendCmd(cmd);
@@ -2867,12 +2870,17 @@ void ChannelEngine::ProcessHmiRegLicCmd(HMICmdFrame &cmd){
 
     if(cmd.data_len != LICCODECOUNT){//授权码长度错误，返回失败
         cmd.cmd_extension = FAILED;
-        cmd.data_len = 24;
+        cmd.data_len = 24 + sizeof(int);
 
         memcpy(cmd.data, this->m_device_sn, SN_COUNT);  //13字节长度的设备SN号
         cmd.data[SN_COUNT] = this->m_lic_info.licflag;    //授权状态
+
         sprintf(cmd.data+SN_COUNT+1, "%d-%02d-%02d", this->m_lic_info.dead_line.year, this->m_lic_info.dead_line.month,
                 this->m_lic_info.dead_line.day);    //授权到期时间,10字节长度字符串，格式如“2021-12-21”
+
+        int remainDays = 0;
+        memcpy(cmd.data+SN_COUNT+10+1, &remainDays, sizeof(remainDays));
+
         this->m_p_hmi_comm->SendCmd(cmd);
         printf("register failed 1\n");
         return;
@@ -2886,12 +2894,16 @@ void ChannelEngine::ProcessHmiRegLicCmd(HMICmdFrame &cmd){
     //注册授权码
     if(RegisterLicWithCode(this->m_device_sn, lic_code, &this->m_lic_info)){
         cmd.cmd_extension = FAILED;
-        cmd.data_len = 24;
+        cmd.data_len = 24 + sizeof(int);
 
         memcpy(cmd.data, m_device_sn, SN_COUNT);  //13字节长度的设备SN号
         cmd.data[SN_COUNT] = this->m_lic_info.licflag;    //授权状态
         sprintf(cmd.data+SN_COUNT+1, "%d-%02d-%02d", this->m_lic_info.dead_line.year, this->m_lic_info.dead_line.month,
                 this->m_lic_info.dead_line.day);    //授权到期时间,10字节长度字符串，格式如“2021-12-21”
+
+        int remainDays = 0;
+        memcpy(cmd.data+SN_COUNT+10+1, &remainDays, sizeof(remainDays));
+
         this->m_p_hmi_comm->SendCmd(cmd);
         printf("register failed 2\n");
         return;
@@ -2899,7 +2911,7 @@ void ChannelEngine::ProcessHmiRegLicCmd(HMICmdFrame &cmd){
 
     this->CheckLicense(true);
 
-    cmd.data_len = 24;
+    cmd.data_len = 24 + sizeof(int);
 
     memcpy(cmd.data, m_device_sn, SN_COUNT);  //13字节长度的设备SN号
     cmd.data[SN_COUNT] = this->m_lic_info.licflag;    //授权状态
@@ -2910,6 +2922,9 @@ void ChannelEngine::ProcessHmiRegLicCmd(HMICmdFrame &cmd){
         sprintf(cmd.data+SN_COUNT+1, "%d-%02d-%02d", this->m_lic_info.dead_line.year, this->m_lic_info.dead_line.month,
                 this->m_lic_info.dead_line.day);    //授权到期时间,10字节长度字符串，格式如“2021-12-21”
     }
+
+    int remainDays = GetRemainDay();
+    memcpy(cmd.data+SN_COUNT+10+1, &remainDays, sizeof(remainDays));
 
     printf("register lic result: %s\n", cmd.data);
 
@@ -11399,6 +11414,83 @@ void ChannelEngine::CheckTmpDir(){
     }else{
         closedir(dir);
     }
+}
+
+/**
+ * @brief 获取注册剩余时间
+ * @return 剩余时间
+ */
+int ChannelEngine::GetRemainDay()
+{
+
+    //获取系统时间
+    time_t now_time=time(NULL);
+    //获取本地时间
+    tm*  t_tm = localtime(&now_time);
+
+    int startYear  = t_tm->tm_year + 1900;
+    int startMonth = t_tm->tm_mon + 1;
+    int startDay   = t_tm->tm_mday;
+
+    int endYear  = this->m_lic_info.dead_line.year;
+    int endMonth = this->m_lic_info.dead_line.month;
+    int endDay   = this->m_lic_info.dead_line.day;
+
+    std::cout << "startYear: " << startYear << " startMonth: " << startMonth << " startDay: " << startDay << std::endl;
+    std::cout << "endYear: "   << endYear   << " endMonth: "   << endMonth   << " endDay:   " << endDay   << std::endl;
+
+
+    int h[13] = { 0, 31, 28, 31, 30, 31, 30 , 31, 31, 30, 31, 30, 31 };
+    //一年的总天数
+    auto yearDay = [&h](int year) -> int{
+        if ((year % 4 == 0 && year % 100 != 0) || year % 400 == 0)
+            h[2] = 29;
+        else
+            h[2] = 28;
+        int sum = 0;
+            for (int i = 1; i<=12 ; ++i)
+                sum += h[i];
+            return sum;
+    };
+
+    //一年过去的天数
+    auto elapseDay = [&h](int year, int month, int day) -> int {
+        if ((year % 4 == 0 && year % 100 != 0) || year % 400 == 0)
+            h[2] = 29;
+        else
+                h[2] = 28;
+            int elapseSum = 0;
+            for (int i = 1; i < month; ++i)
+            {
+                elapseSum += h[i];
+            }
+            if (day > 0)
+                day = day - 1;
+            elapseSum += day;
+            return elapseSum;
+    };
+
+
+    if (startYear > endYear)
+        return -1;
+    int remainDay = 0;
+    if (startYear != endYear)
+    {
+        while (startYear != endYear)
+        {
+            remainDay += yearDay(startYear) - elapseDay(startYear, startMonth, startDay);
+            startYear++;
+            startMonth = 1;
+            startDay = 1;
+        }
+        remainDay += elapseDay(endYear, endMonth, endDay);
+    }
+    else
+    {
+        remainDay = elapseDay(endYear, endMonth, endDay) - elapseDay(startYear, startMonth, startDay);
+    }
+    std::cout << "get remainDay: " << remainDay << std::endl;
+    return remainDay;
 }
 
 

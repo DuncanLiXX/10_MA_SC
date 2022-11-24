@@ -3455,8 +3455,9 @@ TRAN:
 
 
     if(file_type == FILE_BACKUP_CNC && m_sysbackup_status.m_type == SysUpdateStatus::Backup) { //备份
-        m_sysbackup_status.m_status = SysUpdateStatus::Idle;
-        SendHMIBackupStatus(m_sysbackup_status);
+        std::cout << "Send backup file finish" << std::endl;
+//        m_sysbackup_status.m_status = SysUpdateStatus::Idle;
+//        SendHMIBackupStatus(m_sysbackup_status);
     }
 	END:
 #ifndef USES_TCP_FILE_TRANS_KEEP
@@ -3740,9 +3741,8 @@ void HMICommunication::UnPackageBackupFile()
             SendHMIBackupStatus(m_sysbackup_status);
             now = chrono::steady_clock::now();
         }
-     }
-     zip_close(zip);
-
+    }
+    zip_close(zip);
 
     //提取出现错误，删除恢复文件
     if (!ret)

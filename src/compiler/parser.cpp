@@ -298,7 +298,6 @@ bool Parser::CheckGCode(LexerGCode *gcode){
 
 		// @add zk
 
-
 		if((code >=5401 && code <=5499) &&
 				(0x00 == (mode_mask & (0x01<<14)))){   //ÌØÊâ´¦ÀíG5401~G5499
 			mode_mask |= (0x01<<14);

@@ -4296,7 +4296,6 @@ int ChannelControl::Run(){
 				}
 			}else if(m_p_compiler->GetErrorCode() != ERR_NONE)
 			{
-				//m_n_run_thread_state = STOP;  仍然无法停止
 				//编译器出错，但需要继续执行已编译指令
 				if(m_p_compiler->RunMessage()){
 					if(!ExecuteMessage()){
@@ -4334,7 +4333,12 @@ int ChannelControl::Run(){
 						}
 					}
 					else{
-						m_n_run_thread_state = WAIT_RUN;//执行失败，状态切换到WAIT_RUN
+
+						if(m_p_compiler->GetErrorCode() != ERR_NONE){
+							m_n_run_thread_state = ERROR;
+						}else{
+							m_n_run_thread_state = WAIT_RUN;//执行失败，状态切换到WAIT_RUN
+						}
 					}
 				}
 
@@ -5099,6 +5103,9 @@ bool ChannelControl::OutputData(RecordMsg *msg, bool flag_block){
         if(m_p_channel_config->intep_mode == 1){
             data_frame.data.ext_type |= 0x02;   //所有轴插补
         }
+        // @add zk  不指定类型会使 MC 空运行
+        data_frame.data.cmd = 0;  // 指定 G00
+
         break;
     case RAPID_MSG:
     case COORD_MSG:
@@ -5136,7 +5143,7 @@ bool ChannelControl::OutputData(RecordMsg *msg, bool flag_block){
     bool res = false;
     if(!this->m_b_mc_on_arm){
         // 查看 msg的 ext type mc会因ext的值对不上而空执行
-        res = m_p_mc_comm->WriteGCodeData(m_n_channel_index, data_frame);
+    	res = m_p_mc_comm->WriteGCodeData(m_n_channel_index, data_frame);
     }else{
         res = this->m_p_mc_arm_comm->WriteGCodeData(m_n_channel_index, data_frame);
     }
@@ -7119,7 +7126,6 @@ bool ChannelControl::ExecuteLineMsg(RecordMsg *msg, bool flag_block){
                 printf("exception in execute line pmc move, step = %hhu\n", linemsg->GetExecStep());
                 return false;
             }
-
         }
 
     }else if(!OutputData(msg, flag_block))
@@ -7672,7 +7678,6 @@ bool ChannelControl::ExecuteToolMsg(RecordMsg *msg){
 
         switch(toolmsg->GetExecStep(index)){
         case 0:{
-
             this->m_n_cur_tcode = tcode;
             this->m_channel_status.preselect_tool_no = m_n_cur_tcode;
 
@@ -7685,7 +7690,7 @@ bool ChannelControl::ExecuteToolMsg(RecordMsg *msg){
             break;
         }
         case 1:{
-            //等待TMF延时，置位TF选通信号
+        	//等待TMF延时，置位TF选通信号
             gettimeofday(&time_now, NULL);
             time_elpase = (time_now.tv_sec-m_time_t_start[index].tv_sec)*1000000+time_now.tv_usec-m_time_t_start[index].tv_usec;
             if(time_elpase < 16000)
@@ -7707,7 +7712,7 @@ bool ChannelControl::ExecuteToolMsg(RecordMsg *msg){
             break;
         }
         case 3:{
-            if(!this->GetTFINSig(index)){  //干扰信号，重新确认
+        	if(!this->GetTFINSig(index)){  //干扰信号，重新确认
                 toolmsg->SetExecStep(index, 2);
                 break;
             }
@@ -8202,7 +8207,6 @@ bool ChannelControl::ExecuteLoopMsg(RecordMsg *msg){
  * @return true--成功  false--失败
  */
 bool ChannelControl::ExecuteCompensateMsg(RecordMsg *msg){
-    return true;
     CompensateMsg *compmsg = (CompensateMsg *)msg;
     int type = compmsg->GetGCode();
 
@@ -8297,7 +8301,7 @@ bool ChannelControl::ExecuteCompensateMsg(RecordMsg *msg){
     int32_t z_axis_offset = 0;
     uint16_t intp_mode = 0;
 
-    if(type == G41_CMD || type == G42_CMD || type == G40_CMD){//半径补偿，先更新到MC模态信息
+    /*if(type == G41_CMD || type == G42_CMD || type == G40_CMD){//半径补偿，先更新到MC模态信息
         //		this->m_channel_status.cur_d_code = value;
         //		this->SendModeChangToHmi(D_MODE);
 
@@ -8313,9 +8317,11 @@ bool ChannelControl::ExecuteCompensateMsg(RecordMsg *msg){
         if(!OutputData(msg, true))
             return false;
 
-    }else if(type == G43_CMD || type == G44_CMD || type == G49_CMD){//G43/G44    即时更新到通道状态的模态信息中
+    }*/
 
-        if(this->m_simulate_mode != SIM_NONE){//仿真模式，跳过刀长补偿
+    if(type == G43_CMD || type == G44_CMD || type == G49_CMD){//G43/G44    即时更新到通道状态的模态信息中
+
+    	if(this->m_simulate_mode != SIM_NONE){//仿真模式，跳过刀长补偿
             if(!OutputData(msg, true))
                 return false;
             m_n_run_thread_state = RUN;
@@ -8348,7 +8354,6 @@ bool ChannelControl::ExecuteCompensateMsg(RecordMsg *msg){
 
                 this->SetMcToolOffset(true);
             }
-
 
             compmsg->SetExecStep(1);	//跳转下一步
             printf("execute step 1\n");
@@ -8474,6 +8479,7 @@ bool ChannelControl::ExecuteCompensateMsg(RecordMsg *msg){
                 break;
             }
 
+            // @zk  发送这条命令会 卡死 MC tips: 这条指令没指定cmd 指定为00 后可运行
             if(!OutputData(msg, true))
                 return false;
 
@@ -8628,7 +8634,7 @@ bool ChannelControl::ExecuteCompensateMsg(RecordMsg *msg){
 
 
     m_n_run_thread_state = RUN;
-
+    printf("========== m_n_run_thread_state: %d\n", m_n_run_thread_state);
 
     //	printf("execute compensate message: %d, d=%d, h=%d\n", type, m_channel_status.cur_d_code, m_channel_status.cur_h_code);
 
@@ -17279,15 +17285,11 @@ void ChannelControl::SpindleSpeedDaOut(int32_t speed){
         }
     }
 
-
     if(spd_config.motor_dir == 1)
         tt *= -1;   //设置方向为反转
 
-
-
     g_ptr_trace->PrintTrace(TRACE_WARNING, CHANNEL_CONTROL_SC,"Output spd speed da value: %lld, spd_axis=%hhu, max_speed=%u, da_prec=%u\n",
                             tt, phy_spd, spd_config.spd_max_speed, da_prec);
-
 
     this->SendSpdSpeedToMi(phy_spd, (int16_t)tt);
 

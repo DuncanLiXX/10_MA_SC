@@ -105,6 +105,7 @@ typedef struct setup_struct
 	block _block;                                 // parsed next block
 
 	bool cutter_comp_firstmove = true; // this is the first comp move
+	bool cutter_comp_lastmove = false;
 	double cutter_comp_radius;                    // current cutter compensation radius
 	int cutter_comp_side;                         // current cutter compensation side
 	bool arc_not_allowed;
@@ -305,6 +306,12 @@ public:
 	                             double px, double py, double end_z,
 	                             double AA_end, double BB_end, double CC_end,
 	                             double u_end, double v_end, double w_end);
+
+	 int convert_straight_endcomp(int move, block_pointer block,
+	 	                             setup_pointer settings,
+	 	                             double px, double py, double end_z,
+	 	                             double AA_end, double BB_end, double CC_end,
+	 	                             double u_end, double v_end, double w_end);
 
 	 double find_arc_length(double x1, double y1, double z1,
 	                              double center_x, double center_y, int turn,

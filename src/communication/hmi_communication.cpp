@@ -3358,7 +3358,6 @@ int HMICommunication::SendFile(){
 //
 //	}
 
-
 	//打开文件
 	fd = open(filepath, O_RDONLY);
 	if(fd == -1){

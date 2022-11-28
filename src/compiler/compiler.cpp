@@ -2473,7 +2473,7 @@ bool Compiler::RunMessage() {
 				m_error_code = m_p_tool_compensate->err_code;
 				CreateError(m_p_tool_compensate->err_code, ERROR_LEVEL, CLEAR_BY_MCP_RESET, 0,
 						m_n_channel_index);
-				m_p_tool_compensate->clearError();
+				//m_p_tool_compensate->clearError();
 
 				res = false;
 			}

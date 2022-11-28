@@ -22,10 +22,8 @@ Interp interp;
  */
 ToolCompensate::ToolCompensate() {
 	// TODO Auto-generated constructor stub
-
 	this->m_p_output_msg_list = nullptr;
 	this->m_p_channel_control = nullptr;
-
 	this->m_n_channel_index = 0;
 
 	this->m_cur_tool.G41G42dir  = 40;
@@ -63,6 +61,7 @@ void ToolCompensate::clearError(){
 
 void ToolCompensate::Reset(){
 	interp.reset();
+	clearError();
 }
 
 /**
@@ -179,6 +178,10 @@ void ToolCompensate::ProcessData(ListNode<RecordMsg *> *node){
 			}else if(tmsg->GetGCode() == G42_CMD){
 
 				interp.convert_cutter_compensation_on(RIGHT,this->comp_radius,&interp._setup);
+			}else{
+
+				// G43 G44 G49 µ¶³¤²¹³¥
+				this->m_p_output_msg_list->Append(node);
 			}
 
 			break;

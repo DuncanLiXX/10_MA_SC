@@ -241,6 +241,16 @@ public:
     // slave: 从动轴号，从1开始
     // enable: 0:同步无效  1:同步有效
     void SendEnSyncAxis(uint8_t master, uint8_t slave, bool enable);
+    // chn: 通道号
+    // enable: 是否开启手轮跟踪
+    // reverse: 是否反向跟踪
+    void SendHandwheelTrace(uint8_t chn, bool enable, bool reverse);
+    // chn: 通道号
+    // enable: 是否开启手轮插入
+    void SendHandwheelInsert(uint8_t chn, bool enable);
+    // chn: 通道号
+    // axis: 手轮插入轴选
+    void SendHandwheelInsertAxis(uint8_t chn, uint8_t axis);
 
 	bool ReadEncoderWarn(uint64_t &value);		//读取轴编码器告警标志
 	bool ReadServoHLimitFlag(bool pos_flag, uint64_t &value);   //读取伺服限位告警信息

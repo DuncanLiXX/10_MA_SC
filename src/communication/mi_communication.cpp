@@ -386,6 +386,50 @@ void MICommunication::SendEnSyncAxis(uint8_t master, uint8_t slave, bool enable)
     WriteCmd(cmd);
 }
 
+void MICommunication::SendHandwheelTrace(uint8_t chn, bool enable, bool reverse)
+{
+    MiCmdFrame cmd;
+    memset(&cmd, 0x00, sizeof(cmd));
+    cmd.data.cmd = CMD_MI_SET_HANDWHEEL_TRACE;
+
+    cmd.data.data[0] = enable?0x10:0x00;
+    cmd.data.data[1] = reverse;   //手轮反向引导使能
+    cmd.data.data[2] = 0;
+
+    cmd.data.axis_index = NO_AXIS;
+    cmd.data.reserved = chn;
+    WriteCmd(cmd);
+}
+
+void MICommunication::SendHandwheelInsert(uint8_t chn, bool enable)
+{
+    MiCmdFrame cmd;
+    memset(&cmd, 0x00, sizeof(cmd));
+    cmd.data.cmd = CMD_MI_SET_HANDWHEEL_TRACE;
+
+    cmd.data.data[0] = 0x00;
+    cmd.data.data[1] = 0;
+    cmd.data.data[2] = enable?0x10:0x00;
+
+    cmd.data.axis_index = NO_AXIS;
+    cmd.data.reserved = chn;
+    WriteCmd(cmd);
+}
+
+void MICommunication::SendHandwheelInsertAxis(uint8_t chn, uint8_t axis)
+{
+    MiCmdFrame cmd;
+    memset(&cmd, 0x00, sizeof(cmd));
+    cmd.data.cmd = CMD_MI_SET_MPG_INSERT_AXIS;
+
+    cmd.data.data[0] = 0x01;
+    cmd.data.data[1] = axis;
+
+    cmd.data.axis_index = NO_AXIS;
+    cmd.data.reserved = chn;
+    WriteCmd(cmd);
+}
+
 /**
  * @brief 初始化上下行命令通道，将所有命令帧的读写标志位置0
  */

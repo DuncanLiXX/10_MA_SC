@@ -1676,12 +1676,16 @@ void ChannelEngine::ProcessMcCmdRsp(McCmdFrame &rsp){
 void ChannelEngine::ProcessMcVersionCmd(McCmdFrame &cmd){
     //处理MC模块返回的版本信息
     uint16_t data1 = cmd.data.data[0], data2 = cmd.data.data[1], data3 = cmd.data.data[2], data4 = cmd.data.data[3];
+    uint16_t data5 = cmd.data.data[4];
     uint8_t v_a = (data2>>8)&0xFF;
     uint8_t v_b = (data2)&0xFF;
     uint8_t v_c = (data1>>8)&0xFF;
     uint8_t v_d = (data1)&0xFF;
+    uint8_t v_h = (data5)/100;
+    uint8_t v_m = (data5)%100;
 
-    sprintf(g_sys_info.sw_version_info.mc, "%c%hhu.%hhu.%hhu.%hu%04hu", v_a==0?'P':'V', v_b, v_c, v_d, data3, data4);
+    sprintf(g_sys_info.sw_version_info.mc, "%c%hhu.%hhu.%hhu.%hu%04hu%02hu%02hu", v_a==0?'P':'V', v_b, v_c, v_d, data3, data4,
+            v_h,v_m);
 }
 
 /**
@@ -8460,12 +8464,19 @@ void ChannelEngine::ProcessPmcSignal(){
         }
 
         if(g_reg->HSIA != g_reg_last->HSIA){
-            if(g_reg->HSIA == 0){
-                this->SetMiHandwheelInsert(false, i);
-            }else if(g_reg->HSIA == 1){
-                this->SetMiHandwheelInsert(true, i);
-            }else
-                SetMiHandwheelTrace(true, i);
+            uint8_t axis_no = 0;
+            for(int axis = 0; axis < m_p_channel_config[i].chn_axis_count; axis++){
+                if((g_reg->HSIA >> axis) & 0x01){
+                    axis_no = axis + 1;
+                    break;
+                }
+            }
+            if(axis_no == 0){
+                m_p_mi_comm->SendHandwheelInsert(i, false);
+            }else{
+                m_p_mi_comm->SendHandwheelInsert(i, true);
+                m_p_mi_comm->SendHandwheelInsertAxis(i, axis_no);
+            }
         }
 
 

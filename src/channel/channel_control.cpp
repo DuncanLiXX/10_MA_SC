@@ -10383,6 +10383,7 @@ bool ChannelControl::ExecuteClearCirclePosMsg(RecordMsg *msg){
         uint64_t mask = clearmsg->GetAxisMask();
         double mode = clearmsg->GetCircleMode();
         mode /= 1000;   //由um转换为mm
+        ScPrintf("ClearCirclePosMsg: mask = %04llx mode=%lf", mask, mode);
         for(int i = 0; i < m_p_general_config->axis_count; i++){
             if(((mask>>i) & 0x01) == 0){
                 continue;
@@ -10438,7 +10439,7 @@ bool ChannelControl::ExecuteClearCirclePosMsg(RecordMsg *msg){
     case 0://第一步：发送指令到MI
         this->m_channel_status.gmode[39] = clearmsg->GetGCode();
 
-        printf("clear pos message , mask = 0x%llx, mode=%d\n", mask, clearmsg->GetCircleMode());
+        ScPrintf("clear pos message , mask = 0x%llx, mode=%d\n", mask, clearmsg->GetCircleMode());
         //向MI发送清整数圈位置指令
         m_n_mask_clear_pos = 0;
         for(i = 0; i < m_p_general_config->axis_count; i++){
@@ -10453,7 +10454,7 @@ bool ChannelControl::ExecuteClearCirclePosMsg(RecordMsg *msg){
         clearmsg->SetExecStep(1);	//跳转下一步
         return false;
     case 1://第二步
-        //	       printf("clear pos message step1 , mask = 0x%llx, m_n_mask_clear_pos = 0x%llx \n", mask, this->m_n_mask_clear_pos);
+        ScPrintf("clear pos message step1 , mask = 0x%llx, m_n_mask_clear_pos = 0x%llx \n", mask, this->m_n_mask_clear_pos);
         //第二步：等待MI设置完成
         if((mask & this->m_n_mask_clear_pos) == mask){  // if(mask == this->m_n_mask_clear_pos){
             clearmsg->SetExecStep(2);	//跳转下一步
@@ -10806,8 +10807,6 @@ bool ChannelControl::CheckFuncState(int func){
  */
 void ChannelControl::SetAutoRatio(uint8_t ratio){
     //	printf("ChannelControl::SetAutoRatio, chn=%hhu, old_r = %hhu, ratio=%hhu\n", m_n_channel_index, m_channel_status.auto_ratio, ratio);
-    if(ratio > kMaxRatio)
-        ratio = kMaxRatio;
     if(m_channel_status.auto_ratio == ratio)
         return;
     this->m_channel_status.auto_ratio = ratio;
@@ -10824,8 +10823,6 @@ void ChannelControl::SetAutoRatio(uint8_t ratio){
  * @param ratio
  */
 void ChannelControl::SetManualRatio(uint8_t ratio){
-    if(ratio > kMaxRatio)
-        ratio = kMaxRatio;
     if(m_channel_status.manual_ratio == ratio)
         return;
     this->m_channel_status.manual_ratio = ratio;
@@ -10842,8 +10839,6 @@ void ChannelControl::SetManualRatio(uint8_t ratio){
  * @param ratio
  */
 void ChannelControl::SetRapidRatio(uint8_t ratio){
-    if(ratio > kMaxRatio)
-        ratio = kMaxRatio;
     if(m_channel_status.rapid_ratio == ratio)
         return;
 
@@ -10861,8 +10856,6 @@ void ChannelControl::SetRapidRatio(uint8_t ratio){
  * @param ratio
  */
 void ChannelControl::SetSpindleRatio(uint8_t ratio){
-    if(ratio > kMaxRatio)
-        ratio = kMaxRatio;
 
     this->m_channel_status.spindle_ratio = ratio;
 

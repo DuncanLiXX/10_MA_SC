@@ -31,6 +31,9 @@ void SpindleControl::SetComponent(MICommunication *mi,
     this->F = f_reg;
     this->G = g_reg;
     this->variable = variable;
+
+    mi->SendMiParam<int16_t>(phy_axis+1, 1726, spindle->spd_locate_ang);
+
     InputSSTP(G->_SSTP);
     InputSOR(G->SOR);
     InputSOV(G->SOV);
@@ -39,6 +42,7 @@ void SpindleControl::SetComponent(MICommunication *mi,
     InputSSIN(G->SSIN);
     InputSIND(G->SIND);
     LoadTapState(tap_state);
+
 }
 
 void SpindleControl::SetSpindleParams(SCAxisConfig *spindle,

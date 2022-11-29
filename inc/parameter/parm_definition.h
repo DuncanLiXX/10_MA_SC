@@ -292,6 +292,8 @@ struct SCAxisConfig{
     uint8_t spd_rtnt_rate;                      //攻丝回退倍率 单位：1%
     int32_t spd_rtnt_distance;                 //攻丝回退的额外回退值 单位：um
 
+    int16_t spd_locate_ang;                     //主轴定向角度 单位：度
+
 	//旋转轴相关参数
 	uint8_t fast_locate;							//快速定位    0--关闭   1--打开
 	uint8_t pos_disp_mode;						//位置显示模式   0--循环模式（0~360）    1--非循环模式

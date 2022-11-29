@@ -822,7 +822,7 @@ struct GRegBits{
 	//G40
 	uint8_t :8;
 	//G41
-    uint8_t HSIA:8;
+    uint8_t HSIA:8;     //手轮插入信号 G41
 	//G42
 	uint8_t :8;
 	//G43
@@ -984,7 +984,7 @@ struct GRegBits{
 	//G107
 	uint8_t :8;
 	//G108
-    uint8_t MLKI:8;
+    uint8_t MLKI:8;     //机械锁住信号 轴1~轴8
     //G109
 	uint8_t :8;
 	//G110

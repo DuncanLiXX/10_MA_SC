@@ -72,6 +72,7 @@ class ChannelEngine;
 class ParmManager;
 class TraceInfo;
 class AlarmProcessor;
+class TraceLogProcess;
 class ADCommunication;
 
 
@@ -88,6 +89,7 @@ extern ChannelEngine *g_ptr_chn_engine;    //通道引擎
 extern ParmManager *g_ptr_parm_manager;    //参数管理器
 extern TraceInfo *g_ptr_trace;             //日志调试接口
 extern AlarmProcessor *g_ptr_alarm_processor;        //告警处理器接口
+extern TraceLogProcess *g_ptr_tracelog_processor;    //操作日志接口
 
 extern ADCommunication *g_ptr_ad_comm;     //辅助设备通讯接口
 

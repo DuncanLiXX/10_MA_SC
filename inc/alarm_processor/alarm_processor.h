@@ -147,4 +147,64 @@ private:
 };
 
 
+
+enum OptType{
+    kAll=0,//所有操作
+    kProcessInfo=1, //加工信息
+    kDataModify=2,//数据修改
+    kFileModify=3,//文件修改
+    kPanelOper=4,//面板操作
+    kCustom=5,//自定义
+};
+
+enum MsgType{
+    kDebug,//静态消息（黑色、复位 或 页面切换、任意键操作清除）
+    kInfo,//动态消息（黄色、复位 或 页面切换、任意键操作清除）
+    kWarn,//动态消息（红色、复位 或 页面切换、任意键操作清除）
+    kError,//动态消息（红色、复位 或 页面切换、任意键操作清除）
+    kOpt,//模态消息（黑色、复位、ESC/ENTER、 Y/N）
+};
+
+/**
+ * @brief 操作记录
+ */
+class TraceLogProcess {
+public:
+    /*
+     * @brief 获得此类实例的唯一全局访问点
+     * @return 类实例指针
+     */
+    static TraceLogProcess* GetInstance() {
+        if (m_instance == nullptr) {
+            m_instance = new TraceLogProcess();
+        }
+        return m_instance;
+    }
+
+    /*
+     * @brief 操作记录类析构函数
+     * @param 无
+     * @return 无
+     */
+    ~TraceLogProcess();
+
+    //设置接口
+    void SetInterfaces();
+
+    void SendToHmi(OptType optType, MsgType msgType, string mes);
+
+private:
+    /**
+     * @brief 操作记录类析构函数
+     * 构造函数为私有，防止外界使用new创建该类实例
+     * @param 无
+     * @return 无
+     */
+    TraceLogProcess();
+
+    static TraceLogProcess* m_instance; 	//单实例指针
+    HMICommunication *m_p_hmi_comm;     //HMI通讯接口
+};
+
+
 #endif /* INC_ALARM_PROCESSOR_ALARM_PROCESSOR_H_ */

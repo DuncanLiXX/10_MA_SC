@@ -1036,6 +1036,7 @@ int HMICommunication::ProcessHmiCmd(){
 			case CMD_SC_NOTIFY_MACH_OVER:     //加工结束通知消息的响应
             case CMD_SC_NOTIFY_ALARM_CHANGE:
             case CMD_SC_BACKUP_STATUS:        //SC通知HMI当前备份状态
+            case CMD_SC_NOTIFY_TRACELOG:
 				break;
 			case CMD_HMI_GET_SYS_INFO:
 				m_p_channel_engine->ProcessHmiCmd(cmd);
@@ -2608,6 +2609,7 @@ void HMICommunication::ProcessHmiSysBackupCmd(HMICmdFrame &cmd)
     {
         m_sysbackup_status = SysUpdateStatus();
         m_sysbackup_status.m_type = SysUpdateStatus::Backup;
+        m_sysbackup_status.m_status = SysUpdateStatus::Ready;
         memcpy(&m_maks_sys_backup, cmd.data, cmd.data_len);
         std::cout << "begin backup" << m_maks_sys_backup << std::endl;
 
@@ -2641,6 +2643,7 @@ void HMICommunication::ProcessHmiSysRecoverCmd(HMICmdFrame &cmd)
         std::cout << "begin recover" << std::endl;
         m_sysbackup_status = SysUpdateStatus();
         m_sysbackup_status.m_type = SysUpdateStatus::Recover;
+        m_sysbackup_status.m_status = SysUpdateStatus::Ready;
         memcpy(&m_maks_sys_backup, cmd.data, cmd.data_len);
 
         cmd.data_len = sizeof(SysUpdateStatus);
@@ -3456,8 +3459,8 @@ TRAN:
 
     if(file_type == FILE_BACKUP_CNC && m_sysbackup_status.m_type == SysUpdateStatus::Backup) { //备份
         std::cout << "Send backup file finish" << std::endl;
-//        m_sysbackup_status.m_status = SysUpdateStatus::Idle;
-//        SendHMIBackupStatus(m_sysbackup_status);
+        //m_sysbackup_status.m_status = SysUpdateStatus::Idle;
+        //SendHMIBackupStatus(m_sysbackup_status);
     }
 	END:
 #ifndef USES_TCP_FILE_TRANS_KEEP
@@ -3755,13 +3758,13 @@ void HMICommunication::UnPackageBackupFile()
     }
 
     //SC
-    string scPath = RECOVER_TEMP + SC_DIR;
-    if (!access(scPath.c_str(), F_OK))
-    {
-        std::cout << "sc chmod" << std::endl;
-        command = "chmod +x " + scPath;
-        system(command.c_str());
-    }
+//    string scPath = RECOVER_TEMP + SC_DIR;
+//    if (!access(scPath.c_str(), F_OK))
+//    {
+//        std::cout << "sc chmod" << std::endl;
+//        command = "chmod +x " + scPath;
+//        system(command.c_str());
+//    }
 
     //PL
 

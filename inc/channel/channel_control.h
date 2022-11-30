@@ -781,7 +781,7 @@ private://私有成员变量
 	CoordAxisPos m_pos_graph_array[kGraphPosBufCount];   //缓冲图形模式位置数据
 	uint16_t m_n_graph_pos_write_idx;     //当前空闲的位置缓冲写入索引
 	uint16_t m_n_graph_pos_read_idx;      //当前位置数据读取索引
-	uint16_t m_n_graph_pos_count;   //当前位置缓冲数量
+    uint16_t m_n_graph_pos_count;   //当前位置缓冲数量
 	
 
 #ifdef USES_SPEED_TORQUE_CTRL

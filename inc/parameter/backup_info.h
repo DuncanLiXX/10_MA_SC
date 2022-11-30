@@ -17,6 +17,8 @@ const std::string SPARTAN6_DIR = "/cnc/bin/top.bit";
 const std::string PL_DIR = "/cnc/bin/PL.bin";
 const std::string MC_DIR = "/cnc/bin/MC.ldr";
 const std::string FPGA_DIR = "/cnc/bin/SPARTAN6.bin";
+const std::string SCRIPT_DIR = "/cnc/script/S99rmnologin.sh";
+const std::string ScriptPath = "/etc/rc5.d/S99rmnologin.sh";
 
 class Backup_Info {
 public:
@@ -24,8 +26,8 @@ public:
     Backup_Info(int type, string path);
     virtual ~Backup_Info() {};
 
-    bool Package(struct zip_t *zip);
-    bool UnPackage(struct zip_t *zip, string prefix);
+    virtual bool Package(struct zip_t *zip);
+    virtual bool UnPackage(struct zip_t *zip, string prefix);
     string GetPath() const { return m_path; }
 
 protected:
@@ -33,8 +35,23 @@ protected:
     string m_path;        //需备份的路径
     string m_pack_name;
 
-private:
-    bool mk_path(string prefix);
+    bool mk_path(string path);
+};
+
+class Script_Backup_Info : public Backup_Info {
+public:
+    Script_Backup_Info(int type, string path);
+    virtual ~Script_Backup_Info() {};
+
+    bool Package(struct zip_t *zip) override;
+    bool UnPackage(struct zip_t *zip, string prefix) override;
+};
+
+class Sc_Backup_Info : public Backup_Info {
+public:
+    Sc_Backup_Info(int type, string path);
+    virtual ~Sc_Backup_Info() {};
+    bool UnPackage(struct zip_t *zip, string prefix) override;
 };
 
 

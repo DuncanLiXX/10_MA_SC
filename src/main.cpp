@@ -687,6 +687,15 @@ int Initialize(){
     else
         printf("Succeed to create AlarmProcessor object!\n");
 
+    g_ptr_tracelog_processor = TraceLogProcess::GetInstance();
+    if (g_ptr_tracelog_processor == nullptr) {
+        res = ERR_SC_INIT;
+        printf("Failed to create TraceLogProcess object!\n");
+        return res;
+    }
+    else
+        printf("Succeed to create TraceLogProcess object!\n");
+
 
     g_sys_state.system_boot_stage = STEP_INIT_CHN_ENGINER;
     //创建通道引擎
@@ -705,6 +714,7 @@ int Initialize(){
     g_ptr_mc_comm->SetInterface();
     g_ptr_mc_arm_comm->SetInterface();
     g_ptr_alarm_processor->SetInterfaces();  //设置告警处理模块的接口
+    g_ptr_tracelog_processor->SetInterfaces();
 
     g_ptr_chn_engine->SetMcArmComm(g_ptr_mc_arm_comm);
     g_ptr_chn_engine->Initialize(g_ptr_hmi_comm, g_ptr_mi_comm, g_ptr_mc_comm, g_ptr_parm_manager);

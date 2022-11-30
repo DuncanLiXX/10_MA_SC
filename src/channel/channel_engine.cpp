@@ -2891,6 +2891,20 @@ void ChannelEngine::ProcessHmiRegLicCmd(HMICmdFrame &cmd){
     memcpy(lic_code, cmd.data, LICCODECOUNT);  //24字节长度的设备授权码
     printf("Get lic code:%s\n", lic_code);
 
+
+#ifdef USES_LICENSE_FUNC
+    char lic[25] = {};
+    memcpy(lic, lic_code, 25);
+    if (!DecryptLicense(lic))
+    {
+        std::cout << "illegal code" << std::endl;
+        cmd.cmd_extension = FAILED;
+        this->m_p_hmi_comm->SendCmd(cmd);
+        return;
+    }
+    std::cout << lic_code << std::endl;
+#endif
+
     //注册授权码
     if(RegisterLicWithCode(this->m_device_sn, lic_code, &this->m_lic_info)){
         cmd.cmd_extension = FAILED;
@@ -4904,6 +4918,9 @@ void ChannelEngine::SetManualStep(uint8_t chn, uint8_t step){
         break;
     }
 
+    const vector<string> table = {"1", "10", "100", "1000"};
+    if (step > 0 && step < table.size())
+        g_ptr_tracelog_processor->SendToHmi(kPanelOper, kDebug, "[增量倍率]切换为 " + table[step]);
     this->m_p_channel_control[chn].SetManualStep(step);
 }
 
@@ -5137,11 +5154,12 @@ void ChannelEngine::SetJPState(uint8_t chn, uint8_t JP, uint8_t last_JP, ChnWork
         if(flag_now){
             SetCurAxis(chn, chn_axis);
             ManualMove(DIR_POSITIVE);
-
+            g_ptr_tracelog_processor->SendToHmi(kPanelOper, kDebug, "点动[轴" + to_string(chn_axis) + "]+");
             if(mode == MANUAL_MODE){
             }
         }else if(mode == MANUAL_MODE){ // 轴正向移动松开，并且为手动连续模式
             ManualMoveStop(m_p_channel_config[chn].chn_axis_phy[i]-1);
+            g_ptr_tracelog_processor->SendToHmi(kPanelOper, kDebug, "点动释放[轴" + to_string(chn_axis) + "]+");
         }
     }
 }
@@ -5159,8 +5177,11 @@ void ChannelEngine::SetJNState(uint8_t chn, uint8_t JN, uint8_t last_JN, ChnWork
         if(flag_now){
             SetCurAxis(chn, chn_axis);
             ManualMove(DIR_NEGATIVE);
+
+            g_ptr_tracelog_processor->SendToHmi(kPanelOper, kDebug, "点动[轴" + to_string(chn_axis) + "]-");
         }else if(mode == MANUAL_MODE){ // 轴正向移动松开，并且为手动连续模式
             ManualMoveStop(m_p_channel_config[chn].chn_axis_phy[i]-1);
+            g_ptr_tracelog_processor->SendToHmi(kPanelOper, kDebug, "点动释放[轴" + to_string(chn_axis) + "]-");
         }
     }
 }
@@ -8294,10 +8315,12 @@ void ChannelEngine::ProcessPmcSignal(){
 #ifdef USES_PHYSICAL_MOP
         if(g_reg->_ESP == 0 && !m_b_emergency){ //进入急停
             f_reg->RST = 1;
+            g_ptr_tracelog_processor->SendToHmi(kProcessInfo, kDebug, "进入急停");
             this->Emergency();
             m_b_emergency = 1;
         }else if(g_reg->_ESP == 1 && m_b_emergency){ // 取消急停
             m_b_emergency = false;
+            g_ptr_tracelog_processor->SendToHmi(kProcessInfo, kDebug, "解除急停");
             f_reg->RST = 0;
         }
 
@@ -8443,7 +8466,9 @@ void ChannelEngine::ProcessPmcSignal(){
         //选停信号 SBS
         if(g_reg->SBS != g_reg_last->SBS){
             if(g_reg->SBS)
+            {
                 this->SetFuncState(i, FS_OPTIONAL_STOP, 1);
+            }
             else
                 this->SetFuncState(i, FS_OPTIONAL_STOP, 0);
         }
@@ -8461,7 +8486,9 @@ void ChannelEngine::ProcessPmcSignal(){
         //跳段信号   BDT1
         if(g_reg->BDT1 != g_reg_last->BDT1){
             if(g_reg->BDT1)
+            {
                 this->SetFuncState(i, FS_BLOCK_SKIP, 1);
+            }
             else
                 this->SetFuncState(i, FS_BLOCK_SKIP, 0);
         }
@@ -8492,9 +8519,15 @@ void ChannelEngine::ProcessPmcSignal(){
         //手动快速进给选择信号  RT
         if(g_reg->RT != g_reg_last->RT){
             if(g_reg->RT)
+            {
+                g_ptr_tracelog_processor->SendToHmi(kPanelOper, kDebug, "开启[快速移动]");
                 this->SetManualRapidMove(1);
+            }
             else
+            {
+                g_ptr_tracelog_processor->SendToHmi(kPanelOper, kDebug, "关闭[快速移动]");
                 this->SetManualRapidMove(0);
+            }
         }
 
         //倍率信号处理
@@ -11422,7 +11455,6 @@ void ChannelEngine::CheckTmpDir(){
  */
 int ChannelEngine::GetRemainDay()
 {
-
     //获取系统时间
     time_t now_time=time(NULL);
     //获取本地时间
@@ -11492,6 +11524,8 @@ int ChannelEngine::GetRemainDay()
         remainDay = elapseDay(endYear, endMonth, endDay) - elapseDay(startYear, startMonth, startDay);
     }
     std::cout << "get remainDay: " << remainDay << std::endl;
+    if (remainDay < 0)
+        remainDay = 0;
     return remainDay;
 }
 

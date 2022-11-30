@@ -1663,6 +1663,8 @@ void ChannelControl::ResetMode(){
  */
 void ChannelControl::StartRunGCode(){
 
+    string msg = "结束加工程序(" + string(this->m_channel_status.cur_nc_file_name) + ")";
+    g_ptr_tracelog_processor->SendToHmi(kProcessInfo, kDebug, msg);
 	printf("start run g code \n");
 
 	g_ptr_trace->PrintTrace(TRACE_INFO, CHANNEL_CONTROL_SC,"@#@#Enter ChannelControl::StartRunGCode(), m_n_run_thread_state = %d, chn_work_mode = %hhu, machine_mode = %hhu, mc_mode=%hu\n", m_n_run_thread_state,
@@ -1959,6 +1961,8 @@ void ChannelControl::PauseRunGCode(){
     uint8_t state = MS_PAUSING;
 
     if(this->m_channel_status.chn_work_mode == AUTO_MODE){
+        string msg = "暂停加工程序(" + string(this->m_channel_status.cur_nc_file_name) + ")";
+        g_ptr_tracelog_processor->SendToHmi(kProcessInfo, kDebug, msg);
         if(this->m_simulate_mode != SIM_NONE &&
                 (m_channel_status.machining_state == MS_OUTLINE_SIMULATING ||
                  m_channel_status.machining_state == MS_TOOL_PATH_SIMULATING ||
@@ -2065,6 +2069,8 @@ void ChannelControl::StopCompilerRun(){
  * @param reset : 是否复位数据和行号， true--复位   false--不复位
  */
 void ChannelControl::StopRunGCode(bool reset){
+    string msg = "停止加工程序(" + string(this->m_channel_status.cur_nc_file_name) + ")";
+    g_ptr_tracelog_processor->SendToHmi(kProcessInfo, kDebug, msg);
     printf("ChannelControl::StopRunGCode()\n");
 
     if(this->m_channel_status.machining_state == MS_READY && !m_b_cancel_manual_call_macro)  //空闲状态直接返回
@@ -3635,6 +3641,15 @@ bool ChannelControl::SendWorkModeCmdToHmi(uint8_t chn_work_mode){
     cmd.cmd_extension = chn_work_mode;
     cmd.data_len = 0x00;
 
+    const vector<string> table =
+        {"非法模式", "自动模式", "MDA模式", "手动单步模式", "手动连续模式", "手轮模式", "编辑模式"};
+    if (chn_work_mode > 0 && chn_work_mode < table.size())
+    {
+        g_ptr_tracelog_processor->SendToHmi(kPanelOper, kDebug,
+                                            string("[工作模式]切换为 " + table[chn_work_mode]));
+    }
+
+
     return this->m_p_hmi_comm->SendCmd(cmd);
 }
 
@@ -3712,23 +3727,34 @@ bool ChannelControl::SendModeChangToHmi(uint16_t mode_type){
     case T_MODE:		//T
         cmd.data_len = 0x01;
         cmd.data[0] = m_channel_status.cur_tool;
+        g_ptr_tracelog_processor->SendToHmi(kProcessInfo, kDebug,
+                                            string("[刀号T]切换为 " + to_string(m_channel_status.cur_tool)));
         //		printf("SendModeChangToHmi, T = %hhu\n", m_channel_status.cur_tool);
         break;
     case D_MODE:		//D
         cmd.data_len = 0x01;
         cmd.data[0] = m_channel_status.cur_d_code;
+        g_ptr_tracelog_processor->SendToHmi(kProcessInfo, kDebug,
+                                            string("[D]切换为 " + to_string(m_channel_status.cur_d_code)));
         break;
     case H_MODE:		//H
         cmd.data_len = 0x01;
         cmd.data[0] = m_channel_status.cur_h_code;
+        g_ptr_tracelog_processor->SendToHmi(kProcessInfo, kDebug,
+                                            string("[H]切换为 " + to_string(m_channel_status.cur_h_code)));
         break;
     case F_MODE:		//F
         cmd.data_len = sizeof(m_channel_status.rated_feed);
         memcpy(cmd.data, &m_channel_status.rated_feed, cmd.data_len);
+        g_ptr_tracelog_processor->SendToHmi(kProcessInfo, kDebug,
+                                            string("[进给速度F]切换为 " + to_string(m_channel_status.rated_feed)));
         break;
     case S_MODE:		//S
+
         cmd.data_len = sizeof(m_channel_status.rated_spindle_speed);
         memcpy(cmd.data, &m_channel_status.rated_spindle_speed, cmd.data_len);
+        g_ptr_tracelog_processor->SendToHmi(kProcessInfo, kDebug,
+                                            string("[主轴转速S]切换为 " + to_string(m_channel_status.rated_spindle_speed)));
         break;
     default:
         printf("@@@@Invalid value in ChannelControl::SendModeChangToHmi\n");
@@ -10787,6 +10813,17 @@ void ChannelControl::SetFuncState(int state, uint8_t mode){
         }
     }
 
+    const vector<string> table = {"单段执行", "空运行", "选停", "手轮跟踪", "程序跳段", "编辑锁", "机床锁",
+                                 "机床辅助锁", "手动快速"};
+    if(state > 0 && state < (int)table.size())
+    {
+        if (mode == 0)
+            g_ptr_tracelog_processor->SendToHmi(kPanelOper, kDebug, "关闭[" + table[state] + "]");
+        else if (mode == 10)
+            g_ptr_tracelog_processor->SendToHmi(kPanelOper, kDebug, "开启[" + table[state] + "]点动");
+        else
+            g_ptr_tracelog_processor->SendToHmi(kPanelOper, kDebug, "开启[" + table[state] + "]");
+    }
     //通知HMI
     this->SendChnStatusChangeCmdToHmi(FUNC_STATE);
 }
@@ -10812,6 +10849,7 @@ void ChannelControl::SetAutoRatio(uint8_t ratio){
         return;
     this->m_channel_status.auto_ratio = ratio;
 
+    g_ptr_tracelog_processor->SendToHmi(kPanelOper, kDebug, "[自动倍率]切换为 "+to_string(ratio));
     //通知MC
     this->SetMcRatio();
 
@@ -10830,6 +10868,7 @@ void ChannelControl::SetManualRatio(uint8_t ratio){
         return;
     this->m_channel_status.manual_ratio = ratio;
 
+    g_ptr_tracelog_processor->SendToHmi(kPanelOper, kDebug, "[手动倍率]切换为 "+to_string(ratio));
     //通知MC
     this->SetMcRatio();
 
@@ -10848,6 +10887,8 @@ void ChannelControl::SetRapidRatio(uint8_t ratio){
         return;
 
     this->m_channel_status.rapid_ratio = ratio;
+
+    g_ptr_tracelog_processor->SendToHmi(kPanelOper, kDebug, "[快速倍率]切换为 "+to_string(ratio));
 
     //通知MC
     this->SetMcRatio();
@@ -10868,6 +10909,7 @@ void ChannelControl::SetSpindleRatio(uint8_t ratio){
 
     m_p_spindle->InputSOV(ratio);
 
+    g_ptr_tracelog_processor->SendToHmi(kPanelOper, kDebug, "[主轴倍率]切换为 "+to_string(ratio));
     //通知HMI
     this->SendChnStatusChangeCmdToHmi(SPINDLE_RATIO);
 }

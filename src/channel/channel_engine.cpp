@@ -2828,6 +2828,9 @@ void ChannelEngine::ProcessHmiCmd(HMICmdFrame &cmd){
     case CMD_HMI_SET_ALL_COORD: //设置当前通道的所有工件坐标系
         ProcessHmiSetAllCoordCmd(cmd);
         break;
+    case CMD_HMI_ABSOLUTE_REF_SET:
+        ProcessHmiAbsoluteRefSet(cmd);
+        break;
     default:
         g_ptr_trace->PrintTrace(TRACE_WARNING, CHANNEL_ENGINE_SC, "不支持的HMI指令[%d]", cmd.cmd);
         break;
@@ -3298,6 +3301,39 @@ void ChannelEngine::ProcessHmiSetAllCoordCmd(HMICmdFrame &cmd)
     else
         g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "命令[%d]通道号非法！%d", cmd.cmd, cmd.channel_index);
 
+}
+
+void ChannelEngine::ProcessHmiAbsoluteRefSet(HMICmdFrame &cmd)
+{
+    //是否在原点模式
+
+    uint8_t chn_axis = cmd.data[0];
+    uint8_t phy_axis = this->GetChnAxistoPhyAixs(m_n_cur_channle_index, chn_axis);
+
+    std::cout << "phy_axis: " << (int)phy_axis << std::endl;
+    if (phy_axis >= 0 && phy_axis < m_p_general_config->axis_count)
+    {
+        cmd.frame_number |= 0x8000;
+        if ((m_p_axis_config[phy_axis].absolute_ref_mode == 0        //直接设原点方式
+            && m_p_axis_config[phy_axis].feedback_mode == 1)         //绝对式
+                || m_p_axis_config[phy_axis].axis_interface == 0)    //虚拟轴
+        {
+            std::cout << "phy_axis: " << (int)phy_axis << std::endl;
+            //m_b_ret_ref = true;
+            //m_n_mask_ret_ref = (0x01<<phy_axis);
+        }
+        else
+        {//报警
+
+        }
+        this->m_p_hmi_comm->SendCmd(cmd);
+    }
+    else
+    {
+
+    }
+    //获取轴号，判断回零方式是否是绝对式，反馈类型是否是无反馈，回零模式是否是
+    //设置回零标记
 }
 
 /**
@@ -11064,13 +11100,23 @@ void ChannelEngine::ReturnRefPoint(){
             }else if(this->m_p_axis_config[i].feedback_mode == INCREMENTAL_ENCODER) {   //增量式编码器
                 this->EcatIncAxisFindRefWithZeroSignal(i);//增量式编码器只支持有挡块回零
             }
-            else if (this->m_p_axis_config[i].absolute_ref_mode == 0) //回零标记点设定方式
+            else
             {
-                this->AxisFindRefNoZeroSignal(i);
-            }
-            else if (this->m_p_axis_config[i].absolute_ref_mode == 1) //无挡块回零方式
-            {
-                this->EcatAxisFindRefNoZeroSignal(i);
+                if (this->m_p_axis_config[i].absolute_ref_mode == 2)//绝对式有挡块回零
+                {
+                    this->EcatAxisFindRefWithZeroSignal(i);
+                }
+                else
+                {
+                    if (this->m_p_axis_config[i].absolute_ref_mode == 0) //回零标记点设定方式
+                    {
+                        this->AxisFindRefNoZeroSignal(i);
+                    }
+                    else if (this->m_p_axis_config[i].absolute_ref_mode == 1) //无挡块回零方式
+                    {
+                        this->EcatAxisFindRefNoZeroSignal(i);
+                    }
+                }
             }
         }else if(this->m_p_axis_config[i].axis_interface == ANALOG_AXIS){   // 非总线轴
             //设置回零标志

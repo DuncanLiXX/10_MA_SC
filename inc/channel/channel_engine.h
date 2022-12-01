@@ -368,7 +368,7 @@ private:	//私有成员函数
     void ProcessHmiHandWheelCmd(HMICmdFrame &cmd);
 
     void ProcessHmiSetAllCoordCmd(HMICmdFrame &cmd);    //HMI向SC设置当前通道的所有工件坐标系
-
+    void ProcessHmiAbsoluteRefSet(HMICmdFrame &cmd);    //处理HMI设置绝对式编码器原点
 
 	void SendHmiUpdateStatus(uint8_t total_step, uint8_t cur_step);  //给HMI发送升级状态
 

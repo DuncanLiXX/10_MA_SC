@@ -198,6 +198,7 @@ enum HMICmdCode {
     CMD_HMI_BACKUP_REQUEST,          //HMI向SC请求备份 0x3E
     CMD_HMI_RECOVER_REQUEST,         //HMI向SC请求恢复 0x3F
     CMD_HMI_CLEAR_ALARMFILE,         //HMI向SC请求清空报警文件 0x40
+    CMD_HMI_ABSOLUTE_REF_SET,        //HMI向SC请求绝对式编码器设零 0x41
 
 
 	//SC-->HMI

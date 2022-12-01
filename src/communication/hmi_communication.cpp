@@ -1001,6 +1001,7 @@ int HMICommunication::ProcessHmiCmd(){
             case CMD_HMI_GET_ERROR_INFO:          //HMI向SC获取错误信息
             case CMD_HMI_SET_ALL_COORD:           //HMI向SC设置当前通道的所有工件坐标系
             case CMD_HMI_SET_REQUIRE_PIECE:       //HMI向SC请求当前需求件数
+            case CMD_HMI_ABSOLUTE_REF_SET:        //HMI向SC请求绝对式编码器设零 0x41
 #ifdef USES_GRIND_MACHINE
 			case CMD_SC_MECH_ARM_ERR:         //HMI响应机械手告警指令
 #endif

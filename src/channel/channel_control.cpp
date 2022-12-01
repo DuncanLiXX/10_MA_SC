@@ -2874,7 +2874,6 @@ void ChannelControl::ProcessHmiSetCurMachPosCmd(HMICmdFrame &cmd){
     }
 
     this->m_p_hmi_comm->SendCmd(cmd);  //回复响应命令
-
 }
 
 /**
@@ -12253,6 +12252,8 @@ void ChannelControl::SetChnAxisSoftLimit(uint8_t chn_axis){
         m_p_mc_comm->WriteCmd(cmd);
     else
         m_p_mc_arm_comm->WriteCmd(cmd);
+
+    std::cout << "SetChnAxisSoftLimit " << chn_axis << std::endl;
 }
 /**
  * @brief 强制关闭指定轴的软限位开关
@@ -12271,6 +12272,8 @@ void ChannelControl::CloseChnAxisSoftLimit(uint8_t chn_axis){
     cmd.data.data[0] = 0;
 
     m_p_mc_comm->WriteCmd(cmd);
+
+    std::cout << "CloseChnAxisSoftLimit" << chn_axis << std::endl;
 }
 
 

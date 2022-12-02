@@ -1001,6 +1001,8 @@ int HMICommunication::ProcessHmiCmd(){
             case CMD_HMI_GET_ERROR_INFO:          //HMI向SC获取错误信息
             case CMD_HMI_SET_ALL_COORD:           //HMI向SC设置当前通道的所有工件坐标系
             case CMD_HMI_SET_REQUIRE_PIECE:       //HMI向SC请求当前需求件数
+            case CMD_HMI_ABSOLUTE_REF_SET:        //HMI向SC请求绝对式编码器设零 0x41
+            case CMD_HMI_SET_ALL_TOOL_OFFSET:     //HMI向SC请求设置所有刀偏值 0x42
 #ifdef USES_GRIND_MACHINE
 			case CMD_SC_MECH_ARM_ERR:         //HMI响应机械手告警指令
 #endif
@@ -1036,6 +1038,7 @@ int HMICommunication::ProcessHmiCmd(){
 			case CMD_SC_NOTIFY_MACH_OVER:     //加工结束通知消息的响应
             case CMD_SC_NOTIFY_ALARM_CHANGE:
             case CMD_SC_BACKUP_STATUS:        //SC通知HMI当前备份状态
+            case CMD_SC_NOTIFY_TRACELOG:
 				break;
 			case CMD_HMI_GET_SYS_INFO:
 				m_p_channel_engine->ProcessHmiCmd(cmd);
@@ -2608,6 +2611,7 @@ void HMICommunication::ProcessHmiSysBackupCmd(HMICmdFrame &cmd)
     {
         m_sysbackup_status = SysUpdateStatus();
         m_sysbackup_status.m_type = SysUpdateStatus::Backup;
+        m_sysbackup_status.m_status = SysUpdateStatus::Ready;
         memcpy(&m_maks_sys_backup, cmd.data, cmd.data_len);
         std::cout << "begin backup" << m_maks_sys_backup << std::endl;
 
@@ -2641,6 +2645,7 @@ void HMICommunication::ProcessHmiSysRecoverCmd(HMICmdFrame &cmd)
         std::cout << "begin recover" << std::endl;
         m_sysbackup_status = SysUpdateStatus();
         m_sysbackup_status.m_type = SysUpdateStatus::Recover;
+        m_sysbackup_status.m_status = SysUpdateStatus::Ready;
         memcpy(&m_maks_sys_backup, cmd.data, cmd.data_len);
 
         cmd.data_len = sizeof(SysUpdateStatus);
@@ -3455,8 +3460,9 @@ TRAN:
 
 
     if(file_type == FILE_BACKUP_CNC && m_sysbackup_status.m_type == SysUpdateStatus::Backup) { //备份
-        m_sysbackup_status.m_status = SysUpdateStatus::Idle;
-        SendHMIBackupStatus(m_sysbackup_status);
+        std::cout << "Send backup file finish" << std::endl;
+        //m_sysbackup_status.m_status = SysUpdateStatus::Idle;
+        //SendHMIBackupStatus(m_sysbackup_status);
     }
 	END:
 #ifndef USES_TCP_FILE_TRANS_KEEP
@@ -3740,9 +3746,8 @@ void HMICommunication::UnPackageBackupFile()
             SendHMIBackupStatus(m_sysbackup_status);
             now = chrono::steady_clock::now();
         }
-     }
-     zip_close(zip);
-
+    }
+    zip_close(zip);
 
     //提取出现错误，删除恢复文件
     if (!ret)
@@ -3755,13 +3760,13 @@ void HMICommunication::UnPackageBackupFile()
     }
 
     //SC
-    string scPath = RECOVER_TEMP + SC_DIR;
-    if (!access(scPath.c_str(), F_OK))
-    {
-        std::cout << "sc chmod" << std::endl;
-        command = "chmod +x " + scPath;
-        system(command.c_str());
-    }
+//    string scPath = RECOVER_TEMP + SC_DIR;
+//    if (!access(scPath.c_str(), F_OK))
+//    {
+//        std::cout << "sc chmod" << std::endl;
+//        command = "chmod +x " + scPath;
+//        system(command.c_str());
+//    }
 
     //PL
 

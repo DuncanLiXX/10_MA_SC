@@ -2828,6 +2828,22 @@ void ChannelEngine::ProcessHmiCmd(HMICmdFrame &cmd){
     case CMD_HMI_SET_ALL_COORD: //设置当前通道的所有工件坐标系
         ProcessHmiSetAllCoordCmd(cmd);
         break;
+    case CMD_HMI_ABSOLUTE_REF_SET:
+        ProcessHmiAbsoluteRefSet(cmd);
+        break;
+    case CMD_HMI_SET_ALL_TOOL_OFFSET: //HMI向SC请求设置所有刀偏值
+        HmiToolOffsetConfig cfg;
+        memcpy(&cfg, cmd.data, cmd.data_len);
+        if(cmd.channel_index < this->m_p_general_config->chn_count)
+        {
+            m_p_channel_control[cmd.channel_index].UpdateAllToolOffset(cfg);
+        }
+        else if(cmd.channel_index == CHANNEL_ENGINE_INDEX){
+            for(int i = 0; i < this->m_p_general_config->chn_count; i++){
+                this->m_p_channel_control[i].UpdateAllToolOffset(cfg);
+            }
+        }
+        break;
     default:
         g_ptr_trace->PrintTrace(TRACE_WARNING, CHANNEL_ENGINE_SC, "不支持的HMI指令[%d]", cmd.cmd);
         break;
@@ -2890,6 +2906,20 @@ void ChannelEngine::ProcessHmiRegLicCmd(HMICmdFrame &cmd){
     memset(lic_code, 0x00, LICCODECOUNT+1);
     memcpy(lic_code, cmd.data, LICCODECOUNT);  //24字节长度的设备授权码
     printf("Get lic code:%s\n", lic_code);
+
+
+#ifdef USES_LICENSE_FUNC
+    char lic[25] = {};
+    memcpy(lic, lic_code, 25);
+    if (!DecryptLicense(lic))
+    {
+        std::cout << "illegal code" << std::endl;
+        cmd.cmd_extension = FAILED;
+        this->m_p_hmi_comm->SendCmd(cmd);
+        return;
+    }
+    std::cout << lic_code << std::endl;
+#endif
 
     //注册授权码
     if(RegisterLicWithCode(this->m_device_sn, lic_code, &this->m_lic_info)){
@@ -3284,6 +3314,41 @@ void ChannelEngine::ProcessHmiSetAllCoordCmd(HMICmdFrame &cmd)
     else
         g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "命令[%d]通道号非法！%d", cmd.cmd, cmd.channel_index);
 
+}
+
+void ChannelEngine::ProcessHmiAbsoluteRefSet(HMICmdFrame &cmd)
+{
+    cmd.frame_number |= 0x8000;
+
+    uint8_t chn_axis = cmd.data[0];
+    uint8_t phy_axis = this->GetChnAxistoPhyAixs(m_n_cur_channle_index, chn_axis);
+
+    HmiChannelStatus status;
+    GetChnStatus(m_n_cur_channle_index, status);
+
+    if (phy_axis >= 0 && phy_axis < m_p_general_config->axis_count   //轴在合理范围
+            && status.chn_work_mode == REF_MODE)                     //回零模式
+    {
+        cmd.cmd_extension = 0;
+        if ((m_p_axis_config[phy_axis].absolute_ref_mode == 0        //直接设原点方式
+            && m_p_axis_config[phy_axis].feedback_mode == 1)         //绝对式
+                || m_p_axis_config[phy_axis].axis_interface == 0)    //虚拟轴
+        {
+            m_b_ret_ref = true;
+            m_n_mask_ret_ref = (0x01<<phy_axis);
+        }
+        else
+        {//报警
+            CreateError(ERR_RET_REF_FAILED, WARNING_LEVEL, CLEAR_BY_MCP_RESET, 0, CHANNEL_ENGINE_INDEX, 0);
+            cmd.cmd_extension = 1;
+        }
+
+    }
+    else
+    {
+        cmd.cmd_extension = 1;
+    }
+    this->m_p_hmi_comm->SendCmd(cmd);
 }
 
 /**
@@ -3911,8 +3976,6 @@ void ChannelEngine::SaveToolInfo(){
  * @return true--执行成功   false--执行失败
  */
 bool ChannelEngine::UpdateHmiPitchCompData(HMICmdFrame &cmd){
-
-
     uint8_t axis_index = cmd.data[0];
     bool dir = (cmd.data[1]==0)?true:false;   //正向螺补标志
     uint16_t offset, count;
@@ -3934,8 +3997,8 @@ bool ChannelEngine::UpdateHmiPitchCompData(HMICmdFrame &cmd){
         ListNode<AxisPcDataAlloc> *node = this->m_list_pc_alloc.HeadNode();
         while(node != nullptr){
 
-            //printf("node->data.start_index : %d node->data.end_index: %d tmp_start: %d\n",
-            //	node->data.start_index, node->data.end_index, tmp_start);
+            //printf("node->data.start_index : %d node->data.end_index: %d tmp_start: %d \n",
+            //    node->data.start_index, node->data.end_index, tmp_start);
 
             if(node->data.start_index <= tmp_start && node->data.end_index >= tmp_start){
                 if((tmp_start - node->data.start_index) < this->m_p_axis_config[node->data.axis_index].pc_count)
@@ -3976,7 +4039,6 @@ bool ChannelEngine::UpdateHmiPitchCompData(HMICmdFrame &cmd){
     //发送轴螺补设置参数
     this->SendMiPcParam(axis_index);
     this->SendMiPcParam2(axis_index);
-
 
     return true;
 }
@@ -4904,6 +4966,9 @@ void ChannelEngine::SetManualStep(uint8_t chn, uint8_t step){
         break;
     }
 
+    const vector<string> table = {"1", "10", "100", "1000"};
+    if (step > 0 && step < table.size())
+        g_ptr_tracelog_processor->SendToHmi(kPanelOper, kDebug, "[增量倍率]切换为 " + table[step]);
     this->m_p_channel_control[chn].SetManualStep(step);
 }
 
@@ -5137,11 +5202,12 @@ void ChannelEngine::SetJPState(uint8_t chn, uint8_t JP, uint8_t last_JP, ChnWork
         if(flag_now){
             SetCurAxis(chn, chn_axis);
             ManualMove(DIR_POSITIVE);
-
+            g_ptr_tracelog_processor->SendToHmi(kPanelOper, kDebug, "点动[轴" + to_string(chn_axis) + "]+");
             if(mode == MANUAL_MODE){
             }
         }else if(mode == MANUAL_MODE){ // 轴正向移动松开，并且为手动连续模式
             ManualMoveStop(m_p_channel_config[chn].chn_axis_phy[i]-1);
+            g_ptr_tracelog_processor->SendToHmi(kPanelOper, kDebug, "点动释放[轴" + to_string(chn_axis) + "]+");
         }
     }
 }
@@ -5159,8 +5225,11 @@ void ChannelEngine::SetJNState(uint8_t chn, uint8_t JN, uint8_t last_JN, ChnWork
         if(flag_now){
             SetCurAxis(chn, chn_axis);
             ManualMove(DIR_NEGATIVE);
+
+            g_ptr_tracelog_processor->SendToHmi(kPanelOper, kDebug, "点动[轴" + to_string(chn_axis) + "]-");
         }else if(mode == MANUAL_MODE){ // 轴正向移动松开，并且为手动连续模式
             ManualMoveStop(m_p_channel_config[chn].chn_axis_phy[i]-1);
+            g_ptr_tracelog_processor->SendToHmi(kPanelOper, kDebug, "点动释放[轴" + to_string(chn_axis) + "]-");
         }
     }
 }
@@ -8292,10 +8361,12 @@ void ChannelEngine::ProcessPmcSignal(){
 #ifdef USES_PHYSICAL_MOP
         if(g_reg->_ESP == 0 && !m_b_emergency){ //进入急停
             f_reg->RST = 1;
+            g_ptr_tracelog_processor->SendToHmi(kProcessInfo, kDebug, "进入急停");
             this->Emergency();
             m_b_emergency = 1;
         }else if(g_reg->_ESP == 1 && m_b_emergency){ // 取消急停
             m_b_emergency = false;
+            g_ptr_tracelog_processor->SendToHmi(kProcessInfo, kDebug, "解除急停");
             f_reg->RST = 0;
         }
 
@@ -8441,7 +8512,9 @@ void ChannelEngine::ProcessPmcSignal(){
         //选停信号 SBS
         if(g_reg->SBS != g_reg_last->SBS){
             if(g_reg->SBS)
+            {
                 this->SetFuncState(i, FS_OPTIONAL_STOP, 1);
+            }
             else
                 this->SetFuncState(i, FS_OPTIONAL_STOP, 0);
         }
@@ -8459,7 +8532,9 @@ void ChannelEngine::ProcessPmcSignal(){
         //跳段信号   BDT1
         if(g_reg->BDT1 != g_reg_last->BDT1){
             if(g_reg->BDT1)
+            {
                 this->SetFuncState(i, FS_BLOCK_SKIP, 1);
+            }
             else
                 this->SetFuncState(i, FS_BLOCK_SKIP, 0);
         }
@@ -8490,9 +8565,15 @@ void ChannelEngine::ProcessPmcSignal(){
         //手动快速进给选择信号  RT
         if(g_reg->RT != g_reg_last->RT){
             if(g_reg->RT)
+            {
+                g_ptr_tracelog_processor->SendToHmi(kPanelOper, kDebug, "开启[快速移动]");
                 this->SetManualRapidMove(1);
+            }
             else
+            {
+                g_ptr_tracelog_processor->SendToHmi(kPanelOper, kDebug, "关闭[快速移动]");
                 this->SetManualRapidMove(0);
+            }
         }
 
         //倍率信号处理
@@ -11030,13 +11111,23 @@ void ChannelEngine::ReturnRefPoint(){
             }else if(this->m_p_axis_config[i].feedback_mode == INCREMENTAL_ENCODER) {   //增量式编码器
                 this->EcatIncAxisFindRefWithZeroSignal(i);//增量式编码器只支持有挡块回零
             }
-            else if (this->m_p_axis_config[i].absolute_ref_mode == 0) //回零标记点设定方式
+            else
             {
-                this->AxisFindRefNoZeroSignal(i);
-            }
-            else if (this->m_p_axis_config[i].absolute_ref_mode == 1) //无挡块回零方式
-            {
-                this->EcatAxisFindRefNoZeroSignal(i);
+                if (this->m_p_axis_config[i].absolute_ref_mode == 2)//绝对式有挡块回零
+                {
+                    this->EcatAxisFindRefWithZeroSignal(i);
+                }
+                else
+                {
+                    if (this->m_p_axis_config[i].absolute_ref_mode == 0) //回零标记点设定方式
+                    {
+                        this->AxisFindRefNoZeroSignal(i);
+                    }
+                    else if (this->m_p_axis_config[i].absolute_ref_mode == 1) //无挡块回零方式
+                    {
+                        this->EcatAxisFindRefNoZeroSignal(i);
+                    }
+                }
             }
         }else if(this->m_p_axis_config[i].axis_interface == ANALOG_AXIS){   // 非总线轴
             //设置回零标志
@@ -11421,7 +11512,6 @@ void ChannelEngine::CheckTmpDir(){
  */
 int ChannelEngine::GetRemainDay()
 {
-
     //获取系统时间
     time_t now_time=time(NULL);
     //获取本地时间
@@ -11438,8 +11528,6 @@ int ChannelEngine::GetRemainDay()
     std::cout << "startYear: " << startYear << " startMonth: " << startMonth << " startDay: " << startDay << std::endl;
     std::cout << "endYear: "   << endYear   << " endMonth: "   << endMonth   << " endDay:   " << endDay   << std::endl;
 
-//    if (m_lic_info.licflag == 'n' || m_lic_info.licflag == 'o' || m_lic_info.licflag == 'v')
-//        return 0;
     if (startYear > endYear)
     {
         std::cout << "startYear > endYear" << std::endl;
@@ -11493,6 +11581,8 @@ int ChannelEngine::GetRemainDay()
         remainDay = elapseDay(endYear, endMonth, endDay) - elapseDay(startYear, startMonth, startDay);
     }
     std::cout << "get remainDay: " << remainDay << std::endl;
+    if (remainDay < 0)
+        remainDay = 0;
     return remainDay;
 }
 

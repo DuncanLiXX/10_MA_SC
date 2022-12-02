@@ -17,6 +17,7 @@ const int kMaxAlarmCount = 200;   //告警缓冲区最大值
 
 //m_instance初始化为nullptr
 AlarmProcessor* AlarmProcessor::m_instance = nullptr;
+TraceLogProcess* TraceLogProcess::m_instance = nullptr;
 
 //错误处理类构造函数
 AlarmProcessor::AlarmProcessor(){
@@ -640,3 +641,44 @@ void AlarmProcessor::ProcessAutoAlarm()
     }
 }
 
+
+TraceLogProcess::~TraceLogProcess()
+{
+
+}
+
+void TraceLogProcess::SetInterfaces()
+{
+    this->m_p_hmi_comm = HMICommunication::GetInstance();
+}
+
+void TraceLogProcess::SendToHmi(OptType optType, MsgType msgType, string strMsg)
+{
+    HMICmdFrame hmi_cmd;
+    hmi_cmd.channel_index = CHANNEL_ENGINE_INDEX;
+    hmi_cmd.cmd = CMD_SC_NOTIFY_TRACELOG;
+    hmi_cmd.cmd_extension = 0;
+    hmi_cmd.data_len = 0;
+
+    int opt = optType;
+    int msg = msgType;
+    int len = sizeof(int);
+    int strLen = strMsg.size();
+    if (strLen > 512)
+        strLen = 512;
+
+    memset(&hmi_cmd.data[0], 0, kMaxHmiDataLen);
+    memcpy(&hmi_cmd.data[0], &opt, len);
+    memcpy(&hmi_cmd.data[0+len], &msg, len);
+    strcpy(&hmi_cmd.data[0+2*len], strMsg.c_str());
+    std::cout << "TraceLog: " << strMsg.c_str() << std::endl;
+
+    hmi_cmd.data_len = 2*len + strLen;
+
+    m_p_hmi_comm->SendCmd(hmi_cmd);
+}
+
+TraceLogProcess::TraceLogProcess()
+{
+
+}

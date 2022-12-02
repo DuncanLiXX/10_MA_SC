@@ -3163,7 +3163,46 @@ void ParmManager::UpdateToolOffsetConfig(uint16_t chn_index, uint8_t index, HmiT
 	sprintf(kname, "radius_wear_%hhu", index);
 	m_ini_tool->SetDoubleValue(sname, kname, cfg.radius_wear);
 
-	this->m_ini_tool->Save();
+    this->m_ini_tool->Save();
+}
+
+void ParmManager::UpdateAllToolOffsetConfig(uint16_t chn_index, HmiToolOffsetConfig cfg)
+{
+    char sname[32];	//section name
+    char kname[64];	//key name
+//	char value[32]; //value
+
+    memset(sname, 0x00, sizeof(sname));
+    memset(kname, 0x00, sizeof(kname));
+//	memset(value, 0x00, sizeof(value));
+
+    for (int index = 0; index < kMaxToolCount; ++index)
+    {
+        this->m_sc_tool_config[chn_index].geometry_compensation[index][0] = cfg.geometry_compensation[0];
+        this->m_sc_tool_config[chn_index].geometry_compensation[index][1] = cfg.geometry_compensation[1];
+        this->m_sc_tool_config[chn_index].geometry_compensation[index][2] = cfg.geometry_compensation[2];
+        this->m_sc_tool_config[chn_index].geometry_wear[index] = cfg.geometry_wear;
+        this->m_sc_tool_config[chn_index].radius_compensation[index] = cfg.radius_compensation;
+        this->m_sc_tool_config[chn_index].radius_wear[index] = cfg.radius_wear;
+
+        sprintf(sname, "channel_%hu", chn_index);
+        sprintf(kname, "geo_comp_x_%hhu", index);
+        m_ini_tool->SetDoubleValue(sname, kname, cfg.geometry_compensation[0]);
+        sprintf(kname, "geo_comp_y_%hhu", index);
+        m_ini_tool->SetDoubleValue(sname, kname, cfg.geometry_compensation[1]);
+        sprintf(kname, "geo_comp_z_%hhu", index);
+        m_ini_tool->SetDoubleValue(sname, kname, cfg.geometry_compensation[2]);
+
+        sprintf(kname, "geo_wear_%hhu", index);
+        m_ini_tool->SetDoubleValue(sname, kname, cfg.geometry_wear);
+        sprintf(kname, "radius_comp_%hhu", index);
+        m_ini_tool->SetDoubleValue(sname, kname, cfg.radius_compensation);
+
+        sprintf(kname, "radius_wear_%hhu", index);
+        m_ini_tool->SetDoubleValue(sname, kname, cfg.radius_wear);
+    }
+
+    this->m_ini_tool->Save();
 }
 
 /**
@@ -3528,8 +3567,11 @@ bool ParmManager::UpdatePcData(uint8_t axis_index, bool dir_flag, uint16_t offse
 
 	int pc_count = m_sc_axis_config[axis_index].pc_count;
 
+    std::cout << "pc_count: " << m_sc_axis_config[axis_index].pc_count << std::endl;
+    std::cout << "count: " << count << std::endl;
 	for(int i = 0; i < count; i++ ){
 
+        std::cout << "axis_index: " << (int)axis_index << " offset_index+i-1: " << offset_index+i-1 << " data: " << data[i] <<  std::endl;
 		m_sc_pc_table->pc_table[axis_index][offset_index+i-1] = data[i];
 		memset(kname, 0x00, sizeof(kname));
 

@@ -202,6 +202,7 @@ void TraceInfo::PrintTrace(TraceLevel trace_level, TraceModule trace_module,
 	char trace_message_buf[kMaxMsgLen] = { 0 };       //用于保存trace_message
 	va_list arg_ptr;                                    //可变长度参数
 	int str_len = 0;		//消息字符串长度
+
 	if (trace_level <= m_trace_level) {
 
 		//处理可变长度参数

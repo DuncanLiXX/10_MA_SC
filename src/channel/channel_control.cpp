@@ -2420,19 +2420,9 @@ void ChannelControl::SendMonitorData(bool bAxis, bool btime){
 
     //处于刚攻状态需要读取刚攻误差
     if(m_p_g_reg->RGTAP == 1){
-        static int cnt = 0;
-        if(cnt++ %10 == 0){
-            //for(int i=0 ;i<4; i++){
-                m_p_mi_comm->ReadTapErr(&m_channel_rt_status.tap_err,
-                                        &m_channel_rt_status.tap_err_now,
-                                        1);
-                ScPrintf("tap_err = %d tap_err_now = %d",m_channel_rt_status.tap_err,
-                         m_channel_rt_status.tap_err_now);
-                //m_p_mi_comm->ReadTapErrNow(err,i);
-                //m_channel_rt_status.tap_err_now = err;
-                //ScPrintf("tap_err_now = %d",err);
-            //}
-        }
+        m_p_mi_comm->ReadTapErr(&m_channel_rt_status.tap_err,
+                                &m_channel_rt_status.tap_err_now,
+                                1);
     }
 
     //	printf("axis pos %lf, %lf, %lf\n", pos[0], pos[1], pos[2]);
@@ -2444,6 +2434,19 @@ void ChannelControl::SendMonitorData(bool bAxis, bool btime){
     if(this->m_channel_status.chn_work_mode != AUTO_MODE && this->m_channel_status.chn_work_mode != MDA_MODE){//手动模式下，余移动流量显示0
         memcpy(hmi_rt_status.tar_pos_work, hmi_rt_status.cur_pos_work, sizeof(double)*kMaxAxisChn);
     }
+
+    uint8_t MLK_mask = m_p_channel_engine->GetMlkMask();
+    double *MLK_pos = m_p_channel_engine->GetMlkPos();
+    static int cnt = 0;
+    for(int i = 0; i < m_p_channel_config->chn_axis_count; i++){
+        if((MLK_mask >> i) & 0x01){
+            hmi_rt_status.cur_pos_machine[i] = MLK_pos[i];
+            if(cnt%10 == 0){
+                ScPrintf("use old pos");
+            }
+        }
+    }
+    cnt ++;
 
     //	memcpy(hmi_rt_status.cur_pos_machine, m_channel_rt_status.cur_pos_machine.m_df_point, sizeof(double)*kMaxAxisChn);
     //	memcpy(hmi_rt_status.cur_pos_work, m_channel_rt_status.cur_pos_work.m_df_point, sizeof(double)*kMaxAxisChn);
@@ -4360,11 +4363,10 @@ int ChannelControl::Run(){
         #endif
                     )
             {
-                m_n_run_thread_state = STOP;
+                m_n_run_thread_state = ERROR;
 
                 g_ptr_trace->PrintLog(LOG_ALARM, "CHN[%d]语法错误，未找到结束指令！", m_n_channel_index);
                 CreateError(ERR_NO_END, ERROR_LEVEL, CLEAR_BY_MCP_RESET, 0, m_n_channel_index);
-
             }
 #endif
 
@@ -6889,7 +6891,8 @@ bool ChannelControl::ExecuteAuxMsg(RecordMsg *msg){
 
             // 主轴不存在或者主轴为虚拟轴，不执行主轴辅助功能
             if((mcode == 3 || mcode == 4 || mcode == 5
-                || mcode == 19 || mcode == 20 || mcode == 29)
+                || mcode == 19 || mcode == 20 || mcode == 26
+                || mcode == 27 || mcode == 28 || mcode == 29)
                     && m_p_spindle->Type() != 2){
                 tmp->SetExecStep(m_index, 0xFF);    //置位结束状态
                 break;
@@ -10915,9 +10918,9 @@ void ChannelControl::SetManualRapidMove(uint8_t mode){
 
 
     //重发手动命令
-    if(m_channel_status.cur_manual_move_dir != DIR_STOP){
-        this->ManualMove(m_channel_status.cur_manual_move_dir);
-    }
+//    if(m_channel_status.cur_manual_move_dir != DIR_STOP){
+//        this->ManualMove(m_channel_status.cur_manual_move_dir);
+//    }
 }
 
 /**

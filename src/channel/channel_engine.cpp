@@ -704,10 +704,14 @@ void ChannelEngine::SetServoState(uint8_t SVF, uint8_t pos_req){
 void ChannelEngine::SetMLKState(uint8_t MLK)
 {
     static uint8_t last_MLK = 0x00;
-    static double pos_record[kMaxAxisChn] = {0.0};
     static std::future<void> ans;
+    ScPrintf("SetMLKState: MLK = %u", MLK);
 
+    uint8_t clr_mask = 0x00;   // 需要解除锁住的轴mask
     for(int i = 0; i < m_p_channel_config->chn_axis_count; i++){
+        // 旋转轴不用锁住
+        if(m_p_axis_config[i].axis_type == AXIS_SPINDLE)
+            continue;
 
         bool en_now = (MLK & (0x01 << i));
         bool en_last = (last_MLK & (0x01 << i));
@@ -720,28 +724,61 @@ void ChannelEngine::SetMLKState(uint8_t MLK)
                                                        m_df_phy_axis_speed_feedback,
                                                        m_df_phy_axis_torque_feedback,
                                                        m_p_general_config->axis_count);
-           pos_record[i] = m_df_phy_axis_pos_feedback[i];
+           m_MLK_pos[i] = m_df_phy_axis_pos_feedback[i];
            m_p_mi_comm->SendAxisMLK(i+1, en_now);
+           m_MLK_mask |= (0x01 << i);
         }else{
-            //ManualMoveAbs(i, 3000, pos_record[i]);
-            auto func = std::bind(&ChannelEngine::ProcessRecoverMLK,
-                                  this, std::placeholders::_1, std::placeholders::_2);
-            ans = std::async(std::launch::async, func, i,pos_record[i]);
+            clr_mask |= (0x01 << i);
         }
 
+    }
+
+    // 执行机械锁住恢复动作
+    if(clr_mask != 0x00){
+        auto func = std::bind(&ChannelEngine::ProcessRecoverMLK,
+                              this, std::placeholders::_1, std::placeholders::_2);
+        ans = std::async(std::launch::async, func, clr_mask,m_MLK_pos);
     }
     last_MLK = MLK;
 }
 
-void ChannelEngine::ProcessRecoverMLK(uint8_t phy_axis, double mach_pos)
+void ChannelEngine::ProcessRecoverMLK(uint8_t mask, double *mach_pos)
 {
-    ManualMoveAbs(phy_axis, 3000, mach_pos);
-    while(fabs(this->GetPhyAxisMachPosFeedback(phy_axis) - mach_pos) >= 0.010){
-        std::this_thread::sleep_for(std::chrono::microseconds(100 * 1000));
-        ScPrintf("RecoverMLK: axis = %u,fabs = %lf", phy_axis,
-                 fabs(this->GetPhyAxisMachPosFeedback(phy_axis) - mach_pos));
+    // 机械锁住恢复执行流程
+    // 1:将机械锁住恢复标记 置为 1，通知PMC此时不要作轴移动操作
+    // 2:发生轴移动指令，让轴回到之前进入锁住状态前的坐标
+    // 3:等待所有轴移动到位，给MI发送取消锁住的命令
+    // 4:机械锁住标记 清除
+    m_p_pmc_reg->FReg().bits->CLMLK = 1;
+
+    for(int i = 0; i < m_p_channel_config->chn_axis_count; i++){
+        if(((mask >> 1) & 0x01) == 0)
+            continue;
+
+        ManualMoveAbs(i, 3000, mach_pos[i]);
     }
-    m_p_mi_comm->SendAxisMLK(phy_axis+1, 0);
+
+    for(int i = 0; i < m_p_channel_config->chn_axis_count; i++){
+        if(((mask >> 1) & 0x01) == 0)
+            continue;
+
+        while(fabs(this->GetPhyAxisMachPosFeedback(i) - mach_pos[i]) >= 0.010){
+            std::this_thread::sleep_for(std::chrono::microseconds(100 * 1000));
+            ScPrintf("RecoverMLK: axis = %u,fabs = %lf", i,
+                     fabs(this->GetPhyAxisMachPosFeedback(i) - mach_pos[i]));
+
+        }
+    }
+
+    for(int i = 0; i < m_p_channel_config->chn_axis_count; i++){
+        if(((mask >> 1) & 0x01) == 0)
+            continue;
+
+        m_p_mi_comm->SendAxisMLK(i+1, 0);
+        m_MLK_mask &= ~(0x01 << i);
+    }
+    m_p_pmc_reg->FReg().bits->CLMLK = 0;
+
 }
 
 /**
@@ -8342,11 +8379,13 @@ void ChannelEngine::ProcessPmcSignal(){
             f_reg->MMLK = g_reg->MLK;
             if(g_reg->MLK){
                 SetMLKState(0xFF);
+            }else{
+                SetMLKState(g_reg->MLKI);
             }
         }
 
         // 某个轴机械锁住信号发生了改变
-        if(g_reg->MLKI != g_reg_last->MLKI && !g_reg->MLK){
+        if(g_reg->MLKI != g_reg_last->MLKI){
             SetMLKState(g_reg->MLKI);
         }
 

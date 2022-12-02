@@ -93,18 +93,18 @@ void SyncAxisCtrl::RspSyncAxis(int64_t mask)
         bool sync_last = (sync_mask & (0x01<<i));
         bool sync_wait = (wait_sync_mask & (0x01<<i));
 
-//        // 建立同步失败
-//        if(sync_wait != sync_now && sync_wait){
-//            CreateError(ERR_EN_SYNC_AXIS, ERROR_LEVEL, CLEAR_BY_MCP_RESET,
-//                        0, CHANNEL_ENGINE_INDEX, i);
-//            return;
-//        }
-//        // 取消同步失败
-//        if(sync_wait != sync_now && !sync_wait){
-//            CreateError(ERR_DIS_SYNC_AXIS, ERROR_LEVEL, CLEAR_BY_MCP_RESET,
-//                        0, CHANNEL_ENGINE_INDEX, i);
-//            return;
-//        }
+        // 建立同步失败
+        if(sync_wait != sync_now && sync_wait){
+            CreateError(ERR_EN_SYNC_AXIS, ERROR_LEVEL, CLEAR_BY_MCP_RESET,
+                        0, CHANNEL_ENGINE_INDEX, i);
+            return;
+        }
+        // 取消同步失败
+        if(sync_wait != sync_now && !sync_wait){
+            CreateError(ERR_DIS_SYNC_AXIS, ERROR_LEVEL, CLEAR_BY_MCP_RESET,
+                        0, CHANNEL_ENGINE_INDEX, i);
+            return;
+        }
 
         // 同步状态发生了改变，还要改变使能状态
         if(sync_now ^ sync_last){

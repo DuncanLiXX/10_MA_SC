@@ -905,6 +905,8 @@ void MICommunication::ReadTapErr(int32_t *err, int32_t *err_now, uint8_t cnt)
     for(int i=0; i<cnt; i++){
         ReadRegister32_M(SHARED_MEM_TAP_ERR(i), var_err);
         ReadRegister32_M(SHARED_MEM_TAP_ERR_NOW(i), var_err_now);
+        //ScPrintf("read addr = %x, value = %d",SHARED_MEM_TAP_ERR(i), var_err);
+        //ScPrintf("read over flag addr = %x",SHARED_MEM_TAP_READ_OVER);
         err[i] = var_err;
         err_now[i] = var_err_now;
     }

@@ -2831,6 +2831,19 @@ void ChannelEngine::ProcessHmiCmd(HMICmdFrame &cmd){
     case CMD_HMI_ABSOLUTE_REF_SET:
         ProcessHmiAbsoluteRefSet(cmd);
         break;
+    case CMD_HMI_SET_ALL_TOOL_OFFSET: //HMI向SC请求设置所有刀偏值
+        HmiToolOffsetConfig cfg;
+        memcpy(&cfg, cmd.data, cmd.data_len);
+        if(cmd.channel_index < this->m_p_general_config->chn_count)
+        {
+            m_p_channel_control[cmd.channel_index].UpdateAllToolOffset(cfg);
+        }
+        else if(cmd.channel_index == CHANNEL_ENGINE_INDEX){
+            for(int i = 0; i < this->m_p_general_config->chn_count; i++){
+                this->m_p_channel_control[i].UpdateAllToolOffset(cfg);
+            }
+        }
+        break;
     default:
         g_ptr_trace->PrintTrace(TRACE_WARNING, CHANNEL_ENGINE_SC, "不支持的HMI指令[%d]", cmd.cmd);
         break;
@@ -3305,35 +3318,37 @@ void ChannelEngine::ProcessHmiSetAllCoordCmd(HMICmdFrame &cmd)
 
 void ChannelEngine::ProcessHmiAbsoluteRefSet(HMICmdFrame &cmd)
 {
-    //是否在原点模式
+    cmd.frame_number |= 0x8000;
 
     uint8_t chn_axis = cmd.data[0];
     uint8_t phy_axis = this->GetChnAxistoPhyAixs(m_n_cur_channle_index, chn_axis);
 
-    std::cout << "phy_axis: " << (int)phy_axis << std::endl;
-    if (phy_axis >= 0 && phy_axis < m_p_general_config->axis_count)
+    HmiChannelStatus status;
+    GetChnStatus(m_n_cur_channle_index, status);
+
+    if (phy_axis >= 0 && phy_axis < m_p_general_config->axis_count   //轴在合理范围
+            && status.chn_work_mode == REF_MODE)                     //回零模式
     {
-        cmd.frame_number |= 0x8000;
+        cmd.cmd_extension = 0;
         if ((m_p_axis_config[phy_axis].absolute_ref_mode == 0        //直接设原点方式
             && m_p_axis_config[phy_axis].feedback_mode == 1)         //绝对式
                 || m_p_axis_config[phy_axis].axis_interface == 0)    //虚拟轴
         {
-            std::cout << "phy_axis: " << (int)phy_axis << std::endl;
-            //m_b_ret_ref = true;
-            //m_n_mask_ret_ref = (0x01<<phy_axis);
+            m_b_ret_ref = true;
+            m_n_mask_ret_ref = (0x01<<phy_axis);
         }
         else
         {//报警
-
+            CreateError(ERR_RET_REF_FAILED, WARNING_LEVEL, CLEAR_BY_MCP_RESET, 0, CHANNEL_ENGINE_INDEX, 0);
+            cmd.cmd_extension = 1;
         }
-        this->m_p_hmi_comm->SendCmd(cmd);
+
     }
     else
     {
-
+        cmd.cmd_extension = 1;
     }
-    //获取轴号，判断回零方式是否是绝对式，反馈类型是否是无反馈，回零模式是否是
-    //设置回零标记
+    this->m_p_hmi_comm->SendCmd(cmd);
 }
 
 /**
@@ -3961,8 +3976,6 @@ void ChannelEngine::SaveToolInfo(){
  * @return true--执行成功   false--执行失败
  */
 bool ChannelEngine::UpdateHmiPitchCompData(HMICmdFrame &cmd){
-
-
     uint8_t axis_index = cmd.data[0];
     bool dir = (cmd.data[1]==0)?true:false;   //正向螺补标志
     uint16_t offset, count;
@@ -3984,8 +3997,8 @@ bool ChannelEngine::UpdateHmiPitchCompData(HMICmdFrame &cmd){
         ListNode<AxisPcDataAlloc> *node = this->m_list_pc_alloc.HeadNode();
         while(node != nullptr){
 
-            //printf("node->data.start_index : %d node->data.end_index: %d tmp_start: %d\n",
-            //	node->data.start_index, node->data.end_index, tmp_start);
+            //printf("node->data.start_index : %d node->data.end_index: %d tmp_start: %d \n",
+            //    node->data.start_index, node->data.end_index, tmp_start);
 
             if(node->data.start_index <= tmp_start && node->data.end_index >= tmp_start){
                 if((tmp_start - node->data.start_index) < this->m_p_axis_config[node->data.axis_index].pc_count)
@@ -4026,7 +4039,6 @@ bool ChannelEngine::UpdateHmiPitchCompData(HMICmdFrame &cmd){
     //发送轴螺补设置参数
     this->SendMiPcParam(axis_index);
     this->SendMiPcParam2(axis_index);
-
 
     return true;
 }

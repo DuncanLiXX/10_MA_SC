@@ -12252,8 +12252,6 @@ void ChannelControl::SetChnAxisSoftLimit(uint8_t chn_axis){
         m_p_mc_comm->WriteCmd(cmd);
     else
         m_p_mc_arm_comm->WriteCmd(cmd);
-
-    std::cout << "SetChnAxisSoftLimit " << chn_axis << std::endl;
 }
 /**
  * @brief 强制关闭指定轴的软限位开关
@@ -12272,8 +12270,6 @@ void ChannelControl::CloseChnAxisSoftLimit(uint8_t chn_axis){
     cmd.data.data[0] = 0;
 
     m_p_mc_comm->WriteCmd(cmd);
-
-    std::cout << "CloseChnAxisSoftLimit" << chn_axis << std::endl;
 }
 
 
@@ -17434,6 +17430,16 @@ void ChannelControl::UpdateToolOffset(uint8_t index, HmiToolOffsetConfig &cfg){
     }
     else
         g_ptr_parm_manager->UpdateToolOffsetConfig(m_n_channel_index, index, cfg, true);
+}
+
+bool ChannelControl::UpdateAllToolOffset(const HmiToolOffsetConfig &cfg)
+{
+    //if(m_channel_status.machining_state == MS_READY || m_channel_status.machining_state == MS_WARNING){//非运行状态
+        g_ptr_parm_manager->UpdateAllToolOffsetConfig(m_n_channel_index, cfg);
+        //if(this->m_channel_status.gmode[8] != G49_CMD && this->m_channel_status.cur_h_code == index+1)
+        //    this->SetMcToolOffset(true);
+    //}
+    return true;
 }
 
 /**

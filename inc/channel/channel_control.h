@@ -226,6 +226,7 @@ public:
     bool UpdateAllExCoord(double val, int count);//更新所有的扩展工件坐标系设定值
 
 	void UpdateToolOffset(uint8_t index, HmiToolOffsetConfig &cfg);   //更新刀具偏置
+    bool UpdateAllToolOffset(const HmiToolOffsetConfig &cfg);
 
 	bool IsCurNcFile(char *file_name);    //file_name是否为当前加工文件
 

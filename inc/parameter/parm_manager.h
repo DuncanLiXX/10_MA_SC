@@ -73,6 +73,7 @@ public:
 	void UpdateToolWear(uint16_t chn_index, uint8_t index, const double &value);   //更新刀长磨损值
 	void UpdateToolMeasure(uint16_t chn_index, uint8_t index, const double &value);   //更新刀具长度测量值
 	void UpdateToolOffsetConfig(uint16_t chn_index, uint8_t index, HmiToolOffsetConfig &cfg, bool active);	//更新刀具偏置信息
+    void UpdateAllToolOffsetConfig(uint16_t chn_index, HmiToolOffsetConfig cfg);   //设置所有刀具偏置信息
 	void UpdateToolPotConfig(uint16_t chn_index, SCToolPotConfig &cfg);			//更新刀位信息
 	void UpdateToolPotConfig(uint16_t chn_index, bool save = true);    //更新刀具信息
 	void UpdateCoordConfig(uint16_t chn_index, uint8_t index, HmiCoordConfig &cfg, bool active);    //更新工件坐标系

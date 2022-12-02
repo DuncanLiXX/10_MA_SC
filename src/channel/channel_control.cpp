@@ -1336,9 +1336,12 @@ bool ChannelControl::SetSysVarValue(const int index, const double &value){
             this->SendMessageToHmi(MSG_TIPS, msg_id);
         }
     }else if(index == 3006){  //只写变量，显示告警信息
-        uint16_t err_id = value;
-        if(err_id > 0)
+        printf("===================3006=============\n");
+    	uint16_t err_id = value;
+        if(err_id > 0){
             CreateError(err_id, ERROR_LEVEL, CLEAR_BY_MCP_RESET, 0, m_n_channel_index);
+            printf("create error err_id: %d\n", err_id);
+        }
     }else if(index == 3901){  //已加工件数
         //this->m_channel_status.workpiece_count = value;
         this->m_channel_status.workpiece_count_total = value;
@@ -5553,7 +5556,7 @@ bool ChannelControl::ExecuteMessage(){
         if(line_no != msg->GetLineNo() || type != msg->GetMsgType()){
             line_no = msg->GetLineNo();
             type = msg->GetMsgType();
-            printf("-----------------> excute message line no %llu  msg type: %d flag: %d\n", line_no, msg_type, msg->GetFlags().all);
+            printf("---------->excute message line no %llu  msg type: %d flag: %d\n", line_no, msg_type, msg->GetFlags().all);
         }
         // @test zk
 
@@ -10516,6 +10519,7 @@ bool ChannelControl::ExecuteClearCirclePosMsg(RecordMsg *msg){
 bool ChannelControl::ExecuteInputMsg(RecordMsg * msg){
 
     InputMsg * input_msg = (InputMsg *)msg;
+    printf("ldata: %d -- pdata: %d --- rdata: %d\n", input_msg->LData, input_msg->PData, input_msg->RData);
 
     if(this->m_n_restart_mode != NOT_RESTART &&
             input_msg->GetLineNo() < this->m_n_restart_line
@@ -10605,6 +10609,8 @@ bool ChannelControl::ExecuteInputMsg(RecordMsg * msg){
     }
     case 20:{
         int param = input_msg->PData;
+
+        printf("pdata: %d --- rdata: %d\n", input_msg->PData, input_msg->RData);
 
         if(SetSysVarValue(param, input_msg->RData)){
         	printf("param: %d - value: %lf\n", param, input_msg->RData);

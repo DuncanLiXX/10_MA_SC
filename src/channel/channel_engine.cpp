@@ -5646,7 +5646,6 @@ void ChannelEngine::ManualMovePmc(uint8_t phy_axis, double tar_pos, double vel, 
     //设置目标位置
     int64_t target = tar_pos*1e7;    //转换单位为0.1nm
 
-
     if((this->m_n_mask_ret_ref_over & (0x01<<phy_axis))
             && this->m_p_axis_config[phy_axis].soft_limit_check_1 == 1){//软限位1有效
         int64_t tar_inc_max = 0;

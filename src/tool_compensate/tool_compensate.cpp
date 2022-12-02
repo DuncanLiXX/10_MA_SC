@@ -188,15 +188,15 @@ void ToolCompensate::ProcessData(ListNode<RecordMsg *> *node){
 		}
 		default:{
 
-			if(interp.isCompOn){
-				uint16_t flags = msg->GetFlags().all;
+			uint16_t flags = msg->GetFlags().all;
+			if(flags & FLAG_EOF) interp.reset();
 
+			if(interp.isCompOn){
 				// 遇到 M30 或 等待移动到位标志  压空刀补队列 完成运动
 				if((flags & FLAG_BLOCK_OVER) or (flags & FLAG_WAIT_MOVE_OVER) or (flags & FLAG_EOF))
 				{
 					interp.flush_comp();
 					// 程序结束 关闭刀补
-					if(flags & FLAG_EOF) interp.convert_cutter_compensation_off(&interp._setup);
 				}
 			}
 
@@ -207,8 +207,6 @@ void ToolCompensate::ProcessData(ListNode<RecordMsg *> *node){
 	if(interp.err_code != 0){
 		err_code = interp.err_code;
 	}
-
-	//this->m_p_output_msg_list->Append(node);
 
 }
 

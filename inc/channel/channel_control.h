@@ -226,6 +226,7 @@ public:
     bool UpdateAllExCoord(double val, int count);//更新所有的扩展工件坐标系设定值
 
 	void UpdateToolOffset(uint8_t index, HmiToolOffsetConfig &cfg);   //更新刀具偏置
+    bool UpdateAllToolOffset(const HmiToolOffsetConfig &cfg);
 
 	bool IsCurNcFile(char *file_name);    //file_name是否为当前加工文件
 
@@ -781,7 +782,7 @@ private://私有成员变量
 	CoordAxisPos m_pos_graph_array[kGraphPosBufCount];   //缓冲图形模式位置数据
 	uint16_t m_n_graph_pos_write_idx;     //当前空闲的位置缓冲写入索引
 	uint16_t m_n_graph_pos_read_idx;      //当前位置数据读取索引
-	uint16_t m_n_graph_pos_count;   //当前位置缓冲数量
+    uint16_t m_n_graph_pos_count;   //当前位置缓冲数量
 	
 
 #ifdef USES_SPEED_TORQUE_CTRL

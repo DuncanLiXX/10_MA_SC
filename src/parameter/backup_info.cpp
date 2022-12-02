@@ -48,44 +48,64 @@ Backup_Info::Backup_Info()
 Backup_Info::Backup_Info(int type, string path)
     : m_type(type), m_path(path)
 {
-
+    if (ISSLASH(m_path.front()))
+    {
+        m_pack_name = m_path.substr(1, m_path.size());
+    }
+    else
+    {
+        m_pack_name = m_path;
+    }
 }
 
 bool Backup_Info::Package(struct zip_t *zip)
 {
-   zip_entry_open(zip, m_path.c_str());
-   int ret = zip_entry_fwrite(zip, m_path.c_str());
-   zip_entry_close(zip);
+   if(access(m_path.c_str(), F_OK) == 0)
+   {//文件存在
+        int ret = zip_entry_open(zip, m_pack_name.c_str());
+        ret = zip_entry_fwrite(zip, m_path.c_str());
+        zip_entry_close(zip);
 
-   if (ret)
+        if (ret)
+        {
+            std::cout << "Package : (zip_entry_fwrite) "<< ret << " path: " << m_path << std::endl;
+            char *const x = const_cast<char *const>(m_path.c_str());
+            char *entries[] = {x};
+            std::cout << "Package : delete" << *entries << std::endl;
+            zip_entries_delete(zip, entries, 1);
+            std::cout << "Package : Warning(zip_entry_fwrite) "<< m_path << " errCode:" << ret << std::endl;
+        }
+        else
+        {
+            std::cout << "Package : " << m_path << std::endl;
+        }
+   }
+   else
    {
-        char *const x = const_cast<char *const>(m_path.c_str());
-        char *entries[] = {x};
-        zip_entries_delete(zip, entries, 1);
-        std::cout << "Package : Warning(zip_entry_fwrite) "<< m_path << " errCode:" << ret << std::endl;
-    }
-    else
-    {
-        std::cout << "Package : " << m_path << std::endl;
-    }
-    std::cout << std::endl;
-    return true;
+        std::cout << "Package : not find -- " << m_path << std::endl;
+   }
+   std::cout << std::endl;
+   return true;
 }
 
 bool Backup_Info::UnPackage(struct zip_t *zip, string prefix)
 {
-    int ret = zip_entry_open(zip, m_path.c_str());
+    int ret = zip_entry_open(zip, m_pack_name.c_str());
     if (ret)
-        std::cout << "UnPackage : Warning(zip_entry_open) " << m_path.c_str() << " errCode: " << ret << std::endl;
+    {
+        std::cout << "UnPackage : Warning(zip_entry_open) " << m_pack_name.c_str() << " errCode: " << ret << std::endl;
+        //return false;
+    }
 
-    if (mk_path(prefix))
+    string fullPath = prefix + m_path;
+    if (mk_path(fullPath))
     {
         ret = zip_entry_fread(zip, string(prefix + m_path).c_str());
         if (ret)
             std::cout << "UnPackage : Warning(zip_entry_fread) " << string(prefix + m_path).c_str() << " errCode: " << ret << std::endl;
         else
         {
-            std::cout << "UnPackage : " << m_path.c_str() << std::endl;
+            std::cout << "UnPackage : " << m_pack_name.c_str() << std::endl;
         }
     }
     else
@@ -97,9 +117,14 @@ bool Backup_Info::UnPackage(struct zip_t *zip, string prefix)
     return true;
 }
 
-bool Backup_Info::mk_path(string prefix)
+/**
+ * @brief 递归创建文件夹
+ * @param path,  路径,可以是绝对路径,也可以是相对路径,也可以带文件名称
+ * @return true--成功   false--失败
+ */
+bool Backup_Info::mk_path(string path)
 {
-    string dirName = prefix + m_path;
+    string dirName = path;
     uint32_t beginCmpPath = 0;
     uint32_t endCmpPath = 0;
 
@@ -129,7 +154,7 @@ bool Backup_Info::mk_path(string prefix)
                 if (mkdir(curPath.c_str(), S_IRUSR | S_IRGRP | S_IROTH | S_IWUSR | S_IWGRP | S_IWOTH) == -1)
                 {
                     if (errno != EEXIST) {
-                        std::cout << "mkpath err " <<  curPath << " errno" << errno << std::endl;
+                        std::cout << "mk_path " <<  curPath << " errno" << errno << std::endl;
                         return false;
                     }
                 }
@@ -151,6 +176,7 @@ BackUp_Manager::~BackUp_Manager()
 
 void BackUp_Manager::Init_Pack_Info(int mask)
 {
+    std::cout << "mask " << mask << std::endl;
     if (mask & BackUp_System_Param) {
         int type = BackUp_System_Param;
         m_backupInfoVec.push_back(new Backup_Info(type, SYS_CONFIG_FILE));
@@ -179,6 +205,7 @@ void BackUp_Manager::Init_Pack_Info(int mask)
         int type = Backup_Pmc_Data;
         m_backupInfoVec.push_back(new Backup_Info(type, PATH_PMC_DATA));
         m_backupInfoVec.push_back(new Backup_Info(type, PATH_PMC_LDR));
+        m_backupInfoVec.push_back(new Backup_Info(type, PATH_PMC_REG));
     }
 
     if (mask & Backup_Macro_Param)
@@ -203,7 +230,7 @@ void BackUp_Manager::Init_Pack_Info(int mask)
     {
         int type = Backup_Gcode_Data;
         vector<string> files;
-        GetFileName(PATH_NC_FILE, files);
+        GetFileName("/cnc/nc_files", files);
         for(auto itr = files.begin(); itr != files.end(); ++itr)
             m_backupInfoVec.push_back(new Backup_Info(type, *itr));
     }
@@ -219,15 +246,17 @@ void BackUp_Manager::Init_Pack_Info(int mask)
         m_backupInfoVec.push_back(new Backup_Info(type, SC_DIR));
         m_backupInfoVec.push_back(new Backup_Info(type, MI_DIR));
         m_backupInfoVec.push_back(new Backup_Info(type, MC_DIR));
-        m_backupInfoVec.push_back(new Backup_Info(type, PL_DIR));
-        m_backupInfoVec.push_back(new Backup_Info(type, FPGA_DIR));
-        m_backupInfoVec.push_back(new Backup_Info(type, SPARTAN6_DIR));
+        //m_backupInfoVec.push_back(new Backup_Info(type, PL_DIR));
+        //m_backupInfoVec.push_back(new Backup_Info(type, FPGA_DIR));
+        //m_backupInfoVec.push_back(new Backup_Info(type, SPARTAN6_DIR));
 
         m_backupInfoVec.push_back(new Backup_Info(type, HOST_ADDRESS_FILE));
         m_backupInfoVec.push_back(new Backup_Info(type, HANDWHEEL_CONFIG_FILE));
         m_backupInfoVec.push_back(new Backup_Info(type, PITCH_COMP_FILE));
-        m_backupInfoVec.push_back(new Backup_Info(type, PATH_SPARTAN6_PROGRAM_BAK));
+        //m_backupInfoVec.push_back(new Backup_Info(type, PATH_SPARTAN6_PROGRAM_BAK));
         m_backupInfoVec.push_back(new Backup_Info(type, CHN_SCENE_FILE));
+        m_backupInfoVec.push_back(new Backup_Info(type, PATH_PHY_AXIS_ENCODER));
+        m_backupInfoVec.push_back(new Script_Backup_Info(type, SCRIPT_DIR));
 #ifdef USES_GRIND_MACHINE
         m_backupInfoVec.push_back(new Backup_Info(type, GRIND_CONFIG_FILE));
 #endif
@@ -236,6 +265,7 @@ void BackUp_Manager::Init_Pack_Info(int mask)
 
 void BackUp_Manager::Init_UnPack_Info(int mask, zip_t *zip)
 {
+    std::cout << "mask " << mask << std::endl;
     if (mask == Backup_All)
     {//全盘恢复,恢复压缩包的所有内容,跟类型无关
         for(int i = 0; i < zip_entries_total(zip); ++i)
@@ -243,11 +273,21 @@ void BackUp_Manager::Init_UnPack_Info(int mask, zip_t *zip)
             zip_entry_openbyindex(zip, i);
             string name = zip_entry_name(zip);
             zip_entry_close(zip);
-            m_backupInfoVec.push_back(new Backup_Info(0, name));
+            if (name.find("S99rmnologin.sh") != string::npos)
+            {
+                m_backupInfoVec.push_back(new Script_Backup_Info(0, name));
+            }
+            else if (name.find("10MA_SC_Module.elf") != string::npos)
+            {
+                m_backupInfoVec.push_back(new Sc_Backup_Info(0, name));
+            }
+            else
+            {
+                m_backupInfoVec.push_back(new Backup_Info(0, name));
+            }
         }
         return;
     }
-
 
     if (mask & BackUp_System_Param) {
         int type = BackUp_System_Param;
@@ -270,6 +310,7 @@ void BackUp_Manager::Init_UnPack_Info(int mask, zip_t *zip)
         int type = Backup_Coord_Param;
         m_backupInfoVec.push_back(new Backup_Info(type, WORK_COORD_FILE));
         m_backupInfoVec.push_back(new Backup_Info(type, EX_WORK_COORD_FILE));
+        m_backupInfoVec.push_back(new Backup_Info(type, PATH_PMC_REG));
     }
 
     if (mask & Backup_Pmc_Data)
@@ -295,47 +336,27 @@ void BackUp_Manager::Init_UnPack_Info(int mask, zip_t *zip)
 
         if (mask & Backup_Macro_Param)
         {
-            if (name.find("/cnc/config/macro_var/") != string::npos)
+            if (name.find("cnc/config/macro_var") != string::npos)
             {
                 m_backupInfoVec.push_back(new Backup_Info(Backup_Macro_Param, name));
             }
         }
         if (mask & Backup_Esb_Data)
         {
-            if (name.find("/cnc/svo_esb") != string::npos)
+            if (name.find("cnc/svo_esb") != string::npos)
             {
                 m_backupInfoVec.push_back(new Backup_Info(Backup_Esb_Data, name));
             }
         }
         if (mask & Backup_Gcode_Data)
         {
-            if (name.find(PATH_NC_FILE) != string::npos)
+            if (name.find("cnc/nc_files") != string::npos)
             {
                 m_backupInfoVec.push_back(new Backup_Info(Backup_Gcode_Data, name));
             }
         }
     }
-
-
 }
-
-//bool BackUp_Manager::Has_Info(const Backup_Info &info) const
-//{
-//    auto ret = find_if(m_backupInfoVec.begin(), m_backupInfoVec.end(), [info](Backup_Info *item){
-//        return *item == info;
-//    });
-//    return ret != m_backupInfoVec.end();
-//}
-
-//void BackUp_Manager::Add_Info(Backup_Info *info)
-//{
-//    if (Has_Info(*info)){
-//        return;
-//    }
-//    else {
-//        m_backupInfoVec.push_back(info);
-//    }
-//}
 
 void BackUp_Manager::Clean_Info()
 {
@@ -355,38 +376,60 @@ int BackUp_Manager::Info_Cnt() const
     return m_backupInfoVec.size();
 }
 
-//void BackUp_Manager::Remove_Info(const Backup_Info &info)
-//{
+Script_Backup_Info::Script_Backup_Info(int type, string path)
+    : Backup_Info(type, path)
+{
 
-//}
+}
 
-//bool BackUp_Manager::Package()
-//{
-//    zip = zip_open(BACKUP_DIR.c_str(), 1, 'w');
-//    if (!zip) return false;
+bool Script_Backup_Info::Package(zip_t *zip)
+{
+    mk_path(m_path);
+    if(access(ScriptPath.c_str(), F_OK) != 0)
+    {
+        std::cout << "Package : " << ScriptPath << " not find" << std::endl;
+        return true;
+    }
+    string command = "cp " + ScriptPath + " " + m_path;
+    std::cout << command << std::endl;
+    system(command.c_str());
+    Backup_Info::Package(zip);
 
-//    for(auto itr = m_backupInfoVec.begin(); itr != m_backupInfoVec.end(); ++itr)
-//    {
-//        //(*itr)->Make_Package(zip);
+    return true;
+}
 
-//        //package backup info
-//        MakeBackupInfo(*itr);
+bool Script_Backup_Info::UnPackage(zip_t *zip, string prefix)
+{
+    if (Backup_Info::UnPackage(zip, prefix))
+    {
+        string path = prefix + m_pack_name;
+        string command = "chmod +x " + path;
+        system(command.c_str());
+        std::cout << command << std::endl;
+        command = "cp -f " + path + " " + ScriptPath;
+        std::cout << command << std::endl;
+        system(command.c_str());
+    }
+    return true;
+}
 
-//    }
+Sc_Backup_Info::Sc_Backup_Info(int type, string path)
+    : Backup_Info(type, path)
+{
 
-//    //发送package信息
-//    zip_close(zip);
+}
 
-//    return true;
-//}
-
-//void BackUp_Manager::MakeBackupInfo(Backup_Info *info)
-//{
-//    for(auto itr = info->begin(); itr != info->end(); ++itr)
-//    {
-//        //压缩单个文件
-//        zip_entry_open(zip, itr->c_str());
-//        int ret = zip_entry_fwrite(zip, itr->c_str());
-//        zip_entry_close(zip);
-//    }
-//}
+bool Sc_Backup_Info::UnPackage(zip_t *zip, string prefix)
+{
+    if (Backup_Info::UnPackage(zip, prefix))
+    {
+        string scPath = RECOVER_TEMP + SC_DIR;
+        if (!access(scPath.c_str(), F_OK))
+        {
+            string command = "chmod +x " + scPath;
+            std::cout << command << std::endl;
+            system(command.c_str());
+        }
+    }
+    return true;
+}

@@ -1001,6 +1001,8 @@ int HMICommunication::ProcessHmiCmd(){
             case CMD_HMI_GET_ERROR_INFO:          //HMI向SC获取错误信息
             case CMD_HMI_SET_ALL_COORD:           //HMI向SC设置当前通道的所有工件坐标系
             case CMD_HMI_SET_REQUIRE_PIECE:       //HMI向SC请求当前需求件数
+            case CMD_HMI_ABSOLUTE_REF_SET:        //HMI向SC请求绝对式编码器设零 0x41
+            case CMD_HMI_SET_ALL_TOOL_OFFSET:     //HMI向SC请求设置所有刀偏值 0x42
 #ifdef USES_GRIND_MACHINE
 			case CMD_SC_MECH_ARM_ERR:         //HMI响应机械手告警指令
 #endif
@@ -1036,17 +1038,21 @@ int HMICommunication::ProcessHmiCmd(){
 			case CMD_SC_NOTIFY_MACH_OVER:     //加工结束通知消息的响应
             case CMD_SC_NOTIFY_ALARM_CHANGE:
             case CMD_SC_BACKUP_STATUS:        //SC通知HMI当前备份状态
+            case CMD_SC_NOTIFY_TRACELOG:
 				break;
 			case CMD_HMI_GET_SYS_INFO:
 				m_p_channel_engine->ProcessHmiCmd(cmd);
 				break;
 			case CMD_SC_NOTIFY_MCODE:
 				break;
-            case CMD_HMI_BACKUP_REQUEST:
+            case CMD_HMI_BACKUP_REQUEST://HMI向SC请求备份
                 ProcessHmiSysBackupCmd(cmd);
                 break;
-            case CMD_HMI_RECOVER_REQUEST:
+            case CMD_HMI_RECOVER_REQUEST://HMI向SC请求恢复
                 ProcessHmiSysRecoverCmd(cmd);
+                break;
+            case CMD_HMI_CLEAR_ALARMFILE:         //HMI向SC请求清空报警文件
+                ProcessHmiClearAlarmFile(cmd);
                 break;
 			default:
 				g_ptr_trace->PrintLog(LOG_ALARM, "收到不支持的HMI指令cmd=%d", cmd.cmd);
@@ -2597,16 +2603,17 @@ void HMICommunication::ProcessHmiSysBackupCmd(HMICmdFrame &cmd)
     cmd.frame_number |= 0x8000;
     if (m_background_type != Background_None || m_b_trans_file)
     {
-        std::cout << "busy backup"  << " background: " << m_background_type << " file_trans: " << m_b_recv_file << std::endl;
+        std::cout << "busy backup"  << " background: " << m_background_type << " file_trans: " << m_b_trans_file << std::endl;
         cmd.cmd_extension = -1;
         SendCmd(cmd);
     }
     else
     {
-        std::cout << "begin backup" << std::endl;
         m_sysbackup_status = SysUpdateStatus();
         m_sysbackup_status.m_type = SysUpdateStatus::Backup;
+        m_sysbackup_status.m_status = SysUpdateStatus::Ready;
         memcpy(&m_maks_sys_backup, cmd.data, cmd.data_len);
+        std::cout << "begin backup" << m_maks_sys_backup << std::endl;
 
         cmd.data_len = sizeof(SysUpdateStatus);
         cmd.cmd_extension = 0;
@@ -2629,7 +2636,7 @@ void HMICommunication::ProcessHmiSysRecoverCmd(HMICmdFrame &cmd)
     cmd.frame_number |= 0x8000;
     if (m_background_type != Background_None || m_b_trans_file)
     {
-        std::cout << "busy recover" << " background: " << m_background_type << " file_trans: " << m_b_recv_file << std::endl;
+        std::cout << "busy recover" << " background: " << m_background_type << " file_trans: " << m_b_trans_file << std::endl;
         cmd.cmd_extension = -1;
         SendCmd(cmd);
     }
@@ -2638,6 +2645,7 @@ void HMICommunication::ProcessHmiSysRecoverCmd(HMICmdFrame &cmd)
         std::cout << "begin recover" << std::endl;
         m_sysbackup_status = SysUpdateStatus();
         m_sysbackup_status.m_type = SysUpdateStatus::Recover;
+        m_sysbackup_status.m_status = SysUpdateStatus::Ready;
         memcpy(&m_maks_sys_backup, cmd.data, cmd.data_len);
 
         cmd.data_len = sizeof(SysUpdateStatus);
@@ -2648,6 +2656,43 @@ void HMICommunication::ProcessHmiSysRecoverCmd(HMICmdFrame &cmd)
 
         SendCmd(cmd);
     }
+}
+
+/**
+ * @brief 处理HMI清除报警文件命令
+ * @param cmd : 命令数据
+ */
+void HMICommunication::ProcessHmiClearAlarmFile(HMICmdFrame &cmd)
+{
+    cmd.frame_number |= 0x8000;
+    if (m_file_type == FILE_WARN_HISTORY && m_b_trans_file)
+    {
+        std::cout << "clear alram refuse. m_b_trans_file: " << m_b_trans_file << std::endl;
+        cmd.cmd_extension = REFUSE;
+    }
+    else
+    {
+        char filepath[kMaxPathLen] = {0};
+        uint8_t alarm_type = 0x20;   // 初始传送文件alarmfile_bak.txt
+        if(!TraceInfo::IsAlarmFileExist(alarm_type))
+            alarm_type = 0x10;
+        TraceInfo::GetAlarmFilePath(alarm_type, filepath);
+
+        FILE *fp = nullptr;
+        fp = fopen(filepath, "w");
+        if (!fp)
+        {
+            std::cout << "open alram file " << filepath << " error" << std::endl;
+            cmd.cmd_extension = REFUSE;
+        }
+        else
+        {
+            std::cout << "clear alram file " << filepath << std::endl;
+            cmd.cmd_extension = SUCCEED;
+            fclose(fp);
+        }
+    }
+    SendCmd(cmd);
 }
 
 /**
@@ -2710,6 +2755,7 @@ void HMICommunication::ProcessHmiVirtualMOPCmd(HMICmdFrame &cmd){
         m_p_channel_engine->SetAutoRatio(cmd.data[0]);
         // todo: 手动倍率也应该由pmc信号_JV来控制
 		m_p_channel_engine->SetManualRatio(cmd.data[0]);
+		m_p_channel_engine->SetRapidRatio(cmd.data[0]);
 		break;
 	case MOP_KEY_SPD_RATIO:
         // lidianqiang: 去掉倍率控制的接口，主轴倍率只由PMC信号SOV来控制
@@ -3317,7 +3363,6 @@ int HMICommunication::SendFile(){
 //
 //	}
 
-
 	//打开文件
 	fd = open(filepath, O_RDONLY);
 	if(fd == -1){
@@ -3415,8 +3460,9 @@ TRAN:
 
 
     if(file_type == FILE_BACKUP_CNC && m_sysbackup_status.m_type == SysUpdateStatus::Backup) { //备份
-        m_sysbackup_status.m_status = SysUpdateStatus::Idle;
-        SendHMIBackupStatus(m_sysbackup_status);
+        std::cout << "Send backup file finish" << std::endl;
+        //m_sysbackup_status.m_status = SysUpdateStatus::Idle;
+        //SendHMIBackupStatus(m_sysbackup_status);
     }
 	END:
 #ifndef USES_TCP_FILE_TRANS_KEEP
@@ -3700,9 +3746,8 @@ void HMICommunication::UnPackageBackupFile()
             SendHMIBackupStatus(m_sysbackup_status);
             now = chrono::steady_clock::now();
         }
-     }
-     zip_close(zip);
-
+    }
+    zip_close(zip);
 
     //提取出现错误，删除恢复文件
     if (!ret)
@@ -3715,13 +3760,13 @@ void HMICommunication::UnPackageBackupFile()
     }
 
     //SC
-    string scPath = RECOVER_TEMP + SC_DIR;
-    if (!access(scPath.c_str(), F_OK))
-    {
-        std::cout << "sc chmod" << std::endl;
-        command = "chmod +x " + scPath;
-        system(command.c_str());
-    }
+//    string scPath = RECOVER_TEMP + SC_DIR;
+//    if (!access(scPath.c_str(), F_OK))
+//    {
+//        std::cout << "sc chmod" << std::endl;
+//        command = "chmod +x " + scPath;
+//        system(command.c_str());
+//    }
 
     //PL
 

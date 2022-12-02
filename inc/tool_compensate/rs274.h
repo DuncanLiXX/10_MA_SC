@@ -105,6 +105,8 @@ typedef struct setup_struct
 	block _block;                                 // parsed next block
 
 	bool cutter_comp_firstmove = true; // this is the first comp move
+	bool cutter_comp_lastmove = false;
+	bool cutter_comp_fristcalc = false;
 	double cutter_comp_radius;                    // current cutter compensation radius
 	int cutter_comp_side;                         // current cutter compensation side
 	bool arc_not_allowed;
@@ -290,6 +292,8 @@ public:
 	 int convert_cutter_compensation_off(setup_pointer settings);
 
 	 int convert_cutter_compensation_on(int side, double radius, setup_pointer settings);
+
+	 int convert_close_compensation(setup_pointer settings);
 
 	 int convert_straight(int move, block_pointer block,
 	                             setup_pointer settings);

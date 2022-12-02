@@ -197,6 +197,9 @@ enum HMICmdCode {
     CMD_HMI_SET_ALL_COORD,           //HMI向SC设置当前通道的所有工件坐标系 0x3D
     CMD_HMI_BACKUP_REQUEST,          //HMI向SC请求备份 0x3E
     CMD_HMI_RECOVER_REQUEST,         //HMI向SC请求恢复 0x3F
+    CMD_HMI_CLEAR_ALARMFILE,         //HMI向SC请求清空报警文件 0x40
+    CMD_HMI_ABSOLUTE_REF_SET,        //HMI向SC请求绝对式编码器设零 0x41
+    CMD_HMI_SET_ALL_TOOL_OFFSET,     //HMI向SC请求设置所有刀偏值 0x42
 
 
 	//SC-->HMI
@@ -227,6 +230,7 @@ enum HMICmdCode {
     CMD_SC_NOTIFY_MCODE,			//SC通知HMI M代码执行
     CMD_SC_NOTIFY_ALARM_CHANGE,     //SC通知HMI报警信息改变
     CMD_SC_BACKUP_STATUS,           //SC通知HMI当前备份状态     0x7E
+    CMD_SC_NOTIFY_TRACELOG,         //SC通知HMI操作记录        0x7F
 
 
 	CMD_HMI_GUARD = 255       //HMI命令字卫兵 0xFF
@@ -592,6 +596,7 @@ enum ErrorType {
 	//用户自定义告警   40000~49999
 
 };
+
 
 //G指令枚举定义
 enum GCode{
@@ -1692,6 +1697,7 @@ enum SysUpdateType {
 struct SysUpdateStatus {
     enum Status {
         Idle            = 0,    //未开始
+        Ready,                  //准备开始
         Backupping,             //开始备份
         Recovering,             //开始恢复
         FileTransing,           //文件传输

@@ -450,6 +450,7 @@ void ShowSc::PrintSpindle()
     AddPair(s,"spd_rtnt_rate_on",cfg->spd_rtnt_rate_on);
     AddPair(s,"spd_rtnt_rate",cfg->spd_rtnt_rate);
     AddPair(s,"spd_rtnt_distance",cfg->spd_rtnt_distance);
+    AddPair(s,"spd_locate_ang",cfg->spd_locate_ang);
 
     AddPair(s,"tap_flag",spindle->tap_state.tap_flag);
     AddPair(s,"tap_f",spindle->tap_state.F);

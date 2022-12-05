@@ -2757,6 +2757,7 @@ void HMICommunication::ProcessHmiVirtualMOPCmd(HMICmdFrame &cmd){
         m_p_channel_engine->SetAutoRatio(cmd.data[0]);
         // todo: 手动倍率也应该由pmc信号_JV来控制
 		m_p_channel_engine->SetManualRatio(cmd.data[0]);
+		m_p_channel_engine->SetRapidRatio(cmd.data[0]);
 		break;
 	case MOP_KEY_SPD_RATIO:
         // lidianqiang: 去掉倍率控制的接口，主轴倍率只由PMC信号SOV来控制
@@ -3363,7 +3364,6 @@ int HMICommunication::SendFile(){
 //	}else if(file_type == FILE_TOOL_CONFIG){
 //
 //	}
-
 
 	//打开文件
 	fd = open(filepath, O_RDONLY);

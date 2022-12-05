@@ -1392,6 +1392,7 @@ bool ParmManager::ReadAxisConfig(){
             m_sc_axis_config[i].spd_rtnt_rate_on = m_ini_axis->GetIntValueOrDefault(sname, "spd_rtnt_rate_on", 0);
             m_sc_axis_config[i].spd_rtnt_rate = m_ini_axis->GetIntValueOrDefault(sname, "spd_rtnt_rate", 100);
             m_sc_axis_config[i].spd_rtnt_distance = m_ini_axis->GetIntValueOrDefault(sname, "spd_rtnt_distance", 0);
+            m_sc_axis_config[i].spd_locate_ang = m_ini_axis->GetIntValueOrDefault(sname, "spd_locate_ang", 0);
 
 			m_sc_axis_config[i].fast_locate = m_ini_axis->GetIntValueOrDefault(sname, "fast_locat", 1);
 			m_sc_axis_config[i].pos_disp_mode = m_ini_axis->GetIntValueOrDefault(sname, "pos_disp_mode", 0);
@@ -1549,6 +1550,7 @@ bool ParmManager::ReadAxisConfig(){
             m_sc_axis_config[i].spd_rtnt_rate_on = 0;
             m_sc_axis_config[i].spd_rtnt_rate = 100;
             m_sc_axis_config[i].spd_rtnt_distance = 0;
+            m_sc_axis_config[i].spd_locate_ang = 0;
 
 			m_sc_axis_config[i].fast_locate = 1;
 			m_sc_axis_config[i].pos_disp_mode = 0;
@@ -1696,6 +1698,7 @@ bool ParmManager::ReadAxisConfig(){
             m_ini_axis->AddKeyValuePair(string("spd_rtnt_rate_on"), string("0"), ns);
             m_ini_axis->AddKeyValuePair(string("spd_rtnt_rate"), string("100"), ns);
             m_ini_axis->AddKeyValuePair(string("spd_rtnt_distance"), string("0"), ns);
+            m_ini_axis->AddKeyValuePair(string("spd_locate_ang"), string("0"), ns);
 
 			m_ini_axis->AddKeyValuePair(string("fast_locate"), string("1"), ns);
 			m_ini_axis->AddKeyValuePair(string("pos_disp_mode"), string("0"), ns);
@@ -3101,11 +3104,13 @@ void ParmManager::UpdateToolMeasure(uint16_t chn_index, uint8_t index, const dou
 		sprintf(kname, "geo_comp_basic_z");
 	}else{
 #else
-	if(index > 0){
+	//if(index > 0){
 #endif
 		this->m_sc_tool_config[chn_index].geometry_compensation[index-1][2] = value;
-		sprintf(kname, "geo_comp_z_%hhu", index-1);
-	}
+		sprintf(kname, "geo_comp_z_%hhu", index);
+		// @modify  为什么 这里 index -1 ?
+		// sprintf(kname, "geo_comp_z_%hhu", index-1);
+	//}
 
 	m_ini_tool->SetDoubleValue(sname, kname, value);
 
@@ -4841,6 +4846,10 @@ bool ParmManager::UpdateAxisParam(uint8_t axis_index, uint32_t param_no, ParamVa
         sprintf(kname, "spd_rtnt_distance");
         m_ini_axis->SetIntValue(sname, kname,value.value_int32);
         break;
+    case 1726:	//主轴定向角度
+        sprintf(kname, "spd_locate_ang");
+        m_ini_axis->SetIntValue(sname, kname,value.value_int16);
+        break;
 
 	default:
 		g_ptr_trace->PrintLog(LOG_ALARM, "轴参数更新，参数号非法：%d", param_no);
@@ -6293,6 +6302,9 @@ void ParmManager::ActiveAxisParam(uint8_t axis_index, uint32_t param_no, ParamVa
         break;
     case 1721:	//攻丝回退的额外回退值
         this->m_sc_axis_config[axis_index].spd_rtnt_distance = value.value_int32;
+        break;
+    case 1726:	//主轴定向角度
+        this->m_sc_axis_config[axis_index].spd_locate_ang = value.value_int16;
         break;
 	default:
 		g_ptr_trace->PrintLog(LOG_ALARM, "轴参数激活，参数号非法：%d", param_no);

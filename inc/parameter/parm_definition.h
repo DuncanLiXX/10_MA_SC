@@ -188,7 +188,7 @@ struct SCAxisConfig{
 
 
 	uint32_t motor_count_pr;				//电机每转计数
-	uint32_t motor_speed_max;					//电机最大转速   单位：rpm
+	uint32_t motor_speed_max;				//电机最大转速   单位：rpm
 	double move_pr;							//每转移动量，即丝杆螺距    单位：mm(deg)
 	uint8_t motor_dir;						//电机旋转方向    0--正转    1--反转
 	uint8_t feedback_mode;					//电机反馈类型    0--增量式    1--绝对式(安川)     2--绝对式(松下)    3--光栅尺
@@ -291,6 +291,8 @@ struct SCAxisConfig{
     uint8_t spd_rtnt_rate_on;                   //攻丝回退期间，倍率是否有效 0：强制100%  1：有效
     uint8_t spd_rtnt_rate;                      //攻丝回退倍率 单位：1%
     int32_t spd_rtnt_distance;                 //攻丝回退的额外回退值 单位：um
+
+    int16_t spd_locate_ang;                     //主轴定向角度 单位：度
 
 	//旋转轴相关参数
 	uint8_t fast_locate;							//快速定位    0--关闭   1--打开

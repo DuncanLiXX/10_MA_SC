@@ -298,7 +298,6 @@ bool Parser::CheckGCode(LexerGCode *gcode){
 
 		// @add zk
 
-
 		if((code >=5401 && code <=5499) &&
 				(0x00 == (mode_mask & (0x01<<14)))){   //特殊处理G5401~G5499
 			mode_mask |= (0x01<<14);
@@ -2251,8 +2250,25 @@ bool Parser::CreateRapidMsg(){
 	}
 
 	m_p_parser_result->Append(new_msg);
+    ProcessLastBlockRec(new_msg);
 
-	ProcessLastBlockRec(new_msg);
+    // 如果对旋转轴移动，需要插入清整数圈的msg
+    SCAxisConfig *axis_config = g_ptr_parm_manager->GetAxisConfig();
+    SCChannelConfig *chn_config = g_ptr_parm_manager->GetChannelConfig();
+    for(int i = 0; i < chn_config->chn_axis_count; i++){
+        uint8_t mask = axis_mask & (0x01 << i);
+        if(!mask || (axis_config[i].axis_type != AXIS_ROTATE))
+            continue;
+        double pos = target.GetAxisValue(i);
+        if(pos >= 0 && pos < 360)   // 不超范围，不需要清
+            continue;
+        // 添加一条G200消息,对旋转轴清整数圈
+        RecordMsg *clr_msg = new ClearCirclePosMsg(2000, mask, 360*1000);
+        new_msg->SetLineNo(this->m_p_lexer_result->line_no);
+        m_p_parser_result->Append(clr_msg);
+        ProcessLastBlockRec(clr_msg);
+        ScPrintf("append ClearCirclePosMsg, msk = %u",mask);
+    }
 
 //	this->m_p_compiler_status->cur_pos = target; //更新编译当前位置
 
@@ -2327,8 +2343,25 @@ bool Parser::CreateLineMsg(){
 	}
 
 	m_p_parser_result->Append(new_msg);
+    ProcessLastBlockRec(new_msg);
 
-	ProcessLastBlockRec(new_msg);
+    // 如果对旋转轴移动，需要插入清整数圈的msg
+    SCAxisConfig *axis_config = g_ptr_parm_manager->GetAxisConfig();
+    SCChannelConfig *chn_config = g_ptr_parm_manager->GetChannelConfig();
+    for(int i = 0; i < chn_config->chn_axis_count; i++){
+        uint8_t mask = axis_mask & (0x01 << i);
+        if(!mask || (axis_config[i].axis_type != AXIS_ROTATE))
+            continue;
+        double pos = target.GetAxisValue(i);
+        if(pos >= 0 && pos < 360)   // 不超范围，不需要清
+            continue;
+        // 添加一条G200消息,对旋转轴清整数圈
+        RecordMsg *clr_msg = new ClearCirclePosMsg(2000, mask, 360*1000);
+        new_msg->SetLineNo(this->m_p_lexer_result->line_no);
+        m_p_parser_result->Append(clr_msg);
+        ProcessLastBlockRec(clr_msg);
+        ScPrintf("append ClearCirclePosMsg, msk = %u",mask);
+    }
 
 //	printf("line msg : (%lf, %lf, %lf, %lf, %lf, %lf), %lld\n",target.x, target.y, target.z, target.a4,
 //			target.a5, target.a6, new_msg->GetLineNo());
@@ -3127,8 +3160,7 @@ bool Parser::GetCodeData(DataAddr addr, double &data){
 
 	uint32_t mask = (0x01<<addr);
 	MacroVarValue res;
-//	printf("getcodedata, addr = %d, mask=0x%x, mask_macro=0x%x, mask_value=0x%x\n", addr, mask, g_code->mask_macro, g_code->mask_value);
-	if(g_code->mask_value & mask){ //是否存在addr参数
+    if(g_code->mask_value & mask){ //是否存在addr参数
 		if(g_code->mask_macro & mask){ //表达式
 			int exp_index = static_cast<int>(g_code->value[addr]);
 			while(!this->GetExpressionResult(g_code->macro_expression[exp_index], res)){

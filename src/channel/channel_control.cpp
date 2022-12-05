@@ -1319,7 +1319,9 @@ bool ChannelControl::SetSysVarValue(const int index, const double &value){
         int id = index - 2201;
         if(id < kMaxToolCount){
             this->m_p_chn_tool_config->geometry_compensation[id][2] = value;
-            g_ptr_parm_manager->UpdateToolMeasure(this->m_n_channel_index, id+1, value);
+            // @modify 为什么就这个 id + 1  其他的Update 没有 id + 1
+            g_ptr_parm_manager->UpdateToolMeasure(this->m_n_channel_index, id, value);
+            //g_ptr_parm_manager->UpdateToolMeasure(this->m_n_channel_index, id+1, value);
             this->NotifyHmiToolOffsetChanged(id+1);   //通知HMI刀偏值更改
         }else
             return false;
@@ -1334,9 +1336,12 @@ bool ChannelControl::SetSysVarValue(const int index, const double &value){
             this->SendMessageToHmi(MSG_TIPS, msg_id);
         }
     }else if(index == 3006){  //只写变量，显示告警信息
-        uint16_t err_id = value;
-        if(err_id > 0)
+        printf("===================3006=============\n");
+    	uint16_t err_id = value;
+        if(err_id > 0){
             CreateError(err_id, ERROR_LEVEL, CLEAR_BY_MCP_RESET, 0, m_n_channel_index);
+            printf("create error err_id: %d\n", err_id);
+        }
     }else if(index == 3901){  //已加工件数
         //this->m_channel_status.workpiece_count = value;
         this->m_channel_status.workpiece_count_total = value;
@@ -2426,19 +2431,9 @@ void ChannelControl::SendMonitorData(bool bAxis, bool btime){
 
     //处于刚攻状态需要读取刚攻误差
     if(m_p_g_reg->RGTAP == 1){
-        static int cnt = 0;
-        if(cnt++ %10 == 0){
-            //for(int i=0 ;i<4; i++){
-                m_p_mi_comm->ReadTapErr(&m_channel_rt_status.tap_err,
-                                        &m_channel_rt_status.tap_err_now,
-                                        1);
-                ScPrintf("tap_err = %d tap_err_now = %d",m_channel_rt_status.tap_err,
-                         m_channel_rt_status.tap_err_now);
-                //m_p_mi_comm->ReadTapErrNow(err,i);
-                //m_channel_rt_status.tap_err_now = err;
-                //ScPrintf("tap_err_now = %d",err);
-            //}
-        }
+        m_p_mi_comm->ReadTapErr(&m_channel_rt_status.tap_err,
+                                &m_channel_rt_status.tap_err_now,
+                                1);
     }
 
     //	printf("axis pos %lf, %lf, %lf\n", pos[0], pos[1], pos[2]);
@@ -2450,6 +2445,19 @@ void ChannelControl::SendMonitorData(bool bAxis, bool btime){
     if(this->m_channel_status.chn_work_mode != AUTO_MODE && this->m_channel_status.chn_work_mode != MDA_MODE){//手动模式下，余移动流量显示0
         memcpy(hmi_rt_status.tar_pos_work, hmi_rt_status.cur_pos_work, sizeof(double)*kMaxAxisChn);
     }
+
+    uint8_t MLK_mask = m_p_channel_engine->GetMlkMask();
+    double *MLK_pos = m_p_channel_engine->GetMlkPos();
+    static int cnt = 0;
+    for(int i = 0; i < m_p_channel_config->chn_axis_count; i++){
+        if((MLK_mask >> i) & 0x01){
+            hmi_rt_status.cur_pos_machine[i] = MLK_pos[i];
+            if(cnt%10 == 0){
+                ScPrintf("use old pos");
+            }
+        }
+    }
+    cnt ++;
 
     //	memcpy(hmi_rt_status.cur_pos_machine, m_channel_rt_status.cur_pos_machine.m_df_point, sizeof(double)*kMaxAxisChn);
     //	memcpy(hmi_rt_status.cur_pos_work, m_channel_rt_status.cur_pos_work.m_df_point, sizeof(double)*kMaxAxisChn);
@@ -4319,7 +4327,6 @@ int ChannelControl::Run(){
 				}
 			}else if(m_p_compiler->GetErrorCode() != ERR_NONE)
 			{
-				//m_n_run_thread_state = STOP;  仍然无法停止
 				//编译器出错，但需要继续执行已编译指令
 				if(m_p_compiler->RunMessage()){
 					if(!ExecuteMessage()){
@@ -4357,7 +4364,12 @@ int ChannelControl::Run(){
 						}
 					}
 					else{
-						m_n_run_thread_state = WAIT_RUN;//执行失败，状态切换到WAIT_RUN
+
+						if(m_p_compiler->GetErrorCode() != ERR_NONE){
+							m_n_run_thread_state = ERROR;
+						}else{
+							m_n_run_thread_state = WAIT_RUN;//执行失败，状态切换到WAIT_RUN
+						}
 					}
 				}
 
@@ -4385,11 +4397,10 @@ int ChannelControl::Run(){
         #endif
                     )
             {
-                m_n_run_thread_state = STOP;
+                m_n_run_thread_state = ERROR;
 
                 g_ptr_trace->PrintLog(LOG_ALARM, "CHN[%d]语法错误，未找到结束指令！", m_n_channel_index);
                 CreateError(ERR_NO_END, ERROR_LEVEL, CLEAR_BY_MCP_RESET, 0, m_n_channel_index);
-
             }
 #endif
 
@@ -5122,6 +5133,9 @@ bool ChannelControl::OutputData(RecordMsg *msg, bool flag_block){
         if(m_p_channel_config->intep_mode == 1){
             data_frame.data.ext_type |= 0x02;   //所有轴插补
         }
+        // @add zk  不指定类型会使 MC 空运行
+        data_frame.data.cmd = 0;  // 指定 G00
+
         break;
     case RAPID_MSG:
     case COORD_MSG:
@@ -5159,7 +5173,7 @@ bool ChannelControl::OutputData(RecordMsg *msg, bool flag_block){
     bool res = false;
     if(!this->m_b_mc_on_arm){
         // 查看 msg的 ext type mc会因ext的值对不上而空执行
-        res = m_p_mc_comm->WriteGCodeData(m_n_channel_index, data_frame);
+    	res = m_p_mc_comm->WriteGCodeData(m_n_channel_index, data_frame);
     }else{
         res = this->m_p_mc_arm_comm->WriteGCodeData(m_n_channel_index, data_frame);
     }
@@ -5569,7 +5583,7 @@ bool ChannelControl::ExecuteMessage(){
         if(line_no != msg->GetLineNo() || type != msg->GetMsgType()){
             line_no = msg->GetLineNo();
             type = msg->GetMsgType();
-            printf("-----------------> excute message line no %llu  msg type: %d flag: %d\n", line_no, msg_type, msg->GetFlags().all);
+            printf("---------->excute message line no %llu  msg type: %d flag: %d\n", line_no, msg_type, msg->GetFlags().all);
         }
         // @test zk
 
@@ -6914,7 +6928,8 @@ bool ChannelControl::ExecuteAuxMsg(RecordMsg *msg){
 
             // 主轴不存在或者主轴为虚拟轴，不执行主轴辅助功能
             if((mcode == 3 || mcode == 4 || mcode == 5
-                || mcode == 19 || mcode == 20 || mcode == 29)
+                || mcode == 19 || mcode == 20 || mcode == 26
+                || mcode == 27 || mcode == 28 || mcode == 29)
                     && m_p_spindle->Type() != 2){
                 tmp->SetExecStep(m_index, 0xFF);    //置位结束状态
                 break;
@@ -7142,7 +7157,6 @@ bool ChannelControl::ExecuteLineMsg(RecordMsg *msg, bool flag_block){
                 printf("exception in execute line pmc move, step = %hhu\n", linemsg->GetExecStep());
                 return false;
             }
-
         }
 
     }else if(!OutputData(msg, flag_block))
@@ -7695,7 +7709,6 @@ bool ChannelControl::ExecuteToolMsg(RecordMsg *msg){
 
         switch(toolmsg->GetExecStep(index)){
         case 0:{
-
             this->m_n_cur_tcode = tcode;
             this->m_channel_status.preselect_tool_no = m_n_cur_tcode;
 
@@ -7708,7 +7721,7 @@ bool ChannelControl::ExecuteToolMsg(RecordMsg *msg){
             break;
         }
         case 1:{
-            //等待TMF延时，置位TF选通信号
+        	//等待TMF延时，置位TF选通信号
             gettimeofday(&time_now, NULL);
             time_elpase = (time_now.tv_sec-m_time_t_start[index].tv_sec)*1000000+time_now.tv_usec-m_time_t_start[index].tv_usec;
             if(time_elpase < 16000)
@@ -7730,7 +7743,7 @@ bool ChannelControl::ExecuteToolMsg(RecordMsg *msg){
             break;
         }
         case 3:{
-            if(!this->GetTFINSig(index)){  //干扰信号，重新确认
+        	if(!this->GetTFINSig(index)){  //干扰信号，重新确认
                 toolmsg->SetExecStep(index, 2);
                 break;
             }
@@ -8225,7 +8238,6 @@ bool ChannelControl::ExecuteLoopMsg(RecordMsg *msg){
  * @return true--成功  false--失败
  */
 bool ChannelControl::ExecuteCompensateMsg(RecordMsg *msg){
-    return true;
     CompensateMsg *compmsg = (CompensateMsg *)msg;
     int type = compmsg->GetGCode();
 
@@ -8320,7 +8332,7 @@ bool ChannelControl::ExecuteCompensateMsg(RecordMsg *msg){
     int32_t z_axis_offset = 0;
     uint16_t intp_mode = 0;
 
-    if(type == G41_CMD || type == G42_CMD || type == G40_CMD){//半径补偿，先更新到MC模态信息
+    /*if(type == G41_CMD || type == G42_CMD || type == G40_CMD){//半径补偿，先更新到MC模态信息
         //		this->m_channel_status.cur_d_code = value;
         //		this->SendModeChangToHmi(D_MODE);
 
@@ -8336,9 +8348,11 @@ bool ChannelControl::ExecuteCompensateMsg(RecordMsg *msg){
         if(!OutputData(msg, true))
             return false;
 
-    }else if(type == G43_CMD || type == G44_CMD || type == G49_CMD){//G43/G44    即时更新到通道状态的模态信息中
+    }*/
 
-        if(this->m_simulate_mode != SIM_NONE){//仿真模式，跳过刀长补偿
+    if(type == G43_CMD || type == G44_CMD || type == G49_CMD){//G43/G44    即时更新到通道状态的模态信息中
+
+    	if(this->m_simulate_mode != SIM_NONE){//仿真模式，跳过刀长补偿
             if(!OutputData(msg, true))
                 return false;
             m_n_run_thread_state = RUN;
@@ -8371,7 +8385,6 @@ bool ChannelControl::ExecuteCompensateMsg(RecordMsg *msg){
 
                 this->SetMcToolOffset(true);
             }
-
 
             compmsg->SetExecStep(1);	//跳转下一步
             printf("execute step 1\n");
@@ -8497,6 +8510,7 @@ bool ChannelControl::ExecuteCompensateMsg(RecordMsg *msg){
                 break;
             }
 
+            // @zk  发送这条命令会 卡死 MC tips: 这条指令没指定cmd 指定为00 后可运行
             if(!OutputData(msg, true))
                 return false;
 
@@ -8651,7 +8665,7 @@ bool ChannelControl::ExecuteCompensateMsg(RecordMsg *msg){
 
 
     m_n_run_thread_state = RUN;
-
+    printf("========== m_n_run_thread_state: %d\n", m_n_run_thread_state);
 
     //	printf("execute compensate message: %d, d=%d, h=%d\n", type, m_channel_status.cur_d_code, m_channel_status.cur_h_code);
 
@@ -10408,6 +10422,7 @@ bool ChannelControl::ExecuteClearCirclePosMsg(RecordMsg *msg){
         uint64_t mask = clearmsg->GetAxisMask();
         double mode = clearmsg->GetCircleMode();
         mode /= 1000;   //由um转换为mm
+        ScPrintf("ClearCirclePosMsg: mask = %04llx mode=%lf", mask, mode);
         for(int i = 0; i < m_p_general_config->axis_count; i++){
             if(((mask>>i) & 0x01) == 0){
                 continue;
@@ -10463,7 +10478,7 @@ bool ChannelControl::ExecuteClearCirclePosMsg(RecordMsg *msg){
     case 0://第一步：发送指令到MI
         this->m_channel_status.gmode[39] = clearmsg->GetGCode();
 
-        printf("clear pos message , mask = 0x%llx, mode=%d\n", mask, clearmsg->GetCircleMode());
+        ScPrintf("clear pos message , mask = 0x%llx, mode=%d\n", mask, clearmsg->GetCircleMode());
         //向MI发送清整数圈位置指令
         m_n_mask_clear_pos = 0;
         for(i = 0; i < m_p_general_config->axis_count; i++){
@@ -10478,7 +10493,7 @@ bool ChannelControl::ExecuteClearCirclePosMsg(RecordMsg *msg){
         clearmsg->SetExecStep(1);	//跳转下一步
         return false;
     case 1://第二步
-        //	       printf("clear pos message step1 , mask = 0x%llx, m_n_mask_clear_pos = 0x%llx \n", mask, this->m_n_mask_clear_pos);
+        ScPrintf("clear pos message step1 , mask = 0x%llx, m_n_mask_clear_pos = 0x%llx \n", mask, this->m_n_mask_clear_pos);
         //第二步：等待MI设置完成
         if((mask & this->m_n_mask_clear_pos) == mask){  // if(mask == this->m_n_mask_clear_pos){
             clearmsg->SetExecStep(2);	//跳转下一步
@@ -10533,6 +10548,7 @@ bool ChannelControl::ExecuteClearCirclePosMsg(RecordMsg *msg){
 bool ChannelControl::ExecuteInputMsg(RecordMsg * msg){
 
     InputMsg * input_msg = (InputMsg *)msg;
+    printf("ldata: %d -- pdata: %d --- rdata: %d\n", input_msg->LData, input_msg->PData, input_msg->RData);
 
     if(this->m_n_restart_mode != NOT_RESTART &&
             input_msg->GetLineNo() < this->m_n_restart_line
@@ -10579,11 +10595,13 @@ bool ChannelControl::ExecuteInputMsg(RecordMsg * msg){
     int tool_number = input_msg->PData;
     int plane = this->m_mc_mode_exec.bits.mode_g17;
 
-    if(tool_number <= 0 or tool_number > kMaxToolCount){
-        // @TODO 刀具号超出范围
-        CreateError(ERR_NO_CUR_RUN_DATA, ERROR_LEVEL, CLEAR_BY_MCP_RESET, 0, m_n_channel_index);
-        this->m_error_code = ERR_NO_CUR_RUN_DATA;
-        return false;
+    if(input_type < 20){
+        if(tool_number <= 0 or tool_number > kMaxToolCount){
+            // @TODO 刀具号超出范围
+            CreateError(ERR_NO_CUR_RUN_DATA, ERROR_LEVEL, CLEAR_BY_MCP_RESET, 0, m_n_channel_index);
+            this->m_error_code = ERR_NO_CUR_RUN_DATA;
+            return false;
+        }
     }
 
     switch(input_type){
@@ -10596,32 +10614,40 @@ bool ChannelControl::ExecuteInputMsg(RecordMsg * msg){
         else if(plane == 3)
             this->m_p_chn_tool_config->geometry_compensation[tool_number-1][0] = input_msg->RData;
 
-        g_ptr_parm_manager->UpdateToolMeasure(this->m_n_channel_index, tool_number, input_msg->RData);
+        g_ptr_parm_manager->UpdateToolMeasure(this->m_n_channel_index, tool_number-1, input_msg->RData);
         this->NotifyHmiToolOffsetChanged(tool_number);   //通知HMI刀偏值更改
         break;
     }
     case 11:{
         this->m_p_chn_tool_config->radius_compensation[tool_number-1] = input_msg->RData;
+        g_ptr_parm_manager->UpdateToolRadiusGeo(this->m_n_channel_index, tool_number-1, input_msg->RData);
         this->NotifyHmiToolOffsetChanged(tool_number);   //通知HMI刀偏值更改
         break;
     }
     case 12:{
         this->m_p_chn_tool_config->geometry_wear[tool_number-1] = input_msg->RData;
+        g_ptr_parm_manager->UpdateToolWear(this->m_n_channel_index, tool_number-1, input_msg->RData);
         this->NotifyHmiToolOffsetChanged(tool_number);   //通知HMI刀偏值更改
         break;
     }
     case 13:{
         this->m_p_chn_tool_config->radius_wear[tool_number-1] = input_msg->RData;
+        g_ptr_parm_manager->UpdateToolRadiusWear(this->m_n_channel_index, tool_number-1, input_msg->RData);
         this->NotifyHmiToolOffsetChanged(tool_number);   //通知HMI刀偏值更改
         break;
     }
     case 20:{
         int param = input_msg->PData;
 
-        if(SetSysVarValue(param, input_msg->RData))
-            break;
+        printf("pdata: %d --- rdata: %d\n", input_msg->PData, input_msg->RData);
+
+        if(SetSysVarValue(param, input_msg->RData)){
+        	printf("param: %d - value: %lf\n", param, input_msg->RData);
+        	break;
+        }
         else{
-            CreateError(ERR_NO_CUR_RUN_DATA, ERROR_LEVEL, CLEAR_BY_MCP_RESET, 0, m_n_channel_index);
+        	printf("param: %d - value: %lf\n", param, input_msg->RData);
+        	CreateError(ERR_NO_CUR_RUN_DATA, ERROR_LEVEL, CLEAR_BY_MCP_RESET, 0, m_n_channel_index);
             this->m_error_code = ERR_NO_CUR_RUN_DATA;
             return false;
         }
@@ -10842,8 +10868,6 @@ bool ChannelControl::CheckFuncState(int func){
  */
 void ChannelControl::SetAutoRatio(uint8_t ratio){
     //	printf("ChannelControl::SetAutoRatio, chn=%hhu, old_r = %hhu, ratio=%hhu\n", m_n_channel_index, m_channel_status.auto_ratio, ratio);
-    if(ratio > kMaxRatio)
-        ratio = kMaxRatio;
     if(m_channel_status.auto_ratio == ratio)
         return;
     this->m_channel_status.auto_ratio = ratio;
@@ -10861,8 +10885,6 @@ void ChannelControl::SetAutoRatio(uint8_t ratio){
  * @param ratio
  */
 void ChannelControl::SetManualRatio(uint8_t ratio){
-    if(ratio > kMaxRatio)
-        ratio = kMaxRatio;
     if(m_channel_status.manual_ratio == ratio)
         return;
     this->m_channel_status.manual_ratio = ratio;
@@ -10880,8 +10902,6 @@ void ChannelControl::SetManualRatio(uint8_t ratio){
  * @param ratio
  */
 void ChannelControl::SetRapidRatio(uint8_t ratio){
-    if(ratio > kMaxRatio)
-        ratio = kMaxRatio;
     if(m_channel_status.rapid_ratio == ratio)
         return;
 
@@ -10901,8 +10921,6 @@ void ChannelControl::SetRapidRatio(uint8_t ratio){
  * @param ratio
  */
 void ChannelControl::SetSpindleRatio(uint8_t ratio){
-    if(ratio > kMaxRatio)
-        ratio = kMaxRatio;
 
     this->m_channel_status.spindle_ratio = ratio;
 
@@ -10963,9 +10981,9 @@ void ChannelControl::SetManualRapidMove(uint8_t mode){
 
 
     //重发手动命令
-    if(m_channel_status.cur_manual_move_dir != DIR_STOP){
-        this->ManualMove(m_channel_status.cur_manual_move_dir);
-    }
+//    if(m_channel_status.cur_manual_move_dir != DIR_STOP){
+//        this->ManualMove(m_channel_status.cur_manual_move_dir);
+//    }
 }
 
 /**
@@ -12669,6 +12687,10 @@ void ChannelControl::SetMcRatio(){
 	cmd.data.data[1] = this->m_channel_status.auto_ratio;
 	cmd.data.data[2] = this->m_channel_status.manual_ratio;
 
+	printf("rapid: %d auto: %d manual: %d\n",
+			this->m_channel_status.rapid_ratio,
+			this->m_channel_status.auto_ratio,
+			this->m_channel_status.manual_ratio);
 
     if(!this->m_b_mc_on_arm)
         m_p_mc_comm->WriteCmd(cmd);
@@ -17306,15 +17328,11 @@ void ChannelControl::SpindleSpeedDaOut(int32_t speed){
         }
     }
 
-
     if(spd_config.motor_dir == 1)
         tt *= -1;   //设置方向为反转
 
-
-
     g_ptr_trace->PrintTrace(TRACE_WARNING, CHANNEL_CONTROL_SC,"Output spd speed da value: %lld, spd_axis=%hhu, max_speed=%u, da_prec=%u\n",
                             tt, phy_spd, spd_config.spd_max_speed, da_prec);
-
 
     this->SendSpdSpeedToMi(phy_spd, (int16_t)tt);
 

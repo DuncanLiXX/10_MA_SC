@@ -31,6 +31,9 @@ void SpindleControl::SetComponent(MICommunication *mi,
     this->F = f_reg;
     this->G = g_reg;
     this->variable = variable;
+
+    mi->SendMiParam<int16_t>(phy_axis+1, 1726, spindle->spd_locate_ang);
+
     InputSSTP(G->_SSTP);
     InputSOR(G->SOR);
     InputSOV(G->SOV);
@@ -39,6 +42,7 @@ void SpindleControl::SetComponent(MICommunication *mi,
     InputSSIN(G->SSIN);
     InputSIND(G->SIND);
     LoadTapState(tap_state);
+
 }
 
 void SpindleControl::SetSpindleParams(SCAxisConfig *spindle,
@@ -166,6 +170,9 @@ void SpindleControl::StartRigidTap(double feed)
     }
     // ratio:攻丝比例，10000*S/F，S单位为rpm，F单位为mm/min
     int32_t ratio = -10000.0*cnc_speed*spindle->move_pr/feed;
+    // 攻丝回退要特殊处理
+    if(G->RTNT && tap_state.tap_flag)
+        ratio = -10000.0*tap_state.s*spindle->move_pr/tap_state.F;
     if(TSO)
         ratio *= SOV/100.0;
 
@@ -326,13 +333,13 @@ void SpindleControl::InputORCMA(bool ORCMA)
     this->ORCMA = ORCMA;
     if(ORCMA)
     {
-        // 定位时主轴转速为0，报警
-        if(abs(GetSpindleSpeed()) == 0){
-            CreateError(ERR_SPD_LOCATE_SPEED,
-                        ERROR_LEVEL,
-                        CLEAR_BY_MCP_RESET);
-            return;
-        }
+//        // 定位时主轴转速为0，报警
+//        if(abs(GetSpindleSpeed()) == 0){
+//            CreateError(ERR_SPD_LOCATE_SPEED,
+//                        ERROR_LEVEL,
+//                        CLEAR_BY_MCP_RESET);
+//            return;
+//        }
         mi->SendSpdLocateCmd(chn, phy_axis+1,true);
         printf("SendSpdLocateCmd enable = %d\n",true);
     }else{
@@ -707,13 +714,13 @@ void SpindleControl::SendSpdSpeedToMi()
         return;
     CncPolar polar;
     int32_t output;
-    // 攻丝状态下禁止修改转速
-//    if(RGTAP){
-//        CreateError(ERR_SPD_RUN_IN_TAP,
-//                    ERROR_LEVEL,
-//                    CLEAR_BY_MCP_RESET);
-//        return;
-//    }
+    // 位置模式
+    if(mode == Position){
+        CreateError(ERR_SPD_RUN_IN_TAP,
+                    ERROR_LEVEL,
+                    CLEAR_BY_MCP_RESET);
+        return;
+    }
 
     // 获取方向
     polar = CalPolar();
@@ -876,13 +883,13 @@ void SpindleControl::ProcessRTNT()
     double R = tap_state.R + spindle->spd_rtnt_distance;
     variable->SetVarValue(188, R);
     variable->SetVarValue(179, tap_state.F);
-    if(this->cnc_polar != tap_state.polar){
-        InputPolar(tap_state.polar);
-    }
-    if(this->cnc_speed != tap_state.s){
-        InputSCode(tap_state.s);
-    }
-    tap_feed = tap_state.F;
+//    if(this->cnc_polar != tap_state.polar){
+//        InputPolar(tap_state.polar);
+//    }
+//    if(this->cnc_speed != tap_state.s){
+//        InputSCode(tap_state.s);
+//    }
+//    tap_feed = tap_state.F;
     ChannelEngine *engine = ChannelEngine::GetInstance();
     ChannelControl *control = engine->GetChnControl(0);
     if(!control->CallMacroProgram(6100))

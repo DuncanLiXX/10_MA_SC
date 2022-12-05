@@ -291,10 +291,12 @@ void SetMcArmComm(MCArmCommunication *comm){this->m_p_mc_arm_comm = comm;}   //É
 
     void PrintDebugInfo();		//Êä³öµ÷ÊÔÊı¾İ
 
-    PmcAxisCtrl *GetPmcAxisCtrl(){return m_pmc_axis_ctrl;}
-    SyncAxisCtrl *GetSyncAxisCtrl(){return  m_sync_axis_ctrl;}
-    uint8_t GetMlkMask(){return m_MLK_mask;}
-    double* GetMlkPos(){return m_MLK_pos;}
+    PmcAxisCtrl *GetPmcAxisCtrl(){return m_pmc_axis_ctrl;} // »ñÈ¡pmcÖá¿ØÖÆÄ£¿é
+    SyncAxisCtrl *GetSyncAxisCtrl(){return  m_sync_axis_ctrl;} // »ñÈ¡Í¬²½Öá¿ØÖÆÄ£¿é
+    uint8_t GetMlkMask(){return m_MLK_mask;}    // »ñÈ¡»úĞµËø×¡±ê¼Ç
+    double* GetMlkPos(){return m_MLK_pos;}      // »ñÈ¡»úĞµËø×¡Î»ÖÃ
+
+    void SetProgProtect(bool flag);     // ÉèÖÃ³ÌĞò±£»¤×´Ì¬
 
 private:	//Ë½ÓĞ³ÉÔ±º¯Êı
 	ChannelEngine();   //¹¹Ôìº¯Êı

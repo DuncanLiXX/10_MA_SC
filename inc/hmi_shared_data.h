@@ -365,64 +365,64 @@ enum VirtualMOPKeyValue{
 enum ErrorType {
 	ERR_NONE = 0,        //无错误
 	//系统SC内部错误  1~999
-	ERR_SC_INIT = 1,         	//SC模块初始化出错
-	ERR_MI_COM_INIT,            //MI通讯模块初始化出错
-	ERR_MC_COM_INIT,			//MC通讯模块初始化出错
-	ERR_MEMORY_NEW,           	//内存分配失败
-	ERR_OPEN_DIR,				//打开文件目录失败
-	ERR_OPEN_FILE,				//打开文件失败
-	ERR_READ_FILE,              //读取NC文件失败
-	ERR_SAVEAS_FILE,            //文件另存为失败
-	ERR_LOAD_MDA_DATA,			//加载MDA数据失败
-	ERR_INIT_BREAKCONTINUE,		//初始化断点继续线程失败
-	ERR_INIT_UPDATE,			//初始化模块升级线程失败
-	ERR_LOAD_SP6,				//初始化加载SPARTAN6代码失败
-	ERR_LOAD_MI,				//初始化加载MI模块失败
-	ERR_MC_INIT,				//MC启动失败
-	ERR_MI_INIT,				//MI启动失败
-	ERR_POWER_OFF,				//掉电告警
-	ERR_IMPORT_CONFIG,          //配置导入后请先重启
-	ERR_CHN_SPINDLE_OVERRUN,    //通道主轴数量超限
-    ERR_PMC_SDLINK_CONFIG,      //SDLINK配置信息错误
+    ERR_SC_INIT         = 1,    //SC模块初始化出错
+    ERR_MI_COM_INIT     = 2,    //MI通讯模块初始化出错
+    ERR_MC_COM_INIT     = 3,	//MC通讯模块初始化出错
+    ERR_MEMORY_NEW      = 4,    //内存分配失败
+    ERR_OPEN_DIR        = 5,	//打开文件目录失败
+    ERR_OPEN_FILE       = 6,	//打开文件失败
+    ERR_READ_FILE       = 7,    //读取NC文件失败
+    ERR_SAVEAS_FILE     = 8,    //文件另存为失败
+    ERR_LOAD_MDA_DATA   = 9,    //加载MDA数据失败
+    ERR_INIT_BREAKCONTINUE = 10,    //初始化断点继续线程失败
+    ERR_INIT_UPDATE     = 11,   //初始化模块升级线程失败
+    ERR_LOAD_SP6        = 12,   //初始化加载SPARTAN6代码失败
+    ERR_LOAD_MI         = 13,   //初始化加载MI模块失败
+    ERR_MC_INIT         = 14,   //MC启动失败
+    ERR_MI_INIT         = 15,   //MI启动失败
+    ERR_POWER_OFF       = 16,   //掉电告警
+    ERR_IMPORT_CONFIG   = 17,   //配置导入后请先重启
+    ERR_CHN_SPINDLE_OVERRUN = 18,   //通道主轴数量超限
+    ERR_PMC_SDLINK_CONFIG   = 19,   //SDLINK配置信息错误
 
 
-	ERR_SYSTEM_TIME = 80,       //系统时间异常
-	ERR_SYSTEM_FILE,            //系统文件异常
-	ERR_NO_LIC,                 //无授权
-	ERR_LICENSE_INVALID,        //非法授权
-	ERR_LIC_OVERTIME,           //系统授权已过期
-	ERR_LIC_DUE_SOON,           //系统授权即将到期
+    ERR_SYSTEM_TIME         = 80,   //系统时间异常
+    ERR_SYSTEM_FILE         = 81,   //系统文件异常
+    ERR_NO_LIC              = 82,   //无授权
+    ERR_LICENSE_INVALID     = 83,   //非法授权
+    ERR_LIC_OVERTIME        = 84,   //系统授权已过期
+    ERR_LIC_DUE_SOON        = 85,   //系统授权即将到期
 
-	ERR_UPDATE_MC = 100,        //MC模块升级失败
-	ERR_UPDATE_MI,				//MI模块升级失败
-	ERR_UPDATE_PL,				//PL模块升级失败
-	ERR_UPDATE_SC,				//SC模块升级失败
-	ERR_UPDATE_PMC,				//PMC升级失败
-	ERR_UPDATE_SPARTAN,			//SPARTAN升级失败
-	ERR_UPDATE_SCMODBUS,        //SCModbus模块升级失败
+    ERR_UPDATE_MC           = 100,  //MC模块升级失败
+    ERR_UPDATE_MI           = 101,  //MI模块升级失败
+    ERR_UPDATE_PL           = 102,  //PL模块升级失败
+    ERR_UPDATE_SC           = 103,  //SC模块升级失败
+    ERR_UPDATE_PMC          = 104,  //PMC升级失败
+    ERR_UPDATE_SPARTAN      = 105,  //SPARTAN升级失败
+    ERR_UPDATE_SCMODBUS     = 106,  //SCModbus模块升级失败
 
-	ERR_IMPORT_PC_DATA,         //螺补数据导入失败
-	ERR_UPDATE_DISK,			//一键升级失败
+    ERR_IMPORT_PC_DATA      = 107,  //螺补数据导入失败
+    ERR_UPDATE_DISK         = 108,  //一键升级失败
 
-	ERR_EN_SYNC_AXIS = 150,           //同步轴建立同步失败
-	ERR_DIS_SYNC_AXIS,                //同步轴解除同步失败
-	ERR_INIT_SYNC_AXIS,               //同步轴初始化同步失败
-
-
-	ERR_VOLTAGE_OVER = 500,		//过压告警
-	ERR_VOLTAGE_UNDER,			//欠压告警
-	ERR_BATTERY_VOL_UNDER,		//电池电压低
-	ERR_AXIS_CURRENT_OVER,		//轴过流告警
-	ERR_USB_CURRENT_OVER,		//USB过流告警
+    ERR_EN_SYNC_AXIS        = 150,  //同步轴建立同步失败
+    ERR_DIS_SYNC_AXIS       = 151,  //同步轴解除同步失败
+    ERR_INIT_SYNC_AXIS      = 152,  //同步轴初始化同步失败
 
 
+    ERR_VOLTAGE_OVER        = 500,  //过压告警
+    ERR_VOLTAGE_UNDER       = 501,  //欠压告警
+    ERR_BATTERY_VOL_UNDER   = 502,  //电池电压低
+    ERR_AXIS_CURRENT_OVER   = 503,  //轴过流告警
+    ERR_USB_CURRENT_OVER    = 504,  //USB过流告警
 
-    ERR_RET_REF_FAILED = 600,           //回参考点失败
-    ERR_AXIS_REF_NONE = 601,            //轴未回参考点
-    ERR_RET_REF_NOT_RUN = 602,          //系统处于错误状态，禁止回零
-    ERR_NC_FILE_NOT_EXIST = 603,        //文件不存在
+
+
+    ERR_RET_REF_FAILED      = 600,  //回参考点失败
+    ERR_AXIS_REF_NONE       = 601,  //轴未回参考点
+    ERR_RET_REF_NOT_RUN     = 602,  //系统处于错误状态，禁止回零
+    ERR_NC_FILE_NOT_EXIST   = 603,  //文件不存在
     ERR_SWITCH_MODE_IN_RET_REF = 604,   //回零中禁止切换工作模式
-    ERR_RET_REF_Z_ERR = 605,            //搜索Z脉冲位置超限，原点建立失败
+    ERR_RET_REF_Z_ERR       = 605,  //搜索Z脉冲位置超限，原点建立失败
 
 
 	//加工告警	1000~1999
@@ -464,20 +464,20 @@ enum ErrorType {
     ERR_TOOL_LIFE_COMING = 1661,        //刀具寿命即将到达     级别：警告
 
     //主轴告警
-    ERR_SPD_TAP_START_FAIL = 1700,      //刚性攻丝失败(没有进入位置模式)
-    ERR_SPD_RUN_IN_TAP = 1701,          //刚攻状态发送速度指令
-    ERR_SPD_TAP_RATIO_FAULT = 1702,     //刚性攻丝比例异常
-    ERR_SPD_LOCATE_SPEED = 1703,        //定位时主轴转速异常
-    ERR_SPD_SW_LEVEL_FAIL = 1704,       //主轴换挡超时
-    ERR_SPD_TAP_POS_ERROR = 1705,       //刚攻位置错误
-    ERR_SPD_RESET_IN_TAP = 1706,        //刚性攻丝中不能复位
-    ERR_SPD_RTNT_INVALID = 1707,        //刚性攻丝回退无效
-    ERR_SPD_RTNT_FAIL = 1708,           //刚性攻丝回退失败
-    ERR_SPD_RTNT_IN_AUTO = 1709,        //自动模式禁止攻丝回退
+    ERR_SPD_TAP_START_FAIL  = 1700, //刚性攻丝失败(没有进入位置模式)
+    ERR_SPD_RUN_IN_TAP      = 1701, //刚攻状态发送速度指令
+    ERR_SPD_TAP_RATIO_FAULT = 1702, //刚性攻丝比例异常
+    ERR_SPD_LOCATE_SPEED    = 1703, //定位时主轴转速异常
+    ERR_SPD_SW_LEVEL_FAIL   = 1704, //主轴换挡超时
+    ERR_SPD_TAP_POS_ERROR   = 1705, //刚攻位置错误
+    ERR_SPD_RESET_IN_TAP    = 1706, //刚性攻丝中不能复位
+    ERR_SPD_RTNT_INVALID    = 1707, //刚性攻丝回退无效
+    ERR_SPD_RTNT_FAIL       = 1708, //刚性攻丝回退失败
+    ERR_SPD_RTNT_IN_AUTO    = 1709, //自动模式禁止攻丝回退
 
 	//PMC轴告警
-    ERR_PMC_AXIS_CTRL_CHANGE = 1900,    //PMC轴控制状态下切换
-    ERR_PMC_SPEED_ERROR = 1901,         //PMC轴速度异常
+    ERR_PMC_AXIS_CTRL_CHANGE    = 1900, //PMC轴控制状态下切换
+    ERR_PMC_SPEED_ERROR         = 1901, //PMC轴速度异常
 
 #ifdef USES_GRIND_MACHINE
 	//玻璃磨边机定制M指令告警
@@ -489,100 +489,100 @@ enum ErrorType {
 
 
 	//编译告警	2000~3999
-	ERR_COMPILER_INTER = 2000,     	//编译器内部错误
-	ERR_NO_START,          	      	//无%开头
-	ERR_NO_END,                     //无结束命令
-	ERR_NC_FORMAT,       		  	//无法解析
-	ERR_MACRO_FORMAT,               //无法解析的宏指令格式
-	ERR_MACRO_OPT,					//无法解析的宏运算符
-	ERR_INVALID_CODE,    			//非法代码，不支持的代码
-	ERR_TOO_MANY_G_CODE, 			//单行NC代码中G指令个数超限
-	ERR_TOO_MANY_M_CODE, 			//单行NC代码中M指令个数超限
-	ERR_TOO_MANY_MACRO_EXP, 		//单行NC代码中宏表达式个数超限
-	ERR_BRACKET_NOT_MATCH = 2010,  		//括号不匹配
-	ERR_INVALID_MACRO_EXP,  		//非法的宏表达式
-	ERR_MACRO_OPT_VALUE,            //非法的宏函数操作数
-	ERR_MACRO_EXP_CAL,				//宏表达式计算错误
-	ERR_MACRO_DIV_ZERO,				//除0错误
-	ERR_MACRO_DO_OUT,               //DO指令识别号超范围
-	ERR_MACRO_DO_END_MATCH,         //DO-END指令不匹配
-	ERR_NOT_IN_ONE_LINE,            //存在不可同行的指令
-	ERR_ARC_NO_DATA,                //圆弧指令缺少参数
-	ERR_ARC_INVALID_DATA,			//圆弧数据错误，无法自洽
-	ERR_NO_D_DATA = 2020,			//缺少D值指定
-	ERR_NO_H_DATA,					//缺少H值指定
-	ERR_NO_F_DATA,					//G01、G02、G03缺少F值指定
-	ERR_SUB_BACK,                   //子程序返回，恢复现场异常
-	ERR_MAIN_OVER,                  //主程序结束异常，子程序调用堆栈非空
-	ERR_SUB_END,                    //错误的子程序结束指令，子程序必须以M99结束
-	ERR_MDA_OVER,					//MDA程序结束后，调用堆栈为空
-	ERR_NO_SUB_PROG_P,              //无P字段指定子程序号
-	ERR_MCODE_SEPARATED,			//存在不能同行的M指令     注：部分M指令（需要NC内部处理的M指令）不能与其它M指令同行
-	ERR_PRE_SCAN,					//预扫描执行失败
-	ERR_QUIT_PRESCAN = 2030,		//取消预扫描失败
-	ERR_SAME_SUB_INDEX,				//子程序同名
-	ERR_SAME_SEQ_NO,				//重复的顺序号
-	ERR_NO_SUB_PROG,				//找不到指定的子程序
-	ERR_JUMP_SUB_PROG,				//跳转子程序失败
-	ERR_SUB_NESTED_COUNT,			//子程序嵌套层数过多
-	ERR_NO_JUMP_LABEL,				//没有找到跳转点位置
-	ERR_JUMP_GOTO,					//执行GOTO指令，跳转失败
-	ERR_JUMP_END,                   //END指令执行失败
-	ERR_LACK_OF_PARAM,				//指令缺少参数
-	ERR_JUMP_GOTO_ILLIGAL = 2040,	//非法跳转
-	ERR_NO_P_DATA,                  //缺少P值指定
-	ERR_INVALID_L_DATA,             //非法L值指定
-	ERR_TOO_MANY_T_CODE, 			//单行NC代码中T指令个数超限
-	ERR_TOO_LONG_WORD,              //超长词语，无法解析
-	ERR_TOO_LONG_DIGIT,             //超长数值，无法解析
-	ERR_G_EXP_NULL,                 //G指令表达式为空值
-	ERR_M_EXP_NULL,                 //M指令表达式为空值
-	ERR_T_EXP_NULL,                 //T指令表达式为空值
-	IF_ELSE_MATCH_FAILED = 2049,           // if else 匹配失败 栈中没有if 却碰到了 else
-	COMP_LIST_NOT_INIT,             // 刀补模块 输出消息队列指针未初始化
-	ARC_RADIUS_TOO_SMALL,           // 圆弧半径过小 无法计算刀补
-	ARC_NOT_VALID,                  // 圆弧数据错误
-	TOOL_RADIUS_BIGGER_THAN_ARC,    // 刀补半径大于圆弧半径
-	ARC_NOT_ALLOWED,				// 关闭刀补后第一段移动不能是圆弧
-	TOOL_RADIUS_COMP_BUG,
-	CONCAVE_CORNER_ERROR,
-	ARC_TO_ARC_SAME_CENTER,         //圆弧接圆弧刀补不能计算同心圆弧
-	MOVE_SMALLER_THAN_CMPRADIUS,    //移动距离小于刀补半径 无法计算刀补
+    ERR_COMPILER_INTER      = 2000, //编译器内部错误
+    ERR_NO_START            = 2001, //无%开头
+    ERR_NO_END              = 2002, //无结束命令
+    ERR_NC_FORMAT           = 2003, //无法解析
+    ERR_MACRO_FORMAT        = 2004, //无法解析的宏指令格式
+    ERR_MACRO_OPT           = 2005, //无法解析的宏运算符
+    ERR_INVALID_CODE        = 2006, //非法代码，不支持的代码
+    ERR_TOO_MANY_G_CODE     = 2007, //单行NC代码中G指令个数超限
+    ERR_TOO_MANY_M_CODE     = 2008, //单行NC代码中M指令个数超限
+    ERR_TOO_MANY_MACRO_EXP  = 2009, //单行NC代码中宏表达式个数超限
+    ERR_BRACKET_NOT_MATCH   = 2010, //括号不匹配
+    ERR_INVALID_MACRO_EXP   = 2011, //非法的宏表达式
+    ERR_MACRO_OPT_VALUE     = 2012, //非法的宏函数操作数
+    ERR_MACRO_EXP_CAL       = 2013, //宏表达式计算错误
+    ERR_MACRO_DIV_ZERO      = 2014, //除0错误
+    ERR_MACRO_DO_OUT        = 2015, //DO指令识别号超范围
+    ERR_MACRO_DO_END_MATCH  = 2016, //DO-END指令不匹配
+    ERR_NOT_IN_ONE_LINE     = 2017, //存在不可同行的指令
+    ERR_ARC_NO_DATA         = 2018, //圆弧指令缺少参数
+    ERR_ARC_INVALID_DATA    = 2019, //圆弧数据错误，无法自洽
+    ERR_NO_D_DATA           = 2020, //缺少D值指定
+    ERR_NO_H_DATA           = 2021, //缺少H值指定
+    ERR_NO_F_DATA           = 2022, //G01、G02、G03缺少F值指定
+    ERR_SUB_BACK            = 2023, //子程序返回，恢复现场异常
+    ERR_MAIN_OVER           = 2024, //主程序结束异常，子程序调用堆栈非空
+    ERR_SUB_END             = 2025, //错误的子程序结束指令，子程序必须以M99结束
+    ERR_MDA_OVER            = 2026, //MDA程序结束后，调用堆栈为空
+    ERR_NO_SUB_PROG_P       = 2027, //无P字段指定子程序号
+    ERR_MCODE_SEPARATED     = 2028, //存在不能同行的M指令     注：部分M指令（需要NC内部处理的M指令）不能与其它M指令同行
+    ERR_PRE_SCAN            = 2029, //预扫描执行失败
+    ERR_QUIT_PRESCAN        = 2030, //取消预扫描失败
+    ERR_SAME_SUB_INDEX      = 2031, //子程序同名
+    ERR_SAME_SEQ_NO         = 2032, //重复的顺序号
+    ERR_NO_SUB_PROG         = 2033, //找不到指定的子程序
+    ERR_JUMP_SUB_PROG       = 2034, //跳转子程序失败
+    ERR_SUB_NESTED_COUNT    = 2035, //子程序嵌套层数过多
+    ERR_NO_JUMP_LABEL       = 2036, //没有找到跳转点位置
+    ERR_JUMP_GOTO           = 2037, //执行GOTO指令，跳转失败
+    ERR_JUMP_END            = 2038, //END指令执行失败
+    ERR_LACK_OF_PARAM       = 2039, //指令缺少参数
+    ERR_JUMP_GOTO_ILLIGAL   = 2040,	//非法跳转
+    ERR_NO_P_DATA           = 2041, //缺少P值指定
+    ERR_INVALID_L_DATA      = 2042, //非法L值指定
+    ERR_TOO_MANY_T_CODE     = 2043, //单行NC代码中T指令个数超限
+    ERR_TOO_LONG_WORD       = 2044, //超长词语，无法解析
+    ERR_TOO_LONG_DIGIT      = 2045, //超长数值，无法解析
+    ERR_G_EXP_NULL          = 2046, //G指令表达式为空值
+    ERR_M_EXP_NULL          = 2047, //M指令表达式为空值
+    ERR_T_EXP_NULL          = 2048, //T指令表达式为空值
+    IF_ELSE_MATCH_FAILED    = 2049, // if else 匹配失败 栈中没有if 却碰到了 else
+    COMP_LIST_NOT_INIT      = 2050, // 刀补模块 输出消息队列指针未初始化
+    ARC_RADIUS_TOO_SMALL    = 2051, // 圆弧半径过小 无法计算刀补
+    ARC_NOT_VALID           = 2052, // 圆弧数据错误
+    TOOL_RADIUS_BIGGER_THAN_ARC     = 2053, // 刀补半径大于圆弧半径
+    ARC_NOT_ALLOWED         = 2054, // 关闭刀补后第一段移动不能是圆弧
+    TOOL_RADIUS_COMP_BUG    = 2055,
+    CONCAVE_CORNER_ERROR    = 2056,
+    ARC_TO_ARC_SAME_CENTER  = 2057, //圆弧接圆弧刀补不能计算同心圆弧
+    MOVE_SMALLER_THAN_CMPRADIUS     = 2058, //移动距离小于刀补半径 无法计算刀补
 
 
 	//刀补告警	5000~6999
-	ERR_CANCEL_R_COMP_WITHOUT_MOVE = 5000,		//取消刀具半径补偿时没有轴移动
-	ERR_NO_MOVE_DATA_EXCEED,					//刀具半径补偿非加工数据超限
-	ERR_C_L_COMP_AXIS_EXCEED,					//C类刀具长度补偿轴个数超限,针对任意指定轴向进行长度补偿
-	ERR_TOOL_RADIUS_EXCEED,						//刀具半径过大
-	ERR_CHANGE_R_COMP_SURFACE,					//刀具半径补偿过程中不可改变加工平面
-	ERR_CHANGE_R_COMP_STAT_CMD,					//建立或取消刀具半径补偿指令错误
-	ERR_END_WITHOUT_CANCEL_L_COMP,				//程序结束时没有取消刀具长度补偿
-	ERR_R_COMP_UNDER_MACHINE_COORD,				//在机床坐标系下不能使用刀具半径补偿
-	ERR_WRONG_MOV_CMD_FOR_L_COMP_CHANGE,		//刀具长度补偿变化时指定插补指令错误
-	ERR_R_COMP_NOT_SUPPORTED_FOR_CURVE_TYPE,	//不支持指定曲线类型的刀具半径补偿
-	ERR_R_COMP_CHANGE_AFTER_ESTABLISH,			//刀具半径补偿不能在建立后立即改变
-	ERR_R_COMP_UNDER_FIXED_CYCLE,				//固定循环中不能使用刀具半径补偿
-	ERR_R_COMP_GENERATE_FAIL,					//刀补轨迹生成失败
+    ERR_CANCEL_R_COMP_WITHOUT_MOVE      = 5000, //取消刀具半径补偿时没有轴移动
+    ERR_NO_MOVE_DATA_EXCEED             = 5001, //刀具半径补偿非加工数据超限
+    ERR_C_L_COMP_AXIS_EXCEED            = 5002, //C类刀具长度补偿轴个数超限,针对任意指定轴向进行长度补偿
+    ERR_TOOL_RADIUS_EXCEED              = 5003, //刀具半径过大
+    ERR_CHANGE_R_COMP_SURFACE           = 5004, //刀具半径补偿过程中不可改变加工平面
+    ERR_CHANGE_R_COMP_STAT_CMD          = 5005, //建立或取消刀具半径补偿指令错误
+    ERR_END_WITHOUT_CANCEL_L_COMP       = 5006, //程序结束时没有取消刀具长度补偿
+    ERR_R_COMP_UNDER_MACHINE_COORD      = 5007, //在机床坐标系下不能使用刀具半径补偿
+    ERR_WRONG_MOV_CMD_FOR_L_COMP_CHANGE = 5008, //刀具长度补偿变化时指定插补指令错误
+    ERR_R_COMP_NOT_SUPPORTED_FOR_CURVE_TYPE = 5009,	//不支持指定曲线类型的刀具半径补偿
+    ERR_R_COMP_CHANGE_AFTER_ESTABLISH   = 5010, //刀具半径补偿不能在建立后立即改变
+    ERR_R_COMP_UNDER_FIXED_CYCLE        = 5011, //固定循环中不能使用刀具半径补偿
+    ERR_R_COMP_GENERATE_FAIL            = 5012, //刀补轨迹生成失败
 
 
 	//通讯告警	7000~7999
-	ERR_HEARTBEAT_HMI_LOST = 7000,	//HMI心跳丢失
-	ERR_HEARTBEAT_MC_LOST, 			//MC模块心跳丢失
-	ERR_HEARTBEAT_MI_LOST,			//MI模块心跳丢失
-	ERR_HMI_MONITOR_DISCON,      	//HMI监控tcp连接中断
-	ERR_FILE_TRANS,                 //文件传输失败
-	ERR_MC_CMD_CRC,					//MC命令包CRC校验错
-	ERR_MI_CMD_CRC,					//MI命令包CRC校验错
+    ERR_HEARTBEAT_HMI_LOST  = 7000, //HMI心跳丢失
+    ERR_HEARTBEAT_MC_LOST   = 7001, //MC模块心跳丢失
+    ERR_HEARTBEAT_MI_LOST   = 7002, //MI模块心跳丢失
+    ERR_HMI_MONITOR_DISCON  = 7003, //HMI监控tcp连接中断
+    ERR_FILE_TRANS = 7004,  //文件传输失败
+    ERR_MC_CMD_CRC = 7005,  //MC命令包CRC校验错
+    ERR_MI_CMD_CRC = 7006,  //MI命令包CRC校验错
 
 
 	//MC模块告警 10000~19999
-	ERR_SOFT_LIMIT_NEG = 10000,     //负向软限位告警
-	ERR_SOFT_LIMIT_POS, 			//正向软限位告警
-	ERR_POS_ERR,					//位置指令过大告警
-	ERR_ARC_DATA,					//圆弧数据错误告警
-	ERR_CMD_CRC,					//指令校验错
-	ERR_DATA_CRC,					//数据校验错
+    ERR_SOFT_LIMIT_NEG = 10000, //负向软限位告警
+    ERR_SOFT_LIMIT_POS = 10001, //正向软限位告警
+    ERR_POS_ERR     = 10002,    //位置指令过大告警
+    ERR_ARC_DATA    = 10003,    //圆弧数据错误告警
+    ERR_CMD_CRC     = 10004,    //指令校验错
+    ERR_DATA_CRC    = 10005,    //数据校验错
 
 
 	//PMC告警	20000~29999

@@ -26,6 +26,10 @@ public:
     void RspSyncAxis(int64_t mask);    // 轴同步回复
     void RspEnSyncAxis(bool enable, bool success);  // 轴同步使能回复
 
+    // 检测某个轴是否处于同步状态
+    // 返回值 0:不在同步状态  1:在同步状态
+    bool CheckSyncState(uint8_t axis_index);
+
 private:
     void UpdateMask(int64_t mask);
 

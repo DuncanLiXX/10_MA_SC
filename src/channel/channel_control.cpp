@@ -17374,9 +17374,10 @@ void ChannelControl::UpdateCoord(uint8_t index, HmiCoordConfig &cfg){
 void ChannelControl::UpdateExCoord(uint8_t index, HmiCoordConfig &cfg){
     if(m_channel_status.machining_state == MS_READY || m_channel_status.machining_state == MS_WARNING){//非运行状态，直接生效
         g_ptr_parm_manager->UpdateExCoordConfig(m_n_channel_index, index, cfg, true);
-        if(this->m_channel_status.gmode[14] == (G53_CMD+index*10))
+
+        if(this->m_channel_status.gmode[14] == (G5401_CMD+index*10))
             this->SetMcCoord(true);
-    }else if(this->m_channel_status.gmode[14] != (G53_CMD+index*10)){
+    }else if(this->m_channel_status.gmode[14] != (G5401_CMD+index*10)){
         g_ptr_parm_manager->UpdateExCoordConfig(m_n_channel_index, index, cfg, true);
     }
     else

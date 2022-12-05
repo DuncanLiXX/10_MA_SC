@@ -2578,18 +2578,20 @@ void HMICommunication::ProcessHmiSyncTimeCmd(HMICmdFrame &cmd){
 	struct tm *p;
 	time(&timep);
 	p = gmtime(&timep);
-	uint16_t year = p->tm_year;
-	cmd.data[0] = ((year>>8)&0xFF);
-	cmd.data[1] = (year&0xFF);
-	cmd.data[2] = p->tm_mon;
-	cmd.data[3] = p->tm_mday;
-	cmd.data[4] = p->tm_hour;
-	cmd.data[5] = p->tm_min;
-	cmd.data[6] = p->tm_sec;
+//	uint16_t year = p->tm_year;
+//	cmd.data[0] = ((year>>8)&0xFF);
+//	cmd.data[1] = (year&0xFF);
+//	cmd.data[2] = p->tm_mon;
+//	cmd.data[3] = p->tm_mday;
+//	cmd.data[4] = p->tm_hour;
+//	cmd.data[5] = p->tm_min;
+//	cmd.data[6] = p->tm_sec;
+
+    memcpy(cmd.data, &timep, sizeof(time_t));
 
 	//·¢ËÍÏìÓ¦°ü
 	cmd.frame_number |= 0x8000;
-	cmd.data_len = 7;
+    cmd.data_len = sizeof(time_t);
 
     this->SendCmd(cmd);
 }

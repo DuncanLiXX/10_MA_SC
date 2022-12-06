@@ -4010,6 +4010,11 @@ void ChannelEngine::SaveToolInfo(){
 }
 #endif
 
+void ChannelEngine::SetProgProtect(bool flag)
+{
+
+}
+
 
 /**
  * @brief 处理HMI更新螺补数据
@@ -8419,10 +8424,13 @@ void ChannelEngine::ProcessPmcSignal(){
         }
 
         // 伺服关断信号
-
         if(g_reg_last->SVF != g_reg->SVF){
             SetServoState(g_reg->SVF, 1);
             m_cur_svf = g_reg->SVF;
+        }
+
+        if(g_reg_last->KEY != g_reg->KEY){
+            SetProgProtect(g_reg->KEY);
         }
 
         // 处理G信号 切换当前通道

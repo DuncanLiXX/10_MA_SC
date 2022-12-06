@@ -1039,6 +1039,7 @@ int HMICommunication::ProcessHmiCmd(){
             case CMD_SC_NOTIFY_ALARM_CHANGE:
             case CMD_SC_BACKUP_STATUS:        //SC通知HMI当前备份状态
             case CMD_SC_NOTIFY_TRACELOG:
+            case CMD_SC_NOTIFY_PROTECT_STATUS:  //SC通知HMI保护状态
 				break;
 			case CMD_HMI_GET_SYS_INFO:
 				m_p_channel_engine->ProcessHmiCmd(cmd);

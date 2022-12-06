@@ -231,6 +231,7 @@ enum HMICmdCode {
     CMD_SC_NOTIFY_ALARM_CHANGE,     //SC通知HMI报警信息改变
     CMD_SC_BACKUP_STATUS,           //SC通知HMI当前备份状态     0x7E
     CMD_SC_NOTIFY_TRACELOG,         //SC通知HMI操作记录        0x7F
+    CMD_SC_NOTIFY_PROTECT_STATUS,   //SC通知HMI保护状态        0x80
 
 
 	CMD_HMI_GUARD = 255       //HMI命令字卫兵 0xFF

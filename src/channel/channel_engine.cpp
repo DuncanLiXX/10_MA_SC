@@ -4012,7 +4012,15 @@ void ChannelEngine::SaveToolInfo(){
 
 void ChannelEngine::SetProgProtect(bool flag)
 {
+    HMICmdFrame hmi_cmd;
+    hmi_cmd.channel_index = CHANNEL_ENGINE_INDEX;
+    hmi_cmd.cmd = CMD_SC_NOTIFY_PROTECT_STATUS;
+    hmi_cmd.cmd_extension = 0;
+    hmi_cmd.data_len = sizeof(flag);
+    memcpy(&hmi_cmd.data[0], &flag, hmi_cmd.data_len);
 
+    std::cout << "SetProgProtect: " << flag << std::endl;
+    m_p_hmi_comm->SendCmd(hmi_cmd);
 }
 
 

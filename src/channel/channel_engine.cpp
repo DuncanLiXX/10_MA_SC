@@ -11139,6 +11139,12 @@ void ChannelEngine::ReturnRefPoint(){
                 (m_p_axis_config[i].ret_ref_mode == 0 && m_p_axis_config[i].feedback_mode == INCREMENTAL_ENCODER)){  //½ûÖ¹»Ø²Î¿¼µã
             continue;
         }
+
+        if (GetSyncAxisCtrl()->CheckSyncState(i))
+        {
+            CreateError(ERR_RET_SYNC_ERR, WARNING_LEVEL, CLEAR_BY_MCP_RESET, 0, CHANNEL_ENGINE_INDEX, i);
+            continue;
+        }
         if(this->m_b_ret_ref_auto){
             if(m_p_axis_config[i].ret_ref_index > m_n_ret_ref_auto_cur)
                 continue;

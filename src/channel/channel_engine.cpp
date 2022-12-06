@@ -5241,6 +5241,8 @@ void ChannelEngine::SetJPState(uint8_t chn, uint8_t JP, uint8_t last_JP, ChnWork
         GetAxisChannel(m_p_channel_config[chn].chn_axis_phy[i]-1,chn_axis);
         // 轴正向移动按下
         if(flag_now){
+            this->m_p_mi_comm->ReadPhyAxisCurFedBckPos(m_df_phy_axis_pos_feedback, m_df_phy_axis_pos_intp,m_df_phy_axis_speed_feedback,
+                                                       m_df_phy_axis_torque_feedback, m_p_general_config->axis_count);
             SetCurAxis(chn, chn_axis);
             ManualMove(DIR_POSITIVE);
             g_ptr_tracelog_processor->SendToHmi(kPanelOper, kDebug, "点动[轴" + to_string(chn_axis) + "]+");
@@ -5249,6 +5251,7 @@ void ChannelEngine::SetJPState(uint8_t chn, uint8_t JP, uint8_t last_JP, ChnWork
         }else if(mode == MANUAL_MODE){ // 轴正向移动松开，并且为手动连续模式
             ManualMoveStop(m_p_channel_config[chn].chn_axis_phy[i]-1);
             g_ptr_tracelog_processor->SendToHmi(kPanelOper, kDebug, "点动释放[轴" + to_string(chn_axis) + "]+");
+            usleep(200000);
         }
     }
 }
@@ -5264,6 +5267,9 @@ void ChannelEngine::SetJNState(uint8_t chn, uint8_t JN, uint8_t last_JN, ChnWork
         GetAxisChannel(m_p_channel_config[chn].chn_axis_phy[i]-1,chn_axis);
         // 轴负向移动按下
         if(flag_now){
+            this->m_p_mi_comm->ReadPhyAxisCurFedBckPos(m_df_phy_axis_pos_feedback, m_df_phy_axis_pos_intp,m_df_phy_axis_speed_feedback,
+                                                       m_df_phy_axis_torque_feedback, m_p_general_config->axis_count);
+
             SetCurAxis(chn, chn_axis);
             ManualMove(DIR_NEGATIVE);
 
@@ -5271,6 +5277,7 @@ void ChannelEngine::SetJNState(uint8_t chn, uint8_t JN, uint8_t last_JN, ChnWork
         }else if(mode == MANUAL_MODE){ // 轴正向移动松开，并且为手动连续模式
             ManualMoveStop(m_p_channel_config[chn].chn_axis_phy[i]-1);
             g_ptr_tracelog_processor->SendToHmi(kPanelOper, kDebug, "点动释放[轴" + to_string(chn_axis) + "]-");
+            usleep(200000);
         }
     }
 }
@@ -5729,7 +5736,7 @@ void ChannelEngine::ManualMovePmc(int8_t dir){
  *
  */
 void ChannelEngine::ManualMovePmc(uint8_t phy_axis, double tar_pos, double vel, bool inc){
-    uint8_t dir = DIR_POSITIVE;  //默认正向
+    int8_t dir = DIR_POSITIVE;  //默认正向
 
     double cur_pos = this->GetPhyAxisMachPosFeedback(phy_axis);
     if((!inc && tar_pos - cur_pos < 0) ||

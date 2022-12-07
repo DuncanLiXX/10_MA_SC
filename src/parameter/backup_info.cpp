@@ -393,6 +393,7 @@ bool Script_Backup_Info::Package(zip_t *zip)
     string command = "cp " + ScriptPath + " " + m_path;
     std::cout << command << std::endl;
     system(command.c_str());
+    system("sync");
     Backup_Info::Package(zip);
 
     return true;
@@ -409,6 +410,7 @@ bool Script_Backup_Info::UnPackage(zip_t *zip, string prefix)
         command = "cp -f " + path + " " + ScriptPath;
         std::cout << command << std::endl;
         system(command.c_str());
+        system("sync");
     }
     return true;
 }
@@ -429,6 +431,7 @@ bool Sc_Backup_Info::UnPackage(zip_t *zip, string prefix)
             string command = "chmod +x " + scPath;
             std::cout << command << std::endl;
             system(command.c_str());
+            system("sync");
         }
     }
     return true;

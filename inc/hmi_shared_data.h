@@ -231,6 +231,7 @@ enum HMICmdCode {
     CMD_SC_NOTIFY_ALARM_CHANGE,     //SC通知HMI报警信息改变
     CMD_SC_BACKUP_STATUS,           //SC通知HMI当前备份状态     0x7E
     CMD_SC_NOTIFY_TRACELOG,         //SC通知HMI操作记录        0x7F
+    CMD_SC_NOTIFY_PROTECT_STATUS,   //SC通知HMI保护状态        0x80
 
 
 	CMD_HMI_GUARD = 255       //HMI命令字卫兵 0xFF
@@ -423,6 +424,7 @@ enum ErrorType {
     ERR_NC_FILE_NOT_EXIST   = 603,  //文件不存在
     ERR_SWITCH_MODE_IN_RET_REF = 604,   //回零中禁止切换工作模式
     ERR_RET_REF_Z_ERR       = 605,  //搜索Z脉冲位置超限，原点建立失败
+    ERR_RET_SYNC_ERR        = 606,  //同步轴禁止回零
 
 
 	//加工告警	1000~1999

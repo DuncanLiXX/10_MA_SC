@@ -1671,7 +1671,7 @@ void ChannelControl::ResetMode(){
  */
 void ChannelControl::StartRunGCode(){
 
-    string msg = "结束加工程序(" + string(this->m_channel_status.cur_nc_file_name) + ")";
+    string msg = "开始加工程序(" + string(this->m_channel_status.cur_nc_file_name) + ")";
     g_ptr_tracelog_processor->SendToHmi(kProcessInfo, kDebug, msg);
 	printf("start run g code \n");
 
@@ -4329,7 +4329,7 @@ int ChannelControl::Run(){
 			{
 				//编译器出错，但需要继续执行已编译指令
 				if(m_p_compiler->RunMessage()){
-					if(!ExecuteMessage()){
+                    if(!ExecuteMessage()){
 						if(m_error_code != ERR_NONE){
 							g_ptr_trace->PrintTrace(TRACE_WARNING, CHANNEL_CONTROL_SC, "execute message error1, %d\n", m_error_code);
 							m_n_run_thread_state = ERROR; //编译出错
@@ -4342,30 +4342,30 @@ int ChannelControl::Run(){
 			}
 			else if(m_p_compiler->GetLineData())
 			{
-				//printf("----------------------------> GetLineData\n");
+                //printf("----------------------------> GetLineData\n");
 				//获取一行源码
 				if(!m_p_compiler->CompileLine())  //编译一行代码
 				{
 					m_n_run_thread_state = ERROR; //编译出错
 					g_ptr_trace->PrintTrace(TRACE_WARNING, CHANNEL_CONTROL_SC, "#####Compile Error#####\n");
 				}
-				else{
-					//printf("----------------------------> CompileLine\n");
+                else{
+                    //printf("----------------------------> CompileLine\n");
 					if(m_p_compiler->RunMessage()){
-						//printf("----------------------------> RunMessage\n");
+                        //printf("----------------------------> RunMessage\n");
 						if(!ExecuteMessage()){
 							if(m_error_code != ERR_NONE){
 								g_ptr_trace->PrintTrace(TRACE_WARNING, CHANNEL_CONTROL_SC, "execute message error2, %d\n", m_error_code);
 								m_n_run_thread_state = ERROR; //编译出错
 							}else{  //执行未成功，转换为WAIT_EXECUTE状态
 								usleep(10000);   //休眠10ms
-								//printf("----------------------------> WaitExcute\n");
+                                //printf("----------------------------> WaitExcute\n");
 							}
 						}
 					}
 					else{
-
 						if(m_p_compiler->GetErrorCode() != ERR_NONE){
+                            CreateError(m_p_compiler->GetErrorCode(), ERROR_LEVEL, CLEAR_BY_MCP_RESET, 0, m_n_channel_index);
 							m_n_run_thread_state = ERROR;
 						}else{
 							m_n_run_thread_state = WAIT_RUN;//执行失败，状态切换到WAIT_RUN
@@ -4792,7 +4792,7 @@ bool ChannelControl::RefreshStatusFun(){
 		}
 
 		if(this->m_b_manual_call_macro){
-			if(this->GetCompileState() == IDLE){
+            if(this->GetCompileState() == IDLE || this->GetCompileState() == STOP/*中途停止时，State为Stop*/){
 				this->m_b_manual_call_macro = false;
 
 				this->m_b_cancel_manual_call_macro = false;
@@ -5459,8 +5459,7 @@ bool ChannelControl::IsStepMode(){
  * @return true--成功  false--失败
  */
 bool ChannelControl::ExecuteMessage(){
-    //	printf("enter ExecuteMessage\n");
-
+    //printf("enter ExecuteMessage\n");
     int count = m_p_output_msg_list->GetLength();
     if(count == 0){
         return true;
@@ -11246,8 +11245,8 @@ void ChannelControl::ManualMove(int8_t dir){
             limit_pos = m_p_axis_config[phy_axis].soft_limit_max_1*1e7;
             tar_inc_max = limit_pos - cur_pos;
 
-            printf("manual move, dir = %hhd, max = %lld, tar = %lld\n", dir, tar_inc_max,
-                   tar_pos);
+            printf("manual move, dir = %hhd, max = %lld, cur == %lld\n", dir, tar_inc_max,
+                   cur_pos);
             if(tar_inc_max < 0){//已经在限位外，告警
                 CreateError(ERR_SOFTLIMIT_POS, WARNING_LEVEL, CLEAR_BY_MCP_RESET, 0, m_n_channel_index, m_channel_status.cur_axis);
                 //	this->m_error_code = ERR_SOFTLIMIT_POS;
@@ -11255,19 +11254,23 @@ void ChannelControl::ManualMove(int8_t dir){
                 return;
             }else if(tar_inc_max == 0){  //已经到达正限位极限位置
                 CreateError(ERR_SOFTLIMIT_POS, WARNING_LEVEL, CLEAR_BY_MCP_RESET, 0, m_n_channel_index, m_channel_status.cur_axis);
+                printf("manual move out of soft inpositive limit\n");
                 return;
             }else{
                 tar_inc_max = limit_pos - this->GetAxisCurIntpTarPos(m_channel_status.cur_axis, true)*1e7;   //与当前目标位置的机械坐标的差值
                 if(tar_pos > tar_inc_max)
                     tar_pos = tar_inc_max;
-
+                std::cout << "tar_pos: " << tar_pos << std::endl;
             }
         }else if(dir == DIR_NEGATIVE){//负向
             limit_pos = m_p_axis_config[phy_axis].soft_limit_min_1*1e7;
             tar_inc_max = limit_pos - cur_pos;
 
-            printf("manual move, dir = %hhd, max = %lld, tar = %lld\n", dir, tar_inc_max,
-                   tar_pos);
+            //printf("manual move, dir = %hhd, max = %lld, tar = %lld\n", dir, tar_inc_max,
+            //       tar_pos);
+
+            printf("manual move   , dir = %hhd, max = %lld, cur == %lld\n", dir, tar_inc_max,
+                   cur_pos);
             if(tar_inc_max > 0){//已经在限位外，告警
                 CreateError(ERR_SOFTLIMIT_NEG, WARNING_LEVEL, CLEAR_BY_MCP_RESET, 0, m_n_channel_index, m_channel_status.cur_axis);
                 //	this->m_error_code = ERR_SOFTLIMIT_NEG;
@@ -11275,12 +11278,13 @@ void ChannelControl::ManualMove(int8_t dir){
                 return;
             }else if(tar_inc_max == 0){  //已经到达负限位极限位置
                 CreateError(ERR_SOFTLIMIT_NEG, WARNING_LEVEL, CLEAR_BY_MCP_RESET, 0, m_n_channel_index, m_channel_status.cur_axis);
+                printf("manual move out of soft innegative limit\n");
                 return;
             }else{
                 tar_inc_max = limit_pos - this->GetAxisCurIntpTarPos(m_channel_status.cur_axis, true)*1e7;   //与当前目标位置的机械坐标的差值
                 if(tar_pos < tar_inc_max)
                     tar_pos = tar_inc_max;
-
+                std::cout << "tar_pos: " << tar_pos << std::endl;
             }
         }
     }
@@ -11298,8 +11302,8 @@ void ChannelControl::ManualMove(int8_t dir){
     else
         m_p_mc_arm_comm->WriteCmd(cmd);
 
-    printf("manual move: axis = %d, tar_pos = %lld, type = 0x%x, ratio = %hhu\n", m_channel_status.cur_axis, tar_pos, cmd.data.data[6],
-            this->m_channel_status.manual_ratio);
+    //printf("manual move: axis = %d, tar_pos = %lld, type = 0x%x, ratio = %hhu\n", m_channel_status.cur_axis, tar_pos, cmd.data.data[6],
+    //        this->m_channel_status.manual_ratio);
 }
 
 /**

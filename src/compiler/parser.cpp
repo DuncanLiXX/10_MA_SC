@@ -30,11 +30,11 @@ Parser::Parser(uint8_t chn_index, LexerResult *lexer_result, CompileRecList *par
 	this->m_p_compiler_status = compiler_status;
 
 	this->m_p_channel_control = ChannelEngine::GetInstance()->GetChnControl(m_n_channel_index);
-#ifdef USES_WOOD_MACHINE
+//#ifdef USES_WOOD_MACHINE
 	this->m_b_multi_mcode = true;   //对于木工机，多M代码功能默认打开
-#else
-	this->m_b_multi_mcode = false;  //多M代码默认为关闭状态
-#endif
+//#else
+//	this->m_b_multi_mcode = false;  //多M代码默认为关闭状态
+//#endif
 	this->m_b_call_macro_prog = false;
 	m_mask_pmc_axis = 0;
 	m_n_pmc_axis_count = 0;

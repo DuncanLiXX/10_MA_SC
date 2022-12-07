@@ -1258,7 +1258,10 @@ bool ChannelControl::GetSysVarValue(const int index, double&value){
         }else{
             return false;
         }
-
+    }else if(index == 9000){
+    	value = this->m_p_channel_config->G73back;
+    }else if(index == 9001){
+    	value = this->m_p_channel_config->G83back;
     }
     else if(index >= 12001 && index <= 12999){   //µ¶¾ß°ë¾¶Ä¥Ëğ²¹³¥
         int id = index - 12001;
@@ -10544,7 +10547,7 @@ bool ChannelControl::ExecuteClearCirclePosMsg(RecordMsg *msg){
 bool ChannelControl::ExecuteInputMsg(RecordMsg * msg){
 
     InputMsg * input_msg = (InputMsg *)msg;
-    printf("ldata: %d -- pdata: %d --- rdata: %d\n", input_msg->LData, input_msg->PData, input_msg->RData);
+    printf("ldata: %lf -- pdata: %lf --- rdata: %lf\n", input_msg->LData, input_msg->PData, input_msg->RData);
 
     if(this->m_n_restart_mode != NOT_RESTART &&
             input_msg->GetLineNo() < this->m_n_restart_line

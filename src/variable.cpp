@@ -620,7 +620,7 @@ bool Variable::SetSysVar(int index, double value){
  * @return
  */
 bool Variable::SetSysVar(int index, int value){
-	//
+
 	double dv = static_cast<double>(value);
 	return this->SetSysVar(index, dv);
 }

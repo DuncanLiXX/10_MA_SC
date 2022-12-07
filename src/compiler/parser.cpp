@@ -3066,6 +3066,8 @@ bool Parser::CreateInputMsg(){
 	GetCodeData(Z_DATA, new_msg->ZData);
 	GetCodeData(Q_DATA, new_msg->QData);
 
+	printf("create input msg: l: %d -- p: %d -- r: %d\n", new_msg->LData,new_msg->PData,new_msg->RData);
+
 	new_msg->SetLineNo(this->m_p_lexer_result->line_no);
 	m_p_parser_result->Append(new_msg);
 	ProcessLastBlockRec(new_msg);
@@ -3146,7 +3148,8 @@ bool Parser::GetCodeData(DataAddr addr, double &data){
 		}
 		g_code->mask_value &= (~mask);   //使用过后就复位此参数mask
 	}else{//无此地址字数据
-	//	printf("Get %c data: no data\n", 'A'+addr);
+		//printf("Get %c data: no data\n", 'A'+addr);
+		//data = g_code->value[addr];
 		return false;
 	}
 

@@ -869,6 +869,9 @@ int Interp::convert_straight_comp1(int move,
 	comp_get_current(settings, &cx, &cy, &cz);
 	distance = hypot((px - cx), (py - cy));
 
+	printf("cx : %lf cy : %lf px : %lf py : %lf\n", cx, cy, px, py);
+	printf("comp side: %d\n", settings->cutter_comp_side);
+
 	if(side != LEFT and side != RIGHT){
 		printf("NCE_BUG_SIDE_NOT_RIGHT_OR_LEFT\n");
 	}
@@ -903,7 +906,6 @@ int Interp::convert_straight_comp1(int move,
 							  cos(alpha), sin(alpha), 0,
 							  end_x, end_y, pz,
 							  AA_end, BB_end, CC_end, u_end, v_end, w_end);
-		settings->cutter_comp_fristcalc = true;  //首次刀补计算
 	}else{
 		printf("NCE_BUG_CODE_NOT_G0_OR_G1\n");
 	}
@@ -1045,9 +1047,7 @@ int Interp::convert_straight_comp2(int move,
                 // @test 刀补建立
                 if(settings->cutter_comp_fristcalc){
                 	settings->cutter_comp_fristcalc = false;
-                	//mid_x = 50.0;
-                	//mid_y = 45.0;
-                	//printf("************** %lf *************\n", alpha);
+                	calc_mid_first_comp(opx, opy, px, py, mid_x, mid_y, settings->cutter_comp_side, settings->cutter_comp_radius);
                 }
                 // we actually want to move the previous line's endpoint here.  That's the same as
                 // discarding that line and doing this one instead.
@@ -1128,13 +1128,14 @@ int Interp::convert_straight_comp2(int move,
     if(settings->cutter_comp_lastmove){
 
 		dequeue_canons(settings);
-		settings->current_x = settings->program_x;
-		settings->current_y = settings->program_y;
-		settings->current_z = settings->program_z;
+		settings->current_x = px;
+		settings->current_y = py;
+		settings->current_z = pz;
 
 		settings->arc_not_allowed = true;
     	settings->cutter_comp_side = false;
     	settings->cutter_comp_lastmove = false;
+    	settings->cutter_comp_fristcalc = false;
     	settings->cutter_comp_firstmove = true;
     	isCompOn = false;
     }else{
@@ -1401,6 +1402,31 @@ int Interp::move_endpoint_and_flush(setup_pointer settings, double x, double y)
     dequeue_canons(settings);
     set_endpoint(x, y);
     return 0;
+}
+
+void Interp::calc_mid_first_comp(double x1, double y1,
+								double x2, double y2,
+								double &midx, double &midy,
+								int dir, double radius)
+{
+	// 起点到终点向量
+	double vec_x = x2 - x1;
+	double vec_y = y2 - y1;
+
+	double tvecx, tvecy;  // 单位法向量
+
+	if(dir == LEFT){
+		tvecx = -vec_y/sqrt(vec_x * vec_x + vec_y * vec_y);
+		tvecy = vec_x/sqrt(vec_x * vec_x + vec_y * vec_y);
+	}else{
+		tvecx = vec_y/sqrt(vec_x * vec_x + vec_y * vec_y);
+		tvecy = -vec_x/sqrt(vec_x * vec_x + vec_y * vec_y);
+	}
+
+	midx = x1 + radius*tvecx;
+	midy = y1 + radius*tvecy;
+
+	//printf("===================midx %lf  midy %lf\n", midx, midy);
 }
 
 void dequeue_canons(setup_pointer settings)

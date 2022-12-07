@@ -1199,6 +1199,9 @@ struct HmiChnConfig{
     uint16_t mpg_level3_step;       //手轮3档的自定义步长 单位：um
     uint16_t mpg_level4_step;       //手轮4档的自定义步长 单位：um
 
+    double G73back;		// G73回退距离
+    double G83back;		// G83回退距离
+
 #ifdef USES_WOOD_MACHINE
 	int debug_param_1;             //调试参数1
 	int debug_param_2;             //调试参数2

@@ -342,6 +342,9 @@ bool ChannelControl::Initialize(uint8_t chn_index, ChannelEngine *engine, HMICom
                                       m_p_f_reg,
                                       m_p_g_reg,
                                       &m_macro_variable);
+            if(m_n_spindle_count > 1){
+                CreateError(ERR_SPD_MULTI_NUM, ERROR_LEVEL, CLEAR_BY_RESET_POWER);
+            }
         }
 
         //初始化PMC轴信息
@@ -2452,9 +2455,6 @@ void ChannelControl::SendMonitorData(bool bAxis, bool btime){
     for(int i = 0; i < m_p_channel_config->chn_axis_count; i++){
         if((MLK_mask >> i) & 0x01){
             hmi_rt_status.cur_pos_machine[i] = MLK_pos[i];
-            if(cnt%10 == 0){
-                ScPrintf("use old pos");
-            }
         }
     }
     cnt ++;

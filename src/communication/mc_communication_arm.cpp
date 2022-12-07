@@ -369,7 +369,7 @@ void MCArmCommunication::ReadMdaBufDataCount(const uint8_t chn_index, uint16_t &
  * @param cur_feed[out] : 返回当前进给速度
  * @return
  */
-void MCArmCommunication::ReadCurFeed(const uint8_t chn_index, uint32_t &cur_feed){
+void MCArmCommunication::ReadCurFeed(const uint8_t chn_index, int32_t &cur_feed){
 
 	ReadSharedRegister(MC_ARM_CUR_FEED(chn_index), cur_feed);
 
@@ -381,7 +381,7 @@ void MCArmCommunication::ReadCurFeed(const uint8_t chn_index, uint32_t &cur_feed
  * @param cur_feed[out] : 返回当前给定进给速度
  * @return
  */
-void MCArmCommunication::ReadRatedFeed(const uint8_t chn_index, uint32_t &rated_feed){
+void MCArmCommunication::ReadRatedFeed(const uint8_t chn_index, int32_t &rated_feed){
 
 	ReadSharedRegister(MC_ARM_RATED_FEED(chn_index), rated_feed);
 

@@ -689,6 +689,7 @@ void ShowSc::PrintAxisConfig(int axis)
     AddPair(s,"sync_pos_detect",cfg->sync_pos_detect);
     AddPair(s,"sync_mach_detect",cfg->sync_mach_detect);
     AddPair(s,"sync_torque_detect",cfg->sync_torque_detect);
+    AddPair(s,"serial_torque_ratio",cfg->serial_torque_ratio);
 
     for(int i = 0; i < 10; i++){
         string axis_home_pos_s = "axis_home_pos[" + to_string(i) + "]";

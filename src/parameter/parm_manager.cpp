@@ -1394,7 +1394,7 @@ bool ParmManager::ReadAxisConfig(){
             m_sc_axis_config[i].spd_rtnt_distance = m_ini_axis->GetIntValueOrDefault(sname, "spd_rtnt_distance", 0);
             m_sc_axis_config[i].spd_locate_ang = m_ini_axis->GetIntValueOrDefault(sname, "spd_locate_ang", 0);
 
-			m_sc_axis_config[i].fast_locate = m_ini_axis->GetIntValueOrDefault(sname, "fast_locat", 1);
+            m_sc_axis_config[i].fast_locate = m_ini_axis->GetIntValueOrDefault(sname, "fast_locate", 1);
 			m_sc_axis_config[i].pos_disp_mode = m_ini_axis->GetIntValueOrDefault(sname, "pos_disp_mode", 0);
 			m_sc_axis_config[i].encoder_max_cycle = m_ini_axis->GetIntValueOrDefault(sname, "encoder_max_cycle", 0);  //最大圈数默认值由256改为0
 
@@ -1411,6 +1411,7 @@ bool ParmManager::ReadAxisConfig(){
             m_sc_axis_config[i].sync_mach_detect = m_ini_axis->GetIntValueOrDefault(sname, "sync_mach_detect", 1);
             m_sc_axis_config[i].sync_pos_detect = m_ini_axis->GetIntValueOrDefault(sname, "sync_pos_detect", 1);
             m_sc_axis_config[i].sync_torque_detect = m_ini_axis->GetIntValueOrDefault(sname, "sync_torque_detect", 1);
+            m_sc_axis_config[i].serial_torque_ratio = m_ini_axis->GetIntValueOrDefault(sname, "serial_torque_ratio", 100);
 
             m_sc_axis_config[i].pmc_g00_by_EIFg = m_ini_axis->GetIntValueOrDefault(sname, "pmc_g00_by_EIFg", 0);
             m_sc_axis_config[i].pmc_min_speed = m_ini_axis->GetIntValueOrDefault(sname, "pmc_min_speed", 5);
@@ -1569,6 +1570,7 @@ bool ParmManager::ReadAxisConfig(){
             m_sc_axis_config[i].sync_mach_detect = 1;
             m_sc_axis_config[i].sync_pos_detect = 1;
             m_sc_axis_config[i].sync_torque_detect = 1;
+            m_sc_axis_config[i].serial_torque_ratio = 100;
 
             m_sc_axis_config[i].pmc_g00_by_EIFg = 0;
             m_sc_axis_config[i].pmc_min_speed = 5;
@@ -1717,6 +1719,7 @@ bool ParmManager::ReadAxisConfig(){
             m_ini_axis->AddKeyValuePair(string("sync_mach_detect"), string("1"), ns);
             m_ini_axis->AddKeyValuePair(string("sync_pos_detect"), string("1"), ns);
             m_ini_axis->AddKeyValuePair(string("sync_torque_detect"), string("1"), ns);
+            m_ini_axis->AddKeyValuePair(string("serial_torque_ratio"), string("100"), ns);
 
             m_ini_axis->AddKeyValuePair(string("pmc_g00_by_EIFg"), string("0"), ns);
             m_ini_axis->AddKeyValuePair(string("pmc_min_speed"), string("5"), ns);
@@ -4758,6 +4761,10 @@ bool ParmManager::UpdateAxisParam(uint8_t axis_index, uint32_t param_no, ParamVa
         sprintf(kname, "sync_torque_detect");
         m_ini_axis->SetIntValue(sname, kname,value.value_uint8);
         break;
+    case 1663:	//串联力矩系数
+        sprintf(kname, "serial_torque_ratio");
+        m_ini_axis->SetIntValue(sname, kname,value.value_uint16);
+        break;
     case 1700:	//SOR信号用途
         sprintf(kname, "spd_ctrl_GST");
         m_ini_axis->SetIntValue(sname, kname,value.value_uint8);
@@ -6236,6 +6243,10 @@ void ParmManager::ActiveAxisParam(uint8_t axis_index, uint32_t param_no, ParamVa
     case 1662:	//是否进行扭矩同步误差检测
         this->m_sc_axis_config[axis_index].sync_torque_detect = value.value_uint8;
         UpdateMiParam<uint8_t>(axis_index+1, param_no, value.value_uint8);
+        break;
+    case 1663:	//是否进行扭矩同步误差检测
+        this->m_sc_axis_config[axis_index].serial_torque_ratio = value.value_uint16;
+        UpdateMiParam<uint8_t>(axis_index+1, param_no, value.value_uint16);
         break;
     case 1700:	//SOR信号用途
         this->m_sc_axis_config[axis_index].spd_ctrl_GST = value.value_uint8;

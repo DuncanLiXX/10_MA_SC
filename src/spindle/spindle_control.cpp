@@ -455,7 +455,7 @@ void SpindleControl::RspSpindleSpeed(uint8_t axis, bool success)
 {
     if(!spindle)
         return;
-    printf("SpindleControl::RspSpindleSpeed: axis=%d,success=%d\n",axis,success);
+    ScPrintf("SpindleControl::RspSpindleSpeed: axis=%d,success=%d\n",axis,success);
     if(axis == phy_axis + 1){
         // 正在等待速度到达，并且收到了回复
         if(wait_sar && success)

@@ -474,6 +474,7 @@ enum ErrorType {
     ERR_SPD_RTNT_INVALID    = 1707, //刚性攻丝回退无效
     ERR_SPD_RTNT_FAIL       = 1708, //刚性攻丝回退失败
     ERR_SPD_RTNT_IN_AUTO    = 1709, //自动模式禁止攻丝回退
+    ERR_SPD_MULTI_NUM       = 1710, //多主轴告警
 
 	//PMC轴告警
     ERR_PMC_AXIS_CTRL_CHANGE    = 1900, //PMC轴控制状态下切换
@@ -950,7 +951,7 @@ struct HmiChannelRealtimeStatus {
 	double cur_pos_work[kMaxAxisChn];		//当前实际位置，工件坐标系，单位：mm
 	double tar_pos_work[kMaxAxisChn];		//当前目标位置，工件坐标系，单位：mm
 	int32_t spindle_cur_speed; 		        //主轴当前转速，单位：转/分钟
-	uint32_t cur_feed; 						//当前进给速度，单位：um/s
+    int32_t cur_feed; 						//当前进给速度，单位：um/s
 	uint32_t machining_time; 				//加工时间，单位：秒
 	uint32_t machining_time_remains; 		//剩余加工时间，单位：秒
     uint32_t machining_time_total;          //累计加工时间，单位：秒
@@ -1363,6 +1364,7 @@ struct HmiAxisConfig{
     uint8_t sync_pos_detect;                    //是否进行位置同步误差检测 0--否   1：是
     uint8_t sync_mach_detect;                   //是否进行坐标同步误差检测 0--否   1：是
     uint8_t sync_torque_detect;                 //是否进行扭矩同步误差检测 0--否   1：是
+    uint16_t serial_torque_ratio;               //串联力矩系数 单位: 1%
 
     double axis_home_pos[10];				//参考点位置  单位：mm
     double ref_mark_err;                   //参考点基准误差   单位：mm    有效范围：0~10.0

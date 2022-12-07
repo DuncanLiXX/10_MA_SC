@@ -313,6 +313,7 @@ struct SCAxisConfig{
     uint8_t sync_pos_detect;                    //是否进行位置同步误差检测 0--否   1：是
     uint8_t sync_mach_detect;                   //是否进行坐标同步误差检测 0--否   1：是
     uint8_t sync_torque_detect;                 //是否进行扭矩同步误差检测 0--否   1：是
+    uint16_t serial_torque_ratio;               //串联力矩系数 单位: 1%
 
 	double axis_home_pos[10];				//参考点位置  单位：mm
 	double ref_mark_err;                   //参考点基准误差   单位：mm    有效范围：0~10.0

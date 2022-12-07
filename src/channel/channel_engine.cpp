@@ -750,28 +750,32 @@ void ChannelEngine::ProcessRecoverMLK(uint8_t mask, double *mach_pos)
     // 3:等待所有轴移动到位，给MI发送取消锁住的命令
     // 4:机械锁住标记 清除
     m_p_pmc_reg->FReg().bits->CLMLK = 1;
+    //ScPrintf("ProcessRecoverMLK mask = %u", mask);
 
     for(int i = 0; i < m_p_channel_config->chn_axis_count; i++){
-        if(((mask >> 1) & 0x01) == 0)
+        if(((mask >> i) & 0x01) == 0)
             continue;
 
         ManualMoveAbs(i, 3000, mach_pos[i]);
+
     }
 
     for(int i = 0; i < m_p_channel_config->chn_axis_count; i++){
-        if(((mask >> 1) & 0x01) == 0)
+        if(((mask >> i) & 0x01) == 0)
             continue;
 
         while(fabs(this->GetPhyAxisMachPosFeedback(i) - mach_pos[i]) >= 0.010){
             std::this_thread::sleep_for(std::chrono::microseconds(100 * 1000));
-            ScPrintf("RecoverMLK: axis = %u,fabs = %lf", i,
-                     fabs(this->GetPhyAxisMachPosFeedback(i) - mach_pos[i]));
+//            ScPrintf("RecoverMLK: axis = %u,fabs = %lf", i,
+//                     fabs(this->GetPhyAxisMachPosFeedback(i) - mach_pos[i]));
 
         }
     }
 
+    std::this_thread::sleep_for(std::chrono::microseconds(200 * 1000));
+
     for(int i = 0; i < m_p_channel_config->chn_axis_count; i++){
-        if(((mask >> 1) & 0x01) == 0)
+        if(((mask >> i) & 0x01) == 0)
             continue;
 
         m_p_mi_comm->SendAxisMLK(i+1, 0);

@@ -267,7 +267,7 @@ void MICommunication::SendAxisMLK(uint8_t axis, bool MLK)
 {
     printf("SendAxisMLK:axis = %d, enable = %d\n",axis,true);
 
-    // opt为7，代表是机械锁住使能操作
+    // opt为2，代表是机械锁住使能操作
     SendOperateCmd(2,axis,MLK);
 }
 

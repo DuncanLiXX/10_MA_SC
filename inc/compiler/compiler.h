@@ -42,7 +42,7 @@ public://公共接口
 	void SetMode(CompilerWorkMode mode);   	//设置编译工作模式
 	CompilerWorkMode GetMode(){return m_work_mode;}     //返回编译模式
 
-	ErrorType GetErrorCode(){return m_error_code;}   //返回错误码
+    ErrorType GetErrorCode(){return m_error_code;}   //返回错误码
 
 	bool IsCompileOver(){return m_b_compile_over;}  //返回是否编译结束
 

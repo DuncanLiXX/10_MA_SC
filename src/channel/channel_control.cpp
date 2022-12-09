@@ -320,7 +320,7 @@ bool ChannelControl::Initialize(uint8_t chn_index, ChannelEngine *engine, HMICom
         if(m_p_axis_config[phy_axis-1].axis_interface == VIRTUAL_AXIS || m_p_axis_config[phy_axis-1].axis_type == AXIS_SPINDLE	//主轴和虚拟轴不用回参考点
                 || (m_p_axis_config[phy_axis-1].feedback_mode == NO_ENCODER && m_p_axis_config[phy_axis-1].ret_ref_mode == 0)   //无反馈,并且禁止回参考点
                 || (m_p_axis_config[phy_axis-1].feedback_mode != INCREMENTAL_ENCODER && m_p_axis_config[phy_axis-1].ref_encoder != kAxisRefNoDef)  //非增量式，并已确定零点
-                || (m_p_axis_config[phy_axis-1].feedback_mode == INCREMENTAL_ENCODER && m_p_axis_config[phy_axis-1].ret_ref_mode == 0)){   //增量式并禁止回参考点
+                /*|| (m_p_axis_config[phy_axis-1].feedback_mode == INCREMENTAL_ENCODER && m_p_axis_config[phy_axis-1].ret_ref_mode == 0)增量式反馈必须回零*/){   //增量式并禁止回参考点
             m_channel_status.returned_to_ref_point |= (0x01<<i);
         }
         if(m_p_axis_config[phy_axis-1].axis_interface != VIRTUAL_AXIS)
@@ -1900,6 +1900,9 @@ void ChannelControl::StartRunGCode(){
         this->m_p_compiler->SetCurPos(this->m_channel_rt_status.cur_pos_work);
         this->m_p_compiler->SetCurGMode();   //初始化编译器模态
 
+        m_channel_rt_status.machining_time = 0;        //重置加工时间
+        gettimeofday(&m_time_start_maching, nullptr);  //初始化启动时间
+
         this->SendMdaDataReqToHmi();  //发送MDA数据请求
         printf("send mda data req cmd to hmi, chn=%hhu\n", this->m_n_channel_index);
     }
@@ -2612,7 +2615,7 @@ void ChannelControl::ProcessHmiFindRefCmd(HMICmdFrame &cmd){
  * @param cmd
  */
 void ChannelControl::ProcessHmiGetMacroVarCmd(HMICmdFrame &cmd){
-
+    //std::cout << "ChannelControl::ProcessHmiGetMacroVarCmd" << std::endl;
     cmd.frame_number |= 0x8000;   //设置回复标志
 
     uint32_t start_index = 0;   //起始编号
@@ -2629,11 +2632,11 @@ void ChannelControl::ProcessHmiGetMacroVarCmd(HMICmdFrame &cmd){
     memcpy(&count, &cmd.data[4], 1);
 
     //拷贝数据
-
     int len = this->m_macro_variable.CopyVar(&cmd.data[cmd.data_len], 1000, start_index, count);
-
+    //std::cout << "Get len: " << len << std::endl;
     if(0 == len){
         cmd.cmd_extension = FAILED;
+        std::cout << "Send Failed" << std::endl;
         this->m_p_hmi_comm->SendCmd(cmd);
         return;
     }
@@ -3649,7 +3652,7 @@ bool ChannelControl::SendWorkModeCmdToHmi(uint8_t chn_work_mode){
     cmd.data_len = 0x00;
 
     const vector<string> table =
-        {"非法模式", "自动模式", "MDA模式", "手动单步模式", "手动连续模式", "手轮模式", "编辑模式"};
+        {"非法模式", "自动模式", "MDA模式", "手动单步模式", "手动连续模式", "手轮模式", "编辑模式", "原点模式"};
     if (chn_work_mode > 0 && chn_work_mode < table.size())
     {
         g_ptr_tracelog_processor->SendToHmi(kPanelOper, kDebug,

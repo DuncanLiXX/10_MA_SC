@@ -1021,7 +1021,7 @@ void ChannelEngine::Initialize(HMICommunication *hmi_comm, MICommunication *mi_c
         if(m_p_axis_config[i].axis_interface == VIRTUAL_AXIS || m_p_axis_config[i].axis_type == AXIS_SPINDLE	//主轴和虚拟轴不用回参考点
                 || (m_p_axis_config[i].feedback_mode == NO_ENCODER && m_p_axis_config[i].ret_ref_mode == 0)    //无反馈，并且禁止回参考点
                 || (m_p_axis_config[i].feedback_mode != INCREMENTAL_ENCODER && m_p_axis_config[i].feedback_mode != NO_ENCODER && m_p_axis_config[i].ref_encoder != kAxisRefNoDef)    //绝对值编码器，已设定参考点
-                || (m_p_axis_config[i].feedback_mode == INCREMENTAL_ENCODER && m_p_axis_config[i].ret_ref_mode == 0)){  //增量编码器，禁止回参考点
+                /*|| (m_p_axis_config[i].feedback_mode == INCREMENTAL_ENCODER && m_p_axis_config[i].ret_ref_mode == 0)增量式编码器必须回参考点*/){  //增量编码器，禁止回参考点
             //			m_n_mask_ret_ref_over |= (0x01<<i);
             this->SetRetRefFlag(i, true);
         }
@@ -11529,7 +11529,7 @@ void ChannelEngine::SetRetRefFlag(uint8_t phy_axis, bool flag){
         if(m_p_axis_config[phy_axis].axis_interface == VIRTUAL_AXIS || m_p_axis_config[phy_axis].axis_type == AXIS_SPINDLE	//主轴和虚拟轴不用回参考点
                 || (m_p_axis_config[phy_axis].feedback_mode == NO_ENCODER && m_p_axis_config[phy_axis].ret_ref_mode == 0)    //无反馈，并且禁止回参考点
                 || (m_p_axis_config[phy_axis].feedback_mode != INCREMENTAL_ENCODER && m_p_axis_config[phy_axis].feedback_mode != NO_ENCODER && m_p_axis_config[phy_axis].ref_encoder != kAxisRefNoDef)    //绝对值编码器，已设定参考点
-                || (m_p_axis_config[phy_axis].feedback_mode == INCREMENTAL_ENCODER && m_p_axis_config[phy_axis].ret_ref_mode == 0)){  //增量编码器，禁止回参考点
+                /*|| (m_p_axis_config[phy_axis].feedback_mode == INCREMENTAL_ENCODER && m_p_axis_config[phy_axis].ret_ref_mode == 0)增量式编码器必须回零*/){  //增量编码器，禁止回参考点
             return;   //不用回参考点的轴禁止将回零标志复位
         }
         this->m_n_mask_ret_ref_over &= ~(0x01<<phy_axis);

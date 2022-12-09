@@ -601,6 +601,9 @@ bool ParmManager::ReadChnConfig(){
             m_sc_channel_config[i].mpg_level3_step = m_ini_chn->GetIntValueOrDefault(sname, "mpg_level3_step", 100);
             m_sc_channel_config[i].mpg_level4_step = m_ini_chn->GetIntValueOrDefault(sname, "mpg_level4_step", 1000);
 
+            m_sc_channel_config[i].G73back = m_ini_chn->GetIntValueOrDefault(sname, "G73back", 0);
+            m_sc_channel_config[i].G83back = m_ini_chn->GetIntValueOrDefault(sname, "G83back", 0);
+
 #ifdef USES_WOOD_MACHINE
 			m_sc_channel_config[i].debug_param_1 = m_ini_chn->GetIntValueOrDefault(sname, "debug_param_1", 0);  //调试参数1
 			m_sc_channel_config[i].debug_param_2 = m_ini_chn->GetIntValueOrDefault(sname, "debug_param_2", 0);  //调试参数2
@@ -690,6 +693,10 @@ bool ParmManager::ReadChnConfig(){
             m_sc_channel_config[i].g01_max_speed = 15000;
             m_sc_channel_config[i].mpg_level3_step = 100;
             m_sc_channel_config[i].mpg_level4_step = 1000;
+            m_sc_channel_config[i].G73back = 0;
+			m_sc_channel_config[i].G83back = 0;
+
+
 #ifdef USES_WOOD_MACHINE
 			m_sc_channel_config[i].debug_param_1 = 0;  //调试参数1
 			m_sc_channel_config[i].debug_param_2 = 0;  //调试参数2
@@ -780,6 +787,8 @@ bool ParmManager::ReadChnConfig(){
             m_ini_chn->AddKeyValuePair(string("g01_max_speed"), string("15000"), ns);
             m_ini_chn->AddKeyValuePair(string("mpg_level3_step"), string("100"), ns);
             m_ini_chn->AddKeyValuePair(string("mpg_level4_step"), string("1000"), ns);
+            m_ini_chn->AddKeyValuePair(string("G73back"), string("1000"), ns);
+            m_ini_chn->AddKeyValuePair(string("G83back"), string("1000"), ns);
 
 #ifdef USES_WOOD_MACHINE
 			m_ini_chn->AddKeyValuePair(string("debug_param_1"), string("0"), ns);
@@ -910,6 +919,7 @@ bool ParmManager::ReadChnProcParam(){
 				sprintf(kname, "rapid_plan_mode_%d", j+1);
 				m_p_chn_process_param[i].chn_param[j].rapid_plan_mode = m_ini_proc_chn->GetIntValueOrDefault(sname, kname, 1);	//默认S型
 				
+
 #ifdef USES_WOOD_MACHINE
 				memset(kname, 0x00, sizeof(kname));
 				sprintf(kname, "flip_comp_value_%d", j+1);
@@ -3098,7 +3108,6 @@ void ParmManager::UpdateToolMeasure(uint16_t chn_index, uint8_t index, const dou
 	memset(sname, 0x00, sizeof(sname));
 	memset(kname, 0x00, sizeof(kname));
 
-
 	sprintf(sname, "channel_%hu", chn_index);
 
 #ifdef USES_INDEPEND_BASE_TOOL_OFFSET
@@ -4310,6 +4319,14 @@ bool ParmManager::UpdateChnParam(uint8_t chn_index, uint32_t param_no, ParamValu
         sprintf(kname, "mpg_level4_step");
         m_ini_chn->SetIntValue(sname, kname, value.value_uint16);
         break;
+    case 517:
+    	sprintf(kname, "G73back");
+		m_ini_chn->SetIntValue(sname, kname, value.value_double);
+		break;
+    case 518:
+		sprintf(kname, "G83back");
+		m_ini_chn->SetIntValue(sname, kname, value.value_double);
+		break;
 #ifdef USES_WOOD_MACHINE
 	case 600:  //DSP调试参数1
 		sprintf(kname, "debug_param_1");
@@ -4970,6 +4987,15 @@ bool ParmManager::UpdateChnProcParam(uint8_t chn_index, uint8_t group_index, uin
 		sprintf(kname, "chn_small_line_time_%hhu", group_index);
 		m_ini_proc_chn->SetIntValue(sname, kname, value.value_uint16);
 		break;
+	case 236:
+		sprintf(kname, "chn_G73back_%hhu", group_index);
+		m_ini_proc_chn->SetIntValue(sname, kname, value.value_double);
+		break;
+	case 237:
+		sprintf(kname, "chn_G83back_%hhu", group_index);
+		m_ini_proc_chn->SetIntValue(sname, kname, value.value_double);
+		break;
+
 #ifdef USES_WOOD_MACHINE
 	case 240:  //挑角补偿值
 		sprintf(kname, "flip_comp_value_%hhu", group_index);

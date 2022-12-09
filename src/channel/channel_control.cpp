@@ -1331,19 +1331,15 @@ bool ChannelControl::SetSysVarValue(const int index, const double &value){
     }else if(index == 3000){  //只写变量，显示提示信息
         uint32_t msg_id = value;
         //		printf("set 3000 value = %u\n", msg_id);
-        if(msg_id == 0){   //清空提示信息
-            this->ClearHmiInfoMsg();
-        }else{
-            this->ClearHmiInfoMsg();
-
-            this->SendMessageToHmi(MSG_TIPS, msg_id);
-        }
+        if(msg_id > 0){
+			CreateError(msg_id, INFO_LEVEL, CLEAR_BY_MCP_RESET, 0, m_n_channel_index);
+			printf("3000 msg_id: %d\n", msg_id);
+		}
     }else if(index == 3006){  //只写变量，显示告警信息
-        printf("===================3006=============\n");
     	uint16_t err_id = value;
         if(err_id > 0){
             CreateError(err_id, ERROR_LEVEL, CLEAR_BY_MCP_RESET, 0, m_n_channel_index);
-            printf("create error err_id: %d\n", err_id);
+            printf("3006 err_id: %d\n", err_id);
         }
     }else if(index == 3901){  //已加工件数
         //this->m_channel_status.workpiece_count = value;
@@ -7309,7 +7305,7 @@ bool ChannelControl::ExecuteArcMsg(RecordMsg *msg, bool flag_block){
         return true;
     }
 
-    printf("execute arc msg  arc_id: %d\n", arc_msg->arc_id);
+    //printf("execute arc msg  arc_id: %d\n", arc_msg->arc_id);
 
     if(!OutputData(msg, flag_block))
         return false;
@@ -7402,6 +7398,7 @@ bool ChannelControl::ExecuteCoordMsg(RecordMsg *msg){
 			double offset = GetAxisCurMachPos(i) - point.GetAxisValue(i);
 			m_p_chn_g92_offset->offset[i] = offset;
 		}
+		G52Active = false;
 	}
 	// @add zk
 
@@ -7423,6 +7420,7 @@ bool ChannelControl::ExecuteCoordMsg(RecordMsg *msg){
                     origin_pos += m_p_chn_ex_coord_config[coord_index/10-5401].offset[i] * 1e7;    //单位由mm转换为0.1nm
                 }
                 origin_pos += point.GetAxisValue(i)* 1e7;
+                G52offset[i] = point.GetAxisValue(i);
                 this->SetMcAxisOrigin(i, origin_pos);
             }
             this->ActiveMcOrigin(true);
@@ -7453,7 +7451,9 @@ bool ChannelControl::ExecuteCoordMsg(RecordMsg *msg){
             printf("execute coord msg[%hu] error, step = %hhu\n", gcode, coordmsg->GetExecStep());
             break;
         }
+        G52Active = true;
         // @add  zk
+
 
     }else if(gcode == G53_CMD){ //机械坐标系
 
@@ -7506,6 +7506,8 @@ bool ChannelControl::ExecuteCoordMsg(RecordMsg *msg){
             printf("execute coord msg[%hu] error, step = %hhu\n", gcode, coordmsg->GetExecStep());
             break;
         }
+
+        G52Active = false;
 
     }else{//轮廓仿真，刀路仿真
         //先把当前位置的工件坐标转换为机械坐标
@@ -17557,6 +17559,10 @@ void ChannelControl::TransMachCoordToWorkCoord(DPointChn &pos, uint16_t coord_id
                 origin_pos += m_p_chn_ex_coord_config[coord_idx/10-5401].offset[i];
             }
 
+            if(G52Active){
+            	origin_pos += G52offset[i];
+            }
+
             phy_axis = this->GetPhyAxis(i);
             if(phy_axis != 0xFF){
                 if(this->m_p_axis_config[phy_axis].axis_linear_type == LINE_AXIS_Z && m_channel_status.cur_h_code > 0){//Z轴需要加上刀长偏置
@@ -17600,6 +17606,10 @@ void ChannelControl::TransMachCoordToWorkCoord(DPointChn &pos, uint16_t coord_id
                 origin_pos += m_p_chn_ex_coord_config[coord_idx/10-5401].offset[i];
             }
 
+            if(G52Active){
+            	origin_pos += G52offset[i];
+		    }
+
             phy_axis = this->GetPhyAxis(i);
             if(phy_axis != 0xFF){
                 if(this->m_p_axis_config[phy_axis].axis_linear_type == LINE_AXIS_Z && h_code > 0){//Z轴需要加上刀长偏置
@@ -17636,6 +17646,10 @@ void ChannelControl::TransMachCoordToWorkCoord(DPoint &pos, uint16_t coord_idx, 
             }else if(coord_idx >= G5401_CMD && coord_idx <= G5499_CMD){
                 origin_pos += m_p_chn_ex_coord_config[coord_idx/10-5401].offset[i];
             }
+
+            if(G52Active){
+            	origin_pos += G52offset[i];
+		    }
 
             phy_axis = this->GetPhyAxis(i);
             if(phy_axis != 0xFF){
@@ -17748,6 +17762,10 @@ void ChannelControl::TransMachCoordToWorkCoord(double &pos, uint16_t coord_idx, 
         origin_pos += m_p_chn_coord_config[coord_idx/10-53].offset[axis];
     }else if(coord_idx >= G5401_CMD && coord_idx <= G5499_CMD){
         origin_pos += m_p_chn_ex_coord_config[coord_idx/10-5401].offset[axis];
+    }
+
+    if(G52Active){
+    	origin_pos += G52offset[axis];
     }
 
     uint8_t phy_axis = this->GetPhyAxis(axis);

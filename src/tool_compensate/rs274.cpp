@@ -672,8 +672,29 @@ int Interp::convert_arc_comp2(int move,
 
             midx = centerx + dist_from_center * cos(angle_from_center);
             midy = centery + dist_from_center * sin(angle_from_center);
-            //printf("cenx: %f, ceny: %f dist: %f angle: %f\n", centerx, centery, dist_from_center, angle_from_center);
-            //printf("midx: %f, midy: %f\n", midx, midy);
+
+            if(settings->cutter_comp_fristcalc){
+            	settings->cutter_comp_fristcalc = false;
+            	double vecx = centerx - opx;
+            	double vecy = centery - opy;
+
+            	midx = opx + settings->cutter_comp_radius*(vecx/sqrt(vecx*vecx + vecy*vecy));
+            	midy = opy + settings->cutter_comp_radius*(vecy/sqrt(vecx*vecx + vecy*vecy));
+
+            	printf("=================== %lf %lf\n", temp_point[0], temp_point[1]);
+            }
+
+            /*
+            // @test µ¶²¹½¨Á¢
+            printf("origin midx: %lf midy: %lf\n", midx, midy);
+            if(settings->cutter_comp_fristcalc){
+		    	settings->cutter_comp_fristcalc = false;
+			    calc_mid_first_comp(opx, opy, end_x, end_y, midx, midy, settings->cutter_comp_side, settings->cutter_comp_radius);
+		    }
+            printf("======================== opx %lf opy %lf px %lf py %lf\n", opx, opy, end_x, end_y);
+            printf("after midx: %lf midy: %lf\n", midx, midy);
+            */
+
             move_endpoint_and_flush(settings, midx, midy);
         } else {
             // arc->arc

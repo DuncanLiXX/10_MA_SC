@@ -1937,6 +1937,17 @@ bool Parser::CreateCoordMsg(const int gcode){
 			return false;
 	}
 
+	if(gcode >= G5401_CMD and gcode <= G5499_CMD){
+		// @test
+		int coord = gcode/10 - 5400;
+		SCChannelConfig * pChnConfig = g_ptr_parm_manager->GetChannelConfig(m_n_channel_index);
+		if(coord > pChnConfig->ex_coord_count){
+			CreateError(ERR_NC_FORMAT, ERROR_LEVEL, CLEAR_BY_MCP_RESET);
+			return false;
+		}
+
+	}
+
 	RecordMsg *new_msg = new CoordMsg(pos, src, gcode, axis_mask);
 
 	if(new_msg == nullptr){
@@ -2082,6 +2093,12 @@ bool Parser::CreateSpeedMsg(){
  * @return true--³É¹¦  false--Ê§°Ü
  */
 bool Parser::CreateToolMsg(int *tcode, uint8_t total){
+
+	//printf("======================================= tcode: %d\n", *tcode);
+	if(*tcode < 0 or *tcode > 60){
+		CreateError(ERR_T_EXP_NULL, ERROR_LEVEL, CLEAR_BY_MCP_RESET);
+		return false;
+	}
 
 	RecordMsg *new_msg = new ToolMsg(tcode, total);
 	if(new_msg == nullptr){

@@ -826,6 +826,10 @@ private://私有成员变量
 #ifdef USES_SIMULATION_TEST
 	int m_file_sim_data;      //仿真数据保存文件句柄
 #endif
+
+	double G52offset[kMaxAxisChn];
+	bool G52Active = false;
+
 };
 
 #endif /* INC_CHANNEL_CHANNEL_CONTROL_H_ */

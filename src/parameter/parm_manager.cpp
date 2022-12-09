@@ -5522,6 +5522,7 @@ void ParmManager::ActiveSystemParam(uint32_t param_no, ParamValue &value){
  */
 void ParmManager::ActiveChnParam(uint8_t chn_index, uint32_t param_no, ParamValue &value, uint8_t proc_index){
 	ChannelEngine *chn_engine = ChannelEngine::GetInstance();
+    ChannelControl *chn_ctrl = chn_engine->GetChnControl(chn_index);
 	switch(param_no){
 	case 102:	//轴数量
 		this->m_sc_channel_config[chn_index].chn_axis_count = value.value_uint8;
@@ -5773,11 +5774,17 @@ void ParmManager::ActiveChnParam(uint8_t chn_index, uint32_t param_no, ParamValu
         this->m_sc_channel_config[chn_index].g01_max_speed = value.value_uint32;
         break;
     case 515:   //手轮3档的自定义步长
+    {
         this->m_sc_channel_config[chn_index].mpg_level3_step = value.value_uint16;
-        break;
+        if(chn_ctrl->GetManualStep() == MANUAL_STEP_100) // 如果当前为3档，需要往mi更新步长
+            chn_engine->SetManualStep(chn_index, 2);
+    }break;
     case 516:   //手轮4档的自定义步长
+    {
         this->m_sc_channel_config[chn_index].mpg_level4_step = value.value_uint16;
-        break;
+        if(chn_ctrl->GetManualStep() == MANUAL_STEP_1000) // 如果当前为4档，需要往mi更新步长
+            chn_engine->SetManualStep(chn_index, 3);
+    }break;
 #ifdef USES_WOOD_MACHINE
 	case 600:  //DSP调试参数1
 		this->m_sc_channel_config[chn_index].debug_param_1 = value.value_int32;

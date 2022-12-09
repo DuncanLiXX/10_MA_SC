@@ -273,6 +273,10 @@ void SpindleControl::InputSOV(uint8_t SOV)
     if(!spindle)
         return;
     ScPrintf("SpindleControl::InputSOV SOV = %d\n", SOV);
+
+    // 位置模式下不能修改主轴倍率
+    if(mode == Position)
+        return;
     this->SOV = SOV;
     UpdateSpindleState();
 }
@@ -325,27 +329,13 @@ void SpindleControl::InputSIND(bool SIND)
 
 void SpindleControl::InputORCMA(bool ORCMA)
 {
+    static std::future<void> ans;
     if(!spindle)
         return;
     ScPrintf("SpindleControl::InputORCMA ORCMA = %d\n", ORCMA);
-
-    // 收到定位信号，向MI发送主轴定位指令
-    this->ORCMA = ORCMA;
-    if(ORCMA)
-    {
-//        // 定位时主轴转速为0，报警
-//        if(abs(GetSpindleSpeed()) == 0){
-//            CreateError(ERR_SPD_LOCATE_SPEED,
-//                        ERROR_LEVEL,
-//                        CLEAR_BY_MCP_RESET);
-//            return;
-//        }
-        mi->SendSpdLocateCmd(chn, phy_axis+1,true);
-        printf("SendSpdLocateCmd enable = %d\n",true);
-    }else{
-        mi->SendSpdLocateCmd(chn, phy_axis+1,false);
-        printf("SendSpdLocateCmd enable = %d\n",false);
-    }
+    auto func = std::bind(&SpindleControl::ProcessORCMA,
+                          this, std::placeholders::_1);
+    ans = std::async(std::launch::async, func, ORCMA);
 }
 
 void SpindleControl::InputRGTAP(bool RGTAP)
@@ -491,6 +481,20 @@ int32_t SpindleControl::GetSpindleSpeed()
     //    }
     speed = speed*60/(spindle->move_pr*1000);
     return speed;
+}
+
+double SpindleControl::GetSpdAngle()
+{
+    if(!spindle)
+        return 0;
+
+    ChannelEngine *engine = ChannelEngine::GetInstance();
+    double pos = engine->GetPhyAxisMachPosFeedback(phy_axis);
+    double model = fmod(pos, spindle->move_pr);
+    if(model < 0)
+        model += spindle->move_pr;
+
+    return (model/spindle->move_pr)*360.0;
 }
 
 void SpindleControl::UpdateParams()
@@ -754,6 +758,26 @@ void SpindleControl::SendSpdSpeedToMi()
     mi->WriteCmd(cmd);
 }
 
+void SpindleControl::ProcessORCMA(bool ORCMA)
+{
+    this->ORCMA = ORCMA;
+    if(ORCMA){
+        // 如果主轴不在使能状态，先上使能
+        if(!motor_enable)
+            mi->SendAxisEnableCmd(phy_axis+1, true);
+        std::this_thread::sleep_for(std::chrono::microseconds(1000 * 1000));
+        if(!motor_enable){
+            CreateError(ERR_SPD_LOCATE_FAIL,
+                        ERROR_LEVEL,
+                        CLEAR_BY_MCP_RESET);
+            return;
+        }
+        mi->SendSpdLocateCmd(chn, phy_axis+1,true);
+    }else{
+        mi->SendSpdLocateCmd(chn, phy_axis+1,false);
+    }
+}
+
 void SpindleControl::ProcessModeChanged(Spindle::Mode mode)
 {
     if(mode == Position){
@@ -883,13 +907,19 @@ void SpindleControl::ProcessRTNT()
     double R = tap_state.R + spindle->spd_rtnt_distance;
     variable->SetVarValue(188, R);
     variable->SetVarValue(179, tap_state.F);
-//    if(this->cnc_polar != tap_state.polar){
-//        InputPolar(tap_state.polar);
-//    }
-//    if(this->cnc_speed != tap_state.s){
-//        InputSCode(tap_state.s);
-//    }
-//    tap_feed = tap_state.F;
+    tap_feed = tap_state.F;
+
+    // 如果主轴不在使能状态，先上使能
+    if(!motor_enable)
+        mi->SendAxisEnableCmd(phy_axis+1, true);
+    std::this_thread::sleep_for(std::chrono::microseconds(1000 * 1000));
+    if(!motor_enable){
+        CreateError(ERR_SPD_RTNT_FAIL,
+                    ERROR_LEVEL,
+                    CLEAR_BY_MCP_RESET);
+        return;
+    }
+
     ChannelEngine *engine = ChannelEngine::GetInstance();
     ChannelControl *control = engine->GetChnControl(0);
     if(!control->CallMacroProgram(6100))

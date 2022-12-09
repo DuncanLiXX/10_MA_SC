@@ -376,6 +376,7 @@ void ShowSc::PrintRealtimeData()
     AddPair(s,"line_no",chn_rt_status->line_no);
     AddPair(s,"tap_err",chn_rt_status->tap_err);
     AddPair(s,"tap_err_now",chn_rt_status->tap_err_now);
+    AddPair(s,"spd_angle",chn_rt_status->spd_angle);
 
     SendMsg(s);
 }
@@ -455,6 +456,7 @@ void ShowSc::PrintSpindle()
     AddPair(s,"tap_flag",spindle->tap_state.tap_flag);
     AddPair(s,"tap_f",spindle->tap_state.F);
     AddPair(s,"tap_R",spindle->tap_state.R);
+    AddPair(s,"tap_S",spindle->tap_state.s);
     SendMsg(s);
 }
 

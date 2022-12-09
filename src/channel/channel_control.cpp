@@ -2438,6 +2438,7 @@ void ChannelControl::SendMonitorData(bool bAxis, bool btime){
                                 &m_channel_rt_status.tap_err_now,
                                 1);
     }
+    m_channel_rt_status.spd_angle = m_p_spindle->GetSpdAngle();
 
     //	printf("axis pos %lf, %lf, %lf\n", pos[0], pos[1], pos[2]);
 
@@ -3899,12 +3900,6 @@ void ChannelControl::SetMachineState(uint8_t mach_state){
     if(m_channel_status.machining_state == mach_state)
         return;
 
-    if(mach_state == MS_WARNING){
-        if(m_p_spindle->isTapEnable()){    // 刚性攻丝期间出现了警告，取消攻丝
-            m_p_spindle->CancelRigidTap();
-        }
-    }
-
     if(mach_state == MS_WARNING && m_channel_status.machining_state == MS_STOPPING
             && m_channel_mc_status.cur_mode != MC_MODE_MANUAL)  //等待停止到位后再切换为告警状态
         return;
@@ -4181,11 +4176,6 @@ void ChannelControl::SendWorkModeToMc(uint16_t work_mode){
  * @brief 结束编译后的处理
  */
 void ChannelControl::CompileOver(){
-    // 取消刚性攻丝状态
-    if(m_p_spindle->isTapEnable()){
-        m_p_spindle->CancelRigidTap();
-    }
-
     if(m_p_compiler->CompileOver()){
 #ifdef USES_ADDITIONAL_PROGRAM
         if(this->m_n_add_prog_type != CONTINUE_START_ADD)
@@ -4389,6 +4379,8 @@ int ChannelControl::Run(){
                     m_n_run_thread_state = ERROR;
                 }
             }
+
+
 #ifndef USES_WOOD_MACHINE   //木工专机不检查M30结束指令
             if(m_p_compiler->IsEndOfFile() && !m_p_compiler->IsCompileOver() &&
                     this->m_channel_status.chn_work_mode == AUTO_MODE
@@ -4403,7 +4395,6 @@ int ChannelControl::Run(){
                 CreateError(ERR_NO_END, ERROR_LEVEL, CLEAR_BY_MCP_RESET, 0, m_n_channel_index);
             }
 #endif
-
             pthread_mutex_unlock(&m_mutex_change_state);
 
             //			if(this->m_lexer_result.line_no%10000 == 0){
@@ -5714,7 +5705,6 @@ bool ChannelControl::ExecuteMessage(){
 
             break;
         }else{//执行结束
-
             if(this->m_n_restart_mode != NOT_RESTART        //加工复位
         #ifdef USES_ADDITIONAL_PROGRAM
                     && this->m_n_add_prog_type == NONE_ADD      //非附加程序运行状态
@@ -6953,6 +6943,17 @@ bool ChannelControl::ExecuteAuxMsg(RecordMsg *msg){
                 gettimeofday(&m_time_m_start[m_index], NULL);
                 this->SetMFSig(m_index, true);    //置位选通信号
                 tmp->IncreaseExecStep(m_index);
+
+                // 如果当前在正转状态下再给M03，那么ProcessPMCSignal就扫描不到变化了
+                // 这里需要做特殊处理
+                if(mcode == 3 && m_p_g_reg->SFR && m_p_spindle->Type() == 2){
+                    m_p_spindle->InputPolar(CncPolar::Positive);
+                }else if(mcode == 4 && m_p_g_reg->SRV && m_p_spindle->Type() == 2){
+                    m_p_spindle->InputPolar(CncPolar::Negative);
+                }else if(mcode == 5 && m_p_g_reg->SFR == 0 && m_p_g_reg->SRV == 0
+                         && m_p_spindle->Type() == 2){
+                    m_p_spindle->InputPolar(CncPolar::Stop);
+                }
             }else if(tmp->GetExecStep(m_index) == 2){
                 //等待FIN信号
                 if(this->m_p_g_reg->FIN == 1 || this->GetMFINSig(m_index))
@@ -10867,8 +10868,6 @@ bool ChannelControl::CheckFuncState(int func){
  */
 void ChannelControl::SetAutoRatio(uint8_t ratio){
     //	printf("ChannelControl::SetAutoRatio, chn=%hhu, old_r = %hhu, ratio=%hhu\n", m_n_channel_index, m_channel_status.auto_ratio, ratio);
-    if(m_channel_status.auto_ratio == ratio)
-        return;
     this->m_channel_status.auto_ratio = ratio;
 
     g_ptr_tracelog_processor->SendToHmi(kPanelOper, kDebug, "[自动倍率]切换为 "+to_string(ratio));
@@ -10901,8 +10900,6 @@ void ChannelControl::SetManualRatio(uint8_t ratio){
  * @param ratio
  */
 void ChannelControl::SetRapidRatio(uint8_t ratio){
-    if(m_channel_status.rapid_ratio == ratio)
-        return;
 
     this->m_channel_status.rapid_ratio = ratio;
 
@@ -10920,7 +10917,6 @@ void ChannelControl::SetRapidRatio(uint8_t ratio){
  * @param ratio
  */
 void ChannelControl::SetSpindleRatio(uint8_t ratio){
-
     this->m_channel_status.spindle_ratio = ratio;
 
     m_p_spindle->InputSOV(ratio);
@@ -12691,10 +12687,10 @@ void ChannelControl::SetMcRatio(){
 	cmd.data.data[1] = this->m_channel_status.auto_ratio;
 	cmd.data.data[2] = this->m_channel_status.manual_ratio;
 
-	printf("rapid: %d auto: %d manual: %d\n",
-			this->m_channel_status.rapid_ratio,
-			this->m_channel_status.auto_ratio,
-			this->m_channel_status.manual_ratio);
+//    ScPrintf("rapid: %d auto: %d manual: %d\n",
+//			this->m_channel_status.rapid_ratio,
+//			this->m_channel_status.auto_ratio,
+//			this->m_channel_status.manual_ratio);
 
     if(!this->m_b_mc_on_arm)
         m_p_mc_comm->WriteCmd(cmd);
@@ -19342,7 +19338,6 @@ void ChannelControl::SendHmiGraphPosData(){
  */
 bool ChannelControl::CallMacroProgram(uint16_t macro_index){
     g_ptr_trace->PrintTrace(TRACE_INFO, CHANNEL_CONTROL_SC, "ChannelControl[%hhu]::CallMacroProgram, macro_index = %hu\n", this->m_n_channel_index, macro_index);
-
     uint8_t mode = this->m_channel_status.chn_work_mode;
     uint8_t state = this->m_channel_status.machining_state;
     //自动、MDA模式(必须在MS_RUNNING状态)
@@ -19359,9 +19354,12 @@ bool ChannelControl::CallMacroProgram(uint16_t macro_index){
              mode == REF_MODE || state != MS_RUNNING){  //手动、手轮模式（非运行状态亦可）
         if(this->m_b_manual_call_macro){  //已经处于手动宏程序调用中
             g_ptr_trace->PrintTrace(TRACE_WARNING, CHANNEL_CONTROL_SC, "已处于手动宏程序调用中执行过程！[%hu]", macro_index);
-
             return false;
         }
+        if(!m_p_compiler->FindSubProgram(macro_index, true)){
+            return false;
+        }
+
 
         char cmd_buf[256];
         memset (cmd_buf, 0x00, 256);

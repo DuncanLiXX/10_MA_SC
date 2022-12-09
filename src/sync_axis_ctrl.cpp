@@ -27,7 +27,8 @@ void SyncAxisCtrl::SendMiSyncParams()
         mi->SendMiParam<uint8_t>(i+1, 1660, axis_config[i].sync_pos_detect);      //是否进行位置同步误差检测
         mi->SendMiParam<uint8_t>(i+1, 1661, axis_config[i].sync_mach_detect); 	//是否进行坐标同步误差检测
         mi->SendMiParam<uint8_t>(i+1, 1662, axis_config[i].sync_torque_detect); 	//是否进行扭矩同步误差检测
-        mi->SendMiParam<uint8_t>(i+1, 1662, axis_config[i].serial_torque_ratio); 	//是否进行扭矩同步误差检测
+        mi->SendMiParam<uint16_t>(i+1, 1663, axis_config[i].serial_torque_ratio); 	//串联力矩系数 单位: 1%
+        mi->SendMiParam<uint16_t>(i+1, 1664, axis_config[i].serial_pre_speed); 	//预载串联速度 单位：rpm
     }
 }
 

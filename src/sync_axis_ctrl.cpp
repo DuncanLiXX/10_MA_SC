@@ -27,7 +27,8 @@ void SyncAxisCtrl::SendMiSyncParams()
         mi->SendMiParam<uint8_t>(i+1, 1660, axis_config[i].sync_pos_detect);      //是否进行位置同步误差检测
         mi->SendMiParam<uint8_t>(i+1, 1661, axis_config[i].sync_mach_detect); 	//是否进行坐标同步误差检测
         mi->SendMiParam<uint8_t>(i+1, 1662, axis_config[i].sync_torque_detect); 	//是否进行扭矩同步误差检测
-
+        mi->SendMiParam<uint16_t>(i+1, 1663, axis_config[i].serial_torque_ratio); 	//串联力矩系数 单位: 1%
+        mi->SendMiParam<uint16_t>(i+1, 1664, axis_config[i].serial_pre_speed); 	//预载串联速度 单位：rpm
     }
 }
 
@@ -137,18 +138,35 @@ void SyncAxisCtrl::RspEnSyncAxis(bool enable, bool success)
     wait_en_index = -1;
 }
 
-bool SyncAxisCtrl::CheckSyncState(uint8_t axis_index)
+int SyncAxisCtrl::CheckSyncState(uint8_t axis_index)
 {
     if(!axis_config)
-        return false;
+        return 0;
 
     for(int i = 0; i<chn_config->chn_axis_count; i++){
         bool flag = (sync_mask >> i) & 0x01;
         if(!flag)
             continue;
-        if(i == axis_index || axis_config[i].master_axis_no - 1 == axis_index)
-            return true;
+        if(axis_config[i].master_axis_no - 1 == axis_index)
+            return 1;
+        else if(i == axis_index)
+            return 2;
     }
 
-    return false;
+    return 0;
+}
+
+uint8_t SyncAxisCtrl::GetSlaveAxis(uint8_t master_index)
+{
+    if(!axis_config)
+        return 0;
+    uint8_t mask = 0x00;
+    for(int i = 0; i<chn_config->chn_axis_count; i++){
+        bool flag = (sync_mask >> i) & 0x01;
+        if(!flag)
+            continue;
+        if(axis_config[i].master_axis_no - 1 == master_index)
+            mask |= (0x01 << i);
+    }
+    return mask;
 }

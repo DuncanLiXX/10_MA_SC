@@ -750,28 +750,32 @@ void ChannelEngine::ProcessRecoverMLK(uint8_t mask, double *mach_pos)
     // 3:等待所有轴移动到位，给MI发送取消锁住的命令
     // 4:机械锁住标记 清除
     m_p_pmc_reg->FReg().bits->CLMLK = 1;
+    //ScPrintf("ProcessRecoverMLK mask = %u", mask);
 
     for(int i = 0; i < m_p_channel_config->chn_axis_count; i++){
-        if(((mask >> 1) & 0x01) == 0)
+        if(((mask >> i) & 0x01) == 0)
             continue;
 
         ManualMoveAbs(i, 3000, mach_pos[i]);
+
     }
 
     for(int i = 0; i < m_p_channel_config->chn_axis_count; i++){
-        if(((mask >> 1) & 0x01) == 0)
+        if(((mask >> i) & 0x01) == 0)
             continue;
 
         while(fabs(this->GetPhyAxisMachPosFeedback(i) - mach_pos[i]) >= 0.010){
             std::this_thread::sleep_for(std::chrono::microseconds(100 * 1000));
-            ScPrintf("RecoverMLK: axis = %u,fabs = %lf", i,
-                     fabs(this->GetPhyAxisMachPosFeedback(i) - mach_pos[i]));
+//            ScPrintf("RecoverMLK: axis = %u,fabs = %lf", i,
+//                     fabs(this->GetPhyAxisMachPosFeedback(i) - mach_pos[i]));
 
         }
     }
 
+    std::this_thread::sleep_for(std::chrono::microseconds(200 * 1000));
+
     for(int i = 0; i < m_p_channel_config->chn_axis_count; i++){
-        if(((mask >> 1) & 0x01) == 0)
+        if(((mask >> i) & 0x01) == 0)
             continue;
 
         m_p_mi_comm->SendAxisMLK(i+1, 0);
@@ -4881,8 +4885,6 @@ void ChannelEngine::SetAutoRatio(uint8_t ratio){
  * @param ratio ： 倍率值
  */
 void ChannelEngine::SetAutoRatio(uint8_t chn, uint8_t ratio){
-    if(this->m_p_channel_control[chn].GetAutoRatio() == ratio)
-        return;
     this->m_p_channel_control[chn].SetAutoRatio(ratio);
 }
 
@@ -4956,8 +4958,6 @@ void ChannelEngine::SetRapidRatio(uint8_t chn, uint8_t ratio){
     //		ratio = 0;
     //		break;
     //	}
-    if(this->m_p_channel_control[chn].GetRapidRatio() == ratio)
-        return;
     this->m_p_channel_control[chn].SetRapidRatio(ratio);
 }
 
@@ -8379,6 +8379,7 @@ void ChannelEngine::CheckBattery(){
  */
 void ChannelEngine::ProcessPmcSignal(){
 
+    static bool inited = false;
     const GRegBits *g_reg = nullptr;
     GRegBits *g_reg_last = nullptr;
     FRegBits *f_reg = nullptr;
@@ -8412,7 +8413,7 @@ void ChannelEngine::ProcessPmcSignal(){
             printf("ERROR:Invalid work mode signal:MD=%hhu\n", g_reg->MD);
         }
         //方式选择信号
-        if(g_reg->MD != g_reg_last->MD){
+        if(g_reg->MD != g_reg_last->MD || !inited){
             if(mode != INVALID_MODE){
                 this->SetWorkMode(mode);
                 m_sync_axis_ctrl->InputMode(mode);
@@ -8477,6 +8478,7 @@ void ChannelEngine::ProcessPmcSignal(){
         }
 #endif
 
+        // 攻丝状态()不让复位
         if(g_reg->ERS == 1 && g_reg_last->ERS == 0){
             this->SystemReset();
         }
@@ -8573,6 +8575,8 @@ void ChannelEngine::ProcessPmcSignal(){
             if(f_reg_last->RTPT == 1)   // 攻丝回退结束信号
                 f_reg->RTPT = 0;
 
+            if(f_reg_last->MERS == 1)   // MDI复位请求
+                f_reg->MERS = 0;
         }
 
         //选停信号 SBS
@@ -8651,17 +8655,17 @@ void ChannelEngine::ProcessPmcSignal(){
 
         //倍率信号处理
 
-        if(g_reg->_JV != g_reg_last->_JV){
+        if(g_reg->_JV != g_reg_last->_JV || !inited){
             uint16_t ratio= ~g_reg->_JV;
             if(g_reg->_JV == 0)
                 ratio = 0;
             this->SetManualRatio(i, ratio/100);
         }
-        if(g_reg->_FV != g_reg_last->_FV)
+        if(g_reg->_FV != g_reg_last->_FV || !inited)
             this->SetAutoRatio(i, ~g_reg->_FV);
-        if(g_reg->SOV != g_reg_last->SOV)
+        if(g_reg->SOV != g_reg_last->SOV || !inited)
             ctrl->SetSpindleRatio(g_reg->SOV);
-        if(g_reg->ROV != g_reg_last->ROV)
+        if(g_reg->ROV != g_reg_last->ROV || !inited)
             this->SetRapidRatio(i, g_reg->ROV);
 
 
@@ -8860,6 +8864,7 @@ void ChannelEngine::ProcessPmcSignal(){
                 freg->ZP42 &= ~(0x01<<bit);
         }
     }
+    inited = true;
 
     //处理PMC的告警，即A地址寄存器
     this->ProcessPmcAlarm();

@@ -30,11 +30,11 @@ Parser::Parser(uint8_t chn_index, LexerResult *lexer_result, CompileRecList *par
 	this->m_p_compiler_status = compiler_status;
 
 	this->m_p_channel_control = ChannelEngine::GetInstance()->GetChnControl(m_n_channel_index);
-#ifdef USES_WOOD_MACHINE
+//#ifdef USES_WOOD_MACHINE
 	this->m_b_multi_mcode = true;   //对于木工机，多M代码功能默认打开
-#else
-	this->m_b_multi_mcode = false;  //多M代码默认为关闭状态
-#endif
+//#else
+//	this->m_b_multi_mcode = false;  //多M代码默认为关闭状态
+//#endif
 	this->m_b_call_macro_prog = false;
 	m_mask_pmc_axis = 0;
 	m_n_pmc_axis_count = 0;
@@ -1937,6 +1937,17 @@ bool Parser::CreateCoordMsg(const int gcode){
 			return false;
 	}
 
+	if(gcode >= G5401_CMD and gcode <= G5499_CMD){
+		// @test
+		int coord = gcode/10 - 5400;
+		SCChannelConfig * pChnConfig = g_ptr_parm_manager->GetChannelConfig(m_n_channel_index);
+		if(coord > pChnConfig->ex_coord_count){
+			CreateError(ERR_NC_FORMAT, ERROR_LEVEL, CLEAR_BY_MCP_RESET);
+			return false;
+		}
+
+	}
+
 	RecordMsg *new_msg = new CoordMsg(pos, src, gcode, axis_mask);
 
 	if(new_msg == nullptr){
@@ -2082,6 +2093,12 @@ bool Parser::CreateSpeedMsg(){
  * @return true--成功  false--失败
  */
 bool Parser::CreateToolMsg(int *tcode, uint8_t total){
+
+	//printf("======================================= tcode: %d\n", *tcode);
+	if(*tcode < 0 or *tcode > 60){
+		CreateError(ERR_T_EXP_NULL, ERROR_LEVEL, CLEAR_BY_MCP_RESET);
+		return false;
+	}
 
 	RecordMsg *new_msg = new ToolMsg(tcode, total);
 	if(new_msg == nullptr){
@@ -3100,6 +3117,8 @@ bool Parser::CreateInputMsg(){
 	GetCodeData(Z_DATA, new_msg->ZData);
 	GetCodeData(Q_DATA, new_msg->QData);
 
+	printf("create input msg: l: %d -- p: %d -- r: %d\n", new_msg->LData,new_msg->PData,new_msg->RData);
+
 	new_msg->SetLineNo(this->m_p_lexer_result->line_no);
 	m_p_parser_result->Append(new_msg);
 	ProcessLastBlockRec(new_msg);
@@ -3179,7 +3198,8 @@ bool Parser::GetCodeData(DataAddr addr, double &data){
 		}
 		g_code->mask_value &= (~mask);   //使用过后就复位此参数mask
 	}else{//无此地址字数据
-	//	printf("Get %c data: no data\n", 'A'+addr);
+		//printf("Get %c data: no data\n", 'A'+addr);
+		//data = g_code->value[addr];
 		return false;
 	}
 

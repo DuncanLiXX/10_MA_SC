@@ -72,7 +72,7 @@ struct ChannelRealtimeStatus{
 	DPointChn cur_pos_work;			//当前各轴插补位置，工件坐标系，单位：mm
 	DPointChn tar_pos_work;			//当前各轴目标位置，工件坐标系，单位：mm
 	int32_t spindle_cur_speed; 				//主轴当前转速，单位：转/分
-	uint32_t cur_feed; 					  //当前进给速度，单位：um/s
+    int32_t cur_feed; 					  //当前进给速度，单位：um/s
 	uint32_t machining_time; 				//加工时间，单位：秒
 	uint32_t machining_time_remains; 		//剩余加工时间，单位：秒
     uint32_t machining_time_total;          //累计加工时间，单位：秒
@@ -83,6 +83,7 @@ struct ChannelRealtimeStatus{
 
     int32_t tap_err;                        //刚性攻丝误差(最大值) 单位：um
     int32_t tap_err_now;                    //刚性攻丝误差(当前值) 单位：um
+    double spd_angle;                      //主轴当前角度 单位：度
 };
 
 //传递给MC的模态位结构
@@ -128,8 +129,8 @@ struct ChannelMcStatus{
 	DPoint intp_pos;   //各轴当前插补位置
 	DPoint intp_tar_pos;   //各轴当前插补目标位置
 	uint32_t cur_line_no;  //当前程序代码行
-	uint32_t cur_feed;		//当前进给速度,um/s
-	uint32_t rated_feed;	//当前给定进给速度，um/s
+    int32_t cur_feed;		//当前进给速度,um/s
+    int32_t rated_feed;	//当前给定进给速度，um/s
 	uint32_t axis_over_mask;  	//轴插补到位mask
 	McModeStatus mc_mode;		  //MC当前模态
 	McErrorFlag mc_error;        //MC错误状态

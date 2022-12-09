@@ -342,6 +342,9 @@ bool ChannelControl::Initialize(uint8_t chn_index, ChannelEngine *engine, HMICom
                                       m_p_f_reg,
                                       m_p_g_reg,
                                       &m_macro_variable);
+            if(m_n_spindle_count > 1){
+                CreateError(ERR_SPD_MULTI_NUM, ERROR_LEVEL, CLEAR_BY_RESET_POWER);
+            }
         }
 
         //初始化PMC轴信息
@@ -1258,7 +1261,10 @@ bool ChannelControl::GetSysVarValue(const int index, double&value){
         }else{
             return false;
         }
-
+    }else if(index == 9000){
+    	value = this->m_p_channel_config->G73back;
+    }else if(index == 9001){
+    	value = this->m_p_channel_config->G83back;
     }
     else if(index >= 12001 && index <= 12999){   //刀具半径磨损补偿
         int id = index - 12001;
@@ -1328,19 +1334,15 @@ bool ChannelControl::SetSysVarValue(const int index, const double &value){
     }else if(index == 3000){  //只写变量，显示提示信息
         uint32_t msg_id = value;
         //		printf("set 3000 value = %u\n", msg_id);
-        if(msg_id == 0){   //清空提示信息
-            this->ClearHmiInfoMsg();
-        }else{
-            this->ClearHmiInfoMsg();
-
-            this->SendMessageToHmi(MSG_TIPS, msg_id);
-        }
+        if(msg_id > 0){
+			CreateError(msg_id, INFO_LEVEL, CLEAR_BY_MCP_RESET, 0, m_n_channel_index);
+			printf("3000 msg_id: %d\n", msg_id);
+		}
     }else if(index == 3006){  //只写变量，显示告警信息
-        printf("===================3006=============\n");
     	uint16_t err_id = value;
         if(err_id > 0){
             CreateError(err_id, ERROR_LEVEL, CLEAR_BY_MCP_RESET, 0, m_n_channel_index);
-            printf("create error err_id: %d\n", err_id);
+            printf("3006 err_id: %d\n", err_id);
         }
     }else if(index == 3901){  //已加工件数
         //this->m_channel_status.workpiece_count = value;
@@ -2438,6 +2440,7 @@ void ChannelControl::SendMonitorData(bool bAxis, bool btime){
                                 &m_channel_rt_status.tap_err_now,
                                 1);
     }
+    m_channel_rt_status.spd_angle = m_p_spindle->GetSpdAngle();
 
     //	printf("axis pos %lf, %lf, %lf\n", pos[0], pos[1], pos[2]);
 
@@ -2455,9 +2458,6 @@ void ChannelControl::SendMonitorData(bool bAxis, bool btime){
     for(int i = 0; i < m_p_channel_config->chn_axis_count; i++){
         if((MLK_mask >> i) & 0x01){
             hmi_rt_status.cur_pos_machine[i] = MLK_pos[i];
-            if(cnt%10 == 0){
-                ScPrintf("use old pos");
-            }
         }
     }
     cnt ++;
@@ -3902,12 +3902,6 @@ void ChannelControl::SetMachineState(uint8_t mach_state){
     if(m_channel_status.machining_state == mach_state)
         return;
 
-    if(mach_state == MS_WARNING){
-        if(m_p_spindle->isTapEnable()){    // 刚性攻丝期间出现了警告，取消攻丝
-            m_p_spindle->CancelRigidTap();
-        }
-    }
-
     if(mach_state == MS_WARNING && m_channel_status.machining_state == MS_STOPPING
             && m_channel_mc_status.cur_mode != MC_MODE_MANUAL)  //等待停止到位后再切换为告警状态
         return;
@@ -4184,11 +4178,6 @@ void ChannelControl::SendWorkModeToMc(uint16_t work_mode){
  * @brief 结束编译后的处理
  */
 void ChannelControl::CompileOver(){
-    // 取消刚性攻丝状态
-    if(m_p_spindle->isTapEnable()){
-        m_p_spindle->CancelRigidTap();
-    }
-
     if(m_p_compiler->CompileOver()){
 #ifdef USES_ADDITIONAL_PROGRAM
         if(this->m_n_add_prog_type != CONTINUE_START_ADD)
@@ -4392,6 +4381,8 @@ int ChannelControl::Run(){
                     m_n_run_thread_state = ERROR;
                 }
             }
+
+
 #ifndef USES_WOOD_MACHINE   //木工专机不检查M30结束指令
             if(m_p_compiler->IsEndOfFile() && !m_p_compiler->IsCompileOver() &&
                     this->m_channel_status.chn_work_mode == AUTO_MODE
@@ -4406,7 +4397,6 @@ int ChannelControl::Run(){
                 CreateError(ERR_NO_END, ERROR_LEVEL, CLEAR_BY_MCP_RESET, 0, m_n_channel_index);
             }
 #endif
-
             pthread_mutex_unlock(&m_mutex_change_state);
 
             //			if(this->m_lexer_result.line_no%10000 == 0){
@@ -5717,7 +5707,6 @@ bool ChannelControl::ExecuteMessage(){
 
             break;
         }else{//执行结束
-
             if(this->m_n_restart_mode != NOT_RESTART        //加工复位
         #ifdef USES_ADDITIONAL_PROGRAM
                     && this->m_n_add_prog_type == NONE_ADD      //非附加程序运行状态
@@ -6956,6 +6945,17 @@ bool ChannelControl::ExecuteAuxMsg(RecordMsg *msg){
                 gettimeofday(&m_time_m_start[m_index], NULL);
                 this->SetMFSig(m_index, true);    //置位选通信号
                 tmp->IncreaseExecStep(m_index);
+
+                // 如果当前在正转状态下再给M03，那么ProcessPMCSignal就扫描不到变化了
+                // 这里需要做特殊处理
+                if(mcode == 3 && m_p_g_reg->SFR && m_p_spindle->Type() == 2){
+                    m_p_spindle->InputPolar(CncPolar::Positive);
+                }else if(mcode == 4 && m_p_g_reg->SRV && m_p_spindle->Type() == 2){
+                    m_p_spindle->InputPolar(CncPolar::Negative);
+                }else if(mcode == 5 && m_p_g_reg->SFR == 0 && m_p_g_reg->SRV == 0
+                         && m_p_spindle->Type() == 2){
+                    m_p_spindle->InputPolar(CncPolar::Stop);
+                }
             }else if(tmp->GetExecStep(m_index) == 2){
                 //等待FIN信号
                 if(this->m_p_g_reg->FIN == 1 || this->GetMFINSig(m_index))
@@ -7311,7 +7311,7 @@ bool ChannelControl::ExecuteArcMsg(RecordMsg *msg, bool flag_block){
         return true;
     }
 
-    printf("execute arc msg  arc_id: %d\n", arc_msg->arc_id);
+    //printf("execute arc msg  arc_id: %d\n", arc_msg->arc_id);
 
     if(!OutputData(msg, flag_block))
         return false;
@@ -7404,6 +7404,7 @@ bool ChannelControl::ExecuteCoordMsg(RecordMsg *msg){
 			double offset = GetAxisCurMachPos(i) - point.GetAxisValue(i);
 			m_p_chn_g92_offset->offset[i] = offset;
 		}
+		G52Active = false;
 	}
 	// @add zk
 
@@ -7425,6 +7426,7 @@ bool ChannelControl::ExecuteCoordMsg(RecordMsg *msg){
                     origin_pos += m_p_chn_ex_coord_config[coord_index/10-5401].offset[i] * 1e7;    //单位由mm转换为0.1nm
                 }
                 origin_pos += point.GetAxisValue(i)* 1e7;
+                G52offset[i] = point.GetAxisValue(i);
                 this->SetMcAxisOrigin(i, origin_pos);
             }
             this->ActiveMcOrigin(true);
@@ -7455,7 +7457,9 @@ bool ChannelControl::ExecuteCoordMsg(RecordMsg *msg){
             printf("execute coord msg[%hu] error, step = %hhu\n", gcode, coordmsg->GetExecStep());
             break;
         }
+        G52Active = true;
         // @add  zk
+
 
     }else if(gcode == G53_CMD){ //机械坐标系
 
@@ -7508,6 +7512,8 @@ bool ChannelControl::ExecuteCoordMsg(RecordMsg *msg){
             printf("execute coord msg[%hu] error, step = %hhu\n", gcode, coordmsg->GetExecStep());
             break;
         }
+
+        G52Active = false;
 
     }else{//轮廓仿真，刀路仿真
         //先把当前位置的工件坐标转换为机械坐标
@@ -10550,7 +10556,7 @@ bool ChannelControl::ExecuteClearCirclePosMsg(RecordMsg *msg){
 bool ChannelControl::ExecuteInputMsg(RecordMsg * msg){
 
     InputMsg * input_msg = (InputMsg *)msg;
-    printf("ldata: %d -- pdata: %d --- rdata: %d\n", input_msg->LData, input_msg->PData, input_msg->RData);
+    printf("ldata: %lf -- pdata: %lf --- rdata: %lf\n", input_msg->LData, input_msg->PData, input_msg->RData);
 
     if(this->m_n_restart_mode != NOT_RESTART &&
             input_msg->GetLineNo() < this->m_n_restart_line
@@ -10870,8 +10876,6 @@ bool ChannelControl::CheckFuncState(int func){
  */
 void ChannelControl::SetAutoRatio(uint8_t ratio){
     //	printf("ChannelControl::SetAutoRatio, chn=%hhu, old_r = %hhu, ratio=%hhu\n", m_n_channel_index, m_channel_status.auto_ratio, ratio);
-    if(m_channel_status.auto_ratio == ratio)
-        return;
     this->m_channel_status.auto_ratio = ratio;
 
     g_ptr_tracelog_processor->SendToHmi(kPanelOper, kDebug, "[自动倍率]切换为 "+to_string(ratio));
@@ -10904,8 +10908,6 @@ void ChannelControl::SetManualRatio(uint8_t ratio){
  * @param ratio
  */
 void ChannelControl::SetRapidRatio(uint8_t ratio){
-    if(m_channel_status.rapid_ratio == ratio)
-        return;
 
     this->m_channel_status.rapid_ratio = ratio;
 
@@ -10923,7 +10925,6 @@ void ChannelControl::SetRapidRatio(uint8_t ratio){
  * @param ratio
  */
 void ChannelControl::SetSpindleRatio(uint8_t ratio){
-
     this->m_channel_status.spindle_ratio = ratio;
 
     m_p_spindle->InputSOV(ratio);
@@ -12694,10 +12695,10 @@ void ChannelControl::SetMcRatio(){
 	cmd.data.data[1] = this->m_channel_status.auto_ratio;
 	cmd.data.data[2] = this->m_channel_status.manual_ratio;
 
-	printf("rapid: %d auto: %d manual: %d\n",
-			this->m_channel_status.rapid_ratio,
-			this->m_channel_status.auto_ratio,
-			this->m_channel_status.manual_ratio);
+//    ScPrintf("rapid: %d auto: %d manual: %d\n",
+//			this->m_channel_status.rapid_ratio,
+//			this->m_channel_status.auto_ratio,
+//			this->m_channel_status.manual_ratio);
 
     if(!this->m_b_mc_on_arm)
         m_p_mc_comm->WriteCmd(cmd);
@@ -17558,6 +17559,10 @@ void ChannelControl::TransMachCoordToWorkCoord(DPointChn &pos, uint16_t coord_id
                 origin_pos += m_p_chn_ex_coord_config[coord_idx/10-5401].offset[i];
             }
 
+            if(G52Active){
+            	origin_pos += G52offset[i];
+            }
+
             phy_axis = this->GetPhyAxis(i);
             if(phy_axis != 0xFF){
                 if(this->m_p_axis_config[phy_axis].axis_linear_type == LINE_AXIS_Z && m_channel_status.cur_h_code > 0){//Z轴需要加上刀长偏置
@@ -17601,6 +17606,10 @@ void ChannelControl::TransMachCoordToWorkCoord(DPointChn &pos, uint16_t coord_id
                 origin_pos += m_p_chn_ex_coord_config[coord_idx/10-5401].offset[i];
             }
 
+            if(G52Active){
+            	origin_pos += G52offset[i];
+		    }
+
             phy_axis = this->GetPhyAxis(i);
             if(phy_axis != 0xFF){
                 if(this->m_p_axis_config[phy_axis].axis_linear_type == LINE_AXIS_Z && h_code > 0){//Z轴需要加上刀长偏置
@@ -17637,6 +17646,10 @@ void ChannelControl::TransMachCoordToWorkCoord(DPoint &pos, uint16_t coord_idx, 
             }else if(coord_idx >= G5401_CMD && coord_idx <= G5499_CMD){
                 origin_pos += m_p_chn_ex_coord_config[coord_idx/10-5401].offset[i];
             }
+
+            if(G52Active){
+            	origin_pos += G52offset[i];
+		    }
 
             phy_axis = this->GetPhyAxis(i);
             if(phy_axis != 0xFF){
@@ -17749,6 +17762,10 @@ void ChannelControl::TransMachCoordToWorkCoord(double &pos, uint16_t coord_idx, 
         origin_pos += m_p_chn_coord_config[coord_idx/10-53].offset[axis];
     }else if(coord_idx >= G5401_CMD && coord_idx <= G5499_CMD){
         origin_pos += m_p_chn_ex_coord_config[coord_idx/10-5401].offset[axis];
+    }
+
+    if(G52Active){
+    	origin_pos += G52offset[axis];
     }
 
     uint8_t phy_axis = this->GetPhyAxis(axis);
@@ -19345,7 +19362,6 @@ void ChannelControl::SendHmiGraphPosData(){
  */
 bool ChannelControl::CallMacroProgram(uint16_t macro_index){
     g_ptr_trace->PrintTrace(TRACE_INFO, CHANNEL_CONTROL_SC, "ChannelControl[%hhu]::CallMacroProgram, macro_index = %hu\n", this->m_n_channel_index, macro_index);
-
     uint8_t mode = this->m_channel_status.chn_work_mode;
     uint8_t state = this->m_channel_status.machining_state;
     //自动、MDA模式(必须在MS_RUNNING状态)
@@ -19362,9 +19378,12 @@ bool ChannelControl::CallMacroProgram(uint16_t macro_index){
              mode == REF_MODE || state != MS_RUNNING){  //手动、手轮模式（非运行状态亦可）
         if(this->m_b_manual_call_macro){  //已经处于手动宏程序调用中
             g_ptr_trace->PrintTrace(TRACE_WARNING, CHANNEL_CONTROL_SC, "已处于手动宏程序调用中执行过程！[%hu]", macro_index);
-
             return false;
         }
+        if(!m_p_compiler->FindSubProgram(macro_index, true)){
+            return false;
+        }
+
 
         char cmd_buf[256];
         memset (cmd_buf, 0x00, 256);

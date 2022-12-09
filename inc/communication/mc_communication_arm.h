@@ -146,10 +146,10 @@ public:
 	void ReadCurLineNo(const uint8_t chn_index, uint32_t &cur_lineno);
 
 	//读取通道当前实际进给速度
-	void ReadCurFeed(const uint8_t chn_index, uint32_t &cur_feed);
+    void ReadCurFeed(const uint8_t chn_index, int32_t &cur_feed);
 
 	//读取通道当前给定进给速度
-	void ReadRatedFeed(const uint8_t chn_index, uint32_t &rated_feed);
+    void ReadRatedFeed(const uint8_t chn_index, int32_t &rated_feed);
 
 	//读取通道当前自动数据缓冲数量
 	void ReadAutoBufDataCount(const uint8_t chn_index, uint16_t &count);

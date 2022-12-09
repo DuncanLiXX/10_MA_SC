@@ -267,7 +267,9 @@ struct FRegBits{
 	//F82
 	uint8_t :8;
 	//F83
-	uint8_t :8;
+    uint8_t :1;
+    uint8_t :1;     // 自动对刀信号 F83.1
+    uint8_t :6;
 	//F84
 	uint8_t :8;
 	//F85
@@ -554,7 +556,8 @@ struct FRegBits{
 	//F194
 	uint8_t :8;
 	//F195
-	uint8_t :8;
+    uint8_t MERS:1; // MDI复位请求 F195.0
+    uint8_t :7;
 	//F196
 	uint8_t :8;
 	//F197

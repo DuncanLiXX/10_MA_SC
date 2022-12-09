@@ -115,6 +115,8 @@ public:
 
     int32_t GetSpindleSpeed();  // 获取真实主轴转速，带有方向，用于hmi显示转速 单位:rpm
 
+    double GetSpdAngle();  // 获取主轴角度 单位：度
+
 private:
     void UpdateParams();        // 更新常用主轴参数到成员变量中
     void UpdateSpindleState();  // 根据当前状态更新转速
@@ -132,6 +134,9 @@ private:
 
     // 根据当前状态发送主轴转速给Mi
     void SendSpdSpeedToMi();
+
+    // 异步处理主轴定向逻辑
+    void ProcessORCMA(bool ORCMA);
     // 异步处理模式切换完成
     void ProcessModeChanged(Spindle::Mode mode);
     // 异步处理换挡逻辑

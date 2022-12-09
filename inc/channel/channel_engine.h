@@ -291,8 +291,12 @@ void SetMcArmComm(MCArmCommunication *comm){this->m_p_mc_arm_comm = comm;}   //É
 
     void PrintDebugInfo();		//Êä³öµ÷ÊÔÊı¾İ
 
-    PmcAxisCtrl *GetPmcAxisCtrl(){return m_pmc_axis_ctrl;}
-    SyncAxisCtrl *GetSyncAxisCtrl(){return  m_sync_axis_ctrl;}
+    PmcAxisCtrl *GetPmcAxisCtrl(){return m_pmc_axis_ctrl;} // »ñÈ¡pmcÖá¿ØÖÆÄ£¿é
+    SyncAxisCtrl *GetSyncAxisCtrl(){return  m_sync_axis_ctrl;} // »ñÈ¡Í¬²½Öá¿ØÖÆÄ£¿é
+    uint8_t GetMlkMask(){return m_MLK_mask;}    // »ñÈ¡»úĞµËø×¡±ê¼Ç
+    double* GetMlkPos(){return m_MLK_pos;}      // »ñÈ¡»úĞµËø×¡Î»ÖÃ
+
+    void SetProgProtect(bool flag);     // ÉèÖÃ³ÌĞò±£»¤×´Ì¬
 
 private:	//Ë½ÓĞ³ÉÔ±º¯Êı
 	ChannelEngine();   //¹¹Ôìº¯Êı
@@ -424,7 +428,7 @@ private:	//Ë½ÓĞ³ÉÔ±º¯Êı
     void SetAxisRetRefFlag();    //ÏòMI·¢ËÍ¸÷Öá»Ø²Î¿¼µã½áÊø±êÖ¾
     void SetServoState(uint8_t SVF, uint8_t pos_req = 0);  //ÏòMI·¢ËÍ¸÷ÖáÊ¹ÄÜ×´Ì¬£¬µÍµçÆ½ÓĞĞ§
     void SetMLKState(uint8_t MLK); //ÏòMI·¢ËÍ¸÷Öá»úĞµËø×¡×´Ì¬
-    void ProcessRecoverMLK(uint8_t phy_axis, double mach_pos); // Òì²½´¦ÀíMLK»Ö¸´Á÷³Ì
+    void ProcessRecoverMLK(uint8_t mask, double *mach_pos); // Òì²½´¦ÀíMLK»Ö¸´Á÷³Ì
 
     void SaveCurPhyAxisEncoder();  //µôµç±£´æµ±Ç°ËùÓĞÎïÀíÖáµÄ±àÂëÆ÷·´À¡
     void SaveKeepMacroVar();		//µôµç±£´æ·ÇÒ×Ê§ĞÔºê±äÁ¿
@@ -603,7 +607,8 @@ private:  //Ë½ÓĞ³ÉÔ±±äÁ¿
     bool m_servo_ready{false};     //ËÅ·şÊÇ·ñ³õÊ¼»¯Íê³É£¨È«²¿ÖáÉÏÊ¹ÄÜ¾ÍËãÍê³É£©
     uint8_t m_cur_svf{0x00};      //µ±Ç°µÄËÅ·ş¹Ø¶Ï±ê¼Ç
 
-    uint8_t MLK_recover_mask;       //»úĞµËø×¡»Ö¸´ÖĞ±ê¼Ç
+    uint8_t m_MLK_mask{0x00};       //»úĞµËø×¡Öámask
+    double m_MLK_pos[kMaxAxisChn]; //»úĞµËø×¡×ø±êÖµ
 };
 
 #endif /* INC_CHANNEL_CHANNEL_ENGINE_H_ */

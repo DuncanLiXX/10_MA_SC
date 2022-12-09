@@ -268,6 +268,7 @@ enum MiCmdCode{
 	CMD_MI_SET_AXIS_MACH_POS = 0x136,     //设置指定物理轴当前位置的机械坐标
     CMD_MI_SPD_LOCATE = 0x137,            //SC通知MI主轴定位
     CMD_MI_SET_MPG_STEP = 0x138,          //设置手轮自定义步长
+    CMD_MI_SET_MPG_INSERT_AXIS = 0x139,     //设置手轮插入轴选
 
 	CMD_MI_DEBUG_M_FUN = 0x8001,            //MI调试指令
 	CMD_MI_HW_TRACE_STATE_CHANGED_RSP = 0x8009,   //MI通知SC手轮跟踪状态切换响应命令

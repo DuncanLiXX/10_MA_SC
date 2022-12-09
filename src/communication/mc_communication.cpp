@@ -375,7 +375,7 @@ void MCCommunication::ReadMdaBufDataCount(const uint8_t chn_index, uint16_t &cou
  * @param cur_feed[out] : 返回当前进给速度
  * @return
  */
-void MCCommunication::ReadCurFeed(const uint8_t chn_index, uint32_t &cur_feed){
+void MCCommunication::ReadCurFeed(const uint8_t chn_index, int32_t &cur_feed){
 
 	if(++m_n_read_status_sem == 1)
 		WriteRegister(MC_STATUS_READ_REQ, 1);  //读取前置1
@@ -392,7 +392,7 @@ void MCCommunication::ReadCurFeed(const uint8_t chn_index, uint32_t &cur_feed){
  * @param cur_feed[out] : 返回当前给定进给速度
  * @return
  */
-void MCCommunication::ReadRatedFeed(const uint8_t chn_index, uint32_t &rated_feed){
+void MCCommunication::ReadRatedFeed(const uint8_t chn_index, int32_t &rated_feed){
 
 	if(++m_n_read_status_sem == 1)
 		WriteRegister(MC_STATUS_READ_REQ, 1);  //读取前置1

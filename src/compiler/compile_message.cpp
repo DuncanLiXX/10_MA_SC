@@ -459,9 +459,9 @@ int CoordMsg::GetOutputData(GCodeFrame *data, uint32_t mask, bool flag){
 	for(int i = 0; i < kMaxAxisChn && count < 8; i++){
 		if(mask & ms){
 			*pp = ps[i];
-			pp++;
-			count++;
 		}
+        pp++;
+        count++;
 		ms = ms<<1;
 	}
 	data->data.pos0 = MM2NM0_1(pos.x); //单位由mm转换为0.1nm
@@ -2270,9 +2270,9 @@ int CompensateMsg::GetOutputData(GCodeFrame *data, uint32_t mask, bool flag){
 	for(int i = 0; i < kMaxAxisChn && count < 8; i++){
 		if(mask & ms){
 			*pp = ps[i];
-			pp++;
-			count++;
 		}
+        pp++;
+        count++;
 		ms = ms<<1;
 	}
 
@@ -2478,9 +2478,9 @@ int RapidMsg::GetOutputData(GCodeFrame *data, uint32_t mask, bool flag){
 	for(int i = 0; i < kMaxAxisChn && count < 8; i++){
 		if(mask & ms){
 			*pp = ps[i];
-			pp++;
-			count++;
 		}
+        pp++;
+        count++;
 		ms = ms<<1;
 	}
 
@@ -2717,11 +2717,11 @@ int LineMsg::GetOutputData(GCodeFrame *data, uint32_t mask, bool flag){
 	if(flag)
 		ps = this->m_point_source.m_df_point;
 	for(int i = 0; i < kMaxAxisChn && count < 8; i++){
-		if(mask & ms){
-			*pp = ps[i];
-			pp++;
-			count++;
+        if(mask & ms){
+            *pp = ps[i];
 		}
+        pp++;
+        count++;
 		ms = ms<<1;
 	}
 
@@ -2983,9 +2983,9 @@ int ArcMsg::GetOutputData(GCodeFrame *data, uint32_t mask, bool flag){
 	for(int i = 0; i < kMaxAxisChn && count < 8; i++){
 		if(mask & ms){
 			*pp = ps[i];
-			pp++;
-			count++;
 		}
+        pp++;
+        count++;
 		ms = ms<<1;
 	}
 

@@ -704,10 +704,14 @@ void ChannelEngine::SetServoState(uint8_t SVF, uint8_t pos_req){
 void ChannelEngine::SetMLKState(uint8_t MLK)
 {
     static uint8_t last_MLK = 0x00;
-    static double pos_record[kMaxAxisChn] = {0.0};
     static std::future<void> ans;
+    ScPrintf("SetMLKState: MLK = %u", MLK);
 
+    uint8_t clr_mask = 0x00;   // 需要解除锁住的轴mask
     for(int i = 0; i < m_p_channel_config->chn_axis_count; i++){
+        // 旋转轴不用锁住
+        if(m_p_axis_config[i].axis_type == AXIS_SPINDLE)
+            continue;
 
         bool en_now = (MLK & (0x01 << i));
         bool en_last = (last_MLK & (0x01 << i));
@@ -720,28 +724,65 @@ void ChannelEngine::SetMLKState(uint8_t MLK)
                                                        m_df_phy_axis_speed_feedback,
                                                        m_df_phy_axis_torque_feedback,
                                                        m_p_general_config->axis_count);
-           pos_record[i] = m_df_phy_axis_pos_feedback[i];
+           m_MLK_pos[i] = m_df_phy_axis_pos_feedback[i];
            m_p_mi_comm->SendAxisMLK(i+1, en_now);
+           m_MLK_mask |= (0x01 << i);
         }else{
-            //ManualMoveAbs(i, 3000, pos_record[i]);
-            auto func = std::bind(&ChannelEngine::ProcessRecoverMLK,
-                                  this, std::placeholders::_1, std::placeholders::_2);
-            ans = std::async(std::launch::async, func, i,pos_record[i]);
+            clr_mask |= (0x01 << i);
         }
 
+    }
+
+    // 执行机械锁住恢复动作
+    if(clr_mask != 0x00){
+        auto func = std::bind(&ChannelEngine::ProcessRecoverMLK,
+                              this, std::placeholders::_1, std::placeholders::_2);
+        ans = std::async(std::launch::async, func, clr_mask,m_MLK_pos);
     }
     last_MLK = MLK;
 }
 
-void ChannelEngine::ProcessRecoverMLK(uint8_t phy_axis, double mach_pos)
+void ChannelEngine::ProcessRecoverMLK(uint8_t mask, double *mach_pos)
 {
-    ManualMoveAbs(phy_axis, 3000, mach_pos);
-    while(fabs(this->GetPhyAxisMachPosFeedback(phy_axis) - mach_pos) >= 0.010){
-        std::this_thread::sleep_for(std::chrono::microseconds(100 * 1000));
-        ScPrintf("RecoverMLK: axis = %u,fabs = %lf", phy_axis,
-                 fabs(this->GetPhyAxisMachPosFeedback(phy_axis) - mach_pos));
+    // 机械锁住恢复执行流程
+    // 1:将机械锁住恢复标记 置为 1，通知PMC此时不要作轴移动操作
+    // 2:发生轴移动指令，让轴回到之前进入锁住状态前的坐标
+    // 3:等待所有轴移动到位，给MI发送取消锁住的命令
+    // 4:机械锁住标记 清除
+    m_p_pmc_reg->FReg().bits->CLMLK = 1;
+    //ScPrintf("ProcessRecoverMLK mask = %u", mask);
+
+    for(int i = 0; i < m_p_channel_config->chn_axis_count; i++){
+        if(((mask >> i) & 0x01) == 0)
+            continue;
+
+        ManualMoveAbs(i, 3000, mach_pos[i]);
+
     }
-    m_p_mi_comm->SendAxisMLK(phy_axis+1, 0);
+
+    for(int i = 0; i < m_p_channel_config->chn_axis_count; i++){
+        if(((mask >> i) & 0x01) == 0)
+            continue;
+
+        while(fabs(this->GetPhyAxisMachPosFeedback(i) - mach_pos[i]) >= 0.010){
+            std::this_thread::sleep_for(std::chrono::microseconds(100 * 1000));
+//            ScPrintf("RecoverMLK: axis = %u,fabs = %lf", i,
+//                     fabs(this->GetPhyAxisMachPosFeedback(i) - mach_pos[i]));
+
+        }
+    }
+
+    std::this_thread::sleep_for(std::chrono::microseconds(200 * 1000));
+
+    for(int i = 0; i < m_p_channel_config->chn_axis_count; i++){
+        if(((mask >> i) & 0x01) == 0)
+            continue;
+
+        m_p_mi_comm->SendAxisMLK(i+1, 0);
+        m_MLK_mask &= ~(0x01 << i);
+    }
+    m_p_pmc_reg->FReg().bits->CLMLK = 0;
+
 }
 
 /**
@@ -1676,12 +1717,16 @@ void ChannelEngine::ProcessMcCmdRsp(McCmdFrame &rsp){
 void ChannelEngine::ProcessMcVersionCmd(McCmdFrame &cmd){
     //处理MC模块返回的版本信息
     uint16_t data1 = cmd.data.data[0], data2 = cmd.data.data[1], data3 = cmd.data.data[2], data4 = cmd.data.data[3];
+    uint16_t data5 = cmd.data.data[4];
     uint8_t v_a = (data2>>8)&0xFF;
     uint8_t v_b = (data2)&0xFF;
     uint8_t v_c = (data1>>8)&0xFF;
     uint8_t v_d = (data1)&0xFF;
+    uint8_t v_h = (data5)/100;
+    uint8_t v_m = (data5)%100;
 
-    sprintf(g_sys_info.sw_version_info.mc, "%c%hhu.%hhu.%hhu.%hu%04hu", v_a==0?'P':'V', v_b, v_c, v_d, data3, data4);
+    sprintf(g_sys_info.sw_version_info.mc, "%c%hhu.%hhu.%hhu.%hu%04hu%02hu%02hu", v_a==0?'P':'V', v_b, v_c, v_d, data3, data4,
+            v_h,v_m);
 }
 
 /**
@@ -3969,6 +4014,19 @@ void ChannelEngine::SaveToolInfo(){
 }
 #endif
 
+void ChannelEngine::SetProgProtect(bool flag)
+{
+    HMICmdFrame hmi_cmd;
+    hmi_cmd.channel_index = CHANNEL_ENGINE_INDEX;
+    hmi_cmd.cmd = CMD_SC_NOTIFY_PROTECT_STATUS;
+    hmi_cmd.cmd_extension = 0;
+    hmi_cmd.data_len = sizeof(flag);
+    memcpy(&hmi_cmd.data[0], &flag, hmi_cmd.data_len);
+
+    std::cout << "SetProgProtect: " << flag << std::endl;
+    m_p_hmi_comm->SendCmd(hmi_cmd);
+}
+
 
 /**
  * @brief 处理HMI更新螺补数据
@@ -5200,6 +5258,8 @@ void ChannelEngine::SetJPState(uint8_t chn, uint8_t JP, uint8_t last_JP, ChnWork
         GetAxisChannel(m_p_channel_config[chn].chn_axis_phy[i]-1,chn_axis);
         // 轴正向移动按下
         if(flag_now){
+            this->m_p_mi_comm->ReadPhyAxisCurFedBckPos(m_df_phy_axis_pos_feedback, m_df_phy_axis_pos_intp,m_df_phy_axis_speed_feedback,
+                                                       m_df_phy_axis_torque_feedback, m_p_general_config->axis_count);
             SetCurAxis(chn, chn_axis);
             ManualMove(DIR_POSITIVE);
             g_ptr_tracelog_processor->SendToHmi(kPanelOper, kDebug, "点动[轴" + to_string(chn_axis) + "]+");
@@ -5208,6 +5268,7 @@ void ChannelEngine::SetJPState(uint8_t chn, uint8_t JP, uint8_t last_JP, ChnWork
         }else if(mode == MANUAL_MODE){ // 轴正向移动松开，并且为手动连续模式
             ManualMoveStop(m_p_channel_config[chn].chn_axis_phy[i]-1);
             g_ptr_tracelog_processor->SendToHmi(kPanelOper, kDebug, "点动释放[轴" + to_string(chn_axis) + "]+");
+            usleep(200000);
         }
     }
 }
@@ -5223,6 +5284,9 @@ void ChannelEngine::SetJNState(uint8_t chn, uint8_t JN, uint8_t last_JN, ChnWork
         GetAxisChannel(m_p_channel_config[chn].chn_axis_phy[i]-1,chn_axis);
         // 轴负向移动按下
         if(flag_now){
+            this->m_p_mi_comm->ReadPhyAxisCurFedBckPos(m_df_phy_axis_pos_feedback, m_df_phy_axis_pos_intp,m_df_phy_axis_speed_feedback,
+                                                       m_df_phy_axis_torque_feedback, m_p_general_config->axis_count);
+
             SetCurAxis(chn, chn_axis);
             ManualMove(DIR_NEGATIVE);
 
@@ -5230,6 +5294,7 @@ void ChannelEngine::SetJNState(uint8_t chn, uint8_t JN, uint8_t last_JN, ChnWork
         }else if(mode == MANUAL_MODE){ // 轴正向移动松开，并且为手动连续模式
             ManualMoveStop(m_p_channel_config[chn].chn_axis_phy[i]-1);
             g_ptr_tracelog_processor->SendToHmi(kPanelOper, kDebug, "点动释放[轴" + to_string(chn_axis) + "]-");
+            usleep(200000);
         }
     }
 }
@@ -5688,7 +5753,7 @@ void ChannelEngine::ManualMovePmc(int8_t dir){
  *
  */
 void ChannelEngine::ManualMovePmc(uint8_t phy_axis, double tar_pos, double vel, bool inc){
-    uint8_t dir = DIR_POSITIVE;  //默认正向
+    int8_t dir = DIR_POSITIVE;  //默认正向
 
     double cur_pos = this->GetPhyAxisMachPosFeedback(phy_axis);
     if((!inc && tar_pos - cur_pos < 0) ||
@@ -8371,10 +8436,13 @@ void ChannelEngine::ProcessPmcSignal(){
         }
 
         // 伺服关断信号
-
         if(g_reg_last->SVF != g_reg->SVF){
             SetServoState(g_reg->SVF, 1);
             m_cur_svf = g_reg->SVF;
+        }
+
+        if(g_reg_last->KEY != g_reg->KEY){
+            SetProgProtect(g_reg->KEY);
         }
 
         // 处理G信号 切换当前通道
@@ -8422,11 +8490,13 @@ void ChannelEngine::ProcessPmcSignal(){
             f_reg->MMLK = g_reg->MLK;
             if(g_reg->MLK){
                 SetMLKState(0xFF);
+            }else{
+                SetMLKState(g_reg->MLKI);
             }
         }
 
         // 某个轴机械锁住信号发生了改变
-        if(g_reg->MLKI != g_reg_last->MLKI && !g_reg->MLK){
+        if(g_reg->MLKI != g_reg_last->MLKI){
             SetMLKState(g_reg->MLKI);
         }
 
@@ -8548,12 +8618,19 @@ void ChannelEngine::ProcessPmcSignal(){
         }
 
         if(g_reg->HSIA != g_reg_last->HSIA){
-            if(g_reg->HSIA == 0){
-                this->SetMiHandwheelInsert(false, i);
-            }else if(g_reg->HSIA == 1){
-                this->SetMiHandwheelInsert(true, i);
-            }else
-                SetMiHandwheelTrace(true, i);
+            uint8_t axis_no = 0;
+            for(int axis = 0; axis < m_p_channel_config[i].chn_axis_count; axis++){
+                if((g_reg->HSIA >> axis) & 0x01){
+                    axis_no = axis + 1;
+                    break;
+                }
+            }
+            if(axis_no == 0){
+                m_p_mi_comm->SendHandwheelInsert(i, false);
+            }else{
+                m_p_mi_comm->SendHandwheelInsert(i, true);
+                m_p_mi_comm->SendHandwheelInsertAxis(i, axis_no);
+            }
         }
 
 
@@ -11072,6 +11149,12 @@ void ChannelEngine::ReturnRefPoint(){
     for(uint i = 0; i < this->m_p_general_config->axis_count; i++){
         if((m_n_mask_ret_ref & (0x01<<i)) == 0 ||
                 (m_p_axis_config[i].ret_ref_mode == 0 && m_p_axis_config[i].feedback_mode == INCREMENTAL_ENCODER)){  //禁止回参考点
+            continue;
+        }
+
+        if (GetSyncAxisCtrl()->CheckSyncState(i))
+        {
+            CreateError(ERR_RET_SYNC_ERR, WARNING_LEVEL, CLEAR_BY_MCP_RESET, 0, CHANNEL_ENGINE_INDEX, i);
             continue;
         }
         if(this->m_b_ret_ref_auto){

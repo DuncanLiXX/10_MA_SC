@@ -1961,7 +1961,6 @@ void Compiler::Reset(){
  * @brief 编译器状态复位
  */
 void Compiler::ResetState() {
-
 	//m_p_file_map_info->Clear();
 	m_p_file_map_info->ResetFile();
 	m_n_sub_program = MAIN_PROG;
@@ -2327,7 +2326,7 @@ bool Compiler::RunMessage() {
 	ListNode<RecordMsg *> *node = m_p_parser_result->HeadNode();
 	CodeMsgType msg_type = NORMAL_MSG;
 
-//	printf("------> run message ...\n");
+//    printf("------> run message ...\n");
 
 	while (node != nullptr) {
 		msg = static_cast<RecordMsg *>(node->data);
@@ -2483,11 +2482,11 @@ bool Compiler::RunMessage() {
 		node = this->m_p_block_msg_list->HeadNode();  //取下一个消息
 	}
 
-	/*if(res){
+    /*if(res){
 		printf("----compiler run message %llu success\n", lineNo);
 	}else{
 		printf("----compiler run message %llu failed\n", lineNo);
-	}*/
+    }*/
 
 	return res;
 }
@@ -3594,7 +3593,7 @@ bool Compiler::RunMacroMsg(RecordMsg *msg) {
 		break;
 	case MACRO_CMD_EXP:		//纯宏表达式
 		if (!m_p_parser->GetExpressionResult(tmp->GetMacroExp(0), exp_res)) {//表达式运算失败
-			m_error_code = m_p_parser->GetErrorCode();
+            m_error_code = m_p_parser->GetErrorCode();
 			if (m_error_code != ERR_NONE) {
 				CreateErrorMsg(m_error_code, tmp->GetLineNo());  //表达式计算异常
 				return false;

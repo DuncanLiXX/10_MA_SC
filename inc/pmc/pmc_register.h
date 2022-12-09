@@ -142,7 +142,8 @@ struct FRegBits{
 	//F40
 	uint8_t :8;
 	//F41
-	uint8_t :8;
+    uint8_t CLMLK:1;                     //机械锁住恢复中 F41.0
+    uint8_t :7;
 	//F42
 	uint8_t :8;
 	//F43
@@ -199,7 +200,7 @@ struct FRegBits{
 	//F65
     uint8_t RGSPP:1;            //进入攻丝状态反馈 F65.0
     uint8_t :1;
-    uint8_t RGMP:1;             //主轴模式切换
+    uint8_t RGMP:1;             //主轴模式切换 F65.2
     uint8_t :5;
 	//F66
     uint8_t :1;
@@ -266,7 +267,9 @@ struct FRegBits{
 	//F82
 	uint8_t :8;
 	//F83
-	uint8_t :8;
+    uint8_t :1;
+    uint8_t :1;     // 自动对刀信号 F83.1
+    uint8_t :6;
 	//F84
 	uint8_t :8;
 	//F85
@@ -822,7 +825,7 @@ struct GRegBits{
 	//G40
 	uint8_t :8;
 	//G41
-    uint8_t HSIA:8;
+    uint8_t HSIA:8;     //手轮插入信号 G41
 	//G42
 	uint8_t :8;
 	//G43
@@ -838,7 +841,8 @@ struct GRegBits{
 	uint8_t :1;
 	uint8_t SBK:1;     //单程序段信号    G46.1
 	uint8_t SBS:1;     //选停信号         G46.2
-	uint8_t :5;
+    uint8_t KEY:1;     //程序锁住信号  G46.3
+    uint8_t :4;
 	//G47
 	uint8_t :8;
 	//G48
@@ -873,7 +877,7 @@ struct GRegBits{
     uint8_t :6;
 	//G62
     uint8_t :6;
-    uint8_t RTNT:1;     // 刚性攻丝回退启动信号
+    uint8_t RTNT:1;     // 刚性攻丝回退启动信号 G62.6
     uint8_t :1;
 	//G63
 	uint8_t :8;
@@ -984,7 +988,7 @@ struct GRegBits{
 	//G107
 	uint8_t :8;
 	//G108
-    uint8_t MLKI:8;
+    uint8_t MLKI:8;     //机械锁住信号 轴1~轴8
     //G109
 	uint8_t :8;
 	//G110

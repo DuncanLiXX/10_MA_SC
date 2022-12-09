@@ -354,6 +354,10 @@ public:
 	void StraightTraverse(int chn, double x, double y, double z);
 	void g73_func();
 	// @ add zk
+
+    uint8_t GetPhyAxisFromName(uint8_t axis_name);   //获取对应通道轴名称的物理轴索引号，0开始
+    uint8_t GetChnAxisFromName(uint8_t axis_name);   //获取对应通道轴名称的通道轴索引号，0开始
+    uint8_t GetChnAxisFromPhyAxis(uint8_t phy_axis); //获得对应物理轴的通道轴索引号，0开始
 private:
 	void InitialChannelStatus();		//初始化通道状态
     static void *CompileThread(void *args);  //G代码运行线程函数
@@ -555,10 +559,6 @@ private:
 
 	void SpindleSpeedDaOut(int32_t speed);		//将主轴转速转换为电平值
 
-
-	uint8_t GetPhyAxisFromName(uint8_t axis_name);   //获取对应通道轴名称的物理轴索引号，0开始
-	uint8_t GetChnAxisFromName(uint8_t axis_name);   //获取对应通道轴名称的通道轴索引号，0开始
-	uint8_t GetChnAxisFromPhyAxis(uint8_t phy_axis); //获得对应物理轴的通道轴索引号，0开始
 
 	void RefreshAxisIntpPos();   //将MC的各轴插补位置刷新到通道实时状态中
 

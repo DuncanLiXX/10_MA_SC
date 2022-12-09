@@ -30,11 +30,11 @@ Parser::Parser(uint8_t chn_index, LexerResult *lexer_result, CompileRecList *par
 	this->m_p_compiler_status = compiler_status;
 
 	this->m_p_channel_control = ChannelEngine::GetInstance()->GetChnControl(m_n_channel_index);
-#ifdef USES_WOOD_MACHINE
+//#ifdef USES_WOOD_MACHINE
 	this->m_b_multi_mcode = true;   //对于木工机，多M代码功能默认打开
-#else
-	this->m_b_multi_mcode = false;  //多M代码默认为关闭状态
-#endif
+//#else
+//	this->m_b_multi_mcode = false;  //多M代码默认为关闭状态
+//#endif
 	this->m_b_call_macro_prog = false;
 	m_mask_pmc_axis = 0;
 	m_n_pmc_axis_count = 0;
@@ -2267,8 +2267,25 @@ bool Parser::CreateRapidMsg(){
 	}
 
 	m_p_parser_result->Append(new_msg);
+    ProcessLastBlockRec(new_msg);
 
-	ProcessLastBlockRec(new_msg);
+    // 如果对旋转轴移动，需要插入清整数圈的msg
+    SCAxisConfig *axis_config = g_ptr_parm_manager->GetAxisConfig();
+    SCChannelConfig *chn_config = g_ptr_parm_manager->GetChannelConfig();
+    for(int i = 0; i < chn_config->chn_axis_count; i++){
+        uint8_t mask = axis_mask & (0x01 << i);
+        if(!mask || (axis_config[i].axis_type != AXIS_ROTATE))
+            continue;
+        double pos = target.GetAxisValue(i);
+        if(pos >= 0 && pos < 360)   // 不超范围，不需要清
+            continue;
+        // 添加一条G200消息,对旋转轴清整数圈
+        RecordMsg *clr_msg = new ClearCirclePosMsg(2000, mask, 360*1000);
+        new_msg->SetLineNo(this->m_p_lexer_result->line_no);
+        m_p_parser_result->Append(clr_msg);
+        ProcessLastBlockRec(clr_msg);
+        ScPrintf("append ClearCirclePosMsg, msk = %u",mask);
+    }
 
 //	this->m_p_compiler_status->cur_pos = target; //更新编译当前位置
 
@@ -2343,8 +2360,25 @@ bool Parser::CreateLineMsg(){
 	}
 
 	m_p_parser_result->Append(new_msg);
+    ProcessLastBlockRec(new_msg);
 
-	ProcessLastBlockRec(new_msg);
+    // 如果对旋转轴移动，需要插入清整数圈的msg
+    SCAxisConfig *axis_config = g_ptr_parm_manager->GetAxisConfig();
+    SCChannelConfig *chn_config = g_ptr_parm_manager->GetChannelConfig();
+    for(int i = 0; i < chn_config->chn_axis_count; i++){
+        uint8_t mask = axis_mask & (0x01 << i);
+        if(!mask || (axis_config[i].axis_type != AXIS_ROTATE))
+            continue;
+        double pos = target.GetAxisValue(i);
+        if(pos >= 0 && pos < 360)   // 不超范围，不需要清
+            continue;
+        // 添加一条G200消息,对旋转轴清整数圈
+        RecordMsg *clr_msg = new ClearCirclePosMsg(2000, mask, 360*1000);
+        new_msg->SetLineNo(this->m_p_lexer_result->line_no);
+        m_p_parser_result->Append(clr_msg);
+        ProcessLastBlockRec(clr_msg);
+        ScPrintf("append ClearCirclePosMsg, msk = %u",mask);
+    }
 
 //	printf("line msg : (%lf, %lf, %lf, %lf, %lf, %lf), %lld\n",target.x, target.y, target.z, target.a4,
 //			target.a5, target.a6, new_msg->GetLineNo());
@@ -3145,8 +3179,7 @@ bool Parser::GetCodeData(DataAddr addr, double &data){
 
 	uint32_t mask = (0x01<<addr);
 	MacroVarValue res;
-//	printf("getcodedata, addr = %d, mask=0x%x, mask_macro=0x%x, mask_value=0x%x\n", addr, mask, g_code->mask_macro, g_code->mask_value);
-	if(g_code->mask_value & mask){ //是否存在addr参数
+    if(g_code->mask_value & mask){ //是否存在addr参数
 		if(g_code->mask_macro & mask){ //表达式
 			int exp_index = static_cast<int>(g_code->value[addr]);
 			while(!this->GetExpressionResult(g_code->macro_expression[exp_index], res)){

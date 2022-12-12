@@ -685,6 +685,7 @@ bool Parser::AnalyzeGCode(LexerGCode *gcode){
 		default:
 			//生成不支持指令错误消息
 			printf("unsupported G code[%d]!\n", m_mode_code[1]);
+            ScPrintf("-----------3");
 			m_error_code = ERR_INVALID_CODE;
 			return false;
 		}
@@ -724,6 +725,7 @@ bool Parser::AnalyzeGCode(LexerGCode *gcode){
 				default:
 					//生成不支持指令错误消息
 					printf("no move code, unsupported G code[%d]!\n", m_p_compiler_status->mode.gmode[1]);
+                    ScPrintf("-----------4");
 					m_error_code = ERR_INVALID_CODE;
 					return false;
 				}

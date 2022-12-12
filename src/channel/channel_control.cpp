@@ -5853,7 +5853,6 @@ bool ChannelControl::ExecuteAuxMsg(RecordMsg *msg){
     uint8_t m_index = 0;
     int mcode = 0;
 
-
     if(this->m_n_restart_mode != NOT_RESTART &&
             tmp->GetLineNo() < this->m_n_restart_line
         #ifdef USES_ADDITIONAL_PROGRAM
@@ -6848,6 +6847,20 @@ bool ChannelControl::ExecuteAuxMsg(RecordMsg *msg){
             }
 
             break;
+        case 300:   //lidianqiang:MDA自动加上M30临时改为M300
+            NotifyHmiMCode(0);
+            this->SendMCodeToPmc(0, m_index);
+            ResetMcLineNo();//复位MC模块当前行号
+            this->SetCurLineNo(1);
+
+            this->m_p_f_reg->STL = 0;
+            this->m_p_f_reg->SPL = 0;
+            this->m_p_f_reg->OP = 0;
+
+            CompileOver();
+            this->SetMiSimMode(false);  //复位MI仿真状态
+            tmp->SetExecStep(m_index, 0xFF);    //置位结束状态
+        break;
         case 998:	//M998 用于暂停编译
             printf("execute M998\n");
             tmp->SetExecStep(m_index, 0xFF);    //置位结束状态

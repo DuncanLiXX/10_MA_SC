@@ -2052,7 +2052,8 @@ bool Compiler::GetLineData() {
     if (m_b_eof || m_p_file_map_info->ln_file_size == 0) {
         m_b_eof = true;
         if(this->m_work_mode == MDA_COMPILER){  //MDA模式下，到文件尾结束编译
-            strcpy(m_line_buf, "M30");
+            //lidianqiang:MDA自动加上M30临时改为M300
+            strcpy(m_line_buf, "M300");
             this->m_lexer_result.line_no = this->m_ln_cur_line_no;   //更新行号
             g_ptr_trace->PrintTrace(TRACE_DETAIL, COMPILER_CHN, "MDA insert M30-2\n");
             return true;
@@ -2243,7 +2244,8 @@ REDO:
             //重读下一行
         } else if (this->m_work_mode == MDA_COMPILER) {
             //MDA模式，插入一个M30结束命令
-            strcpy(m_line_buf, "M30");
+            //lidianqiang:MDA自动加上M30临时改为M300
+            strcpy(m_line_buf, "M300");
             this->m_lexer_result.line_no = this->m_ln_cur_line_no;   //更新行号
             g_ptr_trace->PrintTrace(TRACE_DETAIL, COMPILER_CHN, "MDA insert M30-1\n");
         } else {
@@ -2532,7 +2534,9 @@ bool Compiler::RunAuxMsg(RecordMsg *msg) {
 
             printf("compiler run M99\n");
             break;
-
+        case 300: //lidianqiang:MDA自动加上M30临时改为M300
+            this->m_b_compile_over = true;
+            break;
         default:
             break;
         }
@@ -3902,6 +3906,7 @@ bool Compiler::RunLoopMsg(RecordMsg *msg) {
     int macro_loc = this->FindSubProgram(macro_index);
     sub_msg->SetMacroProgType(macro_loc);
     if (macro_loc == 0) {
+        ScPrintf("-----------1");
         CreateErrorMsg(ERR_INVALID_CODE, msg->GetLineNo());  //找不到对应子程序
         return false;
     }
@@ -4135,13 +4140,11 @@ bool Compiler::CheckHead() {
     bool res = false;
     char *compBuf = m_line_buf;
 
-    if (m_n_sub_program != MAIN_PROG)  //在子程序中，可以无%
-    {
-        res = this->ProcessMain(); //
-        //	res = true; //子程序
-    } else if (strcmp(compBuf, "%") == 0) {
+    if (strcmp(compBuf, "%") == 0) {
         res = true; //主程序
-    } else {
+    }else if(m_n_sub_program != MAIN_PROG){  //在子程序中，可以无%
+        res = this->ProcessMain(); //
+    }else {
 #ifdef USES_WOOD_MACHINE
         res = this->ProcessMain();
 #else

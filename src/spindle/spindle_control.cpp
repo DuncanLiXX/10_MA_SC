@@ -385,8 +385,8 @@ void SpindleControl::InputRTNT(bool RTNT)
     ChannelControl *control = engine->GetChnControl(0);
     if(control->GetChnStatus().chn_work_mode == AUTO_MODE){
         CreateError(ERR_SPD_RTNT_IN_AUTO,
-                    ERROR_LEVEL,
-                    CLEAR_BY_MCP_RESET);
+                    INFO_LEVEL,
+                    CLEAR_BY_AUTO);
         return;
     }
 
@@ -774,6 +774,18 @@ void SpindleControl::ProcessORCMA(bool ORCMA)
         }
         mi->SendSpdLocateCmd(chn, phy_axis+1,true);
     }else{
+        CncPolar polar = CalPolar();
+        bool need_enable = (polar == Positive || polar == Negative);
+        // 取消定向时，根据之前状态来恢复电机使能
+        if(motor_enable != need_enable)
+            mi->SendAxisEnableCmd(phy_axis+1, need_enable);
+        std::this_thread::sleep_for(std::chrono::microseconds(1000 * 1000));
+        if(motor_enable != need_enable){
+            CreateError(ERR_SPD_LOCATE_FAIL,
+                        ERROR_LEVEL,
+                        CLEAR_BY_MCP_RESET);
+            return;
+        }
         mi->SendSpdLocateCmd(chn, phy_axis+1,false);
     }
 }

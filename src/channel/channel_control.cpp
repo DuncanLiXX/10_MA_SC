@@ -1760,7 +1760,6 @@ void ChannelControl::StartRunGCode(){
         this->m_b_init_compiler_pos = true;
     }
 
-
     if(this->m_channel_status.chn_work_mode == AUTO_MODE){
         if(this->m_channel_status.machining_state == MS_READY){  //就绪状态则直接启动编译
             this->SendWorkModeToMc(MC_MODE_AUTO);

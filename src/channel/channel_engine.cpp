@@ -3375,9 +3375,9 @@ void ChannelEngine::ProcessHmiAbsoluteRefSet(HMICmdFrame &cmd)
             && status.chn_work_mode == REF_MODE)                     //回零模式
     {
         cmd.cmd_extension = 0;
-        if ((m_p_axis_config[phy_axis].absolute_ref_mode == 0        //直接设原点方式
-            && m_p_axis_config[phy_axis].feedback_mode == 1)         //绝对式
-                || m_p_axis_config[phy_axis].axis_interface == 0)    //虚拟轴
+        if (!m_b_emergency  //非急停状态
+            && ((m_p_axis_config[phy_axis].absolute_ref_mode == 0 && m_p_axis_config[phy_axis].feedback_mode == 1)         //绝对式
+                || m_p_axis_config[phy_axis].axis_interface == 0))    //虚拟轴
         {
             m_b_ret_ref = true;
             m_n_mask_ret_ref = (0x01<<phy_axis);
@@ -8015,7 +8015,7 @@ void ChannelEngine::Emergency(uint8_t chn){
 
     //生成急停错误信息
     m_error_code = ERR_EMERGENCY;
-    CreateError(ERR_EMERGENCY, ERROR_LEVEL, CLEAR_BY_MCP_RESET, 0, chn);
+    //CreateError(ERR_EMERGENCY, ERROR_LEVEL, CLEAR_BY_MCP_RESET, 0, chn);//梯图有报警
 
 }
 

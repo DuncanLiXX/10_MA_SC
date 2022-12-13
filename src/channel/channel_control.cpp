@@ -712,7 +712,7 @@ void ChannelControl::Reset(){
 
     char file_name[128];
     memset(file_name, 0x0, 128);
-    m_p_compiler->GetCurNcFile(file_name);
+    m_p_compiler->GetLastOpenFile(file_name);
     this->SendOpenFileCmdToHmi(file_name);
     this->m_macro_variable.Reset();   //宏变量复位
     this->m_scene_auto.need_reload_flag = false;   //取消断点继续标志

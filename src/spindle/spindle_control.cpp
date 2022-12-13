@@ -386,7 +386,7 @@ void SpindleControl::InputRTNT(bool RTNT)
     if(control->GetChnStatus().chn_work_mode == AUTO_MODE){
         CreateError(ERR_SPD_RTNT_IN_AUTO,
                     INFO_LEVEL,
-                    CLEAR_BY_AUTO);
+                    CLEAR_BY_MCP_RESET);
         return;
     }
 
@@ -466,8 +466,8 @@ int32_t SpindleControl::GetSpindleSpeed()
         return speed;
     }
 
-    int32_t speed;
-    if(!mi->ReadPhyAxisSpeed(&speed, phy_axis)){
+    int32_t umps;
+    if(!mi->ReadPhyAxisSpeed(&umps, phy_axis)){
         return 0;
     }
 
@@ -479,8 +479,8 @@ int32_t SpindleControl::GetSpindleSpeed()
     //    if(polar == Negative){
     //        speed *= -1;
     //    }
-    speed = speed*60/(spindle->move_pr*1000);
-    return speed;
+    double speed = (double)umps*60.0/(spindle->move_pr*1000.0);
+    return (int32_t)speed;
 }
 
 double SpindleControl::GetSpdAngle()

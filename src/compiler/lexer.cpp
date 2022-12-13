@@ -644,7 +644,6 @@ bool Lexer::Compile(){
 				break;
 			default:
 				printf("lexer: unsupported code: %c\n", *comp_buf);
-                ScPrintf("-----------2");
 				m_p_lexer_result->error_code = ERR_INVALID_CODE;
 				break;
 			}

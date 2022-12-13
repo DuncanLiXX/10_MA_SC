@@ -3906,7 +3906,6 @@ bool Compiler::RunLoopMsg(RecordMsg *msg) {
     int macro_loc = this->FindSubProgram(macro_index);
     sub_msg->SetMacroProgType(macro_loc);
     if (macro_loc == 0) {
-        ScPrintf("-----------1");
         CreateErrorMsg(ERR_INVALID_CODE, msg->GetLineNo());  //找不到对应子程序
         return false;
     }

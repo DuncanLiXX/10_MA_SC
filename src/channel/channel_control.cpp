@@ -8667,9 +8667,7 @@ bool ChannelControl::ExecuteCompensateMsg(RecordMsg *msg){
 
     }
 
-
     m_n_run_thread_state = RUN;
-    printf("========== m_n_run_thread_state: %d\n", m_n_run_thread_state);
 
     //	printf("execute compensate message: %d, d=%d, h=%d\n", type, m_channel_status.cur_d_code, m_channel_status.cur_h_code);
 

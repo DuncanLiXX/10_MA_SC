@@ -96,6 +96,10 @@ public://公共接口
 		return m_compiler_status.mode.f_mode;
 	}
 
+    // sub_name:子程序号
+    // file_only:只搜索实际文件
+    int FindSubProgram(int sub_name, bool file_only = false);   //查找并打开子程序
+
 #ifdef USES_WOOD_MACHINE
 	bool FindPreStartSpdCmd(uint64_t line_min , uint64_t line_max, SpindleStartOffset &spd_cmd);   //查找是否存在可预启动的主轴指令
 #endif
@@ -172,8 +176,6 @@ private://私有接口
 
 //	bool CallSubProgram(int sub_name);   //调用子程序
 	bool ReturnFromSubProg();				//子程序返回处理
-
-	int FindSubProgram(int sub_name);   //查找并打开子程序
 
 	int FindJumpLabel(int label, uint64_t &offset, uint64_t &line_no);    //查找跳转点位置
 

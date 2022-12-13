@@ -556,7 +556,8 @@ struct FRegBits{
 	//F194
 	uint8_t :8;
 	//F195
-	uint8_t :8;
+    uint8_t MERS:1; // MDI∏¥Œª«Î«Û F195.0
+    uint8_t :7;
 	//F196
 	uint8_t :8;
 	//F197

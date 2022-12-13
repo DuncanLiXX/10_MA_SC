@@ -83,6 +83,7 @@ struct ChannelRealtimeStatus{
 
     int32_t tap_err;                        //刚性攻丝误差(最大值) 单位：um
     int32_t tap_err_now;                    //刚性攻丝误差(当前值) 单位：um
+    double spd_angle;                      //主轴当前角度 单位：度
 };
 
 //传递给MC的模态位结构

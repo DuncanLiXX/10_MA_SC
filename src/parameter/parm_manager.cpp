@@ -1422,6 +1422,7 @@ bool ParmManager::ReadAxisConfig(){
             m_sc_axis_config[i].sync_pos_detect = m_ini_axis->GetIntValueOrDefault(sname, "sync_pos_detect", 1);
             m_sc_axis_config[i].sync_torque_detect = m_ini_axis->GetIntValueOrDefault(sname, "sync_torque_detect", 1);
             m_sc_axis_config[i].serial_torque_ratio = m_ini_axis->GetIntValueOrDefault(sname, "serial_torque_ratio", 100);
+            m_sc_axis_config[i].serial_pre_speed = m_ini_axis->GetIntValueOrDefault(sname, "serial_pre_speed", 20);
 
             m_sc_axis_config[i].pmc_g00_by_EIFg = m_ini_axis->GetIntValueOrDefault(sname, "pmc_g00_by_EIFg", 0);
             m_sc_axis_config[i].pmc_min_speed = m_ini_axis->GetIntValueOrDefault(sname, "pmc_min_speed", 5);
@@ -1581,6 +1582,7 @@ bool ParmManager::ReadAxisConfig(){
             m_sc_axis_config[i].sync_pos_detect = 1;
             m_sc_axis_config[i].sync_torque_detect = 1;
             m_sc_axis_config[i].serial_torque_ratio = 100;
+            m_sc_axis_config[i].serial_pre_speed = 20;
 
             m_sc_axis_config[i].pmc_g00_by_EIFg = 0;
             m_sc_axis_config[i].pmc_min_speed = 5;
@@ -1730,6 +1732,7 @@ bool ParmManager::ReadAxisConfig(){
             m_ini_axis->AddKeyValuePair(string("sync_pos_detect"), string("1"), ns);
             m_ini_axis->AddKeyValuePair(string("sync_torque_detect"), string("1"), ns);
             m_ini_axis->AddKeyValuePair(string("serial_torque_ratio"), string("100"), ns);
+            m_ini_axis->AddKeyValuePair(string("serial_pre_speed"), string("20"), ns);
 
             m_ini_axis->AddKeyValuePair(string("pmc_g00_by_EIFg"), string("0"), ns);
             m_ini_axis->AddKeyValuePair(string("pmc_min_speed"), string("5"), ns);
@@ -4782,6 +4785,10 @@ bool ParmManager::UpdateAxisParam(uint8_t axis_index, uint32_t param_no, ParamVa
         sprintf(kname, "serial_torque_ratio");
         m_ini_axis->SetIntValue(sname, kname,value.value_uint16);
         break;
+    case 1664:	//预载串联速度
+        sprintf(kname, "serial_pre_speed");
+        m_ini_axis->SetIntValue(sname, kname,value.value_uint16);
+        break;
     case 1700:	//SOR信号用途
         sprintf(kname, "spd_ctrl_GST");
         m_ini_axis->SetIntValue(sname, kname,value.value_uint8);
@@ -5548,6 +5555,7 @@ void ParmManager::ActiveSystemParam(uint32_t param_no, ParamValue &value){
  */
 void ParmManager::ActiveChnParam(uint8_t chn_index, uint32_t param_no, ParamValue &value, uint8_t proc_index){
 	ChannelEngine *chn_engine = ChannelEngine::GetInstance();
+    ChannelControl *chn_ctrl = chn_engine->GetChnControl(chn_index);
 	switch(param_no){
 	case 102:	//轴数量
 		this->m_sc_channel_config[chn_index].chn_axis_count = value.value_uint8;
@@ -5799,11 +5807,17 @@ void ParmManager::ActiveChnParam(uint8_t chn_index, uint32_t param_no, ParamValu
         this->m_sc_channel_config[chn_index].g01_max_speed = value.value_uint32;
         break;
     case 515:   //手轮3档的自定义步长
+    {
         this->m_sc_channel_config[chn_index].mpg_level3_step = value.value_uint16;
-        break;
+        if(chn_ctrl->GetManualStep() == MANUAL_STEP_100) // 如果当前为3档，需要往mi更新步长
+            chn_engine->SetManualStep(chn_index, 2);
+    }break;
     case 516:   //手轮4档的自定义步长
+    {
         this->m_sc_channel_config[chn_index].mpg_level4_step = value.value_uint16;
-        break;
+        if(chn_ctrl->GetManualStep() == MANUAL_STEP_1000) // 如果当前为4档，需要往mi更新步长
+            chn_engine->SetManualStep(chn_index, 3);
+    }break;
 #ifdef USES_WOOD_MACHINE
 	case 600:  //DSP调试参数1
 		this->m_sc_channel_config[chn_index].debug_param_1 = value.value_int32;
@@ -6272,6 +6286,10 @@ void ParmManager::ActiveAxisParam(uint8_t axis_index, uint32_t param_no, ParamVa
         break;
     case 1663:	//是否进行扭矩同步误差检测
         this->m_sc_axis_config[axis_index].serial_torque_ratio = value.value_uint16;
+        UpdateMiParam<uint8_t>(axis_index+1, param_no, value.value_uint16);
+        break;
+    case 1664:	//预载串联速度
+        this->m_sc_axis_config[axis_index].serial_pre_speed = value.value_uint16;
         UpdateMiParam<uint8_t>(axis_index+1, param_no, value.value_uint16);
         break;
     case 1700:	//SOR信号用途

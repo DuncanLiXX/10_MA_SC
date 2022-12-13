@@ -1021,7 +1021,7 @@ void ChannelEngine::Initialize(HMICommunication *hmi_comm, MICommunication *mi_c
         if(m_p_axis_config[i].axis_interface == VIRTUAL_AXIS || m_p_axis_config[i].axis_type == AXIS_SPINDLE	//主轴和虚拟轴不用回参考点
                 || (m_p_axis_config[i].feedback_mode == NO_ENCODER && m_p_axis_config[i].ret_ref_mode == 0)    //无反馈，并且禁止回参考点
                 || (m_p_axis_config[i].feedback_mode != INCREMENTAL_ENCODER && m_p_axis_config[i].feedback_mode != NO_ENCODER && m_p_axis_config[i].ref_encoder != kAxisRefNoDef)    //绝对值编码器，已设定参考点
-                || (m_p_axis_config[i].feedback_mode == INCREMENTAL_ENCODER && m_p_axis_config[i].ret_ref_mode == 0)){  //增量编码器，禁止回参考点
+                /*|| (m_p_axis_config[i].feedback_mode == INCREMENTAL_ENCODER && m_p_axis_config[i].ret_ref_mode == 0)增量式编码器必须回参考点*/){  //增量编码器，禁止回参考点
             //			m_n_mask_ret_ref_over |= (0x01<<i);
             this->SetRetRefFlag(i, true);
         }
@@ -3375,9 +3375,9 @@ void ChannelEngine::ProcessHmiAbsoluteRefSet(HMICmdFrame &cmd)
             && status.chn_work_mode == REF_MODE)                     //回零模式
     {
         cmd.cmd_extension = 0;
-        if ((m_p_axis_config[phy_axis].absolute_ref_mode == 0        //直接设原点方式
-            && m_p_axis_config[phy_axis].feedback_mode == 1)         //绝对式
-                || m_p_axis_config[phy_axis].axis_interface == 0)    //虚拟轴
+        if (!m_b_emergency  //非急停状态
+            && ((m_p_axis_config[phy_axis].absolute_ref_mode == 0 && m_p_axis_config[phy_axis].feedback_mode == 1)         //绝对式
+                || m_p_axis_config[phy_axis].axis_interface == 0))    //虚拟轴
         {
             m_b_ret_ref = true;
             m_n_mask_ret_ref = (0x01<<phy_axis);
@@ -4885,8 +4885,6 @@ void ChannelEngine::SetAutoRatio(uint8_t ratio){
  * @param ratio ： 倍率值
  */
 void ChannelEngine::SetAutoRatio(uint8_t chn, uint8_t ratio){
-    if(this->m_p_channel_control[chn].GetAutoRatio() == ratio)
-        return;
     this->m_p_channel_control[chn].SetAutoRatio(ratio);
 }
 
@@ -4960,8 +4958,6 @@ void ChannelEngine::SetRapidRatio(uint8_t chn, uint8_t ratio){
     //		ratio = 0;
     //		break;
     //	}
-    if(this->m_p_channel_control[chn].GetRapidRatio() == ratio)
-        return;
     this->m_p_channel_control[chn].SetRapidRatio(ratio);
 }
 
@@ -8019,7 +8015,7 @@ void ChannelEngine::Emergency(uint8_t chn){
 
     //生成急停错误信息
     m_error_code = ERR_EMERGENCY;
-    CreateError(ERR_EMERGENCY, ERROR_LEVEL, CLEAR_BY_MCP_RESET, 0, chn);
+    //CreateError(ERR_EMERGENCY, ERROR_LEVEL, CLEAR_BY_MCP_RESET, 0, chn);//梯图有报警
 
 }
 
@@ -8383,6 +8379,7 @@ void ChannelEngine::CheckBattery(){
  */
 void ChannelEngine::ProcessPmcSignal(){
 
+    static bool inited = false;
     const GRegBits *g_reg = nullptr;
     GRegBits *g_reg_last = nullptr;
     FRegBits *f_reg = nullptr;
@@ -8416,7 +8413,7 @@ void ChannelEngine::ProcessPmcSignal(){
             printf("ERROR:Invalid work mode signal:MD=%hhu\n", g_reg->MD);
         }
         //方式选择信号
-        if(g_reg->MD != g_reg_last->MD){
+        if(g_reg->MD != g_reg_last->MD || !inited){
             if(mode != INVALID_MODE){
                 this->SetWorkMode(mode);
                 m_sync_axis_ctrl->InputMode(mode);
@@ -8481,6 +8478,7 @@ void ChannelEngine::ProcessPmcSignal(){
         }
 #endif
 
+        // 攻丝状态()不让复位
         if(g_reg->ERS == 1 && g_reg_last->ERS == 0){
             this->SystemReset();
         }
@@ -8577,6 +8575,8 @@ void ChannelEngine::ProcessPmcSignal(){
             if(f_reg_last->RTPT == 1)   // 攻丝回退结束信号
                 f_reg->RTPT = 0;
 
+            if(f_reg_last->MERS == 1)   // MDI复位请求
+                f_reg->MERS = 0;
         }
 
         //选停信号 SBS
@@ -8655,17 +8655,17 @@ void ChannelEngine::ProcessPmcSignal(){
 
         //倍率信号处理
 
-        if(g_reg->_JV != g_reg_last->_JV){
+        if(g_reg->_JV != g_reg_last->_JV || !inited){
             uint16_t ratio= ~g_reg->_JV;
             if(g_reg->_JV == 0)
                 ratio = 0;
             this->SetManualRatio(i, ratio/100);
         }
-        if(g_reg->_FV != g_reg_last->_FV)
+        if(g_reg->_FV != g_reg_last->_FV || !inited)
             this->SetAutoRatio(i, ~g_reg->_FV);
-        if(g_reg->SOV != g_reg_last->SOV)
+        if(g_reg->SOV != g_reg_last->SOV || !inited)
             ctrl->SetSpindleRatio(g_reg->SOV);
-        if(g_reg->ROV != g_reg_last->ROV)
+        if(g_reg->ROV != g_reg_last->ROV || !inited)
             this->SetRapidRatio(i, g_reg->ROV);
 
 
@@ -8864,6 +8864,7 @@ void ChannelEngine::ProcessPmcSignal(){
                 freg->ZP42 &= ~(0x01<<bit);
         }
     }
+    inited = true;
 
     //处理PMC的告警，即A地址寄存器
     this->ProcessPmcAlarm();
@@ -11528,7 +11529,7 @@ void ChannelEngine::SetRetRefFlag(uint8_t phy_axis, bool flag){
         if(m_p_axis_config[phy_axis].axis_interface == VIRTUAL_AXIS || m_p_axis_config[phy_axis].axis_type == AXIS_SPINDLE	//主轴和虚拟轴不用回参考点
                 || (m_p_axis_config[phy_axis].feedback_mode == NO_ENCODER && m_p_axis_config[phy_axis].ret_ref_mode == 0)    //无反馈，并且禁止回参考点
                 || (m_p_axis_config[phy_axis].feedback_mode != INCREMENTAL_ENCODER && m_p_axis_config[phy_axis].feedback_mode != NO_ENCODER && m_p_axis_config[phy_axis].ref_encoder != kAxisRefNoDef)    //绝对值编码器，已设定参考点
-                || (m_p_axis_config[phy_axis].feedback_mode == INCREMENTAL_ENCODER && m_p_axis_config[phy_axis].ret_ref_mode == 0)){  //增量编码器，禁止回参考点
+                /*|| (m_p_axis_config[phy_axis].feedback_mode == INCREMENTAL_ENCODER && m_p_axis_config[phy_axis].ret_ref_mode == 0)增量式编码器必须回零*/){  //增量编码器，禁止回参考点
             return;   //不用回参考点的轴禁止将回零标志复位
         }
         this->m_n_mask_ret_ref_over &= ~(0x01<<phy_axis);

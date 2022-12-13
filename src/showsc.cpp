@@ -376,6 +376,7 @@ void ShowSc::PrintRealtimeData()
     AddPair(s,"line_no",chn_rt_status->line_no);
     AddPair(s,"tap_err",chn_rt_status->tap_err);
     AddPair(s,"tap_err_now",chn_rt_status->tap_err_now);
+    AddPair(s,"spd_angle",chn_rt_status->spd_angle);
 
     SendMsg(s);
 }
@@ -455,6 +456,7 @@ void ShowSc::PrintSpindle()
     AddPair(s,"tap_flag",spindle->tap_state.tap_flag);
     AddPair(s,"tap_f",spindle->tap_state.F);
     AddPair(s,"tap_R",spindle->tap_state.R);
+    AddPair(s,"tap_S",spindle->tap_state.s);
     SendMsg(s);
 }
 
@@ -690,6 +692,7 @@ void ShowSc::PrintAxisConfig(int axis)
     AddPair(s,"sync_mach_detect",cfg->sync_mach_detect);
     AddPair(s,"sync_torque_detect",cfg->sync_torque_detect);
     AddPair(s,"serial_torque_ratio",cfg->serial_torque_ratio);
+    AddPair(s,"serial_pre_speed",cfg->serial_pre_speed);
 
     for(int i = 0; i < 10; i++){
         string axis_home_pos_s = "axis_home_pos[" + to_string(i) + "]";

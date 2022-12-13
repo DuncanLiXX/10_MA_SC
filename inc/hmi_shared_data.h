@@ -477,6 +477,7 @@ enum ErrorType {
     ERR_SPD_RTNT_FAIL       = 1708, //刚性攻丝回退失败
     ERR_SPD_RTNT_IN_AUTO    = 1709, //自动模式禁止攻丝回退
     ERR_SPD_MULTI_NUM       = 1710, //多主轴告警
+    ERR_SPD_LOCATE_FAIL     = 1711, //主轴定向失败
 
 	//PMC轴告警
     ERR_PMC_AXIS_CTRL_CHANGE    = 1900, //PMC轴控制状态下切换
@@ -964,7 +965,7 @@ struct HmiChannelRealtimeStatus {
 
     int32_t tap_err;                        //刚性攻丝误差(最大值) 单位：um
     int32_t tap_err_now;                    //刚性攻丝误差(当前值) 单位：um
-
+    double spd_angle;                      //主轴当前角度 单位：度
 };
 
 
@@ -1370,6 +1371,7 @@ struct HmiAxisConfig{
     uint8_t sync_mach_detect;                   //是否进行坐标同步误差检测 0--否   1：是
     uint8_t sync_torque_detect;                 //是否进行扭矩同步误差检测 0--否   1：是
     uint16_t serial_torque_ratio;               //串联力矩系数 单位: 1%
+    uint16_t serial_pre_speed;                  //预载串联速度 单位：rpm
 
     double axis_home_pos[10];				//参考点位置  单位：mm
     double ref_mark_err;                   //参考点基准误差   单位：mm    有效范围：0~10.0

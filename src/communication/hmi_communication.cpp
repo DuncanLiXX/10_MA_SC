@@ -2827,9 +2827,12 @@ void HMICommunication::ProcessHmiVirtualMOPCmd(HMICmdFrame &cmd){
 		this->m_p_channel_engine->ClearAlarm();
 		break;
 	case MOP_KEY_SYS_RESET:				//系统复位
-
-		this->m_p_channel_engine->SystemReset();
-		break;
+    {
+        // this->m_p_channel_engine->SystemReset();
+        // 通过MERS(F195.0)导通ERS(G8.7)来实现复位
+        FRegBits *F =this->m_p_channel_engine->GetChnFRegBits(0);
+        F->MERS = 1;
+    }break;
 	case MOP_KEY_LIGHT:	{				//照明
 	//	this->m_p_channel_engine->ProcessHmiSetRefCmd();  //测试设置参考点功能
 #ifdef USES_PEITIAN_SMALL_FIVE

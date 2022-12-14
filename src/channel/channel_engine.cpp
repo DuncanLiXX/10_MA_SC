@@ -4027,6 +4027,71 @@ void ChannelEngine::SetProgProtect(bool flag)
     m_p_hmi_comm->SendCmd(hmi_cmd);
 }
 
+bool ChannelEngine::CheckSoftLimit(ManualMoveDir dir, uint8_t phy_axis, double pos){
+    // 如果没回零，认为限位不超限
+    if(!(this->m_n_mask_ret_ref_over & (0x01<<phy_axis)))
+        return false;
+    double positive[3];
+    double negative[3];
+    bool enable[3];
+    positive[0] = m_p_axis_config[phy_axis].soft_limit_max_1;
+    positive[1] = m_p_axis_config[phy_axis].soft_limit_max_2;
+    positive[2] = m_p_axis_config[phy_axis].soft_limit_max_3;
+    negative[0] = m_p_axis_config[phy_axis].soft_limit_min_1;
+    negative[1] = m_p_axis_config[phy_axis].soft_limit_min_2;
+    negative[2] = m_p_axis_config[phy_axis].soft_limit_min_3;
+    enable[0] = m_p_axis_config[phy_axis].soft_limit_check_1;
+    enable[1] = m_p_axis_config[phy_axis].soft_limit_check_2;
+    enable[2] = m_p_axis_config[phy_axis].soft_limit_check_3;
+    uint8_t chn_axis = 0, chn = 0;
+    chn = this->GetAxisChannel(phy_axis, chn_axis);
+    for(int i=0; i<3; i++){
+        if(dir == DIR_POSITIVE && enable[i] && positive[i] <= pos){
+            CreateError(ERR_SOFTLIMIT_POS, WARNING_LEVEL, CLEAR_BY_MCP_RESET, 0, chn, chn_axis);
+            return false;
+
+        }
+        if(dir == DIR_NEGATIVE && enable[i] && negative[i] >= pos){
+            CreateError(ERR_SOFTLIMIT_NEG, WARNING_LEVEL, CLEAR_BY_MCP_RESET, 0, chn, chn_axis);
+            return false;
+        }
+    }
+    return true;
+}
+
+bool ChannelEngine::GetSoftLimt(ManualMoveDir dir, uint8_t phy_axis, double &limit){
+    // 如果没回零，认为限位不超限
+    if(!(this->m_n_mask_ret_ref_over & (0x01<<phy_axis)))
+        return false;
+    double positive[3];
+    double negative[3];
+    bool enable[3];
+    positive[0] = m_p_axis_config[phy_axis].soft_limit_max_1;
+    positive[1] = m_p_axis_config[phy_axis].soft_limit_max_2;
+    positive[2] = m_p_axis_config[phy_axis].soft_limit_max_3;
+    negative[0] = m_p_axis_config[phy_axis].soft_limit_min_1;
+    negative[1] = m_p_axis_config[phy_axis].soft_limit_min_2;
+    negative[2] = m_p_axis_config[phy_axis].soft_limit_min_3;
+    enable[0] = m_p_axis_config[phy_axis].soft_limit_check_1;
+    enable[1] = m_p_axis_config[phy_axis].soft_limit_check_2;
+    enable[2] = m_p_axis_config[phy_axis].soft_limit_check_3;
+    uint8_t chn_axis = 0, chn = 0;
+    chn = this->GetAxisChannel(phy_axis, chn_axis);
+    bool flag = false; // 是否找到了限位位置
+    for(int i=0; i<3; i++){
+        if(dir == DIR_POSITIVE && enable[i] &&
+                (!flag || (positive[i] < limit))){
+            flag = true;
+            limit = positive[i];
+        }
+        if(dir == DIR_NEGATIVE && enable[i] &&
+                (!flag || (negative[i] < limit))){
+            flag = true;
+            limit = negative[i];
+        }
+    }
+    return flag;
+}
 
 /**
  * @brief 处理HMI更新螺补数据
@@ -5318,12 +5383,21 @@ void ChannelEngine::ManualMoveAbs(uint8_t phy_axis, double vel, double pos){
     int64_t cur_pos = this->m_df_phy_axis_pos_feedback[phy_axis]*1e7;  //当前位置
     //设置目标位置
     int64_t tar_pos = pos * 1e7;   //单位转换：mm-->0.1nms
-    int8_t dir = (tar_pos > cur_pos)?DIR_POSITIVE:DIR_NEGATIVE;  //移动方向
+    ManualMoveDir dir = (tar_pos > cur_pos)?DIR_POSITIVE:DIR_NEGATIVE;  //移动方向
 
     //检查硬限位
     if(CheckAxisHardLimit(phy_axis, dir)){   //硬限位告警，直接返回
         printf("hard limit active, manual move abs return \n");
         return;
+    }
+    //检查软限位
+    double limit = 0;
+    if(CheckSoftLimit(dir, phy_axis, this->m_df_phy_axis_pos_feedback[phy_axis])){
+        printf("soft limit active, manual move abs return \n");
+    }else if(GetSoftLimt(dir, phy_axis, limit) && dir == DIR_POSITIVE && pos > limit){
+        tar_pos = limit * 1e7;
+    }else if(GetSoftLimt(dir, phy_axis, limit) && dir == DIR_NEGATIVE && pos < limit){
+        tar_pos = limit * 1e7;
     }
 
 
@@ -5344,7 +5418,6 @@ void ChannelEngine::ManualMoveAbs(uint8_t phy_axis, double vel, double pos){
         //	memcpy(cmd.data.data, &feed, sizeof(feed));
         cmd.data.data[0] = (feed & 0xFFFF);
         cmd.data.data[1] = ((feed>>16)&0xFFFF);
-
 
         if((this->m_n_mask_ret_ref_over & (0x01<<phy_axis))
                 && m_p_axis_config[phy_axis].soft_limit_check_1 == 1){//软限位1有效

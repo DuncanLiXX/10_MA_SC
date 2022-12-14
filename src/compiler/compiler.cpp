@@ -2031,7 +2031,6 @@ void Compiler::GetLastOpenFile(char *file)
 {
     if(file == nullptr)
         return;
-
     strcpy(file, m_last_main_file);
 }
 

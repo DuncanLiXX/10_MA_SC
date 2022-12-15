@@ -11121,85 +11121,85 @@ uint8_t ChannelControl::GetSpdChnAxis(uint8_t spd_idx){
  * @param vel : 运动速度, 单位：mm/min
  * @param inc_dis ： 增量位置
  */
-void ChannelControl::ManualMove2(uint8_t axis, int8_t dir, double vel, double inc_dis){
+//void ChannelControl::ManualMove2(uint8_t axis, int8_t dir, double vel, double inc_dis){
 
-    //检查硬限位
-    uint8_t phy_axis = this->GetPhyAxis(axis);
-    if(phy_axis != 0xff){
-        if(m_p_channel_engine->CheckAxisHardLimit(phy_axis, dir)){   //硬限位告警，直接返回
-            printf("hard limit active, manual move return 1 \n");
-            return;
-        }
-    }
+//    //检查硬限位
+//    uint8_t phy_axis = this->GetPhyAxis(axis);
+//    if(phy_axis != 0xff){
+//        if(m_p_channel_engine->CheckAxisHardLimit(phy_axis, dir)){   //硬限位告警，直接返回
+//            printf("hard limit active, manual move return 1 \n");
+//            return;
+//        }
+//    }
 
-    McCmdFrame cmd;
-    memset(&cmd, 0x00, sizeof(McCmdFrame));
+//    McCmdFrame cmd;
+//    memset(&cmd, 0x00, sizeof(McCmdFrame));
 
-    cmd.data.channel_index = m_n_channel_index;
-    cmd.data.axis_index = axis+1;   //轴号从1开始
-    cmd.data.cmd = CMD_MC_AXIS_MAUAL_MOVE;
+//    cmd.data.channel_index = m_n_channel_index;
+//    cmd.data.axis_index = axis+1;   //轴号从1开始
+//    cmd.data.cmd = CMD_MC_AXIS_MAUAL_MOVE;
 
-    //设置速度
-    uint32_t feed = vel*1000/60;   //转换单位为um/s
+//    //设置速度
+//    uint32_t feed = vel*1000/60;   //转换单位为um/s
 
-    //	memcpy(cmd.data.data, &feed, sizeof(feed));
-    cmd.data.data[0] = (feed & 0xFFFF);
-    cmd.data.data[1] = ((feed>>16)&0xFFFF);
+//    //	memcpy(cmd.data.data, &feed, sizeof(feed));
+//    cmd.data.data[0] = (feed & 0xFFFF);
+//    cmd.data.data[1] = ((feed>>16)&0xFFFF);
 
-    //设置目标位置
-    int64_t tar_pos = fabs(inc_dis) * 1e7 *dir;   //单位转换：mm-->0.1nms
-
-
-    if((m_channel_status.returned_to_ref_point & (0x01<<axis))
-            && m_p_axis_config[phy_axis].soft_limit_check_1 == 1){//软限位1有效
-        int64_t cur_pos = this->GetAxisCurMachPos(axis)*1e7;  //当前位置
-        int64_t limit_pos = 0;
-        int8_t dir = (tar_pos > cur_pos)?DIR_POSITIVE:DIR_NEGATIVE;
-        if(dir == DIR_POSITIVE){//正向
-            limit_pos = m_p_axis_config[phy_axis].soft_limit_max_1*1e7;
+//    //设置目标位置
+//    int64_t tar_pos = fabs(inc_dis) * 1e7 *dir;   //单位转换：mm-->0.1nms
 
 
-            if(limit_pos < cur_pos){//已经在限位外，告警
-                CreateError(ERR_SOFTLIMIT_POS, WARNING_LEVEL, CLEAR_BY_MCP_RESET, 0, m_n_channel_index, m_channel_status.cur_axis);
-                //	this->m_error_code = ERR_SOFTLIMIT_POS;
-                return;
-            }else if(limit_pos == cur_pos){  //已经到达正限位极限位置
-                CreateError(ERR_SOFTLIMIT_POS, WARNING_LEVEL, CLEAR_BY_MCP_RESET, 0, m_n_channel_index, m_channel_status.cur_axis);
-                return;
-            }else if(tar_pos > (limit_pos-cur_pos)){
-                tar_pos = limit_pos - this->GetAxisCurIntpTarPos(m_channel_status.cur_axis, true)*1e7;
+//    if((m_channel_status.returned_to_ref_point & (0x01<<axis))
+//            && m_p_axis_config[phy_axis].soft_limit_check_1 == 1){//软限位1有效
+//        int64_t cur_pos = this->GetAxisCurMachPos(axis)*1e7;  //当前位置
+//        int64_t limit_pos = 0;
+//        int8_t dir = (tar_pos > cur_pos)?DIR_POSITIVE:DIR_NEGATIVE;
+//        if(dir == DIR_POSITIVE){//正向
+//            limit_pos = m_p_axis_config[phy_axis].soft_limit_max_1*1e7;
 
-            }
-        }else if(dir == DIR_NEGATIVE){//负向
-            limit_pos = m_p_axis_config[phy_axis].soft_limit_min_1*1e7;
 
-            if(limit_pos > cur_pos){//已经在限位外，告警
-                CreateError(ERR_SOFTLIMIT_NEG, WARNING_LEVEL, CLEAR_BY_MCP_RESET, 0, m_n_channel_index, m_channel_status.cur_axis);
-                //	this->m_error_code = ERR_SOFTLIMIT_NEG;
-                return;
-            }else if(limit_pos == cur_pos){  //已经到达负限位极限位置
-                CreateError(ERR_SOFTLIMIT_NEG, WARNING_LEVEL, CLEAR_BY_MCP_RESET, 0, m_n_channel_index, m_channel_status.cur_axis);
-                return;
-            }else if(tar_pos < (limit_pos-cur_pos)){
-                tar_pos = limit_pos-this->GetAxisCurIntpTarPos(m_channel_status.cur_axis, true)*1e7;
-            }
-        }
-    }
+//            if(limit_pos < cur_pos){//已经在限位外，告警
+//                CreateError(ERR_SOFTLIMIT_POS, WARNING_LEVEL, CLEAR_BY_MCP_RESET, 0, m_n_channel_index, m_channel_status.cur_axis);
+//                //	this->m_error_code = ERR_SOFTLIMIT_POS;
+//                return;
+//            }else if(limit_pos == cur_pos){  //已经到达正限位极限位置
+//                CreateError(ERR_SOFTLIMIT_POS, WARNING_LEVEL, CLEAR_BY_MCP_RESET, 0, m_n_channel_index, m_channel_status.cur_axis);
+//                return;
+//            }else if(tar_pos > (limit_pos-cur_pos)){
+//                tar_pos = limit_pos - this->GetAxisCurIntpTarPos(m_channel_status.cur_axis, true)*1e7;
 
-    cmd.data.data[2] = (tar_pos & 0xFFFF);
-    cmd.data.data[3] = ((tar_pos>>16)&0xFFFF);
-    cmd.data.data[4] = ((tar_pos>>32) & 0xFFFF);
-    cmd.data.data[5] = ((tar_pos>>48)&0xFFFF);
+//            }
+//        }else if(dir == DIR_NEGATIVE){//负向
+//            limit_pos = m_p_axis_config[phy_axis].soft_limit_min_1*1e7;
 
-    cmd.data.data[6] = 0x02;   //增量目标位置
+//            if(limit_pos > cur_pos){//已经在限位外，告警
+//                CreateError(ERR_SOFTLIMIT_NEG, WARNING_LEVEL, CLEAR_BY_MCP_RESET, 0, m_n_channel_index, m_channel_status.cur_axis);
+//                //	this->m_error_code = ERR_SOFTLIMIT_NEG;
+//                return;
+//            }else if(limit_pos == cur_pos){  //已经到达负限位极限位置
+//                CreateError(ERR_SOFTLIMIT_NEG, WARNING_LEVEL, CLEAR_BY_MCP_RESET, 0, m_n_channel_index, m_channel_status.cur_axis);
+//                return;
+//            }else if(tar_pos < (limit_pos-cur_pos)){
+//                tar_pos = limit_pos-this->GetAxisCurIntpTarPos(m_channel_status.cur_axis, true)*1e7;
+//            }
+//        }
+//    }
 
-    if(!this->m_b_mc_on_arm)
-        m_p_mc_comm->WriteCmd(cmd);
-    else
-        m_p_mc_arm_comm->WriteCmd(cmd);
+//    cmd.data.data[2] = (tar_pos & 0xFFFF);
+//    cmd.data.data[3] = ((tar_pos>>16)&0xFFFF);
+//    cmd.data.data[4] = ((tar_pos>>32) & 0xFFFF);
+//    cmd.data.data[5] = ((tar_pos>>48)&0xFFFF);
 
-    printf("manual move2: axis = %d, tar_pos = %lld, type = 0x%x\n", axis, tar_pos, cmd.data.data[6]);
-}
+//    cmd.data.data[6] = 0x02;   //增量目标位置
+
+//    if(!this->m_b_mc_on_arm)
+//        m_p_mc_comm->WriteCmd(cmd);
+//    else
+//        m_p_mc_arm_comm->WriteCmd(cmd);
+
+//    printf("manual move2: axis = %d, tar_pos = %lld, type = 0x%x\n", axis, tar_pos, cmd.data.data[6]);
+//}
 
 /**
  * @brief 手动移动轴
@@ -11210,7 +11210,7 @@ void ChannelControl::ManualMove(int8_t dir){
             m_channel_status.chn_work_mode != MANUAL_STEP_MODE){  //非手动模式，不做响应，退出
         return;
     }
-    //	printf("send manualmove cmd to mc\n");
+    // printf("send manualmove cmd to mc\n");
 
     //检查硬限位
     uint8_t phy_axis = this->GetPhyAxis(m_channel_status.cur_axis);
@@ -11220,6 +11220,27 @@ void ChannelControl::ManualMove(int8_t dir){
             return;
         }
     }
+    //设置目标位置
+    int64_t cur_pos = m_p_channel_engine->GetPhyAxisMachPosFeedback(phy_axis)*1e7;  //当前位置
+    int64_t tar_pos = 0;
+    if(GetChnWorkMode() == MANUAL_STEP_MODE){ //手动单步
+        tar_pos = cur_pos + GetCurManualStep()*1e4*dir;		//转换单位为0.1nm
+
+    }else{
+        tar_pos = cur_pos + 99999*1e7*dir;    //手动连续模式，将目标位置设置的很远
+    }
+    //检查软限位
+    double limit = 0;
+    if(CheckSoftLimit((ManualMoveDir)dir, phy_axis,
+                      m_p_channel_engine->GetPhyAxisMachPosFeedback(phy_axis))){
+        ScPrintf("soft limit active, manual move abs return \n");
+        return;
+    }else if(GetSoftLimt((ManualMoveDir)dir, phy_axis, limit) && dir == DIR_POSITIVE && tar_pos > limit){
+        tar_pos = limit * 1e7;
+    }else if(GetSoftLimt((ManualMoveDir)dir, phy_axis, limit) && dir == DIR_NEGATIVE && tar_pos < limit){
+        tar_pos = limit * 1e7;
+    }
+    int64_t n_inc_dis = tar_pos - GetAxisCurIntpTarPos(m_channel_status.cur_axis, true)*1e7;
 
     if(this->m_mask_pmc_axis & (0x01<<m_channel_status.cur_axis)){
         this->ManualMovePmc(dir);
@@ -11241,77 +11262,14 @@ void ChannelControl::ManualMove(int8_t dir){
         feed *= 2;  //速度翻倍
         printf("double manual feed\n");
     }
+    ScPrintf("axis:%u, feed:%u, n_inc_dis=%lld",m_channel_status.cur_axis,feed, n_inc_dis);
 
     cmd.data.data[0] = (feed & 0xFFFF);
     cmd.data.data[1] = ((feed>>16)&0xFFFF);
-
-    //设置目标位置
-    int64_t tar_pos = 0;
-
-    if(m_channel_status.chn_work_mode == MANUAL_STEP_MODE){
-        tar_pos = this->GetCurManualStep()*1e4*dir;		//转换单位为0.1nm
-
-    }else
-        tar_pos = 90000*1e7*dir;    //手动连续模式，将目标位置设置的很远
-
-    if((m_channel_status.returned_to_ref_point & (0x01<<m_channel_status.cur_axis))
-            && m_p_axis_config[phy_axis].soft_limit_check_1 == 1){//软限位1有效
-        int64_t tar_inc_max = 0;
-        int64_t cur_pos = this->GetAxisCurMachPos(m_channel_status.cur_axis)*1e7;  //当前位置
-        int64_t limit_pos = 0;   //限位位置
-        if(dir == DIR_POSITIVE){//正向
-            limit_pos = m_p_axis_config[phy_axis].soft_limit_max_1*1e7;
-            tar_inc_max = limit_pos - cur_pos;
-
-            printf("manual move, dir = %hhd, max = %lld, cur == %lld\n", dir, tar_inc_max,
-                   cur_pos);
-            if(tar_inc_max < 0){//已经在限位外，告警
-                CreateError(ERR_SOFTLIMIT_POS, WARNING_LEVEL, CLEAR_BY_MCP_RESET, 0, m_n_channel_index, m_channel_status.cur_axis);
-                //	this->m_error_code = ERR_SOFTLIMIT_POS;
-                printf("manual move out of soft positive limit\n");
-                return;
-            }else if(tar_inc_max == 0){  //已经到达正限位极限位置
-                CreateError(ERR_SOFTLIMIT_POS, WARNING_LEVEL, CLEAR_BY_MCP_RESET, 0, m_n_channel_index, m_channel_status.cur_axis);
-                printf("manual move out of soft inpositive limit\n");
-                return;
-            }else{
-                tar_inc_max = limit_pos - this->GetAxisCurIntpTarPos(m_channel_status.cur_axis, true)*1e7;   //与当前目标位置的机械坐标的差值
-                if(tar_pos > tar_inc_max)
-                    tar_pos = tar_inc_max;
-                std::cout << "tar_pos: " << tar_pos << std::endl;
-            }
-        }else if(dir == DIR_NEGATIVE){//负向
-            limit_pos = m_p_axis_config[phy_axis].soft_limit_min_1*1e7;
-            tar_inc_max = limit_pos - cur_pos;
-
-            //printf("manual move, dir = %hhd, max = %lld, tar = %lld\n", dir, tar_inc_max,
-            //       tar_pos);
-
-            printf("manual move   , dir = %hhd, max = %lld, cur == %lld\n", dir, tar_inc_max,
-                   cur_pos);
-            if(tar_inc_max > 0){//已经在限位外，告警
-                CreateError(ERR_SOFTLIMIT_NEG, WARNING_LEVEL, CLEAR_BY_MCP_RESET, 0, m_n_channel_index, m_channel_status.cur_axis);
-                //	this->m_error_code = ERR_SOFTLIMIT_NEG;
-                printf("manual move out of soft negative limit\n");
-                return;
-            }else if(tar_inc_max == 0){  //已经到达负限位极限位置
-                CreateError(ERR_SOFTLIMIT_NEG, WARNING_LEVEL, CLEAR_BY_MCP_RESET, 0, m_n_channel_index, m_channel_status.cur_axis);
-                printf("manual move out of soft innegative limit\n");
-                return;
-            }else{
-                tar_inc_max = limit_pos - this->GetAxisCurIntpTarPos(m_channel_status.cur_axis, true)*1e7;   //与当前目标位置的机械坐标的差值
-                if(tar_pos < tar_inc_max)
-                    tar_pos = tar_inc_max;
-                std::cout << "tar_pos: " << tar_pos << std::endl;
-            }
-        }
-    }
-
-
-    cmd.data.data[2] = (tar_pos & 0xFFFF);
-    cmd.data.data[3] = ((tar_pos>>16)&0xFFFF);
-    cmd.data.data[4] = ((tar_pos>>32) & 0xFFFF);
-    cmd.data.data[5] = ((tar_pos>>48)&0xFFFF);
+    cmd.data.data[2] = (n_inc_dis & 0xFFFF);
+    cmd.data.data[3] = ((n_inc_dis>>16)&0xFFFF);
+    cmd.data.data[4] = ((n_inc_dis>>32) & 0xFFFF);
+    cmd.data.data[5] = ((n_inc_dis>>48)&0xFFFF);
 
     cmd.data.data[6] = 0x02;   //增量目标位置
 
@@ -11352,63 +11310,34 @@ void ChannelControl::ManualMovePmc(int8_t dir){
     }
 
     //设置目标位置
+    int64_t cur_pos = m_p_channel_engine->GetPhyAxisMachPosFeedback(phy_axis)*1e7;  //当前位置
     int64_t tar_pos = 0;
+    if(GetChnWorkMode() == MANUAL_STEP_MODE){ //手动单步
+        tar_pos = cur_pos + GetCurManualStep()*1e4*dir;		//转换单位为0.1nm
 
-    if(m_channel_status.chn_work_mode == MANUAL_STEP_MODE){
-        tar_pos = this->GetCurManualStep()*1e4*dir;		//转换单位为0.1nm
-
-    }else
-        tar_pos = 90000*1e7*dir;    //手动连续模式，将目标位置设置的很远
-
-
-    if((m_channel_status.returned_to_ref_point & (0x01<<m_channel_status.cur_axis))
-            && m_p_axis_config[phy_axis].soft_limit_check_1 == 1){//软限位1有效
-        int64_t tar_inc_max = 0;
-        int64_t cur_pos = this->GetAxisCurMachPos(m_channel_status.cur_axis)*1e7;  //当前位置
-        int64_t limit_pos = 0;   //限位位置
-        if(dir == DIR_POSITIVE){//正向
-            limit_pos = m_p_axis_config[phy_axis].soft_limit_max_1*1e7;
-            tar_inc_max = limit_pos - cur_pos;
-
-            printf("manual move pmc , dir = %hhd, max = %lld, tar = %lld\n", dir, tar_inc_max,
-                   tar_pos);
-            if(tar_inc_max < 0){//已经在限位外，告警
-                CreateError(ERR_SOFTLIMIT_POS, WARNING_LEVEL, CLEAR_BY_MCP_RESET, 0, m_n_channel_index, m_channel_status.cur_axis);
-                //	this->m_error_code = ERR_SOFTLIMIT_POS;
-                printf("manual move out of soft positive limit\n");
-                return;
-            }else if(tar_inc_max == 0){  //已经到达正限位极限位置
-                CreateError(ERR_SOFTLIMIT_POS, WARNING_LEVEL, CLEAR_BY_MCP_RESET, 0, m_n_channel_index, m_channel_status.cur_axis);
-                return;
-            }else{
-                tar_inc_max = limit_pos - this->GetAxisCurIntpTarPos(m_channel_status.cur_axis, true)*1e7;   //与当前目标位置的机械坐标的差值
-                if(tar_pos > tar_inc_max)
-                    tar_pos = tar_inc_max;
-
-            }
-        }else if(dir == DIR_NEGATIVE){//负向
-            limit_pos = m_p_axis_config[phy_axis].soft_limit_min_1*1e7;
-            tar_inc_max = limit_pos - cur_pos;
-
-            printf("manual move, dir = %hhd, max = %lld, tar = %lld\n", dir, tar_inc_max,
-                   tar_pos);
-            if(tar_inc_max > 0){//已经在限位外，告警
-                CreateError(ERR_SOFTLIMIT_NEG, WARNING_LEVEL, CLEAR_BY_MCP_RESET, 0, m_n_channel_index, m_channel_status.cur_axis);
-                //	this->m_error_code = ERR_SOFTLIMIT_NEG;
-                printf("manual move out of soft negative limit\n");
-                return;
-            }else if(tar_inc_max == 0){  //已经到达负限位极限位置
-                CreateError(ERR_SOFTLIMIT_NEG, WARNING_LEVEL, CLEAR_BY_MCP_RESET, 0, m_n_channel_index, m_channel_status.cur_axis);
-                return;
-            }else{
-                tar_inc_max = limit_pos - this->GetAxisCurIntpTarPos(m_channel_status.cur_axis, true)*1e7;   //与当前目标位置的机械坐标的差值
-                if(tar_pos < tar_inc_max)
-                    tar_pos = tar_inc_max;
-            }
-        }
+    }else{
+        tar_pos = cur_pos + 99999*1e7*dir;    //手动连续模式，将目标位置设置的很远
     }
 
-    memcpy(&cmd.data.data[1], &tar_pos, sizeof(tar_pos));  //设置目标位置
+    //检查软限位
+    double limit = 0;
+    if(CheckSoftLimit((ManualMoveDir)dir, phy_axis,
+                      m_p_channel_engine->GetPhyAxisMachPosFeedback(phy_axis))){
+        printf("soft limit active, manual move abs return \n");
+        return;
+    }else if(GetSoftLimt((ManualMoveDir)dir, phy_axis, limit) && dir == DIR_POSITIVE && tar_pos > limit){
+        tar_pos = limit * 1e7;
+    }else if(GetSoftLimt((ManualMoveDir)dir, phy_axis, limit) && dir == DIR_NEGATIVE && tar_pos < limit){
+        tar_pos = limit * 1e7;
+    }
+    int64_t n_inc_dis = tar_pos - GetAxisCurIntpTarPos(m_channel_status.cur_axis, true)*1e7;
+
+    if(this->m_mask_pmc_axis & (0x01<<m_channel_status.cur_axis)){
+        this->ManualMovePmc(dir);
+        return;
+    }
+
+    memcpy(&cmd.data.data[1], &n_inc_dis, sizeof(tar_pos));  //设置目标位置
 
     memcpy(&cmd.data.data[5], &feed, sizeof(feed)); //设置速度
 
@@ -11461,6 +11390,27 @@ void ChannelControl::ManualMove(uint8_t axis, double pos, double vel, bool workc
         return;
     }
 
+    if(workcoord_flag){//工件坐标系转换为机械坐标系
+        this->TransWorkCoordToMachCoord(pos, this->m_channel_status.gmode[14], axis);
+    }
+
+    //设置目标位置
+    int64_t tar_pos = pos*1e7;    //转换单位为0.1nm
+    uint8_t phy_axis = this->GetPhyAxis(axis);
+    int64_t cur_pos = m_p_channel_engine->GetPhyAxisMachPosFeedback(phy_axis)*1e7;  //当前位置
+    ManualMoveDir dir = (tar_pos > cur_pos)?DIR_POSITIVE:DIR_NEGATIVE;  //移动方向
+
+    //检查软限位
+    double limit = 0;
+    if(CheckSoftLimit(dir, phy_axis, m_p_channel_engine->GetPhyAxisMachPosFeedback(phy_axis))){
+        printf("soft limit active, manual move abs return \n");
+        return;
+    }else if(GetSoftLimt(dir, phy_axis, limit) && dir == DIR_POSITIVE && pos > limit){
+        tar_pos = limit * 1e7;
+    }else if(GetSoftLimt(dir, phy_axis, limit) && dir == DIR_NEGATIVE && pos < limit){
+        tar_pos = limit * 1e7;
+    }
+
     McCmdFrame cmd;
     memset(&cmd, 0x00, sizeof(McCmdFrame));
 
@@ -11470,53 +11420,7 @@ void ChannelControl::ManualMove(uint8_t axis, double pos, double vel, bool workc
 
     //设置速度
     uint32_t feed = vel*1000/60;   //转换单位为um/s
-
     memcpy(cmd.data.data, &feed, sizeof(feed));
-
-    if(workcoord_flag){//工件坐标系转换为机械坐标系
-        this->TransWorkCoordToMachCoord(pos, this->m_channel_status.gmode[14], axis);
-    }
-
-    //设置目标位置
-    int64_t tar_pos = pos*1e7;    //转换单位为0.1nm
-    uint8_t phy_axis = this->GetPhyAxis(axis);
-
-    if((m_channel_status.returned_to_ref_point & (0x01<<axis))
-            && m_p_axis_config[phy_axis].soft_limit_check_1 == 1){//软限位1有效
-        int64_t cur_pos = this->GetAxisCurMachPos(axis)*1e7;  //当前位置
-        int64_t limit_pos = 0;
-        int8_t dir = (tar_pos > cur_pos)?DIR_POSITIVE:DIR_NEGATIVE;
-        if(dir == DIR_POSITIVE){//正向
-            limit_pos = m_p_axis_config[phy_axis].soft_limit_max_1*1e7;
-
-
-            if(limit_pos < cur_pos){//已经在限位外，告警
-                CreateError(ERR_SOFTLIMIT_POS, WARNING_LEVEL, CLEAR_BY_MCP_RESET, 0, m_n_channel_index, m_channel_status.cur_axis);
-                //	this->m_error_code = ERR_SOFTLIMIT_POS;
-                return;
-            }else if(limit_pos == cur_pos){  //已经到达正限位极限位置
-                CreateError(ERR_SOFTLIMIT_POS, WARNING_LEVEL, CLEAR_BY_MCP_RESET, 0, m_n_channel_index, m_channel_status.cur_axis);
-                return;
-            }else if(tar_pos > limit_pos){
-                tar_pos = limit_pos;
-
-            }
-        }else if(dir == DIR_NEGATIVE){//负向
-            limit_pos = m_p_axis_config[phy_axis].soft_limit_min_1*1e7;
-
-            if(limit_pos > cur_pos){//已经在限位外，告警
-                CreateError(ERR_SOFTLIMIT_NEG, WARNING_LEVEL, CLEAR_BY_MCP_RESET, 0, m_n_channel_index, m_channel_status.cur_axis);
-                //	this->m_error_code = ERR_SOFTLIMIT_NEG;
-                printf("manual move out of soft negative limit\n");
-                return;
-            }else if(limit_pos == cur_pos){  //已经到达负限位极限位置
-                CreateError(ERR_SOFTLIMIT_NEG, WARNING_LEVEL, CLEAR_BY_MCP_RESET, 0, m_n_channel_index, m_channel_status.cur_axis);
-                return;
-            }else if(tar_pos < limit_pos){
-                tar_pos = limit_pos;
-            }
-        }
-    }
     memcpy(&cmd.data.data[2], &tar_pos, sizeof(tar_pos));
 
     //	if(workcoord_flag)
@@ -11687,7 +11591,7 @@ void ChannelControl::StopPmcAxis(uint8_t phy_axis){
  * @param vel ： 目标速度，单位mm/min
  */
 void ChannelControl::ManualMovePmc(uint8_t axis, double pos, double vel){
-    uint8_t phy_axis = this->GetPhyAxis(m_channel_status.cur_axis);  //当前轴对应的物理轴号
+    uint8_t phy_axis = this->GetPhyAxis(axis);
 
     PmcCmdFrame cmd;
     memset(&cmd, 0x00, sizeof(PmcCmdFrame));
@@ -11707,42 +11611,17 @@ void ChannelControl::ManualMovePmc(uint8_t axis, double pos, double vel){
 
     //设置目标位置
     int64_t tar_pos = pos*1e7;    //转换单位为0.1nm
-
-    if((m_channel_status.returned_to_ref_point & (0x01<<axis))
-            && m_p_axis_config[phy_axis].soft_limit_check_1 == 1){//软限位1有效
-        int64_t cur_pos = this->GetAxisCurMachPos(axis)*1e7;  //当前位置
-        int64_t limit_pos = 0;
-        int8_t dir = (tar_pos > cur_pos)?DIR_POSITIVE:DIR_NEGATIVE;
-        if(dir == DIR_POSITIVE){//正向
-            limit_pos = m_p_axis_config[phy_axis].soft_limit_max_1*1e7;
-
-
-            if(limit_pos < cur_pos){//已经在限位外，告警
-                CreateError(ERR_SOFTLIMIT_POS, WARNING_LEVEL, CLEAR_BY_MCP_RESET, 0, m_n_channel_index, m_channel_status.cur_axis);
-                //	this->m_error_code = ERR_SOFTLIMIT_POS;
-                return;
-            }else if(limit_pos == cur_pos){  //已经到达正限位极限位置
-                CreateError(ERR_SOFTLIMIT_POS, WARNING_LEVEL, CLEAR_BY_MCP_RESET, 0, m_n_channel_index, m_channel_status.cur_axis);
-                return;
-            }else if(tar_pos > limit_pos){
-                tar_pos = limit_pos;
-
-            }
-        }else if(dir == DIR_NEGATIVE){//负向
-            limit_pos = m_p_axis_config[phy_axis].soft_limit_min_1*1e7;
-
-            if(limit_pos > cur_pos){//已经在限位外，告警
-                CreateError(ERR_SOFTLIMIT_NEG, WARNING_LEVEL, CLEAR_BY_MCP_RESET, 0, m_n_channel_index, m_channel_status.cur_axis);
-                //	this->m_error_code = ERR_SOFTLIMIT_NEG;
-                printf("manual move out of soft negative limit\n");
-                return;
-            }else if(limit_pos == cur_pos){  //已经到达负限位极限位置
-                CreateError(ERR_SOFTLIMIT_NEG, WARNING_LEVEL, CLEAR_BY_MCP_RESET, 0, m_n_channel_index, m_channel_status.cur_axis);
-                return;
-            }else if(tar_pos < limit_pos){
-                tar_pos = limit_pos;
-            }
-        }
+    int64_t cur_pos = m_p_channel_engine->GetPhyAxisMachPosFeedback(phy_axis)*1e7;  //当前位置
+    ManualMoveDir dir = (tar_pos > cur_pos)?DIR_POSITIVE:DIR_NEGATIVE;  //移动方向
+    //检查软限位
+    double limit = 0;
+    if(CheckSoftLimit(dir, phy_axis, m_p_channel_engine->GetPhyAxisMachPosFeedback(phy_axis))){
+        printf("soft limit active, manual move abs return \n");
+        return;
+    }else if(GetSoftLimt(dir, phy_axis, limit) && dir == DIR_POSITIVE && pos > limit){
+        tar_pos = limit * 1e7;
+    }else if(GetSoftLimt(dir, phy_axis, limit) && dir == DIR_NEGATIVE && pos < limit){
+        tar_pos = limit * 1e7;
     }
 
     memcpy(&cmd.data.data[1], &tar_pos, sizeof(tar_pos));  //设置目标位置
@@ -11756,6 +11635,13 @@ void ChannelControl::ManualMovePmc(uint8_t axis, double pos, double vel){
     //	printf("send manual move cmd: axis=%d, pos = %lf, vel = %lf\n", axis, pos, vel);
 }
 
+bool ChannelControl::CheckSoftLimit(ManualMoveDir dir, uint8_t phy_axis, double pos){
+    return m_p_channel_engine->CheckSoftLimit(dir,phy_axis,pos);
+}
+
+bool ChannelControl::GetSoftLimt(ManualMoveDir dir, uint8_t phy_axis, double &limit){
+    return m_p_channel_engine->GetSoftLimt(dir,phy_axis,limit);
+}
 
 /**
  * @brief 设置MC单段模式

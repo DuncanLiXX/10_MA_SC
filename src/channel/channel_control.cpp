@@ -4858,6 +4858,7 @@ bool ChannelControl::RefreshStatusFun(){
 			}
 		}
 #endif
+
         if(m_channel_status.cur_tool > 0 && m_channel_status.cur_tool <= kMaxToolCount){
             int cur_tool = m_channel_status.cur_tool - 1;
             if(m_p_chn_tool_info->tool_life_type[cur_tool] == ToolPot_Cnt)

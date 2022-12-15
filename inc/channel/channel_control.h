@@ -358,6 +358,7 @@ public:
     uint8_t GetPhyAxisFromName(uint8_t axis_name);   //获取对应通道轴名称的物理轴索引号，0开始
     uint8_t GetChnAxisFromName(uint8_t axis_name);   //获取对应通道轴名称的通道轴索引号，0开始
     uint8_t GetChnAxisFromPhyAxis(uint8_t phy_axis); //获得对应物理轴的通道轴索引号，0开始
+
 private:
 	void InitialChannelStatus();		//初始化通道状态
     static void *CompileThread(void *args);  //G代码运行线程函数

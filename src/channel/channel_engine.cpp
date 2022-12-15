@@ -3366,33 +3366,56 @@ void ChannelEngine::ProcessHmiAbsoluteRefSet(HMICmdFrame &cmd)
     cmd.frame_number |= 0x8000;
 
     uint8_t chn_axis = cmd.data[0];
-    uint8_t phy_axis = this->GetChnAxistoPhyAixs(m_n_cur_channle_index, chn_axis);
+    uint8_t phy_axis = 0;
+
+    if (chn_axis != 0xFF)
+        phy_axis = this->GetChnAxistoPhyAixs(m_n_cur_channle_index, chn_axis);
 
     HmiChannelStatus status;
     GetChnStatus(m_n_cur_channle_index, status);
 
-    if (phy_axis >= 0 && phy_axis < m_p_general_config->axis_count   //轴在合理范围
-            && status.chn_work_mode == REF_MODE)                     //回零模式
+    cmd.cmd_extension = 1;
+    std::cout << "chn_axis: " << (int)chn_axis << " phy_axis: " << (int)phy_axis << std::endl;
+    if (((phy_axis >= 0 && phy_axis < m_p_general_config->axis_count) || chn_axis == 0xFF)   //轴在合理范围
+            && status.chn_work_mode == REF_MODE)                                             //回零模式
     {
-        cmd.cmd_extension = 0;
-        if (!m_b_emergency  //非急停状态
-            && ((m_p_axis_config[phy_axis].absolute_ref_mode == 0 && m_p_axis_config[phy_axis].feedback_mode == 1)         //绝对式
-                || m_p_axis_config[phy_axis].axis_interface == 0))    //虚拟轴
+        if (!m_b_emergency || !m_b_ret_ref)//不在急停和当前不处于回零动作中
         {
-            m_b_ret_ref = true;
-            m_n_mask_ret_ref = (0x01<<phy_axis);
+            if (chn_axis == 0xFF)//所有绝对式编码器回零
+            {
+                int index = 0;
+                for(int i = 0; i < m_p_general_config->axis_count; ++i)
+                {
+                    if ((m_p_axis_config[i].absolute_ref_mode == 0 && m_p_axis_config[i].feedback_mode == 1)
+                        || m_p_axis_config[i].axis_interface == 0)
+                    {
+                        m_n_mask_ret_ref |= (0x01<<i);   //设置需要回零的轴
+                        m_p_axis_config[i].ret_ref_index = index++;
+                    }
+                }
+                if (m_n_mask_ret_ref != 0)
+                {
+                    cmd.cmd_extension = 0;
+                    m_n_ret_ref_auto_cur = 0;
+                    m_b_ret_ref_auto = true;
+                    m_b_ret_ref = true;     //开启回零
+                }
+            }
+            else
+            {
+                if ((m_p_axis_config[phy_axis].absolute_ref_mode == 0 && m_p_axis_config[phy_axis].feedback_mode == 1)         //绝对式
+                    || m_p_axis_config[phy_axis].axis_interface == 0)
+                {
+                    cmd.cmd_extension = 0;
+                    m_b_ret_ref = true;
+                    m_n_mask_ret_ref = (0x01<<phy_axis);
+                }
+            }
         }
-        else
-        {//报警
-            CreateError(ERR_RET_REF_FAILED, WARNING_LEVEL, CLEAR_BY_MCP_RESET, 0, CHANNEL_ENGINE_INDEX, 0);
-            cmd.cmd_extension = 1;
-        }
+    }
 
-    }
-    else
-    {
-        cmd.cmd_extension = 1;
-    }
+    if (cmd.cmd_extension)
+        CreateError(ERR_RET_REF_FAILED, WARNING_LEVEL, CLEAR_BY_MCP_RESET, 0, CHANNEL_ENGINE_INDEX, 0);
     this->m_p_hmi_comm->SendCmd(cmd);
 }
 
@@ -4661,7 +4684,6 @@ bool ChannelEngine::Start(){
         CreateError(m_error_code, ERROR_LEVEL, CLEAR_BY_MCP_RESET);
         return false;
     }
-
 
     //检查授权
     if(1 == this->CheckLicense()){  //非法授权
@@ -7523,7 +7545,7 @@ void ChannelEngine::SendMiPcParam2(uint8_t axis){
     cmd.data.axis_index = axis+1;
 
     //放置数据
-    uint32_t pos = m_p_axis_config[axis].axis_home_pos[0]*1000;   //转换为微米单位
+    int32_t pos = m_p_axis_config[axis].axis_home_pos[0]*1000;   //转换为微米单位
     memcpy(cmd.data.data, &pos, 4);  //
 
     this->m_p_mi_comm->WriteCmd(cmd);
@@ -9612,6 +9634,11 @@ void ChannelEngine::AxisFindRefNoZeroSignal(uint8_t phy_axis){
         this->m_n_mask_ret_ref &= ~(0x01<<phy_axis);
         m_n_ret_ref_step[phy_axis] = 0;
 
+        if(m_n_mask_ret_ref == 0){
+            this->m_b_ret_ref = false;
+            this->m_b_ret_ref_auto = false;
+            m_n_ret_ref_auto_cur = 0;
+        }
 
         break;
     case 20: //失败处理
@@ -11148,8 +11175,8 @@ void ChannelEngine::ReturnRefPoint(){
     //	static uint8_t ret_ref_auto_cur = 0;    //自动回参考点时，当前顺序号
     int count = 0;
     for(uint i = 0; i < this->m_p_general_config->axis_count; i++){
-        if((m_n_mask_ret_ref & (0x01<<i)) == 0 ||
-                (m_p_axis_config[i].ret_ref_mode == 0 && m_p_axis_config[i].feedback_mode == INCREMENTAL_ENCODER)){  //禁止回参考点
+        if((m_n_mask_ret_ref & (0x01<<i)) == 0 /*||
+                (m_p_axis_config[i].ret_ref_mode == 0 && m_p_axis_config[i].feedback_mode == INCREMENTAL_ENCODER) 为什么增量式要禁止回参考点*/){  //禁止回参考点
             continue;
         }
 
@@ -11501,6 +11528,7 @@ void ChannelEngine::ReturnRefPoint(){
             this->m_b_ret_ref_auto = false;
             m_n_ret_ref_auto_cur = 0;
             printf("自动回零异常！\n");
+            std::cout << "m_n_mask_ret_ref: " << (int)m_n_mask_ret_ref << std::endl;
         }
     }
 }

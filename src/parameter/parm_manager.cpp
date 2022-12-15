@@ -3137,7 +3137,7 @@ void ParmManager::UpdateToolMeasure(uint16_t chn_index, uint8_t index, const dou
  * @param chn_index ： 通道号，从0开始
  * @param index ： 刀具补偿号，从0开始， H1时index为0
  * @param active : true--更新    false--放入待更新队列
- * @param cfg
+ * @param cfge
  */
 void ParmManager::UpdateToolOffsetConfig(uint16_t chn_index, uint8_t index, HmiToolOffsetConfig &cfg, bool active){
 	char sname[32];	//section name
@@ -3238,6 +3238,7 @@ void ParmManager::UpdateToolPotConfig(uint16_t chn_index, SCToolPotConfig &cfg){
 	memset(value, 0x00, sizeof(value));
 
 	memcpy(&m_sc_tool_pot_config[chn_index], &cfg, sizeof(SCToolPotConfig));		//更新当前参数
+
 
 	sprintf(sname, "channel_%hu", chn_index);
 

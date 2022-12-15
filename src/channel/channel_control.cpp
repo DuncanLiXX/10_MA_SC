@@ -5126,7 +5126,7 @@ bool ChannelControl::OutputData(RecordMsg *msg, bool flag_block){
             data_frame.data.ext_type |= 0x02;   //所有轴插补
         }
         // @add zk  不指定类型会使 MC 空运行
-        data_frame.data.cmd = 0;  // 指定 G00
+        data_frame.data.cmd = 1;  // 指定 G01
 
         break;
     case RAPID_MSG:

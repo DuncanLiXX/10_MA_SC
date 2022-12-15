@@ -9541,7 +9541,8 @@ bool ChannelControl::ExecuteRefReturnMsg(RecordMsg *msg){
     if(gcode == G28_CMD or gcode == G30_CMD){
         switch(refmsg->GetExecStep()){
         case 0:
-            //第一步：控制对应的轴走到中间点位置
+
+        	//第一步：控制对应的轴走到中间点位置
             for(i = 0; i < m_p_channel_config->chn_axis_count; i++){
                 if(axis_mask & (0x01<<i)){
                     phy_axis = this->GetPhyAxis(i);
@@ -9556,6 +9557,7 @@ bool ChannelControl::ExecuteRefReturnMsg(RecordMsg *msg){
             refmsg->SetExecStep(1);	//跳转下一步
             return false;
         case 1:
+
             //第二步：等待对应轴到位
             for(i = 0; i < m_p_channel_config->chn_axis_count; i++){
                 if(axis_mask & (0x01<<i)){
@@ -9575,6 +9577,7 @@ bool ChannelControl::ExecuteRefReturnMsg(RecordMsg *msg){
                 refmsg->SetExecStep(2);  //跳转下一步
             return false;
         case 2:
+
             printf("ret ref, step 2\n");
             //第三步：控制对应的轴走到机械零点
             if(gcode == G28_CMD){
@@ -9611,26 +9614,28 @@ bool ChannelControl::ExecuteRefReturnMsg(RecordMsg *msg){
             }
 
         case 3:{
-            //第四步：等待对应的轴到位
+
+        	//第四步：等待对应的轴到位
+
+			for(i = 0; i < m_p_channel_config->chn_axis_count; i++){
+				phy_axis = this->GetPhyAxis(i);
+				double target_pos =  m_p_axis_config[phy_axis].axis_home_pos[0];
 #ifdef USES_RET_REF_TO_MACH_ZERO
             double target_pos = 0;
-#else
-            double target_pos =  m_p_axis_config[phy_axis].axis_home_pos[0];
 #endif
-            if(gcode == G30_CMD) target_pos = m_p_axis_config[phy_axis].axis_home_pos[ref_id-1];
-
-            for(i = 0; i < m_p_channel_config->chn_axis_count; i++){
-                if(axis_mask & (0x01<<i)){
-                    if(fabs(this->m_channel_rt_status.cur_pos_machine.GetAxisValue(i) - target_pos) > 5e-3){ //未到位
-                        //						printf("step 3: axis %hhu cur pos = %lf, target=%lf\n", i, m_channel_rt_status.cur_pos_machine.GetAxisValue(i), target_pos);
-                        flag = false;
-                        phy_axis = this->GetPhyAxis(i);
-                        if(phy_axis != 0xff){
-                            this->ManualMove(i, target_pos, m_p_axis_config[phy_axis].rapid_speed);  //机械坐标系
-                        }
-                    }
-                }
-            }
+				if(gcode == G30_CMD) target_pos = m_p_axis_config[phy_axis].axis_home_pos[ref_id-1];
+				if(axis_mask & (0x01<<i)){
+					if(fabs(this->m_channel_rt_status.cur_pos_machine.GetAxisValue(i) - target_pos) > 5e-3){ //未到位
+						//						printf("step 3: axis %hhu cur pos = %lf, target=%lf\n", i, m_channel_rt_status.cur_pos_machine.GetAxisValue(i), target_pos);
+						flag = false;
+						phy_axis = this->GetPhyAxis(i);
+						if(phy_axis != 0xff){
+							printf("phy_axis: %d target_pos: %lf\n", phy_axis, target_pos);
+							this->ManualMove(i, target_pos, m_p_axis_config[phy_axis].rapid_speed);  //机械坐标系
+						}
+					}
+				}
+			}
 
             if(flag){
                 refmsg->SetExecStep(4);  //跳转下一步
@@ -11204,7 +11209,7 @@ void ChannelControl::ManualMove2(uint8_t axis, int8_t dir, double vel, double in
 void ChannelControl::ManualMove(int8_t dir){
     if(m_channel_status.chn_work_mode != MANUAL_MODE &&
             m_channel_status.chn_work_mode != MANUAL_STEP_MODE){  //非手动模式，不做响应，退出
-        return;
+    	return;
     }
     //	printf("send manualmove cmd to mc\n");
 
@@ -11522,7 +11527,7 @@ void ChannelControl::ManualMove(uint8_t axis, double pos, double vel, bool workc
         m_p_mc_comm->WriteCmd(cmd);
     else
         m_p_mc_arm_comm->WriteCmd(cmd);
-    // 	printf("send manual move cmd: axis=%d, pos = %lf, vel = %lf\n", axis, pos, vel);
+     //printf("send manual move cmd: axis=%d, pos = %lf, vel = %lf\n", axis, pos, vel);
 }
 
 /**
@@ -17572,6 +17577,7 @@ void ChannelControl::TransMachCoordToWorkCoord(DPointChn &pos, uint16_t coord_id
             if(G52Active){
             	origin_pos += G52offset[i];
             }
+            origin_pos += m_p_chn_g92_offset->offset[i];
 
             phy_axis = this->GetPhyAxis(i);
             if(phy_axis != 0xFF){
@@ -17619,6 +17625,7 @@ void ChannelControl::TransMachCoordToWorkCoord(DPointChn &pos, uint16_t coord_id
             if(G52Active){
             	origin_pos += G52offset[i];
 		    }
+            origin_pos += m_p_chn_g92_offset->offset[i];
 
             phy_axis = this->GetPhyAxis(i);
             if(phy_axis != 0xFF){
@@ -17660,6 +17667,7 @@ void ChannelControl::TransMachCoordToWorkCoord(DPoint &pos, uint16_t coord_idx, 
             if(G52Active){
             	origin_pos += G52offset[i];
 		    }
+            origin_pos += m_p_chn_g92_offset->offset[i];
 
             phy_axis = this->GetPhyAxis(i);
             if(phy_axis != 0xFF){
@@ -17777,6 +17785,7 @@ void ChannelControl::TransMachCoordToWorkCoord(double &pos, uint16_t coord_idx, 
     if(G52Active){
     	origin_pos += G52offset[axis];
     }
+    origin_pos += m_p_chn_g92_offset->offset[axis];
 
     uint8_t phy_axis = this->GetPhyAxis(axis);
     if(phy_axis != 0xFF){
@@ -19668,7 +19677,7 @@ void ChannelControl::StraightTraverse(int chn, double x, double y, double z)
 void ChannelControl::g73_func(){
     StartMcIntepolate();
 
-    double data;
+    //double data;
 
     bool flag = false;
 

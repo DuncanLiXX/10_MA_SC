@@ -40,7 +40,7 @@ typedef struct
     bool tap_flag{false};       // 攻丝标记
     CncPolar polar{Stop};       // 主轴方向
     double F{0.0};              // 攻丝进给
-    uint16_t s{0};              // 主轴转速
+    uint16_t S{0};              // 主轴转速
     uint8_t phy_axis{0};        // 主轴轴号
     uint8_t z_axis{0};          // z轴轴号
     double R{0.0};              // R平面
@@ -191,6 +191,7 @@ public:
     bool ORCMA;  // 主轴定向信号 G70.6
     bool RGTAP;  //刚攻状态  0：退出刚攻状态  1：进入刚攻状态 G61.0
     bool RGMD;   //主轴控制模式 0：速度模式  1：位置模式 G61.1
+    bool RTNT;   //攻丝回退信号 G62.6
 
     // 参数
     uint8_t GST{0};    //(1657)SOR信号用于： 0：主轴定向 1：齿轮换档

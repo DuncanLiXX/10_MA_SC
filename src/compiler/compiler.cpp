@@ -168,6 +168,7 @@ void Compiler::InitCompiler() {
     m_b_prescan_in_stack = false;
 
     memset(m_line_buf, 0x00, kMaxLineSize); //初始化编译行的缓冲区
+    memset(m_last_main_file, 0x00, kMaxPathLen);
 
     m_p_cur_file_pos = nullptr;
     m_ln_read_size = 0;
@@ -1456,7 +1457,7 @@ bool Compiler::OpenFile(const char *file, bool sub_flag) {
     //	else if(m_work_mode == AUTO_COMPILER){
     //		res = m_p_file_map_info->OpenFile(file);
     //	}
-    printf("compiler::openfile, file[%s], sub_flag= %hhu\n", file, sub_flag);
+    ScPrintf("compiler::openfile, file[%s], sub_flag= %hhu\n", file, sub_flag);
     int res = 0;
 
     // @add zk 加载过长文件名导致崩溃
@@ -1478,7 +1479,9 @@ bool Compiler::OpenFile(const char *file, bool sub_flag) {
         }
     }
 
-
+    if(this->m_work_mode != MDA_COMPILER && !sub_flag){
+        strcpy(m_last_main_file, file);
+    }
 
     if (!m_p_file_map_info->OpenFile(file, sub_flag)) {
         g_ptr_trace->PrintLog(LOG_ALARM, "CHN[%d]编译器打开文件[%s]失败!",
@@ -2022,6 +2025,13 @@ void Compiler::GetCurNcFile(char *file){
         return;
 
     strcpy(file, m_p_file_map_info->str_file_name);
+}
+
+void Compiler::GetLastOpenFile(char *file)
+{
+    if(file == nullptr)
+        return;
+    strcpy(file, m_last_main_file);
 }
 
 //int total_time = 0;

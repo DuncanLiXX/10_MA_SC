@@ -456,7 +456,7 @@ void ShowSc::PrintSpindle()
     AddPair(s,"tap_flag",spindle->tap_state.tap_flag);
     AddPair(s,"tap_f",spindle->tap_state.F);
     AddPair(s,"tap_R",spindle->tap_state.R);
-    AddPair(s,"tap_S",spindle->tap_state.s);
+    AddPair(s,"tap_S",spindle->tap_state.S);
     SendMsg(s);
 }
 

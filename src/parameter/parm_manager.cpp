@@ -601,8 +601,8 @@ bool ParmManager::ReadChnConfig(){
             m_sc_channel_config[i].mpg_level3_step = m_ini_chn->GetIntValueOrDefault(sname, "mpg_level3_step", 100);
             m_sc_channel_config[i].mpg_level4_step = m_ini_chn->GetIntValueOrDefault(sname, "mpg_level4_step", 1000);
 
-            m_sc_channel_config[i].G73back = m_ini_chn->GetIntValueOrDefault(sname, "G73back", 0);
-            m_sc_channel_config[i].G83back = m_ini_chn->GetIntValueOrDefault(sname, "G83back", 0);
+            m_sc_channel_config[i].G73back = m_ini_chn->GetDoubleValueOrDefault(sname, "G73back", 0);
+            m_sc_channel_config[i].G83back = m_ini_chn->GetDoubleValueOrDefault(sname, "G83back", 0);
 
 #ifdef USES_WOOD_MACHINE
 			m_sc_channel_config[i].debug_param_1 = m_ini_chn->GetIntValueOrDefault(sname, "debug_param_1", 0);  //调试参数1
@@ -787,8 +787,8 @@ bool ParmManager::ReadChnConfig(){
             m_ini_chn->AddKeyValuePair(string("g01_max_speed"), string("15000"), ns);
             m_ini_chn->AddKeyValuePair(string("mpg_level3_step"), string("100"), ns);
             m_ini_chn->AddKeyValuePair(string("mpg_level4_step"), string("1000"), ns);
-            m_ini_chn->AddKeyValuePair(string("G73back"), string("1000"), ns);
-            m_ini_chn->AddKeyValuePair(string("G83back"), string("1000"), ns);
+            m_ini_chn->AddKeyValuePair(string("G73back"), string("0"), ns);
+            m_ini_chn->AddKeyValuePair(string("G83back"), string("0"), ns);
 
 #ifdef USES_WOOD_MACHINE
 			m_ini_chn->AddKeyValuePair(string("debug_param_1"), string("0"), ns);
@@ -4323,12 +4323,12 @@ bool ParmManager::UpdateChnParam(uint8_t chn_index, uint32_t param_no, ParamValu
         m_ini_chn->SetIntValue(sname, kname, value.value_uint16);
         break;
     case 517:
-    	sprintf(kname, "G73back");
-		m_ini_chn->SetIntValue(sname, kname, value.value_double);
+        sprintf(kname, "G73back");  //G73回退距离
+        m_ini_chn->SetDoubleValue(sname, kname, value.value_double);
 		break;
     case 518:
-		sprintf(kname, "G83back");
-		m_ini_chn->SetIntValue(sname, kname, value.value_double);
+        sprintf(kname, "G83back");  //G83回退距离
+        m_ini_chn->SetDoubleValue(sname, kname, value.value_double);
 		break;
 #ifdef USES_WOOD_MACHINE
 	case 600:  //DSP调试参数1
@@ -5818,6 +5818,12 @@ void ParmManager::ActiveChnParam(uint8_t chn_index, uint32_t param_no, ParamValu
         if(chn_ctrl->GetManualStep() == MANUAL_STEP_1000) // 如果当前为4档，需要往mi更新步长
             chn_engine->SetManualStep(chn_index, 3);
     }break;
+    case 517:   //G73回退距离
+        this->m_sc_channel_config[chn_index].G73back = value.value_double;
+        break;
+    case 518:   //G83回退距离
+        this->m_sc_channel_config[chn_index].G83back = value.value_double;
+        break;
 #ifdef USES_WOOD_MACHINE
 	case 600:  //DSP调试参数1
 		this->m_sc_channel_config[chn_index].debug_param_1 = value.value_int32;

@@ -5579,7 +5579,7 @@ bool ChannelControl::ExecuteMessage(){
         if(line_no != msg->GetLineNo() || type != msg->GetMsgType()){
             line_no = msg->GetLineNo();
             type = msg->GetMsgType();
-            printf("---------->excute message line no %llu  msg type: %d flag: %d\n", line_no, msg_type, msg->GetFlags().all);
+            //printf("---------->excute message line no %llu  msg type: %d flag: %d\n", line_no, msg_type, msg->GetFlags().all);
         }
         // @test zk
 
@@ -7416,6 +7416,8 @@ bool ChannelControl::ExecuteCoordMsg(RecordMsg *msg){
 
 		DPointChn point = coordmsg->GetTargetPos();
 		for(int i=0; i<kMaxAxisChn; i++){
+            if(!(coordmsg->GetAxisMask() & (0x01 << i)))
+                continue;
 			double offset = GetAxisCurMachPos(i) - point.GetAxisValue(i);
 			m_p_chn_g92_offset->offset[i] = offset;
 		}
@@ -8104,7 +8106,7 @@ bool ChannelControl::ExecuteSpeedMsg(RecordMsg *msg){
     //S代码输入到主轴模块
     m_p_spindle->InputSCode(speed->GetSpeed());
 
-    printf("ExecuteSpeedMsg::%d rpm\n", m_p_spindle->GetSCode());
+    //ScPrintf("ExecuteSpeedMsg::%d rpm\n", m_p_spindle->GetSCode());
 
     //更新当前S值
     m_channel_status.rated_spindle_speed = m_p_spindle->GetSCode();
@@ -10451,7 +10453,7 @@ bool ChannelControl::ExecuteClearCirclePosMsg(RecordMsg *msg){
         uint64_t mask = clearmsg->GetAxisMask();
         double mode = clearmsg->GetCircleMode();
         mode /= 1000;   //由um转换为mm
-        ScPrintf("ClearCirclePosMsg: mask = %04llx mode=%lf", mask, mode);
+        //ScPrintf("ClearCirclePosMsg: mask = %04llx mode=%lf", mask, mode);
         for(int i = 0; i < m_p_general_config->axis_count; i++){
             if(((mask>>i) & 0x01) == 0){
                 continue;
@@ -10507,7 +10509,7 @@ bool ChannelControl::ExecuteClearCirclePosMsg(RecordMsg *msg){
     case 0://第一步：发送指令到MI
         this->m_channel_status.gmode[39] = clearmsg->GetGCode();
 
-        ScPrintf("clear pos message , mask = 0x%llx, mode=%d\n", mask, clearmsg->GetCircleMode());
+        //ScPrintf("clear pos message , mask = 0x%llx, mode=%d\n", mask, clearmsg->GetCircleMode());
         //向MI发送清整数圈位置指令
         m_n_mask_clear_pos = 0;
         for(i = 0; i < m_p_general_config->axis_count; i++){
@@ -10522,7 +10524,7 @@ bool ChannelControl::ExecuteClearCirclePosMsg(RecordMsg *msg){
         clearmsg->SetExecStep(1);	//跳转下一步
         return false;
     case 1://第二步
-        ScPrintf("clear pos message step1 , mask = 0x%llx, m_n_mask_clear_pos = 0x%llx \n", mask, this->m_n_mask_clear_pos);
+        //ScPrintf("clear pos message step1 , mask = 0x%llx, m_n_mask_clear_pos = 0x%llx \n", mask, this->m_n_mask_clear_pos);
         //第二步：等待MI设置完成
         if((mask & this->m_n_mask_clear_pos) == mask){  // if(mask == this->m_n_mask_clear_pos){
             clearmsg->SetExecStep(2);	//跳转下一步
@@ -11240,7 +11242,7 @@ void ChannelControl::ManualMove(int8_t dir){
     double limit = 0;
     if(CheckSoftLimit((ManualMoveDir)dir, phy_axis,
                       m_p_channel_engine->GetPhyAxisMachPosFeedback(phy_axis))){
-        ScPrintf("soft limit active, manual move abs return \n");
+        // ScPrintf("soft limit active, manual move abs return \n");
         return;
     }else if(GetSoftLimt((ManualMoveDir)dir, phy_axis, limit) && dir == DIR_POSITIVE && tar_pos > limit){
         tar_pos = limit * 1e7;
@@ -11269,7 +11271,7 @@ void ChannelControl::ManualMove(int8_t dir){
         feed *= 2;  //速度翻倍
         printf("double manual feed\n");
     }
-    ScPrintf("axis:%u, feed:%u, n_inc_dis=%lld",m_channel_status.cur_axis,feed, n_inc_dis);
+    // ScPrintf("axis:%u, feed:%u, n_inc_dis=%lld",m_channel_status.cur_axis,feed, n_inc_dis);
 
     cmd.data.data[0] = (feed & 0xFFFF);
     cmd.data.data[1] = ((feed>>16)&0xFFFF);
@@ -19016,6 +19018,7 @@ bool ChannelControl::NotifyHmiWorkcoordExChanged(uint8_t coord_idx){
     cmd.data_len = 1+sizeof(HmiCoordConfig);
     cmd.data[0] = coord_idx;
     memcpy(&cmd.data[1], &this->m_p_chn_ex_coord_config[coord_idx], sizeof(HmiCoordConfig));
+
 
     return this->m_p_hmi_comm->SendCmd(cmd);
 }

@@ -714,7 +714,7 @@ void ShowSc::PrintCoordConfig()
         string coord_name_s = "G" + to_string(i);
         string value_s = "[";
         for(int axis = 0; axis < kMaxAxisChn; axis++){
-            value_s = value_s + to_string(coord[i-53].offset[axis]);
+            value_s = value_s + to_string(coord[i-53].offset[axis])+" ";
         }
         value_s = value_s + "]";
 
@@ -724,7 +724,7 @@ void ShowSc::PrintCoordConfig()
     if(global_coord){
         string g93_value_s = "[";
         for(int axis = 0; axis < kMaxAxisChn; axis++){
-            g93_value_s = g93_value_s + to_string(global_coord->offset[axis]);
+            g93_value_s = g93_value_s + to_string(global_coord->offset[axis])+" ";
         }
         g93_value_s = g93_value_s + "]";
         AddPair(s,"G92",g93_value_s);
@@ -739,11 +739,11 @@ void ShowSc::PrintExCoordConfig()
         return;
 
     string s = "";
-    for(int i = 5401; i <= 5499; i++){ // G53 - G59
+    for(int i = 5401; i <= 5410; i++){ // G53 - G59
         string coord_name_s = "G" + to_string(i);
         string value_s = "[";
         for(int axis = 0; axis < kMaxAxisChn; axis++){
-            value_s = value_s + to_string(coord[i-5401].offset[axis]);
+            value_s = value_s + to_string(ex_coord[i-5401].offset[axis])+" ";
         }
         value_s = value_s + "]";
 

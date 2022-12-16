@@ -64,6 +64,7 @@ public://公共接口
 
 	void RecycleCompile();		//循环编译，处理M99指令
 	void GetCurNcFile(char *file);   //获取当前加工的NC文件名称
+    void GetLastOpenFile(char *file);   //获取最后打开的文件(非子程序)
 
 
 	bool SaveScene();   //缓存编译器状态
@@ -316,6 +317,7 @@ private://私有成员
 
     uint8_t m_n_restart_mode;     //加工复位模式，0--非加工复位   1--正常加工复位    2--快速加工复位
     uint64_t m_n_restart_line;    //加工复位目的行号
+    char m_last_main_file[kMaxPathLen];        //最后加载的程序
 };
 
 

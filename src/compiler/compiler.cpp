@@ -168,6 +168,7 @@ void Compiler::InitCompiler() {
     m_b_prescan_in_stack = false;
 
     memset(m_line_buf, 0x00, kMaxLineSize); //初始化编译行的缓冲区
+    memset(m_last_main_file, 0x00, kMaxPathLen);
 
     m_p_cur_file_pos = nullptr;
     m_ln_read_size = 0;
@@ -1456,7 +1457,7 @@ bool Compiler::OpenFile(const char *file, bool sub_flag) {
     //	else if(m_work_mode == AUTO_COMPILER){
     //		res = m_p_file_map_info->OpenFile(file);
     //	}
-    printf("compiler::openfile, file[%s], sub_flag= %hhu\n", file, sub_flag);
+    ScPrintf("compiler::openfile, file[%s], sub_flag= %hhu\n", file, sub_flag);
     int res = 0;
 
     // @add zk 加载过长文件名导致崩溃
@@ -1478,7 +1479,9 @@ bool Compiler::OpenFile(const char *file, bool sub_flag) {
         }
     }
 
-
+    if(this->m_work_mode != MDA_COMPILER && !sub_flag){
+        strcpy(m_last_main_file, file);
+    }
 
     if (!m_p_file_map_info->OpenFile(file, sub_flag)) {
         g_ptr_trace->PrintLog(LOG_ALARM, "CHN[%d]编译器打开文件[%s]失败!",
@@ -2024,6 +2027,13 @@ void Compiler::GetCurNcFile(char *file){
     strcpy(file, m_p_file_map_info->str_file_name);
 }
 
+void Compiler::GetLastOpenFile(char *file)
+{
+    if(file == nullptr)
+        return;
+    strcpy(file, m_last_main_file);
+}
+
 //int total_time = 0;
 
 /**
@@ -2052,7 +2062,8 @@ bool Compiler::GetLineData() {
     if (m_b_eof || m_p_file_map_info->ln_file_size == 0) {
         m_b_eof = true;
         if(this->m_work_mode == MDA_COMPILER){  //MDA模式下，到文件尾结束编译
-            strcpy(m_line_buf, "M30");
+            //lidianqiang:MDA自动加上M30临时改为M300
+            strcpy(m_line_buf, "M300");
             this->m_lexer_result.line_no = this->m_ln_cur_line_no;   //更新行号
             g_ptr_trace->PrintTrace(TRACE_DETAIL, COMPILER_CHN, "MDA insert M30-2\n");
             return true;
@@ -2243,7 +2254,8 @@ REDO:
             //重读下一行
         } else if (this->m_work_mode == MDA_COMPILER) {
             //MDA模式，插入一个M30结束命令
-            strcpy(m_line_buf, "M30");
+            //lidianqiang:MDA自动加上M30临时改为M300
+            strcpy(m_line_buf, "M300");
             this->m_lexer_result.line_no = this->m_ln_cur_line_no;   //更新行号
             g_ptr_trace->PrintTrace(TRACE_DETAIL, COMPILER_CHN, "MDA insert M30-1\n");
         } else {
@@ -2532,7 +2544,9 @@ bool Compiler::RunAuxMsg(RecordMsg *msg) {
 
             printf("compiler run M99\n");
             break;
-
+        case 300: //lidianqiang:MDA自动加上M30临时改为M300
+            this->m_b_compile_over = true;
+            break;
         default:
             break;
         }
@@ -4135,13 +4149,11 @@ bool Compiler::CheckHead() {
     bool res = false;
     char *compBuf = m_line_buf;
 
-    if (m_n_sub_program != MAIN_PROG)  //在子程序中，可以无%
-    {
-        res = this->ProcessMain(); //
-        //	res = true; //子程序
-    } else if (strcmp(compBuf, "%") == 0) {
+    if (strcmp(compBuf, "%") == 0) {
         res = true; //主程序
-    } else {
+    }else if(m_n_sub_program != MAIN_PROG){  //在子程序中，可以无%
+        res = this->ProcessMain(); //
+    }else {
 #ifdef USES_WOOD_MACHINE
         res = this->ProcessMain();
 #else

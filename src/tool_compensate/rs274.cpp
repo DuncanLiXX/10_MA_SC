@@ -673,27 +673,31 @@ int Interp::convert_arc_comp2(int move,
             midx = centerx + dist_from_center * cos(angle_from_center);
             midy = centery + dist_from_center * sin(angle_from_center);
 
+            // 开启刀补 直线接圆弧
             if(settings->cutter_comp_fristcalc){
-            	settings->cutter_comp_fristcalc = false;
+            	//settings->cutter_comp_fristcalc = false;
+
+            	// 起点指向圆心向量
             	double vecx = centerx - opx;
             	double vecy = centery - opy;
 
-            	midx = opx + settings->cutter_comp_radius*(vecx/sqrt(vecx*vecx + vecy*vecy));
-            	midy = opy + settings->cutter_comp_radius*(vecy/sqrt(vecx*vecx + vecy*vecy));
+            	// 上一程序段指向起点向量
+            	double vecStartx = opx - temp_point[0];
+             	double vecStarty = opy - temp_point[1];
 
-            	printf("=================== %lf %lf\n", temp_point[0], temp_point[1]);
+            	double costheta = (vecx * vecStartx + vecy * vecStarty)
+            			/(sqrt(vecx*vecx + vecy*vecy)*sqrt(vecStartx*vecStartx + vecStarty*vecStarty));
+
+            	if(costheta < 0){
+            		midx = opx + settings->cutter_comp_radius*(vecx/sqrt(vecx*vecx + vecy*vecy));
+					midy = opy + settings->cutter_comp_radius*(vecy/sqrt(vecx*vecx + vecy*vecy));
+            	}else{
+            		midx = opx - settings->cutter_comp_radius*(vecx/sqrt(vecx*vecx + vecy*vecy));
+					midy = opy - settings->cutter_comp_radius*(vecy/sqrt(vecx*vecx + vecy*vecy));
+            	}
+
+            	printf("============  convert arc comp2 midx: %lf midy: %lf\n", midx, midy);
             }
-
-            /*
-            // @test 刀补建立
-            printf("origin midx: %lf midy: %lf\n", midx, midy);
-            if(settings->cutter_comp_fristcalc){
-		    	settings->cutter_comp_fristcalc = false;
-			    calc_mid_first_comp(opx, opy, end_x, end_y, midx, midy, settings->cutter_comp_side, settings->cutter_comp_radius);
-		    }
-            printf("======================== opx %lf opy %lf px %lf py %lf\n", opx, opy, end_x, end_y);
-            printf("after midx: %lf midy: %lf\n", midx, midy);
-            */
 
             move_endpoint_and_flush(settings, midx, midy);
         } else {
@@ -775,6 +779,7 @@ int Interp::convert_arc_comp2(int move,
                          AA_end, BB_end, CC_end, u, v, w);
     }
 
+    if(settings->cutter_comp_fristcalc) settings->cutter_comp_fristcalc = false;
     comp_set_programmed(settings, end_x, end_y, end_z);
     comp_set_current(settings, new_end_x, new_end_y, end_z);
 
@@ -1053,74 +1058,94 @@ int Interp::convert_straight_comp2(int move,
                 set_endpoint(mid_x, mid_y);
             } //else ERS(NCE_BUG_CODE_NOT_G0_OR_G1);
         } else if (concave) {
-            if (qc().front().type != QARC_FEED) {
-                // line->line
-                double retreat;
-                // half the angle of the inside corner
-                double halfcorner = (beta + M_PIl) / 2.0;
-                //CHKS((halfcorner == 0.0), (_("Zero degree inside corner is invalid for cutter compensation")));
-                retreat = radius / tan(halfcorner);
-                // move back along the compensated path
-                // this should replace the endpoint of the previous move
-                mid_x = cx + retreat * cos(theta + gamma);
-                mid_y = cy + retreat * sin(theta + gamma);
+        	if(settings->cutter_comp_lastmove){
+        		printf("========\n");
+        	}else{
 
-                // @test 刀补建立
-                if(settings->cutter_comp_fristcalc){
-                	settings->cutter_comp_fristcalc = false;
-                	calc_mid_first_comp(opx, opy, px, py, mid_x, mid_y, settings->cutter_comp_side, settings->cutter_comp_radius);
-                }
-                // we actually want to move the previous line's endpoint here.  That's the same as
-                // discarding that line and doing this one instead.
-                //printf("============ mid x: %lf mid y: %lf\n", mid_x, mid_y);
-                move_endpoint_and_flush(settings, mid_x, mid_y);
-            } else {
-                // arc->line
-                // beware: the arc we saved is the compensated one.
-                arc_feed prev = qc().front().data.arc_feed;
-                double oldrad = hypot(prev.center2 - prev.end2, prev.center1 - prev.end1);
-                double oldrad_uncomp;
+				if (qc().front().type != QARC_FEED) {
+					// line->line
+					double retreat;
+					// half the angle of the inside corner
+					double halfcorner = (beta + M_PIl) / 2.0;
+					//CHKS((halfcorner == 0.0), (_("Zero degree inside corner is invalid for cutter compensation")));
+					retreat = radius / tan(halfcorner);
+					// move back along the compensated path
+					// this should replace the endpoint of the previous move
+					mid_x = cx + retreat * cos(theta + gamma);
+					mid_y = cy + retreat * sin(theta + gamma);
 
-                // new line's direction
-                double base_dir = atan2(py - opy, px - opx);
-                double theta;
-                double phi;
 
-                theta = (prev.turn > 0) ? base_dir + M_PI_2l : base_dir - M_PI_2l;
-                phi = atan2(prev.center2 - opy, prev.center1 - opx);
-                if TOOL_INSIDE_ARC(side, prev.turn) {
-                    oldrad_uncomp = oldrad + radius;
-                } else {
-                    oldrad_uncomp = oldrad - radius;
-                }
+					double vecStartx = opx - temp_point[0];
+					double vecStarty = opy - temp_point[1];
+					double vecx = px - opx;
+					double vecy = py - opy;
 
-                double alpha = theta - phi;
-                // distance to old arc center perpendicular to the new line
-                double d = oldrad_uncomp * cos(alpha);
-                double d2;
-                double angle_from_center;
+					// 前一段和本段向量夹角
+					double costheta = (vecx * vecStartx + vecy * vecStarty)
+											/(sqrt(vecx*vecx + vecy*vecy)*sqrt(vecStartx*vecStartx + vecStarty*vecStarty));
 
-                if TOOL_INSIDE_ARC(side, prev.turn) {
-                    d2 = d - radius;
-                    double l = d2/oldrad;
-                    //CHKS((l > 1.0 || l < -1.0), _("Arc to straight motion makes a corner the compensated tool can't fit in without gouging"));
-                    if(prev.turn > 0)
-                        angle_from_center = - acos(l) + theta + M_PIl;
-                    else
-                        angle_from_center = acos(l) + theta + M_PIl;
-                } else {
-                    d2 = d + radius;
-                    double l = d2/oldrad;
-                    //CHKS((l > 1.0 || l < -1.0), _("Arc to straight motion makes a corner the compensated tool can't fit in without gouging"));
-                    if(prev.turn > 0)
-                        angle_from_center = acos(l) + theta + M_PIl;
-                    else
-                        angle_from_center = - acos(l) + theta + M_PIl;
-                }
-                mid_x = prev.center1 + oldrad * cos(angle_from_center);
-                mid_y = prev.center2 + oldrad * sin(angle_from_center);
-                move_endpoint_and_flush(settings, mid_x, mid_y);
-            }
+
+					// @test 刀补建立
+					if(settings->cutter_comp_fristcalc and costheta > 0){
+
+						settings->cutter_comp_fristcalc = false;
+						calc_mid_first_comp(opx, opy, px, py, mid_x, mid_y, settings->cutter_comp_side, settings->cutter_comp_radius);
+						printf("============== convert straight comp2 mid x: %lf mid y: %lf\n", mid_x, mid_y);
+					}
+					// we actually want to move the previous line's endpoint here.  That's the same as
+					// discarding that line and doing this one instead.
+					//
+					move_endpoint_and_flush(settings, mid_x, mid_y);
+				} else {
+					// arc->line
+					// beware: the arc we saved is the compensated one.
+					arc_feed prev = qc().front().data.arc_feed;
+					double oldrad = hypot(prev.center2 - prev.end2, prev.center1 - prev.end1);
+					double oldrad_uncomp;
+
+					// new line's direction
+					double base_dir = atan2(py - opy, px - opx);
+					double theta;
+					double phi;
+
+					theta = (prev.turn > 0) ? base_dir + M_PI_2l : base_dir - M_PI_2l;
+					phi = atan2(prev.center2 - opy, prev.center1 - opx);
+					if TOOL_INSIDE_ARC(side, prev.turn) {
+						oldrad_uncomp = oldrad + radius;
+					} else {
+						oldrad_uncomp = oldrad - radius;
+					}
+
+					double alpha = theta - phi;
+					// distance to old arc center perpendicular to the new line
+					double d = oldrad_uncomp * cos(alpha);
+					double d2;
+					double angle_from_center;
+
+					if TOOL_INSIDE_ARC(side, prev.turn) {
+						d2 = d - radius;
+						double l = d2/oldrad;
+						//CHKS((l > 1.0 || l < -1.0), _("Arc to straight motion makes a corner the compensated tool can't fit in without gouging"));
+						if(prev.turn > 0)
+							angle_from_center = - acos(l) + theta + M_PIl;
+						else
+							angle_from_center = acos(l) + theta + M_PIl;
+					} else {
+						d2 = d + radius;
+						double l = d2/oldrad;
+						//CHKS((l > 1.0 || l < -1.0), _("Arc to straight motion makes a corner the compensated tool can't fit in without gouging"));
+						if(prev.turn > 0)
+							angle_from_center = acos(l) + theta + M_PIl;
+						else
+							angle_from_center = - acos(l) + theta + M_PIl;
+					}
+
+					mid_x = prev.center1 + oldrad * cos(angle_from_center);
+					mid_y = prev.center2 + oldrad * sin(angle_from_center);
+
+					move_endpoint_and_flush(settings, mid_x, mid_y);
+				}
+        	}
         } else {
             // no arc needed, also not concave (colinear lines or tangent arc->line)
             dequeue_canons(settings);
@@ -1128,6 +1153,7 @@ int Interp::convert_straight_comp2(int move,
         }
 
         if(settings->cutter_comp_lastmove){
+        	// 改变终点
         	(move == 0? enqueue_STRAIGHT_TRAVERSE: enqueue_STRAIGHT_FEED)
         	            (settings, block->line_number,
         	             0, 0, 0,
@@ -1142,9 +1168,9 @@ int Interp::convert_straight_comp2(int move,
         	             AA_end, BB_end, CC_end,
         	             u_end, v_end, w_end);
         }
-
-
     }
+
+    if(settings->cutter_comp_fristcalc) settings->cutter_comp_fristcalc = false;
 
     if(settings->cutter_comp_lastmove){
 
@@ -1354,11 +1380,12 @@ int Interp::move_endpoint_and_flush(setup_pointer settings, double x, double y)
             dot = x1 * x2 + y1 * y2; // not normalized; we only care about the angle
             printf("moving endpoint of traverse old dir %f new dir %f dot %f endpoint_valid %d\n", atan2(y1,x1), atan2(y2,x2), dot, endpoint_valid);
 
-            if(endpoint_valid && dot<0) {
+            if(endpoint_valid && dot<0 && !settings->cutter_comp_fristcalc) {
                 // oops, the move is the wrong way.  this means the
                 // path has crossed because we backed up further
                 // than the line is long.  this will gouge.
                 printf("Straight traverse in concave corner cannot be reached by the tool without gouging\n");
+                err_code = CONCAVE_CORNER_ERROR;
             }
             switch(settings->plane) {
             case CANON_PLANE_XY:
@@ -1394,7 +1421,7 @@ int Interp::move_endpoint_and_flush(setup_pointer settings, double x, double y)
             dot = x1 * x2 + y1 * y2;
             printf("moving endpoint of feed old dir %f new dir %f dot %f endpoint_valid %d\n", atan2(y1,x1), atan2(y2,x2), dot, endpoint_valid);
 
-            if(endpoint_valid && dot<0) {
+            if(endpoint_valid && dot<0 && !settings->cutter_comp_fristcalc) {
                 // oops, the move is the wrong way.  this means the
                 // path has crossed because we backed up further
                 // than the line is long.  this will gouge.

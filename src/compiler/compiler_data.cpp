@@ -107,7 +107,6 @@ bool AsFileMapInfo::OpenFile(const char *name, bool sub_flag){
 			//¹Ø±ÕÎÄ¼ş
 			close(fp_cur);
 			fp_cur = -1;
-
 			memset(str_file_name, 0x00, kMaxPathLen);
 			return false;  //Ó³ÉäÊ§°Ü
 		}

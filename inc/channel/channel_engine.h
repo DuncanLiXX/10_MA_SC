@@ -299,6 +299,15 @@ void SetMcArmComm(MCArmCommunication *comm){this->m_p_mc_arm_comm = comm;}   //É
     void SetProgProtect(bool flag);     // ÉèÖÃ³ÌĞò±£»¤×´Ì¬
     bool UpdateMcModel(const string &mcPath);
 
+    // ¼ì²âÊÇ·ñÈíÏŞÎ»³¬ÏŞ
+    // dir: ·½Ïò
+    // phy_axis: ÎïÀíÖáºÅ ´Ó0¿ªÊ¼
+    // pos: Ä¿±êÎ»ÖÃ mm
+    // ·µ»ØÖµ£º 0£ºÃ»ÓĞ³¬ÏŞ   1£º³¬ÏŞ
+    bool CheckSoftLimit(ManualMoveDir dir, uint8_t phy_axis, double pos);
+    // »ñÈ¡ÏŞÎ»Î»ÖÃ
+    bool GetSoftLimt(ManualMoveDir dir, uint8_t phy_axis, double &limit);
+
 private:	//Ë½ÓĞ³ÉÔ±º¯Êı
 	ChannelEngine();   //¹¹Ôìº¯Êı
 

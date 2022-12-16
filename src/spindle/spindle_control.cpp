@@ -171,10 +171,13 @@ void SpindleControl::StartRigidTap(double feed)
     // ratio:攻丝比例，10000*S/F，S单位为rpm，F单位为mm/min
     int32_t ratio = -10000.0*cnc_speed*spindle->move_pr/feed;
     // 攻丝回退要特殊处理
-    if(G->RTNT && tap_state.tap_flag)
-        ratio = -10000.0*tap_state.s*spindle->move_pr/tap_state.F;
-    if(TSO)
-        ratio *= SOV/100.0;
+    if(running_rtnt && tap_state.tap_flag){
+        ratio = -10000.0*tap_state.S*spindle->move_pr/tap_state.F;
+    }
+    ScPrintf("running_rtnt=%u S=%u  F=%llf",running_rtnt,tap_state.S,tap_state.F);
+
+    //if(TSO)
+    //    ratio *= SOV/100.0;
 
     // 发送攻丝轴号
     mi->SendTapAxisCmd(chn, phy_axis+1, z_axis+1);
@@ -194,7 +197,7 @@ void SpindleControl::StartRigidTap(double feed)
 
     tap_state.tap_flag = true;
     tap_state.F = feed;
-    tap_state.s = cnc_speed;
+    tap_state.S = cnc_speed;
     tap_state.polar = cnc_polar;
     tap_state.phy_axis = phy_axis;
     tap_state.z_axis = z_axis;
@@ -368,23 +371,25 @@ void SpindleControl::InputRGMD(bool RGMD)
 void SpindleControl::InputRTNT(bool RTNT)
 {
     static std::future<void> ans;
-    if(!RTNT)
+    this->RTNT = RTNT;
+    if(!RTNT || !spindle)
         return;
     ScPrintf("SpindleControl::InputRTNT RTNT = %d\n", RTNT);
+
+    ChannelEngine *engine = ChannelEngine::GetInstance();
+    ChannelControl *control = engine->GetChnControl(0);
+    if(control->GetChnStatus().chn_work_mode == AUTO_MODE){
+        CreateError(ERR_SPD_RTNT_IN_AUTO,
+                    INFO_LEVEL,
+                    CLEAR_BY_MCP_RESET);
+        return;
+    }
 
     // 加载攻丝状态
     if(SSIN == 1 || SIND == 1 || _SSTP == 0 ||
             !LoadTapState(tap_state) || !tap_state.tap_flag)
     {
         CreateError(ERR_SPD_RTNT_INVALID,
-                    ERROR_LEVEL,
-                    CLEAR_BY_MCP_RESET);
-        return;
-    }
-    ChannelEngine *engine = ChannelEngine::GetInstance();
-    ChannelControl *control = engine->GetChnControl(0);
-    if(control->GetChnStatus().chn_work_mode == AUTO_MODE){
-        CreateError(ERR_SPD_RTNT_IN_AUTO,
                     ERROR_LEVEL,
                     CLEAR_BY_MCP_RESET);
         return;
@@ -466,8 +471,8 @@ int32_t SpindleControl::GetSpindleSpeed()
         return speed;
     }
 
-    int32_t speed;
-    if(!mi->ReadPhyAxisSpeed(&speed, phy_axis)){
+    int32_t umps;
+    if(!mi->ReadPhyAxisSpeed(&umps, phy_axis)){
         return 0;
     }
 
@@ -479,8 +484,8 @@ int32_t SpindleControl::GetSpindleSpeed()
     //    if(polar == Negative){
     //        speed *= -1;
     //    }
-    speed = speed*60/(spindle->move_pr*1000);
-    return speed;
+    double speed = (double)umps*60.0/(spindle->move_pr*1000.0);
+    return (int32_t)speed;
 }
 
 double SpindleControl::GetSpdAngle()
@@ -774,6 +779,18 @@ void SpindleControl::ProcessORCMA(bool ORCMA)
         }
         mi->SendSpdLocateCmd(chn, phy_axis+1,true);
     }else{
+        CncPolar polar = CalPolar();
+        bool need_enable = (polar == Positive || polar == Negative);
+        // 取消定向时，根据之前状态来恢复电机使能
+        if(motor_enable != need_enable)
+            mi->SendAxisEnableCmd(phy_axis+1, need_enable);
+        std::this_thread::sleep_for(std::chrono::microseconds(1000 * 1000));
+        if(motor_enable != need_enable){
+            CreateError(ERR_SPD_LOCATE_FAIL,
+                        ERROR_LEVEL,
+                        CLEAR_BY_MCP_RESET);
+            return;
+        }
         mi->SendSpdLocateCmd(chn, phy_axis+1,false);
     }
 }
@@ -862,7 +879,7 @@ void SpindleControl::SendMcRigidTapFlag(bool enable)
 
 void SpindleControl::SaveTapState()
 {
-   printf("SaveTapState\n");
+   ScPrintf("SaveTapState\n");
     int fp = open(PATH_TAP_STATE, O_CREAT | O_RDWR);
     if(fp < 0){         //文件打开失败
         printf("Open tap state fail!");
@@ -881,7 +898,7 @@ void SpindleControl::SaveTapState()
 
 bool SpindleControl::LoadTapState(TapState &state)
 {
-    printf("LoadTapState\n");
+    ScPrintf("LoadTapState\n");
     TapState tmp;
     int fp = open(PATH_TAP_STATE, O_RDWR);
     if(fp < 0){         //文件打开失败
@@ -903,12 +920,6 @@ bool SpindleControl::LoadTapState(TapState &state)
 
 void SpindleControl::ProcessRTNT()
 {
-    // 恢复攻丝状态
-    double R = tap_state.R + spindle->spd_rtnt_distance;
-    variable->SetVarValue(188, R);
-    variable->SetVarValue(179, tap_state.F);
-    tap_feed = tap_state.F;
-
     // 如果主轴不在使能状态，先上使能
     if(!motor_enable)
         mi->SendAxisEnableCmd(phy_axis+1, true);
@@ -920,13 +931,21 @@ void SpindleControl::ProcessRTNT()
         return;
     }
 
+    // 恢复攻丝状态
+    double R = tap_state.R + spindle->spd_rtnt_distance;
+    variable->SetVarValue(188, R);
+    variable->SetVarValue(179, tap_state.F);
+    SetTapFeed(tap_state.F);
+
     ChannelEngine *engine = ChannelEngine::GetInstance();
     ChannelControl *control = engine->GetChnControl(0);
+    running_rtnt = true;
     if(!control->CallMacroProgram(6100))
     {
         CreateError(ERR_SPD_RTNT_FAIL,
                     ERROR_LEVEL,
                     CLEAR_BY_MCP_RESET);
+        running_rtnt = false;
         return;
     }
     std::this_thread::sleep_for(std::chrono::microseconds(500 * 1000));

@@ -799,7 +799,7 @@ struct GRegBits{
 	//G29
 	uint8_t GR21:1;     //齿轮选择信号（输入）     G29.0
     uint8_t :4;
-    uint8_t SOR:1;      //主轴定向信号           G29.5
+    uint8_t SOR:1;      //主轴准停信号           G29.5
 	uint8_t _SSTP:1;    //主轴停信号             G29.6
 	uint8_t :1;
 	//G30

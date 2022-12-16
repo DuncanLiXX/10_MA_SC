@@ -137,7 +137,7 @@ public:
 	uint16_t GetMcAutoBufMax(){return this->m_n_mc_auto_buf_max;}   //获取MC单通道自动数据缓冲数量
 
 	void ManualMove(int8_t dir);		//手动移动
-	void ManualMove2(uint8_t axis, int8_t dir, double vel, double inc_dis);  //手动移动，向dir方向移动dis距离
+    //void ManualMove2(uint8_t axis, int8_t dir, double vel, double inc_dis);  //手动移动，向dir方向移动dis距离
 	void ManualMoveStop();			//停止当前轴手动移动
 	void ManualMoveStop(uint16_t axis_mask);   //停止轴的手动移动
 
@@ -150,6 +150,15 @@ public:
 	void ManualMovePmcStop(uint8_t phy_axis);   //停止PMC轴的手动移动
 	void PausePmcAxis(uint8_t phy_axis, bool flag);          //暂停PMC轴移动
 	void StopPmcAxis(uint8_t phy_axis);       //停止PMC轴的移动
+
+    // 检测是否软限位超限
+    // dir: 方向
+    // phy_axis: 物理轴号 从0开始
+    // pos: 目标位置 mm
+    // 返回值： 0：没有超限   1：超限
+    bool CheckSoftLimit(ManualMoveDir dir, uint8_t phy_axis, double pos);
+    // 获取限位位置
+    bool GetSoftLimt(ManualMoveDir dir, uint8_t phy_axis, double &limit);
 
 	void HandwheelMove(int32_t hw_count);   //手轮移动指令
 

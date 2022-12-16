@@ -1560,7 +1560,8 @@ AuxMsg::AuxMsg(int mcode){
 	SetMsgType(AUX_MSG);
 	this->SetFlag(FLAG_WAIT_MOVE_OVER, true);   //需要等待运动到位
 
-	if(mcode == 2 || mcode == 30)
+    //lidianqiang:MDA自动加上M30临时改为M300
+    if(mcode == 2 || mcode == 30 || mcode == 300)
 		this->SetFlag(FLAG_EOF, true);		//M02/M30程序结束指令
 }
 
@@ -1575,7 +1576,7 @@ AuxMsg::AuxMsg(int *mcode, uint8_t total){
 	this->SetFlag(FLAG_WAIT_MOVE_OVER, true);   //需要等待运动到位
 
 	for(uint8_t i = 0; i < total; i++){
-		if(mcode[i] == 2 || mcode[i] == 30)
+        if(mcode[i] == 2 || mcode[i] == 30 || mcode[i] == 300)
 			this->SetFlag(FLAG_EOF, true);		//M02/M30程序结束指令
 	}
 }

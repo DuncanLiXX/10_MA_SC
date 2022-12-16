@@ -3587,8 +3587,6 @@ void ChannelEngine::ProcessHmiSetParam(HMICmdFrame &cmd){
 
             memcpy(&cfg, cmd.data+1, cmd.data_len-1);
             this->m_p_channel_control[cmd.channel_index].UpdateExCoord(cmd.data[0], cfg);
-
-
             cmd.data[0] = SUCCEED;
 
         }

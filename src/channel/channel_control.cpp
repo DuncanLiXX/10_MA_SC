@@ -5576,7 +5576,7 @@ bool ChannelControl::ExecuteMessage(){
         if(line_no != msg->GetLineNo() || type != msg->GetMsgType()){
             line_no = msg->GetLineNo();
             type = msg->GetMsgType();
-            printf("---------->excute message line no %llu  msg type: %d flag: %d\n", line_no, msg_type, msg->GetFlags().all);
+            //printf("---------->excute message line no %llu  msg type: %d flag: %d\n", line_no, msg_type, msg->GetFlags().all);
         }
         // @test zk
 
@@ -7415,6 +7415,8 @@ bool ChannelControl::ExecuteCoordMsg(RecordMsg *msg){
 
 		DPointChn point = coordmsg->GetTargetPos();
 		for(int i=0; i<kMaxAxisChn; i++){
+            if(!(coordmsg->GetAxisMask() & (0x01 << i)))
+                continue;
 			double offset = GetAxisCurMachPos(i) - point.GetAxisValue(i);
 			m_p_chn_g92_offset->offset[i] = offset;
 		}
@@ -8100,7 +8102,7 @@ bool ChannelControl::ExecuteSpeedMsg(RecordMsg *msg){
     //S代码输入到主轴模块
     m_p_spindle->InputSCode(speed->GetSpeed());
 
-    printf("ExecuteSpeedMsg::%d rpm\n", m_p_spindle->GetSCode());
+    ScPrintf("ExecuteSpeedMsg::%d rpm\n", m_p_spindle->GetSCode());
 
     //更新当前S值
     m_channel_status.rated_spindle_speed = m_p_spindle->GetSCode();
@@ -18996,6 +18998,7 @@ bool ChannelControl::NotifyHmiWorkcoordExChanged(uint8_t coord_idx){
     cmd.data_len = 1+sizeof(HmiCoordConfig);
     cmd.data[0] = coord_idx;
     memcpy(&cmd.data[1], &this->m_p_chn_ex_coord_config[coord_idx], sizeof(HmiCoordConfig));
+
 
     return this->m_p_hmi_comm->SendCmd(cmd);
 }

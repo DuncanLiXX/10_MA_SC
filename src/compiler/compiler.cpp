@@ -1457,7 +1457,7 @@ bool Compiler::OpenFile(const char *file, bool sub_flag) {
     //	else if(m_work_mode == AUTO_COMPILER){
     //		res = m_p_file_map_info->OpenFile(file);
     //	}
-    ScPrintf("compiler::openfile, file[%s], sub_flag= %hhu\n", file, sub_flag);
+    // printf("compiler::openfile, file[%s], sub_flag= %hhu\n", file, sub_flag);
     int res = 0;
 
     // @add zk 加载过长文件名导致崩溃

@@ -1040,14 +1040,14 @@ void Compiler::PreScanLine1(char *buf, uint64_t offset, uint64_t line_no,
             if (sub_prog) {
                 digit_buf[digit_count++] = *pc;
                 if (digit_count >= kMaxSubNameLen){ //子程序号超范围
-                    //TODO 告警：子程序号超范围，不能超过6位
+                    //TODO 告警：子程序号超范围，不能超过5位
 
                     return;
                 }
             } else if (goto_cmd) {
                 digit_buf[digit_count++] = *pc;
                 if (digit_count >= kMaxLineNoLen){ //顺序号超范围
-                    //TODO 告警：顺序号超范围，不能超过9位
+                    //TODO 告警：顺序号超范围，不能超过8位
 
                     return;
                 }

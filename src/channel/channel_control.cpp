@@ -7369,8 +7369,6 @@ bool ChannelControl::ExecuteCoordMsg(RecordMsg *msg){
 		return true;
 	}
 
-
-
     int limit = 2;
     if(this->IsStepMode())
         limit = 4;	//单步模式需要多次验证，因为状态切换有延时
@@ -7429,22 +7427,25 @@ bool ChannelControl::ExecuteCoordMsg(RecordMsg *msg){
 
         // @add  zk
         DPointChn point = coordmsg->GetTargetPos();
+        uint32_t axis_mask = coordmsg->GetAxisMask();
 
         switch(coordmsg->GetExecStep()){
         case 0:
             //第一步：更新坐标系的值 激活坐标系
-            for(int i = 0; i < kMaxAxisChn; i++){
+        	for(int i = 0; i < kMaxAxisChn; i++){
                 //this->SetMcAxisOrigin(i);
-                int64_t origin_pos = m_p_chn_coord_config[0].offset[i] * 1e7;  //基本工件坐标系
-                int coord_index = m_channel_status.gmode[14];
-                if(coord_index <= G59_CMD ){
-                    origin_pos += m_p_chn_coord_config[coord_index/10-53].offset[i] * 1e7;    //单位由mm转换为0.1nm
-                }else if(coord_index <= G5499_CMD){
-                    origin_pos += m_p_chn_ex_coord_config[coord_index/10-5401].offset[i] * 1e7;    //单位由mm转换为0.1nm
-                }
-                origin_pos += point.GetAxisValue(i)* 1e7;
-                G52offset[i] = point.GetAxisValue(i);
-                this->SetMcAxisOrigin(i, origin_pos);
+				if(axis_mask & (0x01<<i)){
+					int64_t origin_pos = m_p_chn_coord_config[0].offset[i] * 1e7;  //基本工件坐标系
+					int coord_index = m_channel_status.gmode[14];
+					if(coord_index <= G59_CMD ){
+						origin_pos += m_p_chn_coord_config[coord_index/10-53].offset[i] * 1e7;    //单位由mm转换为0.1nm
+					}else if(coord_index <= G5499_CMD){
+						origin_pos += m_p_chn_ex_coord_config[coord_index/10-5401].offset[i] * 1e7;    //单位由mm转换为0.1nm
+					}
+					origin_pos += point.GetAxisValue(i)* 1e7;
+					G52offset[i] = point.GetAxisValue(i);
+					this->SetMcAxisOrigin(i, origin_pos);
+        		}
             }
             this->ActiveMcOrigin(true);
             coordmsg->SetExecStep(1); //跳转下一步
@@ -8248,8 +8249,8 @@ bool ChannelControl::ExecuteLoopMsg(RecordMsg *msg){
             && loopmsg->GetGCode() == G80_CMD){ // 退出攻丝
         m_p_spindle->ResetTapFlag();
     }
-    this->m_channel_status.gmode[9] = loopmsg->GetGCode();
 
+    this->m_channel_status.gmode[9] = loopmsg->GetGCode();
 
     // 通知HMI模态变化
     this->SendChnStatusChangeCmdToHmi(G_MODE);

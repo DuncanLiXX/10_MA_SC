@@ -4050,6 +4050,146 @@ void ChannelEngine::SetProgProtect(bool flag)
     m_p_hmi_comm->SendCmd(hmi_cmd);
 }
 
+bool ChannelEngine::UpdateMcModel(const string &mcPath)
+{
+    std::cout << "ChannelEngine::UpdateMcModel" << std::endl;
+    if(access(mcPath.c_str(), F_OK) == -1)	//升级文件不存在，MC模块不需要升级
+    {
+        std::cout << "file not exist " << mcPath << std::endl;
+        return false;
+    }
+
+    std::cout << "step1: SendMcUpdateStartCmd()" << std::endl;
+    //通知MC开始升级
+    if(!this->SendMcUpdateStartCmd()){
+        g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "发送MC模块升级开始命令失败！");
+        return false;
+    }
+
+    std::cout << "step2: clear flash" << std::endl;
+    //等待MC擦除备份区flash
+    do{
+        if(!QueryMcUpdateStatus()){
+            g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "查询MC模块升级状态失败！");
+            return false;
+        }
+        while(!m_b_get_mc_update_status)
+            usleep(100);
+
+        if(m_n_mc_update_status == 4)
+            break;
+
+        usleep(100000);
+
+    }while(1);
+
+    std::cout << "step3: get file size" << std::endl;
+    //通知MC升级文件的大小
+    struct stat statbuf;
+    uint32_t file_size = 0;
+    if(stat(mcPath.c_str(), &statbuf) == 0)
+        file_size = statbuf.st_size;
+    else{
+        g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "获取文件[%s]大小失败！", PATH_PMC_DATA);
+        return false;
+    }
+    if(!this->SendMcUpdateFileSize(file_size)){
+        g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "发送升级文件大小失败！");
+        return false;
+    }
+
+    std::cout << "step4: open file" << std::endl;
+    //打开MC文件
+    int fp = 0;
+    fp = open(mcPath.c_str(), O_RDONLY);
+    if(fp < 0){
+        g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "打开文件[%s]失败！", mcPath.c_str());
+        return false;
+    }
+
+    //计算文件总帧数
+    uint16_t file_frame_count = 0;
+    file_frame_count = file_size/MC_UPDATE_BLOCK_SIZE;
+    if(file_size % MC_UPDATE_BLOCK_SIZE)
+        file_frame_count++;
+
+    std::cout << "step5: write file" << std::endl;
+    //写入文件
+    GCodeFrame data_frame;
+    uint32_t send_size = 0, read_size = 0;
+    uint32_t cc = 0, i = 0;
+    uint16_t file_crc = 0xffff;
+    while(file_size > 0){
+        bzero(data_frame.data_crc, sizeof(data_frame));
+        send_size = file_size>MC_UPDATE_BLOCK_SIZE?MC_UPDATE_BLOCK_SIZE:file_size;
+        read_size = read(fp, (void *)&data_frame.data_crc[1], send_size);
+        if(read_size != send_size){
+            g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "读取文件[%s]失败，%u, %u！", mcPath.c_str(), send_size, read_size);
+            goto END;//文件读取失败
+        }
+
+        cc = send_size/2;
+        if(send_size%2)
+            cc++;
+        for(i = 0; i < cc; i++){
+            file_crc ^= data_frame.data_crc[i+1];  //计算CRC
+        }
+
+        while(!this->m_p_mc_comm->WriteGCodeData(0, data_frame)){  //固定用通道0数据通道更新MC
+            usleep(100);
+        }
+        file_size -= send_size;
+    }
+
+    //等待文件写入完成
+    while(this->m_p_mc_comm->ReadGCodeFifoCount(0) > 0)
+        usleep(10000);
+    std::cout << "step6, write finish" << std::endl;
+
+    //发送升级文件CRC
+    printf("send crc, block = %hu, crc = 0x%hx\n", file_frame_count, file_crc);
+    this->SendMcUpdateFileCrc(file_frame_count, file_crc);
+    std::cout << "step7, send crc" << std::endl;
+
+    //查询MC状态，等待MC升级接收完成
+    //printf("wait update result!\n");
+    do{
+        if(!QueryMcUpdateStatus()){
+            g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "查询MC模块升级状态失败！");
+            goto END;
+        }
+        while(!m_b_get_mc_update_status)
+            usleep(100); //等待查询结果
+
+        if(m_n_mc_update_status == 0x02){ //报错
+            g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "MC升级失败！");
+            goto END;
+        }
+        else if(m_n_mc_update_status == 0x13){ //CRC校验错
+            g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "MC升级CRC校验失败！");
+            goto END;
+        }
+        else if(m_n_mc_update_status == 0x11){//升级成功
+            printf("Succeed to update the MC module!\n");
+            break;
+        }else
+            usleep(100000);  //等待100ms
+
+    }while(1);
+    std::cout << "step8, finish" << std::endl;
+
+    if(fp > 0)
+        close(fp);
+    return true;
+
+END:
+    if(fp > 0)
+        close(fp);
+
+    return false;
+
+}
+
 
 /**
  * @brief 处理HMI更新螺补数据
@@ -9609,6 +9749,17 @@ void ChannelEngine::AxisFindRefNoZeroSignal(uint8_t phy_axis){
         this->m_p_mi_comm->WriteCmd(cmd);
         gettimeofday(&this->m_time_ret_ref[phy_axis], NULL);   //记录起始时间，延时300ms
 
+
+        if (GetSyncAxisCtrl()->CheckSyncState(phy_axis) == 1)
+        {//主动轴相应的从动轴也需要清除回零标志
+            int axisMask = GetSyncAxisCtrl()->GetSlaveAxis(phy_axis);
+            for (int i = 0; i < this->m_p_general_config->axis_count; ++i) {
+                if(axisMask & (0x01<<i)){
+                    this->SetRetRefFlag(i, false);
+                }
+            }
+        }
+
         m_n_ret_ref_step[phy_axis] = 1;  //跳转下一步
         printf("return ref, goto step 1\n");
 
@@ -9633,6 +9784,30 @@ void ChannelEngine::AxisFindRefNoZeroSignal(uint8_t phy_axis){
         //					m_p_pmc_reg->FReg().all[204], m_p_pmc_reg->FReg().all[205], m_p_pmc_reg->FReg().all[206], m_p_pmc_reg->FReg().all[207]);
         this->m_n_mask_ret_ref &= ~(0x01<<phy_axis);
         m_n_ret_ref_step[phy_axis] = 0;
+
+        if (GetSyncAxisCtrl()->CheckSyncState(phy_axis) == 1)
+        {//建立同步轴
+            int axisMask = GetSyncAxisCtrl()->GetSlaveAxis(phy_axis);
+            for (int i = 0; i < this->m_p_general_config->axis_count; ++i) {
+                if(axisMask & (0x01<<i)){
+                    MiCmdFrame mi_cmd;//主动轴相应的从动轴也需要设置当前位置为零点
+                    memset(&mi_cmd, 0x00, sizeof(mi_cmd));
+                    mi_cmd.data.cmd = CMD_MI_SET_AXIS_MACH_POS;
+                    mi_cmd.data.axis_index = i+1;
+
+                    int64_t pos = m_p_axis_config[i].axis_home_pos[0]*1e7;   //单位转换,0.1nm
+                    mi_cmd.data.data[0] = pos&0xFFFF;
+                    mi_cmd.data.data[1] = (pos>>16)&0xFFFF;
+
+                    this->m_p_mi_comm->WriteCmd(mi_cmd);
+
+                    this->SetRetRefFlag(i, true);
+                    this->m_p_pmc_reg->FReg().bits[0].in_ref_point |= (0x01<<i);   //置位到参考点标志
+                }
+            }
+        }
+
+
 
         if(m_n_mask_ret_ref == 0){
             this->m_b_ret_ref = false;
@@ -9679,8 +9854,7 @@ void ChannelEngine::EcatIncAxisFindRefWithZeroSignal(uint8_t phy_axis){
         //                for(uint8_t i = 0; i < this->m_p_general_config->axis_count; i++){
         //                    if(this->m_p_axis_config[i].sync_axis == 1 && this->m_p_axis_config[i].master_axis_no == (phy_axis+1)){
         //                        if(this->m_n_sync_axis_enable_mask & (0x01<<i)){
-        //                            this->SetRetRefFlag(i, false);
-        //                            this->m_p_pmc_reg->FReg().bits[0].in_ref_point &= ~(0x01<<i);
+        //=
 
         //                        //	this->m_p_axis_config[i].benchmark_offset = 0;   //主从基准偏差为0
         //                        }
@@ -11180,8 +11354,8 @@ void ChannelEngine::ReturnRefPoint(){
             continue;
         }
 
-        if (GetSyncAxisCtrl()->CheckSyncState(i))
-        {
+        if (GetSyncAxisCtrl()->CheckSyncState(i) == 2)
+        {//从动轴不能回零
             CreateError(ERR_RET_SYNC_ERR, WARNING_LEVEL, CLEAR_BY_MCP_RESET, 0, CHANNEL_ENGINE_INDEX, i);
             continue;
         }

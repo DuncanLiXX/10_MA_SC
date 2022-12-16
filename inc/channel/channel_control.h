@@ -518,6 +518,7 @@ private:
 	bool ExecuteAuxMsg_wood(RecordMsg *msg);    	//实际执行辅助指令消息, 木工机定制版本
 #endif
 
+    void SetChnCurWorkPiece(int newCnt);   //设置当前加工件数
 	int GetCurToolLife();    //获取当前刀具寿命
 
 	uint8_t GetCurPhyAxis();		//获取当前物理轴号
@@ -617,7 +618,7 @@ private://私有成员变量
 	SCSystemConfig *m_p_general_config;   //系统配置
 	SCChannelConfig *m_p_channel_config;  //通道配置
 	SCAxisConfig *m_p_axis_config;        //轴配置
-	SCCoordConfig *m_p_chn_coord_config;  //工件坐标系配置
+    SCCoordConfig *m_p_chn_coord_config;  //工件坐标系配置
 	SCCoordConfig *m_p_chn_ex_coord_config; //扩展工件坐标系配置
 	SCCoordConfig *m_p_chn_g92_offset;    //@add zk G92 全局坐标系偏移
 

@@ -1,11 +1,16 @@
 #include <algorithm>
 #include <iostream>
 #include <chrono>
+#include <string>
+#include <vector>
 #include "backup_info.h"
 #include "global_definition.h"
 #include "zip.h"
 #include "dirent.h"
 #include "hmi_shared_data.h"
+#include "inifile.h"
+#include "global_include.h"
+#include "channel_engine.h"
 #include <unistd.h>
 #include <sys/stat.h>
 
@@ -273,13 +278,21 @@ void BackUp_Manager::Init_UnPack_Info(int mask, zip_t *zip)
             zip_entry_openbyindex(zip, i);
             string name = zip_entry_name(zip);
             zip_entry_close(zip);
-            if (name.find("S99rmnologin.sh") != string::npos)
+            if (GetBackupType(name) == Script_Type)
             {
                 m_backupInfoVec.push_back(new Script_Backup_Info(0, name));
             }
-            else if (name.find("10MA_SC_Module.elf") != string::npos)
+            else if (GetBackupType(name) == Sc_Type)
             {
                 m_backupInfoVec.push_back(new Sc_Backup_Info(0, name));
+            }
+            else if (GetBackupType(name) == Axis_Type)
+            {
+                m_backupInfoVec.push_back(new AxisConfig_Backup_Info(0, name));
+            }
+            else if (GetBackupType(name) == Mc_Type)
+            {
+                m_backupInfoVec.push_back(new Mc_Backup_Info(0, name));
             }
             else
             {
@@ -293,7 +306,7 @@ void BackUp_Manager::Init_UnPack_Info(int mask, zip_t *zip)
         int type = BackUp_System_Param;
         m_backupInfoVec.push_back(new Backup_Info(type, SYS_CONFIG_FILE));
         m_backupInfoVec.push_back(new Backup_Info(type, CHN_CONFIG_FILE));
-        m_backupInfoVec.push_back(new Backup_Info(type, AXIS_CONFIG_FILE));
+        m_backupInfoVec.push_back(new AxisConfig_Backup_Info(type, AXIS_CONFIG_FILE));
         m_backupInfoVec.push_back(new Backup_Info(type, FIVE_AXIS_CONFIG_FILE));
         m_backupInfoVec.push_back(new Backup_Info(type, CHN_PROC_PARAM_FILE));
         m_backupInfoVec.push_back(new Backup_Info(type, AXIS_PROC_PARAM_FILE));
@@ -336,21 +349,21 @@ void BackUp_Manager::Init_UnPack_Info(int mask, zip_t *zip)
 
         if (mask & Backup_Macro_Param)
         {
-            if (name.find("cnc/config/macro_var") != string::npos)
+            if (GetBackupType(name) == Macro_Type)
             {
                 m_backupInfoVec.push_back(new Backup_Info(Backup_Macro_Param, name));
             }
         }
         if (mask & Backup_Esb_Data)
         {
-            if (name.find("cnc/svo_esb") != string::npos)
+            if (GetBackupType(name) == Esb_Type)
             {
                 m_backupInfoVec.push_back(new Backup_Info(Backup_Esb_Data, name));
             }
         }
         if (mask & Backup_Gcode_Data)
         {
-            if (name.find("cnc/nc_files") != string::npos)
+            if (GetBackupType(name) == NcFile_Type)
             {
                 m_backupInfoVec.push_back(new Backup_Info(Backup_Gcode_Data, name));
             }
@@ -374,6 +387,40 @@ void BackUp_Manager::Clean_Info()
 int BackUp_Manager::Info_Cnt() const
 {
     return m_backupInfoVec.size();
+}
+
+BackUp_Manager::SpecialType BackUp_Manager::GetBackupType(const string &backName)
+{
+    if (backName.find("S99rmnologin.sh") != string::npos)
+    {
+        return Script_Type;
+    }
+    if (backName.find("10MA_SC_Module.elf") != string::npos)
+    {
+        return Sc_Type;
+    }
+    if (backName.find("cnc/config/macro_var") != string::npos)
+    {
+        return Macro_Type;
+    }
+    if (backName.find("cnc/svo_esb") != string::npos)
+    {
+        return Esb_Type;
+    }
+    if (backName.find("cnc/nc_files") != string::npos)
+    {
+        return NcFile_Type;
+    }
+    if (backName.find("axis_config.ini") != string::npos)
+    {
+        return Axis_Type;
+    }
+    if (backName.find("cnc/bin/module_mc.ldr") != string::npos)
+    {
+        return Mc_Type;
+    }
+
+    return Basic_Type;
 }
 
 Script_Backup_Info::Script_Backup_Info(int type, string path)
@@ -433,6 +480,62 @@ bool Sc_Backup_Info::UnPackage(zip_t *zip, string prefix)
             system(command.c_str());
             system("sync");
         }
+    }
+    return true;
+}
+
+AxisConfig_Backup_Info::AxisConfig_Backup_Info(int type, string path)
+    : Backup_Info(type, path)
+{
+
+}
+
+bool AxisConfig_Backup_Info::UnPackage(zip_t *zip, string prefix)
+{
+    if (Backup_Info::UnPackage(zip, prefix))
+    {
+        //读取配置文件，恢复绝对式编码器的原点参数
+        string scPath = RECOVER_TEMP + AXIS_CONFIG_FILE;
+        inifile::IniFile m_ini_axis;
+        if (m_ini_axis.Load(scPath))
+        {
+            return false;
+        }
+
+        //重置 ref_encoder 参数
+        std::vector<std::string> sections;
+        m_ini_axis.GetSections(&sections);
+        for(auto itr = sections.begin(); itr != sections.end(); ++itr)
+        {
+            std::string key = "ref_encoder";
+            if (m_ini_axis.HasKey(*itr, key))
+            {
+                std::cout << "setInt64Value: [" << *itr << "] = " << key << std::endl;
+                if (m_ini_axis.SetInt64Value(*itr, key, kAxisRefNoDef))
+                    return false;
+            }
+        }
+        if (m_ini_axis.Save())
+            return false;
+
+        return true;
+    }
+    return false;
+}
+
+Mc_Backup_Info::Mc_Backup_Info(int type, string path)
+    : Backup_Info(type, path)
+{
+
+}
+
+bool Mc_Backup_Info::UnPackage(zip_t *zip, string prefix)
+{
+    if (Backup_Info::UnPackage(zip, prefix))
+    {
+        //升级MC模块
+        if (!g_ptr_chn_engine->UpdateMcModel(RECOVER_TEMP + MC_DIR))
+            return false;
     }
     return true;
 }

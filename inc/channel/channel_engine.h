@@ -297,6 +297,7 @@ void SetMcArmComm(MCArmCommunication *comm){this->m_p_mc_arm_comm = comm;}   //É
     double* GetMlkPos(){return m_MLK_pos;}      // »ñÈ¡»úĞµËø×¡Î»ÖÃ
 
     void SetProgProtect(bool flag);     // ÉèÖÃ³ÌĞò±£»¤×´Ì¬
+    bool UpdateMcModel(const string &mcPath);
 
 private:	//Ë½ÓĞ³ÉÔ±º¯Êı
 	ChannelEngine();   //¹¹Ôìº¯Êı

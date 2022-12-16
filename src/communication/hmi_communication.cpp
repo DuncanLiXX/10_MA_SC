@@ -1721,6 +1721,9 @@ void HMICommunication::BackgroundFunc()
     while(!g_sys_state.system_quit){
 
         sem_wait(&m_sem_background);//等待tcp文件传输信号
+        int val;
+        sem_getvalue(&m_sem_background, &val);
+        std::cout << "sem_background: " << val << std::endl;
         std::cout << "HMICommunication::BackgroundFunc()" << std::endl;
         if(g_sys_state.eth0_running && g_sys_state.hmi_comm_ready){
             switch (m_background_type) {
@@ -2604,9 +2607,11 @@ void HMICommunication::ProcessHmiSyncTimeCmd(HMICmdFrame &cmd){
 void HMICommunication::ProcessHmiSysBackupCmd(HMICmdFrame &cmd)
 {
     cmd.frame_number |= 0x8000;
-    if (m_background_type != Background_None || m_b_trans_file)
+    int val;
+    sem_getvalue(&m_sem_background, &val);
+    if (val != 0 || m_b_trans_file)
     {
-        std::cout << "busy backup"  << " background: " << m_background_type << " file_trans: " << m_b_trans_file << std::endl;
+        std::cout << "busy backup"  << " background: " << val << " file_trans: " << m_b_trans_file << std::endl;
         cmd.cmd_extension = -1;
         SendCmd(cmd);
     }
@@ -2626,7 +2631,6 @@ void HMICommunication::ProcessHmiSysBackupCmd(HMICmdFrame &cmd)
         SendCmd(cmd);
 
         m_background_type = Background_Pack;
-        sem_post(&m_sem_background);//通知执行后台程序
     }
 }
 
@@ -2637,9 +2641,11 @@ void HMICommunication::ProcessHmiSysBackupCmd(HMICmdFrame &cmd)
 void HMICommunication::ProcessHmiSysRecoverCmd(HMICmdFrame &cmd)
 {
     cmd.frame_number |= 0x8000;
-    if (m_background_type != Background_None || m_b_trans_file)
+    int val;
+    sem_getvalue(&m_sem_background, &val);
+    if (val != 0 || m_b_trans_file)
     {
-        std::cout << "busy recover" << " background: " << m_background_type << " file_trans: " << m_b_trans_file << std::endl;
+        std::cout << "busy recover" << " background: " << val << " file_trans: " << m_b_trans_file << std::endl;
         cmd.cmd_extension = -1;
         SendCmd(cmd);
     }
@@ -3752,6 +3758,8 @@ void HMICommunication::UnPackageBackupFile()
     }
     zip_close(zip);
 
+    system("sync");
+
     //提取出现错误，删除恢复文件
     if (!ret)
     {
@@ -3761,19 +3769,6 @@ void HMICommunication::UnPackageBackupFile()
         SendHMIBackupStatus(m_sysbackup_status);
         return;
     }
-
-    //SC
-//    string scPath = RECOVER_TEMP + SC_DIR;
-//    if (!access(scPath.c_str(), F_OK))
-//    {
-//        std::cout << "sc chmod" << std::endl;
-//        command = "chmod +x " + scPath;
-//        system(command.c_str());
-//    }
-
-    //PL
-
-    //MC
 
     std::cout << "UnPack Finished" << std::endl;
 
@@ -4564,6 +4559,7 @@ int HMICommunication::RecvFile(){
 #ifdef USES_TCP_FILE_TRANS_KEEP
 	sync();
 #else
+
 	if(m_soc_file_send > 0){
 		close(m_soc_file_send);
 		m_soc_file_send = -1;

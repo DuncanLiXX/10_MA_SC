@@ -1345,9 +1345,7 @@ bool ChannelControl::SetSysVarValue(const int index, const double &value){
             printf("3006 err_id: %d\n", err_id);
         }
     }else if(index == 3901){  //已加工件数
-        //this->m_channel_status.workpiece_count = value;
-        this->m_channel_status.workpiece_count_total = value;
-        g_ptr_parm_manager->SetCurWorkPiece(m_n_channel_index, m_channel_status.workpiece_count_total);
+        SetChnCurWorkPiece(value);
     }else if(index == 4320){  //设置当前刀号
         this->m_channel_status.cur_tool = value;
         g_ptr_parm_manager->SetCurTool(m_n_channel_index, m_channel_status.cur_tool);
@@ -1493,15 +1491,19 @@ bool ChannelControl::SetSysVarValue(const int index, const double &value){
     else if(index >= 30001 && index <= 30060) {    //刀具寿命管理方式
         int id = index - 30001;
         this->m_p_chn_tool_info->tool_life_type[id] = value;
+        NotifyHmiToolPotChanged();
     }else if(index >= 30101 && index <= 30160) {    //刀具最大寿命
         int id = index - 30101;
         this->m_p_chn_tool_info->tool_life_max[id] = value;
+        NotifyHmiToolPotChanged();
     }else if(index >= 30201 && index <= 30260) {    //刀具已用寿命
         int id = index - 30201;
         this->m_p_chn_tool_info->tool_life_cur[id] = value;
+        NotifyHmiToolPotChanged();
     }else if(index >= 30301 && index <= 30360) {    //刀具预警寿命
         int id = index - 30301;
         this->m_p_chn_tool_info->tool_threshold[id] = value;
+        NotifyHmiToolPotChanged();
     }
     else
         return false;
@@ -16096,6 +16098,15 @@ void ChannelControl::SetMcRtcpMode(uint16_t cmd_type, uint16_t switch_type, int3
         m_p_mc_comm->WriteCmd(cmd);
     else
         m_p_mc_arm_comm->WriteCmd(cmd);
+}
+
+void ChannelControl::SetChnCurWorkPiece(int newCnt)
+{
+    int diff = newCnt - m_channel_status.workpiece_count_total;
+    this->m_channel_status.workpiece_count = newCnt;
+    this->m_channel_status.workpiece_count_total += diff;
+    g_ptr_parm_manager->SetCurWorkPiece(m_n_channel_index, m_channel_status.workpiece_count);
+    g_ptr_parm_manager->SetTotalWorkPiece(m_n_channel_index, m_channel_status.workpiece_count_total);
 }
 
 /**

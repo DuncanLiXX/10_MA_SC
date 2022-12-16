@@ -15,7 +15,7 @@ const std::string SC_DIR = "/cnc/bin/10MA_SC_Module.elf";
 const std::string MI_DIR = "/cnc/bin/MI.bin";
 const std::string SPARTAN6_DIR = "/cnc/bin/top.bit";
 const std::string PL_DIR = "/cnc/bin/PL.bin";
-const std::string MC_DIR = "/cnc/bin/MC.ldr";
+const std::string MC_DIR = "/cnc/bin/module_mc.ldr";
 const std::string FPGA_DIR = "/cnc/bin/SPARTAN6.bin";
 const std::string SCRIPT_DIR = "/cnc/script/S99rmnologin.sh";
 const std::string ScriptPath = "/etc/rc5.d/S99rmnologin.sh";
@@ -54,11 +54,36 @@ public:
     bool UnPackage(struct zip_t *zip, string prefix) override;
 };
 
+class AxisConfig_Backup_Info : public Backup_Info {
+public:
+    AxisConfig_Backup_Info(int type, string path);
+    virtual ~AxisConfig_Backup_Info() {};
+    bool UnPackage(struct zip_t *zip, string prefix) override;
+};
+
+class Mc_Backup_Info : public Backup_Info {
+public:
+    Mc_Backup_Info(int type, string path);
+    virtual ~Mc_Backup_Info() {};
+    bool UnPackage(struct zip_t *zip, string prefix) override;
+};
+
 
 class BackUp_Manager {
 public:
     BackUp_Manager();
     ~BackUp_Manager();
+
+    enum SpecialType{
+        Basic_Type = 0,
+        Script_Type,
+        Sc_Type,
+        Macro_Type,
+        Esb_Type,
+        NcFile_Type,
+        Axis_Type,
+        Mc_Type,
+    };
 
     void Init_Pack_Info(int mask);
     void Init_UnPack_Info(int mask, zip_t *zip);
@@ -72,6 +97,7 @@ public:
 private:
 
     void MakeBackupInfo(Backup_Info *info);
+    SpecialType GetBackupType(const std::string &backName);
     vector<Backup_Info *> m_backupInfoVec;
 };
 

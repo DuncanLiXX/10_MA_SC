@@ -251,6 +251,9 @@ public:
     // chn: 通道号
     // axis: 手轮插入轴选
     void SendHandwheelInsertAxis(uint8_t chn, uint8_t axis);
+    // chn: 通道号
+    // mask: 告警掩码 每一bit代表一个轴是否处于告警状态
+    void SendHardLimitState(uint8_t chn, uint16_t mask);
 
 	bool ReadEncoderWarn(uint64_t &value);		//读取轴编码器告警标志
 	bool ReadServoHLimitFlag(bool pos_flag, uint64_t &value);   //读取伺服限位告警信息

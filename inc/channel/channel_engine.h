@@ -561,7 +561,8 @@ private:  //私有成员变量
     FRegister m_f_reg_last;             //上一周期的F寄存器
 
 	bool m_b_emergency;				//急停状态标志  true--急停状态    false--非急停状态
-	uint64_t m_hard_limit_postive;	//硬限位触发标志，正向   64bit代表64轴
+    uint64_t m_hard_limit_last{0};  //上一周期的硬限位标记
+    uint64_t m_hard_limit_postive;	//硬限位触发标志，正向   64bit代表64轴
 	uint64_t m_hard_limit_negative; //硬限位触发标志，负向
 
 	uint32_t m_n_da_prec;			//DA精度，转换成了拆分精度，即：如果DA为16位，则为32768

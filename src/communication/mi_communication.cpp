@@ -430,6 +430,18 @@ void MICommunication::SendHandwheelInsertAxis(uint8_t chn, uint8_t axis)
     WriteCmd(cmd);
 }
 
+void MICommunication::SendHardLimitState(uint8_t chn, uint16_t mask)
+{
+    MiCmdFrame cmd;
+    memset(&cmd, 0x00, sizeof(cmd));
+    cmd.data.cmd = CMD_MI_SET_HARD_LIMIT;
+
+    cmd.data.data[0] = mask;
+
+    cmd.data.axis_index = NO_AXIS;
+    cmd.data.reserved = chn;
+}
+
 /**
  * @brief 初始化上下行命令通道，将所有命令帧的读写标志位置0
  */

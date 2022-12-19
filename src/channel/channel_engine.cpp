@@ -8754,13 +8754,13 @@ void ChannelEngine::ProcessPmcSignal(){
         }
 #endif
     }
-
     //处理轴的限位信号，虽然64个轴的限位信号平均分布在四个通道中，但是处理时不分通道
     if(!this->m_b_ret_ref){  //回参考点过程中屏蔽限位
         chn = m_p_general_config->axis_count/16;
         if(m_p_general_config->axis_count%16)
             chn++;
         for(int i = 0; i < chn; i++){
+
             g_reg = &m_p_pmc_reg->GReg().bits[i];
             if(g_reg->axis_limit_postive1 != 0x00 || g_reg->axis_limit_postive2 != 0x00){  //正向硬限位触发
 
@@ -8794,6 +8794,10 @@ void ChannelEngine::ProcessPmcSignal(){
                     this->m_hard_limit_negative |= flag;
                     //		printf("negative limit222 : 0x%llx\n", m_hard_limit_negative);
                 }
+            }
+            if(m_hard_limit_last != (m_hard_limit_postive | m_hard_limit_negative)){
+                m_hard_limit_last = (m_hard_limit_postive | m_hard_limit_negative);
+                m_p_mi_comm->SendHardLimitState(chn, m_hard_limit_last);
             }
         }
     }

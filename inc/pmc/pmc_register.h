@@ -290,7 +290,7 @@ struct FRegBits{
 	uint8_t :8;
 	//F93
 	uint8_t :8;
-	//F94
+    //F94
 	uint8_t ZP11:8;   //返回参考点结束信号   bit0-bit7：  轴1-轴8
 	//F95
 	uint8_t ZP12:8;   //返回参考点结束信号   bit0-bit7：  轴9-轴16

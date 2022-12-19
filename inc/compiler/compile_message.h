@@ -748,6 +748,7 @@ public:
 
 	uint8_t GetExecStep(){return m_n_exec_step;}		//获取当前步骤
 	void SetExecStep(uint8_t step){m_n_exec_step = step;} //设置执行步骤
+    uint8_t GetMoveType(){return m_n_move_type;};       //移动类型
 
 
 	CompensateMsg& operator=( const CompensateMsg& msg);  //赋值运算符

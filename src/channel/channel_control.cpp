@@ -5131,8 +5131,10 @@ bool ChannelControl::OutputData(RecordMsg *msg, bool flag_block){
             data_frame.data.ext_type |= 0x02;   //所有轴插补
         }
         // @add zk  不指定类型会使 MC 空运行
-        data_frame.data.cmd = 1;  // 指定 G01
-
+        if(msg->GetMsgType() == COMPENSATE_MSG)
+            data_frame.data.cmd = ((CompensateMsg*)msg)->GetMoveType();
+        else
+            data_frame.data.cmd = 1;   // G31需要强制设为G01
         break;
     case RAPID_MSG:
     case COORD_MSG:

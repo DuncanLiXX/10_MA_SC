@@ -7623,6 +7623,8 @@ void ChannelEngine::SendMiBacklash(uint8_t axis){
         memcpy(cmd.data.data, &data, 4);  //
         data = m_p_axis_config[axis].backlash_negative;
         memcpy(&cmd.data.data[2], &data, 4);
+        data = m_p_axis_config[axis].backlash_step;
+        memcpy(&cmd.data.data[4], &data, 4);
     }else{
         uint32_t data = 0.0;
         memcpy(cmd.data.data, &data, 4);  //
@@ -7633,6 +7635,7 @@ void ChannelEngine::SendMiBacklash(uint8_t axis){
     std::cout << "backlash_enable: " << (int)m_p_axis_config[axis].backlash_enable << std::endl;
     std::cout << "backlash_forward: " << (int)m_p_axis_config[axis].backlash_forward << std::endl;
     std::cout << "backlash_negative: " << (int)m_p_axis_config[axis].backlash_negative << std::endl;
+    std::cout << "backlash_step: " << (int)m_p_axis_config[axis].backlash_step << std::endl;
     this->m_p_mi_comm->WriteCmd(cmd);
 }
 

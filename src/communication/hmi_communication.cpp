@@ -2631,6 +2631,7 @@ void HMICommunication::ProcessHmiSysBackupCmd(HMICmdFrame &cmd)
         SendCmd(cmd);
 
         m_background_type = Background_Pack;
+        sem_post(&m_sem_background);//通知执行后台程序
     }
 }
 

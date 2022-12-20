@@ -3126,6 +3126,7 @@ bool Compiler::RunCompensateMsg(RecordMsg *msg) {
             double radius = offset_config->radius_compensation[d_value - 1];
             this->m_p_tool_compensate->setToolRadius(radius);
         }
+        m_p_channel_control->UpdateModeData(D_MODE, d_value);//llx add,由SC直接更新D模态，不经过MC
 
     } else if (gcode == G43_CMD || gcode == G44_CMD || gcode == G43_4_CMD) {  //刀具长度补偿
         tmp->SetCompLastValue(m_compiler_status.mode.h_mode);  //记录历史值

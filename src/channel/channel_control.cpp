@@ -11920,7 +11920,7 @@ void ChannelControl::RefreshModeInfo(const McModeStatus &mode){
         this->m_channel_status.gmode[11] = mode.bits.mode_g50*10+G50_CMD;
         this->m_channel_status.gmode[13] = mode.bits.mode_g60*10+G60_CMD;
         this->m_channel_status.gmode[16] = mode.bits.mode_g68*10+G68_CMD;
-        this->m_channel_status.cur_d_code = mode.bits.mode_d;
+        //this->m_channel_status.cur_d_code = mode.bits.mode_d;//llx add 刀具半径D模态，不从MC读取,由SC直接设置
 
         this->m_mc_mode_cur.all = mode.all;
 
@@ -11937,9 +11937,26 @@ void ChannelControl::RefreshModeInfo(const McModeStatus &mode){
 
     if(b_change){
         this->SendChnStatusChangeCmdToHmi(G_MODE);
-        this->SendModeChangToHmi(D_MODE);
+        //this->SendModeChangToHmi(D_MODE);//llx add 刀具半径D模态，不从MC读取,由SC直接设置
     }
 
+}
+
+/**
+ * @brief 由SC直接更新模态数据
+ * @param mode_type : 模态类型
+ * @param value     : 更新值
+ */
+void ChannelControl::UpdateModeData(uint16_t mode_type, int value)
+{
+    switch(mode_type){
+    case D_MODE:
+        m_channel_status.cur_d_code = value;
+        SendModeChangToHmi(D_MODE);
+        break;
+    default:
+        break;
+    }
 }
 
 /**
@@ -16016,6 +16033,7 @@ void ChannelControl::SetChnCurWorkPiece(int newCnt)
     this->m_channel_status.workpiece_count_total += diff;
     g_ptr_parm_manager->SetCurWorkPiece(m_n_channel_index, m_channel_status.workpiece_count);
     g_ptr_parm_manager->SetTotalWorkPiece(m_n_channel_index, m_channel_status.workpiece_count_total);
+    SendWorkCountToHmi(m_channel_status.workpiece_count, m_channel_status.workpiece_count_total);
 }
 
 /**

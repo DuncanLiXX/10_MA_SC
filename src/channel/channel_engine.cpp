@@ -3379,7 +3379,7 @@ void ChannelEngine::ProcessHmiAbsoluteRefSet(HMICmdFrame &cmd)
     if (((phy_axis >= 0 && phy_axis < m_p_general_config->axis_count) || chn_axis == 0xFF)   //轴在合理范围
             && status.chn_work_mode == REF_MODE)                                             //回零模式
     {
-        if (!m_b_emergency || !m_b_ret_ref)//不在急停和当前不处于回零动作中
+        if (!m_b_emergency && !m_b_ret_ref)//不在急停和当前不处于回零动作中
         {
             if (chn_axis == 0xFF)//所有绝对式编码器回零
             {
@@ -4266,8 +4266,6 @@ bool ChannelEngine::UpdateHmiPitchCompData(HMICmdFrame &cmd){
     memcpy(&offset, &cmd.data[2], 2);
     memcpy(&count, &cmd.data[4], 2);
 
-    printf("UpdateHmiPitchCompData::axis=%hhu, dir=%hhu, offset=%hu, count=%hu\n", axis_index, dir, offset, count);
-
     if(cmd.data_len != 6+sizeof(double)*count ){
         printf("UpdateHmiPitchCompData: ERROR in data format, datalen=%hu, count=%hu\n", cmd.data_len, count);
         return false;
@@ -4315,6 +4313,8 @@ bool ChannelEngine::UpdateHmiPitchCompData(HMICmdFrame &cmd){
             return false;
         }
     }
+
+     printf("UpdateHmiPitchCompData::axis=%hhu, dir=%hhu, offset=%hu, count=%hu\n", axis_index, dir, offset, count);
 
     //更新数据给MC
     //发送轴螺补数据表
@@ -7455,6 +7455,8 @@ void ChannelEngine::SendMiPcData(uint8_t axis){
     //放置数据
     uint16_t count = m_p_axis_config[axis].pc_count;
     uint16_t offset = m_p_axis_config[axis].pc_offset-1;  //起始编号，0开始
+
+    std::cout << "offset :" << offset << std::endl;
     if(this->m_p_axis_config[axis].pc_type == 1){//双向螺补
         count *= 2;   //数据量翻倍
     }
@@ -7507,8 +7509,18 @@ void ChannelEngine::SendMiPcParam(uint8_t axis){
     uint16_t offset = m_p_axis_config[axis].pc_offset-1;  //起始编号，0开始
     uint32_t inter = m_p_axis_config[axis].pc_inter_dist*1000;   //转换为微米单位
     uint16_t ref_index = m_p_axis_config[axis].pc_ref_index-1;   //参考点对应位置，0开始
+    //uint16_t ref_index = 0;   //参考点对应位置，0开始
     uint16_t pc_type = this->m_p_axis_config[axis].pc_type;
     uint16_t pc_enable = m_p_axis_config[axis].pc_enable;
+
+    //std::cout << "SendMiPcParam() " << std::endl;
+    //std::cout << "axis: " << (int)cmd.data.axis_index << std::endl;
+    //std::cout << "count: " << (int)count << std::endl;
+    //std::cout << "offset: " << (int)offset << std::endl;
+    //std::cout << "inter: " << (int)inter << std::endl;
+    //std::cout << "ref_index: " << (int)ref_index << std::endl;
+    //std::cout << "pc_type: " << (int)pc_type << std::endl;
+    //std::cout << "pc_enable: " << (int)pc_enable << std::endl;
 
     memcpy(cmd.data.data, &count, 2);  //补偿数据个数
     memcpy(&cmd.data.data[1], &offset, 2);   //起始编号
@@ -7617,7 +7629,10 @@ void ChannelEngine::SendMiBacklash(uint8_t axis){
         data = 0.0;
         memcpy(&cmd.data.data[2], &data, 4);
     }
-
+    std::cout << "axis: " << (int)cmd.data.axis_index << std::endl;
+    std::cout << "backlash_enable: " << (int)m_p_axis_config[axis].backlash_enable << std::endl;
+    std::cout << "backlash_forward: " << (int)m_p_axis_config[axis].backlash_forward << std::endl;
+    std::cout << "backlash_negative: " << (int)m_p_axis_config[axis].backlash_negative << std::endl;
     this->m_p_mi_comm->WriteCmd(cmd);
 }
 

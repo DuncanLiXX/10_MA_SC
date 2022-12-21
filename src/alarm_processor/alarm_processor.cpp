@@ -12,6 +12,7 @@
 #include "alarm_processor.h"
 #include "hmi_communication.h"
 #include "channel_engine.h"
+#include "axis_status_ctrl.h"
 
 const int kMaxAlarmCount = 200;   //告警缓冲区最大值
 
@@ -81,6 +82,7 @@ void AlarmProcessor::SetErrorInfo(ErrorInfo* error_info) {
     pthread_mutex_unlock(&m_mutex);
 
     NotifyToHmi();
+    Singleton<AxisStatusCtrl>::instance().UpdateServoState();
     return;
 }
 
@@ -308,7 +310,7 @@ void AlarmProcessor::Clear(){
         m_error_info_input_list->RemoveData(*itr);
 
     pthread_mutex_unlock(&m_mutex);
-
+    Singleton<AxisStatusCtrl>::instance().UpdateServoState();
     if (delVec.size())
         NotifyToHmi();
 }
@@ -338,6 +340,7 @@ void AlarmProcessor::ClearWarning(uint8_t chn){
     pthread_mutex_unlock(&m_mutex);
     if (del_count)
         NotifyToHmi();
+    Singleton<AxisStatusCtrl>::instance().UpdateServoState();
 //	printf("clear warning:%d\n", del_count);
 }
 
@@ -365,6 +368,7 @@ void AlarmProcessor::RemoveWarning(uint8_t chn, uint16_t error_code){
     }
 
     pthread_mutex_unlock(&m_mutex);
+    Singleton<AxisStatusCtrl>::instance().UpdateServoState();
 //	printf("remove warning:%d\n", del_count);
 }
 
@@ -470,9 +474,6 @@ void AlarmProcessor::ProcessAlarm(ErrorInfo *err){
         break;
     case ERR_ENCODER:    //编码器错误
     case ERR_SERVO:     //伺服告警
-#ifndef USES_EMERGENCY_DEC_STOP
-        this->m_p_chn_engine->ServoOff();
-#endif
     case ERR_SOFT_LIMIT_NEG:     //负向软限位告警
     case ERR_SOFT_LIMIT_POS: 			//正向软限位告警
     case ERR_POS_ERR:					//位置指令过大告警
@@ -486,13 +487,6 @@ void AlarmProcessor::ProcessAlarm(ErrorInfo *err){
     case ERR_AXIS_CTRL_MODE_SWITCH:    //轴控制模式切换超时
         this->m_p_chn_engine->Stop(err->channel_index, false);
         break;
-#ifdef USES_EMERGENCY_DEC_STOP
-    case ERR_EMERGENCY:  //木工机急停时先减速停，再断伺服
-        printf("process emergency error!\n");
-        this->m_p_chn_engine->Stop(false);
-        this->m_p_chn_engine->DelayToServoOff(CHANNEL_ENGINE_INDEX);
-        break;
-#endif
 #ifdef USES_GRIND_MACHINE
     case ERR_WORK_VAC_OPEN:			//工位吸真空超时
     case ERR_WORK_VAC_CLOSE:		//工位破真空超时
@@ -511,15 +505,8 @@ void AlarmProcessor::ProcessAlarm(ErrorInfo *err){
         else if (err->error_code >= 20144 && err->error_code < 20184) {
             this->m_p_chn_engine->Stop(false);   //终止加工
         }
-        else if (err->error_code >= 20184 && err->error_code < 20192) {
-            //通知MI下伺服
-#ifdef USES_EMERGENCY_DEC_STOP
+        else if (err->error_code >= 20184 && err->error_code < 20199) {
             this->m_p_chn_engine->Stop(false);  //急停处理
-            this->m_p_chn_engine->DelayToServoOff(CHANNEL_ENGINE_INDEX);
-#else
-            this->m_p_chn_engine->ServoOff();
-            this->m_p_chn_engine->Stop(false);  //急停处理
-#endif
         }
 
 #else
@@ -534,13 +521,8 @@ void AlarmProcessor::ProcessAlarm(ErrorInfo *err){
 
         }else if(err->error_code >=20480 && err->error_code < 20512){ //PMC的A地址严重错误信息 A60~A63
             //通知MI下伺服
-#ifdef USES_EMERGENCY_DEC_STOP
-            this->m_p_chn_engine->Stop(false);  //急停处理
-            this->m_p_chn_engine->DelayToServoOff(CHANNEL_ENGINE_INDEX);
-#else
             this->m_p_chn_engine->ServoOff();
             this->m_p_chn_engine->Stop(false);  //急停处理
-#endif
 #endif
         else if(err->error_code >= 30000 && err->error_code < 40000){//总线通讯告警
             this->m_p_chn_engine->Stop(false);

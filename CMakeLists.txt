@@ -27,6 +27,7 @@ set(SC_SRC
         src/spindle/spindle_control.cpp
         src/showsc.cpp
         src/sync_axis_ctrl.cpp
+        src/axis_status_ctrl.cpp
 )
 
 set(CHANNEL_SRC

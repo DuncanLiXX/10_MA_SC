@@ -31,6 +31,8 @@ const uint32_t kSharedMemMapMask = (kSharedMemMapSize - 1);	 	//µØÖ·ÑÚÂë 0x0FFFF
 #define WriteRegister16_M(x,y) {volatile int16_t *virt_addr = (volatile int16_t*) ( m_p_shared_base + ((int32_t)x & kSharedMemMapMask));\
 	*(virt_addr) = (int16_t)y;}
 
+#define ReadRegister64U_M(x,y) {volatile uint64_t *virt_addr = (volatile uint64_t*) ( m_p_shared_base + ((int32_t)x & kSharedMemMapMask));\
+    y = *(virt_addr);}
 #define ReadRegister64_M(x,y) {volatile int64_t *virt_addr = (volatile int64_t*) ( m_p_shared_base + ((int32_t)x & kSharedMemMapMask));\
 	y = *(virt_addr);}
 
@@ -430,16 +432,20 @@ void MICommunication::SendHandwheelInsertAxis(uint8_t chn, uint8_t axis)
     WriteCmd(cmd);
 }
 
-void MICommunication::SendHardLimitState(uint8_t chn, uint16_t mask)
+void MICommunication::SendHardLimitState(uint64_t mask)
 {
     MiCmdFrame cmd;
     memset(&cmd, 0x00, sizeof(cmd));
     cmd.data.cmd = CMD_MI_SET_HARD_LIMIT;
 
-    cmd.data.data[0] = mask;
+    uint16_t *p_mask = (uint16_t*)&mask;
+    cmd.data.data[0] = *p_mask;
+    cmd.data.data[1] = *(p_mask+1);
+    cmd.data.data[2] = *(p_mask+2);
+    cmd.data.data[3] = *(p_mask+3);
 
     cmd.data.axis_index = NO_AXIS;
-    cmd.data.reserved = chn;
+    cmd.data.reserved = 0xFF;
 }
 
 /**
@@ -643,10 +649,10 @@ bool MICommunication::ReadServoWarnCode(uint8_t axis, uint32_t &value){
  * @param warn
  * @return
  */
-bool MICommunication::ReadAxisWarnFlag(int8_t &warn){
+bool MICommunication::ReadAxisWarnFlag(uint64_t &warn){
 	bool res = true;
 
-	ReadRegister8_M(SHARED_MEM_MI_STATUS_WARN, warn);
+    ReadRegister64U_M(SHARED_MEM_MI_STATUS_WARN, warn);
 
 	return res;
 }

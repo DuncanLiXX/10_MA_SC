@@ -15,8 +15,10 @@
 #include <stdint.h>
 #include <unistd.h>
 #include <pthread.h>
+#include <string.h>
 #include "hmi_shared_data.h"
 #include "comm_data_definition.h"
+#include "list_buffer.h"
 
 class ChannelEngine;   //通道引擎
 
@@ -253,13 +255,13 @@ public:
     void SendHandwheelInsertAxis(uint8_t chn, uint8_t axis);
     // chn: 通道号
     // mask: 告警掩码 每一bit代表一个轴是否处于告警状态
-    void SendHardLimitState(uint8_t chn, uint16_t mask);
+    void SendHardLimitState(uint64_t mask);
 
 	bool ReadEncoderWarn(uint64_t &value);		//读取轴编码器告警标志
 	bool ReadServoHLimitFlag(bool pos_flag, uint64_t &value);   //读取伺服限位告警信息
     bool ReadServoWarn(uint64_t &value);			//读取轴伺服告警标志
     bool ReadServoWarnCode(uint8_t axis, uint32_t &value); 	//读取指定轴的伺服告警码
-    bool ReadAxisWarnFlag(int8_t &warn);        //读取轴告警标志
+    bool ReadAxisWarnFlag(uint64_t &warn);        //读取轴告警标志
     bool ReadServoOnState(uint64_t &value);		//读取轴使能状态
     bool ReadTrackErr(uint64_t &value);        //读取轴跟踪误差过大告警
     bool ReadSyncPosErr(uint64_t &value);     //读取同步轴指令偏差过大告警

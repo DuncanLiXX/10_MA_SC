@@ -41,6 +41,7 @@ class ParmManager;      //ÅäÖÃ¹ÜÀíÀà
 class PmcRegister;		//PMC¼Ä´æÆ÷Àà
 class ChannelModeGroup;   //Í¨µÀ·½Ê½×éÀà
 class SyncAxisCtrl;     //Í¬²½Öá¿ØÖÆÀà
+class AxisStatusCtrl;   //Öá×´Ì¬¿ØÖÆÀà
 struct SCSystemConfig; //SCÍ¨µÀÅäÖÃ
 struct SCChannelConfig;  //SCÍ¨µÀÅäÖÃ
 struct SCAxisConfig;	//SCÖáÅäÖÃ
@@ -94,14 +95,6 @@ void SetMcArmComm(MCArmCommunication *comm){this->m_p_mc_arm_comm = comm;}   //É
 	bool Stop(bool reset);	 //Í£Ö¹³ÌĞòÖ´ĞĞ£¬ÓÃÓÚ´¦ÀíÏµÍ³¸æ¾¯ÏÂµÄ³ÌĞòÍ£Ö¹
 	bool Stop(uint8_t chn, bool reset);  //Í£Ö¹³ÌĞòÖ´ĞĞ£¬ÓÃÓÚ´¦ÀíÏµÍ³¸æ¾¯ÏÂµÄ³ÌĞòÍ£Ö¹
 	bool SetCurWorkChanl(uint8_t work_chan);   //ÉèÖÃµ±Ç°Í¨µÀºÅ
-    void ServoOn();     //¶Ô³ıÖ÷ÖáÍâµÄËùÓĞÖáÉÏÊ¹ÄÜ
-    void ServoOff();	//¶Ô³ıÖ÷ÖáÍâµÄËùÓĞÖáÏÂÊ¹ÄÜ
-
-#ifdef USES_EMERGENCY_DEC_STOP
-    void DelayToServoOff(uint8_t chn_index);  //ÑÓ³ÙÏÂËÅ·ş
-
-    void SetChnStoppedMask(uint8_t chn_index);   //ÉèÖÃÍ¨µÀÍ£Ö¹µ½Î»±êÖ¾
-#endif
 
 	bool SetWorkMode(uint8_t work_mode);   //ÉèÖÃ¹¤×÷Ä£Ê½
 
@@ -436,7 +429,8 @@ private:	//Ë½ÓĞ³ÉÔ±º¯Êı
     void InitPhyAxisChn();		//³õÊ¼»¯ÎïÀíÖáÓëÍ¨µÀµÄÓ³Éä
     void SendMiPhyAxisEncoder();     //ÏòMI·¢ËÍÎïÀíÖáµÄ·´À¡
     void SetAxisRetRefFlag();    //ÏòMI·¢ËÍ¸÷Öá»Ø²Î¿¼µã½áÊø±êÖ¾
-    void SetServoState(uint8_t SVF, uint8_t pos_req = 0);  //ÏòMI·¢ËÍ¸÷ÖáÊ¹ÄÜ×´Ì¬£¬µÍµçÆ½ÓĞĞ§
+    // SVF:¸÷ÖáÊ¹ÄÜ×´Ì¬
+    // pos_reg: »¹Ô­Ê¹ÄÜºóÊÇ·ñ»Ö¸´Î»ÖÃ
     void SetMLKState(uint8_t MLK); //ÏòMI·¢ËÍ¸÷Öá»úĞµËø×¡×´Ì¬
     void ProcessRecoverMLK(uint8_t mask, double *mach_pos); // Òì²½´¦ÀíMLK»Ö¸´Á÷³Ì
 
@@ -578,6 +572,7 @@ private:  //Ë½ÓĞ³ÉÔ±±äÁ¿
 
 	//Í¬²½Öá±äÁ¿
     SyncAxisCtrl *m_sync_axis_ctrl;
+    AxisStatusCtrl *m_axis_status_ctrl;
 
 	BdioDevList m_list_bdio_dev;    //SD-LINKÉè±¸¶ÓÁĞ
 
@@ -605,12 +600,6 @@ private:  //Ë½ÓĞ³ÉÔ±±äÁ¿
 	bool m_mc_run_on_arm[kMaxChnCount];   //MCÍ¨µÀÊÇ·ñÔËĞĞÔÚARMÉÏ            0 -- dsp    1--mi
 	bool m_mc_run_dsp_flag;    // ÓĞÍ¨µÀµÄMCÔËĞĞÔÚDSPµÄ±êÊ¶   
 	bool m_mc_run_mi_flag;     // ÓĞÍ¨µÀµÄMCÔËĞĞÔÚMIµÄ±êÊ¶  
-
-#ifdef USES_EMERGENCY_DEC_STOP
-	bool m_b_delay_servo_off;      //ÑÓ³Ù¶ÏËÅ·ş±êÖ¾£¬µÈ´ı¼õËÙÍ£Ö¹ºóÔÙ¶ÏËÅ·ş£¬Ä¾¹¤»úËÙ¶ÈÌ«¿ì²»ÄÜÖ±½Ó¶ÏËÅ·ş
-	uint8_t m_mask_delay_svo_off;   //´ıÑÓ³ÙÏÂËÅ·şµÄÍ¨µÀmask
-	uint8_t m_mask_delay_svo_off_over;   //ÒÑ¾­Í£Ö¹µ½Î»µÄÍ¨µÀµÄmask
-#endif
 
     const int HANDWHEEL_BYTES = 3;
     const static map<int, SDLINK_SPEC> m_SDLINK_MAP;

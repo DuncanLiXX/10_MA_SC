@@ -73,7 +73,6 @@ void ToolCompensate::ProcessData(ListNode<RecordMsg *> *node){
 
 	msg = node->data;
 
-
 	switch(msg->GetMsgType()){
 		case RAPID_MSG:{
 			RapidMsg * tmsg = (RapidMsg *)msg;

@@ -9,7 +9,7 @@
 #include <cmath>
 #include "geometry_data.h"
 
-#define RADIUS_TOLERANCE_MM 0.001
+#define RADIUS_TOLERANCE_MM 0.002
 #define TINY 1e-12
 #define TOLERANCE_EQUAL 0.0001
 #define TOLERANCE_CONCAVE_CORNER 0.05  /* angle for testing corners */
@@ -370,12 +370,12 @@ int Interp::convert_arc(int move, block_pointer block, setup_pointer settings)
                      u_end, v_end, w_end,
                      block->i_number, block->j_number);
     } else if (first) {
-      status = convert_arc_comp1(move, block, settings, end_x, end_y, end_z,
+    	status = convert_arc_comp1(move, block, settings, end_x, end_y, end_z,
                                  block->i_number, block->j_number,
                                  AA_end, BB_end, CC_end,
                                  u_end, v_end, w_end);
     } else {
-      status = convert_arc_comp2(move, block, settings, end_x, end_y, end_z,
+    	status = convert_arc_comp2(move, block, settings, end_x, end_y, end_z,
                                  block->i_number, block->j_number,
                                  AA_end, BB_end, CC_end,
                                  u_end, v_end, w_end);
@@ -896,14 +896,36 @@ int Interp::convert_straight_comp1(int move,
 	distance = hypot((px - cx), (py - cy));
 
 	printf("cx : %lf cy : %lf px : %lf py : %lf\n", cx, cy, px, py);
-	printf("comp side: %d\n", settings->cutter_comp_side);
+
+	if(distance <= radius){
+		if(move == 0){
+
+			STRAIGHT_TRAVERSE(block->line_number, px, py, pz,
+							  AA_end, BB_end, CC_end,
+							  u_end, v_end, w_end);
+			settings->current_x = px;
+			settings->current_y = py;
+			settings->current_z = pz;
+		} else if (move == 10) {
+
+			STRAIGHT_FEED(block->line_number,  px, py, pz,
+					  AA_end, BB_end, CC_end,
+					  u_end, v_end, w_end);
+			settings->current_x = px;
+			settings->current_y = py;
+			settings->current_z = pz;
+		}
+		return 0;
+	}
+
 
 	if(side != LEFT and side != RIGHT){
 		printf("NCE_BUG_SIDE_NOT_RIGHT_OR_LEFT\n");
 	}
 
+	// @test 不报错 直接不进行刀补 并保留首次刀补状态
 	if(distance <= radius){
-		printf("Length of cutter compensation entry move is not greater than the tool radius");
+		printf("Length of cutter compensation entry move is not greater than the tool radius\n");
 		//CreateError(MOVE_SMALLER_THAN_CMPRADIUS, ERROR_LEVEL, CLEAR_BY_MCP_RESET);
 		err_code = MOVE_SMALLER_THAN_CMPRADIUS;
 		return 0;

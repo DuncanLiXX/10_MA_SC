@@ -225,6 +225,8 @@ bool MCCommunication::WriteGCodeData(uint8_t chn, GCodeFrame &data){
 	if(count >= kMaxGCodeFifoCount)
 		return false;   //FIFO数据满，无法写入
 
+	//printf("WriteGCodeData: %llu-%llu-%llu-%d-%d-%d\n", data.data.pos0, data.data.pos1, data.data.pos2, data.data.ext_type, data.data.cmd, data.data.mode);
+
 	WriteRegister(MC_GCODE_WRITE_OVER(chn), 0);  //写入前置零
 
 	//发送数据

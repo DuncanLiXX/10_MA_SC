@@ -72,13 +72,11 @@ void AlarmProcessor::SetErrorInfo(ErrorInfo* error_info) {
 
     m_error_info_input_list->WriteData(error_info, 1);
 
-
-
-
     g_ptr_trace->PrintAlarm(error_info);
     g_ptr_trace->PrintLog(LOG_ALARM, "ALARM:%d, %d, %d, %d",
         error_info->error_code, error_info->channel_index, error_info->axis_index, error_info->error_info);
     pthread_mutex_unlock(&m_mutex);
+    printf("AlarmProcessor unlocked!!!\n");
 
     NotifyToHmi();
     return;

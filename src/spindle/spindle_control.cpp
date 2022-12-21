@@ -90,7 +90,7 @@ void SpindleControl::InputSCode(uint32_t s_code)
 
 uint32_t SpindleControl::GetSCode()
 {
-    return cnc_speed*SOV/100.0;
+    return cnc_speed;
 }
 
 void SpindleControl::InputPolar(Spindle::CncPolar polar)

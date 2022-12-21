@@ -281,7 +281,7 @@ enum MiCmdCode{
 /*#####################################################################SC<-->HMI############################################################################*/
 const int kCmdRecvBufLen = 100;  //udp命令接受缓冲区大小，环形缓冲
 const int kTcpBufferSize = 1024*8;  //tcp传输缓冲区大小,8K
-const unsigned int kHeartbeatTimeout = 100; //30;  //30个监控周期，30*50ms
+const unsigned int kHeartbeatTimeout = 30; //30;  //30个监控周期，30*50ms
 const int kTcpSockTimeout = 3;		//TCP连接接收数据（包括recv和accept）超时时间：3秒
 
 //收到的HMI指令节点

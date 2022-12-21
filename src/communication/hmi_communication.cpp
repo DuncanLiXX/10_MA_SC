@@ -1721,10 +1721,6 @@ void HMICommunication::BackgroundFunc()
     while(!g_sys_state.system_quit){
 
         sem_wait(&m_sem_background);//等待tcp文件传输信号
-        int val;
-        sem_getvalue(&m_sem_background, &val);
-        std::cout << "sem_background: " << val << std::endl;
-        std::cout << "HMICommunication::BackgroundFunc()" << std::endl;
         if(g_sys_state.eth0_running && g_sys_state.hmi_comm_ready){
             switch (m_background_type) {
             case Background_None:
@@ -2631,6 +2627,7 @@ void HMICommunication::ProcessHmiSysBackupCmd(HMICmdFrame &cmd)
         SendCmd(cmd);
 
         m_background_type = Background_Pack;
+        sem_post(&m_sem_background);//通知执行后台程序
     }
 }
 

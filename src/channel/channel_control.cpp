@@ -1330,13 +1330,16 @@ bool ChannelControl::SetSysVarValue(const int index, const double &value){
         }else
             return false;
     }else if(index == 3000){  //只写变量，显示提示信息
-        uint32_t msg_id = value;
-        //		printf("set 3000 value = %u\n", msg_id);
+        pthread_mutex_unlock(&m_mutex_change_state);
+        pthread_mutex_unlock(&m_mutex_change_state);
+    	uint16_t msg_id = value;
+        printf("set 3000 value = %u\n", msg_id);
         if(msg_id > 0){
 			CreateError(msg_id, INFO_LEVEL, CLEAR_BY_MCP_RESET, 0, m_n_channel_index);
 			printf("3000 msg_id: %d\n", msg_id);
 		}
     }else if(index == 3006){  //只写变量，显示告警信息
+    	pthread_mutex_unlock(&m_mutex_change_state);
     	uint16_t err_id = value;
         if(err_id > 0){
             CreateError(err_id, ERROR_LEVEL, CLEAR_BY_MCP_RESET, 0, m_n_channel_index);
@@ -2066,11 +2069,12 @@ void ChannelControl::PauseRunGCode(){
 void ChannelControl::StopCompilerRun(){
     printf("stop compiler run\n");
 
+    // @test zk
     pthread_mutex_lock(&m_mutex_change_state);  //等待编译运行线程停止
-
+    //printf("locked 1\n");
     m_n_run_thread_state = STOP;
-
     pthread_mutex_unlock(&m_mutex_change_state);
+    //printf("unlocked 1\n");
 }
 
 /**
@@ -3601,8 +3605,10 @@ void ChannelControl::ProcessMdaData(HMICmdFrame &cmd){
     printf("ProcessMdaData() m_n_run_thread_state: %d\n", m_n_run_thread_state);
     if(m_n_run_thread_state == IDLE || m_n_run_thread_state == PAUSE){
         pthread_mutex_lock(&m_mutex_change_state);
+        //printf("locked 2\n");
         m_n_run_thread_state = RUN;  //置为运行状态
         pthread_mutex_unlock(&m_mutex_change_state);
+        //printf("unlocked 2\n");
     }
 
     this->m_p_f_reg->OP = 1;   //自动运行状态
@@ -3961,6 +3967,7 @@ void ChannelControl::SetWorkMode(uint8_t work_mode){
         }
     case MDA_MODE:
         pthread_mutex_lock(&m_mutex_change_state);  //等待编译运行线程停止
+        //printf("locked 3\n");
         if(this->m_channel_status.machining_state == MS_RUNNING){//运行时需要先暂停
             //printf("paus1111\n");
             this->PauseRunGCode();
@@ -3969,6 +3976,7 @@ void ChannelControl::SetWorkMode(uint8_t work_mode){
             return;
         }
         pthread_mutex_unlock(&m_mutex_change_state);
+        //printf("unlocked 3\n");
         break;
     case MANUAL_STEP_MODE:
     case MANUAL_MODE:
@@ -4027,6 +4035,7 @@ void ChannelControl::SetWorkMode(uint8_t work_mode){
     case AUTO_MODE:
     case MDA_MODE:
         pthread_mutex_lock(&m_mutex_change_state);  //等待编译运行线程停止
+        //printf("locked 4\n");
         //首先切换输出消息缓冲队列
         if(work_mode == AUTO_MODE){
             m_p_output_msg_list = m_p_output_msg_list_auto;
@@ -4050,6 +4059,7 @@ void ChannelControl::SetWorkMode(uint8_t work_mode){
         this->m_p_compiler->SetMode((CompilerWorkMode)work_mode);	//编译器切换模式
         this->m_p_compiler->SetOutputMsgList(m_p_output_msg_list);  //切换输出队列
         pthread_mutex_unlock(&m_mutex_change_state);
+        //printf("unlocked 4\n");
 
         //		//设置OP信号
         //		if(!this->m_p_channel_engine->IsEmergency() && !g_ptr_alarm_processor->HasErrorInfo(m_n_channel_index)){
@@ -4061,13 +4071,14 @@ void ChannelControl::SetWorkMode(uint8_t work_mode){
         this->m_p_f_reg->MINC = 1;
 
         //手动模式下，编译器设置为MDA模式
-        pthread_mutex_lock(&m_mutex_change_state);  //等待编译运行线程停止
+        //pthread_mutex_lock(&m_mutex_change_state);  //等待编译运行线程停止
+        printf("locked 5\n");
         m_p_output_msg_list = m_p_output_msg_list_mda;
         m_n_run_thread_state = IDLE;
         this->m_p_compiler->SetMode(MDA_COMPILER);	//编译器切换模式
         this->m_p_compiler->SetOutputMsgList(m_p_output_msg_list);  //切换输出队列
         pthread_mutex_unlock(&m_mutex_change_state);
-
+        //printf("unlocked 5\n");
         this->SendWorkModeToMc(MC_MODE_MANUAL);
         break;
     case MANUAL_MODE:
@@ -4076,12 +4087,13 @@ void ChannelControl::SetWorkMode(uint8_t work_mode){
 
         //手动模式下，编译器设置为MDA模式
         pthread_mutex_lock(&m_mutex_change_state);  //等待编译运行线程停止
+        //printf("locked 6\n");
         m_p_output_msg_list = m_p_output_msg_list_mda;
         m_n_run_thread_state = IDLE;
         this->m_p_compiler->SetMode(MDA_COMPILER);	//编译器切换模式
         this->m_p_compiler->SetOutputMsgList(m_p_output_msg_list);  //切换输出队列
         pthread_mutex_unlock(&m_mutex_change_state);
-
+        //printf("unlocked 6\n");
         this->SendWorkModeToMc(MC_MODE_MANUAL);
         break;
     case MPG_MODE:
@@ -4090,12 +4102,13 @@ void ChannelControl::SetWorkMode(uint8_t work_mode){
 
         //手动模式下，编译器设置为MDA模式
         pthread_mutex_lock(&m_mutex_change_state);  //等待编译运行线程停止
+        //printf("locked 7\n");
         m_p_output_msg_list = m_p_output_msg_list_mda;
         m_n_run_thread_state = IDLE;
         this->m_p_compiler->SetMode(MDA_COMPILER);	//编译器切换模式
         this->m_p_compiler->SetOutputMsgList(m_p_output_msg_list);  //切换输出队列
         pthread_mutex_unlock(&m_mutex_change_state);
-
+        //printf("unlocked 7\n");
         this->SendWorkModeToMc(MC_MODE_MANUAL);
         break;
     case REF_MODE:
@@ -4103,12 +4116,13 @@ void ChannelControl::SetWorkMode(uint8_t work_mode){
 
         //原定模式下，编译器设置为MDA模式
         pthread_mutex_lock(&m_mutex_change_state);  //等待编译运行线程停止
+        //printf("locked 8\n");
         m_p_output_msg_list = m_p_output_msg_list_mda;
         m_n_run_thread_state = IDLE;
         this->m_p_compiler->SetMode(MDA_COMPILER);	//编译器切换模式
         this->m_p_compiler->SetOutputMsgList(m_p_output_msg_list);  //切换输出队列
         pthread_mutex_unlock(&m_mutex_change_state);
-
+        //printf("unlocked 8\n");
         this->SendWorkModeToMc(MC_MODE_MANUAL);
         break;
     default:
@@ -4287,7 +4301,7 @@ int ChannelControl::Run(){
         {
             //printf("m_n_run_thread_state = RUN\n");
             pthread_mutex_lock(&m_mutex_change_state);
-
+            //printf("locked 9\n");
             //			if(this->m_channel_status.chn_work_mode == AUTO_MODE &&
             //#ifdef USES_ADDITIONAL_PROGRAM
             //					this->m_n_add_prog_type != CONTINUE_START_ADD &&
@@ -4297,7 +4311,8 @@ int ChannelControl::Run(){
             {
                 //自动模式下，反向引导或者正向引导缓冲数据未发送完，则不进行编译
                 //	printf("@@@@@@, last= %d, tail=%d\n", m_p_last_output_msg, m_p_output_msg_list->TailNode());
-                bf = ExecuteMessage();
+                printf("11111\n");
+            	bf = ExecuteMessage();
 
 				if(!bf){
 					if(m_error_code != ERR_NONE){
@@ -4309,6 +4324,7 @@ int ChannelControl::Run(){
 				}
 			}else if(m_p_compiler->GetErrorCode() != ERR_NONE)
 			{
+				printf("22222\n");
 				//编译器出错，但需要继续执行已编译指令
 				if(m_p_compiler->RunMessage()){
                     if(!ExecuteMessage()){
@@ -4324,7 +4340,8 @@ int ChannelControl::Run(){
 			}
 			else if(m_p_compiler->GetLineData())
 			{
-                //printf("----------------------------> GetLineData\n");
+				printf("33333\n");
+				//printf("----------------------------> GetLineData\n");
 				//获取一行源码
 				if(!m_p_compiler->CompileLine())  //编译一行代码
 				{
@@ -4332,14 +4349,17 @@ int ChannelControl::Run(){
 					g_ptr_trace->PrintTrace(TRACE_WARNING, CHANNEL_CONTROL_SC, "#####Compile Error#####\n");
 				}
                 else{
-                    //printf("----------------------------> CompileLine\n");
+
+                	//printf("----------------------------> CompileLine\n");
 					if(m_p_compiler->RunMessage()){
                         //printf("----------------------------> RunMessage\n");
 						if(!ExecuteMessage()){
 							if(m_error_code != ERR_NONE){
+
 								g_ptr_trace->PrintTrace(TRACE_WARNING, CHANNEL_CONTROL_SC, "execute message error2, %d\n", m_error_code);
 								m_n_run_thread_state = ERROR; //编译出错
 							}else{  //执行未成功，转换为WAIT_EXECUTE状态
+
 								usleep(10000);   //休眠10ms
                                 //printf("----------------------------> WaitExcute\n");
 							}
@@ -4347,9 +4367,11 @@ int ChannelControl::Run(){
 					}
 					else{
 						if(m_p_compiler->GetErrorCode() != ERR_NONE){
-                            CreateError(m_p_compiler->GetErrorCode(), ERROR_LEVEL, CLEAR_BY_MCP_RESET, 0, m_n_channel_index);
+                            //printf("ccccc\n");
+							CreateError(m_p_compiler->GetErrorCode(), ERROR_LEVEL, CLEAR_BY_MCP_RESET, 0, m_n_channel_index);
 							m_n_run_thread_state = ERROR;
 						}else{
+							//printf("dcba\n");
 							m_n_run_thread_state = WAIT_RUN;//执行失败，状态切换到WAIT_RUN
 						}
 					}
@@ -4361,12 +4383,14 @@ int ChannelControl::Run(){
                 }
             }
             else if(m_p_compiler->IsCompileOver()){  //已经编译完成
-                ExecuteMessage();
+
+            	ExecuteMessage();
 
             }
             else
             {//出错
-                if(m_p_compiler->GetErrorCode() != ERR_NONE){
+
+            	if(m_p_compiler->GetErrorCode() != ERR_NONE){
                     g_ptr_trace->PrintTrace(TRACE_WARNING, CHANNEL_CONTROL_SC, "Get line data error!\n");
                     m_n_run_thread_state = ERROR;
                 }
@@ -4381,14 +4405,15 @@ int ChannelControl::Run(){
         #endif
                     )
             {
-                m_n_run_thread_state = ERROR;
+
+            	m_n_run_thread_state = ERROR;
 
                 g_ptr_trace->PrintLog(LOG_ALARM, "CHN[%d]语法错误，未找到结束指令！", m_n_channel_index);
                 CreateError(ERR_NO_END, ERROR_LEVEL, CLEAR_BY_MCP_RESET, 0, m_n_channel_index);
             }
 #endif
             pthread_mutex_unlock(&m_mutex_change_state);
-
+            //printf("unlocked 9\n");
             //			if(this->m_lexer_result.line_no%10000 == 0){
             //				gettimeofday(&tvNow, NULL);
             //				nTimeDelay = (tvNow.tv_sec-tvStart.tv_sec)*1000000+tvNow.tv_usec-tvStart.tv_usec;
@@ -4420,8 +4445,10 @@ int ChannelControl::Run(){
             //printf("m_n_run_thread_state = WAIT_EXECUTE\n");
 
             pthread_mutex_lock(&m_mutex_change_state);
+            //printf("locked 10\n");
             bf = ExecuteMessage();
             pthread_mutex_unlock(&m_mutex_change_state);
+            //printf("unlocked 10\n");
             if(!bf){
                 if(m_error_code != ERR_NONE){
                     g_ptr_trace->PrintTrace(TRACE_WARNING, CHANNEL_CONTROL_SC, "execute message error4, %d\n", m_error_code);
@@ -4437,6 +4464,7 @@ int ChannelControl::Run(){
         {
             //printf("m_n_run_thread_state = WAIT_RUN\n");
             pthread_mutex_lock(&m_mutex_change_state);
+            //printf("locked 11\n");
             bf = m_p_compiler->RunMessage();
             if(!ExecuteMessage()){
                 if(m_error_code != ERR_NONE){
@@ -4445,6 +4473,7 @@ int ChannelControl::Run(){
                 }
             }
             pthread_mutex_unlock(&m_mutex_change_state);
+            //printf("unlocked 11\n");
             if(!bf){
                 usleep(10000);
                 m_n_run_thread_state = WAIT_RUN;    //防止在ExecuteMessage（）函数中修改m_n_run_thread_state
@@ -5041,7 +5070,6 @@ bool ChannelControl::OutputData(RecordMsg *msg, bool flag_block){
     if(msg->GetOutputData(&data_frame, m_mask_intp_axis, flag) == 1)  //无要发送的运动数据
         return true;
 
-
     //设置模态信息
     data_frame.data.mode = this->m_mc_mode_exec.all;
     //	if(data_frame.data.mode & 0x03){
@@ -5107,7 +5135,7 @@ bool ChannelControl::OutputData(RecordMsg *msg, bool flag_block){
         }
         // @add zk  不指定类型会使 MC 空运行
         if(msg->GetMsgType() == COMPENSATE_MSG)
-            data_frame.data.cmd = 0;   // G43固定使用G00
+            data_frame.data.cmd = ((CompensateMsg*)msg)->GetMoveType();   // G43根据之前模态确定移动类型
         else
             data_frame.data.cmd = 1;   // G31需要强制设为G01
         break;
@@ -5147,9 +5175,11 @@ bool ChannelControl::OutputData(RecordMsg *msg, bool flag_block){
     bool res = false;
     if(!this->m_b_mc_on_arm){
         // 查看 msg的 ext type mc会因ext的值对不上而空执行
+    	printf("ext_type: %d\n", data_frame.data.ext_type);
     	res = m_p_mc_comm->WriteGCodeData(m_n_channel_index, data_frame);
     }else{
-        res = this->m_p_mc_arm_comm->WriteGCodeData(m_n_channel_index, data_frame);
+
+    	res = this->m_p_mc_arm_comm->WriteGCodeData(m_n_channel_index, data_frame);
     }
     if(!res){
         //发送失败
@@ -8466,7 +8496,7 @@ bool ChannelControl::ExecuteCompensateMsg(RecordMsg *msg){
 
     m_n_run_thread_state = RUN;
 
-    //	printf("execute compensate message: %d, d=%d, h=%d\n", type, m_channel_status.cur_d_code, m_channel_status.cur_h_code);
+    printf("execute compensate message: %d, d=%d, h=%d\n", type, m_channel_status.cur_d_code, m_channel_status.cur_h_code);
 
     return true;
 }
@@ -9407,11 +9437,11 @@ bool ChannelControl::ExecuteRefReturnMsg(RecordMsg *msg){
 				if(gcode == G30_CMD) target_pos = m_p_axis_config[phy_axis].axis_home_pos[ref_id-1];
 				if(axis_mask & (0x01<<i)){
 					if(fabs(this->m_channel_rt_status.cur_pos_machine.GetAxisValue(i) - target_pos) > 5e-3){ //未到位
-						//						printf("step 3: axis %hhu cur pos = %lf, target=%lf\n", i, m_channel_rt_status.cur_pos_machine.GetAxisValue(i), target_pos);
+						//printf("step 3: axis %hhu cur pos = %lf, target=%lf\n", i, m_channel_rt_status.cur_pos_machine.GetAxisValue(i), target_pos);
 						flag = false;
 						phy_axis = this->GetPhyAxis(i);
 						if(phy_axis != 0xff){
-							printf("phy_axis: %d target_pos: %lf\n", phy_axis, target_pos);
+							//printf("phy_axis: %d target_pos: %lf\n", phy_axis, target_pos);
 							this->ManualMove(i, target_pos, m_p_axis_config[phy_axis].rapid_speed);  //机械坐标系
 						}
 					}
@@ -9420,7 +9450,7 @@ bool ChannelControl::ExecuteRefReturnMsg(RecordMsg *msg){
 
             if(flag){
                 refmsg->SetExecStep(4);  //跳转下一步
-                //				printf("ret ref, jump to step 4\n");
+                //printf("ret ref, jump to step 4\n");
             }
             return false;
         }
@@ -9539,9 +9569,6 @@ bool ChannelControl::ExecuteRefReturnMsg(RecordMsg *msg){
     }
 
     m_n_run_thread_state = RUN;
-
-    //	this->m_channel_status.gmode[GCode2Mode[gcode/10]] = gcode;
-    //	this->SendChnStatusChangeCmdToHmi(G_MODE);
 
     printf("execute ref return msg\n");
 
@@ -10408,6 +10435,8 @@ bool ChannelControl::ExecuteInputMsg(RecordMsg * msg){
         }
     }
 
+    printf("input type %d\n", input_type);
+
     switch(input_type){
     case 10:{
         // XY平面 刀长补偿 Z   TODO 其他平面的情况下 刀长补偿到不同的轴号
@@ -10443,14 +10472,15 @@ bool ChannelControl::ExecuteInputMsg(RecordMsg * msg){
     case 20:{
         int param = input_msg->PData;
 
-        printf("pdata: %d --- rdata: %d\n", input_msg->PData, input_msg->RData);
+        printf("11111 pdata: %lf --- rdata: %lf\n", input_msg->PData, input_msg->RData);
+
 
         if(SetSysVarValue(param, input_msg->RData)){
-        	printf("param: %d - value: %lf\n", param, input_msg->RData);
+        	printf("22222 param: %d - value: %lf\n", param, input_msg->RData);
         	break;
         }
         else{
-        	printf("param: %d - value: %lf\n", param, input_msg->RData);
+        	printf("33333 param: %d - value: %lf\n", param, input_msg->RData);
         	CreateError(ERR_NO_CUR_RUN_DATA, ERROR_LEVEL, CLEAR_BY_MCP_RESET, 0, m_n_channel_index);
             this->m_error_code = ERR_NO_CUR_RUN_DATA;
             return false;
@@ -11533,7 +11563,9 @@ void ChannelControl::SetMcAxisToolOffset(uint8_t axis_index){
     SCAxisConfig &axis_config = this->m_p_axis_config[this->GetPhyAxis(axis_index)];
 
     if(axis_config.axis_type != AXIS_LINEAR || m_channel_status.cur_h_code == 0 || m_channel_status.gmode[8] == G49_CMD)  //非直线轴或者当前刀偏为0
-        return;
+    {
+    	return;
+    }
 
     McCmdFrame cmd;
     memset(&cmd, 0x00, sizeof(McCmdFrame));
@@ -11554,7 +11586,11 @@ void ChannelControl::SetMcAxisToolOffset(uint8_t axis_index){
         offset = m_p_chn_tool_config->geometry_compensation[m_channel_status.cur_h_code-1][axis_config.axis_linear_type-1] * 1e7;  //单位由mm转换为0.1nm
     }
     else //非XYZ轴没有刀具偏置
-        return;
+    {
+    	printf("非XYZ轴没有刀具偏置");
+    	return;
+    }
+
     if(this->m_channel_status.gmode[8] == G44_CMD)	//负向补偿
         offset *= -1;
 
@@ -11697,7 +11733,7 @@ void ChannelControl::RefreshModeInfo(const McModeStatus &mode){
         this->m_channel_status.gmode[11] = mode.bits.mode_g50*10+G50_CMD;
         this->m_channel_status.gmode[13] = mode.bits.mode_g60*10+G60_CMD;
         this->m_channel_status.gmode[16] = mode.bits.mode_g68*10+G68_CMD;
-        this->m_channel_status.cur_d_code = mode.bits.mode_d;
+        //this->m_channel_status.cur_d_code = mode.bits.mode_d;//llx add 刀具半径D模态，不从MC读取,由SC直接设置
 
         this->m_mc_mode_cur.all = mode.all;
 
@@ -11714,9 +11750,26 @@ void ChannelControl::RefreshModeInfo(const McModeStatus &mode){
 
     if(b_change){
         this->SendChnStatusChangeCmdToHmi(G_MODE);
-        this->SendModeChangToHmi(D_MODE);
+        //this->SendModeChangToHmi(D_MODE);//llx add 刀具半径D模态，不从MC读取,由SC直接设置
     }
 
+}
+
+/**
+ * @brief 由SC直接更新模态数据
+ * @param mode_type : 模态类型
+ * @param value     : 更新值
+ */
+void ChannelControl::UpdateModeData(uint16_t mode_type, int value)
+{
+    switch(mode_type){
+    case D_MODE:
+        m_channel_status.cur_d_code = value;
+        SendModeChangToHmi(D_MODE);
+        break;
+    default:
+        break;
+    }
 }
 
 /**
@@ -14760,19 +14813,19 @@ void ChannelControl::ProcessGrindM66(AuxMsg *msg){
                 if(this->m_p_g_reg->left_claw_vac_check == 0){
                     this->m_p_mech_arm_state->has_material = false;
                     this->m_p_mech_arm_state->repos = false;
-                    //	printf("@@@@@@@@@@@@@!1111111111111111\n");
+
                 }else{
                     this->m_p_mech_arm_state->has_material = true;
-                    //	printf("@@@@@@@@@@@@@@2222222222222\n");
+
                 }
 
                 if(this->m_p_g_reg->right_claw_vac_check == 0){
                     this->m_p_mech_arm_state->has_finished_material = false;
-                    //	printf("@@@@@@@@@@333333333333\n");
+
                 }
                 else{
                     this->m_p_mech_arm_state->has_finished_material = true;
-                    //	printf("@@@@@@@@@@@@@444444444\n");
+
                 }
 
                 //强制夹爪上升
@@ -15784,6 +15837,7 @@ void ChannelControl::SetChnCurWorkPiece(int newCnt)
     this->m_channel_status.workpiece_count_total += diff;
     g_ptr_parm_manager->SetCurWorkPiece(m_n_channel_index, m_channel_status.workpiece_count);
     g_ptr_parm_manager->SetTotalWorkPiece(m_n_channel_index, m_channel_status.workpiece_count_total);
+    SendWorkCountToHmi(m_channel_status.workpiece_count, m_channel_status.workpiece_count_total);
 }
 
 /**
@@ -15832,10 +15886,11 @@ void ChannelControl::Pause(){
         }
 
         pthread_mutex_lock(&m_mutex_change_state);  //等待编译运行线程停止
-
+        //printf("locked 12\n");
         this->PauseRunGCode();
 
         pthread_mutex_unlock(&m_mutex_change_state);  //等待编译运行线程停止
+        //printf("unlocked 12\n");
     }
     else{
         this->ManualMoveStop();  //手动停止
@@ -16483,9 +16538,10 @@ bool ChannelControl::EmergencyStop(){
 
     //停止编译
     pthread_mutex_lock(&m_mutex_change_state);  //等待编译运行线程停止
+    //printf("locked 15\n");
     m_n_run_thread_state = STOP;
     pthread_mutex_unlock(&m_mutex_change_state);
-
+    //printf("unlocked 15\n");
     //停止MC执行
     this->PauseMc();
 
@@ -18684,9 +18740,11 @@ void ChannelControl::ManualToolMeasure(int h_code, int times){
     printf("ManualToolMeasure() m_n_run_thread_state: %d\n", m_n_run_thread_state);
     if(m_n_run_thread_state == IDLE || m_n_run_thread_state == PAUSE){
         pthread_mutex_lock(&m_mutex_change_state);
+        //printf("locked 16\n");
         m_n_run_thread_state = RUN;  //置为运行状态
         this->m_b_manual_tool_measure = true;
         pthread_mutex_unlock(&m_mutex_change_state);
+        //printf("unlocked 16\n");
     }
 }
 
@@ -18965,6 +19023,7 @@ bool ChannelControl::ChangeHwTraceState(HWTraceState state){
     }
 
     pthread_mutex_lock(&m_mutex_change_state);
+    //printf("locked 17\n");
     //清空当前MC中的自动缓冲数据
     this->InitMcIntpAutoBuf();
 
@@ -18981,6 +19040,7 @@ bool ChannelControl::ChangeHwTraceState(HWTraceState state){
     this->m_n_hw_trace_state = state;
 
     pthread_mutex_unlock(&m_mutex_change_state);
+    //printf("unlocked 17\n");
 
 
     // 发送启动消息
@@ -19121,9 +19181,11 @@ bool ChannelControl::CallMacroProgram(uint16_t macro_index){
         printf("CallMacroProgram() m_n_run_thread_state: %d\n", m_n_run_thread_state);
         if(m_n_run_thread_state == IDLE || m_n_run_thread_state == PAUSE){
             pthread_mutex_lock(&m_mutex_change_state);
+            //printf("locked 18\n");
             m_n_run_thread_state = RUN;  //置为运行状态
             this->m_b_manual_call_macro = true;
             pthread_mutex_unlock(&m_mutex_change_state);
+            //printf("unlocked 18\n");
         }
     }else{
         return false;
@@ -19312,8 +19374,9 @@ void ChannelControl::PrintDebugInfo1(){
 
 // @test zk
 void ChannelControl::test(){
-    StartMcIntepolate();
-    StraightTraverse(0,100,100,100);
+	CreateError(33002, INFO_LEVEL, CLEAR_BY_MCP_RESET, 0, m_n_channel_index);
+	//StartMcIntepolate();
+    //StraightTraverse(0,100,100,100);
 }
 
 

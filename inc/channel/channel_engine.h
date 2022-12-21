@@ -460,6 +460,8 @@ private:	//私有成员函数
 	void AxisFindRefNoZeroSignal(uint8_t phy_axis);              // 当前位置设置为参考点   虚拟轴回参考点  步进电机设置参考点
     void EcatIncAxisFindRefWithZeroSignal(uint8_t phy_axis);     // 总线增量式轴有基准回参考点，根据Z信号作为精基准
     void EcatIncAxisFindRefNoZeroSignal(uint8_t phy_axis);       // 总线增量式无基准回参考点，仅根据Z信号作为精基准回零
+    void SetSubAxisRefPoint(int axisID, double pos);            // 从动轴回零
+    void ClearSubAxisRefFlag(int axisID);                        // 清除重动轴回零标志
 
 
 	void PmcAxisRunOver(MiCmdFrame &cmd);    //PMC轴运行到位

@@ -774,6 +774,7 @@ void Compiler::PreScan() {
 
 
     /*** test if else */
+    /*
     for(unsigned int i=0; i<m_node_vectors_vector.size(); i++){
         vector<IfElseOffset> node_vector = m_node_vectors_vector.at(i);
         printf("node number: %d\n", i+1);
@@ -783,7 +784,7 @@ void Compiler::PreScan() {
         }
         printf("\n");
     }
-
+     */
     /*** test if else */
 
     if (total_size != read_size) { //没有完整读取文件，告警

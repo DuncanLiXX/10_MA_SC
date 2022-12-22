@@ -1513,6 +1513,7 @@ bool Compiler::OpenFile(const char *file, bool sub_flag) {
             if (res != 0) {
                 g_ptr_trace->PrintLog(LOG_ALARM, "预扫描线程退出失败1！errno = %d\n",
                                       res);
+                printf("预扫描线程退出失败1111\n");
                 CreateError(ERR_QUIT_PRESCAN, ERROR_LEVEL, CLEAR_BY_RESET_POWER,
                             0, m_n_channel_index);
                 return false;
@@ -1524,6 +1525,7 @@ bool Compiler::OpenFile(const char *file, bool sub_flag) {
         if (res != 0) {
             g_ptr_trace->PrintLog(LOG_ALARM, "预扫描线程退出失败2！errno = %d\n",
                                   res);
+            printf("预扫描线程退出失败2222\n");
             CreateError(ERR_QUIT_PRESCAN, ERROR_LEVEL, CLEAR_BY_RESET_POWER,
                         0, m_n_channel_index);
             return false;
@@ -1535,6 +1537,7 @@ bool Compiler::OpenFile(const char *file, bool sub_flag) {
         if (res != 0) {
             g_ptr_trace->PrintLog(LOG_ALARM, "预扫描线程资源释放失败！errno = %d\n",
                                   res);
+            printf("预扫描线程退出失败3333\n");
             CreateError(ERR_QUIT_PRESCAN, ERROR_LEVEL, CLEAR_BY_RESET_POWER,
                         0, m_n_channel_index);
         }
@@ -1652,6 +1655,7 @@ bool Compiler::OpenFileInScene(const char *file){
             if (res != 0) {
                 g_ptr_trace->PrintLog(LOG_ALARM, "预扫描线程退出失败1！errno = %d\n",
                                       res);
+                printf("预扫描线程退出失败4444\n");
                 CreateError(ERR_QUIT_PRESCAN, ERROR_LEVEL, CLEAR_BY_RESET_POWER,
                             0, m_n_channel_index);
                 return false;
@@ -1663,6 +1667,7 @@ bool Compiler::OpenFileInScene(const char *file){
         if (res != 0) {
             g_ptr_trace->PrintLog(LOG_ALARM, "预扫描线程退出失败2！errno = %d\n",
                                   res);
+            printf("预扫描线程退出失败5555\n");
             CreateError(ERR_QUIT_PRESCAN, ERROR_LEVEL, CLEAR_BY_RESET_POWER,
                         0, m_n_channel_index);
             return false;
@@ -1674,6 +1679,7 @@ bool Compiler::OpenFileInScene(const char *file){
         if (res != 0) {
             g_ptr_trace->PrintLog(LOG_ALARM, "预扫描线程资源释放失败！errno = %d\n",
                                   res);
+            printf("预扫描线程退出失败6666\n");
             CreateError(ERR_QUIT_PRESCAN, ERROR_LEVEL, CLEAR_BY_RESET_POWER,
                         0, m_n_channel_index);
         }
@@ -4395,6 +4401,7 @@ bool Compiler::ReturnFromSubProg() {
                 if (res != 0) {
                     g_ptr_trace->PrintLog(LOG_ALARM, "预扫描线程退出失败3！errno = %d\n",
                                           res);
+                    printf("预扫描线程退出失败7777\n");
                     CreateError(ERR_QUIT_PRESCAN, ERROR_LEVEL, CLEAR_BY_RESET_POWER,
                                 0, m_n_channel_index);
                     return false;
@@ -4406,6 +4413,7 @@ bool Compiler::ReturnFromSubProg() {
             if (res != 0) {
                 g_ptr_trace->PrintLog(LOG_ALARM, "预扫描线程退出失败4！errno = %d\n",
                                       res);
+                printf("预扫描线程退出失败8888\n");
                 CreateError(ERR_QUIT_PRESCAN, ERROR_LEVEL, CLEAR_BY_RESET_POWER,
                             0, m_n_channel_index);
                 return false;
@@ -4417,6 +4425,7 @@ bool Compiler::ReturnFromSubProg() {
             if (res != 0) {
                 g_ptr_trace->PrintLog(LOG_ALARM, "预扫描线程资源释放失败2！errno = %d\n",
                                       res);
+                printf("预扫描线程退出失败9999\n");
                 CreateError(ERR_QUIT_PRESCAN, ERROR_LEVEL, CLEAR_BY_RESET_POWER,
                             0, m_n_channel_index);
             }

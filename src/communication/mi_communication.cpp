@@ -1017,6 +1017,15 @@ bool MICommunication::ReadCmd(MiCmdFrame &data){
  */
 bool MICommunication::WriteCmd(MiCmdFrame &data, bool resend){
 
+    if ((int)data.data.cmd == 0x107
+            || (int)data.data.cmd == 0x108
+            || (int)data.data.cmd == 0x136
+            || (int)data.data.cmd == 0x109
+            || (int)data.data.cmd == 0x11A)
+
+    {
+        std::cout << "MICommunication::WriteCmd " << (int)data.data.cmd << " axis: " << (int)data.data.axis_index << std::endl;
+    }
 	bool res = true;
 	bool wf = false;	//当前命令帧是否已写入过数据
 	uint16_t flag = 0;

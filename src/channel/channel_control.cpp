@@ -704,14 +704,16 @@ void ChannelControl::Reset(){
     m_b_ret_from_macroprog = false;
     m_b_init_compiler_pos = false;  //编译器初始位置需要重新初始化
     m_b_need_change_to_pause = false;
-    this->m_p_compiler->Reset();
 
-    if(m_channel_status.chn_work_mode != MDA_MODE){
+    this->m_p_compiler->Reset();
+    if(strlen(m_channel_status.cur_nc_file_name) > 0){
         char file_name[128];
         memset(file_name, 0x0, 128);
-        m_p_compiler->GetLastOpenFile(file_name);
-        this->SendOpenFileCmdToHmi(file_name);
+        strcpy(file_name, PATH_NC_FILE);
+        strcat(file_name, m_channel_status.cur_nc_file_name);   //拼接文件绝对路径
+        this->SendOpenFileCmdToHmi(m_channel_status.cur_nc_file_name);
     }
+
     this->m_macro_variable.Reset();   //宏变量复位
     this->m_scene_auto.need_reload_flag = false;   //取消断点继续标志
 

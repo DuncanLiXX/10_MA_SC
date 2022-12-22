@@ -100,14 +100,23 @@ void SpindleControl::InputPolar(Spindle::CncPolar polar)
     ScPrintf("SpindleControl::InputPolar %d\n",polar);
     if(polar == Positive || polar == Negative){
         // 收到正/反转信号
-        wait_on = true;
-        mi->SendAxisEnableCmd(phy_axis+1, true);
-        printf("SendAxisEnable enable = %d\n",true);
+        if(motor_enable){
+            wait_sar = true;
+            UpdateSpindleState();
+        }else{
+            wait_on = true;
+            mi->SendAxisEnableCmd(phy_axis+1, true);
+            printf("SendAxisEnable enable = %d\n",true);
+        }
     }else{
         // 收到主轴停信号
-        wait_off = true;
-        mi->SendAxisEnableCmd(phy_axis+1,false);
-        printf("SendAxisEnable enable = %d\n",false);
+        if(!motor_enable){
+            F->SST = 1;
+        }else{
+            wait_off = true;
+            mi->SendAxisEnableCmd(phy_axis+1,false);
+            printf("SendAxisEnable enable = %d\n",false);
+        }
     }
     cnc_polar = polar;
 }

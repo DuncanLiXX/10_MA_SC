@@ -290,7 +290,7 @@ struct FRegBits{
 	uint8_t :8;
 	//F93
 	uint8_t :8;
-	//F94
+    //F94
 	uint8_t ZP11:8;   //返回参考点结束信号   bit0-bit7：  轴1-轴8
 	//F95
 	uint8_t ZP12:8;   //返回参考点结束信号   bit0-bit7：  轴9-轴16
@@ -981,7 +981,7 @@ struct GRegBits{
 //	uint8_t JN7:1;				//进给轴和方向选择信号  -J7    轴7负向
 //	uint8_t JN8:1;				//进给轴和方向选择信号  -J8    轴8负向
 	//G103
-	uint8_t :8;
+    uint8_t :8;
 	//G104~G105
 	uint16_t REFE:16;           //物理轴回参考点使能信号，  bit0~bit15  轴1~轴15
 	//G106

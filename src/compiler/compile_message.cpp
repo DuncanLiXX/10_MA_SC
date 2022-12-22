@@ -2253,8 +2253,9 @@ int CompensateMsg::GetOutputData(GCodeFrame *data, uint32_t mask, bool flag){
 	//进给速度
 	if(m_n_move_type == MOVE_G01)
 		data->data.feed = FEED_TRANS(m_df_feed);   //单位由mm/min转换为um/s
-	else
+    else{
 		data->data.feed = 0;
+    }
 //	printf("linemsg feed : %d\n", data->data.feed);
 
 

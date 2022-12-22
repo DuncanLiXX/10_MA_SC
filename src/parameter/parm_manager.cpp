@@ -1337,6 +1337,7 @@ bool ParmManager::ReadAxisConfig(){
 			m_sc_axis_config[i].backlash_forward = m_ini_axis->GetIntValueOrDefault(sname, "backlash_forward", 0);
 			m_sc_axis_config[i].backlash_negative = m_ini_axis->GetIntValueOrDefault(sname, "backlash_negative", 0);
 			m_sc_axis_config[i].backlash_enable = m_ini_axis->GetIntValueOrDefault(sname, "backlash_enable", 1);
+            m_sc_axis_config[i].backlash_step = m_ini_axis->GetIntValueOrDefault(sname, "backlash_step", 20);
 			m_sc_axis_config[i].pc_offset = m_ini_axis->GetIntValueOrDefault(sname, "pc_offset", 1+400*i);
 //			printf("init axis %hhu pc_offset = %hu\n", i, m_sc_axis_config[i].pc_offset);
 			m_sc_axis_config[i].pc_type = m_ini_axis->GetIntValueOrDefault(sname, "pc_type", 0);
@@ -1500,6 +1501,7 @@ bool ParmManager::ReadAxisConfig(){
 
 			m_sc_axis_config[i].backlash_forward = 0;
 			m_sc_axis_config[i].backlash_negative = 0;
+            m_sc_axis_config[i].backlash_step = 20;
 			m_sc_axis_config[i].pc_offset = 1+400*i;
 			m_sc_axis_config[i].pc_count = 0;
 			m_sc_axis_config[i].pc_ref_index = 1;
@@ -1650,6 +1652,7 @@ bool ParmManager::ReadAxisConfig(){
 
 			m_ini_axis->AddKeyValuePair(string("backlash_forward"), string("0"), ns);
 			m_ini_axis->AddKeyValuePair(string("backlash_negative"), string("0"), ns);
+            m_ini_axis->AddKeyValuePair(string("backlash_step"), string("20"), ns);
 
 			memset(value, 0x00, sizeof(value));
 			sprintf(value, "%hu", m_sc_axis_config[i].pc_offset);
@@ -3590,7 +3593,7 @@ bool ParmManager::UpdatePcData(uint8_t axis_index, bool dir_flag, uint16_t offse
     std::cout << "count: " << count << std::endl;
 	for(int i = 0; i < count; i++ ){
 
-        std::cout << "axis_index: " << (int)axis_index << " offset_index+i-1: " << offset_index+i-1 << " data: " << data[i] <<  std::endl;
+        std::cout << "axis_index: " << (int)axis_index << " offset_index: " << offset_index+i-1 << " data: " << data[i] <<  std::endl;
 		m_sc_pc_table->pc_table[axis_index][offset_index+i-1] = data[i];
 		memset(kname, 0x00, sizeof(kname));
 
@@ -4609,6 +4612,11 @@ bool ParmManager::UpdateAxisParam(uint8_t axis_index, uint32_t param_no, ParamVa
 		m_ini_axis->SetIntValue(sname, kname, value.value_uint8);
 		this->m_sc_axis_config[axis_index].backlash_enable = value.value_uint8;
 		break;
+    case 1409:  //反向间隙步长
+        sprintf(kname, "backlash_step");
+        m_ini_axis->SetIntValue(sname, kname, value.value_int16);
+        this->m_sc_axis_config[axis_index].backlash_step = value.value_int16;
+        break;
 	case 1403: //螺距补偿点数
 		sprintf(kname, "pc_count");
 		m_ini_axis->SetIntValue(sname, kname, value.value_uint16);
@@ -6119,6 +6127,10 @@ void ParmManager::ActiveAxisParam(uint8_t axis_index, uint32_t param_no, ParamVa
 		this->m_sc_axis_config[axis_index].backlash_enable = value.value_uint8;
 		chn_engine->SendMiBacklash(axis_index);
 		break;
+    case 1409:  //反向间隙步长
+        this->m_sc_axis_config[axis_index].backlash_step = value.value_int16;
+        chn_engine->SendMiBacklash(axis_index);
+        break;
 	case 1405:  //参考点补偿位置
 		break;
 	case 1500: 	//软限位1

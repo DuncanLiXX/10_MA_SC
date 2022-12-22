@@ -64,8 +64,6 @@ public://公共接口
 
 	void RecycleCompile();		//循环编译，处理M99指令
 	void GetCurNcFile(char *file);   //获取当前加工的NC文件名称
-    void GetLastOpenFile(char *file);   //获取最后打开的文件(非子程序)
-
 
 	bool SaveScene();   //缓存编译器状态
 	bool ReloadScene(bool bRecPos = true);   //恢复编译器状态

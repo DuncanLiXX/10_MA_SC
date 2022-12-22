@@ -384,8 +384,6 @@ void MCArmCommunication::ReadCurFeed(const uint8_t chn_index, int32_t &cur_feed)
 void MCArmCommunication::ReadRatedFeed(const uint8_t chn_index, int32_t &rated_feed){
 
 	ReadSharedRegister(MC_ARM_RATED_FEED(chn_index), rated_feed);
-
-
 }
 
 /**

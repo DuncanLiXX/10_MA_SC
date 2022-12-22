@@ -269,6 +269,7 @@ enum MiCmdCode{
     CMD_MI_SPD_LOCATE = 0x137,            //SC通知MI主轴定位
     CMD_MI_SET_MPG_STEP = 0x138,          //设置手轮自定义步长
     CMD_MI_SET_MPG_INSERT_AXIS = 0x139,     //设置手轮插入轴选
+    CMD_MI_SET_HARD_LIMIT = 0x140,          //SC通知MI硬限位状态
 
 	CMD_MI_DEBUG_M_FUN = 0x8001,            //MI调试指令
 	CMD_MI_HW_TRACE_STATE_CHANGED_RSP = 0x8009,   //MI通知SC手轮跟踪状态切换响应命令
@@ -280,7 +281,7 @@ enum MiCmdCode{
 /*#####################################################################SC<-->HMI############################################################################*/
 const int kCmdRecvBufLen = 100;  //udp命令接受缓冲区大小，环形缓冲
 const int kTcpBufferSize = 1024*8;  //tcp传输缓冲区大小,8K
-const unsigned int kHeartbeatTimeout = 100; //30;  //30个监控周期，30*50ms
+const unsigned int kHeartbeatTimeout = 30; //30;  //30个监控周期，30*50ms
 const int kTcpSockTimeout = 3;		//TCP连接接收数据（包括recv和accept）超时时间：3秒
 
 //收到的HMI指令节点

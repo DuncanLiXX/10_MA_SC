@@ -197,6 +197,14 @@ void ToolCompensate::ProcessData(ListNode<RecordMsg *> *node){
 					interp.flush_comp();
 					// ³ÌÐò½áÊø ¹Ø±Õµ¶²¹
 				}
+
+				CodeMsgType msg_type = msg->GetMsgType();
+
+				if(msg_type == COORD_MSG || msg_type == LOOP_MSG ||  msg_type == REF_RETURN_MSG
+				 ||msg_type == RESTART_OVER_MSG || msg_type == AUTO_TOOL_MEASURE_MSG){
+					//interp.convert_cutter_compensation_off(&interp._setup);
+					interp.convert_close_compensation(&interp._setup);
+				}
 			}
 
 			this->m_p_output_msg_list->Append(node);

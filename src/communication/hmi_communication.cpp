@@ -3268,6 +3268,9 @@ void HMICommunication::DisconnectToHmi(){
 		g_ptr_trace->PrintLog(LOG_SYSTEM_INFO, "关闭文件传输连接！");
 	}
 
+    //停止加工
+    ChannelEngine::GetInstance()->Pause();
+
 	g_sys_state.hmi_comm_ready = false;
 }
 

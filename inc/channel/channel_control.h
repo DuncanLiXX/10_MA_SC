@@ -213,10 +213,6 @@ public:
 
 #endif
 
-#ifdef USES_EMERGENCY_DEC_STOP
-	void DelayToServoOff();  //延迟下伺服
-#endif
-
 
 	double GetAxisCurIntpTarPos(uint8_t axis_index, bool bMachCoord);  //获取单轴的当前插补目标位置
 	double GetAxisCurWorkPos(uint8_t axis_index);   //获取单轴的当前工件坐标系位置
@@ -810,11 +806,6 @@ private://私有成员变量
 	bool m_b_prestart_spd;    //主轴预启动执行标志    true--当前正在执行
 	int m_n_spd_prestart_step;   //当前主轴预启动执行步骤， 从0开始，结束后为0xFF
 	SpindleStartOffset m_spd_prestart_offset;   //当前所执行的主轴预启动数据
-#endif
-
-#ifdef USES_EMERGENCY_DEC_STOP
-	//延迟断伺服标志，等待减速停止后再断伺服，木工机速度太快不能直接断伺服
-	bool m_b_delay_servo_off;
 #endif
 
 

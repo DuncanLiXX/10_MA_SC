@@ -60,8 +60,6 @@
 
 //#define USES_ADDITIONAL_PROGRAM     //支持前置、后置程序调用
 
-#define USES_EMERGENCY_DEC_STOP   //支持急停减速停
-
 // #define USES_SIMULATION_TEST   //仿真测试，仿真数据保存为文件
 
 

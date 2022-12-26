@@ -4313,7 +4313,7 @@ int ChannelControl::Run(){
             {
                 //自动模式下，反向引导或者正向引导缓冲数据未发送完，则不进行编译
                 //	printf("@@@@@@, last= %d, tail=%d\n", m_p_last_output_msg, m_p_output_msg_list->TailNode());
-                printf("11111\n");
+                //printf("11111\n");
             	bf = ExecuteMessage();
 
 				if(!bf){
@@ -4326,7 +4326,7 @@ int ChannelControl::Run(){
 				}
 			}else if(m_p_compiler->GetErrorCode() != ERR_NONE)
 			{
-				printf("22222\n");
+                //printf("22222\n");
 				//编译器出错，但需要继续执行已编译指令
 				if(m_p_compiler->RunMessage()){
                     if(!ExecuteMessage()){
@@ -4342,7 +4342,7 @@ int ChannelControl::Run(){
 			}
 			else if(m_p_compiler->GetLineData())
 			{
-				printf("33333\n");
+                //printf("33333\n");
 				//printf("----------------------------> GetLineData\n");
 				//获取一行源码
 				if(!m_p_compiler->CompileLine())  //编译一行代码
@@ -9438,7 +9438,8 @@ bool ChannelControl::ExecuteRefReturnMsg(RecordMsg *msg){
 #endif
 				if(gcode == G30_CMD) target_pos = m_p_axis_config[phy_axis].axis_home_pos[ref_id-1];
                 TransMachCoordToWorkCoord(target_pos, m_channel_status.gmode[14], phy_axis);
-				if(axis_mask & (0x01<<i)){
+                uint8_t mlk_mask = m_p_channel_engine->GetMlkMask();
+                if((axis_mask & (0x01<<i)) && !(mlk_mask & (0x01 << i))){ // 机械锁住状态不等待
                     if(fabs(this->m_channel_rt_status.cur_pos_work.GetAxisValue(i) - target_pos) > 5e-3){ //未到位
 						//printf("step 3: axis %hhu cur pos = %lf, target=%lf\n", i, m_channel_rt_status.cur_pos_machine.GetAxisValue(i), target_pos);
 						flag = false;

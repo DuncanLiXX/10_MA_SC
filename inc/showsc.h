@@ -66,6 +66,8 @@ public:
 
     // 发送信息
     void SendMsg(string &s);
+    void NewMsg(){msg_new_count++;}
+    void DeleteMsg(){msg_delete_count++;}
 
 private:
     // 打印处理线程
@@ -132,6 +134,8 @@ private:
     SyncAxisCtrl *sync_axis_ctrl{nullptr};
 
     bool exit_flag{false};
+    int msg_new_count{0};
+    int msg_delete_count{0};
 };
 
 #endif

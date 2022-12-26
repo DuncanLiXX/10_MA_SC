@@ -258,8 +258,8 @@ public:
 	void TransMachCoordToWorkCoord(DPoint &pos, uint16_t coord_idx, uint32_t axis_mask);   //将坐标由机械坐标系转换为工件坐标系
 	void TransWorkCoordToMachCoord(DPointChn &pos, uint16_t coord_idx, uint32_t axis_mask);   //将坐标由工件坐标系转换为机械坐标系
 	void TransWorkCoordToMachCoord(DPoint &pos, uint16_t coord_idx, uint32_t axis_mask);   //将坐标由工件坐标系转换为机械坐标系
-	void TransMachCoordToWorkCoord(double &pos, uint16_t coord_idx, uint8_t axis);    //将单轴坐标由机械坐标系转换为工件坐标系
-	void TransWorkCoordToMachCoord(double &pos, uint16_t coord_idx, uint8_t axis);    //将单轴坐标由工件坐标系转换为机械坐标系
+    void TransMachCoordToWorkCoord(double &pos, uint16_t coord_idx, uint8_t axis);    //将单轴坐标由机械坐标系转换为工件坐标系
+    void TransWorkCoordToMachCoord(double &pos, uint16_t coord_idx, uint8_t axis);    //将单轴坐标由工件坐标系转换为机械坐标系
 	void TransWorkCoordToMachCoord(double &pos, uint16_t coord_idx, uint16_t h_code, uint8_t axis);  //将单轴坐标由工件坐标系转换为机械坐标系
 
 	void ProcessHmiReturnRefCmd(bool flag);                   //回参考点执行函数

@@ -9437,8 +9437,9 @@ bool ChannelControl::ExecuteRefReturnMsg(RecordMsg *msg){
             double target_pos = 0;
 #endif
 				if(gcode == G30_CMD) target_pos = m_p_axis_config[phy_axis].axis_home_pos[ref_id-1];
+                TransMachCoordToWorkCoord(target_pos, m_channel_status.gmode[14], phy_axis);
 				if(axis_mask & (0x01<<i)){
-					if(fabs(this->m_channel_rt_status.cur_pos_machine.GetAxisValue(i) - target_pos) > 5e-3){ //未到位
+                    if(fabs(this->m_channel_rt_status.cur_pos_work.GetAxisValue(i) - target_pos) > 5e-3){ //未到位
 						//printf("step 3: axis %hhu cur pos = %lf, target=%lf\n", i, m_channel_rt_status.cur_pos_machine.GetAxisValue(i), target_pos);
 						flag = false;
 						phy_axis = this->GetPhyAxis(i);

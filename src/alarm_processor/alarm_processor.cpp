@@ -651,7 +651,6 @@ void TraceLogProcess::SendToHmi(OptType optType, MsgType msgType, string strMsg)
     memcpy(&hmi_cmd.data[0], &opt, len);
     memcpy(&hmi_cmd.data[0+len], &msg, len);
     strcpy(&hmi_cmd.data[0+2*len], strMsg.c_str());
-    std::cout << "TraceLog: " << strMsg.c_str() << std::endl;
 
     hmi_cmd.data_len = 2*len + strLen;
 

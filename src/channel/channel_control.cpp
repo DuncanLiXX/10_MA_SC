@@ -11045,6 +11045,7 @@ void ChannelControl::ManualMove(int8_t dir){
     if(CheckSoftLimit((ManualMoveDir)dir, phy_axis,
                       GetAxisCurMachPos(m_channel_status.cur_axis))){
         // ScPrintf("soft limit active, manual move abs return \n");
+        std::cout << "soft limit active, manual move abs return\n";
         return;
     }else if(GetSoftLimt((ManualMoveDir)dir, phy_axis, limit) && dir == DIR_POSITIVE && tar_pos > limit*1e7){
         tar_pos = limit * 1e7;
@@ -11060,6 +11061,7 @@ void ChannelControl::ManualMove(int8_t dir){
 
     if(this->m_mask_pmc_axis & (0x01<<m_channel_status.cur_axis)){
         this->ManualMovePmc(dir);
+        std::cout << "ManualMovePmc\n";
         return;
     }
 
@@ -11089,13 +11091,14 @@ void ChannelControl::ManualMove(int8_t dir){
 
     cmd.data.data[6] = 0x02;   //增量目标位置
 
+    std::cout << "WriteCmd:move" << std::endl;
     if(!this->m_b_mc_on_arm)
         m_p_mc_comm->WriteCmd(cmd);
     else
         m_p_mc_arm_comm->WriteCmd(cmd);
 
-    //printf("manual move: axis = %d, tar_pos = %lld, type = 0x%x, ratio = %hhu\n", m_channel_status.cur_axis, tar_pos, cmd.data.data[6],
-    //        this->m_channel_status.manual_ratio);
+    printf("manual move: axis = %d, tar_pos = %lld, type = 0x%x, ratio = %hhu\n", m_channel_status.cur_axis, tar_pos, cmd.data.data[6],
+            this->m_channel_status.manual_ratio);
 }
 
 /**

@@ -226,8 +226,8 @@ public:
 
     void SendTapRatioCmd(uint8_t chn,int32_t ratio); // 发送攻丝比例
     // 发送同步误差增益，轴速度前馈增益，轴位置比例增益
-    void SendTapParams(uint8_t chn,uint16_t error_gain,
-                       uint16_t feed_gain,uint16_t ratio_gain);
+    void SendTapParams(uint8_t chn,uint32_t error_gain,
+                       uint32_t feed_gain,uint32_t ratio_gain);
     void SendTapStateCmd(uint8_t chn,bool enable); // 发送攻丝状态给MI
     // axis: 主轴轴号，从1开始
     void SendSpdLocateCmd(uint8_t chn, uint8_t axis, bool enable); // 发送主轴定位命令

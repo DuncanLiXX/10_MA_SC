@@ -224,7 +224,8 @@ bool MICommunication::InitSharedMemory(){
 	//初始化上下行命令通道
 	InitCmdChannel();
 
-	WriteRegister32_M(SHARED_MEM_AXIS_READ_OVER, 0);  //初始化读取完成标志为0
+    WriteRegister32_M(SHARED_MEM_AXIS_READ_OVER, 0);  //初始化读取完成标志为0
+    WriteRegister32_M(SHARED_MEM_TAP_READ_OVER, 0);  //初始化读取完成标志为0
 
 	printf("mem file : %d, base_addr : %p\n", m_n_mem_file, m_p_shared_base);
 	return true;
@@ -297,7 +298,7 @@ void MICommunication::SendTapRatioCmd(uint8_t chn, int32_t ratio)
     WriteCmd(cmd);
 }
 
-void MICommunication::SendTapParams(uint8_t chn, uint16_t error_gain, uint16_t feed_gain, uint16_t ratio_gain)
+void MICommunication::SendTapParams(uint8_t chn, uint32_t error_gain, uint32_t feed_gain, uint32_t ratio_gain)
 {
     MiCmdFrame cmd;
     memset(&cmd, 0x00, sizeof(cmd));
@@ -305,13 +306,13 @@ void MICommunication::SendTapParams(uint8_t chn, uint16_t error_gain, uint16_t f
     cmd.data.axis_index = 0xFF;
     cmd.data.reserved = chn;
 
-    uint32_t param = error_gain*1000;
+    uint32_t param = error_gain;
     memcpy(&cmd.data.data[0], &param, sizeof(uint32_t));
 
-    param = feed_gain*1000;
+    param = feed_gain;
     memcpy(&cmd.data.data[2], &param, sizeof(uint32_t));
 
-    param = ratio_gain*1000;
+    param = ratio_gain;
     memcpy(&cmd.data.data[4], &param, sizeof(uint32_t));
 
     WriteCmd(cmd);

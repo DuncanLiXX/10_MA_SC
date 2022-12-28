@@ -8,7 +8,7 @@
 
 
 // 以下错误出现时会关闭伺服使能 20184~20199
-std::vector<int> CRITS =
+const std::vector<int> CRITS =
 {
     // 同步轴相关报警
     150,151,152,1009,1016,1017,
@@ -83,6 +83,7 @@ void AxisStatusCtrl::UpdateServoState(bool force){
         ErrorInfo *info = list->ReadDataPtr(i);
         if(std::find(CRITS.begin(),CRITS.end(),info->error_code) != CRITS.end()){
              servo_warn = true;
+             break;
         }
     }
 
@@ -96,8 +97,11 @@ void AxisStatusCtrl::UpdateServoState(bool force){
         svf = SVF & (0x01<<i);
         enable = _ESP && !servo_warn && (sync_warn & (0x01<<i)) == 0 && !svf;
 
-        if(enable == last_enable[i] && svf == last_svf[i] && !force)
+        if(enable == last_enable[i] && last_svf[i] == svf && !force){
+            last_enable[i] = enable;
+            last_svf[i] = svf;
             continue;
+        }
 
         mi->SendAxisEnableCmd(i+1, enable, svf);
         last_enable[i] = enable;

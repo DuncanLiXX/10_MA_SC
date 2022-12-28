@@ -218,7 +218,7 @@ const int kTCodeSubProg = 9000;     //T指令对应的子程序号
 const int kMCodeTimeout = 500000;    //M指令判断合法性的超时时间  单位：us
 
 //ESB文件发送给MI的数据字节数
-const int kEsbDataSize = 998;
+const int kEsbDataSize = 1094;
 
 const int kGraphPosBufCount = 300;    //图形位置数据缓冲，用于仿真绘图的高频位置数据
 

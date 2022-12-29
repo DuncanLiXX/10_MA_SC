@@ -77,11 +77,11 @@ void AxisStatusCtrl::UpdateServoState(bool force){
     bool svf;    // 是否伺服关断（关断的状态下如果拧动轴，会在恢复之后移动回来）
     bool servo_warn = false; // 是否有需要关闭伺服的报警
     AlarmProcessor *alarms = AlarmProcessor::GetInstance();
-    CircularBuffer<ErrorInfo>* list = alarms->GetWarningList();
-    int count = list->BufLen();
-    for(int i = 0; i < count; i++){
-        ErrorInfo *info = list->ReadDataPtr(i);
-        if(std::find(CRITS.begin(),CRITS.end(),info->error_code) != CRITS.end()){
+    vector<ErrorInfo> list = alarms->GetWarningList();
+    //int count = list.BufLen();
+    for(size_t i = 0; i < list.size(); i++){
+        ErrorInfo info = list.at(i);
+        if(std::find(CRITS.begin(),CRITS.end(),info.error_code) != CRITS.end()){
              servo_warn = true;
         }
     }

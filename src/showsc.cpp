@@ -797,16 +797,16 @@ void ShowSc::PrintWarning()
 
     string s= "";
 
-    CircularBuffer<ErrorInfo>* list = alarms->GetWarningList();
-    int count = list->BufLen();
-    for(int i = 0; i < count; i++){
-        ErrorInfo *info = list->ReadDataPtr(i);
-        string key = "error info[" + to_string(i) = "]";
-        char value[128];
-        sprintf(value,"chn=%hhu, axis=%hhu, err_code=%hu, err_info=0x%x\n",
-                info->channel_index, info->axis_index, info->error_code, info->error_info);
-        AddPair(s,key,value);
-    }
+//    CircularBuffer<ErrorInfo> list = alarms->GetWarningList();
+//    int count = list.BufLen();
+//    for(int i = 0; i < count; i++){
+//        ErrorInfo *info = list.ReadDataPtr(i);
+//        string key = "error info[" + to_string(i) = "]";
+//        char value[128];
+//        sprintf(value,"chn=%hhu, axis=%hhu, err_code=%hu, err_info=0x%x\n",
+//                info->channel_index, info->axis_index, info->error_code, info->error_info);
+//        AddPair(s,key,value);
+//    }
 
     SendMsg(s);
 }

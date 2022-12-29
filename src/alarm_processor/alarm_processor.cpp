@@ -367,7 +367,29 @@ void AlarmProcessor::RemoveWarning(uint8_t chn, uint16_t error_code){
 
     pthread_mutex_unlock(&m_mutex);
     Singleton<AxisStatusCtrl>::instance().UpdateServoState();
-//	printf("remove warning:%d\n", del_count);
+    //	printf("remove warning:%d\n", del_count);
+}
+
+vector<ErrorInfo> AlarmProcessor::GetWarningList()
+{
+    vector<ErrorInfo> vecInfo;
+    pthread_mutex_lock(&m_mutex);
+    int err_num = m_error_info_input_list->BufLen();
+    for(int i = 0; i < err_num; ++i)
+    {
+        ErrorInfo *infoPtr = m_error_info_input_list->ReadDataPtr(i);
+        ErrorInfo info;
+        info.time = infoPtr->time;
+        info.error_info = infoPtr->error_code;
+        info.error_code = infoPtr->error_code;
+        info.channel_index = infoPtr->channel_index;
+        info.axis_index = infoPtr->axis_index;
+        info.error_level = infoPtr->error_level;
+        info.clear_type = infoPtr->clear_type;
+        vecInfo.push_back(info);
+    }
+    pthread_mutex_unlock(&m_mutex);
+    return vecInfo;
 }
 
 

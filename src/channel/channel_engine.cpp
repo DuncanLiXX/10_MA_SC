@@ -8176,7 +8176,6 @@ bool ChannelEngine::RefreshMiStatusFun(){
                                 CreateError(ERR_ENCODER, ERROR_LEVEL, CLEAR_BY_MCP_RESET, 0, CHANNEL_ENGINE_INDEX, i);
                             flag = flag << 1;
                         }
-
                     }
                 }
                 if(warn_flag & (0x01 << 3)){ //伺服告警
@@ -8546,6 +8545,10 @@ void ChannelEngine::ProcessPmcSignal(){
         // 攻丝回退
         if(g_reg->RTNT != g_reg_last->RTNT){
             ctrl->GetSpdCtrl()->InputRTNT(g_reg->RTNT);
+        }
+        // 换刀信号
+        if(g_reg->GTC != g_reg_last->GTC) {
+            ctrl->SetSysVarValue(4320, g_reg->GTC);
         }
 
         //通知类型的信号，只保留一个周期

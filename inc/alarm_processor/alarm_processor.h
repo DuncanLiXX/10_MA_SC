@@ -106,6 +106,8 @@ public:
 
 	void Clear();   //清空告警队列
 
+    void ClearTips(); //清空提示信息
+
 	void ClearWarning(uint8_t chn);  //清空告警即以下等级的消息
 
 	void RemoveWarning(uint8_t chn, uint16_t error_code);   //清空指定告警

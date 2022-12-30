@@ -314,6 +314,35 @@ void AlarmProcessor::Clear(){
 }
 
 /**
+ * @brief  清空提示信息
+ */
+void AlarmProcessor::ClearTips()
+{
+    vector<int> delVec;
+    ErrorInfo *info;
+
+    pthread_mutex_lock(&m_mutex);
+
+    int count = m_error_info_input_list->BufLen();
+
+    for(int i = 0; i < count; i++){
+        info = m_error_info_input_list->ReadDataPtr(i);
+        if(info == nullptr)
+            continue;
+        if(info->error_level == INFO_LEVEL)
+            delVec.push_back(i);
+    }
+
+    for(auto itr = delVec.rbegin(); itr != delVec.rend(); ++itr)
+        m_error_info_input_list->RemoveData(*itr);
+
+    pthread_mutex_unlock(&m_mutex);
+    Singleton<AxisStatusCtrl>::instance().UpdateServoState();
+    if (delVec.size())
+        NotifyToHmi();
+}
+
+/**
  * @brief 清空告警即以下等级的消息
  * @param chn : 通道号
  */

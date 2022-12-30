@@ -1332,7 +1332,7 @@ bool ChannelControl::SetSysVarValue(const int index, const double &value){
         pthread_mutex_unlock(&m_mutex_change_state);
     	uint16_t msg_id = value;
         printf("set 3000 value = %u\n", msg_id);
-        if(msg_id > 0){
+        if(msg_id >= 0){
 			CreateError(msg_id, INFO_LEVEL, CLEAR_BY_MCP_RESET, 0, m_n_channel_index);
 			printf("3000 msg_id: %d\n", msg_id);
 		}

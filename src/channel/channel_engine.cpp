@@ -677,19 +677,22 @@ void ChannelEngine::SetAxisRetRefFlag(){
 /**
  * @brief 向MI发送各轴机械锁住状态
  */
-void ChannelEngine::SetMLKState(uint8_t MLK)
+void ChannelEngine::SetMLKState(uint8_t MLK, uint8_t MLKI)
 {
     static uint8_t last_MLK = 0x00;
     //static std::future<void> ans;
-    ScPrintf("SetMLKState: MLK = %u", MLK);
+    ScPrintf("SetMLKState: MLK = %u MLKI=%u",MLK, MLKI);
 
-    //uint8_t clr_mask = 0x00;   // 需要解除锁住的轴mask
+    uint8_t mask = 0x00;
     for(int i = 0; i < m_p_channel_config->chn_axis_count; i++){
         // 旋转轴不用锁住
         if(m_p_axis_config[i].axis_type == AXIS_SPINDLE)
             continue;
 
-        bool en_now = (MLK & (0x01 << i));
+        bool en_now = (MLKI & (0x01 << i)) || (MLK == 1);
+        if(en_now)
+            mask |= (0x01 << i);
+
         bool en_last = (last_MLK & (0x01 << i));
         if(en_now == en_last)
             continue;
@@ -721,7 +724,7 @@ void ChannelEngine::SetMLKState(uint8_t MLK)
 //                              this, std::placeholders::_1, std::placeholders::_2);
 //        ans = std::async(std::launch::async, func, clr_mask,m_MLK_pos);
 //    }
-    last_MLK = MLK;
+    last_MLK = mask;
 }
 
 void ChannelEngine::ProcessRecoverMLK(uint8_t mask, double *mach_pos)
@@ -765,6 +768,18 @@ void ChannelEngine::ProcessRecoverMLK(uint8_t mask, double *mach_pos)
     }
     m_p_pmc_reg->FReg().bits->CLMLK = 0;
 
+}
+
+void ChannelEngine::SetSoftLimitSignal(uint8_t EXLM, uint8_t RLSOT){
+    bool check1 = true;
+    bool check2 = false;
+    for(int i=0; i<m_p_channel_config->chn_axis_count; i++){
+        check1 = (!EXLM && !RLSOT);
+        check2 = (EXLM && !RLSOT);
+        m_p_axis_config[i].soft_limit_check_1 = check1;
+        m_p_axis_config[i].soft_limit_check_2 = check2;
+        m_p_channel_control->SetChnAxisSoftLimit(i);
+    }
 }
 
 /**
@@ -8469,19 +8484,15 @@ void ChannelEngine::ProcessPmcSignal(){
             this->SystemReset();
         }
 
-        // 所有轴机械锁住信号发生了改变
-        if(g_reg->MLK != g_reg_last->MLK){
+        // 某个轴机械锁住信号发生了改变
+        if(g_reg->MLK != g_reg_last->MLK || g_reg->MLKI != g_reg_last->MLKI){
             f_reg->MMLK = g_reg->MLK;
-            if(g_reg->MLK){
-                SetMLKState(0xFF);
-            }else{
-                SetMLKState(g_reg->MLKI);
-            }
+            SetMLKState(g_reg->MLK, g_reg->MLKI);
         }
 
-        // 某个轴机械锁住信号发生了改变
-        if(g_reg->MLKI != g_reg_last->MLKI){
-            SetMLKState(g_reg->MLKI);
+        // 限位开关选择信号
+        if(g_reg->EXLM != g_reg_last->EXLM || g_reg->RLSOT != g_reg_last->RLSOT){
+            SetSoftLimitSignal(g_reg->EXLM, g_reg->RLSOT);
         }
 
         if(g_reg->SYNC != g_reg_last->SYNC){

@@ -1346,13 +1346,13 @@ bool ParmManager::ReadAxisConfig(){
 			m_sc_axis_config[i].pc_ref_index = m_ini_axis->GetIntValueOrDefault(sname, "pc_ref_index", 1);
 			m_sc_axis_config[i].pc_inter_dist = m_ini_axis->GetDoubleValueOrDefault(sname, "pc_inter_dist", 1.0);
 
-			m_sc_axis_config[i].soft_limit_check_1 = m_ini_axis->GetIntValueOrDefault(sname, "soft_limit_check_1", 0);
-			m_sc_axis_config[i].soft_limit_max_1 = m_ini_axis->GetDoubleValueOrDefault(sname, "soft_limit_max_1", 100.0);
+            m_sc_axis_config[i].soft_limit_check_1 = 1;
+            m_sc_axis_config[i].soft_limit_max_1 = m_ini_axis->GetDoubleValueOrDefault(sname, "soft_limit_max_1", 100.0);
 			m_sc_axis_config[i].soft_limit_min_1 = m_ini_axis->GetDoubleValueOrDefault(sname, "soft_limit_min_1", -100.0);
-			m_sc_axis_config[i].soft_limit_check_2 = m_ini_axis->GetIntValueOrDefault(sname, "soft_limit_check_2", 0);
+            m_sc_axis_config[i].soft_limit_check_2 = 0;
 			m_sc_axis_config[i].soft_limit_max_2 = m_ini_axis->GetDoubleValueOrDefault(sname, "soft_limit_max_2", 100.0);
 			m_sc_axis_config[i].soft_limit_min_2 = m_ini_axis->GetDoubleValueOrDefault(sname, "soft_limit_min_2", -100.0);
-			m_sc_axis_config[i].soft_limit_check_3 = m_ini_axis->GetIntValueOrDefault(sname, "soft_limit_check_3", 0);
+            m_sc_axis_config[i].soft_limit_check_3 = 0;
 			m_sc_axis_config[i].soft_limit_max_3 = m_ini_axis->GetDoubleValueOrDefault(sname, "soft_limit_max_3", 100.0);
 			m_sc_axis_config[i].soft_limit_min_3 = m_ini_axis->GetDoubleValueOrDefault(sname, "soft_limit_min_3", -100.0);
 
@@ -1507,7 +1507,7 @@ bool ParmManager::ReadAxisConfig(){
 			m_sc_axis_config[i].pc_ref_index = 1;
 			m_sc_axis_config[i].pc_inter_dist = 1.0;
 
-			m_sc_axis_config[i].soft_limit_check_1 = 0;
+            m_sc_axis_config[i].soft_limit_check_1 = 1;
 			m_sc_axis_config[i].soft_limit_max_1 = 100.0;
 			m_sc_axis_config[i].soft_limit_min_1 = -100.0;
 			m_sc_axis_config[i].soft_limit_check_2 = 0;
@@ -1661,7 +1661,7 @@ bool ParmManager::ReadAxisConfig(){
 			m_ini_axis->AddKeyValuePair(string("pc_ref_index"), string("1"), ns);
 			m_ini_axis->AddKeyValuePair(string("pc_inter_dist"), string("1.0"), ns);
 
-			m_ini_axis->AddKeyValuePair(string("soft_limit_check_1"), string("0"), ns);
+            m_ini_axis->AddKeyValuePair(string("soft_limit_check_1"), string("1"), ns);
 			m_ini_axis->AddKeyValuePair(string("soft_limit_max_1"), string("100.0"), ns);
 			m_ini_axis->AddKeyValuePair(string("soft_limit_min_1"), string("-100.0"), ns);
 			m_ini_axis->AddKeyValuePair(string("soft_limit_check_2"), string("0"), ns);
@@ -4657,10 +4657,10 @@ bool ParmManager::UpdateAxisParam(uint8_t axis_index, uint32_t param_no, ParamVa
 		sprintf(kname, "soft_limit_min_1");
 		m_ini_axis->SetDoubleValue(sname, kname, value.value_double);
 		break;
-	case 1502:
-		sprintf(kname, "soft_limit_check_1");
-		m_ini_axis->SetIntValue(sname, kname, value.value_uint8);
-		break;
+//    case 1502:  // 限位开关不通过参数修改，改为通过信号控制
+//		sprintf(kname, "soft_limit_check_1");
+//		m_ini_axis->SetIntValue(sname, kname, value.value_uint8);
+//		break;
 	case 1503: 	//软限位2
 		sprintf(kname, "soft_limit_max_2");
 		m_ini_axis->SetDoubleValue(sname, kname, value.value_double);
@@ -4669,10 +4669,10 @@ bool ParmManager::UpdateAxisParam(uint8_t axis_index, uint32_t param_no, ParamVa
 		sprintf(kname, "soft_limit_min_2");
 		m_ini_axis->SetDoubleValue(sname, kname, value.value_double);
 		break;
-	case 1505:
-		sprintf(kname, "soft_limit_check_2");
-		m_ini_axis->SetIntValue(sname, kname, value.value_uint8);
-		break;
+//	case 1505:  // 限位开关不通过参数修改，改为通过信号控制
+//		sprintf(kname, "soft_limit_check_2");
+//		m_ini_axis->SetIntValue(sname, kname, value.value_uint8);
+//		break;
 	case 1506: 	//软限位3
 		sprintf(kname, "soft_limit_max_3");
 		m_ini_axis->SetDoubleValue(sname, kname, value.value_double);
@@ -4681,10 +4681,10 @@ bool ParmManager::UpdateAxisParam(uint8_t axis_index, uint32_t param_no, ParamVa
 		sprintf(kname, "soft_limit_min_3");
 		m_ini_axis->SetDoubleValue(sname, kname, value.value_double);
 		break;
-	case 1508:
-		sprintf(kname, "soft_limit_check_3");
-		m_ini_axis->SetIntValue(sname, kname, value.value_uint8);
-		break;
+//	case 1508:  // 限位开关不通过参数修改，改为通过信号控制
+//		sprintf(kname, "soft_limit_check_3");
+//		m_ini_axis->SetIntValue(sname, kname, value.value_uint8);
+//		break;
 	case 1520:
 	case 1521:
 	case 1522:
@@ -6149,13 +6149,13 @@ void ParmManager::ActiveAxisParam(uint8_t axis_index, uint32_t param_no, ParamVa
 		g_ptr_chn_engine->GetChnControl(chan)->SetChnAxisSoftLimitValue(chan_axis, 0);
 		}
 		break;
-	case 1502:
-		this->m_sc_axis_config[axis_index].soft_limit_check_1 = value.value_uint8;
-		UpdateMiParam<uint8_t>(axis_index+1, param_no, value.value_uint8);
-//		g_ptr_chn_engine->SetAxisSoftLimit(axis_index);
-		chan = g_ptr_chn_engine->GetAxisChannel(axis_index, chan_axis);
-		g_ptr_chn_engine->GetChnControl(chan)->SetChnAxisSoftLimit(chan_axis);
-		break;
+//	case 1502:  // 限位开关不通过参数修改，改为通过信号控制
+//		this->m_sc_axis_config[axis_index].soft_limit_check_1 = value.value_uint8;
+//		UpdateMiParam<uint8_t>(axis_index+1, param_no, value.value_uint8);
+////		g_ptr_chn_engine->SetAxisSoftLimit(axis_index);
+//		chan = g_ptr_chn_engine->GetAxisChannel(axis_index, chan_axis);
+//		g_ptr_chn_engine->GetChnControl(chan)->SetChnAxisSoftLimit(chan_axis);
+//		break;
 	case 1503: 	//软限位2
 		this->m_sc_axis_config[axis_index].soft_limit_max_2 = value.value_double;
 		UpdateMiParam<double>(axis_index+1, param_no, value.value_double);
@@ -6170,13 +6170,13 @@ void ParmManager::ActiveAxisParam(uint8_t axis_index, uint32_t param_no, ParamVa
 		chan = g_ptr_chn_engine->GetAxisChannel(axis_index, chan_axis);
 		g_ptr_chn_engine->GetChnControl(chan)->SetChnAxisSoftLimitValue(chan_axis, 1);
 		break;
-	case 1505:
-		this->m_sc_axis_config[axis_index].soft_limit_check_2 = value.value_uint8;
-		UpdateMiParam<uint8_t>(axis_index+1, param_no, value.value_uint8);
-//		g_ptr_chn_engine->SetAxisSoftLimit(axis_index);
-		chan = g_ptr_chn_engine->GetAxisChannel(axis_index, chan_axis);
-		g_ptr_chn_engine->GetChnControl(chan)->SetChnAxisSoftLimit(chan_axis);
-		break;
+//	case 1505:  // 限位开关不通过参数修改，改为通过信号控制
+//		this->m_sc_axis_config[axis_index].soft_limit_check_2 = value.value_uint8;
+//		UpdateMiParam<uint8_t>(axis_index+1, param_no, value.value_uint8);
+////		g_ptr_chn_engine->SetAxisSoftLimit(axis_index);
+//		chan = g_ptr_chn_engine->GetAxisChannel(axis_index, chan_axis);
+//		g_ptr_chn_engine->GetChnControl(chan)->SetChnAxisSoftLimit(chan_axis);
+//		break;
 	case 1506: 	//软限位3
 		this->m_sc_axis_config[axis_index].soft_limit_max_3 = value.value_double;
 		UpdateMiParam<double>(axis_index+1, param_no, value.value_double);
@@ -6191,13 +6191,13 @@ void ParmManager::ActiveAxisParam(uint8_t axis_index, uint32_t param_no, ParamVa
 		chan = g_ptr_chn_engine->GetAxisChannel(axis_index, chan_axis);
 		g_ptr_chn_engine->GetChnControl(chan)->SetChnAxisSoftLimitValue(chan_axis, 2);
 		break;
-	case 1508:
-		this->m_sc_axis_config[axis_index].soft_limit_check_3 = value.value_uint8;
-		UpdateMiParam<uint8_t>(axis_index+1, param_no, value.value_uint8);
-//		g_ptr_chn_engine->SetAxisSoftLimit(axis_index);
-		chan = g_ptr_chn_engine->GetAxisChannel(axis_index, chan_axis);
-		g_ptr_chn_engine->GetChnControl(chan)->SetChnAxisSoftLimit(chan_axis);
-		break;
+//	case 1508:  // 限位开关不通过参数修改，改为通过信号控制
+//		this->m_sc_axis_config[axis_index].soft_limit_check_3 = value.value_uint8;
+//		UpdateMiParam<uint8_t>(axis_index+1, param_no, value.value_uint8);
+////		g_ptr_chn_engine->SetAxisSoftLimit(axis_index);
+//		chan = g_ptr_chn_engine->GetAxisChannel(axis_index, chan_axis);
+//		g_ptr_chn_engine->GetChnControl(chan)->SetChnAxisSoftLimit(chan_axis);
+//		break;
 	case 1520:
 	case 1521:
 	case 1522:

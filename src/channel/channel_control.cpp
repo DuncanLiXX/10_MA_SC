@@ -4310,7 +4310,7 @@ int ChannelControl::Run(){
             {
                 //自动模式下，反向引导或者正向引导缓冲数据未发送完，则不进行编译
                 //	printf("@@@@@@, last= %d, tail=%d\n", m_p_last_output_msg, m_p_output_msg_list->TailNode());
-                printf("11111\n");
+                //printf("11111\n");
             	bf = ExecuteMessage();
 
 				if(!bf){
@@ -4323,7 +4323,7 @@ int ChannelControl::Run(){
 				}
 			}else if(m_p_compiler->GetErrorCode() != ERR_NONE)
 			{
-				printf("22222\n");
+                //printf("22222\n");
 				//编译器出错，但需要继续执行已编译指令
 				if(m_p_compiler->RunMessage()){
                     if(!ExecuteMessage()){
@@ -4339,7 +4339,7 @@ int ChannelControl::Run(){
 			}
 			else if(m_p_compiler->GetLineData())
 			{
-				printf("33333\n");
+                //printf("33333\n");
 				//printf("----------------------------> GetLineData\n");
 				//获取一行源码
 				if(!m_p_compiler->CompileLine())  //编译一行代码
@@ -9433,18 +9433,19 @@ bool ChannelControl::ExecuteRefReturnMsg(RecordMsg *msg){
 #ifdef USES_RET_REF_TO_MACH_ZERO
             double target_pos = 0;
 #endif
-				if(gcode == G30_CMD) target_pos = m_p_axis_config[phy_axis].axis_home_pos[ref_id-1];
-				if(axis_mask & (0x01<<i)){
-					if(fabs(this->m_channel_rt_status.cur_pos_machine.GetAxisValue(i) - target_pos) > 5e-3){ //未到位
-						//printf("step 3: axis %hhu cur pos = %lf, target=%lf\n", i, m_channel_rt_status.cur_pos_machine.GetAxisValue(i), target_pos);
-						flag = false;
-						phy_axis = this->GetPhyAxis(i);
-						if(phy_axis != 0xff){
-							//printf("phy_axis: %d target_pos: %lf\n", phy_axis, target_pos);
-							this->ManualMove(i, target_pos, m_p_axis_config[phy_axis].rapid_speed);  //机械坐标系
-						}
-					}
-				}
+                if(gcode == G30_CMD) target_pos = m_p_axis_config[phy_axis].axis_home_pos[ref_id-1];
+                uint8_t mlk_mask = m_p_channel_engine->GetMlkMask();
+                if((axis_mask & (0x01<<i)) && !(mlk_mask & (0x01 << i))){
+                    if(fabs(this->m_channel_rt_status.cur_pos_machine.GetAxisValue(i) - target_pos) > 5e-3){ //未到位
+                        //printf("step 3: axis %hhu cur pos = %lf, target=%lf\n", i, m_channel_rt_status.cur_pos_machine.GetAxisValue(i), target_pos);
+                        flag = false;
+                        phy_axis = this->GetPhyAxis(i);
+                        if(phy_axis != 0xff){
+                            //printf("phy_axis: %d target_pos: %lf\n", phy_axis, target_pos);
+                            this->ManualMove(i, target_pos, m_p_axis_config[phy_axis].rapid_speed);  //机械坐标系
+                        }
+                    }
+                }
 			}
 
             if(flag){
@@ -17231,13 +17232,20 @@ bool ChannelControl::CheckAxisSrvOn(uint64_t &flag){
     uint64_t line_axis = m_n_real_phy_axis;
     uint64_t srvon_mask = flag;
     //printf("CheckAxisSrvOn:m_n_real_phy_axis=%lld,flag=%lld",m_n_real_phy_axis,flag);
+
     if(m_p_spindle->Type() != 0){
         line_axis &= ~(0x01 << m_p_spindle->GetPhyAxis());
         srvon_mask &= ~(0x01 << m_p_spindle->GetPhyAxis());
     }
+    for(int i=0; i<m_p_channel_config->chn_axis_count; i++){
+        if(m_p_g_reg->SVF & (0x01<<i)){
+            line_axis &= ~(0x01 << i);
+            srvon_mask &= ~(0x01 << i);
+        }
+    }
     //printf("CheckAxisSrvOn:line_axis=%lld,srvon_mask=%lld",line_axis,srvon_mask);
 
-    if((line_axis & srvon_mask) == (line_axis & (~m_p_g_reg->SVF))){
+    if((line_axis & srvon_mask) == line_axis){
         this->m_p_f_reg->SA = 1;
         return true;
     }else{

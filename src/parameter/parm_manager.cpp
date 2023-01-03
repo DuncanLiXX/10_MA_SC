@@ -1334,8 +1334,8 @@ bool ParmManager::ReadAxisConfig(){
 //			printf("axis %hhu, type = %hhu, time1=%hhu, time2=%hhu\n", i, m_sc_axis_config[i].post_filter_type,
 //					m_sc_axis_config[i].post_filter_time_1, m_sc_axis_config[i].post_filter_time_2);
 
-			m_sc_axis_config[i].backlash_forward = m_ini_axis->GetIntValueOrDefault(sname, "backlash_forward", 0);
-			m_sc_axis_config[i].backlash_negative = m_ini_axis->GetIntValueOrDefault(sname, "backlash_negative", 0);
+            m_sc_axis_config[i].backlash_forward = m_ini_axis->GetDoubleValueOrDefault(sname, "backlash_forward", 0);
+            m_sc_axis_config[i].backlash_negative = m_ini_axis->GetDoubleValueOrDefault(sname, "backlash_negative", 0);
 			m_sc_axis_config[i].backlash_enable = m_ini_axis->GetIntValueOrDefault(sname, "backlash_enable", 1);
             m_sc_axis_config[i].backlash_step = m_ini_axis->GetIntValueOrDefault(sname, "backlash_step", 20);
 			m_sc_axis_config[i].pc_offset = m_ini_axis->GetIntValueOrDefault(sname, "pc_offset", 1+400*i);
@@ -4600,14 +4600,14 @@ bool ParmManager::UpdateAxisParam(uint8_t axis_index, uint32_t param_no, ParamVa
 		m_ini_axis->SetDoubleValue(sname, kname, value.value_double);
 		break;
 	case 1400:  //正向反向间隙
-		printf("update axis 1400 val: %d\n", value.value_int16);
 		sprintf(kname, "backlash_forward");
-		m_ini_axis->SetIntValue(sname, kname, value.value_int16);
+        //m_ini_axis->SetIntValue(sname, kname, value.value_int16);
+        m_ini_axis->SetDoubleValue(sname, kname, value.value_double);
 		break;
 	case 1401:  //负向反向间隙
-		printf("update axis 1401 val: %d\n", value.value_int16);
 		sprintf(kname, "backlash_negative");
-		m_ini_axis->SetIntValue(sname, kname, value.value_int16);
+        //m_ini_axis->SetIntValue(sname, kname, value.value_int16);
+        m_ini_axis->SetDoubleValue(sname, kname, value.value_double);
 		break;
 	case 1402:   //反向间隙是否生效  **************************
 		printf("update axis 1402 \n");
@@ -6119,11 +6119,11 @@ void ParmManager::ActiveAxisParam(uint8_t axis_index, uint32_t param_no, ParamVa
 		this->m_sc_axis_config[axis_index].reset_speed = value.value_double;
 		break;
 	case 1400:  //正向反向间隙
-		this->m_sc_axis_config[axis_index].backlash_forward = value.value_int16;
+        this->m_sc_axis_config[axis_index].backlash_forward = value.value_double;
 		chn_engine->SendMiBacklash(axis_index);
 		break;
 	case 1401:  //负向反向间隙
-		this->m_sc_axis_config[axis_index].backlash_negative = value.value_int16;
+        this->m_sc_axis_config[axis_index].backlash_negative = value.value_double;
 		chn_engine->SendMiBacklash(axis_index);
 		break;
 	case 1402:  //反向间隙补偿生效

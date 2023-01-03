@@ -309,14 +309,10 @@ bool ChannelControl::Initialize(uint8_t chn_index, ChannelEngine *engine, HMICom
             m_channel_status.returned_to_ref_point |= (0x01<<i);
             continue;
         }
-        //		printf("init axis %d ref_flag, interface=%hhu, feedback=%hhu, ref_encoder=0x%llx\n", i,
-        //				m_p_axis_config[phy_axis-1].axis_interface,
-        //				m_p_axis_config[phy_axis-1].feedback_mode,
-        //				m_p_axis_config[phy_axis-1].ref_encoder);
-        if(m_p_axis_config[phy_axis-1].axis_interface == VIRTUAL_AXIS || m_p_axis_config[phy_axis-1].axis_type == AXIS_SPINDLE	//主轴和虚拟轴不用回参考点
-                || (m_p_axis_config[phy_axis-1].feedback_mode == NO_ENCODER && m_p_axis_config[phy_axis-1].ret_ref_mode == 0)   //无反馈,并且禁止回参考点
-                || (m_p_axis_config[phy_axis-1].feedback_mode != INCREMENTAL_ENCODER && m_p_axis_config[phy_axis-1].ref_encoder != kAxisRefNoDef)  //非增量式，并已确定零点
-                /*|| (m_p_axis_config[phy_axis-1].feedback_mode == INCREMENTAL_ENCODER && m_p_axis_config[phy_axis-1].ret_ref_mode == 0)增量式反馈必须回零*/){   //增量式并禁止回参考点
+        if(m_p_axis_config[phy_axis-1].axis_interface == VIRTUAL_AXIS   //虚拟轴不用建立参考点
+            || m_p_axis_config[phy_axis-1].axis_type == AXIS_SPINDLE	//主轴不用建立参数点
+            || (m_p_axis_config[phy_axis-1].feedback_mode == ABSOLUTE_ENCODER && m_p_axis_config[phy_axis-1].ref_encoder != kAxisRefNoDef))  //已经建立参考点的绝对式编码器，不用再次建立参考点
+        {
             m_channel_status.returned_to_ref_point |= (0x01<<i);
         }
         if(m_p_axis_config[phy_axis-1].axis_interface != VIRTUAL_AXIS)
@@ -1337,7 +1333,7 @@ bool ChannelControl::SetSysVarValue(const int index, const double &value){
         pthread_mutex_unlock(&m_mutex_change_state);
     	uint16_t msg_id = value;
         printf("set 3000 value = %u\n", msg_id);
-        if(msg_id > 0){
+        if(msg_id >= 0){
 			CreateError(msg_id, INFO_LEVEL, CLEAR_BY_MCP_RESET, 0, m_n_channel_index);
 			printf("3000 msg_id: %d\n", msg_id);
 		}
@@ -2156,6 +2152,7 @@ void ChannelControl::StopRunGCode(bool reset){
 
     this->m_p_f_reg->SPL = 0;
     this->m_p_f_reg->STL = 0;
+
 }
 
 
@@ -11062,6 +11059,7 @@ void ChannelControl::ManualMove(int8_t dir){
     if(CheckSoftLimit((ManualMoveDir)dir, phy_axis,
                       GetAxisCurMachPos(m_channel_status.cur_axis))){
         // ScPrintf("soft limit active, manual move abs return \n");
+        std::cout << "soft limit active, manual move abs return\n";
         return;
     }else if(GetSoftLimt((ManualMoveDir)dir, phy_axis, limit) && dir == DIR_POSITIVE && tar_pos > limit*1e7){
         tar_pos = limit * 1e7;
@@ -11077,6 +11075,7 @@ void ChannelControl::ManualMove(int8_t dir){
 
     if(this->m_mask_pmc_axis & (0x01<<m_channel_status.cur_axis)){
         this->ManualMovePmc(dir);
+        std::cout << "ManualMovePmc\n";
         return;
     }
 
@@ -11106,13 +11105,14 @@ void ChannelControl::ManualMove(int8_t dir){
 
     cmd.data.data[6] = 0x02;   //增量目标位置
 
+    std::cout << "WriteCmd:move" << std::endl;
     if(!this->m_b_mc_on_arm)
         m_p_mc_comm->WriteCmd(cmd);
     else
         m_p_mc_arm_comm->WriteCmd(cmd);
 
-    //printf("manual move: axis = %d, tar_pos = %lld, type = 0x%x, ratio = %hhu\n", m_channel_status.cur_axis, tar_pos, cmd.data.data[6],
-    //        this->m_channel_status.manual_ratio);
+    printf("manual move: axis = %d, tar_pos = %lld, type = 0x%x, ratio = %hhu\n", m_channel_status.cur_axis, tar_pos, cmd.data.data[6],
+            this->m_channel_status.manual_ratio);
 }
 
 /**
@@ -16579,24 +16579,12 @@ bool ChannelControl::EmergencyStop(){
 #endif
     this->SetMachineState(state);  //更新通道状态
 
-    /*
-    //复位各轴回参考点标志，只有增量式编码器的轴需要复位
-    for(int i = 0; i < this->m_p_channel_config->chn_axis_count; i++){
-        if(m_p_axis_config[m_channel_status.cur_chn_axis_phy[i]-1].axis_interface != VIRTUAL_AXIS		//非虚拟轴
-                && m_p_axis_config[m_channel_status.cur_chn_axis_phy[i]-1].axis_type != AXIS_SPINDLE				//非主轴
-                && m_p_axis_config[m_channel_status.cur_chn_axis_phy[i]-1].ret_ref_mode > 0 ){	//非禁止回参考点
-        m_channel_status.returned_to_ref_point &= ~(0x01<<i);
-        }
-    }
-*/
-
     //复位各轴回参考点标志，只有增量式编码器的轴需要复位
     for(int i = 0; i < this->m_p_channel_config->chn_axis_count; i++){
         if(m_p_axis_config[m_p_channel_config->chn_axis_phy[i]-1].axis_interface != VIRTUAL_AXIS		//非虚拟轴
                 && m_p_axis_config[m_p_channel_config->chn_axis_phy[i]-1].axis_type != AXIS_SPINDLE				//非主轴
-                && (m_p_axis_config[m_p_channel_config->chn_axis_phy[i]-1].feedback_mode == INCREMENTAL_ENCODER ||
-                    m_p_axis_config[m_p_channel_config->chn_axis_phy[i]-1].feedback_mode == NO_ENCODER)   //增量式编码器或者无反馈
-                && m_p_axis_config[m_p_channel_config->chn_axis_phy[i]-1].ret_ref_mode > 0 ){	//非禁止回参考点
+                && m_p_axis_config[m_p_channel_config->chn_axis_phy[i]-1].feedback_mode == INCREMENTAL_ENCODER)    //增量式编码器
+        {
             m_channel_status.returned_to_ref_point &= ~(0x01<<i);
         }
     }

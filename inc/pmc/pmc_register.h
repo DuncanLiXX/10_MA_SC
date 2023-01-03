@@ -782,7 +782,7 @@ struct GRegBits{
 	//G25
 	uint8_t :8;
 	//G26
-	uint8_t :8;
+    uint8_t GTC:8;     //获取当前刀号 G26.8
 	//G27
 	uint8_t :8;
 	//G28

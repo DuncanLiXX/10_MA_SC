@@ -1024,10 +1024,10 @@ void ChannelEngine::Initialize(HMICommunication *hmi_comm, MICommunication *mi_c
     //初始化回参考点标志
     this->m_n_mask_ret_ref_over = 0;
     for(int i = 0; i < this->m_p_general_config->axis_count; i++){
-        if(m_p_axis_config[i].axis_interface == VIRTUAL_AXIS || m_p_axis_config[i].axis_type == AXIS_SPINDLE	//主轴和虚拟轴不用回参考点
-                || (m_p_axis_config[i].feedback_mode == NO_ENCODER && m_p_axis_config[i].ret_ref_mode == 0)    //无反馈，并且禁止回参考点
-                || (m_p_axis_config[i].feedback_mode != INCREMENTAL_ENCODER && m_p_axis_config[i].feedback_mode != NO_ENCODER && m_p_axis_config[i].ref_encoder != kAxisRefNoDef)    //绝对值编码器，已设定参考点
-                /*|| (m_p_axis_config[i].feedback_mode == INCREMENTAL_ENCODER && m_p_axis_config[i].ret_ref_mode == 0)增量式编码器必须回参考点*/){  //增量编码器，禁止回参考点
+        if(m_p_axis_config[i].axis_interface == VIRTUAL_AXIS    //虚拟轴不用建立参考点
+            || m_p_axis_config[i].axis_type == AXIS_SPINDLE     //主轴不用建立参数点
+            || (m_p_axis_config[i].feedback_mode != INCREMENTAL_ENCODER && m_p_axis_config[i].feedback_mode != NO_ENCODER && m_p_axis_config[i].ref_encoder != kAxisRefNoDef))    //已经建立参考点的绝对式编码器，不用再次建立参考点
+        {
             //			m_n_mask_ret_ref_over |= (0x01<<i);
             this->SetRetRefFlag(i, true);
         }
@@ -1918,56 +1918,82 @@ void ChannelEngine::ProcessGetCurAxisEncodeRsp(MiCmdFrame &cmd){
 void ChannelEngine::ProcessSetAxisRefRsp(MiCmdFrame &cmd){
     uint8_t  axis = cmd.data.axis_index-1;
     printf("ChannelEngine::ProcessSetAxisRefRsp, axis = 0x%hu\n", axis);
-    if(cmd.data.data[0] == FAILED){
+    if(cmd.data.data[0] == FAILED)
+    {
         printf("axis [%hhu] set ref point failed!\n", cmd.data.axis_index);
         m_error_code = ERR_RET_REF_FAILED;
         this->m_n_ret_ref_step[axis] = 20;   //跳转到失败处理
-    }else{
-        if(this->m_p_axis_config[axis].feedback_mode == NO_ENCODER){  //无反馈轴，直接结束
-            m_n_ret_ref_step[axis] = 11;   //跳转到成功结束
-        }else{//其它类型都移动到第一参考点位置
-            //让轴运动到第一参考点位置
-            //	int64_t pos = 0;
-            //	int8_t dir = DIR_POSITIVE;
-            //	memcpy(&pos, &cmd.data.data[1], 8);
-            //		this->m_df_phy_axis_pos_feedback[axis] = (double)pos*1e-7;   //单位转换：0.1nm --> mm
-            //		double dis = this->m_p_axis_config[axis].axis_home_pos[0]-(double)pos*1e-7;   //移动距离
-            //		if(dis < 0)
-            //			dir = DIR_NEGATIVE;
+    }
+    else {
+//        if(this->m_p_axis_config[axis].feedback_mode == NO_ENCODER){  //无反馈轴，直接结束
+//            m_n_ret_ref_step[axis] = 11;   //跳转到成功结束
+//        }else{//其它类型都移动到第一参考点位置
+//            //让轴运动到第一参考点位置
+//            //	int64_t pos = 0;
+//            //	int8_t dir = DIR_POSITIVE;
+//            //	memcpy(&pos, &cmd.data.data[1], 8);
+//            //		this->m_df_phy_axis_pos_feedback[axis] = (double)pos*1e-7;   //单位转换：0.1nm --> mm
+//            //		double dis = this->m_p_axis_config[axis].axis_home_pos[0]-(double)pos*1e-7;   //移动距离
+//            //		if(dis < 0)
+//            //			dir = DIR_NEGATIVE;
 
-            //		printf("axis %hhu dir = %hhd, dis = %lf, curpos = %lld\n", axis, dir, dis, pos);
+//            //		printf("axis %hhu dir = %hhd, dis = %lf, curpos = %lld\n", axis, dir, dis, pos);
 
-            //计算粗精基准偏差
-            if(this->m_p_axis_config[axis].ref_base_diff_check){
-                int64_t pos = 0;
-                double df_pos = 0;
-                memcpy(&pos, &cmd.data.data[1], 8);
-                df_pos = pos;
-                df_pos *= 1e-7;   //单位转换：0.1nm-->mm
-                this->m_p_axis_config[axis].ref_base_diff = df_pos;    //粗精基准误差
-                ParamValue value;
-                value.value_double = df_pos;
-                g_ptr_parm_manager->UpdateAxisParam(axis, 1312, value);
-                this->NotifyHmiAxisRefBaseDiffChanged(axis, df_pos);   //通知HMI轴参数改变
-                printf("axis %hhu ref base diff:%lf, %llu\n", axis, df_pos, pos);
-            }
+//            //计算粗精基准偏差
+//            if(this->m_p_axis_config[axis].ref_base_diff_check){
+//                int64_t pos = 0;
+//                double df_pos = 0;
+//                memcpy(&pos, &cmd.data.data[1], 8);
+//                df_pos = pos;
+//                df_pos *= 1e-7;   //单位转换：0.1nm-->mm
+//                this->m_p_axis_config[axis].ref_base_diff = df_pos;    //粗精基准误差
+//                ParamValue value;
+//                value.value_double = df_pos;
+//                g_ptr_parm_manager->UpdateAxisParam(axis, 1312, value);
+//                this->NotifyHmiAxisRefBaseDiffChanged(axis, df_pos);   //通知HMI轴参数改变
+//                printf("axis %hhu ref base diff:%lf, %llu\n", axis, df_pos, pos);
+//            }
 
-            /*llx todo
-            if (GetSyncAxisCtrl()->CheckSyncState(axis) == 1)
-            {//从动轴建立机械坐标
-                SetSubAxisRefPoint(axis);
-                usleep(200000);
-            }
-            */
+//            /*llx todo
+//            if (GetSyncAxisCtrl()->CheckSyncState(axis) == 1)
+//            {//从动轴建立机械坐标
+//                SetSubAxisRefPoint(axis);
+//                usleep(200000);
+//            }
+//            */
 
 
-#ifdef USES_RET_REF_TO_MACH_ZERO
-            this->ManualMoveAbs(axis, m_p_axis_config[axis].ret_ref_speed, 0);
-#else
-            this->ManualMoveAbs(axis, m_p_axis_config[axis].ret_ref_speed, m_p_axis_config[axis].axis_home_pos[0]);
-#endif
-            m_n_ret_ref_step[axis] = 10;   // 跳转下一步
-        }
+//#ifdef USES_RET_REF_TO_MACH_ZERO
+//            this->ManualMoveAbs(axis, m_p_axis_config[axis].ret_ref_speed, 0);
+//#else
+//            this->ManualMoveAbs(axis, m_p_axis_config[axis].ret_ref_speed, m_p_axis_config[axis].axis_home_pos[0]);
+//#endif
+//            m_n_ret_ref_step[axis] = 10;   // 跳转下一步
+//        }
+       int64_t pos = 0;
+       double df_pos = 0;
+       memcpy(&pos, &cmd.data.data[1], 8);
+       df_pos = pos;
+       df_pos *= 1e-7;   //单位转换：0.1nm-->mm
+       this->m_p_axis_config[axis].ref_base_diff = df_pos;    //粗精基准误差
+       ParamValue value;
+       value.value_double = df_pos;
+       g_ptr_parm_manager->UpdateAxisParam(axis, 1312, value);
+       this->NotifyHmiAxisRefBaseDiffChanged(axis, df_pos);   //通知HMI轴参数改变
+       printf("axis %hhu ref base diff:%lf, %llu\n", axis, df_pos, pos);
+
+       gettimeofday(&this->m_time_ret_ref[axis], NULL);
+
+       double move_length = 0;
+       if (this->m_p_axis_config[axis].ref_z_distance_max == 0)
+           move_length = this->m_p_axis_config[axis].move_pr*2;
+       else
+           move_length = this->m_p_axis_config[axis].ref_z_distance_max;
+
+       if (df_pos <= move_length)
+           m_n_ret_ref_step[axis] = 10;
+       else
+           m_n_ret_ref_step[axis] = 20;
     }
 }
 
@@ -1988,6 +2014,7 @@ void ChannelEngine::ProcessGetAxisZeroEncoderRsp(MiCmdFrame &cmd){
         this->m_p_axis_config[axis].ref_encoder = encoder_value;
         g_ptr_parm_manager->UpdateAxisRef(axis, encoder_value); //写入文件
         this->NotifyHmiAxisRefChanged(axis);  //通知HMI
+        std::cout << "encoder: " << encoder_value << std::endl;
     }
 }
 
@@ -1998,13 +2025,13 @@ void ChannelEngine::ProcessGetAxisZeroEncoderRsp(MiCmdFrame &cmd){
 void ChannelEngine::ProcessRefreshAxisZeroEncoder(MiCmdFrame &cmd){
     uint8_t axis = cmd.data.axis_index-1;
     int64_t encoder_value = 0;
-    printf("ChannelEngine::ProcessRefreshAxisZeroEncoder, axis = 0x%hu\n", axis);
 
     //读取编码器值并保存
     memcpy(&encoder_value, &cmd.data.data[0], sizeof(int64_t));
     this->m_p_axis_config[axis].ref_encoder = encoder_value;
     g_ptr_parm_manager->UpdateAxisRef(axis, encoder_value); //写入文件
     this->NotifyHmiAxisRefChanged(axis);
+    printf("ChannelEngine::ProcessRefreshAxisZeroEncoder, axis = 0x%hu, encoder = %lld\n", axis, encoder_value);
 }
 
 /**
@@ -2091,7 +2118,7 @@ void ChannelEngine::ProcessMiActiveAxisZCaptureRsp(MiCmdFrame &cmd){
         g_ptr_parm_manager->UpdateAxisRef(axis, encoder_value); //写入文件
 
         //		this->NotifyHmiAxisRefChanged(axis);
-        printf("ChannelEngine::ProcessMiActiveAxisZCaptureRsp(), encoder:%lld", encoder_value);
+        printf("ChannelEngine::ProcessMiActiveAxisZCaptureRsp(), encoder:%lld\n", encoder_value);
 
         this->m_n_ret_ref_step[axis] = 10;  //回零步骤跳转到第10步
     }else if(cmd.data.data[0] == 0){ //非总线轴
@@ -2113,6 +2140,7 @@ void ChannelEngine::ProcessSetAxisCurMachPosRsp(MiCmdFrame &cmd){
     this->m_p_axis_config[phy_axis].ref_encoder = encoder_value;
     g_ptr_parm_manager->UpdateAxisRef(phy_axis, encoder_value); //写入文件
     this->NotifyHmiAxisRefChanged(phy_axis);
+    std::cout << "encoder_value: " << encoder_value << std::endl;
 }
 
 /**
@@ -2396,7 +2424,7 @@ void ChannelEngine::ProcessMiSetRefCurRsp(MiCmdFrame &cmd){
 
     this->NotifyHmiAxisRefChanged(axis);
 
-    printf("ProcessMiSetRefCurRsp , axis = %hhu\n", axis);
+    printf("ProcessMiSetRefCurRsp , axis = %hhu, encoder= %lld\n", axis, encoder_value);
 
 }
 
@@ -4629,11 +4657,9 @@ void ChannelEngine::ProcessHmiUpdateReq(HMICmdFrame &cmd){
  * @param phy_axis : 物理轴号，从0开始
  */
 void ChannelEngine::ProcessPmcAxisFindRef(uint8_t phy_axis){
-    if(m_p_axis_config[phy_axis].axis_interface != VIRTUAL_AXIS		//非虚拟轴
-            && m_p_axis_config[phy_axis].axis_type != AXIS_SPINDLE				//非主轴
-            && /*(m_p_axis_config[phy_axis].feedback_mode == INCREMENTAL_ENCODER ||
-                        m_p_axis_config[phy_axis].feedback_mode == NO_ENCODER)   //增量式编码器或者无反馈
-                && */m_p_axis_config[phy_axis].ret_ref_mode > 0){	//非禁止回参考点
+    if(m_p_axis_config[phy_axis].axis_interface != VIRTUAL_AXIS       //非虚拟轴
+            && m_p_axis_config[phy_axis].axis_type != AXIS_SPINDLE)   //非主轴
+        {	//非禁止回参考点
 
 #ifdef USES_PMC_PROCESS
         if(phy_axis == 5)
@@ -4688,10 +4714,8 @@ void ChannelEngine::ProcessHmiFindRefCmd(HMICmdFrame &cmd){
     }else if(cmd.cmd_extension == 0xFF){  //所有轴回零
         for(int i = 0; i < this->m_p_general_config->axis_count; i++){
             if(m_p_axis_config[i].axis_interface != VIRTUAL_AXIS		//非虚拟轴
-                    && m_p_axis_config[i].axis_type != AXIS_SPINDLE				//非主轴
-                    && /*(m_p_axis_config[i].feedback_mode == INCREMENTAL_ENCODER ||
-                            m_p_axis_config[i].feedback_mode == NO_ENCODER)//增量式编码器或者无反馈
-                        && */m_p_axis_config[i].ret_ref_mode > 0){	 //回参考点方式非禁止
+                && m_p_axis_config[i].axis_type != AXIS_SPINDLE)		//非主轴
+            {	 //回参考点方式非禁止
 
                 this->m_n_mask_ret_ref |= (0x01<<i);
             }
@@ -4737,9 +4761,8 @@ void ChannelEngine::ProcessPmcRefRet(uint8_t phy_axis){
         return;
     }
 
-    if(m_p_axis_config[phy_axis].axis_interface == VIRTUAL_AXIS || m_p_axis_config[phy_axis].axis_type == AXIS_SPINDLE	//主轴和虚拟轴不用回参考点
-            || (m_p_axis_config[phy_axis].feedback_mode == NO_ENCODER && m_p_axis_config[phy_axis].ret_ref_mode == 0)    //无反馈，并且禁止回参考点
-            || (m_p_axis_config[phy_axis].feedback_mode == INCREMENTAL_ENCODER && m_p_axis_config[phy_axis].ret_ref_mode == 0)){  //增量编码器，禁止回参考点
+    if(m_p_axis_config[phy_axis].axis_interface == VIRTUAL_AXIS || m_p_axis_config[phy_axis].axis_type == AXIS_SPINDLE)	//主轴和虚拟轴不用回参考点
+    {  //增量编码器，禁止回参考点
         printf("no ret ref, return\n");
         return;   //不用回参考点的轴禁止将回零标志复位
     }
@@ -7488,7 +7511,7 @@ void ChannelEngine::SendMiPcData(uint8_t axis){
     uint16_t count = m_p_axis_config[axis].pc_count;
     uint16_t offset = m_p_axis_config[axis].pc_offset-1;  //起始编号，0开始
 
-    std::cout << "offset :" << offset << std::endl;
+    //std::cout << "offset :" << offset << std::endl;
     if(this->m_p_axis_config[axis].pc_type == 1){//双向螺补
         count *= 2;   //数据量翻倍
     }
@@ -7651,9 +7674,9 @@ void ChannelEngine::SendMiBacklash(uint8_t axis){
 
     //放置数据
     if(m_p_axis_config[axis].backlash_enable){
-        uint32_t data = m_p_axis_config[axis].backlash_forward;
+        uint32_t data = m_p_axis_config[axis].backlash_forward * 1000;
         memcpy(cmd.data.data, &data, 4);  //
-        data = m_p_axis_config[axis].backlash_negative;
+        data = m_p_axis_config[axis].backlash_negative * 1000;
         memcpy(&cmd.data.data[2], &data, 4);
         data = m_p_axis_config[axis].backlash_step;
         memcpy(&cmd.data.data[4], &data, 4);
@@ -7663,11 +7686,11 @@ void ChannelEngine::SendMiBacklash(uint8_t axis){
         data = 0.0;
         memcpy(&cmd.data.data[2], &data, 4);
     }
-    std::cout << "axis: " << (int)cmd.data.axis_index << std::endl;
-    std::cout << "backlash_enable: " << (int)m_p_axis_config[axis].backlash_enable << std::endl;
-    std::cout << "backlash_forward: " << (int)m_p_axis_config[axis].backlash_forward << std::endl;
-    std::cout << "backlash_negative: " << (int)m_p_axis_config[axis].backlash_negative << std::endl;
-    std::cout << "backlash_step: " << (int)m_p_axis_config[axis].backlash_step << std::endl;
+    //std::cout << "axis: " << (int)cmd.data.axis_index << std::endl;
+    //std::cout << "backlash_enable: " << (int)m_p_axis_config[axis].backlash_enable << std::endl;
+    //std::cout << "backlash_forward: " << (int)m_p_axis_config[axis].backlash_forward << std::endl;
+    //std::cout << "backlash_negative: " << (int)m_p_axis_config[axis].backlash_negative << std::endl;
+    //std::cout << "backlash_step: " << (int)m_p_axis_config[axis].backlash_step << std::endl;
     this->m_p_mi_comm->WriteCmd(cmd);
 }
 
@@ -7998,9 +8021,8 @@ void ChannelEngine::Emergency(uint8_t chn){
 #ifndef USES_WOOD_MACHINE
     for(int i = 0; i < this->m_p_general_config->axis_count; i++){
         if(m_p_axis_config[i].axis_interface != VIRTUAL_AXIS && m_p_axis_config[i].axis_type != AXIS_SPINDLE	//非主轴并且非虚拟轴
-                && (m_p_axis_config[i].feedback_mode == INCREMENTAL_ENCODER ||
-                    m_p_axis_config[i].feedback_mode == NO_ENCODER)   //增量编码器
-                && m_p_axis_config[i].ret_ref_mode > 0){
+                && m_p_axis_config[i].feedback_mode == INCREMENTAL_ENCODER )
+        {
             //			m_n_mask_ret_ref_over &= ~(0x01<<i);   //
             this->SetRetRefFlag(i, false);
         }
@@ -8174,7 +8196,6 @@ bool ChannelEngine::RefreshMiStatusFun(){
                                 CreateError(ERR_ENCODER, ERROR_LEVEL, CLEAR_BY_MCP_RESET, 0, CHANNEL_ENGINE_INDEX, i);
                             flag = flag << 1;
                         }
-
                     }
                 }
                 if(warn_flag & (0x01 << 3)){ //伺服告警
@@ -8541,6 +8562,10 @@ void ChannelEngine::ProcessPmcSignal(){
         if(g_reg->RTNT != g_reg_last->RTNT){
             ctrl->GetSpdCtrl()->InputRTNT(g_reg->RTNT);
         }
+        // 换刀信号
+        if(g_reg->GTC != g_reg_last->GTC) {
+            ctrl->SetSysVarValue(4320, g_reg->GTC);
+        }
 
         //通知类型的信号，只保留一个周期
         {
@@ -8794,7 +8819,9 @@ void ChannelEngine::ProcessPmcSignal(){
         //第一参考点
         if(fabs(m_df_phy_axis_pos_feedback[i]-m_p_axis_config[i].axis_home_pos[0]) < prec){
             if(byte < 8)
+            {
                 freg->ZP11 |= (0x01<<bit);
+            }
             else
                 freg->ZP12 |= (0x01<<bit);
         }else{
@@ -9552,7 +9579,8 @@ void ChannelEngine::AxisFindRefNoZeroSignal(uint8_t phy_axis){
 
     switch(this->m_n_ret_ref_step[phy_axis]){
     case 0: {// 设置原点
-        printf("return ref step 0: send cmd to mi, set ref point\n");
+        std::cout << "ChannelEngine::AxisFindRefNoZeroSignal " << (int)phy_axis << std::endl;
+        std::cout << "step 0: CMD_MI_SET_REF_CUR 0x0108\n";
         MiCmdFrame cmd;
         memset(&cmd, 0x00, sizeof(cmd));
         cmd.data.axis_index = phy_axis+1;
@@ -9567,29 +9595,22 @@ void ChannelEngine::AxisFindRefNoZeroSignal(uint8_t phy_axis){
         {//主动轴相应的从动轴也需要清除回零标志
             ClearSubAxisRefFlag(phy_axis);
         }
-
         m_n_ret_ref_step[phy_axis] = 1;  //跳转下一步
-        printf("return ref, goto step 1\n");
-
     }
         break;
     case 1: { //等待设置参考点完成，在Mi指令响应处理函数中处理
         struct timeval time_now;
         gettimeofday(&time_now, NULL);
         unsigned int time_elpase = (time_now.tv_sec-m_time_ret_ref[phy_axis].tv_sec)*1000000+time_now.tv_usec-m_time_ret_ref[phy_axis].tv_usec;
-        if(time_elpase >= 300000){ //延时300ms
+        if(time_elpase >= 200000){ //延时200ms
             m_n_ret_ref_step[phy_axis] = 2;  //跳转下一步
-            printf("return ref, goto step 2\n");
+            std::cout << "step 1, waitfor 200ms\n";
         }
     }
         break;
     case 2:  //回参考点完成
-        printf("axis %u return ref over\n", phy_axis);
         this->SetRetRefFlag(phy_axis, true);
         this->m_p_pmc_reg->FReg().bits[0].in_ref_point |= (0x01<<phy_axis);   //置位到参考点标志
-        //			printf("return ref over flag : 0x%llx, 0x%hhx, 0x%hhx, 0x%hhx, 0x%hhx, 0x%hhx, 0x%hhx, 0x%hhx, 0x%hhx\n", this->m_p_pmc_reg->FReg().bits[0].in_ref_point,
-        //					m_p_pmc_reg->FReg().all[200], m_p_pmc_reg->FReg().all[201], m_p_pmc_reg->FReg().all[202], m_p_pmc_reg->FReg().all[203],
-        //					m_p_pmc_reg->FReg().all[204], m_p_pmc_reg->FReg().all[205], m_p_pmc_reg->FReg().all[206], m_p_pmc_reg->FReg().all[207]);
         this->m_n_mask_ret_ref &= ~(0x01<<phy_axis);
         m_n_ret_ref_step[phy_axis] = 0;
 
@@ -9603,6 +9624,7 @@ void ChannelEngine::AxisFindRefNoZeroSignal(uint8_t phy_axis){
             this->m_b_ret_ref_auto = false;
             m_n_ret_ref_auto_cur = 0;
         }
+        std::cout << "step 2, ref finish\n";
 
         break;
     case 20: //失败处理
@@ -9614,6 +9636,7 @@ void ChannelEngine::AxisFindRefNoZeroSignal(uint8_t phy_axis){
             this->m_b_ret_ref_auto = false;
             m_n_ret_ref_auto_cur = 0;
         }
+        std::cout << "step 20, ref failed\n";
         m_error_code = ERR_RET_REF_FAILED;
         CreateError(ERR_RET_REF_FAILED, WARNING_LEVEL, CLEAR_BY_MCP_RESET, 0, CHANNEL_ENGINE_INDEX, phy_axis+1);
         break;
@@ -9636,7 +9659,8 @@ void ChannelEngine::EcatIncAxisFindRefWithZeroSignal(uint8_t phy_axis){
 
     switch(this->m_n_ret_ref_step[phy_axis]){
     case 0://检查原点信号
-        this->SetRetRefFlag(phy_axis, false);   //复位回参考点完成标志
+        std::cout << "ChannelEngine::EcatIncAxisFindRefWithZeroSignal " << (int)phy_axis << std::endl;
+        this->SetRetRefFlag(phy_axis, false);//清除建立参考点标志
         this->m_p_pmc_reg->FReg().bits[0].in_ref_point &= ~(0x01<<phy_axis);
 
         if (GetSyncAxisCtrl()->CheckSyncState(phy_axis) == 1)
@@ -9644,7 +9668,8 @@ void ChannelEngine::EcatIncAxisFindRefWithZeroSignal(uint8_t phy_axis){
             ClearSubAxisRefFlag(phy_axis);
         }
 
-        if(this->CheckAxisRefBaseSignal(phy_axis, dir)){  // 已经触发粗基准信号，直接开开始回退
+        if(this->CheckAxisRefBaseSignal(phy_axis, dir))
+        {// 已经触发粗基准信号
             double move_length = this->m_p_axis_config[phy_axis].move_pr*1.2;
             if(move_length>10.0) {
                 move_length = 10.0;
@@ -9659,7 +9684,8 @@ void ChannelEngine::EcatIncAxisFindRefWithZeroSignal(uint8_t phy_axis){
             std::cout << "step 0, dir: " << (int)dir << " dir_opt: " << dir_opt << " goto step 1 " << std::endl;
             m_n_ret_ref_step[phy_axis] = 1;
         }
-        else{
+        else
+        {
             std::cout << "step 0, dir: " << (int)dir << " dir_opt: " << dir_opt << " goto step 2 " << std::endl;
             m_n_ret_ref_step[phy_axis] = 2;
         }
@@ -9671,14 +9697,14 @@ void ChannelEngine::EcatIncAxisFindRefWithZeroSignal(uint8_t phy_axis){
 
         if(chn != CHANNEL_ENGINE_INDEX){
             if(fabs(this->GetPhyAxisMachPosFeedback(phy_axis) - m_df_ret_ref_tar_pos[phy_axis]) <= 0.010){
-                if(true == flag){   //回到step0，继续回退
+                if(true == flag){   //还处于粗基准信号上，继续回退
                     m_n_ret_ref_step[phy_axis] = 0;
                     std::cout << "step 1, goback 0" << std::endl;
                     break;
                 }
             }
             if(flag == false){
-                m_n_ret_ref_step[phy_axis] = 2;  //跳转下一步
+                m_n_ret_ref_step[phy_axis] = 2;
                 std::cout << "step 1" << std::endl;
             }
 
@@ -9688,7 +9714,7 @@ void ChannelEngine::EcatIncAxisFindRefWithZeroSignal(uint8_t phy_axis){
                     m_n_ret_ref_step[phy_axis] = 0;
                     break;
                 }else{
-                    m_n_ret_ref_step[phy_axis] = 2;  //跳转下一步
+                    m_n_ret_ref_step[phy_axis] = 2;
                 }
             }
         }
@@ -9696,16 +9722,16 @@ void ChannelEngine::EcatIncAxisFindRefWithZeroSignal(uint8_t phy_axis){
         break;
     case 2:  //以回参考点速度向回参考点方向运动
         this->ManualMove(phy_axis, dir, this->m_p_axis_config[phy_axis].ret_ref_speed, 90000.0);
-        m_n_ret_ref_step[phy_axis] = 3;  //跳转下一步
+        m_n_ret_ref_step[phy_axis] = 3;
         std::cout << "step 2, ret_ref_speed: " << this->m_p_axis_config[phy_axis].ret_ref_speed << "dir: " << (int)dir << std::endl;
         break;
     case 3:  //触发粗基准信号，停止
         if(this->CheckAxisRefBaseSignal(phy_axis, dir)){
             this->ManualMoveStop(phy_axis);
-            gettimeofday(&this->m_time_ret_ref[phy_axis], NULL);   //记录起始时间
-            m_n_ret_ref_step[phy_axis] = 4;  //跳转下一步
+            gettimeofday(&this->m_time_ret_ref[phy_axis], NULL);
+            m_n_ret_ref_step[phy_axis] = 4;
             this->SendMonitorData(false, false);
-            std::cout << "step 3, axisPos: " << this->GetPhyAxisMachPosIntp(phy_axis) << std::endl;
+            std::cout << "step 3, find signal pos: " << this->GetPhyAxisMachPosIntp(phy_axis) << std::endl;
         }
         else{
             //	this->ManualMove(phy_axis, dir, this->m_p_axis_config[phy_axis].ret_ref_speed,1.0);
@@ -9716,14 +9742,13 @@ void ChannelEngine::EcatIncAxisFindRefWithZeroSignal(uint8_t phy_axis){
         gettimeofday(&time_now, NULL);
         unsigned int time_elpase = (time_now.tv_sec-m_time_ret_ref[phy_axis].tv_sec)*1000000+time_now.tv_usec-m_time_ret_ref[phy_axis].tv_usec;
         if(time_elpase >= 1000000){ //延时1000ms
-            m_n_ret_ref_step[phy_axis] = 5;  //跳转下一步
+            m_n_ret_ref_step[phy_axis] = 5;
             this->SendMonitorData(false, false);
-            std::cout << "step 4, axisPos: " << this->GetPhyAxisMachPosIntp(phy_axis) << std::endl;
+            std::cout << "step 4, wait for 1000ms, get signal pos: " << this->GetPhyAxisMachPosIntp(phy_axis) << std::endl;
         }
     }
         break;
     case 5:{  //有基准， 低速回退至粗基准信号消失,
-        printf("return ref step 5\n");
         double move_length = this->m_p_axis_config[phy_axis].move_pr*2;
         if(move_length>10.0) {
             move_length = 10.0;
@@ -9735,8 +9760,8 @@ void ChannelEngine::EcatIncAxisFindRefWithZeroSignal(uint8_t phy_axis){
         if (this->m_p_axis_config[phy_axis].ret_ref_speed_second > 0)
             val = this->m_p_axis_config[phy_axis].ret_ref_speed_second;
         m_df_ret_ref_tar_pos[phy_axis] = this->GetPhyAxisMachPosFeedback(phy_axis)+move_length* dir_opt;
-        this->ManualMove(phy_axis, dir_opt, val, move_length); //有基准， 低速回退至粗基准信号消失, 速度：60mm/min
-        m_n_ret_ref_step[phy_axis] = 6;  //跳转下一步
+        this->ManualMove(phy_axis, dir_opt, val, move_length); //有基准， 低速回退至粗基准信号消失
+        m_n_ret_ref_step[phy_axis] = 6;
         std::cout << "step 5," << " speed: " << val << std::endl;
 
         break;
@@ -9745,12 +9770,12 @@ void ChannelEngine::EcatIncAxisFindRefWithZeroSignal(uint8_t phy_axis){
         if(!this->CheckAxisRefBaseSignal(phy_axis, dir)){
             this->ManualMoveStop(phy_axis);
 
-            gettimeofday(&this->m_time_ret_ref[phy_axis], NULL);   //记录起始时间，延时600ms
+            gettimeofday(&this->m_time_ret_ref[phy_axis], NULL);
 
-            m_n_ret_ref_step[phy_axis] = 7;  //跳转下一步
+            m_n_ret_ref_step[phy_axis] = 7;
             std::cout << "step 6, goto 7" << std::endl;
         }else if(fabs(this->GetPhyAxisMachPosFeedback(phy_axis) - m_df_ret_ref_tar_pos[phy_axis]) <= 0.010){  //接近目标位置，粗基准信号还在，则继续回退
-            m_n_ret_ref_step[phy_axis] = 5;  //跳转第5步
+            m_n_ret_ref_step[phy_axis] = 5;
             std::cout << "step 6, goback 5" << std::endl;
         }
         break;
@@ -9758,34 +9783,35 @@ void ChannelEngine::EcatIncAxisFindRefWithZeroSignal(uint8_t phy_axis){
         struct timeval time_now;
         gettimeofday(&time_now, NULL);
         unsigned int time_elpase = (time_now.tv_sec-m_time_ret_ref[phy_axis].tv_sec)*1000000+time_now.tv_usec-m_time_ret_ref[phy_axis].tv_usec;
-        if(time_elpase >= 600000){ //延时600ms
+        if(time_elpase >= 200000){ //延时200ms
             if(!this->CheckAxisRefBaseSignal(phy_axis, dir)){
                 this->SendMiAxisZCaptureCmd(phy_axis, true);  //激活Z信号捕获
-                m_n_ret_ref_step[phy_axis] = 8;  //跳转下一步
-                std::cout << "step 7" << std::endl;
-            }else{      //如果又发现粗基准有信号，则继续回退
-                m_n_ret_ref_step[phy_axis] = 5;  //回跳至第5步
-                std::cout << "step 7, goback 5" << std::endl;
+                m_n_ret_ref_step[phy_axis] = 8;
+                std::cout << "step 7, wait for 600ms, CMD_MI_ACTIVE_Z_CAPT 0x0109" << std::endl;
+            }else
+            {//如果又发现粗基准有信号，则继续回退
+                m_n_ret_ref_step[phy_axis] = 5;
+                std::cout << "step 7, wait for 600ms, goback 5" << std::endl;
             }
 
         }
     }
         break;
-    case 8:{ //向寻找精基准方向运动1.2个螺距，以捕获Z信号
+    case 8:{ //向寻找精基准方向运动，以捕获Z信号
         double move_length = 0;
         if (this->m_p_axis_config[phy_axis].ref_z_distance_max == 0)
             move_length = this->m_p_axis_config[phy_axis].move_pr*1.2;
         else
             move_length = this->m_p_axis_config[phy_axis].ref_z_distance_max;
 
-        m_df_ret_ref_tar_pos[phy_axis] = this->GetPhyAxisMachPosFeedback(phy_axis)+move_length * dir_opt;
+        m_df_ret_ref_tar_pos[phy_axis] = this->GetPhyAxisMachPosFeedback(phy_axis) + move_length * dir_opt;
 
         double val = 60;
         if (this->m_p_axis_config[phy_axis].ret_ref_speed_second > 0)
             val = this->m_p_axis_config[phy_axis].ret_ref_speed_second;
         this->ManualMove(phy_axis, dir_opt, val, move_length);
 
-        m_n_ret_ref_step[phy_axis] = 9;  //跳转下一步
+        m_n_ret_ref_step[phy_axis] = 9;
         std::cout << "step 8, moveLength: " << move_length << " val " << val << std::endl;
     }
         break;
@@ -9797,11 +9823,11 @@ void ChannelEngine::EcatIncAxisFindRefWithZeroSignal(uint8_t phy_axis){
         }
     }
         break;
-    case 10:{ //延时300ms，等待停止到位
+    case 10:{ //延时1000ms，等待停止到位
         struct timeval time_now;
         gettimeofday(&time_now, NULL);
         unsigned int time_elpase = (time_now.tv_sec-m_time_ret_ref[phy_axis].tv_sec)*1000000+time_now.tv_usec-m_time_ret_ref[phy_axis].tv_usec;
-        if(time_elpase >= 300000){ //延时300ms
+        if(time_elpase >= 1000000){ //延时1000ms
             MiCmdFrame cmd;
             memset(&cmd, 0x00, sizeof(cmd));
             cmd.data.axis_index = phy_axis+1;
@@ -9809,47 +9835,69 @@ void ChannelEngine::EcatIncAxisFindRefWithZeroSignal(uint8_t phy_axis){
             memcpy(cmd.data.data, &m_p_axis_config[phy_axis].ref_encoder, sizeof(int64_t));
 
             this->m_p_mi_comm->WriteCmd(cmd);
-            gettimeofday(&this->m_time_ret_ref[phy_axis], NULL);   //记录起始时间
-            m_n_ret_ref_step[phy_axis]++;  //跳转下一步
-            std::cout << "step 10" << std::endl;
+
+            gettimeofday(&this->m_time_ret_ref[phy_axis], NULL);
+            m_n_ret_ref_step[phy_axis]++;
+            std::cout << "step 10, get z signal, wait for 2500ms, CMD_MI_SET_REF 0x0107" << std::endl;
         }
         break;
     }
 
-    case 11:{   // 先走偏移量
+    case 11:{
+        if (GetSyncAxisCtrl()->CheckSyncState(phy_axis) == 1)
+        {
+            struct timeval time_now;
+            gettimeofday(&time_now, NULL);
+            unsigned int time_elpase = (time_now.tv_sec-m_time_ret_ref[phy_axis].tv_sec)*1000000+time_now.tv_usec-m_time_ret_ref[phy_axis].tv_usec;
+            if (time_elpase >= 1000000) //延时1000ms,等待轴停稳
+            {
+                SetSubAxisRefPoint(phy_axis, 0);
+                gettimeofday(&this->m_time_ret_ref[phy_axis], NULL);
+                m_n_ret_ref_step[phy_axis]++;
+                std::cout << "step 11, wait for 1000ms" << std::endl;
+            }
+        }
+        else
+        {
+            gettimeofday(&this->m_time_ret_ref[phy_axis], NULL);
+            m_n_ret_ref_step[phy_axis]++;
+            std::cout << "step 11" << std::endl;
+        }
+    }
+        break;
+
+    case 12:{   // 零点偏移量
         struct timeval time_now;
         gettimeofday(&time_now, NULL);
         unsigned int time_elpase = (time_now.tv_sec-m_time_ret_ref[phy_axis].tv_sec)*1000000+time_now.tv_usec-m_time_ret_ref[phy_axis].tv_usec;
-        if(time_elpase >= 100000){ //延时100ms
+        if(time_elpase >= 200000){ //延时200ms
             if (this->m_p_axis_config[phy_axis].ref_offset_pos)
-            {
+            {//零点偏移量
                 double val = 60;
                 if (this->m_p_axis_config[phy_axis].ret_ref_speed_second > 0)
                     val = this->m_p_axis_config[phy_axis].ret_ref_speed_second;
                 this->ManualMoveAbs(phy_axis, val, this->m_p_axis_config[phy_axis].ref_offset_pos);
-                m_n_ret_ref_step[phy_axis] = 12;  //跳转下一步
-                std::cout << "step 11, ref_offset_pos: " << this->m_p_axis_config[phy_axis].ref_offset_pos << std::endl;
+                m_n_ret_ref_step[phy_axis] = 13;
             }
             else
             {
                 this->ManualMoveAbs(phy_axis, m_p_axis_config[phy_axis].ret_ref_speed, m_p_axis_config[phy_axis].axis_home_pos[0]);
-                //m_n_ret_ref_step[phy_axis]++;  //跳转下一步
-                m_n_ret_ref_step[phy_axis] = 16;
-                std::cout << "step 11, axis_home_pos: " << m_p_axis_config[phy_axis].axis_home_pos[0] << std::endl;
+                m_n_ret_ref_step[phy_axis] = 17;
             }
+            std::cout << "step 12, wait for 200ms, ref_offset_pos: " << this->m_p_axis_config[phy_axis].ref_offset_pos << std::endl;
         }
         break;
     }
 
-    case 12: {  // 等待运动停止
+    case 13: {  // 等待运动停止
         if(fabs(this->GetPhyAxisMachPosFeedback(phy_axis) - this->m_p_axis_config[phy_axis].ref_offset_pos) <= 0.010){  //到位
-            gettimeofday(&this->m_time_ret_ref[phy_axis], NULL);   //记录起始时间，延时600ms
+            gettimeofday(&this->m_time_ret_ref[phy_axis], NULL);
             m_n_ret_ref_step[phy_axis]++;
-            std::cout << "step 12 " << std::endl;
+            std::cout << "step 13, move over" << std::endl;
         }
     }
         break;
-    case 13: {
+    case 14: {
         struct timeval time_now;
         gettimeofday(&time_now, NULL);
         unsigned int time_elpase = (time_now.tv_sec-m_time_ret_ref[phy_axis].tv_sec)*1000000+time_now.tv_usec-m_time_ret_ref[phy_axis].tv_usec;
@@ -9861,25 +9909,30 @@ void ChannelEngine::EcatIncAxisFindRefWithZeroSignal(uint8_t phy_axis){
             mi_cmd.data.data[0] = 0;
             mi_cmd.data.data[1] = 0;
             this->m_p_mi_comm->WriteCmd(mi_cmd);
-            gettimeofday(&this->m_time_ret_ref[phy_axis], NULL);   //记录起始时间，延时200ms
+            gettimeofday(&this->m_time_ret_ref[phy_axis], NULL);
             m_n_ret_ref_step[phy_axis]++;
-            std::cout << "step 13 " << std::endl;
+            std::cout << "step 14, wait for 600ms, CMD_MI_SET_AXIS_MACH_POS 0x136" << std::endl;
         }
     }
         break;
 
-    case 14: {
+    case 15: {
         struct timeval time_now;
         gettimeofday(&time_now, NULL);
         unsigned int time_elpase = (time_now.tv_sec-m_time_ret_ref[phy_axis].tv_sec)*1000000+time_now.tv_usec-m_time_ret_ref[phy_axis].tv_usec;
         if(time_elpase >= 200000) {//延时200ms,等待MI处理
+            if (GetSyncAxisCtrl()->CheckSyncState(phy_axis) == 1)
+            {//从动轴建立机械坐标
+                SetSubAxisRefPoint(phy_axis, 0);
+            }
             m_n_ret_ref_step[phy_axis]++;
-            std::cout << "step 14" << std::endl;
+            gettimeofday(&this->m_time_ret_ref[phy_axis], NULL);
+            std::cout << "step 15, wait for 200ms" << std::endl;
         }
     }
         break;
 
-    case 15:{  //延时100ms，保证机械坐标已更新
+    case 16:{
         struct timeval time_now;
         gettimeofday(&time_now, NULL);
         unsigned int time_elpase = (time_now.tv_sec-m_time_ret_ref[phy_axis].tv_sec)*1000000+time_now.tv_usec-m_time_ret_ref[phy_axis].tv_usec;
@@ -9890,11 +9943,11 @@ void ChannelEngine::EcatIncAxisFindRefWithZeroSignal(uint8_t phy_axis){
             this->ManualMoveAbs(phy_axis, m_p_axis_config[phy_axis].ret_ref_speed, m_p_axis_config[phy_axis].axis_home_pos[0]);
 #endif
             m_n_ret_ref_step[phy_axis]++;  //跳转下一步
-            std::cout << "step 15, axis_home_pos:" << m_p_axis_config[phy_axis].axis_home_pos[0] << std::endl;
+            std::cout << "step 16, axis_home_pos:" << m_p_axis_config[phy_axis].axis_home_pos[0] << std::endl;
         }
         break;
     }
-    case 16:
+    case 17:
 #ifdef USES_RET_REF_TO_MACH_ZERO
         dis = 0;    //机械零
 #else
@@ -9904,53 +9957,23 @@ void ChannelEngine::EcatIncAxisFindRefWithZeroSignal(uint8_t phy_axis){
 
         if(fabs(this->GetPhyAxisMachPosFeedback(phy_axis)- dis) <= 0.010){  //到位
             m_n_ret_ref_step[phy_axis]++;  //跳转下一步
+            std::cout << "step 17" << std::endl;
         }
-        std::cout << "step 16" << std::endl;
         break;
-    case 17:  //回参考点完成
+    case 18:  //回参考点完成
         printf("axis %u return ref over\n", phy_axis);
-        if(this->m_p_axis_config[phy_axis].feedback_mode == ABSOLUTE_ENCODER_YASAKAWA ||
-                this->m_p_axis_config[phy_axis].feedback_mode == ABSOLUTE_ENCODER_PANASONIC ||
-                this->m_p_axis_config[phy_axis].feedback_mode == LINEAR_ENCODER){  //绝对值需获取机械零点的编码器值并保存，方便断点后恢复坐标
-            MiCmdFrame mi_cmd;
-            memset(&mi_cmd, 0x00, sizeof(mi_cmd));
-            mi_cmd.data.cmd = CMD_MI_GET_ZERO_ENCODER;
-            mi_cmd.data.axis_index = phy_axis+1;
+//        if(this->m_p_axis_config[phy_axis].feedback_mode == ABSOLUTE_ENCODER ||
+//            this->m_p_axis_config[phy_axis].feedback_mode == LINEAR_ENCODER){  //绝对值需获取机械零点的编码器值并保存，方便断点后恢复坐标
+//                MiCmdFrame mi_cmd;
+//                memset(&mi_cmd, 0x00, sizeof(mi_cmd));
+//                mi_cmd.data.cmd = CMD_MI_GET_ZERO_ENCODER;
+//                mi_cmd.data.axis_index = phy_axis+1;
 
-            this->m_p_mi_comm->WriteCmd(mi_cmd);
-        }
+//                this->m_p_mi_comm->WriteCmd(mi_cmd);
+//        }
         this->SetRetRefFlag(phy_axis, true);
         this->m_p_pmc_reg->FReg().bits[0].in_ref_point |= (0x01<<phy_axis);   //置位到参考点标志
 
-        if (GetSyncAxisCtrl()->CheckSyncState(phy_axis) == 1)
-        {//从动轴建立机械坐标
-            SetSubAxisRefPoint(phy_axis, m_p_axis_config[phy_axis].axis_home_pos[0]);
-        }
-        //            if(this->m_n_sync_master_mask & this->m_n_sync_master_enable_mask & (0x01<<phy_axis)){//主动轴相应的从动轴也需要置位到参考点标志
-        //                for(uint8_t i = 0; i < this->m_p_general_config->axis_count; i++){
-        //                    if(this->m_p_axis_config[i].sync_axis == 1 && this->m_p_axis_config[i].master_axis_no == (phy_axis+1)){
-        //                        if(this->m_n_sync_axis_enable_mask & (0x01<<i)){
-        //                            MiCmdFrame mi_cmd;//主动轴相应的从动轴也需要设置当前位置为零点
-        //                            memset(&mi_cmd, 0x00, sizeof(mi_cmd));
-        //                            mi_cmd.data.cmd = CMD_MI_SET_AXIS_MACH_POS;
-        //                            mi_cmd.data.axis_index = i+1;
-
-        //                            int64_t pos = m_p_axis_config[i].axis_home_pos[0]*1e7;   //单位转换,0.1nm
-        //                            mi_cmd.data.data[0] = pos&0xFFFF;
-        //                            mi_cmd.data.data[1] = (pos>>16)&0xFFFF;
-
-        //                            this->m_p_mi_comm->WriteCmd(mi_cmd);
-
-        //                            this->SetRetRefFlag(i, true);
-        //                            this->m_p_pmc_reg->FReg().bits[0].in_ref_point |= (0x01<<i);   //置位到参考点标志
-        //                        }
-        //                    }
-        //                }
-        //            }
-
-        //			printf("return ref over flag : 0x%llx, 0x%hhx, 0x%hhx, 0x%hhx, 0x%hhx, 0x%hhx, 0x%hhx, 0x%hhx, 0x%hhx\n", this->m_p_pmc_reg->FReg().bits[0].in_ref_point,
-        //					m_p_pmc_reg->FReg().all[200], m_p_pmc_reg->FReg().all[201], m_p_pmc_reg->FReg().all[202], m_p_pmc_reg->FReg().all[203],
-        //					m_p_pmc_reg->FReg().all[204], m_p_pmc_reg->FReg().all[205], m_p_pmc_reg->FReg().all[206], m_p_pmc_reg->FReg().all[207]);
         this->m_n_mask_ret_ref &= ~(0x01<<phy_axis);
         m_n_ret_ref_step[phy_axis] = 0;
 
@@ -9959,7 +9982,7 @@ void ChannelEngine::EcatIncAxisFindRefWithZeroSignal(uint8_t phy_axis){
             this->m_b_ret_ref_auto = false;
             m_n_ret_ref_auto_cur = 0;
         }
-        std::cout << "step 17, home over" << std::endl;
+        std::cout << "step 18, home finish" << std::endl;
         break;
     case 20: //失败处理
         this->m_n_mask_ret_ref &= ~(0x01<<phy_axis);
@@ -9970,6 +9993,7 @@ void ChannelEngine::EcatIncAxisFindRefWithZeroSignal(uint8_t phy_axis){
             this->m_b_ret_ref_auto = false;
             m_n_ret_ref_auto_cur = 0;
         }
+        std::cout << "step 20, home failed" << std::endl;
         m_error_code = ERR_RET_REF_FAILED;
         CreateError(ERR_RET_REF_FAILED, WARNING_LEVEL, CLEAR_BY_MCP_RESET, 0, CHANNEL_ENGINE_INDEX, phy_axis+1);
         break;
@@ -10057,8 +10081,7 @@ void ChannelEngine::EcatIncAxisFindRefNoZeroSignal(uint8_t phy_axis){
         break;
     case 13:  //回参考点完成
         printf("axis %u return ref over\n", phy_axis);
-        if(this->m_p_axis_config[phy_axis].feedback_mode == ABSOLUTE_ENCODER_YASAKAWA ||
-                this->m_p_axis_config[phy_axis].feedback_mode == ABSOLUTE_ENCODER_PANASONIC ||
+        if(this->m_p_axis_config[phy_axis].feedback_mode == ABSOLUTE_ENCODER ||
                 this->m_p_axis_config[phy_axis].feedback_mode == LINEAR_ENCODER){  //绝对值需要发送设置参考点指令
             MiCmdFrame mi_cmd;
             memset(&mi_cmd, 0x00, sizeof(mi_cmd));
@@ -10110,11 +10133,12 @@ void ChannelEngine::SetSubAxisRefPoint(int axisID, double refPos)
             mi_cmd.data.cmd = CMD_MI_SET_AXIS_MACH_POS;
             mi_cmd.data.axis_index = i+1;
 
-            int64_t pos = refPos * 1000;
+            int64_t pos = (refPos + m_p_axis_config[i].benchmark_offset) * 1000;
             mi_cmd.data.data[0] = pos&0xFFFF;
             mi_cmd.data.data[1] = (pos>>16)&0xFFFF;
 
             std::cout << "sub axis_index: " << (int)mi_cmd.data.axis_index << std::endl;
+            std::cout << "CMD_MI_SET_AXIS_MACH_POS 0x136 " << "pos-> : " << pos << std::endl;
             this->m_p_mi_comm->WriteCmd(mi_cmd);
 
             this->SetRetRefFlag(i, true);
@@ -10133,6 +10157,31 @@ void ChannelEngine::ClearSubAxisRefFlag(int axisID)
     for (int i = 0; i < this->m_p_general_config->axis_count; ++i) {
         if(axisMask & (0x01<<i)){
             this->SetRetRefFlag(i, false);
+        }
+    }
+}
+
+
+/**
+ * @brief 清除绝对式零点编码器值
+ * @param axisID : 轴ID
+ */
+void ChannelEngine::ClearAxisRefEncoder(int axisID)
+{
+    if (axisID > 0 && axisID <m_p_general_config->axis_count)
+    {
+        this->m_p_axis_config[axisID].ref_encoder = kAxisRefNoDef;
+        g_ptr_parm_manager->UpdateAxisRef(axisID, kAxisRefNoDef);
+        this->NotifyHmiAxisRefChanged(axisID);
+
+        int axisMask = GetSyncAxisCtrl()->GetSlaveAxis(axisID);
+        for (int i = 0; i < this->m_p_general_config->axis_count; ++i) {
+            if(axisMask & (0x01<<i)){
+                std::cout << "ChannelEngine::ClearAxisRefEncoder " << axisID << std::endl;
+                this->m_p_axis_config[i].ref_encoder = kAxisRefNoDef;
+                g_ptr_parm_manager->UpdateAxisRef(i, kAxisRefNoDef);
+                this->NotifyHmiAxisRefChanged(i);
+            }
         }
     }
 }
@@ -10614,9 +10663,7 @@ void ChannelEngine::EcatAxisFindRefWithZeroSignal(uint8_t phy_axis){
     //	uint8_t ret_mode = 0;   //回参考点方式
     uint8_t chn = 0, chn_axis = 0;
     double dis = 0;      //移动距离
-    //	static double ret_ref_start_pos[kMaxAxisNum];
 
-    //	ret_mode = m_p_axis_config[phy_axis].ret_ref_mode;
     dir = this->m_p_axis_config[phy_axis].ret_ref_dir?DIR_POSITIVE:DIR_NEGATIVE;  // 回参考点找粗基准方向
     dir_opt = (m_p_axis_config[phy_axis].ret_ref_change_dir==0)?dir*-1:dir;       //回参考点找精基准方向
     switch(this->m_n_ret_ref_step[phy_axis]){
@@ -10682,16 +10729,16 @@ void ChannelEngine::EcatAxisFindRefWithZeroSignal(uint8_t phy_axis){
         break;
     case 2:  //以回参考点速度向回参考点方向运动
         this->ManualMove(phy_axis, dir, this->m_p_axis_config[phy_axis].ret_ref_speed, 90000.0);
-        m_n_ret_ref_step[phy_axis] = 3;  //跳转下一步
+        m_n_ret_ref_step[phy_axis] = 3;
         std::cout << "step 2, ret_ref_speed: " << this->m_p_axis_config[phy_axis].ret_ref_speed << "dir: " << (int)dir << std::endl;
         break;
     case 3:  //触发粗基准信号，停止
         if(this->CheckAxisRefBaseSignal(phy_axis, dir)){
             this->ManualMoveStop(phy_axis);
-            gettimeofday(&this->m_time_ret_ref[phy_axis], NULL);   //记录起始时间
-            m_n_ret_ref_step[phy_axis] = 4;  //跳转下一步
+            gettimeofday(&this->m_time_ret_ref[phy_axis], NULL);
+            m_n_ret_ref_step[phy_axis] = 4;
             this->SendMonitorData(false, false);
-            std::cout << "step 3, axisPos: " << this->GetPhyAxisMachPosIntp(phy_axis) << std::endl;
+            std::cout << "step 3, find signal pos: " << this->GetPhyAxisMachPosIntp(phy_axis) << std::endl;
         }
         else{
             //	this->ManualMove(phy_axis, dir, this->m_p_axis_config[phy_axis].ret_ref_speed,1.0);
@@ -10702,14 +10749,13 @@ void ChannelEngine::EcatAxisFindRefWithZeroSignal(uint8_t phy_axis){
         gettimeofday(&time_now, NULL);
         unsigned int time_elpase = (time_now.tv_sec-m_time_ret_ref[phy_axis].tv_sec)*1000000+time_now.tv_usec-m_time_ret_ref[phy_axis].tv_usec;
         if(time_elpase >= 1000000){ //延时1000ms
-            m_n_ret_ref_step[phy_axis] = 5;  //跳转下一步
+            m_n_ret_ref_step[phy_axis] = 5;
             this->SendMonitorData(false, false);
-            std::cout << "step 4, axisPos: " << this->GetPhyAxisMachPosIntp(phy_axis) << std::endl;
+            std::cout << "step 4, wait for 1000ms, axisPos: " << this->GetPhyAxisMachPosIntp(phy_axis) << std::endl;
         }
     }
         break;
     case 5:{  //有基准， 低速回退至粗基准信号消失,
-        //	printf("return ref step 5\n");
         double move_length = this->m_p_axis_config[phy_axis].move_pr*2;
         if(move_length>10.0) {
             move_length = 10.0;
@@ -10747,10 +10793,10 @@ void ChannelEngine::EcatAxisFindRefWithZeroSignal(uint8_t phy_axis){
             //				m_n_get_cur_encoder_count = 0;  //复位获取当前编码器次数
             if(!this->CheckAxisRefBaseSignal(phy_axis, dir)){
                 m_n_ret_ref_step[phy_axis] = 8;  //跳转下一步
-                std::cout << "step 7" << std::endl;
+                std::cout << "step 7, wait for 600" << std::endl;
             }else{      //如果又发现粗基准有信号，则继续回退
                 m_n_ret_ref_step[phy_axis] = 5;  //回跳至第5步
-                std::cout << "step 7, goback 5" << std::endl;
+                std::cout << "step 7, goback 5, wait for 600" << std::endl;
             }
 
         }
@@ -10774,107 +10820,148 @@ void ChannelEngine::EcatAxisFindRefWithZeroSignal(uint8_t phy_axis){
         //			gettimeofday(&this->m_time_ret_ref[phy_axis], nullptr);   //记录起始时间，延时300ms
 
         m_n_ret_ref_step[phy_axis] = 9;  //跳转下一步
-        std::cout << "step 9, CMD_MI_SET_REF_POINT" << std::endl;
+        std::cout << "step 9, CMD_MI_SET_REF_POINT 0x011A " << std::endl;
     }
         break;
     case 9: //等待设置参考点完成，在Mi指令响应处理函数中处理
-
         break;
-    case 10: //等待轴移动到位,完成
+
+    case 10:{
+        struct timeval time_now;
+        gettimeofday(&time_now, NULL);
+        unsigned int time_elpase = (time_now.tv_sec-m_time_ret_ref[phy_axis].tv_sec)*1000000+time_now.tv_usec-m_time_ret_ref[phy_axis].tv_usec;
+        if (time_elpase >= 200000)
+        {
+            this->m_p_mi_comm->ReadPhyAxisCurFedBckPos(m_df_phy_axis_pos_feedback, m_df_phy_axis_pos_intp,m_df_phy_axis_speed_feedback,
+                                                       m_df_phy_axis_torque_feedback, m_p_general_config->axis_count);
+            if (GetSyncAxisCtrl()->CheckSyncState(phy_axis) == 1)
+            {//重新建立主从轴关系
+                double machPos = this->GetPhyAxisMachPosFeedback(phy_axis);
+                std::cout << "machPos:" << machPos << std::endl;
+                SetSubAxisRefPoint(phy_axis, machPos);
+            }
+            gettimeofday(&this->m_time_ret_ref[phy_axis], NULL);
+            m_n_ret_ref_step[phy_axis]++;
+            std::cout << "step 10\n";
+        }
+    }
+        break;
+    case 11:{ //延时完成
+        struct timeval time_now;
+        gettimeofday(&time_now, NULL);
+        unsigned int time_elpase = (time_now.tv_sec-m_time_ret_ref[phy_axis].tv_sec)*1000000+time_now.tv_usec-m_time_ret_ref[phy_axis].tv_usec;
+        if(time_elpase >= 200000){ //延时200ms
+            m_n_ret_ref_step[phy_axis]++;
+            std::cout << "step 11, wait for 200ms" << std::endl;
+        }
+    }
+        break;
+    case 12: { //运动到偏移坐标
+        this->ManualMoveAbs(phy_axis, m_p_axis_config[phy_axis].ret_ref_speed, m_p_axis_config[phy_axis].ref_offset_pos);
+        m_n_ret_ref_step[phy_axis]++;
+        std::cout << "step 12, move to 0" << std::endl;
+    }
+        break;
+    case 13: { //等待轴运动完成
+        double dis = m_p_axis_config[phy_axis].ref_offset_pos;
+        if(fabs(this->GetPhyAxisMachPosFeedback(phy_axis) - dis) <= 0.010){  //到位
+            m_n_ret_ref_step[phy_axis]++;  //跳转下一步
+            gettimeofday(&this->m_time_ret_ref[phy_axis], NULL);
+            std::cout << "step 13\n";
+        }
+    }
+        break;
+    case 14: { //等待轴停稳
+        struct timeval time_now;
+        gettimeofday(&time_now, NULL);
+        unsigned int time_elpase = (time_now.tv_sec-m_time_ret_ref[phy_axis].tv_sec)*1000000+time_now.tv_usec-m_time_ret_ref[phy_axis].tv_usec;
+        if(time_elpase >= 1000000){ //延时1000ms
+            gettimeofday(&this->m_time_ret_ref[phy_axis], NULL);
+            //if (m_p_axis_config[phy_axis].ref_offset_pos)
+            if(1)
+            { //设置零点偏移
+                MiCmdFrame mi_cmd;
+                memset(&mi_cmd, 0x00, sizeof(mi_cmd));
+                mi_cmd.data.cmd = CMD_MI_SET_AXIS_MACH_POS;
+                mi_cmd.data.axis_index = phy_axis+1;
+                mi_cmd.data.data[0] = 0;
+                mi_cmd.data.data[1] = 0;
+                this->m_p_mi_comm->WriteCmd(mi_cmd);
+                m_n_ret_ref_step[phy_axis]++;
+            }
+            else
+            {
+                m_n_ret_ref_step[phy_axis] = 16;
+            }
+
+            std::cout << "step 14, wait for 2000ms" << std::endl;
+            printf("step 14, return ref[%hhu, %lf, %lf]\n", phy_axis, this->GetPhyAxisMachPosFeedback(phy_axis), 0);
+        }
+    }
+        break;
+    case 15: { //设置零点偏移后，重新建立主丛轴关系
+        struct timeval time_now;
+        gettimeofday(&time_now, NULL);
+        unsigned int time_elpase = (time_now.tv_sec-m_time_ret_ref[phy_axis].tv_sec)*1000000+time_now.tv_usec-m_time_ret_ref[phy_axis].tv_usec;
+        if(time_elpase >= 200000){ //延时200ms
+            if (GetSyncAxisCtrl()->CheckSyncState(phy_axis) == 1)
+            {
+                SetSubAxisRefPoint(phy_axis, 0);
+            }
+            m_n_ret_ref_step[phy_axis]++;
+            gettimeofday(&this->m_time_ret_ref[phy_axis], NULL);
+            std::cout << "step 15, wait for 200ms" << std::endl;
+        }
+    }
+        break;
+    case 16: {
+        struct timeval time_now;
+        gettimeofday(&time_now, NULL);
+        unsigned int time_elpase = (time_now.tv_sec-m_time_ret_ref[phy_axis].tv_sec)*1000000+time_now.tv_usec-m_time_ret_ref[phy_axis].tv_usec;
+        if(time_elpase >= 200000){ //延时200ms
+//            if(this->m_p_axis_config[phy_axis].feedback_mode == ABSOLUTE_ENCODER ||
+//                    this->m_p_axis_config[phy_axis].feedback_mode == LINEAR_ENCODER){  //绝对值需获取机械零点的编码器值并保存，方便断点后恢复坐标
+//                MiCmdFrame mi_cmd;
+//                memset(&mi_cmd, 0x00, sizeof(mi_cmd));
+//                mi_cmd.data.cmd = CMD_MI_GET_ZERO_ENCODER;
+//                mi_cmd.data.axis_index = phy_axis+1;
+
+//                this->m_p_mi_comm->WriteCmd(mi_cmd);
+//            }
+            m_n_ret_ref_step[phy_axis]++;
+            std::cout << "step 16, get encoder" << std::endl;
+        }
+    }
+        break;
+
+    case 17: {
+        struct timeval time_now;
+        gettimeofday(&time_now, NULL);
+        unsigned int time_elpase = (time_now.tv_sec-m_time_ret_ref[phy_axis].tv_sec)*1000000+time_now.tv_usec-m_time_ret_ref[phy_axis].tv_usec;
+        if(time_elpase >= 200000){ //延时200ms
+            this->ManualMoveAbs(phy_axis, m_p_axis_config[phy_axis].ret_ref_speed, m_p_axis_config[phy_axis].axis_home_pos[0]);
+            m_n_ret_ref_step[phy_axis]++;
+            std::cout << "step 17, move to " << m_p_axis_config[phy_axis].axis_home_pos[0] << std::endl;
+        }
+    }
+        break;
+
+    case 18: //等待轴移动到位,完成
 #ifdef USES_RET_REF_TO_MACH_ZERO
         dis = 0;    //机械零
 #else
         dis = this->m_p_axis_config[phy_axis].axis_home_pos[0];   // 原点坐标
 #endif
         this->SendMonitorData(false, false);  //再次读取实时位置
-
         if(fabs(this->GetPhyAxisMachPosFeedback(phy_axis)- dis) <= 0.010){  //到位
-            if (m_p_axis_config[phy_axis].ref_z_distance_max == 0
-                    || m_p_axis_config[phy_axis].ref_z_distance_max > this->m_p_axis_config[phy_axis].ref_base_diff)
-            {
-                m_n_ret_ref_step[phy_axis] = 11;  //跳转下一步
-                std::cout << "step 10 " << std::endl;
-            }
-            else
-            {
-                m_error_code = ERR_RET_REF_Z_ERR;
-                m_n_ret_ref_step[phy_axis] = 20;
-                std::cout << "step 10, goto 20. z_distance_max " << m_p_axis_config[phy_axis].ref_z_distance_max << std::endl;
-            }
-        }
-
-        break;
-    case 11:  //回参考点完成
-        if (this->m_p_axis_config[phy_axis].ref_offset_pos)
-        {
-            this->ManualMoveAbs(phy_axis, this->m_p_axis_config[phy_axis].ret_ref_speed, this->m_p_axis_config[phy_axis].ref_offset_pos); //有基准，
-            std::cout << "step 11, ref_offset_pos: " << m_p_axis_config[phy_axis].ref_offset_pos << std::endl;
-            m_n_ret_ref_step[phy_axis] = 12;
-        }
-        else
-        {
-            std::cout << "step 11, goto 15" << std::endl;
-            m_n_ret_ref_step[phy_axis] = 15;
+                m_n_ret_ref_step[phy_axis]++;  //跳转下一步
+                printf("step 18, return ref[%hhu, %lf, %lf]\n", phy_axis, this->GetPhyAxisMachPosFeedback(phy_axis), dis);
         }
         break;
-    case 12://运动停止
-        if(fabs(this->GetPhyAxisMachPosFeedback(phy_axis) - this->m_p_axis_config[phy_axis].ref_offset_pos) <= 0.010){  //到位
-            gettimeofday(&this->m_time_ret_ref[phy_axis], NULL);   //记录起始时间，延时600ms
-            m_n_ret_ref_step[phy_axis] = 13;
-            std::cout << "step 12" << std::endl;
-        }
-        break;
-    case 13: {
-        struct timeval time_now;
-        gettimeofday(&time_now, NULL);
-        unsigned int time_elpase = (time_now.tv_sec-m_time_ret_ref[phy_axis].tv_sec)*1000000+time_now.tv_usec-m_time_ret_ref[phy_axis].tv_usec;
-        if(time_elpase >= 600000){ //延时600ms
-            MiCmdFrame mi_cmd;
-            memset(&mi_cmd, 0x00, sizeof(mi_cmd));
-            mi_cmd.data.cmd = CMD_MI_SET_AXIS_MACH_POS;
-            mi_cmd.data.axis_index = phy_axis+1;
-            mi_cmd.data.data[0] = 0;
-            mi_cmd.data.data[1] = 0;
-            this->m_p_mi_comm->WriteCmd(mi_cmd);
-            gettimeofday(&this->m_time_ret_ref[phy_axis], NULL);   //记录起始时间，延时200ms
-            m_n_ret_ref_step[phy_axis] = 14;
-            std::cout << "step 13 CMD_MI_SET_AXIS_MACH_POS" << std::endl;
-        }
-    }
-        break;
-    case 14: {
-        struct timeval time_now;
-        gettimeofday(&time_now, NULL);
-        unsigned int time_elpase = (time_now.tv_sec-m_time_ret_ref[phy_axis].tv_sec)*1000000+time_now.tv_usec-m_time_ret_ref[phy_axis].tv_usec;
-        if(time_elpase >= 200000) {//延时200ms,等待MI处理
-            m_n_ret_ref_step[phy_axis] = 15;
-            std::cout << "step 14" << std::endl;
-        }
-    }
-        break;
-    case 15:
+    case 19:
         this->SetRetRefFlag(phy_axis, true);
         this->m_p_pmc_reg->FReg().bits[0].in_ref_point |= (0x01<<phy_axis);   //置位到参考点标志
 
-        if(this->m_p_axis_config[phy_axis].feedback_mode == ABSOLUTE_ENCODER_YASAKAWA ||
-                this->m_p_axis_config[phy_axis].feedback_mode == ABSOLUTE_ENCODER_PANASONIC ||
-                this->m_p_axis_config[phy_axis].feedback_mode == LINEAR_ENCODER){  //绝对值需获取机械零点的编码器值并保存，方便断点后恢复坐标
-            MiCmdFrame mi_cmd;
-            memset(&mi_cmd, 0x00, sizeof(mi_cmd));
-            mi_cmd.data.cmd = CMD_MI_GET_ZERO_ENCODER;
-            mi_cmd.data.axis_index = phy_axis+1;
-
-            this->m_p_mi_comm->WriteCmd(mi_cmd);
-        }
-
-        if (GetSyncAxisCtrl()->CheckSyncState(phy_axis) == 1)
-        {//从动轴建立机械坐标
-            SetSubAxisRefPoint(phy_axis, m_p_axis_config[phy_axis].axis_home_pos[0]);
-        }
-
-        //			printf("return ref over flag : 0x%llx, 0x%hhx, 0x%hhx, 0x%hhx, 0x%hhx, 0x%hhx, 0x%hhx, 0x%hhx, 0x%hhx\n", this->m_p_pmc_reg->FReg().bits[0].in_ref_point,
-        //					m_p_pmc_reg->FReg().all[200], m_p_pmc_reg->FReg().all[201], m_p_pmc_reg->FReg().all[202], m_p_pmc_reg->FReg().all[203],
-        //					m_p_pmc_reg->FReg().all[204], m_p_pmc_reg->FReg().all[205], m_p_pmc_reg->FReg().all[206], m_p_pmc_reg->FReg().all[207]);
         this->m_n_mask_ret_ref &= ~(0x01<<phy_axis);
         m_n_ret_ref_step[phy_axis] = 0;
 
@@ -10883,7 +10970,7 @@ void ChannelEngine::EcatAxisFindRefWithZeroSignal(uint8_t phy_axis){
             this->m_b_ret_ref_auto = false;
             m_n_ret_ref_auto_cur = 0;
         }
-        std::cout << "step 15, home over" << std::endl;
+        std::cout << "step 19, ref finish" << std::endl;
         break;
     case 20: //失败处理
         this->m_n_mask_ret_ref &= ~(0x01<<phy_axis);
@@ -11095,7 +11182,7 @@ void ChannelEngine::EcatAxisFindRefWithZeroSignal2(uint8_t phy_axis){
 void ChannelEngine::EcatAxisFindRefNoZeroSignal(uint8_t phy_axis){
     switch(this->m_n_ret_ref_step[phy_axis]){
     case 0: {// 计算原点偏移，设置原点
-        printf("return ref step 0: send cmd to mi, set ref point\n");
+        std::cout << "ChannelEngine::EcatAxisFindRefNoZeroSignal" << std::endl;
 
         if (GetSyncAxisCtrl()->CheckSyncState(phy_axis) == 1)
         {//主动轴相应的从动轴也需要清除回零标志
@@ -11116,16 +11203,135 @@ void ChannelEngine::EcatAxisFindRefNoZeroSignal(uint8_t phy_axis){
         this->m_p_mi_comm->WriteCmd(cmd);
 
 
-        m_n_ret_ref_step[phy_axis] = 1;  //跳转下一步
-        printf("return ref, goto step 1\n");
-
+        m_n_ret_ref_step[phy_axis]++;  //跳转下一步
+        std::cout << "Step 0, CMD_MI_SET_REF_POINT 0x011A" << std::endl;
     }
         break;
     case 1:  //等待设置参考点完成，在Mi指令响应处理函数中处理
-
         break;
 
-    case 10:{  //等待轴移动到位,完成！
+    case 10:{
+        struct timeval time_now;
+        gettimeofday(&time_now, NULL);
+        unsigned int time_elpase = (time_now.tv_sec-m_time_ret_ref[phy_axis].tv_sec)*1000000+time_now.tv_usec-m_time_ret_ref[phy_axis].tv_usec;
+        if (time_elpase >= 200000)
+        {
+            this->m_p_mi_comm->ReadPhyAxisCurFedBckPos(m_df_phy_axis_pos_feedback, m_df_phy_axis_pos_intp,m_df_phy_axis_speed_feedback,
+                                                       m_df_phy_axis_torque_feedback, m_p_general_config->axis_count);
+            if (GetSyncAxisCtrl()->CheckSyncState(phy_axis) == 1)
+            {//重新建立主从关系
+                double machPos = this->GetPhyAxisMachPosFeedback(phy_axis);
+                std::cout << "machPos:" << machPos << std::endl;
+                SetSubAxisRefPoint(phy_axis, machPos);
+            }
+            gettimeofday(&this->m_time_ret_ref[phy_axis], NULL);
+            m_n_ret_ref_step[phy_axis]++;
+            std::cout << "step 10\n";
+        }
+    }
+        break;
+    case 11:{ //延时完成
+        struct timeval time_now;
+        gettimeofday(&time_now, NULL);
+        unsigned int time_elpase = (time_now.tv_sec-m_time_ret_ref[phy_axis].tv_sec)*1000000+time_now.tv_usec-m_time_ret_ref[phy_axis].tv_usec;
+        if(time_elpase >= 200000){ //延时200ms
+            m_n_ret_ref_step[phy_axis]++;
+            std::cout << "step 11, wait for 200ms" << std::endl;
+        }
+    }
+        break;
+    case 12:{ //运动到偏移坐标
+        //this->ManualMoveAbs(phy_axis, m_p_axis_config[phy_axis].ret_ref_speed, m_p_axis_config[phy_axis].ref_offset_pos);
+        this->ManualMoveAbs(phy_axis, m_p_axis_config[phy_axis].ret_ref_speed, 0);
+        m_n_ret_ref_step[phy_axis]++;
+        std::cout << "step 12, move to " << m_p_axis_config[phy_axis].ref_offset_pos << std::endl;
+    }
+        break;
+    case 13:{ //等待轴运动完成
+        double dis = 0;
+        if(fabs(this->GetPhyAxisMachPosFeedback(phy_axis) - dis) <= 0.010){  //到位
+            m_n_ret_ref_step[phy_axis]++;  //跳转下一步
+            gettimeofday(&this->m_time_ret_ref[phy_axis], NULL);
+            std::cout << "step 13\n";
+        }
+    }
+        break;
+    case 14:{ //等待轴停稳
+        struct timeval time_now;
+        gettimeofday(&time_now, NULL);
+        unsigned int time_elpase = (time_now.tv_sec-m_time_ret_ref[phy_axis].tv_sec)*1000000+time_now.tv_usec-m_time_ret_ref[phy_axis].tv_usec;
+        if(time_elpase >= 1000000){ //延时1000ms
+            printf("step 14, return ref[%hhu, %lf, %lf]\n", phy_axis, this->GetPhyAxisMachPosFeedback(phy_axis), 0.0);
+
+            if (1)
+            {
+                MiCmdFrame mi_cmd;//设置主轴偏移坐标
+                memset(&mi_cmd, 0x00, sizeof(mi_cmd));
+                mi_cmd.data.cmd = CMD_MI_SET_AXIS_MACH_POS;
+                mi_cmd.data.axis_index = phy_axis+1;
+                mi_cmd.data.data[0] = 0;
+                mi_cmd.data.data[1] = 0;
+                this->m_p_mi_comm->WriteCmd(mi_cmd);
+                m_n_ret_ref_step[phy_axis]++;
+                gettimeofday(&this->m_time_ret_ref[phy_axis], NULL);
+            }
+            else
+            {
+                m_n_ret_ref_step[phy_axis] = 16;
+            }
+            std::cout << "step 14, wait for 2000ms, CMD_MI_SET_AXIS_MACH_POS 0x136" << std::endl;
+        }
+    }
+        break;
+    case 15:{ //设置从轴偏移坐标
+        struct timeval time_now;
+        gettimeofday(&time_now, NULL);
+        unsigned int time_elpase = (time_now.tv_sec-m_time_ret_ref[phy_axis].tv_sec)*1000000+time_now.tv_usec-m_time_ret_ref[phy_axis].tv_usec;
+        if(time_elpase >= 200000){ //延时200ms
+            if (GetSyncAxisCtrl()->CheckSyncState(phy_axis) == 1)
+            {
+                SetSubAxisRefPoint(phy_axis, 0);
+            }
+            gettimeofday(&this->m_time_ret_ref[phy_axis], NULL);
+            m_n_ret_ref_step[phy_axis]++;
+            std::cout << "step 15, wait for 200ms" << std::endl;
+        }
+    }
+        break;
+    case 16:{ //运动到第一参考点
+        struct timeval time_now;
+        gettimeofday(&time_now, NULL);
+        unsigned int time_elpase = (time_now.tv_sec-m_time_ret_ref[phy_axis].tv_sec)*1000000+time_now.tv_usec-m_time_ret_ref[phy_axis].tv_usec;
+        if(time_elpase >= 200000){ //延时200ms
+//            if(this->m_p_axis_config[phy_axis].feedback_mode == ABSOLUTE_ENCODER ||
+//                this->m_p_axis_config[phy_axis].feedback_mode == LINEAR_ENCODER){  //绝对值需要发送设置参考点指令
+//                MiCmdFrame mi_cmd;
+//                memset(&mi_cmd, 0x00, sizeof(mi_cmd));
+//                mi_cmd.data.cmd = CMD_MI_GET_ZERO_ENCODER;
+//                mi_cmd.data.axis_index = phy_axis+1;
+
+//                this->m_p_mi_comm->WriteCmd(mi_cmd);
+//                gettimeofday(&this->m_time_ret_ref[phy_axis], NULL);
+//            }
+            m_n_ret_ref_step[phy_axis]++;
+            std::cout << "step 16, get encoder" << std::endl;
+        }
+    }
+        break;
+
+    case 17:{
+        struct timeval time_now;
+        gettimeofday(&time_now, NULL);
+        unsigned int time_elpase = (time_now.tv_sec-m_time_ret_ref[phy_axis].tv_sec)*1000000+time_now.tv_usec-m_time_ret_ref[phy_axis].tv_usec;
+        if(time_elpase >= 200000){ //延时200ms
+            this->ManualMoveAbs(phy_axis, m_p_axis_config[phy_axis].ret_ref_speed, m_p_axis_config[phy_axis].axis_home_pos[0]);
+            m_n_ret_ref_step[phy_axis]++;
+            std::cout << "step 17, move to " << m_p_axis_config[phy_axis].axis_home_pos[0] << std::endl;
+        }
+    }
+        break;
+
+    case 18:{  //等待轴移动到位,完成！
 #ifdef USES_RET_REF_TO_MACH_ZERO
         double dis = 0;    //机械零
 #else
@@ -11133,39 +11339,33 @@ void ChannelEngine::EcatAxisFindRefNoZeroSignal(uint8_t phy_axis){
 #endif
         this->SendMonitorData(false, false);  //再次读取实时位置
         if(fabs(this->GetPhyAxisMachPosFeedback(phy_axis)- dis) <= 0.010){  //到位
-            m_n_ret_ref_step[phy_axis] = 11;  //跳转下一步
-            printf("return ref[%hhu, %lf, %lf], goto step 11\n", phy_axis, this->GetPhyAxisMachPosFeedback(phy_axis), dis);
+            m_n_ret_ref_step[phy_axis]++;  //跳转下一步
+            printf("step 18, return ref[%hhu, %lf, %lf]\n", phy_axis, this->GetPhyAxisMachPosFeedback(phy_axis), dis);
         }
         break;
     }
-    case 11:  //回参考点完成
-        printf("axis %u return ref over\n", phy_axis);
-        if(this->m_p_axis_config[phy_axis].feedback_mode == ABSOLUTE_ENCODER_YASAKAWA ||
-                this->m_p_axis_config[phy_axis].feedback_mode == ABSOLUTE_ENCODER_PANASONIC ||
-                this->m_p_axis_config[phy_axis].feedback_mode == LINEAR_ENCODER){  //绝对值需要发送设置参考点指令
-            MiCmdFrame mi_cmd;
-            memset(&mi_cmd, 0x00, sizeof(mi_cmd));
-            mi_cmd.data.cmd = CMD_MI_GET_ZERO_ENCODER;
-            mi_cmd.data.axis_index = phy_axis+1;
+    case 19:  //回参考点完成
+//        if(this->m_p_axis_config[phy_axis].feedback_mode == ABSOLUTE_ENCODER ||
+//                this->m_p_axis_config[phy_axis].feedback_mode == LINEAR_ENCODER){  //绝对值需要发送设置参考点指令
+//            MiCmdFrame mi_cmd;
+//            memset(&mi_cmd, 0x00, sizeof(mi_cmd));
+//            mi_cmd.data.cmd = CMD_MI_GET_ZERO_ENCODER;
+//            mi_cmd.data.axis_index = phy_axis+1;
 
-            this->m_p_mi_comm->WriteCmd(mi_cmd);
-        }
+//            this->m_p_mi_comm->WriteCmd(mi_cmd);
+//        }
         this->SetRetRefFlag(phy_axis, true);
         this->m_p_pmc_reg->FReg().bits[0].in_ref_point |= (0x01<<phy_axis);   //置位到参考点标志
 
         this->m_n_mask_ret_ref &= ~(0x01<<phy_axis);
         m_n_ret_ref_step[phy_axis] = 0;
 
-        if (GetSyncAxisCtrl()->CheckSyncState(phy_axis) == 1)
-        {//从动轴建立机械坐标
-            SetSubAxisRefPoint(phy_axis, m_p_axis_config[phy_axis].axis_home_pos[0]);
-        }
-
         if(m_n_mask_ret_ref == 0){
             this->m_b_ret_ref = false;
             this->m_b_ret_ref_auto = false;
             m_n_ret_ref_auto_cur = 0;
         }
+        std::cout << "step 19, ref finish\n";
         break;
     case 20: //失败处理
         this->m_n_mask_ret_ref &= ~(0x01<<phy_axis);
@@ -11176,6 +11376,7 @@ void ChannelEngine::EcatAxisFindRefNoZeroSignal(uint8_t phy_axis){
             this->m_b_ret_ref_auto = false;
             m_n_ret_ref_auto_cur = 0;
         }
+        std::cout << "step 20, ref failed\n";
         m_error_code = ERR_RET_REF_FAILED;
         CreateError(ERR_RET_REF_FAILED, WARNING_LEVEL, CLEAR_BY_MCP_RESET, 0, CHANNEL_ENGINE_INDEX, phy_axis);
         break;
@@ -11190,12 +11391,6 @@ void ChannelEngine::EcatAxisFindRefNoZeroSignal(uint8_t phy_axis){
  */
 void ChannelEngine::ReturnRefPoint(){
 
-    //	int8_t dir = 0, dir_opt;   //回参考点方向
-    //	uint8_t ret_mode = 0;   //回参考点方式
-    //	uint8_t chn = 0, chn_axis = 0;
-    //	double dis = 0;      //移动距离
-    //	static double ret_ref_start_pos[kMaxAxisNum];
-    //	static uint8_t ret_ref_auto_cur = 0;    //自动回参考点时，当前顺序号
     int count = 0;
     for(uint i = 0; i < this->m_p_general_config->axis_count; i++){
         if((m_n_mask_ret_ref & (0x01<<i)) == 0 /*||
@@ -11205,8 +11400,7 @@ void ChannelEngine::ReturnRefPoint(){
 
         if (GetSyncAxisCtrl()->CheckSyncState(i) == 2)
         {//从动轴不能回零
-            std::cout << "sub axis can't home: " << (int)i << std::endl;
-            CreateError(ERR_RET_SYNC_ERR, WARNING_LEVEL, CLEAR_BY_MCP_RESET, 0, CHANNEL_ENGINE_INDEX, i);
+            CreateError(ERR_RET_SYNC_ERR, WARNING_LEVEL, CLEAR_BY_MCP_RESET, 0, CHANNEL_ENGINE_INDEX, i); 
             continue;
         }
         if(this->m_b_ret_ref_auto){
@@ -11214,41 +11408,27 @@ void ChannelEngine::ReturnRefPoint(){
                 continue;
             count++;
         }
-        if(this->m_p_axis_config[i].axis_interface == VIRTUAL_AXIS){// 虚拟轴
-            this->AxisFindRefNoZeroSignal(i);   // 直接设置零点
-
-        }else if(this->m_p_axis_config[i].axis_interface == BUS_AXIS){     // 总线轴
-            //设置回零标志
+        if(this->m_p_axis_config[i].axis_interface == VIRTUAL_AXIS)
+        {// 虚拟轴
+            this->AxisFindRefNoZeroSignal(i);
+        }
+        else if(this->m_p_axis_config[i].axis_interface == BUS_AXIS)
+        {// 总线轴
             this->SetInRetRefFlag(i, true);
 
-            if(this->m_p_axis_config[i].feedback_mode == NO_ENCODER) {   // 步进电机，无反馈
-                if(this->m_p_axis_config[i].ret_ref_mode == 1){
-                    this->AxisFindRefWithZeroSignal(i); // 根据零点信号设置零点
-                }else{
-                    this->AxisFindRefNoZeroSignal(i);  // 直接设置零点
-                }
-                /*}else if(this->m_p_axis_config[i].feedback_mode == INCREMENTAL_ENCODER) {   //增量式编码器
-                //if(this->m_p_axis_config[i].ret_ref_mode == 1){//  总线有基准回零
-                    this->EcatIncAxisFindRefWithZeroSignal(i);                          //增量式编码器只支持有挡块回零
-                }else if(this->m_p_axis_config[i].ret_ref_mode == 2){//  总线无基准回零
-                    this->EcatIncAxisFindRefNoZeroSignal(i);
-                }
-            }else if(this->m_p_axis_config[i].ret_ref_mode == 1){
-                this->EcatAxisFindRefWithZeroSignal(i);    //  总线有基准回零
-            }else if(this->m_p_axis_config[i].ret_ref_mode == 2){
-                this->EcatAxisFindRefNoZeroSignal(i);      //  总线无基准回零
-            }else if(this->m_p_axis_config[i].ret_ref_mode == 4){  //总线双基准回零，粗、精基准都是IO输入信号
-                this->EcatAxisFindRefWithZeroSignal2(i);
-            }else if(this->m_p_axis_config[i].ret_ref_mode == 0 &&
-                    (this->m_p_axis_config[i].feedback_mode == ABSOLUTE_ENCODER_YASAKAWA || this->m_p_axis_config[i].feedback_mode == ABSOLUTE_ENCODER_PANASONIC)){  //绝对值编码器并且禁止回零
-                this->AxisFindRefNoZeroSignal(i);   // 直接设置零点
-            }*/
-            }else if(this->m_p_axis_config[i].feedback_mode == INCREMENTAL_ENCODER) {   //增量式编码器
-                this->EcatIncAxisFindRefWithZeroSignal(i);//增量式编码器只支持有挡块回零
+            if(this->m_p_axis_config[i].feedback_mode == NO_ENCODER)
+            {   // 步进电机，无反馈
+                CreateError(ERR_RET_SYNC_ERR, WARNING_LEVEL, CLEAR_BY_MCP_RESET, 0, CHANNEL_ENGINE_INDEX, i);
+            }else if(this->m_p_axis_config[i].feedback_mode == INCREMENTAL_ENCODER)
+            {   //增量式编码器
+                if (this->m_p_axis_config[i].ret_ref_mode == 1)
+                    this->EcatIncAxisFindRefWithZeroSignal(i);//增量式编码器只支持有挡块回零
+                else //不支持无挡块回零
+                    CreateError(ERR_RET_SYNC_ERR, WARNING_LEVEL, CLEAR_BY_MCP_RESET, 0, CHANNEL_ENGINE_INDEX, i);
             }
             else
-            {
-                if (this->m_p_axis_config[i].absolute_ref_mode == 2)//绝对式有挡块回零
+            {  //绝对式编码器
+                if (this->m_p_axis_config[i].ret_ref_mode == 1)//绝对式有挡块回零
                 {
                     this->EcatAxisFindRefWithZeroSignal(i);
                 }
@@ -11265,279 +11445,9 @@ void ChannelEngine::ReturnRefPoint(){
                 }
             }
         }else if(this->m_p_axis_config[i].axis_interface == ANALOG_AXIS){   // 非总线轴
-            //设置回零标志
-            this->SetInRetRefFlag(i, true);
-
-            if(this->m_p_axis_config[i].feedback_mode == NO_ENCODER){   // 步进电机，无反馈
-                if(this->m_p_axis_config[i].ret_ref_mode == 1){
-                    this->AxisFindRefWithZeroSignal(i); // 根据零点信号设置零点
-                }
-                else{
-                    this->AxisFindRefNoZeroSignal(i);  // 直接设置零点
-                }
-            }
-            else if(this->m_p_axis_config[i].ret_ref_mode == 1){
-                this->PulseAxisFindRefWithZeroSignal(i);    //  脉冲模拟量型有基准回零
-            }
-            else if(this->m_p_axis_config[i].ret_ref_mode == 2){
-                this->PulseAxisFindRefNoZeroSignal(i);    // 脉冲模拟量型无基准回零
-            }
+            //不支持非总线轴
+            CreateError(ERR_RET_SYNC_ERR, WARNING_LEVEL, CLEAR_BY_MCP_RESET, 0, CHANNEL_ENGINE_INDEX, i);
         }
-
-        /*
-        ret_mode = m_p_axis_config[i].ret_ref_mode;
-        dir = this->m_p_axis_config[i].ret_ref_dir?DIR_POSITIVE:DIR_NEGATIVE;
-        dir_opt = (m_p_axis_config[i].ret_ref_change_dir==0)?dir*-1:dir;  //回参考点方向相反的方向
-
-        switch(this->m_n_ret_ref_step[i]){
-        case 0://检查原点信号
-            printf("return ref step 0, dir = %hhd, dir_opt=%hhd\n", dir, dir_opt);
-            this->SetRetRefFlag(i, false);   //复位回参考点完成标志
-            this->m_p_pmc_reg->FReg().bits[0].in_ref_point &= ~(0x01<<i);
-
-            if(this->CheckAxisRefBaseSignal(i, dir)){  //回退1.2个螺距
-                ret_ref_start_pos[i] = this->GetPhyAxisMachPosFeedback(i)+this->m_p_axis_config[i].move_pr*1.2;
-                this->ManualMove(i, dir*-1,
-                        this->m_p_axis_config[i].ret_ref_speed, this->m_p_axis_config[i].move_pr*1.2);
-
-                m_n_ret_ref_step[i] = 1;
-            }
-            else{
-                m_n_ret_ref_step[i] = 2;
-            }
-
-            break;
-        case 1://等待回退到位，并再次检查原点信号
-            printf("return ref step 1\n");
-            chn = this->GetAxisChannel(i, chn_axis);
-            if(chn != CHANNEL_ENGINE_INDEX){
-                if(fabs(this->GetPhyAxisMachPosFeedback(i) - ret_ref_start_pos[i]) <= 0.001){
-                    if(CheckAxisRefBaseSignal(i, dir)){
-                        m_n_ret_ref_step[i] = 0;
-                        break;
-                    }else{
-                        if(ret_mode == 2)  //无基准
-                            m_n_ret_ref_step[i] = 5;  //跳转下一步
-                        else if(ret_mode == 1)   //有基准
-                            m_n_ret_ref_step[i] = 2;  //跳转下一步
-                    }
-                }
-            }else if(this->m_p_axis_config[i].axis_pmc){  //PMC轴到位
-                if(this->m_n_run_axis_mask == 0 || (this->m_n_runover_axis_mask & (0x01L<<i))){
-                    if(CheckAxisRefBaseSignal(i, dir)){
-                        m_n_ret_ref_step[i] = 0;
-                        break;
-                    }else{
-                        if(ret_mode == 2)  //无基准
-                            m_n_ret_ref_step[i] = 5;  //跳转下一步
-                        else if(ret_mode == 1)   //有基准
-                            m_n_ret_ref_step[i] = 2;  //跳转下一步
-                    }
-                }
-            }
-            break;
-        case 2:{   //向MI发送开始回参考点命令
-    //		printf("return ref step 2\n");
-            MiCmdFrame cmd;
-            memset(&cmd, 0x00, sizeof(cmd));
-            cmd.data.cmd = CMD_MI_START_RET_REF;
-
-            cmd.data.axis_index = i+1;
-
-            this->m_p_mi_comm->WriteCmd(cmd);
-            m_n_ret_ref_step[i] = 3;  //跳转下一步
-            printf("return ref, goto step 3\n");
-        }
-            break;
-        case 3:  //以回参考点速度向回参考点方向运动
-    //		printf("return ref step 3\n");
-            this->ManualMove(i, dir, this->m_p_axis_config[i].ret_ref_speed, 90000.);
-            m_n_ret_ref_step[i] = 4;  //跳转下一步
-            printf("return ref, goto step 4\n");
-            break;
-        case 4:  //触发粗基准信号，停止
-    //		printf("return ref step 4\n");
-            if(this->CheckAxisRefBaseSignal(i, dir)){
-                this->ManualMoveStop(i);
-                gettimeofday(&this->m_time_ret_ref[phy_axis], NULL);   //记录起始时间，延时200ms
-                m_n_ret_ref_step[i] = 50;  //跳转下一步
-                printf("return ref, goto step 50\n");
-            }
-            break;
-        case 50:{//等待停止到位
-            struct timeval time_now;
-            gettimeofday(&time_now, NULL);
-            unsigned int time_elpase = (time_now.tv_sec-m_time_ret_ref[phy_axis].tv_sec)*1000000+time_now.tv_usec-m_time_ret_ref[phy_axis].tv_usec;
-            if(time_elpase >= 300000){ //延时300ms
-                m_n_ret_ref_step[i] = 5;  //跳转下一步
-                printf("return ref, goto step 5\n");
-            }
-        }
-            break;
-        case 5:
-            printf("return ref step 5\n");
-            if(ret_mode == 1)//有基准， 低速回退至粗基准信号消失, 速度：100mm/min
-                this->ManualMove(i, dir_opt, 100, this->m_p_axis_config[i].move_pr*2);
-            else if(ret_mode ==2){ //无基准，回参考点方向移动1.1个螺距
-                ret_ref_start_pos[i] = this->GetPhyAxisMachPosFeedback(i)+this->m_p_axis_config[i].move_pr*1.1;
-                this->ManualMove(i, dir, m_p_axis_config[i].ret_ref_speed, this->m_p_axis_config[i].move_pr*1.1);
-            }
-            m_n_ret_ref_step[i] = 6;  //跳转下一步
-            printf("return ref, goto step 6\n");
-
-            break;
-        case 6:
-        //	printf("return ref step 6\n");
-            if(ret_mode == 1){//有基准，等待粗基准信号消失
-                if(!this->CheckAxisRefBaseSignal(i, dir)){
-                    this->ManualMoveStop(i);
-
-                    gettimeofday(&this->m_time_ret_ref[phy_axis], NULL);   //记录起始时间，延时300ms
-
-                    m_n_ret_ref_step[i] = 70;  //跳转下一步
-                }
-            }else if(ret_mode == 2){  //无基准， 位置到位
-                if(fabs(this->GetPhyAxisMachPosFeedback(i) - ret_ref_start_pos[i]) <= 0.001){
-                    m_n_ret_ref_step[i] = 7;  //跳转下一步
-                }
-            }
-            break;
-        case 70:{ //等待停止到位
-            struct timeval time_now;
-            gettimeofday(&time_now, NULL);
-            unsigned int time_elpase = (time_now.tv_sec-m_time_ret_ref[phy_axis].tv_sec)*1000000+time_now.tv_usec-m_time_ret_ref[phy_axis].tv_usec;
-            if(time_elpase >= 800000){ //延时800ms
-                m_n_get_cur_encoder_count = 0;  //复位获取当前编码器次数
-                m_n_ret_ref_step[i] = 7;  //跳转下一步
-                printf("return ref, goto step 7\n");
-            }
-        }
-            break;
-        case 7:{ //读取当前编码器值
-            printf("return ref step 7: get_encoder_count = %hhu\n",
-                    this->m_n_get_cur_encoder_count);
-            MiCmdFrame cmd;
-            memset(&cmd, 0x00, sizeof(cmd));
-            cmd.data.axis_index = i+1;
-
-            if(m_p_axis_config[i].feedback_mode == NO_ENCODER){   //无反馈则将当前位置设置为零点
-                cmd.data.cmd = CMD_MI_SET_REF_POINT;
-            }else{
-                cmd.data.cmd = CMD_MI_GET_CUR_ENCODER;   //其它类型则读取当前单圈绝对值
-            }
-
-
-            this->m_p_mi_comm->WriteCmd(cmd);
-            m_n_ret_ref_step[i] = 8;  //跳转下一步
-            printf("return ref, goto step 8\n");
-
-        }
-            break;
-        case 8: //等待设置参考点完成，在Mi指令响应处理函数中处理
-
-
-            break;
-        case 9: //等待设置完成，移动到轴参考点1
-
-            dis = this->m_p_axis_config[i].axis_home_pos[0]-this->GetPhyAxisMachPosFeedback(i);   //移动距离
-            if(dis >= 0)
-                dir = DIR_POSITIVE;
-            else
-                dir = DIR_NEGATIVE;
-
-            printf("axis %u dir = %hhd, dis = %lf, curpos = %lf\n", i, dir, dis, GetPhyAxisMachPosFeedback(i));
-
-            this->ManualMove(i, dir, m_p_axis_config[i].ret_ref_speed, dis);
-            m_n_ret_ref_step[i] = 10;  //跳转下一步
-            printf("return ref, goto step 10\n");
-            break;
-        case 10:  //等待轴移动到位,完成！
-
-            if(fabs(this->GetPhyAxisMachPosFeedback(i)- m_p_axis_config[i].axis_home_pos[0]) <= 0.005){  //到位
-                m_n_ret_ref_step[i] = 11;  //跳转下一步
-            }
-            break;
-        case 11:  //回参考点完成
-            printf("axis %u return ref over\n", i);
-            if(this->m_p_axis_config[i].feedback_mode == ABSOLUTE_ENCODER_YASAKAWA ||
-                this->m_p_axis_config[i].feedback_mode == ABSOLUTE_ENCODER_PANASONIC ||
-                this->m_p_axis_config[i].feedback_mode == LINEAR_ENCODER){  //绝对值需要发送设置参考点指令
-                MiCmdFrame mi_cmd;
-                memset(&mi_cmd, 0x00, sizeof(mi_cmd));
-                mi_cmd.data.cmd = CMD_MI_SET_REF_CUR;
-                mi_cmd.data.axis_index = i+1;
-                int64_t pos = m_p_axis_config[i].axis_home_pos[0] * 1e7;   //单位转换，0.1nm
-                memcpy(cmd.data.data, &pos, sizeof(int64_t));
-
-                this->m_p_mi_comm->WriteCmd(mi_cmd);
-            }else{
-                this->SetRetRefFlag(i, true);
-                this->m_p_pmc_reg->FReg().bits[0].in_ref_point |= (0x01<<i);   //置位到参考点标志
-            }
-//			printf("return ref over flag : 0x%llx, 0x%hhx, 0x%hhx, 0x%hhx, 0x%hhx, 0x%hhx, 0x%hhx, 0x%hhx, 0x%hhx\n", this->m_p_pmc_reg->FReg().bits[0].in_ref_point,
-//					m_p_pmc_reg->FReg().all[200], m_p_pmc_reg->FReg().all[201], m_p_pmc_reg->FReg().all[202], m_p_pmc_reg->FReg().all[203],
-//					m_p_pmc_reg->FReg().all[204], m_p_pmc_reg->FReg().all[205], m_p_pmc_reg->FReg().all[206], m_p_pmc_reg->FReg().all[207]);
-            this->m_n_mask_ret_ref &= ~(0x01<<i);
-            m_n_ret_ref_step[i] = 0;
-
-
-
-//#ifdef USES_PMC_PROCESS
-            //PMC轴指令回参考点结束处理
-            if(this->m_p_axis_config[i].axis_pmc > 0 &&
-                    this->m_pmc_axis_ctrl[m_p_axis_config[i].axis_pmc-1].GetCmdCount() > 0 &&
-                    !this->m_pmc_axis_ctrl[m_p_axis_config[i].axis_pmc-1].IsPaused()){
-                m_pmc_axis_ctrl[m_p_axis_config[i].axis_pmc-1].ExecCmdOver(true);
-            }
-
-            if(i == 5)
-                this->m_p_pmc_reg->FReg().bits[0].OUT8 = 0;  //pmc X轴回零复位
-            else if(i == 6)
-                this->m_p_pmc_reg->FReg().bits[0].OUT9 = 0;  //pmc Y轴回零复位
-            else if(i == 7)
-                this->m_p_pmc_reg->FReg().bits[0].OUT10 = 0;  //pmc 左Z轴回零复位
-            else if(i == 8)
-                this->m_p_pmc_reg->FReg().bits[0].OUT11 = 0;  //pmc 右Z轴回零复位
-//#endif
-
-            if(m_n_mask_ret_ref == 0){
-                this->m_b_ret_ref = false;
-                this->m_b_ret_ref_auto = false;
-                m_n_ret_ref_auto_cur = 0;
-            }
-            break;
-        case 20: //失败处理
-            this->m_n_mask_ret_ref &= ~(0x01<<i);
-            m_n_ret_ref_step[i] = 0;
-//#ifdef USES_PMC_PROCESS
-            //PMC轴指令回参考点结束处理
-            if(this->m_p_axis_config[i].axis_pmc > 0 &&
-                    this->m_pmc_axis_ctrl[m_p_axis_config[i].axis_pmc-1].GetCmdCount() > 0 &&
-                    !this->m_pmc_axis_ctrl[m_p_axis_config[i].axis_pmc-1].IsPaused()){
-                m_pmc_axis_ctrl[m_p_axis_config[i].axis_pmc-1].ExecCmdOver(false);
-            }
-
-            if(i == 5)
-                this->m_p_pmc_reg->FReg().bits[0].OUT8 = 0;  //pmc X轴回零复位
-            else if(i == 6)
-                this->m_p_pmc_reg->FReg().bits[0].OUT9 = 0;  //pmc Y轴回零复位
-            else if(i == 7)
-                this->m_p_pmc_reg->FReg().bits[0].OUT10 = 0;  //pmc 左Z轴回零复位
-            else if(i == 8)
-                this->m_p_pmc_reg->FReg().bits[0].OUT11 = 0;  //pmc 右Z轴回零复位
-//#endif
-            if(m_n_mask_ret_ref == 0){
-                this->m_b_ret_ref = false;
-                this->m_b_ret_ref_auto = false;
-                m_n_ret_ref_auto_cur = 0;
-            }
-            m_error_code = ERR_RET_REF_FAILED;
-            CreateError(ERR_RET_REF_FAILED, WARNING_LEVEL, CLEAR_BY_MCP_RESET, 0, CHANNEL_ENGINE_INDEX, i+1);
-            break;
-        default:
-            break;
-        }
-        */
     }
 
     if(m_n_mask_ret_ref == 0){
@@ -11579,9 +11489,8 @@ void ChannelEngine::SetRetRefFlag(uint8_t phy_axis, bool flag){
 
     }else{
         if(m_p_axis_config[phy_axis].axis_interface == VIRTUAL_AXIS || m_p_axis_config[phy_axis].axis_type == AXIS_SPINDLE	//主轴和虚拟轴不用回参考点
-                || (m_p_axis_config[phy_axis].feedback_mode == NO_ENCODER && m_p_axis_config[phy_axis].ret_ref_mode == 0)    //无反馈，并且禁止回参考点
-                || (m_p_axis_config[phy_axis].feedback_mode != INCREMENTAL_ENCODER && m_p_axis_config[phy_axis].feedback_mode != NO_ENCODER && m_p_axis_config[phy_axis].ref_encoder != kAxisRefNoDef)    //绝对值编码器，已设定参考点
-                /*|| (m_p_axis_config[phy_axis].feedback_mode == INCREMENTAL_ENCODER && m_p_axis_config[phy_axis].ret_ref_mode == 0)增量式编码器必须回零*/){  //增量编码器，禁止回参考点
+            || (m_p_axis_config[phy_axis].feedback_mode == ABSOLUTE_ENCODER && m_p_axis_config[phy_axis].ref_encoder != kAxisRefNoDef))    //绝对值编码器，已设定参考点
+        {
             return;   //不用回参考点的轴禁止将回零标志复位
         }
         this->m_n_mask_ret_ref_over &= ~(0x01<<phy_axis);
@@ -11590,6 +11499,8 @@ void ChannelEngine::SetRetRefFlag(uint8_t phy_axis, bool flag){
             m_p_pmc_reg->FReg().bits[chn].ZRF1 &= ~(0x01<<bit);
         else
             m_p_pmc_reg->FReg().bits[chn].ZRF2 &= ~(0x01<<bit);
+
+
     }
 
     //	if(this->m_p_axis_config[phy_axis].axis_pmc == 0){//非PMC轴    //PMC轴也能加载到通道

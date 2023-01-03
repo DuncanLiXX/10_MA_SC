@@ -425,6 +425,7 @@ enum ErrorType {
     ERR_SWITCH_MODE_IN_RET_REF = 604,   //回零中禁止切换工作模式
     ERR_RET_REF_Z_ERR       = 605,  //搜索Z脉冲位置超限，原点建立失败
     ERR_RET_SYNC_ERR        = 606,  //从动轴禁止回零
+    ERR_RET_NOT_SUPPORT     = 607,  //不支持的回零方式
 
 
 	//加工告警	1000~1999
@@ -1252,7 +1253,7 @@ struct HmiAxisConfig{
 	uint8_t motor_dir;						//电机旋转方向    0--正转    1--反转
 	uint8_t feedback_mode;					//电机反馈类型    0--增量式    1--绝对式(安川)     2--绝对式(松下)    3--光栅尺        4--无反馈
 
-	uint8_t ret_ref_mode;					//回参考点方式      0--禁止   1--有基准    2--无基准     3--驱动回零
+    uint8_t ret_ref_mode;					//0--无挡块回零  1--有挡块回零
     uint8_t absolute_ref_mode;              //绝对式电机回零方式 0--回零标记点设定方式    1--无挡块回零方式
     uint8_t ret_ref_dir;					//回参考点方向		0--负向    1--正向
 	uint8_t ret_ref_change_dir;				//回参考点换向      0--反向    1--同向

@@ -52,6 +52,9 @@ ADCommunication *g_ptr_ad_comm = nullptr;     //辅助设备通讯接口
  */
 void CreateError(uint16_t error_code, uint8_t error_level,
     uint8_t clear_type, int32_t error_info, uint8_t channel_index, uint8_t axis_index) { 
+
+    if (error_code == 0)
+        return g_ptr_alarm_processor->ClearTips();
     if(axis_index != 0xffff) {
         axis_index++;	//0,1,2,3,4 --> 1,2,3,4,5
     }

@@ -301,6 +301,8 @@ void SetMcArmComm(MCArmCommunication *comm){this->m_p_mc_arm_comm = comm;}   //É
     // »ñÈ¡ÏŞÎ»Î»ÖÃ
     bool GetSoftLimt(ManualMoveDir dir, uint8_t phy_axis, double &limit);
 
+    void ClearAxisRefEncoder(int axisID);                        // Çå³ı¾ø¶ÔÊ½Áãµã±àÂëÆ÷
+
 private:	//Ë½ÓĞ³ÉÔ±º¯Êı
 	ChannelEngine();   //¹¹Ôìº¯Êı
 
@@ -458,7 +460,7 @@ private:	//Ë½ÓĞ³ÉÔ±º¯Êı
 	void AxisFindRefNoZeroSignal(uint8_t phy_axis);              // µ±Ç°Î»ÖÃÉèÖÃÎª²Î¿¼µã   ĞéÄâÖá»Ø²Î¿¼µã  ²½½øµç»úÉèÖÃ²Î¿¼µã
     void EcatIncAxisFindRefWithZeroSignal(uint8_t phy_axis);     // ×ÜÏßÔöÁ¿Ê½ÖáÓĞ»ù×¼»Ø²Î¿¼µã£¬¸ù¾İZĞÅºÅ×÷Îª¾«»ù×¼
     void EcatIncAxisFindRefNoZeroSignal(uint8_t phy_axis);       // ×ÜÏßÔöÁ¿Ê½ÎŞ»ù×¼»Ø²Î¿¼µã£¬½ö¸ù¾İZĞÅºÅ×÷Îª¾«»ù×¼»ØÁã
-    void SetSubAxisRefPoint(int axisID, double pos);            // ´Ó¶¯Öá»ØÁã
+    void SetSubAxisRefPoint(int axisID, double pos);             // ´Ó¶¯Öá»ØÁã
     void ClearSubAxisRefFlag(int axisID);                        // Çå³ıÖØ¶¯Öá»ØÁã±êÖ¾
 
 

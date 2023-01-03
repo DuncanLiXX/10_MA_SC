@@ -314,6 +314,35 @@ void AlarmProcessor::Clear(){
 }
 
 /**
+ * @brief  清空提示信息
+ */
+void AlarmProcessor::ClearTips()
+{
+    vector<int> delVec;
+    ErrorInfo *info;
+
+    pthread_mutex_lock(&m_mutex);
+
+    int count = m_error_info_input_list->BufLen();
+
+    for(int i = 0; i < count; i++){
+        info = m_error_info_input_list->ReadDataPtr(i);
+        if(info == nullptr)
+            continue;
+        if(info->error_level == INFO_LEVEL)
+            delVec.push_back(i);
+    }
+
+    for(auto itr = delVec.rbegin(); itr != delVec.rend(); ++itr)
+        m_error_info_input_list->RemoveData(*itr);
+
+    pthread_mutex_unlock(&m_mutex);
+    Singleton<AxisStatusCtrl>::instance().UpdateServoState();
+    if (delVec.size())
+        NotifyToHmi();
+}
+
+/**
  * @brief 清空告警即以下等级的消息
  * @param chn : 通道号
  */
@@ -367,7 +396,29 @@ void AlarmProcessor::RemoveWarning(uint8_t chn, uint16_t error_code){
 
     pthread_mutex_unlock(&m_mutex);
     Singleton<AxisStatusCtrl>::instance().UpdateServoState();
-//	printf("remove warning:%d\n", del_count);
+    //	printf("remove warning:%d\n", del_count);
+}
+
+vector<ErrorInfo> AlarmProcessor::GetWarningList()
+{
+    vector<ErrorInfo> vecInfo;
+    pthread_mutex_lock(&m_mutex);
+    int err_num = m_error_info_input_list->BufLen();
+    for(int i = 0; i < err_num; ++i)
+    {
+        ErrorInfo *infoPtr = m_error_info_input_list->ReadDataPtr(i);
+        ErrorInfo info;
+        info.time = infoPtr->time;
+        info.error_info = infoPtr->error_code;
+        info.error_code = infoPtr->error_code;
+        info.channel_index = infoPtr->channel_index;
+        info.axis_index = infoPtr->axis_index;
+        info.error_level = infoPtr->error_level;
+        info.clear_type = infoPtr->clear_type;
+        vecInfo.push_back(info);
+    }
+    pthread_mutex_unlock(&m_mutex);
+    return vecInfo;
 }
 
 
@@ -651,7 +702,6 @@ void TraceLogProcess::SendToHmi(OptType optType, MsgType msgType, string strMsg)
     memcpy(&hmi_cmd.data[0], &opt, len);
     memcpy(&hmi_cmd.data[0+len], &msg, len);
     strcpy(&hmi_cmd.data[0+2*len], strMsg.c_str());
-    std::cout << "TraceLog: " << strMsg.c_str() << std::endl;
 
     hmi_cmd.data_len = 2*len + strLen;
 

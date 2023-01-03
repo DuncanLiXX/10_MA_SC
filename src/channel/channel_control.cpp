@@ -347,7 +347,8 @@ bool ChannelControl::Initialize(uint8_t chn_index, ChannelEngine *engine, HMICom
         if(m_p_axis_config[phy_axis-1].axis_pmc > 0){
             this->m_mask_pmc_axis |= (0x01<<i);
             this->m_n_pmc_axis_count++;
-        }else if(m_p_axis_config[phy_axis-1].axis_type != AXIS_SPINDLE){   //²å²¹Öá, ÅÅ³ıÖ÷Öá
+        }else{
+        //}else if(m_p_axis_config[phy_axis-1].axis_type != AXIS_SPINDLE){   //²å²¹Öá, ÅÅ³ıÖ÷Öá
             this->m_mask_intp_axis |= (0x01<<i);
             this->m_n_intp_axis_count++;
         }
@@ -2441,6 +2442,7 @@ void ChannelControl::SendMonitorData(bool bAxis, bool btime){
 
     //´¦ÓÚ¸Õ¹¥×´Ì¬ĞèÒª¶ÁÈ¡¸Õ¹¥Îó²î
     if(m_p_g_reg->RGTAP == 1){
+        //m_channel_rt_status.tap_err_now = m_p_spindle->GetTapErr();
         m_p_mi_comm->ReadTapErr(&m_channel_rt_status.tap_err,
                                 &m_channel_rt_status.tap_err_now,
                                 1);
@@ -10873,6 +10875,16 @@ uint8_t ChannelControl::GetChnAxisFromPhyAxis(uint8_t phy_axis){
     }
 
     return res;
+}
+
+void ChannelControl::SyncMcPosition(){
+    if(!this->m_b_mc_on_arm)
+        this->m_p_mc_comm->ReadAxisIntpPos(m_n_channel_index, m_channel_mc_status.intp_pos, m_channel_mc_status.intp_tar_pos);
+    else
+        this->m_p_mc_arm_comm->ReadAxisIntpPos(m_n_channel_index, m_channel_mc_status.intp_pos, m_channel_mc_status.intp_tar_pos);
+
+    this->RefreshAxisIntpPos();
+    this->m_p_compiler->SetCurPos(this->m_channel_mc_status.intp_pos);   //Í¬²½±àÒëÆ÷Î»ÖÃ
 }
 
 /**

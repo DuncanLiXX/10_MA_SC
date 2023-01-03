@@ -14,6 +14,7 @@
 #include "channel_control.h"
 #include "variable.h"
 #include "parm_manager.h"
+#include "spindle_control.h"
 
 const int kSeparatedMCodeArray[] = {0,1,2,30,98,99,198};   //不能与其它M代码同行的M代码
 const int kSeparatedMCodeCount = sizeof(kSeparatedMCodeArray)/sizeof(int);   //不能同行的M代码个数
@@ -2297,7 +2298,7 @@ bool Parser::CreateRapidMsg(){
  * @return true--成功  false--失败
  */
 bool Parser::CreateLineMsg(){
-//	printf("Parser::CreateLineMsg\n");
+    ScPrintf("Parser::CreateLineMsg\n");
 
 	DPointChn source = this->m_p_compiler_status->cur_pos;   //起点
 	DPointChn target = source;	//终点
@@ -2331,6 +2332,20 @@ bool Parser::CreateLineMsg(){
 		m_error_code = ERR_NO_F_DATA;
 		return false;
 	}
+
+//    // 如果在攻丝状态移动z轴，同时也指定主轴
+//    uint8_t axis_z = m_p_channel_control->GetChnAxisFromName(AXIS_NAME_Z);
+//    SpindleControl *spindle = m_p_channel_control->GetSpdCtrl();
+//    if(spindle->isTapEnable() && (axis_mask & (0x01 << axis_z))){
+//        axis_mask |= (0x01 << spindle->GetPhyAxis());
+
+//        bool ret = spindle->CalTapPosition(target.m_df_point[axis_z],
+//                                           target.m_df_point[spindle->GetPhyAxis()]);
+//        if(!ret){
+//            m_error_code = ERR_CAL_SPD_TAP_POS;
+//            return false;
+//        }
+//    }
 
 	new_msg = new LineMsg(source, target, m_p_compiler_status->mode.f_mode, axis_mask);
 	if(new_msg == nullptr){

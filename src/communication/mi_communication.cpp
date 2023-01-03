@@ -433,20 +433,22 @@ void MICommunication::SendHandwheelInsertAxis(uint8_t chn, uint8_t axis)
     WriteCmd(cmd);
 }
 
-void MICommunication::SendHardLimitState(uint64_t mask)
+void MICommunication::SendHardLimitState(bool is_positive,uint64_t mask)
 {
     MiCmdFrame cmd;
     memset(&cmd, 0x00, sizeof(cmd));
     cmd.data.cmd = CMD_MI_SET_HARD_LIMIT;
 
     uint16_t *p_mask = (uint16_t*)&mask;
-    cmd.data.data[0] = *p_mask;
-    cmd.data.data[1] = *(p_mask+1);
-    cmd.data.data[2] = *(p_mask+2);
-    cmd.data.data[3] = *(p_mask+3);
+    cmd.data.data[0] = is_positive;
+    cmd.data.data[1] = *p_mask;
+    cmd.data.data[2] = *(p_mask+1);
+    cmd.data.data[3] = *(p_mask+2);
+    cmd.data.data[4] = *(p_mask+3);
 
     cmd.data.axis_index = NO_AXIS;
     cmd.data.reserved = 0xFF;
+    WriteCmd(cmd);
 }
 
 /**

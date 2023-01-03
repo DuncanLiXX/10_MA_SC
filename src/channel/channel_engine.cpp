@@ -8761,9 +8761,13 @@ void ChannelEngine::ProcessPmcSignal(){
                     //		printf("negative limit222 : 0x%llx\n", m_hard_limit_negative);
                 }
             }
-            if(m_hard_limit_last != (m_hard_limit_postive | m_hard_limit_negative)){
-                m_hard_limit_last = (m_hard_limit_postive | m_hard_limit_negative);
-                m_p_mi_comm->SendHardLimitState(m_hard_limit_last);
+            if(m_pos_hard_limit_last != m_hard_limit_postive){
+                m_pos_hard_limit_last = m_hard_limit_postive;
+                m_p_mi_comm->SendHardLimitState(true,m_pos_hard_limit_last);
+            }
+            if(m_neg_hard_limit_last != m_hard_limit_negative){
+                m_neg_hard_limit_last = m_hard_limit_negative;
+                m_p_mi_comm->SendHardLimitState(false,m_neg_hard_limit_last);
             }
         }
     }

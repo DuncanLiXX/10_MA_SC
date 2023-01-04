@@ -10381,6 +10381,9 @@ bool ChannelControl::ExecuteClearCirclePosMsg(RecordMsg *msg){
 bool ChannelControl::ExecuteInputMsg(RecordMsg * msg){
 
     InputMsg * input_msg = (InputMsg *)msg;
+
+    bool isAbs = this->m_channel_status.gmode[3] == 900 ? true: false;
+
     printf("ldata: %lf -- pdata: %lf --- rdata: %lf\n", input_msg->LData, input_msg->PData, input_msg->RData);
 
     if(this->m_n_restart_mode != NOT_RESTART &&
@@ -10442,47 +10445,67 @@ bool ChannelControl::ExecuteInputMsg(RecordMsg * msg){
     switch(input_type){
     case 10:{
         // XY平面 刀长补偿 Z   TODO 其他平面的情况下 刀长补偿到不同的轴号
-        if(plane == 0)
-            this->m_p_chn_tool_config->geometry_compensation[tool_number-1][2] = input_msg->RData;
-        else if(plane == 1)
-            this->m_p_chn_tool_config->geometry_compensation[tool_number-1][1] = input_msg->RData;
-        else if(plane == 3)
-            this->m_p_chn_tool_config->geometry_compensation[tool_number-1][0] = input_msg->RData;
+    	if(isAbs){
+        	if(plane == 0)
+                this->m_p_chn_tool_config->geometry_compensation[tool_number-1][2] = input_msg->RData;
+            else if(plane == 1)
+                this->m_p_chn_tool_config->geometry_compensation[tool_number-1][1] = input_msg->RData;
+            else if(plane == 3)
+                this->m_p_chn_tool_config->geometry_compensation[tool_number-1][0] = input_msg->RData;
+    	}else{
+        	if(plane == 0)
+                this->m_p_chn_tool_config->geometry_compensation[tool_number-1][2] += input_msg->RData;
+            else if(plane == 1)
+                this->m_p_chn_tool_config->geometry_compensation[tool_number-1][1] += input_msg->RData;
+            else if(plane == 3)
+                this->m_p_chn_tool_config->geometry_compensation[tool_number-1][0] += input_msg->RData;
+    	}
 
         g_ptr_parm_manager->UpdateToolMeasure(this->m_n_channel_index, tool_number-1, input_msg->RData);
         this->NotifyHmiToolOffsetChanged(tool_number);   //通知HMI刀偏值更改
         break;
     }
     case 11:{
-        this->m_p_chn_tool_config->radius_compensation[tool_number-1] = input_msg->RData;
+    	if(isAbs)
+    		this->m_p_chn_tool_config->radius_compensation[tool_number-1] = input_msg->RData;
+    	else
+    		this->m_p_chn_tool_config->radius_compensation[tool_number-1] += input_msg->RData;
+
         g_ptr_parm_manager->UpdateToolRadiusGeo(this->m_n_channel_index, tool_number-1, input_msg->RData);
         this->NotifyHmiToolOffsetChanged(tool_number);   //通知HMI刀偏值更改
         break;
     }
     case 12:{
-        this->m_p_chn_tool_config->geometry_wear[tool_number-1] = input_msg->RData;
+    	if(isAbs)
+    		this->m_p_chn_tool_config->geometry_wear[tool_number-1] = input_msg->RData;
+    	else
+    		this->m_p_chn_tool_config->geometry_wear[tool_number-1] += input_msg->RData;
+
         g_ptr_parm_manager->UpdateToolWear(this->m_n_channel_index, tool_number-1, input_msg->RData);
         this->NotifyHmiToolOffsetChanged(tool_number);   //通知HMI刀偏值更改
         break;
     }
     case 13:{
-        this->m_p_chn_tool_config->radius_wear[tool_number-1] = input_msg->RData;
+        if(isAbs)
+        	this->m_p_chn_tool_config->radius_wear[tool_number-1] = input_msg->RData;
+        else
+        	this->m_p_chn_tool_config->radius_wear[tool_number-1] += input_msg->RData;
+
+
         g_ptr_parm_manager->UpdateToolRadiusWear(this->m_n_channel_index, tool_number-1, input_msg->RData);
         this->NotifyHmiToolOffsetChanged(tool_number);   //通知HMI刀偏值更改
         break;
     }
     case 20:{
         int param = input_msg->PData;
-
-        printf("11111 pdata: %lf --- rdata: %lf\n", input_msg->PData, input_msg->RData);
-
+        //printf("11111 pdata: %lf --- rdata: %lf\n", input_msg->PData, input_msg->RData);
 
         if(SetSysVarValue(param, input_msg->RData)){
-        	printf("22222 param: %d - value: %lf\n", param, input_msg->RData);
+        	//printf("22222 param: %d - value: %lf\n", param, input_msg->RData);
         	break;
         }
         else{
-        	printf("33333 param: %d - value: %lf\n", param, input_msg->RData);
+        	//printf("33333 param: %d - value: %lf\n", param, input_msg->RData);
         	CreateError(ERR_NO_CUR_RUN_DATA, ERROR_LEVEL, CLEAR_BY_MCP_RESET, 0, m_n_channel_index);
             this->m_error_code = ERR_NO_CUR_RUN_DATA;
             return false;

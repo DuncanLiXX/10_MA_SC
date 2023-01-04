@@ -1433,7 +1433,7 @@ void Compiler::PreScanLine2(char *buf, uint64_t offset, uint64_t line_no,
                 }
                 node->data.offset = offset;
                 node->data.line_no = line_no;
-                //				printf("pre scan 2, find label %d , offset %llu\n", label, offset);
+                //printf("pre scan 2, find label %d , offset %llu\n", label, offset);
                 break;
             } else if (label < node->data.label)
                 break;
@@ -3118,7 +3118,7 @@ bool Compiler::RunCompensateMsg(RecordMsg *msg) {
         if(d_value == 0){
             this->m_p_tool_compensate->setToolRadius(0);
         }else {
-            double radius = offset_config->radius_compensation[d_value - 1];
+            double radius = offset_config->radius_compensation[d_value - 1] + offset_config->geometry_wear[d_value-1];
             this->m_p_tool_compensate->setToolRadius(radius);
         }
         m_p_channel_control->UpdateModeData(D_MODE, d_value);//llx add,由SC直接更新D模态，不经过MC

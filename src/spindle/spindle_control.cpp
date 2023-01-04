@@ -177,27 +177,38 @@ void SpindleControl::StartRigidTap(double feed)
                     CLEAR_BY_MCP_RESET);
         return;
     }
-    // ratio:攻丝比例，10000*S/F，S单位为rpm，F单位为mm/min
-    int32_t ratio = -10000.0*cnc_speed*spindle->move_pr/feed;
+
+    tap_ratio = -10000.0*cnc_speed*spindle->move_pr/feed;
+    //tap_ratio = 1.0*cnc_speed*spindle->move_pr/feed;
     // 攻丝回退要特殊处理
     if(running_rtnt && tap_state.tap_flag){
-        ratio = -10000.0*tap_state.S*spindle->move_pr/tap_state.F;
+        //tap_ratio = 1.0*tap_state.S*spindle->move_pr/tap_state.F;
+        tap_ratio = -10000.0*tap_state.S*spindle->move_pr/tap_state.F;
     }
     ScPrintf("running_rtnt=%u S=%u  F=%llf",running_rtnt,tap_state.S,tap_state.F);
+
+    // 计算攻丝曲线方程,用于计算攻丝误差
+    ChannelEngine *engine = ChannelEngine::GetInstance();
+    ChannelControl *control = engine->GetChnControl(0);
+    ChannelRealtimeStatus status = control->GetRealtimeStatus();
+    tap_line.k = 1.0/tap_ratio;
+    double x0 = status.cur_pos_machine.m_df_point[phy_axis];
+    double y0 = status.cur_pos_work.m_df_point[z_axis];
+    tap_line.b = -tap_line.k*x0 + y0;
 
     //if(TSO)
     //    ratio *= SOV/100.0;
 
-    // 发送攻丝轴号
+    //发送攻丝轴号
     mi->SendTapAxisCmd(chn, phy_axis+1, z_axis+1);
     printf("SendTapAxisCmd spd=%d,z=%d\n",phy_axis+1,z_axis+1);
-    // 发送攻丝参数
+    //发送攻丝参数
     mi->SendTapParams(chn,spindle->spd_sync_error_gain,
                       spindle->spd_speed_feed_gain,
                       spindle->spd_pos_ratio_gain);
-    // 发送攻丝比例
-    mi->SendTapRatioCmd(chn, ratio);
-    // 打开攻丝状态
+    //发送攻丝比例
+    mi->SendTapRatioCmd(chn, tap_ratio);
+    //打开攻丝状态
     SendMcRigidTapFlag(true);
     mi->SendTapStateCmd(chn,true);
     tap_enable = true;
@@ -232,7 +243,7 @@ void SpindleControl::CancelRigidTap()
     mi->SendTapRatioCmd(chn, 0);
     std::this_thread::sleep_for(std::chrono::microseconds(100*1000));
     double pos = status.cur_pos_machine.GetAxisValue(phy_axis);
-    mi->SetAxisRefCur(phy_axis+1,pos);
+    //mi->SetAxisRefCur(phy_axis+1,pos);
 
     tap_enable = false;
 
@@ -509,6 +520,31 @@ double SpindleControl::GetSpdAngle()
         model += spindle->move_pr;
 
     return (model/spindle->move_pr)*360.0;
+}
+
+bool SpindleControl::CalTapPosition(double tar_z_work_pos, double &tar_spd_work_pos){
+    if(!spindle || !tap_enable)
+        return false;
+    ChannelEngine *engine = ChannelEngine::GetInstance();
+    ChannelControl *control = engine->GetChnControl(0);
+    ChannelRealtimeStatus rt_status = control->GetRealtimeStatus();
+    double incre_z = tar_z_work_pos - rt_status.cur_pos_work.m_df_point[z_axis];
+    double incre_spd = incre_z * tap_ratio;
+    tar_spd_work_pos = rt_status.cur_pos_work.m_df_point[phy_axis] + incre_spd;
+    return true;
+}
+
+double SpindleControl::GetTapErr(){
+    if(!spindle || !tap_enable)
+        return 0.0;
+
+    ChannelEngine *engine = ChannelEngine::GetInstance();
+    ChannelControl *control = engine->GetChnControl(0);
+    ChannelRealtimeStatus status = control->GetRealtimeStatus();
+    double x1 = status.cur_pos_machine.m_df_point[phy_axis];
+    double y1 = status.cur_pos_machine.m_df_point[z_axis];
+    // 距离 = |kx1-y1+b|/√[k+（-1）]
+    return 1000.0*fabs(tap_line.k*x1-y1+tap_line.b)/sqrt(tap_line.k*tap_line.k+1);
 }
 
 void SpindleControl::UpdateParams()
@@ -815,6 +851,7 @@ void SpindleControl::ProcessModeChanged(Spindle::Mode mode)
         printf("SetAxisRefCur: axis=%d, pos = %lf\n",phy_axis+1,pos);
         printf("RspCtrlMode:Position\n");
         std::this_thread::sleep_for(std::chrono::microseconds(100*1000));
+        control->SyncMcPosition();
         F->RGMP = 1;
     }else{
         F->RGMP = 0;
@@ -888,7 +925,7 @@ void SpindleControl::SendMcRigidTapFlag(bool enable)
 
 void SpindleControl::SaveTapState()
 {
-   ScPrintf("SaveTapState\n");
+    ScPrintf("SaveTapState\n");
     int fp = open(PATH_TAP_STATE, O_CREAT | O_RDWR);
     if(fp < 0){         //文件打开失败
         printf("Open tap state fail!");

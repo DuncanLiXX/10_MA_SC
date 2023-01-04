@@ -541,14 +541,10 @@ struct FRegBits{
 	uint8_t :8;
 	//F184
 	uint8_t :8;
-	//F185
-	uint8_t :8;
-	//F186
-	uint8_t :8;
-	//F187
-	uint8_t :8;
-	//F188
-	uint8_t :8;
+    //F185-F186
+    int16_t SRS:16;                     //主轴设置的定向角度
+    //F187-F188
+    int16_t SRG:16;                     //主轴当前角度
 	//F189
 	uint8_t :8;
 	//F190~F193

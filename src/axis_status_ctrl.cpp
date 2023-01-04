@@ -7,7 +7,7 @@
 #include <algorithm>
 
 
-// 以下错误出现时会关闭伺服使能 20184~20199
+// 以下错误出现时会关闭伺服使能
 const std::vector<int> CRITS =
 {
     // 同步轴相关报警

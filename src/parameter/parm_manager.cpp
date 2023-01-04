@@ -1346,7 +1346,10 @@ bool ParmManager::ReadAxisConfig(){
 			m_sc_axis_config[i].pc_ref_index = m_ini_axis->GetIntValueOrDefault(sname, "pc_ref_index", 1);
 			m_sc_axis_config[i].pc_inter_dist = m_ini_axis->GetDoubleValueOrDefault(sname, "pc_inter_dist", 1.0);
 
-            m_sc_axis_config[i].soft_limit_check_1 = 1;
+            if(m_sc_axis_config[i].axis_type == AXIS_SPINDLE)// 主轴不需软限位
+                m_sc_axis_config[i].soft_limit_check_1 = 0;
+            else
+                m_sc_axis_config[i].soft_limit_check_1 = 1;
             m_sc_axis_config[i].soft_limit_max_1 = m_ini_axis->GetDoubleValueOrDefault(sname, "soft_limit_max_1", 100.0);
 			m_sc_axis_config[i].soft_limit_min_1 = m_ini_axis->GetDoubleValueOrDefault(sname, "soft_limit_min_1", -100.0);
             m_sc_axis_config[i].soft_limit_check_2 = 0;

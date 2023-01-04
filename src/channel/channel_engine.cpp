@@ -123,7 +123,7 @@ ChannelEngine::ChannelEngine() {
 
     ShowSc& showSc = Singleton<ShowSc>::instance();
     showSc.SetPrintType(TypePrintOutput);
-    showSc.SetInterval(1000);
+    showSc.SetInterval(200);
 }
 
 /**
@@ -776,8 +776,13 @@ void ChannelEngine::SetSoftLimitSignal(uint8_t EXLM, uint8_t RLSOT){
     for(int i=0; i<m_p_channel_config->chn_axis_count; i++){
         check1 = (!EXLM && !RLSOT);
         check2 = (EXLM && !RLSOT);
-        m_p_axis_config[i].soft_limit_check_1 = check1;
-        m_p_axis_config[i].soft_limit_check_2 = check2;
+        if(m_p_axis_config[i].axis_type == AXIS_SPINDLE){ // 主轴不需软限位
+            m_p_axis_config[i].soft_limit_check_1 = 0;
+            m_p_axis_config[i].soft_limit_check_2 = 0;
+        }else{
+            m_p_axis_config[i].soft_limit_check_1 = check1;
+            m_p_axis_config[i].soft_limit_check_2 = check2;
+        }
         m_p_channel_control->SetChnAxisSoftLimit(i);
     }
 }

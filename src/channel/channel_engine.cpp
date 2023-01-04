@@ -7670,22 +7670,28 @@ void ChannelEngine::SendMiBacklash(uint8_t axis){
     //∑≈÷√ ˝æ›
     if(m_p_axis_config[axis].backlash_enable){
         uint32_t data = m_p_axis_config[axis].backlash_forward * 1000;
-        memcpy(cmd.data.data, &data, 4);  //
+        memcpy(cmd.data.data, &data, 4);
         data = m_p_axis_config[axis].backlash_negative * 1000;
         memcpy(&cmd.data.data[2], &data, 4);
         data = m_p_axis_config[axis].backlash_step;
         memcpy(&cmd.data.data[4], &data, 4);
+        uint16_t enable = m_p_axis_config[axis].backlash_enable;
+        memcpy(&cmd.data.data[6], &enable, 2);
     }else{
         uint32_t data = 0.0;
-        memcpy(cmd.data.data, &data, 4);  //
+        memcpy(cmd.data.data, &data, 4);
         data = 0.0;
         memcpy(&cmd.data.data[2], &data, 4);
+        data = 0.0;
+        memcpy(&cmd.data.data[4], &data, 4);
+        uint16_t enable = 0;
+        memcpy(&cmd.data.data[6], &enable, 2);
     }
-    //std::cout << "axis: " << (int)cmd.data.axis_index << std::endl;
-    //std::cout << "backlash_enable: " << (int)m_p_axis_config[axis].backlash_enable << std::endl;
-    //std::cout << "backlash_forward: " << (int)m_p_axis_config[axis].backlash_forward << std::endl;
-    //std::cout << "backlash_negative: " << (int)m_p_axis_config[axis].backlash_negative << std::endl;
-    //std::cout << "backlash_step: " << (int)m_p_axis_config[axis].backlash_step << std::endl;
+    std::cout << "axis: " << (int)cmd.data.axis_index << std::endl;
+    std::cout << "backlash_enable: " << (int)m_p_axis_config[axis].backlash_enable << std::endl;
+    std::cout << "backlash_forward: " << (int)m_p_axis_config[axis].backlash_forward << std::endl;
+    std::cout << "backlash_negative: " << (int)m_p_axis_config[axis].backlash_negative << std::endl;
+    std::cout << "backlash_step: " << (int)m_p_axis_config[axis].backlash_step << std::endl;
     this->m_p_mi_comm->WriteCmd(cmd);
 }
 

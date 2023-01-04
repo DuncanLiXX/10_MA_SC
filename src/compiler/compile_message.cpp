@@ -23,13 +23,14 @@ RecordMsg::RecordMsg()/*:m_p_next(nullptr), m_p_prev(nullptr)*/{
 	this->m_n_line_no = 0;
 	this->m_n_flags.all = 0;
 	this->m_n_frame_index = 0;
+    Singleton<ShowSc>::instance().NewMsg();
 }
 
 /**
  * @brief Îö¹¹º¯Êý
  */
 RecordMsg::~RecordMsg(){
-
+    Singleton<ShowSc>::instance().DeleteMsg();
 }
 
 /**

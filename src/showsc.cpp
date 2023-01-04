@@ -227,6 +227,14 @@ void ShowSc::PrintChnStatus()
     else if(chn_status->machining_state == MS_WARNING)
         AddPair(s,"machining_state","MS_WARNING");
 
+    AddPair(s,"cur_tool",chn_status->cur_tool);
+    AddPair(s,"preselect_tool_no",chn_status->preselect_tool_no);
+    AddPair(s,"cur_h_code",chn_status->cur_h_code);
+    AddPair(s,"cur_d_code",chn_status->cur_d_code);
+    AddPair(s,"auto_ratio",chn_status->auto_ratio);
+    AddPair(s,"rapid_ratio",chn_status->rapid_ratio);
+    AddPair(s,"manual_ratio",chn_status->manual_ratio);
+
     AddPair(s,"manual_step",chn_status->manual_step);
     AddPair(s,"cur_manual_move_dir",chn_status->cur_manual_move_dir);
     AddPair(s,"cur_axis",chn_status->cur_axis);
@@ -377,6 +385,9 @@ void ShowSc::PrintRealtimeData()
     AddPair(s,"tap_err",chn_rt_status->tap_err);
     AddPair(s,"tap_err_now",chn_rt_status->tap_err_now);
     AddPair(s,"spd_angle",chn_rt_status->spd_angle);
+
+    AddPair(s,"msg_new_count",msg_new_count);
+    AddPair(s,"msg_delete_count",msg_delete_count);
 
     SendMsg(s);
 }
@@ -797,14 +808,14 @@ void ShowSc::PrintWarning()
 
     string s= "";
 
-    CircularBuffer<ErrorInfo>* list = alarms->GetWarningList();
-    int count = list->BufLen();
-    for(int i = 0; i < count; i++){
-        ErrorInfo *info = list->ReadDataPtr(i);
+    vector<ErrorInfo> list = alarms->GetWarningList();
+    //int count = list.BufLen();
+    for(size_t i = 0; i < list.size(); i++){
+        ErrorInfo info = list.at(i);
         string key = "error info[" + to_string(i) = "]";
         char value[128];
         sprintf(value,"chn=%hhu, axis=%hhu, err_code=%hu, err_info=0x%x\n",
-                info->channel_index, info->axis_index, info->error_code, info->error_info);
+                info.channel_index, info.axis_index, info.error_code, info.error_info);
         AddPair(s,key,value);
     }
 

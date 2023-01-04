@@ -47,9 +47,10 @@ typedef struct
 }TapState;
 }
 
-// M27
-// M29
-// G01 Z[#188]
+typedef struct{
+    double k;
+    double b;
+}TapLineEqt; // 刚性攻丝曲线方程 y = kx + b (假设主轴为x,z轴为y)
 
 class SpindleControl
 {
@@ -117,6 +118,13 @@ public:
 
     double GetSpdAngle();  // 获取主轴角度 单位：度
 
+    // tar_z_work_pos:z轴目标工件坐标
+    // tar_spd_work_pos:主轴目标工件坐标
+    // 返回值:是否成功
+    bool CalTapPosition(double tar_z_work_pos, double &tar_spd_work_pos); // 计算攻丝时的主轴目标工件坐标
+
+    double GetTapErr(); // 获取攻丝误差 单位:um
+
 private:
     void UpdateParams();        // 更新常用主轴参数到成员变量中
     void UpdateSpindleState();  // 根据当前状态更新转速
@@ -174,6 +182,7 @@ public:
 
     Spindle::Mode mode{Spindle::Speed};             // 控制模式
     bool tap_enable{false};     // 攻丝状态  false:不在攻丝状态 true:处于攻丝状态
+    double  tap_ratio{1.0};       // 攻丝比例
     bool motor_enable{false};   // 电机使能状态
     bool wait_sar{false};       // 等待速度到达 0:不在等待 1:正在等待
     bool wait_off{false};       // 等待电机下使能 0:不在等待 1:正在等待
@@ -206,7 +215,8 @@ public:
     uint16_t TMF{16000};   //SF选通信号打开后，数据的输出延时 单位:us
 
     Spindle::TapState tap_state;    // 攻丝数据记录
-    bool running_rtnt{false};
+    bool running_rtnt{false};       // 是否正在攻丝回退
+    TapLineEqt tap_line;
 };
 
 #endif

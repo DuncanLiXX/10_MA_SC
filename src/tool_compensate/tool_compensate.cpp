@@ -72,6 +72,8 @@ void ToolCompensate::Reset(){
 void ToolCompensate::ProcessData(ListNode<RecordMsg *> *node){
 
 	msg = node->data;
+    //this->m_p_output_msg_list->Append(node);
+    //return;
 
 	switch(msg->GetMsgType()){
 		case RAPID_MSG:{
@@ -95,8 +97,8 @@ void ToolCompensate::ProcessData(ListNode<RecordMsg *> *node){
 
 			printf("convert rapid lino:%llu ... \n", tmsg->GetLineNo());
 			interp.convert_straight(0, &interp._setup._block, &interp._setup);
-			delete msg;
-			delete node;
+            delete msg;
+            delete node;
 			break;
 		}
 		case LINE_MSG:{
@@ -121,8 +123,8 @@ void ToolCompensate::ProcessData(ListNode<RecordMsg *> *node){
 			pblock->line_number = tmsg->GetLineNo();
 			printf("convert line lino:%llu... \n", tmsg->GetLineNo());
 			interp.convert_straight(10, &interp._setup._block, &interp._setup);
-			delete msg;
-			delete node;
+            delete msg;
+            delete node;
 			break;
 		}
 		case ARC_MSG:{
@@ -162,8 +164,9 @@ void ToolCompensate::ProcessData(ListNode<RecordMsg *> *node){
 			}else{
 				interp.convert_arc(30, &interp._setup._block, &interp._setup);
 			}
-			delete msg;
-			delete node;
+
+            delete msg;
+            delete node;
 			break;
 		}
 		case COMPENSATE_MSG:{
@@ -174,18 +177,26 @@ void ToolCompensate::ProcessData(ListNode<RecordMsg *> *node){
 			if(tmsg->GetGCode() == G40_CMD){
 
 				interp.convert_cutter_compensation_off(&interp._setup);
+
 				delete msg;
 				delete node;
 			}else if(tmsg->GetGCode() == G41_CMD){
 
 				interp.convert_cutter_compensation_on(LEFT,this->comp_radius,&interp._setup);
-				delete msg;
-				delete node;
-			}else if(tmsg->GetGCode() == G42_CMD){
 
+                delete msg;
+                delete node;
+
+			}else if(tmsg->GetGCode() == G41_CMD){
+
+				interp.convert_cutter_compensation_on(LEFT,this->comp_radius,&interp._setup);
+                delete msg;
+                delete node;
+			}else if(tmsg->GetGCode() == G42_CMD){
 				interp.convert_cutter_compensation_on(RIGHT,this->comp_radius,&interp._setup);
-				delete msg;
-				delete node;
+
+                delete msg;
+                delete node;
 			}else{
 
 				// G43 G44 G49 µ¶³¤²¹³¥

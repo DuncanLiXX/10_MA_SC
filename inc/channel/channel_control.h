@@ -258,8 +258,8 @@ public:
 	void TransMachCoordToWorkCoord(DPoint &pos, uint16_t coord_idx, uint32_t axis_mask);   //将坐标由机械坐标系转换为工件坐标系
 	void TransWorkCoordToMachCoord(DPointChn &pos, uint16_t coord_idx, uint32_t axis_mask);   //将坐标由工件坐标系转换为机械坐标系
 	void TransWorkCoordToMachCoord(DPoint &pos, uint16_t coord_idx, uint32_t axis_mask);   //将坐标由工件坐标系转换为机械坐标系
-	void TransMachCoordToWorkCoord(double &pos, uint16_t coord_idx, uint8_t axis);    //将单轴坐标由机械坐标系转换为工件坐标系
-	void TransWorkCoordToMachCoord(double &pos, uint16_t coord_idx, uint8_t axis);    //将单轴坐标由工件坐标系转换为机械坐标系
+    void TransMachCoordToWorkCoord(double &pos, uint16_t coord_idx, uint8_t axis);    //将单轴坐标由机械坐标系转换为工件坐标系
+    void TransWorkCoordToMachCoord(double &pos, uint16_t coord_idx, uint8_t axis);    //将单轴坐标由工件坐标系转换为机械坐标系
 	void TransWorkCoordToMachCoord(double &pos, uint16_t coord_idx, uint16_t h_code, uint8_t axis);  //将单轴坐标由工件坐标系转换为机械坐标系
 
 	void ProcessHmiReturnRefCmd(bool flag);                   //回参考点执行函数
@@ -365,6 +365,8 @@ public:
     uint8_t GetPhyAxisFromName(uint8_t axis_name);   //获取对应通道轴名称的物理轴索引号，0开始
     uint8_t GetChnAxisFromName(uint8_t axis_name);   //获取对应通道轴名称的通道轴索引号，0开始
     uint8_t GetChnAxisFromPhyAxis(uint8_t phy_axis); //获得对应物理轴的通道轴索引号，0开始
+
+    void SyncMcPosition();  // 同步位置
 
 private:
 	void InitialChannelStatus();		//初始化通道状态

@@ -541,14 +541,10 @@ struct FRegBits{
 	uint8_t :8;
 	//F184
 	uint8_t :8;
-	//F185
-	uint8_t :8;
-	//F186
-	uint8_t :8;
-	//F187
-	uint8_t :8;
-	//F188
-	uint8_t :8;
+    //F185-F186
+    int16_t SRS:16;                     //主轴设置的定向角度
+    //F187-F188
+    int16_t SRG:16;                     //主轴当前角度
 	//F189
 	uint8_t :8;
 	//F190~F193
@@ -733,7 +729,9 @@ struct GRegBits{
 	uint8_t :1;
 	uint8_t STLK:1;					//启动锁住信号   G7.1
 	uint8_t ST:1;					//循环启动信号   G7.2
-	uint8_t :5;
+    uint8_t :3;
+    uint8_t EXLM:1;                     //软限位选择信号 0:软限位1  1:软限位2
+    uint8_t RLSOT:1;                     //解除软限位限制信号
 	//G8
 	uint8_t :4;
 	uint8_t _ESP:1;					//急停信号  G8.4
@@ -784,7 +782,7 @@ struct GRegBits{
 	//G25
 	uint8_t :8;
 	//G26
-	uint8_t :8;
+    uint8_t GTC:8;     //获取当前刀号 G26.8
 	//G27
 	uint8_t :8;
 	//G28

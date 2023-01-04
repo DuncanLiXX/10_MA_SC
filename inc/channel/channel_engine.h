@@ -301,6 +301,8 @@ void SetMcArmComm(MCArmCommunication *comm){this->m_p_mc_arm_comm = comm;}   //É
     // »ñÈ¡ÏŞÎ»Î»ÖÃ
     bool GetSoftLimt(ManualMoveDir dir, uint8_t phy_axis, double &limit);
 
+    void ClearAxisRefEncoder(int axisID);                        // Çå³ı¾ø¶ÔÊ½Áãµã±àÂëÆ÷
+
 private:	//Ë½ÓĞ³ÉÔ±º¯Êı
 	ChannelEngine();   //¹¹Ôìº¯Êı
 
@@ -429,10 +431,14 @@ private:	//Ë½ÓĞ³ÉÔ±º¯Êı
     void InitPhyAxisChn();		//³õÊ¼»¯ÎïÀíÖáÓëÍ¨µÀµÄÓ³Éä
     void SendMiPhyAxisEncoder();     //ÏòMI·¢ËÍÎïÀíÖáµÄ·´À¡
     void SetAxisRetRefFlag();    //ÏòMI·¢ËÍ¸÷Öá»Ø²Î¿¼µã½áÊø±êÖ¾
-    // SVF:¸÷ÖáÊ¹ÄÜ×´Ì¬
-    // pos_reg: »¹Ô­Ê¹ÄÜºóÊÇ·ñ»Ö¸´Î»ÖÃ
-    void SetMLKState(uint8_t MLK); //ÏòMI·¢ËÍ¸÷Öá»úĞµËø×¡×´Ì¬
+    // MLK:ËùÓĞÖáËø×¡
+    // MLKI:¸÷ÖáËø×¡×´Ì¬
+    void SetMLKState(uint8_t MLK, uint8_t MLKI); //ÏòMI·¢ËÍ¸÷Öá»úĞµËø×¡×´Ì¬
     void ProcessRecoverMLK(uint8_t mask, double *mach_pos); // Òì²½´¦ÀíMLK»Ö¸´Á÷³Ì
+
+    // EXLM: 0:ÈíÏŞÎ»1  1:ÈíÏŞÎ»2
+    // RLSOT: 0:ÏŞÎ»¿ªÆô 1:ÏŞÎ»¹Ø±Õ
+    void SetSoftLimitSignal(uint8_t EXLM, uint8_t RLSOT);
 
     void SaveCurPhyAxisEncoder();  //µôµç±£´æµ±Ç°ËùÓĞÎïÀíÖáµÄ±àÂëÆ÷·´À¡
     void SaveKeepMacroVar();		//µôµç±£´æ·ÇÒ×Ê§ĞÔºê±äÁ¿
@@ -454,7 +460,7 @@ private:	//Ë½ÓĞ³ÉÔ±º¯Êı
 	void AxisFindRefNoZeroSignal(uint8_t phy_axis);              // µ±Ç°Î»ÖÃÉèÖÃÎª²Î¿¼µã   ĞéÄâÖá»Ø²Î¿¼µã  ²½½øµç»úÉèÖÃ²Î¿¼µã
     void EcatIncAxisFindRefWithZeroSignal(uint8_t phy_axis);     // ×ÜÏßÔöÁ¿Ê½ÖáÓĞ»ù×¼»Ø²Î¿¼µã£¬¸ù¾İZĞÅºÅ×÷Îª¾«»ù×¼
     void EcatIncAxisFindRefNoZeroSignal(uint8_t phy_axis);       // ×ÜÏßÔöÁ¿Ê½ÎŞ»ù×¼»Ø²Î¿¼µã£¬½ö¸ù¾İZĞÅºÅ×÷Îª¾«»ù×¼»ØÁã
-    void SetSubAxisRefPoint(int axisID, double pos);            // ´Ó¶¯Öá»ØÁã
+    void SetSubAxisRefPoint(int axisID, double pos);             // ´Ó¶¯Öá»ØÁã
     void ClearSubAxisRefFlag(int axisID);                        // Çå³ıÖØ¶¯Öá»ØÁã±êÖ¾
 
 

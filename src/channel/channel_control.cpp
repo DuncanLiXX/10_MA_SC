@@ -309,14 +309,10 @@ bool ChannelControl::Initialize(uint8_t chn_index, ChannelEngine *engine, HMICom
             m_channel_status.returned_to_ref_point |= (0x01<<i);
             continue;
         }
-        //		printf("init axis %d ref_flag, interface=%hhu, feedback=%hhu, ref_encoder=0x%llx\n", i,
-        //				m_p_axis_config[phy_axis-1].axis_interface,
-        //				m_p_axis_config[phy_axis-1].feedback_mode,
-        //				m_p_axis_config[phy_axis-1].ref_encoder);
-        if(m_p_axis_config[phy_axis-1].axis_interface == VIRTUAL_AXIS || m_p_axis_config[phy_axis-1].axis_type == AXIS_SPINDLE	//主轴和虚拟轴不用回参考点
-                || (m_p_axis_config[phy_axis-1].feedback_mode == NO_ENCODER && m_p_axis_config[phy_axis-1].ret_ref_mode == 0)   //无反馈,并且禁止回参考点
-                || (m_p_axis_config[phy_axis-1].feedback_mode != INCREMENTAL_ENCODER && m_p_axis_config[phy_axis-1].ref_encoder != kAxisRefNoDef)  //非增量式，并已确定零点
-                /*|| (m_p_axis_config[phy_axis-1].feedback_mode == INCREMENTAL_ENCODER && m_p_axis_config[phy_axis-1].ret_ref_mode == 0)增量式反馈必须回零*/){   //增量式并禁止回参考点
+        if(m_p_axis_config[phy_axis-1].axis_interface == VIRTUAL_AXIS   //虚拟轴不用建立参考点
+            || m_p_axis_config[phy_axis-1].axis_type == AXIS_SPINDLE	//主轴不用建立参数点
+            || (m_p_axis_config[phy_axis-1].feedback_mode == ABSOLUTE_ENCODER && m_p_axis_config[phy_axis-1].ref_encoder != kAxisRefNoDef))  //已经建立参考点的绝对式编码器，不用再次建立参考点
+        {
             m_channel_status.returned_to_ref_point |= (0x01<<i);
         }
         if(m_p_axis_config[phy_axis-1].axis_interface != VIRTUAL_AXIS)
@@ -347,7 +343,8 @@ bool ChannelControl::Initialize(uint8_t chn_index, ChannelEngine *engine, HMICom
         if(m_p_axis_config[phy_axis-1].axis_pmc > 0){
             this->m_mask_pmc_axis |= (0x01<<i);
             this->m_n_pmc_axis_count++;
-        }else if(m_p_axis_config[phy_axis-1].axis_type != AXIS_SPINDLE){   //插补轴, 排除主轴
+        }else{
+        //}else if(m_p_axis_config[phy_axis-1].axis_type != AXIS_SPINDLE){   //插补轴, 排除主轴
             this->m_mask_intp_axis |= (0x01<<i);
             this->m_n_intp_axis_count++;
         }
@@ -1336,7 +1333,7 @@ bool ChannelControl::SetSysVarValue(const int index, const double &value){
         pthread_mutex_unlock(&m_mutex_change_state);
     	uint16_t msg_id = value;
         printf("set 3000 value = %u\n", msg_id);
-        if(msg_id > 0){
+        if(msg_id >= 0){
 			CreateError(msg_id, INFO_LEVEL, CLEAR_BY_MCP_RESET, 0, m_n_channel_index);
 			printf("3000 msg_id: %d\n", msg_id);
 		}
@@ -2155,6 +2152,7 @@ void ChannelControl::StopRunGCode(bool reset){
 
     this->m_p_f_reg->SPL = 0;
     this->m_p_f_reg->STL = 0;
+
 }
 
 
@@ -2441,6 +2439,7 @@ void ChannelControl::SendMonitorData(bool bAxis, bool btime){
 
     //处于刚攻状态需要读取刚攻误差
     if(m_p_g_reg->RGTAP == 1){
+        //m_channel_rt_status.tap_err_now = m_p_spindle->GetTapErr();
         m_p_mi_comm->ReadTapErr(&m_channel_rt_status.tap_err,
                                 &m_channel_rt_status.tap_err_now,
                                 1);
@@ -4313,7 +4312,7 @@ int ChannelControl::Run(){
             {
                 //自动模式下，反向引导或者正向引导缓冲数据未发送完，则不进行编译
                 //	printf("@@@@@@, last= %d, tail=%d\n", m_p_last_output_msg, m_p_output_msg_list->TailNode());
-                printf("11111\n");
+                //printf("11111\n");
             	bf = ExecuteMessage();
 
 				if(!bf){
@@ -4326,7 +4325,7 @@ int ChannelControl::Run(){
 				}
 			}else if(m_p_compiler->GetErrorCode() != ERR_NONE)
 			{
-				printf("22222\n");
+                //printf("22222\n");
 				//编译器出错，但需要继续执行已编译指令
 				if(m_p_compiler->RunMessage()){
                     if(!ExecuteMessage()){
@@ -4342,7 +4341,7 @@ int ChannelControl::Run(){
 			}
 			else if(m_p_compiler->GetLineData())
 			{
-				printf("33333\n");
+                //printf("33333\n");
 				//printf("----------------------------> GetLineData\n");
 				//获取一行源码
 				if(!m_p_compiler->CompileLine())  //编译一行代码
@@ -9436,18 +9435,19 @@ bool ChannelControl::ExecuteRefReturnMsg(RecordMsg *msg){
 #ifdef USES_RET_REF_TO_MACH_ZERO
             double target_pos = 0;
 #endif
-				if(gcode == G30_CMD) target_pos = m_p_axis_config[phy_axis].axis_home_pos[ref_id-1];
-				if(axis_mask & (0x01<<i)){
-					if(fabs(this->m_channel_rt_status.cur_pos_machine.GetAxisValue(i) - target_pos) > 5e-3){ //未到位
-						//printf("step 3: axis %hhu cur pos = %lf, target=%lf\n", i, m_channel_rt_status.cur_pos_machine.GetAxisValue(i), target_pos);
-						flag = false;
-						phy_axis = this->GetPhyAxis(i);
-						if(phy_axis != 0xff){
-							//printf("phy_axis: %d target_pos: %lf\n", phy_axis, target_pos);
-							this->ManualMove(i, target_pos, m_p_axis_config[phy_axis].rapid_speed);  //机械坐标系
-						}
-					}
-				}
+                if(gcode == G30_CMD) target_pos = m_p_axis_config[phy_axis].axis_home_pos[ref_id-1];
+                uint8_t mlk_mask = m_p_channel_engine->GetMlkMask();
+                if((axis_mask & (0x01<<i)) && !(mlk_mask & (0x01 << i))){
+                    if(fabs(this->m_channel_rt_status.cur_pos_machine.GetAxisValue(i) - target_pos) > 5e-3){ //未到位
+                        //printf("step 3: axis %hhu cur pos = %lf, target=%lf\n", i, m_channel_rt_status.cur_pos_machine.GetAxisValue(i), target_pos);
+                        flag = false;
+                        phy_axis = this->GetPhyAxis(i);
+                        if(phy_axis != 0xff){
+                            //printf("phy_axis: %d target_pos: %lf\n", phy_axis, target_pos);
+                            this->ManualMove(i, target_pos, m_p_axis_config[phy_axis].rapid_speed);  //机械坐标系
+                        }
+                    }
+                }
 			}
 
             if(flag){
@@ -10908,6 +10908,16 @@ uint8_t ChannelControl::GetChnAxisFromPhyAxis(uint8_t phy_axis){
     return res;
 }
 
+void ChannelControl::SyncMcPosition(){
+    if(!this->m_b_mc_on_arm)
+        this->m_p_mc_comm->ReadAxisIntpPos(m_n_channel_index, m_channel_mc_status.intp_pos, m_channel_mc_status.intp_tar_pos);
+    else
+        this->m_p_mc_arm_comm->ReadAxisIntpPos(m_n_channel_index, m_channel_mc_status.intp_pos, m_channel_mc_status.intp_tar_pos);
+
+    this->RefreshAxisIntpPos();
+    this->m_p_compiler->SetCurPos(this->m_channel_mc_status.intp_pos);   //同步编译器位置
+}
+
 /**
  * @brief 获取对应通道轴名称的物理轴索引号，0开始
  * @param axis_name : 轴名称索引
@@ -11083,6 +11093,7 @@ void ChannelControl::ManualMove(int8_t dir){
     if(CheckSoftLimit((ManualMoveDir)dir, phy_axis,
                       GetAxisCurMachPos(m_channel_status.cur_axis))){
         // ScPrintf("soft limit active, manual move abs return \n");
+        std::cout << "soft limit active, manual move abs return\n";
         return;
     }else if(GetSoftLimt((ManualMoveDir)dir, phy_axis, limit) && dir == DIR_POSITIVE && tar_pos > limit*1e7){
         tar_pos = limit * 1e7;
@@ -11098,6 +11109,7 @@ void ChannelControl::ManualMove(int8_t dir){
 
     if(this->m_mask_pmc_axis & (0x01<<m_channel_status.cur_axis)){
         this->ManualMovePmc(dir);
+        std::cout << "ManualMovePmc\n";
         return;
     }
 
@@ -11127,13 +11139,14 @@ void ChannelControl::ManualMove(int8_t dir){
 
     cmd.data.data[6] = 0x02;   //增量目标位置
 
+    std::cout << "WriteCmd:move" << std::endl;
     if(!this->m_b_mc_on_arm)
         m_p_mc_comm->WriteCmd(cmd);
     else
         m_p_mc_arm_comm->WriteCmd(cmd);
 
-    //printf("manual move: axis = %d, tar_pos = %lld, type = 0x%x, ratio = %hhu\n", m_channel_status.cur_axis, tar_pos, cmd.data.data[6],
-    //        this->m_channel_status.manual_ratio);
+    printf("manual move: axis = %d, tar_pos = %lld, type = 0x%x, ratio = %hhu\n", m_channel_status.cur_axis, tar_pos, cmd.data.data[6],
+            this->m_channel_status.manual_ratio);
 }
 
 /**
@@ -16600,24 +16613,12 @@ bool ChannelControl::EmergencyStop(){
 #endif
     this->SetMachineState(state);  //更新通道状态
 
-    /*
-    //复位各轴回参考点标志，只有增量式编码器的轴需要复位
-    for(int i = 0; i < this->m_p_channel_config->chn_axis_count; i++){
-        if(m_p_axis_config[m_channel_status.cur_chn_axis_phy[i]-1].axis_interface != VIRTUAL_AXIS		//非虚拟轴
-                && m_p_axis_config[m_channel_status.cur_chn_axis_phy[i]-1].axis_type != AXIS_SPINDLE				//非主轴
-                && m_p_axis_config[m_channel_status.cur_chn_axis_phy[i]-1].ret_ref_mode > 0 ){	//非禁止回参考点
-        m_channel_status.returned_to_ref_point &= ~(0x01<<i);
-        }
-    }
-*/
-
     //复位各轴回参考点标志，只有增量式编码器的轴需要复位
     for(int i = 0; i < this->m_p_channel_config->chn_axis_count; i++){
         if(m_p_axis_config[m_p_channel_config->chn_axis_phy[i]-1].axis_interface != VIRTUAL_AXIS		//非虚拟轴
                 && m_p_axis_config[m_p_channel_config->chn_axis_phy[i]-1].axis_type != AXIS_SPINDLE				//非主轴
-                && (m_p_axis_config[m_p_channel_config->chn_axis_phy[i]-1].feedback_mode == INCREMENTAL_ENCODER ||
-                    m_p_axis_config[m_p_channel_config->chn_axis_phy[i]-1].feedback_mode == NO_ENCODER)   //增量式编码器或者无反馈
-                && m_p_axis_config[m_p_channel_config->chn_axis_phy[i]-1].ret_ref_mode > 0 ){	//非禁止回参考点
+                && m_p_axis_config[m_p_channel_config->chn_axis_phy[i]-1].feedback_mode == INCREMENTAL_ENCODER)    //增量式编码器
+        {
             m_channel_status.returned_to_ref_point &= ~(0x01<<i);
         }
     }
@@ -17277,13 +17278,20 @@ bool ChannelControl::CheckAxisSrvOn(uint64_t &flag){
     uint64_t line_axis = m_n_real_phy_axis;
     uint64_t srvon_mask = flag;
     //printf("CheckAxisSrvOn:m_n_real_phy_axis=%lld,flag=%lld",m_n_real_phy_axis,flag);
+
     if(m_p_spindle->Type() != 0){
         line_axis &= ~(0x01 << m_p_spindle->GetPhyAxis());
         srvon_mask &= ~(0x01 << m_p_spindle->GetPhyAxis());
     }
+    for(int i=0; i<m_p_channel_config->chn_axis_count; i++){
+        if(m_p_g_reg->SVF & (0x01<<i)){
+            line_axis &= ~(0x01 << i);
+            srvon_mask &= ~(0x01 << i);
+        }
+    }
     //printf("CheckAxisSrvOn:line_axis=%lld,srvon_mask=%lld",line_axis,srvon_mask);
 
-    if((line_axis & srvon_mask) == (line_axis & (~m_p_g_reg->SVF))){
+    if((line_axis & srvon_mask) == line_axis){
         this->m_p_f_reg->SA = 1;
         return true;
     }else{

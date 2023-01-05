@@ -164,6 +164,7 @@ void ToolCompensate::ProcessData(ListNode<RecordMsg *> *node){
 			}else{
 				interp.convert_arc(30, &interp._setup._block, &interp._setup);
 			}
+
             delete msg;
             delete node;
 			break;
@@ -176,6 +177,13 @@ void ToolCompensate::ProcessData(ListNode<RecordMsg *> *node){
 			if(tmsg->GetGCode() == G40_CMD){
 
 				interp.convert_cutter_compensation_off(&interp._setup);
+
+				delete msg;
+				delete node;
+			}else if(tmsg->GetGCode() == G41_CMD){
+
+				interp.convert_cutter_compensation_on(LEFT,this->comp_radius,&interp._setup);
+
                 delete msg;
                 delete node;
 
@@ -186,6 +194,7 @@ void ToolCompensate::ProcessData(ListNode<RecordMsg *> *node){
                 delete node;
 			}else if(tmsg->GetGCode() == G42_CMD){
 				interp.convert_cutter_compensation_on(RIGHT,this->comp_radius,&interp._setup);
+
                 delete msg;
                 delete node;
 			}else{

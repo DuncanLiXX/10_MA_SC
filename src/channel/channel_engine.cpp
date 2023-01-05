@@ -2371,6 +2371,8 @@ void ChannelEngine::ProcessMiGetESBCmd(MiCmdFrame &cmd){
     uint16_t index = cmd.data.data[0];
 
     uint32_t res = LoadEsbData(index, cmd.data.data[3]); //加载ESB文件数据
+
+    printf("===== write esb cmd %d\n", res);
     memcpy(cmd.data.data, &res, sizeof(uint32_t));
     cmd.data.data[2] = index;
 
@@ -2674,6 +2676,8 @@ int32_t ChannelEngine::LoadEsbData(uint16_t index, uint16_t &flag){
     close(fp);
     closedir(pdir);
     g_ptr_trace->PrintTrace(TRACE_INFO, CHANNEL_ENGINE_SC, "Exit ChannelEngine::LoadEsbData(), flag=%hu, bytes=%d", flag, res);
+
+    printf("===== read esb file size: %d\n", res);
     return res;
 }
 

@@ -10676,7 +10676,7 @@ void ChannelControl::SetFuncState(int state, uint8_t mode){
 
     const vector<string> table = {"单段执行", "空运行", "选停", "手轮跟踪", "程序跳段", "编辑锁", "机床锁",
                                  "机床辅助锁", "手动快速"};
-    if(state > 0 && state < (int)table.size())
+    if(state >= 0 && state < (int)table.size())
     {
         if (mode == 0)
             g_ptr_tracelog_processor->SendToHmi(kPanelOper, kDebug, "关闭[" + table[state] + "]");

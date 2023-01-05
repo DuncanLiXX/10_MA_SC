@@ -5538,7 +5538,7 @@ void ChannelEngine::SetJPState(uint8_t chn, uint8_t JP, uint8_t last_JP, ChnWork
             g_ptr_tracelog_processor->SendToHmi(kPanelOper, kDebug, "点动[轴" + to_string(chn_axis) + "]+");
         }else if(mode == MANUAL_MODE){ // 轴正向移动松开，并且为手动连续模式
             ManualMoveStop(m_p_channel_config[chn].chn_axis_phy[i]-1);
-            g_ptr_tracelog_processor->SendToHmi(kPanelOper, kDebug, "点动释放[轴" + to_string(chn_axis) + "]+");
+            //g_ptr_tracelog_processor->SendToHmi(kPanelOper, kDebug, "点动释放[轴" + to_string(chn_axis) + "]+");
             usleep(200000);
         }
     }
@@ -5564,7 +5564,7 @@ void ChannelEngine::SetJNState(uint8_t chn, uint8_t JN, uint8_t last_JN, ChnWork
             g_ptr_tracelog_processor->SendToHmi(kPanelOper, kDebug, "点动[轴" + to_string(chn_axis) + "]-");
         }else if(mode == MANUAL_MODE){ // 轴正向移动松开，并且为手动连续模式
             ManualMoveStop(m_p_channel_config[chn].chn_axis_phy[i]-1);
-            g_ptr_tracelog_processor->SendToHmi(kPanelOper, kDebug, "点动释放[轴" + to_string(chn_axis) + "]-");
+            //g_ptr_tracelog_processor->SendToHmi(kPanelOper, kDebug, "点动释放[轴" + to_string(chn_axis) + "]-");
             usleep(200000);
         }
     }
@@ -8499,6 +8499,26 @@ void ChannelEngine::ProcessPmcSignal(){
         if(g_reg->MLK != g_reg_last->MLK || g_reg->MLKI != g_reg_last->MLKI){
             f_reg->MMLK = g_reg->MLK;
             SetMLKState(g_reg->MLK, g_reg->MLKI);
+            //日志记录
+            if (g_reg->MLK != g_reg_last->MLK)
+            {
+                if (g_reg->MLK)
+                    g_ptr_tracelog_processor->SendToHmi(kPanelOper, kDebug, "开启[机械锁住]");
+                else
+                    g_ptr_tracelog_processor->SendToHmi(kPanelOper, kDebug, "关闭[机械锁住]");
+            }
+            else
+            {
+                for (int i = 0; i < m_p_channel_config->chn_axis_count; i++)
+                {
+                    bool curState = g_reg->MLKI & (0x01 << i);
+                    bool lastState = g_reg_last->MLKI & (0x01 << i);
+                    if (curState && !lastState)
+                        g_ptr_tracelog_processor->SendToHmi(kPanelOper, kDebug, "轴 " + to_string(i) + "开启[机械锁]");
+                    if (!curState && lastState)
+                        g_ptr_tracelog_processor->SendToHmi(kPanelOper, kDebug, "轴 " + to_string(i) + "关闭[机械锁]");
+                }
+            }
         }
 
         // 限位开关选择信号

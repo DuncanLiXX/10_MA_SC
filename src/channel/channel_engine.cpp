@@ -7625,7 +7625,8 @@ void ChannelEngine::SendMiPcParam2(uint8_t axis){
     cmd.data.axis_index = axis+1;
 
     //放置数据
-    int32_t pos = m_p_axis_config[axis].axis_home_pos[0]*1000;   //转换为微米单位
+    //int32_t pos = m_p_axis_config[axis].axis_home_pos[0]*1000;   //转换为微米单位
+    int32_t pos = 0;//固定传0，传非零测试出问题，暂时规避
     memcpy(cmd.data.data, &pos, 4);  //
 
     this->m_p_mi_comm->WriteCmd(cmd);
@@ -7678,7 +7679,7 @@ void ChannelEngine::SendMiBacklash(uint8_t axis){
 
     //放置数据
     if(m_p_axis_config[axis].backlash_enable){
-        uint32_t data = m_p_axis_config[axis].backlash_forward * 1000;
+        int32_t data = m_p_axis_config[axis].backlash_forward * 1000;
         memcpy(cmd.data.data, &data, 4);
         data = m_p_axis_config[axis].backlash_negative * 1000;
         memcpy(&cmd.data.data[2], &data, 4);
@@ -7687,7 +7688,7 @@ void ChannelEngine::SendMiBacklash(uint8_t axis){
         uint16_t enable = m_p_axis_config[axis].backlash_enable;
         memcpy(&cmd.data.data[6], &enable, 2);
     }else{
-        uint32_t data = 0.0;
+        int32_t data = 0.0;
         memcpy(cmd.data.data, &data, 4);
         data = 0.0;
         memcpy(&cmd.data.data[2], &data, 4);
@@ -7698,8 +7699,8 @@ void ChannelEngine::SendMiBacklash(uint8_t axis){
     }
     std::cout << "axis: " << (int)cmd.data.axis_index << std::endl;
     std::cout << "backlash_enable: " << (int)m_p_axis_config[axis].backlash_enable << std::endl;
-    std::cout << "backlash_forward: " << (int)m_p_axis_config[axis].backlash_forward << std::endl;
-    std::cout << "backlash_negative: " << (int)m_p_axis_config[axis].backlash_negative << std::endl;
+    std::cout << "backlash_forward: " << (double)m_p_axis_config[axis].backlash_forward << std::endl;
+    std::cout << "backlash_negative: " << (double)m_p_axis_config[axis].backlash_negative << std::endl;
     std::cout << "backlash_step: " << (int)m_p_axis_config[axis].backlash_step << std::endl;
     this->m_p_mi_comm->WriteCmd(cmd);
 }

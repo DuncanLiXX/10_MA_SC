@@ -6180,6 +6180,9 @@ bool ChannelControl::ExecuteAuxMsg(RecordMsg *msg){
                         this->SendMachOverToHmi();  //发送加工结束消息给HMI
                     }
 #else
+                    string msg = "结束加工程序(" + string(this->m_channel_status.cur_nc_file_name) + ")";
+                    g_ptr_tracelog_processor->SendToHmi(kProcessInfo, kDebug, msg);
+
                     this->SendMachOverToHmi();  //发送加工结束消息给HMI
 #endif
                 }

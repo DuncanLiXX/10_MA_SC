@@ -2371,6 +2371,8 @@ void ChannelEngine::ProcessMiGetESBCmd(MiCmdFrame &cmd){
     uint16_t index = cmd.data.data[0];
 
     uint32_t res = LoadEsbData(index, cmd.data.data[3]); //加载ESB文件数据
+
+    printf("===== write esb cmd %d\n", res);
     memcpy(cmd.data.data, &res, sizeof(uint32_t));
     cmd.data.data[2] = index;
 
@@ -2674,6 +2676,8 @@ int32_t ChannelEngine::LoadEsbData(uint16_t index, uint16_t &flag){
     close(fp);
     closedir(pdir);
     g_ptr_trace->PrintTrace(TRACE_INFO, CHANNEL_ENGINE_SC, "Exit ChannelEngine::LoadEsbData(), flag=%hu, bytes=%d", flag, res);
+
+    printf("===== read esb file size: %d\n", res);
     return res;
 }
 
@@ -5540,7 +5544,7 @@ void ChannelEngine::SetJPState(uint8_t chn, uint8_t JP, uint8_t last_JP, ChnWork
             g_ptr_tracelog_processor->SendToHmi(kPanelOper, kDebug, "点动[轴" + to_string(chn_axis) + "]+");
         }else if(mode == MANUAL_MODE){ // 轴正向移动松开，并且为手动连续模式
             ManualMoveStop(m_p_channel_config[chn].chn_axis_phy[i]-1);
-            g_ptr_tracelog_processor->SendToHmi(kPanelOper, kDebug, "点动释放[轴" + to_string(chn_axis) + "]+");
+            //g_ptr_tracelog_processor->SendToHmi(kPanelOper, kDebug, "点动释放[轴" + to_string(chn_axis) + "]+");
             usleep(200000);
         }
     }
@@ -5566,7 +5570,7 @@ void ChannelEngine::SetJNState(uint8_t chn, uint8_t JN, uint8_t last_JN, ChnWork
             g_ptr_tracelog_processor->SendToHmi(kPanelOper, kDebug, "点动[轴" + to_string(chn_axis) + "]-");
         }else if(mode == MANUAL_MODE){ // 轴正向移动松开，并且为手动连续模式
             ManualMoveStop(m_p_channel_config[chn].chn_axis_phy[i]-1);
-            g_ptr_tracelog_processor->SendToHmi(kPanelOper, kDebug, "点动释放[轴" + to_string(chn_axis) + "]-");
+            //g_ptr_tracelog_processor->SendToHmi(kPanelOper, kDebug, "点动释放[轴" + to_string(chn_axis) + "]-");
             usleep(200000);
         }
     }
@@ -7624,7 +7628,8 @@ void ChannelEngine::SendMiPcParam2(uint8_t axis){
     cmd.data.axis_index = axis+1;
 
     //放置数据
-    int32_t pos = m_p_axis_config[axis].axis_home_pos[0]*1000;   //转换为微米单位
+    //int32_t pos = m_p_axis_config[axis].axis_home_pos[0]*1000;   //转换为微米单位
+    int32_t pos = 0;//固定传0，传非零测试出问题，暂时规避
     memcpy(cmd.data.data, &pos, 4);  //
 
     this->m_p_mi_comm->WriteCmd(cmd);
@@ -7677,23 +7682,29 @@ void ChannelEngine::SendMiBacklash(uint8_t axis){
 
     //放置数据
     if(m_p_axis_config[axis].backlash_enable){
-        uint32_t data = m_p_axis_config[axis].backlash_forward * 1000;
-        memcpy(cmd.data.data, &data, 4);  //
+        int32_t data = m_p_axis_config[axis].backlash_forward * 1000;
+        memcpy(cmd.data.data, &data, 4);
         data = m_p_axis_config[axis].backlash_negative * 1000;
         memcpy(&cmd.data.data[2], &data, 4);
         data = m_p_axis_config[axis].backlash_step;
         memcpy(&cmd.data.data[4], &data, 4);
+        uint16_t enable = m_p_axis_config[axis].backlash_enable;
+        memcpy(&cmd.data.data[6], &enable, 2);
     }else{
-        uint32_t data = 0.0;
-        memcpy(cmd.data.data, &data, 4);  //
+        int32_t data = 0.0;
+        memcpy(cmd.data.data, &data, 4);
         data = 0.0;
         memcpy(&cmd.data.data[2], &data, 4);
+        data = 0.0;
+        memcpy(&cmd.data.data[4], &data, 4);
+        uint16_t enable = 0;
+        memcpy(&cmd.data.data[6], &enable, 2);
     }
-    //std::cout << "axis: " << (int)cmd.data.axis_index << std::endl;
-    //std::cout << "backlash_enable: " << (int)m_p_axis_config[axis].backlash_enable << std::endl;
-    //std::cout << "backlash_forward: " << (int)m_p_axis_config[axis].backlash_forward << std::endl;
-    //std::cout << "backlash_negative: " << (int)m_p_axis_config[axis].backlash_negative << std::endl;
-    //std::cout << "backlash_step: " << (int)m_p_axis_config[axis].backlash_step << std::endl;
+    std::cout << "axis: " << (int)cmd.data.axis_index << std::endl;
+    std::cout << "backlash_enable: " << (int)m_p_axis_config[axis].backlash_enable << std::endl;
+    std::cout << "backlash_forward: " << (double)m_p_axis_config[axis].backlash_forward << std::endl;
+    std::cout << "backlash_negative: " << (double)m_p_axis_config[axis].backlash_negative << std::endl;
+    std::cout << "backlash_step: " << (int)m_p_axis_config[axis].backlash_step << std::endl;
     this->m_p_mi_comm->WriteCmd(cmd);
 }
 
@@ -8492,6 +8503,26 @@ void ChannelEngine::ProcessPmcSignal(){
         if(g_reg->MLK != g_reg_last->MLK || g_reg->MLKI != g_reg_last->MLKI){
             f_reg->MMLK = g_reg->MLK;
             SetMLKState(g_reg->MLK, g_reg->MLKI);
+            //日志记录
+            if (g_reg->MLK != g_reg_last->MLK)
+            {
+                if (g_reg->MLK)
+                    g_ptr_tracelog_processor->SendToHmi(kPanelOper, kDebug, "开启[机械锁住]");
+                else
+                    g_ptr_tracelog_processor->SendToHmi(kPanelOper, kDebug, "关闭[机械锁住]");
+            }
+            else
+            {
+                for (int i = 0; i < m_p_channel_config->chn_axis_count; i++)
+                {
+                    bool curState = g_reg->MLKI & (0x01 << i);
+                    bool lastState = g_reg_last->MLKI & (0x01 << i);
+                    if (curState && !lastState)
+                        g_ptr_tracelog_processor->SendToHmi(kPanelOper, kDebug, "轴 " + to_string(i) + "开启[机械锁]");
+                    if (!curState && lastState)
+                        g_ptr_tracelog_processor->SendToHmi(kPanelOper, kDebug, "轴 " + to_string(i) + "关闭[机械锁]");
+                }
+            }
         }
 
         // 限位开关选择信号

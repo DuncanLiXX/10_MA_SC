@@ -624,7 +624,7 @@ bool Parser::AnalyzeGCode(LexerGCode *gcode){
 
 	//TODO 处理07组模态指令：G40/G41/G42 半径补偿指令
 	if(m_mode_mask & GMODE_07){
-		has_move_code = true;
+		//has_move_code = true;
 		if(!this->CreateCompensateMsg(m_mode_code[7])){
 			return false;
 		}
@@ -664,7 +664,6 @@ bool Parser::AnalyzeGCode(LexerGCode *gcode){
 		if(!CreateLoopMsg(m_mode_code[9]))
 			return false;
 	}
-
 
 	//处理01组模态指令：G00/G01/G02/G03/G6.2/G33~G36 切削类指令
 	if(m_mode_mask & GMODE_01 && !has_move_code){
@@ -734,9 +733,7 @@ bool Parser::AnalyzeGCode(LexerGCode *gcode){
 					return false;
 			}
 		}
-
 	}
-
 
 	return true;
 }

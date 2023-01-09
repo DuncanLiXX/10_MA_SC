@@ -668,7 +668,6 @@ private://私有成员变量
 	uint32_t m_mask_intp_axis;      //通道插补轴mask，按通道轴顺序
 	uint8_t m_n_intp_axis_count;    //通道插补轴个数
 	uint32_t m_mask_pmc_axis;       //PMC通道轴mask，按通道轴顺序
-	uint8_t m_n_pmc_axis_count;     //PMC轴个数
 
 	ErrorType m_error_code;      	//错误码
 

@@ -2065,7 +2065,7 @@ void ChannelEngine::ProcessMiOperateCmdRsp(MiCmdFrame &cmd)
 {
     MiCtrlOperate type = (MiCtrlOperate)cmd.data.data[0];
     uint8_t axis = cmd.data.axis_index;
-    printf("cmd.data.data[1] = %d\n",cmd.data.data[1]);
+    //printf("cmd.data.data[1] = %d\n",cmd.data.data[1]);
     bool enable = cmd.data.data[1];
     if(type == MOTOR_ON_FLAG){
         m_p_channel_control[0].GetSpdCtrl()->RspAxisEnable(axis,enable);
@@ -4675,6 +4675,8 @@ void ChannelEngine::ProcessPmcAxisFindRef(uint8_t phy_axis){
         this->m_n_mask_ret_ref |= (0x01<<phy_axis);
         this->m_b_ret_ref = true;
         this->m_b_ret_ref_auto = false;
+        ScPrintf("ProcessPmcAxisFindRef axis=%u",phy_axis);
+
 #endif
     }else{
         if(this->m_p_axis_config[phy_axis].axis_pmc > 0){
@@ -5577,10 +5579,10 @@ void ChannelEngine::SetJNState(uint8_t chn, uint8_t JN, uint8_t last_JN, ChnWork
 void ChannelEngine::ManualMove(int8_t dir){
     if(this->m_b_emergency)
         return;
-    if(this->m_n_cur_pmc_axis != 0xFF){  //移动PMC轴
-        this->ManualMovePmc(dir);
-    }else
-        m_p_channel_control[m_n_cur_channle_index].ManualMove(dir);
+//    if(this->m_n_cur_pmc_axis != 0xFF){  //移动PMC轴
+//        this->ManualMovePmc(dir);
+//    }else
+     m_p_channel_control[m_n_cur_channle_index].ManualMove(dir);
 }
 
 /**
@@ -5977,11 +5979,12 @@ void ChannelEngine::ManualMoveStop(uint8_t phy_axis){
     if(this->m_p_axis_config[phy_axis].axis_pmc == 0 && chn != CHANNEL_ENGINE_INDEX){
         this->m_p_channel_control[chn].ManualMoveStop(0x01<<chn_axis);
     }else if(this->m_p_axis_config[phy_axis].axis_pmc){  //PMC轴
+        //ScPrintf("ManualMoveStop axis=%u",phy_axis);
         MiCmdFrame cmd;
         memset(&cmd, 0x00, sizeof(MiCmdFrame));
 
         cmd.data.axis_index = phy_axis+1;
-        cmd.data.reserved = CHANNEL_ENGINE_INDEX;
+        cmd.data.reserved = chn+1;
         cmd.data.cmd = CMD_MI_PAUSE_PMC_AXIS;
         cmd.data.data[0] = 0x30;   //停止指定轴运动，并抛弃当前运动指令
 
@@ -8153,12 +8156,8 @@ bool ChannelEngine::RefreshMiStatusFun(){
         }
 
 
-        this->m_p_mi_comm->ReadServoOnState(this->m_n_phy_axis_svo_on);
-        this->CheckAxisSrvOn();
-//        if(!m_servo_ready){
-//            usleep(8000);
-//            continue;
-//        }
+        this->m_p_mi_comm->ReadServoOnState(m_n_phy_axis_svo_on);
+        Singleton<AxisStatusCtrl>::instance().UpdateSA(m_n_phy_axis_svo_on);
 
         if(!this->m_b_power_off){  //掉电后不处理
             this->ProcessPmcSignal();
@@ -8666,12 +8665,19 @@ void ChannelEngine::ProcessPmcSignal(){
             this->SetRapidRatio(i, g_reg->ROV);
 
 
-
         if(g_reg->JP != g_reg_last->JP){
-            SetJPState(i, g_reg->JP, g_reg_last->JP, mode);
+            // 如果在增量模式下并且手动倍率为0，则不发指令
+            bool valid = !(mode == MANUAL_STEP_MODE && ctrl[i].GetManualRatio() == 0);
+            if(valid){
+                SetJPState(i, g_reg->JP, g_reg_last->JP, mode);
+            }
         }
         if(g_reg->JN != g_reg_last->JN){
-            SetJNState(i, g_reg->JN, g_reg_last->JN, mode);
+            // 如果在增量模式下并且手动倍率为0，则不发指令
+            bool valid = !(mode == MANUAL_STEP_MODE && ctrl[i].GetManualRatio() == 0);
+            if(valid){
+                SetJNState(i, g_reg->JN, g_reg_last->JN, mode);
+            }
         }
 
         if(g_reg->MD == 6){  //原点模式

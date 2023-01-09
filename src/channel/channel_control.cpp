@@ -20,6 +20,7 @@
 #include "alarm_processor.h"
 #include "spindle_control.h"
 #include "showsc.h"
+#include "axis_status_ctrl.h"
 
 using namespace Spindle;
 
@@ -293,7 +294,6 @@ bool ChannelControl::Initialize(uint8_t chn_index, ChannelEngine *engine, HMICom
     this->m_mask_intp_axis = 0;
     this->m_n_intp_axis_count = 0;
     this->m_mask_pmc_axis = 0;
-    this->m_n_pmc_axis_count = 0;
 
     m_b_need_change_to_pause = false;
 
@@ -342,7 +342,6 @@ bool ChannelControl::Initialize(uint8_t chn_index, ChannelEngine *engine, HMICom
         //初始化PMC轴信息
         if(m_p_axis_config[phy_axis-1].axis_pmc > 0){
             this->m_mask_pmc_axis |= (0x01<<i);
-            this->m_n_pmc_axis_count++;
         }else{
         //}else if(m_p_axis_config[phy_axis-1].axis_type != AXIS_SPINDLE){   //插补轴, 排除主轴
             this->m_mask_intp_axis |= (0x01<<i);
@@ -689,12 +688,12 @@ void ChannelControl::Reset(){
     this->m_mask_run_pmc = 0;
     this->m_mask_runover_pmc = 0;
 
-    //同步PMC轴的目标位置和当前位置
-    for(int i = 0; i < this->m_p_channel_config->chn_axis_count; i++){
-        if(this->m_mask_pmc_axis & (0x01<<i)){
-            m_channel_rt_status.tar_pos_work.m_df_point[i] = m_channel_rt_status.cur_pos_work.m_df_point[i];
-        }
-    }
+//    //同步PMC轴的目标位置和当前位置
+//    for(int i = 0; i < this->m_p_channel_config->chn_axis_count; i++){
+//        if(this->m_mask_pmc_axis & (0x01<<i)){
+//            m_channel_rt_status.tar_pos_work.m_df_point[i] = m_channel_rt_status.cur_pos_work.m_df_point[i];
+//        }
+//    }
 
     m_n_subprog_count = 0;
     m_n_macroprog_count = 0;
@@ -2321,6 +2320,8 @@ void ChannelControl::RefreshAxisIntpPos(){
     for(int i = 0; i < m_p_channel_config->chn_axis_count && count < 8; i++){
         if(this->m_mask_pmc_axis & (0x01<<i)){
             m_channel_rt_status.cur_pos_work.m_df_point[i] = m_channel_rt_status.cur_pos_machine.m_df_point[i];   //pmc轴的工件坐标同机械坐标
+            m_channel_rt_status.tar_pos_work.m_df_point[i] = m_channel_rt_status.cur_pos_machine.m_df_point[i];   //pmc轴的工件坐标同机械坐标
+            count++;
             continue;
         }
         m_channel_rt_status.cur_pos_work.m_df_point[i] = m_channel_mc_status.intp_pos.GetAxisValue(count);
@@ -5031,6 +5032,7 @@ bool ChannelControl::OutputData(RecordMsg *msg, bool flag_block){
     //		return false;
     //	}
 
+
     if(this->m_simulate_mode == SIM_OUTLINE || this->m_simulate_mode == SIM_TOOLPATH){   //轮廓仿真和刀路仿真时直接发送数据给HMI
         return this->OutputSimulateData(msg);
     }
@@ -7017,7 +7019,6 @@ bool ChannelControl::ExecuteRapidMsg(RecordMsg *msg, bool flag_block){
             ){//加工复位
         this->m_mode_restart.pos_target = rapidmsg->GetTargetPos();  //更新目标位置
         this->m_mode_restart.gmode[1] = rapidmsg->GetGCode();   //更新模态
-
         return true;
     }
 
@@ -7035,6 +7036,7 @@ bool ChannelControl::ExecuteRapidMsg(RecordMsg *msg, bool flag_block){
                         m_channel_status.machining_state == MS_PAUSED ||
                         m_channel_status.machining_state == MS_WARNING ||
                         this->m_mask_run_pmc != 0){ //未达到执行条件
+
                     //			printf("compensate exec return: %d, %d , %d\n", block_over, ReadMcMoveDataCount(), m_channel_status.machining_state);
                     return false;    //还未运行到位
                 }
@@ -7050,6 +7052,7 @@ bool ChannelControl::ExecuteRapidMsg(RecordMsg *msg, bool flag_block){
                 this->m_b_need_change_to_pause = false;
                 m_n_run_thread_state = PAUSE;
                 SetMachineState(MS_PAUSED);
+
                 return false;
             }
         }
@@ -11075,7 +11078,6 @@ void ChannelControl::ManualMove(int8_t dir){
 
     if(this->m_mask_pmc_axis & (0x01<<m_channel_status.cur_axis)){
         this->ManualMovePmc(dir);
-        std::cout << "ManualMovePmc\n";
         return;
     }
 
@@ -11277,7 +11279,7 @@ void ChannelControl::ManualMoveStop(){
 
     m_channel_status.cur_manual_move_dir = DIR_STOP;
 
-    if(this->m_mask_run_pmc){   //PMC轴运动中
+    if(this->m_mask_pmc_axis & (0x01<<m_channel_status.cur_axis)){   //PMC轴运动中
         this->ManualMovePmcStop();
         return;
     }
@@ -17240,7 +17242,6 @@ void ChannelControl::SaveKeepMacroVar(){
  * @param flag
  */
 bool ChannelControl::CheckAxisSrvOn(uint64_t &flag){
-    // 屏蔽主轴
     uint64_t line_axis = m_n_real_phy_axis;
     uint64_t srvon_mask = flag;
     //printf("CheckAxisSrvOn:m_n_real_phy_axis=%lld,flag=%lld",m_n_real_phy_axis,flag);

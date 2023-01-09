@@ -253,7 +253,7 @@ void MICommunication::SendOperateCmd(uint16_t opt, uint8_t axis, uint16_t enable
 
 void MICommunication::SendAxisEnableCmd(uint8_t axis, bool enable, uint8_t pos_req)
 {
-    printf("SendAxisEnable:axis = %d, enable = %d\n",axis,true);
+    printf("SendAxisEnable:axis = %d, enable = %d\n",axis,enable);
 
     // opt为1，代表是轴使能操作
     MiCmdFrame cmd;
@@ -1007,8 +1007,6 @@ bool MICommunication::ReadCmd(MiCmdFrame &data){
 
 
 	if(flag1 == 1 && flag2 == 0){//有数据待读取
-	//	printf("read mi cmd: %d, %d, addr=0x%x\n", flag1, flag2, SHARED_MEM_CMD_RECV_WF(m_n_cur_recv_cmd_index));
-
 		//读取数据
 		ReadRegister32_M(SHARED_MEM_CMD_RECV_DATA0(m_n_cur_recv_cmd_index), data.data_w[0]);
 		ReadRegister32_M(SHARED_MEM_CMD_RECV_DATA1(m_n_cur_recv_cmd_index), data.data_w[1]);
@@ -1020,8 +1018,9 @@ bool MICommunication::ReadCmd(MiCmdFrame &data){
 		WriteRegister16_M(SHARED_MEM_CMD_RECV_RF(m_n_cur_recv_cmd_index), 1);
 
 		//读取指针下移
-		if(++m_n_cur_recv_cmd_index >= MI_CMD_FIFO_DEPTH)
+        if(++m_n_cur_recv_cmd_index >= MI_CMD_FIFO_DEPTH){
 			m_n_cur_recv_cmd_index = 0;
+        }
 
 	}
 	else

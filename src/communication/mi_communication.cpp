@@ -253,7 +253,7 @@ void MICommunication::SendOperateCmd(uint16_t opt, uint8_t axis, uint16_t enable
 
 void MICommunication::SendAxisEnableCmd(uint8_t axis, bool enable, uint8_t pos_req)
 {
-    printf("SendAxisEnable:axis = %d, enable = %d\n",axis,true);
+    printf("SendAxisEnable:axis = %d, enable = %d\n",axis,enable);
 
     // opt为1，代表是轴使能操作
     MiCmdFrame cmd;
@@ -433,20 +433,22 @@ void MICommunication::SendHandwheelInsertAxis(uint8_t chn, uint8_t axis)
     WriteCmd(cmd);
 }
 
-void MICommunication::SendHardLimitState(uint64_t mask)
+void MICommunication::SendHardLimitState(bool is_positive,uint64_t mask)
 {
     MiCmdFrame cmd;
     memset(&cmd, 0x00, sizeof(cmd));
     cmd.data.cmd = CMD_MI_SET_HARD_LIMIT;
 
     uint16_t *p_mask = (uint16_t*)&mask;
-    cmd.data.data[0] = *p_mask;
-    cmd.data.data[1] = *(p_mask+1);
-    cmd.data.data[2] = *(p_mask+2);
-    cmd.data.data[3] = *(p_mask+3);
+    cmd.data.data[0] = is_positive;
+    cmd.data.data[1] = *p_mask;
+    cmd.data.data[2] = *(p_mask+1);
+    cmd.data.data[3] = *(p_mask+2);
+    cmd.data.data[4] = *(p_mask+3);
 
     cmd.data.axis_index = NO_AXIS;
     cmd.data.reserved = 0xFF;
+    WriteCmd(cmd);
 }
 
 /**
@@ -1005,8 +1007,6 @@ bool MICommunication::ReadCmd(MiCmdFrame &data){
 
 
 	if(flag1 == 1 && flag2 == 0){//有数据待读取
-	//	printf("read mi cmd: %d, %d, addr=0x%x\n", flag1, flag2, SHARED_MEM_CMD_RECV_WF(m_n_cur_recv_cmd_index));
-
 		//读取数据
 		ReadRegister32_M(SHARED_MEM_CMD_RECV_DATA0(m_n_cur_recv_cmd_index), data.data_w[0]);
 		ReadRegister32_M(SHARED_MEM_CMD_RECV_DATA1(m_n_cur_recv_cmd_index), data.data_w[1]);
@@ -1018,8 +1018,9 @@ bool MICommunication::ReadCmd(MiCmdFrame &data){
 		WriteRegister16_M(SHARED_MEM_CMD_RECV_RF(m_n_cur_recv_cmd_index), 1);
 
 		//读取指针下移
-		if(++m_n_cur_recv_cmd_index >= MI_CMD_FIFO_DEPTH)
+        if(++m_n_cur_recv_cmd_index >= MI_CMD_FIFO_DEPTH){
 			m_n_cur_recv_cmd_index = 0;
+        }
 
 	}
 	else

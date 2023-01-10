@@ -47,11 +47,6 @@ typedef struct
 }TapState;
 }
 
-typedef struct{
-    double k;
-    double b;
-}TapLineEqt; // 刚性攻丝曲线方程 y = kx + b (假设主轴为x,z轴为y)
-
 class SpindleControl
 {
 public:
@@ -118,13 +113,6 @@ public:
 
     double GetSpdAngle();  // 获取主轴角度 单位：度
 
-    // tar_z_work_pos:z轴目标工件坐标
-    // tar_spd_work_pos:主轴目标工件坐标
-    // 返回值:是否成功
-    bool CalTapPosition(double tar_z_work_pos, double &tar_spd_work_pos); // 计算攻丝时的主轴目标工件坐标
-
-    double GetTapErr(); // 获取攻丝误差 单位:um
-
 private:
     void UpdateParams();        // 更新常用主轴参数到成员变量中
     void UpdateSpindleState();  // 根据当前状态更新转速
@@ -170,7 +158,7 @@ public:
     uint32_t da_prec{4095};    // DA精度
 
     FRegBits *F{nullptr};            // F寄存器
-    const GRegBits *G{nullptr};            // F寄存器
+    const GRegBits *G{nullptr};            // G寄存器
 
     Variable *variable;
 
@@ -216,7 +204,7 @@ public:
 
     Spindle::TapState tap_state;    // 攻丝数据记录
     bool running_rtnt{false};       // 是否正在攻丝回退
-    TapLineEqt tap_line;
+    double pos_zero_ang{0.0};            // 0度机械坐标
 };
 
 #endif

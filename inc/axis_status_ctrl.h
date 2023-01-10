@@ -30,6 +30,8 @@ public:
 
     // 输入伺服关断信号
     void InputSVF(uint64_t SVF);
+    void WaitingEnable();
+    bool IsWaitingEnable(){return is_waiting_enable;}
 
     // 输入伺服告警
     void InputServoWarn(bool is_warn);
@@ -40,6 +42,10 @@ public:
     // 更新伺服状态
     // force 0:一定会重发使能状态  1:需要更改使能时才往mi发命令
     void UpdateServoState(bool force = false);
+
+    void InitRealPhyAxisMask();
+    // 更新SA(F0.6)伺服就绪状态
+    void UpdateSA(uint64_t srvon_mask);
 
 private:
     uint8_t _ESP{1};    // 急停状态 低有效
@@ -54,6 +60,9 @@ private:
     bool last_enable[kMaxAxisNum]{false};
     bool last_svf[kMaxAxisNum]{false};
     bool axis_mask[kMaxAxisNum]{false};
+
+    uint64_t real_phy_axis{0x00};
+    bool is_waiting_enable{false};
 };
 
 #endif

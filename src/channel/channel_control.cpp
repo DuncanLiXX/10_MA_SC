@@ -1671,9 +1671,6 @@ void ChannelControl::ResetMode(){
  * @brief 开始G代码运行
  */
 void ChannelControl::StartRunGCode(){
-
-    string msg = "开始加工程序(" + string(this->m_channel_status.cur_nc_file_name) + ")";
-    g_ptr_tracelog_processor->SendToHmi(kProcessInfo, kDebug, msg);
 	printf("start run g code \n");
 
 	g_ptr_trace->PrintTrace(TRACE_INFO, CHANNEL_CONTROL_SC,"@#@#Enter ChannelControl::StartRunGCode(), m_n_run_thread_state = %d, chn_work_mode = %hhu, machine_mode = %hhu, mc_mode=%hu\n", m_n_run_thread_state,
@@ -1763,6 +1760,10 @@ void ChannelControl::StartRunGCode(){
     }
 
     if(this->m_channel_status.chn_work_mode == AUTO_MODE){
+
+        string msg = "开始加工程序(" + string(this->m_channel_status.cur_nc_file_name) + ")";
+        g_ptr_tracelog_processor->SendToHmi(kProcessInfo, kDebug, msg);
+
         if(this->m_channel_status.machining_state == MS_READY){  //就绪状态则直接启动编译
             this->SendWorkModeToMc(MC_MODE_AUTO);
 
@@ -1892,6 +1893,10 @@ void ChannelControl::StartRunGCode(){
 
     }
     else if(m_channel_status.chn_work_mode == MDA_MODE){
+
+        string msg = "开始执行MDA程序";
+        g_ptr_tracelog_processor->SendToHmi(kProcessInfo, kDebug, msg);
+
         this->m_p_output_msg_list->Clear();	//清空缓冲数据
         this->InitMcIntpMdaBuf();  //清空MC中的MDA数据缓冲
 
@@ -3754,14 +3759,14 @@ bool ChannelControl::SendModeChangToHmi(uint16_t mode_type){
         cmd.data_len = sizeof(m_channel_status.rated_feed);
         memcpy(cmd.data, &m_channel_status.rated_feed, cmd.data_len);
         g_ptr_tracelog_processor->SendToHmi(kProcessInfo, kDebug,
-                                            string("[进给速度F]切换为 " + to_string(m_channel_status.rated_feed)));
+                                            string("[进给速度F]切换为 " + to_string(m_channel_status.rated_feed*60/1000)));
         break;
     case S_MODE:		//S
 
         cmd.data_len = sizeof(m_channel_status.rated_spindle_speed);
         memcpy(cmd.data, &m_channel_status.rated_spindle_speed, cmd.data_len);
         g_ptr_tracelog_processor->SendToHmi(kProcessInfo, kDebug,
-                                            string("[主轴转速S]切换为 " + to_string(m_channel_status.rated_spindle_speed)));
+                                            string("[主轴转速S]切换为 " + to_string(m_channel_status.rated_spindle_speed*60/1000)));
         break;
     default:
         printf("@@@@Invalid value in ChannelControl::SendModeChangToHmi\n");

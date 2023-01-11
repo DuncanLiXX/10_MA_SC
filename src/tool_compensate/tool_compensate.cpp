@@ -75,9 +75,15 @@ void ToolCompensate::ProcessData(ListNode<RecordMsg *> *node){
     //this->m_p_output_msg_list->Append(node);
     //return;
 
-	switch(msg->GetMsgType()){
+
+
+    switch(msg->GetMsgType()){
 		case RAPID_MSG:{
 			RapidMsg * tmsg = (RapidMsg *)msg;
+            if(tmsg->GetPmcAxisCount() > 0){
+                this->m_p_output_msg_list->Append(node);
+                break;
+            }
 			block * pblock = interp.interp_block();
 			interp.init_block(pblock);
 			pblock->x_flag = true;
@@ -103,6 +109,10 @@ void ToolCompensate::ProcessData(ListNode<RecordMsg *> *node){
 		}
 		case LINE_MSG:{
 			LineMsg * tmsg = (LineMsg *) msg;
+            if(tmsg->GetPmcAxisCount() > 0){
+                this->m_p_output_msg_list->Append(node);
+                break;
+            }
 			block * pblock = interp.interp_block();
 			interp.init_block(pblock);
 			pblock->x_flag = true;
@@ -129,6 +139,10 @@ void ToolCompensate::ProcessData(ListNode<RecordMsg *> *node){
 		}
 		case ARC_MSG:{
 			ArcMsg * tmsg = (ArcMsg *) msg;
+            if(tmsg->GetPmcAxisCount() > 0){
+                this->m_p_output_msg_list->Append(node);
+                break;
+            }
 			block * pblock = interp.interp_block();
 			interp.init_block(pblock);
 			pblock->x_flag = true;

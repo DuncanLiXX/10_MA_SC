@@ -51,6 +51,8 @@ public:
 	void SetMcArmComm(MCArmCommunication *comm){this->m_p_mc_arm_comm = comm;}   //设置MC-ARM通讯接口
 
     SpindleControl *GetSpdCtrl(){return m_p_spindle;}
+    const GRegBits *GetGReg(){return m_p_g_reg;}
+    PmcAxisCtrl *GetPmcAxisCtrl();
 
 
 //	bool OpenFile(const char *file_name);   //打开待编译文件

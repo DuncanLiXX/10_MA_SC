@@ -1230,6 +1230,12 @@ const GRegBits *ChannelEngine::GetChnGRegBits(uint8_t chn_index){
     return &m_p_pmc_reg->GReg().bits[chn_index];
 }
 
+PmcAxisCtrl *ChannelEngine::GetChnPmcAxisCtrl(uint8_t chn_index){
+    if(chn_index > kMaxChnCount)
+        return nullptr;
+    return &m_pmc_axis_ctrl[chn_index*4];
+}
+
 
 //void ChannelEnginePoweroffHandler(int signo, siginfo_t *info, void *context){
 //	//

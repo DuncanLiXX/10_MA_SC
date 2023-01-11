@@ -170,6 +170,8 @@ void SetMcArmComm(MCArmCommunication *comm){this->m_p_mc_arm_comm = comm;}   //É
 	FRegBits *GetChnFRegBits(uint8_t chn_index);     //»ñÈ¡Ö¸¶¨Í¨µÀµÄF¼Ä´æÆ÷Ö¸Õë
 	const GRegBits *GetChnGRegBits(uint8_t chn_index);      //»ñÈ¡Ö¸¶¨Í¨µÀµÄG¼Ä´æÆ÷Ö¸Õë
 
+    PmcAxisCtrl *GetChnPmcAxisCtrl(uint8_t chn_index); //»ñÈ¡Ö¸¶¨Í¨µÀµÄPMCÖá¿ØÖÆ×é¼ş
+
 	static void InitPoweroffHandler();			//³õÊ¼¹ØÁªµôµçĞÅºÅºÍµôµç´¦Àíº¯Êı
 
 

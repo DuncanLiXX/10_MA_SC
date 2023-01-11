@@ -2253,7 +2253,7 @@ bool Parser::CreateRapidMsg(){
 	}
 
 	if(pmc_count > 0){
-		((RapidMsg *)new_msg)->SetPmcAxisData(pmc_count);
+        ((RapidMsg *)new_msg)->SetPmcAxisCount(pmc_count);
 	}
 
 	if(this->m_p_compiler_status->jump_flag)
@@ -2295,7 +2295,7 @@ bool Parser::CreateRapidMsg(){
  * @return true--成功  false--失败
  */
 bool Parser::CreateLineMsg(){
-    ScPrintf("Parser::CreateLineMsg\n");
+//    ScPrintf("Parser::CreateLineMsg\n");
 
 	DPointChn source = this->m_p_compiler_status->cur_pos;   //起点
 	DPointChn target = source;	//终点
@@ -2313,6 +2313,7 @@ bool Parser::CreateLineMsg(){
 
 	if(!GetTargetPos(target, axis_mask, &pmc_count))
 		return false;
+   ScPrintf("Parser::CreateLineMsg pmc_count = %u", pmc_count);
 
 
 //	uint8_t count = this->GetTargetPosEx(pmc_data, pmc_mask, inc_flag, m_n_pmc_axis_count);   //获取PMC轴运动数据
@@ -2358,7 +2359,8 @@ bool Parser::CreateLineMsg(){
 	}
 
 	if(pmc_count > 0){
-		((LineMsg *)new_msg)->SetPmcAxisData(pmc_count);
+        ((LineMsg *)new_msg)->SetPmcAxisCount(pmc_count);
+        ScPrintf("SetPmcAxisData count = %u", pmc_count);
 	}
 //	printf("line msg create, wait=%hhu\n", new_msg->IsNeedWaitMsg());
 
@@ -2425,8 +2427,9 @@ bool Parser::CreateArcMsg(const int gcode){
 	if(gcode == G03_CMD)
 		dir_flag = 1;
 
+    uint8_t pmc_count = 0;
 	//读取终点坐标
-	if(!GetTargetPos(target, axis_mask)){
+    if(!GetTargetPos(target, axis_mask, &pmc_count)){
 		return false;   //产生错误，返回
 	}
 
@@ -2536,6 +2539,10 @@ bool Parser::CreateArcMsg(const int gcode){
 	}
 
     ArcMsg * msg = (ArcMsg *) new_msg;
+    if(pmc_count > 0){
+        msg->SetPmcAxisCount(pmc_count);
+    }
+
     msg->setI(i_number);
     msg->setJ(j_number);
     msg->setR(r_number);
@@ -3313,7 +3320,7 @@ bool Parser::GetAxisExData(uint8_t name, uint8_t name_ex, double &data){
  * @param [out]pmc_count: PMC轴个数
  * @return  true--成功    false--失败
  */
-bool Parser::GetTargetPos(DPointChn &target, uint32_t &axis_mask, uint8_t *pmc_count){
+bool Parser::GetTargetPos(DPointChn &target, uint32_t &axis_mask, uint8_t *count){
 	DataAddr addr = A_DATA;
     uint8_t i = 0;
 	double data = 0.0;
@@ -3322,7 +3329,7 @@ bool Parser::GetTargetPos(DPointChn &target, uint32_t &axis_mask, uint8_t *pmc_c
 	LexerGCode *g_code = &(m_p_lexer_result->nc_code.gcode);
 
 	SCChannelConfig *chn_config = g_ptr_parm_manager->GetChannelConfig(m_n_channel_index);
-	uint8_t pmc_axis_count = 0;
+    uint8_t pmc_axis_count = 0;
 	uint8_t axis_name_idx = 0;
 	uint32_t tm = 0x01;
 	for(i = 0; i < chn_config->chn_axis_count; i++){
@@ -3341,8 +3348,8 @@ bool Parser::GetTargetPos(DPointChn &target, uint32_t &axis_mask, uint8_t *pmc_c
 //				}
 
 				axis_mask |= tm;  //设置轴mask
-				if((this->m_mask_pmc_axis & tm))
-					pmc_axis_count++;   //计数PMC轴
+                if(this->m_mask_pmc_axis & tm)
+                    pmc_axis_count++;   //计数PMC轴
 
 			}else if(m_error_code == ERR_NONE){ //无此参数,使用起点相应轴位置
 				*p_target_pos = *p_source_pos;
@@ -3363,8 +3370,8 @@ bool Parser::GetTargetPos(DPointChn &target, uint32_t &axis_mask, uint8_t *pmc_c
 //				}
 
 				axis_mask |= tm;  //设置轴mask
-				if((this->m_mask_pmc_axis & tm))
-					pmc_axis_count++;   //计数PMC轴
+                if(this->m_mask_pmc_axis & tm)
+                    pmc_axis_count++;   //计数PMC轴
 			 }else if(m_error_code == ERR_NONE){ //无此参数,使用起点相应轴位置
 				*p_target_pos = *p_source_pos;
 			 }else{//异常
@@ -3377,8 +3384,8 @@ bool Parser::GetTargetPos(DPointChn &target, uint32_t &axis_mask, uint8_t *pmc_c
 		p_source_pos++;
 	}
 
-	if(pmc_count)
-		*pmc_count = pmc_axis_count;
+    if(count)
+        *count = pmc_axis_count;
 
 	return true;
 }

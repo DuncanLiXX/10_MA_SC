@@ -484,6 +484,7 @@ enum ErrorType {
 	//PMC轴告警
     ERR_PMC_AXIS_CTRL_CHANGE    = 1900, //PMC轴控制状态下切换
     ERR_PMC_SPEED_ERROR         = 1901, //PMC轴速度异常
+    ERR_PMC_IVALID_USED         = 1902, //PMC轴非法使用
 
 #ifdef USES_GRIND_MACHINE
 	//玻璃磨边机定制M指令告警

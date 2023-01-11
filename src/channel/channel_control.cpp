@@ -2320,7 +2320,7 @@ void ChannelControl::RefreshAxisIntpPos(){
     for(int i = 0; i < m_p_channel_config->chn_axis_count && count < 8; i++){
         if(this->m_mask_pmc_axis & (0x01<<i)){
             m_channel_rt_status.cur_pos_work.m_df_point[i] = m_channel_rt_status.cur_pos_machine.m_df_point[i];   //pmc轴的工件坐标同机械坐标
-            m_channel_rt_status.tar_pos_work.m_df_point[i] = m_channel_rt_status.cur_pos_machine.m_df_point[i];   //pmc轴的工件坐标同机械坐标
+            m_channel_rt_status.tar_pos_work.m_df_point[i] = m_channel_rt_status.cur_pos_machine.m_df_point[i] + m_p_channel_engine->GetPmcAxisRemain(i);   //pmc轴余移动量从mi读取
             count++;
             continue;
         }
@@ -2371,6 +2371,7 @@ void ChannelControl::SendMonitorData(bool bAxis, bool btime){
     double *pos = m_channel_rt_status.cur_pos_machine.m_df_point;
     double *speed = m_channel_rt_status.cur_feedbck_velocity.m_df_point;
     double *torque = m_channel_rt_status.cur_feedbck_torque.m_df_point;
+    double *angle = m_channel_rt_status.spd_angle.m_df_point;
     uint8_t phy_axis = 0; //通道轴所对应的物理轴
     for(uint8_t i =0; i < this->m_p_channel_config->chn_axis_count; i++){
         phy_axis = this->m_p_channel_config->chn_axis_phy[i]; // phy_axis = this->m_channel_status.cur_chn_axis_phy[i];
@@ -2378,6 +2379,7 @@ void ChannelControl::SendMonitorData(bool bAxis, bool btime){
             pos[i] = this->m_p_channel_engine->GetPhyAxisMachPosFeedback(phy_axis-1);
             speed[i] = this->m_p_channel_engine->GetPhyAxisMachSpeedFeedback(phy_axis-1);
             torque[i] = this->m_p_channel_engine->GetPhyAxisMachTorqueFeedback(phy_axis-1);
+            angle[i] = this->m_p_channel_engine->GetSpdAngleFeedback(phy_axis-1);
         }
     }
 
@@ -3917,6 +3919,7 @@ void ChannelControl::SetMachineState(uint8_t mach_state){
     //	}
 
     SendMachineStateCmdToHmi(mach_state);   //通知HMI
+    SendMachineStateToMc(mach_state); //通知mc
 
     if(mach_state == MS_PAUSED || mach_state == MS_WARNING){
         this->m_p_f_reg->STL = 0;
@@ -4173,6 +4176,22 @@ void ChannelControl::SendWorkModeToMc(uint16_t work_mode){
     cmd.data.cmd = CMD_MC_SET_CHN_WORK_MODE;
 
     cmd.data.data[0] = work_mode;
+
+    if(!this->m_b_mc_on_arm)
+        m_p_mc_comm->WriteCmd(cmd);
+    else
+        m_p_mc_arm_comm->WriteCmd(cmd);
+}
+
+void ChannelControl::SendMachineStateToMc(uint8_t state){
+    McCmdFrame cmd;
+    memset(&cmd, 0x00, sizeof(McCmdFrame));
+
+    cmd.data.channel_index = this->m_n_channel_index;
+    cmd.data.axis_index = NO_AXIS;
+    cmd.data.cmd = CMD_MC_MACHINE_STATE;
+
+    cmd.data.data[0] = state;
 
     if(!this->m_b_mc_on_arm)
         m_p_mc_comm->WriteCmd(cmd);

@@ -146,6 +146,8 @@ void SetMcArmComm(MCArmCommunication *comm){this->m_p_mc_arm_comm = comm;}   //É
 
 	double GetPhyAxisMachSpeedFeedback(uint8_t index){return m_df_phy_axis_speed_feedback[index];}  //»ñÈ¡Ö¸¶¨ÎïÀíÖáµÄµ±Ç°·´À¡ËÙ¶È
 	double GetPhyAxisMachTorqueFeedback(uint8_t index){return m_df_phy_axis_torque_feedback[index];}  //»ñÈ¡Ö¸¶¨ÎïÀíÖáµÄµ±Ç°·´À¡Á¦¾Ø
+    double GetSpdAngleFeedback(uint8_t index){return m_df_spd_angle[index];}    //»ñÈ¡Ö¸¶¨ÖáµÄÖ÷Öá½Ç¶È·´À¡
+    double GetPmcAxisRemain(uint8_t index){return m_df_pmc_axis_remain[index];} //»ñÈ¡PMCÖáÓàÒÆ¶¯Á¿·´À¡
 	
 	double GetPhyAxisMachPosIntp(uint8_t index){return m_df_phy_axis_pos_intp[index];}   //·µ»ØÖ¸¶¨ÎïÀíÖáµÄµ±Ç°²å²¹»úĞµ×ø±ê
 	void StartUpdateProcess();		//¿ªÊ¼Ä£¿éÉı¼¶²Ù×÷
@@ -194,7 +196,7 @@ void SetMcArmComm(MCArmCommunication *comm){this->m_p_mc_arm_comm = comm;}   //É
 
 
     void SetMiWorkMode(uint8_t value);   //ÉèÖÃMIÄ£¿é¹¤×÷Ä£Ê½
-    void SetMiHandwheelTrace(bool flag, uint8_t chn);   //ÉèÖÃMIÄ£¿éÊÖÂÖ¸ú×ÙÄ£Ê½
+    void UpdateHandwheelState(uint8_t chn);   //ÉèÖÃMIÄ£¿éÊÖÂÖ¸ú×ÙÄ£Ê½
     void SetMiHandwheelInsert(bool flag, uint8_t chn);  //ÉèÖÃMIÄ£¿éÊÖÂÖ²åÈëÄ£Ê½
     void SetMiCurChannel();   //ÉèÖÃMIµ±Ç°Í¨µÀºÅ
 
@@ -543,6 +545,7 @@ private:  //Ë½ÓĞ³ÉÔ±±äÁ¿
 	double *m_df_phy_axis_speed_feedback;        //ÎïÀíÖáµ±Ç°·´À¡ËÙ¶È
 	double *m_df_phy_axis_torque_feedback;        //ÎïÀíÖáµ±Ç°·´À¡Á¦¾Ø
 //#endif	
+    double *m_df_spd_angle;     // Ö÷Öáµ±Ç°½Ç¶È·´À¡
 
     uint64_t m_n_phy_axis_svo_on;		//ÎïÀíÖáÊ¹ÄÜ±êÖ¾
 

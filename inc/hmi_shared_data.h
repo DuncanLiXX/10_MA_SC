@@ -462,6 +462,7 @@ enum ErrorType {
     ERR_AUTO_TOOL_MEASURE = 1601,       //自动对刀失败
 
     ERR_HW_REV_OVER = 1650,             //手轮反向跟踪无更多数据   级别：警告
+    ERR_HW_INSERT_INVALID = 1651,       //手轮插入无效
 
     ERR_TOOL_LIFE_OVER = 1660,          //刀具寿命到达
     ERR_TOOL_LIFE_COMING = 1661,        //刀具寿命即将到达     级别：警告
@@ -1351,7 +1352,7 @@ struct HmiAxisConfig{
     uint8_t spd_rtnt_rate;                      //攻丝回退倍率 单位：1%
     int32_t spd_rtnt_distance;                 //攻丝回退的额外回退值 单位：um
 
-    int16_t spd_locate_ang;                     //主轴定向角度 单位：度
+    double spd_locate_ang;                     //主轴定向角度 单位：度
 
     //旋转轴相关参数
     uint8_t fast_locate;							//快速定位    0--关闭   1--打开

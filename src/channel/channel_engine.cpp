@@ -849,21 +849,42 @@ void ChannelEngine::SetMiWorkMode(uint8_t value){
  * @param flag : true -- 打开手轮跟踪  false--关闭手轮跟踪
  * @param chn : 通道号，从0开始
  */
-void ChannelEngine::SetMiHandwheelTrace(bool flag, uint8_t chn){
-    g_ptr_trace->PrintTrace(TRACE_INFO, CHANNEL_ENGINE_SC, "SetMiHandwheelTrace: %hhu， curgroup=%hhu\n", flag, m_n_cur_chn_group_index);
-    MiCmdFrame cmd;
-    memset(&cmd, 0x00, sizeof(cmd));
-    cmd.data.cmd = CMD_MI_SET_HANDWHEEL_TRACE;
+void ChannelEngine::UpdateHandwheelState(uint8_t chn){
+    bool trace_enable = m_p_channel_control[chn].CheckFuncState(FS_HANDWHEEL_CONTOUR);
+    bool trace_reverse = this->m_p_general_config->hw_rev_trace;
+    bool insert_enable;
+    const GRegBits *g_reg = &m_p_pmc_reg->GReg().bits[chn];
+    uint8_t axis_no = 0;
+    for(int axis = 0; axis < m_p_channel_config[chn].chn_axis_count; axis++){
+        if((g_reg->HSIA >> axis) & 0x01){
+            axis_no = axis + 1;
+            break;
+        }
+    }
+    if(axis_no == 0){
+        insert_enable = false;
+    }else{
+        insert_enable = true;
+    }
+    if(trace_enable){
+        insert_enable = false;
+    }
 
-    cmd.data.data[0] = flag?0x10:0x00;
-    cmd.data.data[1] = this->m_p_general_config->hw_rev_trace;   //手轮反向引导使能
-    cmd.data.data[2] = 0;
+    m_p_mi_comm->SendHandwheelState(chn,trace_enable,trace_reverse,insert_enable);
 
-    cmd.data.axis_index = NO_AXIS;
-    cmd.data.reserved = chn;   //通道，从0开始
+//    MiCmdFrame cmd;
+//    memset(&cmd, 0x00, sizeof(cmd));
+//    cmd.data.cmd = CMD_MI_SET_HANDWHEEL_TRACE;
+
+//    cmd.data.data[0] = flag?0x10:0x00;
+//    cmd.data.data[1] = this->m_p_general_config->hw_rev_trace;   //手轮反向引导使能
+//    cmd.data.data[2] = 0;
+
+//    cmd.data.axis_index = NO_AXIS;
+//    cmd.data.reserved = chn;   //通道，从0开始
 
 
-    this->m_p_mi_comm->WriteCmd(cmd);
+//    this->m_p_mi_comm->WriteCmd(cmd);
 
     //	uint8_t chn_count = this->m_p_channel_mode_group[this->m_n_cur_chn_group_index].GetChannelCount();
     //	for(uint i = 0; i < chn_count; i++){
@@ -988,6 +1009,9 @@ void ChannelEngine::Initialize(HMICommunication *hmi_comm, MICommunication *mi_c
 
     this->m_df_phy_axis_torque_feedback = new double[m_p_general_config->axis_count];  //分配物理轴当前反馈机械坐标存储区
     memset(m_df_phy_axis_torque_feedback, 0, sizeof(double)*m_p_general_config->axis_count);
+
+    this->m_df_spd_angle = new double[m_p_general_config->axis_count];  //分配物理轴当前反馈机械坐标存储区
+    memset(m_df_spd_angle, 0, sizeof(double)*m_p_general_config->axis_count);
 
     //创建通道对象
     this->m_p_channel_control = new ChannelControl[m_p_general_config->chn_count];
@@ -1635,7 +1659,7 @@ void ChannelEngine::SendPmcAxisToHmi(){
 void ChannelEngine::SendMonitorData(bool bAxis, bool btime){
     //从MI读取所有轴的位置
     this->m_p_mi_comm->ReadPhyAxisCurFedBckPos(m_df_phy_axis_pos_feedback, m_df_phy_axis_pos_intp,m_df_phy_axis_speed_feedback,
-                                               m_df_phy_axis_torque_feedback, m_p_general_config->axis_count);
+                                               m_df_phy_axis_torque_feedback,m_df_spd_angle, m_p_general_config->axis_count);
 
     //#ifdef USES_SPEED_TORQUE_CTRL
     //	this->m_p_mi_comm->ReadPhyAxisCurFedBckSpeedTorque(m_df_phy_axis_speed_feedback, m_df_phy_axis_torque_feedback, m_p_general_config->axis_count);
@@ -4970,10 +4994,7 @@ bool ChannelEngine::Start(){
         uint8_t chn = 0;
         for(uint8_t i = 0; i < m_p_channel_mode_group[m_n_cur_chn_group_index].GetChannelCount(); i++){
             chn = m_p_channel_mode_group[m_n_cur_chn_group_index].GetChannel(i);
-            if(m_p_channel_control[chn].CheckFuncState(FS_HANDWHEEL_CONTOUR))   //再次发送手轮跟踪状态给MI，防止MC复位时清除状态
-                this->SetMiHandwheelTrace(true, chn);
-            else
-                this->SetMiHandwheelTrace(false, chn);
+            UpdateHandwheelState(chn);
 
             m_p_channel_control[chn].StartRunGCode();
         }
@@ -5113,19 +5134,13 @@ void ChannelEngine::SetFuncState(uint8_t chn, int state, uint8_t mode){
         this->m_p_channel_control[chn].SetFuncState(state, mode);
 
         if(state == FS_HANDWHEEL_CONTOUR){ //手轮跟踪，通知MI切换状态
-            if(m_p_channel_control[chn].CheckFuncState(FS_HANDWHEEL_CONTOUR))
-                this->SetMiHandwheelTrace(true, chn);
-            else
-                this->SetMiHandwheelTrace(false, chn);
+            this->UpdateHandwheelState(chn);
         }
     }else{
         for(uint8_t i = 0; i < m_p_general_config->chn_count; i++){
             this->m_p_channel_control[i].SetFuncState(state, mode);
             if(state == FS_HANDWHEEL_CONTOUR){ //手轮跟踪，通知MI切换状态
-                if(m_p_channel_control[i].CheckFuncState(FS_HANDWHEEL_CONTOUR))
-                    this->SetMiHandwheelTrace(true, i);
-                else
-                    this->SetMiHandwheelTrace(false, i);
+                this->UpdateHandwheelState(chn);
             }
         }
     }
@@ -5138,10 +5153,7 @@ void ChannelEngine::SetFuncState(uint8_t chn, int state, uint8_t mode){
 void ChannelEngine::EnableHWTraceToMi(){
     uint8_t chn_count = m_p_channel_mode_group[m_n_cur_chn_group_index].GetChannelCount();
     for(uint8_t i = 0; i < chn_count; i++){
-        if(m_p_channel_control[i].CheckFuncState(FS_HANDWHEEL_CONTOUR))
-            this->SetMiHandwheelTrace(true, i);
-        else
-            this->SetMiHandwheelTrace(false, i);
+        this->UpdateHandwheelState(i);
     }
 }
 
@@ -5538,7 +5550,7 @@ void ChannelEngine::SetJPState(uint8_t chn, uint8_t JP, uint8_t last_JP, ChnWork
         // 轴正向移动按下
         if(flag_now){
             this->m_p_mi_comm->ReadPhyAxisCurFedBckPos(m_df_phy_axis_pos_feedback, m_df_phy_axis_pos_intp,m_df_phy_axis_speed_feedback,
-                                                       m_df_phy_axis_torque_feedback, m_p_general_config->axis_count);
+                                                       m_df_phy_axis_torque_feedback, m_df_spd_angle, m_p_general_config->axis_count);
             SetCurAxis(chn, chn_axis);
             ManualMove(DIR_POSITIVE);
             g_ptr_tracelog_processor->SendToHmi(kPanelOper, kDebug, "点动[轴" + to_string(chn_axis) + "]+");
@@ -5562,7 +5574,7 @@ void ChannelEngine::SetJNState(uint8_t chn, uint8_t JN, uint8_t last_JN, ChnWork
         // 轴负向移动按下
         if(flag_now){
             this->m_p_mi_comm->ReadPhyAxisCurFedBckPos(m_df_phy_axis_pos_feedback, m_df_phy_axis_pos_intp,m_df_phy_axis_speed_feedback,
-                                                       m_df_phy_axis_torque_feedback, m_p_general_config->axis_count);
+                                                       m_df_phy_axis_torque_feedback, m_df_spd_angle, m_p_general_config->axis_count);
 
             SetCurAxis(chn, chn_axis);
             ManualMove(DIR_NEGATIVE);
@@ -8645,18 +8657,12 @@ void ChannelEngine::ProcessPmcSignal(){
         }
 
         if(g_reg->HSIA != g_reg_last->HSIA){
-            uint8_t axis_no = 0;
-            for(int axis = 0; axis < m_p_channel_config[i].chn_axis_count; axis++){
-                if((g_reg->HSIA >> axis) & 0x01){
-                    axis_no = axis + 1;
-                    break;
-                }
-            }
-            if(axis_no == 0){
-                m_p_mi_comm->SendHandwheelInsert(i, false);
+            MachiningState state = (MachiningState)ctrl->GetChnStatus().machining_state;
+            // 运行或者暂停状态才能手轮插入
+            if(g_reg->HSIA != 0 && state != MS_RUNNING && state != MS_PAUSED){
+                CreateError(ERR_HW_INSERT_INVALID, INFO_LEVEL, CLEAR_BY_AUTO, 0, i);
             }else{
-                m_p_mi_comm->SendHandwheelInsert(i, true);
-                m_p_mi_comm->SendHandwheelInsertAxis(i, axis_no);
+                UpdateHandwheelState(i);
             }
         }
 
@@ -10874,7 +10880,7 @@ void ChannelEngine::EcatAxisFindRefWithZeroSignal(uint8_t phy_axis){
         if (time_elpase >= 200000)
         {
             this->m_p_mi_comm->ReadPhyAxisCurFedBckPos(m_df_phy_axis_pos_feedback, m_df_phy_axis_pos_intp,m_df_phy_axis_speed_feedback,
-                                                       m_df_phy_axis_torque_feedback, m_p_general_config->axis_count);
+                                                       m_df_phy_axis_torque_feedback, m_df_spd_angle, m_p_general_config->axis_count);
             if (GetSyncAxisCtrl()->CheckSyncState(phy_axis) == 1)
             {//重新建立主从轴关系
                 double machPos = this->GetPhyAxisMachPosFeedback(phy_axis);
@@ -11258,7 +11264,7 @@ void ChannelEngine::EcatAxisFindRefNoZeroSignal(uint8_t phy_axis){
         if (time_elpase >= 200000)
         {
             this->m_p_mi_comm->ReadPhyAxisCurFedBckPos(m_df_phy_axis_pos_feedback, m_df_phy_axis_pos_intp,m_df_phy_axis_speed_feedback,
-                                                       m_df_phy_axis_torque_feedback, m_p_general_config->axis_count);
+                                                       m_df_phy_axis_torque_feedback, m_df_spd_angle, m_p_general_config->axis_count);
             if (GetSyncAxisCtrl()->CheckSyncState(phy_axis) == 1)
             {//重新建立主从关系
                 double machPos = this->GetPhyAxisMachPosFeedback(phy_axis);

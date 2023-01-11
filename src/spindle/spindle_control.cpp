@@ -32,7 +32,7 @@ void SpindleControl::SetComponent(MICommunication *mi,
     this->G = g_reg;
     this->variable = variable;
 
-    mi->SendMiParam<int16_t>(phy_axis+1, 1726, spindle->spd_locate_ang);
+    mi->SendMiParam<uint16_t>(phy_axis+1, 1726, uint16_t(spindle->spd_locate_ang*100));
 
     InputSSTP(G->_SSTP);
     InputSOR(G->SOR);
@@ -42,7 +42,6 @@ void SpindleControl::SetComponent(MICommunication *mi,
     InputSSIN(G->SSIN);
     InputSIND(G->SIND);
     LoadTapState(tap_state);
-
 }
 
 void SpindleControl::SetSpindleParams(SCAxisConfig *spindle,
@@ -420,10 +419,6 @@ void SpindleControl::RspORCMA(bool success)
     ScPrintf("SpindleControl::RspORCMA : success = %d\n",success);
     // 定位成功，将ORAR置为1，通知PMC定位动作完成
     if(success && ORCMA){
-        ChannelEngine *engine = ChannelEngine::GetInstance();
-        ChannelControl *control = engine->GetChnControl(0);
-        ChannelRealtimeStatus status = control->GetRealtimeStatus();
-        pos_zero_ang = status.cur_pos_machine.GetAxisValue(phy_axis);
         F->ORAR = 1;
     }
 }
@@ -511,12 +506,13 @@ double SpindleControl::GetSpdAngle()
         return 0;
 
     ChannelEngine *engine = ChannelEngine::GetInstance();
-    double pos = engine->GetPhyAxisMachPosFeedback(phy_axis)-pos_zero_ang;
-    double model = fmod(pos, spindle->move_pr);
-    if(model < 0)
-        model += spindle->move_pr;
+    return engine->GetSpdAngleFeedback(phy_axis);
+//    double pos = engine->GetPhyAxisMachPosFeedback(phy_axis);
+//    double model = fmod(pos, spindle->move_pr);
+//    if(model < 0)
+//        model += spindle->move_pr;
 
-    return (model/spindle->move_pr)*360.0;
+//    return (model/spindle->move_pr)*360.0;
 }
 
 void SpindleControl::UpdateParams()

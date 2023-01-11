@@ -384,7 +384,9 @@ void ShowSc::PrintRealtimeData()
     AddPair(s,"line_no",chn_rt_status->line_no);
     AddPair(s,"tap_err",chn_rt_status->tap_err);
     AddPair(s,"tap_err_now",chn_rt_status->tap_err_now);
-    AddPair(s,"spd_angle",chn_rt_status->spd_angle);
+
+    if(spindle && spindle->Type() == 2)
+        AddPair(s,"spd_angle",chn_rt_status->spd_angle.GetAxisValue(spindle->GetPhyAxis()));
 
     AddPair(s,"msg_new_count",msg_new_count);
     AddPair(s,"msg_delete_count",msg_delete_count);

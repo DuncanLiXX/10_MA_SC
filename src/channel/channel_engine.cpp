@@ -8452,6 +8452,15 @@ void ChannelEngine::ProcessPmcSignal(){
             }
         }
 
+        //cnc就绪
+        if(!f_reg->MA)
+        {
+            if (g_sys_state.system_ready && f_reg->SA/*MI需要用伺服就绪信号来判断是否正确初始化*/)
+            {
+                f_reg->MA = 1;
+            }
+        }
+
 #ifdef USES_PHYSICAL_MOP
         if(g_reg->_ESP == 0 && !m_b_emergency){ //进入急停
             f_reg->RST = 1;

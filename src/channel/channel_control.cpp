@@ -5464,12 +5464,14 @@ bool ChannelControl::IsStepMode(){
  * @return true--³É¹¦  false--Ê§°Ü
  */
 bool ChannelControl::ExecuteMessage(){
-    //printf("enter ExecuteMessage\n");
+    printf("enter ExecuteMessage\n");
     int count = m_p_output_msg_list->GetLength();
     if(count == 0){
-        return true;
+    	printf("aaaaa\n");
+    	return true;
     }
 
+    printf("bbbbb\n");
     bool res = false;
     RecordMsg *msg = nullptr;
     ListNode<RecordMsg *> *node = nullptr;   //
@@ -5560,7 +5562,7 @@ bool ChannelControl::ExecuteMessage(){
     }else{
         node = m_p_output_msg_list->HeadNode();
     }
-
+    printf("ccccc\n");
     while(node != nullptr){
         msg = static_cast<RecordMsg *>(node->data);
         end_cmd = 0;
@@ -5587,7 +5589,7 @@ bool ChannelControl::ExecuteMessage(){
         if(line_no != msg->GetLineNo() || type != msg->GetMsgType()){
             line_no = msg->GetLineNo();
             type = msg->GetMsgType();
-            //printf("---------->excute message line no %llu  msg type: %d flag: %d\n", line_no, msg_type, msg->GetFlags().all);
+            printf("---------->excute message line no %llu  msg type: %d flag: %d\n", line_no, msg_type, msg->GetFlags().all);
         }
         // @test zk
 

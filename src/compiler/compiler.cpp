@@ -400,7 +400,6 @@ bool Compiler::SaveScene() {
 
     scene.file_map_info = *m_p_file_map_info;
 
-
     //	memcpy(&scene->file_map_info, m_p_file_map_info, sizeof(AsFileMapInfo));
     scene.n_sub_program = m_n_sub_program;
     scene.b_eof = m_b_eof;
@@ -483,8 +482,11 @@ bool Compiler::ReloadScene(bool bRecPos) {
     }
 
     //宏程序调用有部分模态不用恢复
-    if(this->m_n_sub_program == MACRO_PROG)
-        mode_tmp = this->m_compiler_status.mode;
+    // @modify zk  测试得到 M98 类型为SUB_PROG G65 P 类型为 MACRO_PROG
+    if(this->m_n_sub_program == MACRO_PROG){
+    	mode_tmp = this->m_compiler_status.mode;
+    }
+
 
     scene.file_map_info.Clear();  //防止后面delete scene时将文件映射关闭
 
@@ -493,8 +495,10 @@ bool Compiler::ReloadScene(bool bRecPos) {
     m_b_eof = scene.b_eof;
     //	this->m_n_thread_state = scene.thread_state;
 
+    // 要实现子程序调用 固定循环保持模态 注释这个条件  但不知道会不会引发其他问题
     if(this->m_n_sub_program != SUB_PROG) //子程序调用不用恢复模态
-        this->m_compiler_status = scene.compiler_status;
+    	this->m_compiler_status = scene.compiler_status;
+	//printf("========================= 9 model group %d\n", m_compiler_status.mode.gmode[9]);
     this->m_n_compile_state = scene.file_state;
     this->m_n_head_state = scene.head_state;
     this->m_ln_cur_line_no = scene.ln_cur_line_no;
@@ -717,7 +721,7 @@ void Compiler::PreScan() {
     CompilerScene *ptr_scene = nullptr;
     StackRec<CompilerScene> *scene_node = nullptr;
     if(this->m_b_prescan_in_stack){
-        scene_node = this->m_stack_scene.bottom();
+    	scene_node = this->m_stack_scene.bottom();
         if(scene_node != nullptr){
             ptr_scene = &scene_node->rec;
             file = fopen(ptr_scene->file_map_info.str_file_name, "r+");
@@ -773,7 +777,8 @@ void Compiler::PreScan() {
 
 
     /*** test if else */
-    /*
+
+    printf("*********************************************\n");
     for(unsigned int i=0; i<m_node_vectors_vector.size(); i++){
         vector<IfElseOffset> node_vector = m_node_vectors_vector.at(i);
         printf("node number: %d\n", i+1);
@@ -783,7 +788,7 @@ void Compiler::PreScan() {
         }
         printf("\n");
     }
-     */
+
     /*** test if else */
 
     if (total_size != read_size) { //没有完整读取文件，告警
@@ -934,7 +939,7 @@ void Compiler::PreScanLine1(char *buf, uint64_t offset, uint64_t line_no,
         }
 
         if (strchr("XYZBCJKUV", *pc) != nullptr){  //加快扫描速度
-            return;
+            //return;
         }
         else if (*pc == '(') { //进入跨行注释
             flag = true;
@@ -951,7 +956,7 @@ void Compiler::PreScanLine1(char *buf, uint64_t offset, uint64_t line_no,
                 memset(digit_buf, 0, kMaxDigitBufLen+1);
             }
         }else if(*pc == 'I' && *(pc + 1) == 'F' && first_alpha){
-            if_cmd = true;
+        	if_cmd = true;
             pc += 2;
             continue;
         }else if(*pc == 'E' && *(pc + 1) == 'N'&& *(pc + 2) == 'D'&& *(pc + 3) == 'I' && *(pc + 4) == 'F' && first_alpha){
@@ -1241,8 +1246,7 @@ void Compiler::PreScanLine1(char *buf, uint64_t offset, uint64_t line_no,
 
     // 找到 if 指令
     if(if_cmd){
-
-        // 初始化基础变量
+    	// 初始化基础变量
         m_else_count_prescan = 0;
         m_node_vector_index = m_node_vector_len;
         m_node_vector_len ++;
@@ -1259,17 +1263,19 @@ void Compiler::PreScanLine1(char *buf, uint64_t offset, uint64_t line_no,
         vector<IfElseOffset> node_vector;
         node_vector.push_back(node);
         //节点容器装入主容器
-        if(this->m_b_prescan_in_stack)
+        if(this->m_b_prescan_in_stack){
             scene->node_vectors_vector.push_back(node_vector);
-        else
+        }
+        else{
             m_node_vectors_vector.push_back(node_vector);
+        }
 
         if_cmd = false;
 
     }else if(endif_cmd){
 
         if(m_stack_vector_index_prescan.size() == 0){
-            g_ptr_trace->PrintLog(LOG_ALARM, "CHN[%d]预扫描语法错误  请检查 IF ELSEIF ELSE ENDIF 语法配对！！！\n",
+            g_ptr_trace->PrintLog(LOG_ALARM, "CHN[%d]预扫描语法错误  请检查 IF ELSEIF ELSE ENDIF 语法配对1！！！\n",
                                   m_n_channel_index);
 
             CreateError(IF_ELSE_MATCH_FAILED, ERROR_LEVEL, CLEAR_BY_MCP_RESET,
@@ -1307,7 +1313,7 @@ void Compiler::PreScanLine1(char *buf, uint64_t offset, uint64_t line_no,
     }else if(else_cmd or elseif_cmd){
 
         if(m_stack_vector_index_prescan.size() == 0){
-            g_ptr_trace->PrintLog(LOG_ALARM, "CHN[%d]预扫描语法错误  请检查 IF ELSEIF ELSE ENDIF 语法配对！！！\n",
+            g_ptr_trace->PrintLog(LOG_ALARM, "CHN[%d]预扫描语法错误  请检查 IF ELSEIF ELSE ENDIF 语法配对2！！！\n",
                                   m_n_channel_index);
 
             CreateError(IF_ELSE_MATCH_FAILED, ERROR_LEVEL, CLEAR_BY_MCP_RESET,
@@ -1318,7 +1324,7 @@ void Compiler::PreScanLine1(char *buf, uint64_t offset, uint64_t line_no,
         if(else_cmd){
             ++ m_else_count_prescan;
             if(m_else_count_prescan > 1){
-                g_ptr_trace->PrintLog(LOG_ALARM, "CHN[%d]预扫描语法错误  请检查 IF ELSEIF ELSE ENDIF 语法配对！！！\n",
+                g_ptr_trace->PrintLog(LOG_ALARM, "CHN[%d]预扫描语法错误  请检查 IF ELSEIF ELSE ENDIF 语法配对3！！！\n",
                                       m_n_channel_index);
                 CreateError(IF_ELSE_MATCH_FAILED, ERROR_LEVEL, CLEAR_BY_MCP_RESET,
                             line_no, m_n_channel_index);
@@ -1449,7 +1455,6 @@ void Compiler::PreScanLine2(char *buf, uint64_t offset, uint64_t line_no,
  * @param sub_flag : 是否子程序文件
  */
 bool Compiler::OpenFile(const char *file, bool sub_flag) {
-
     //	bool res = false;
     //	if(this->m_work_mode == MDA_COMPILER){  //MDA模式下在启动编译时再打开文件
     //		res = m_p_file_map_info->OpenFile(m_str_mda_path);
@@ -1494,7 +1499,7 @@ bool Compiler::OpenFile(const char *file, bool sub_flag) {
 
     void* thread_result;
     //创建预扫描线程
-    if (!m_b_prescan_over && m_thread_prescan != 0) {
+    if (!m_b_prescan_over && m_thread_prescan != 0){
         //先退出之前的线程
         m_b_breakout_prescan = true;
         int wait_count = 0;
@@ -2333,7 +2338,7 @@ bool Compiler::RunMessage() {
     ListNode<RecordMsg *> *node = m_p_parser_result->HeadNode();
     CodeMsgType msg_type = NORMAL_MSG;
 
-    //    printf("------> run message ...\n");
+    printf("------> run message ...\n");
 
     while (node != nullptr) {
         msg = static_cast<RecordMsg *>(node->data);
@@ -2349,9 +2354,11 @@ bool Compiler::RunMessage() {
 
             // @test zk
             static uint64_t cur_line = 0;
+            static int type = 0;
 
-            if(cur_line != msg->GetLineNo()){
+            if(cur_line != msg->GetLineNo() || type != msg->GetMsgType()){
                 cur_line = msg->GetLineNo();
+                type = msg->GetMsgType();
                 printf("compiler run message  line no: %llu,  type: %d\n", cur_line, msg_type);
             }
             // @test zk
@@ -3107,7 +3114,7 @@ bool Compiler::RunCompensateMsg(RecordMsg *msg) {
     this->ProcessFiveAxisRotPos(tmp->GetTargetPos(), tmp->GetSourcePos(), tmp->GetAxisMoveMask());
 #endif
 
-    if (gcode == G41_CMD || gcode == G42_CMD) {  //建立刀具半径补偿需要轴移动
+    if (gcode == G41_CMD || gcode == G42_CMD) {
 
         tmp->SetCompLastValue(m_compiler_status.mode.d_mode);  //记录历史值
         m_compiler_status.mode.d_mode = tmp->GetCompValue();   //修改编译器状态
@@ -3115,6 +3122,7 @@ bool Compiler::RunCompensateMsg(RecordMsg *msg) {
         SCToolOffsetConfig * offset_config = g_ptr_parm_manager->GetToolConfig(m_n_channel_index);
         int d_value = tmp->GetCompValue();
         if(d_value > kMaxToolCount  or d_value < 0) return false;
+
         if(d_value == 0){
             this->m_p_tool_compensate->setToolRadius(0);
         }else {
@@ -3131,7 +3139,7 @@ bool Compiler::RunCompensateMsg(RecordMsg *msg) {
         tmp->SetCompLastValue(m_compiler_status.mode.h_mode);  //记录历史值
         m_compiler_status.mode.h_mode = 0;  //取消刀长补偿或者RTCP
     }else if(gcode == G40_CMD){
-        tmp->SetCompLastValue(m_compiler_status.mode.d_mode);  //记录历史值
+    	tmp->SetCompLastValue(m_compiler_status.mode.d_mode);  //记录历史值
         m_compiler_status.mode.d_mode = 0;   //取消刀具半径补偿
     }
 
@@ -3614,7 +3622,8 @@ bool Compiler::RunMacroMsg(RecordMsg *msg) {
         }
         break;
     case MACRO_CMD_IF:{
-
+    	//@test
+    	printf("===== IF CMD %llu\n", tmp->GetLineNo());
         if(!tmp->GetMacroExpCalFlag(0)){
             if(!m_p_parser->GetExpressionResult(tmp->GetMacroExp(0), tmp->GetMacroExpResult(0))) {//表达式运算失败
                 m_error_code = m_p_parser->GetErrorCode();
@@ -3622,7 +3631,6 @@ bool Compiler::RunMacroMsg(RecordMsg *msg) {
                     CreateErrorMsg(m_error_code, tmp->GetLineNo());  //表达式计算异常
                     return false;
                 }
-
                 //没有错误，则说明表达式中需要访问系统变量，必须等待MC运行到位
                 return false;
             }
@@ -3631,8 +3639,13 @@ bool Compiler::RunMacroMsg(RecordMsg *msg) {
 
 
             IfElseOffset node;
+            printf("===== node vectors vector size: %d\n", m_node_vectors_vector.size());
+
             for(vector<IfElseOffset> node_vector : m_node_vectors_vector){
-                if(node_vector.at(0).line_no == tmp->GetLineNo()){
+            	// @test
+                printf("===== node lino: %llu, tmp lino: %llu\n", node_vector.at(0).line_no, tmp->GetLineNo());
+
+            	if(node_vector.at(0).line_no == tmp->GetLineNo()){
                     node = node_vector.at(0);
                 }
             }
@@ -3676,7 +3689,10 @@ bool Compiler::RunMacroMsg(RecordMsg *msg) {
     }
     case MACRO_CMD_ELSEIF:{
 
-        if(m_node_stack_run.size() == 0){
+    	//@test
+		printf("===== ELSEIF CMD %llu\n", tmp->GetLineNo());
+
+    	if(m_node_stack_run.size() == 0){
             printf("IF ELSE 不匹配, 没有if入栈但遇到  else/ elseif\n");
             CreateErrorMsg(IF_ELSE_MATCH_FAILED, tmp->GetLineNo());
             return false;
@@ -3738,7 +3754,10 @@ bool Compiler::RunMacroMsg(RecordMsg *msg) {
     }
     case MACRO_CMD_ELSE:{
 
-        if(m_node_stack_run.size() == 0){
+    	//@test
+		printf("===== ELSE CMD %llu\n", tmp->GetLineNo());
+
+    	if(m_node_stack_run.size() == 0){
             printf("IF ELSE 不匹配, 没有if入栈但遇到  else/ elseif 222\n");
             CreateErrorMsg(IF_ELSE_MATCH_FAILED, tmp->GetLineNo());
             return false;
@@ -3761,7 +3780,10 @@ bool Compiler::RunMacroMsg(RecordMsg *msg) {
     }
     case MACRO_CMD_ENDIF:{
 
-        if(m_node_stack_run.size() == 0){
+    	//@test
+		printf("===== ENDIF CMD %llu\n", tmp->GetLineNo());
+
+    	if(m_node_stack_run.size() == 0){
             printf("IF ELSE 不匹配, 没有if入栈但遇到  endif \n");
             CreateErrorMsg(IF_ELSE_MATCH_FAILED, tmp->GetLineNo());
             return false;
@@ -3971,7 +3993,7 @@ bool Compiler::RunLoopMsg(RecordMsg *msg) {
     this->m_n_sub_call_times = 1;//调用次数
 
     //打开子程序文件
-    this->m_n_sub_program = MACRO_PROG;
+    this->m_n_sub_program = SUB_PROG;
     char filepath[kMaxPathLen] = { 0 };   //文件路径
 
     sub_msg->GetMacroProgName(filepath, true);

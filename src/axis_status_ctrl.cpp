@@ -5,6 +5,8 @@
 #include "parm_definition.h"
 #include <vector>
 #include <algorithm>
+#include <future>
+#include <functional>
 
 
 // 以下错误出现时会关闭伺服使能
@@ -38,6 +40,7 @@ void AxisStatusCtrl::Init(MICommunication *comm,
             continue;
         axis_mask[i] = true;
     }
+    InitRealPhyAxisMask();
 }
 
 void AxisStatusCtrl::InputEsp(uint8_t _ESP){
@@ -50,15 +53,27 @@ void AxisStatusCtrl::InputEsp(uint8_t _ESP){
 void AxisStatusCtrl::InputSyncWarn(uint64_t flag){
     if(!axis)
         return;
+
     this->sync_warn = flag;
     UpdateServoState();
 }
 
 void AxisStatusCtrl::InputSVF(uint64_t SVF){
+    static std::future<void> ans;
     if(!axis)
         return;
+
     this->SVF = SVF;
     UpdateServoState();
+    auto func = std::bind(&AxisStatusCtrl::WaitingEnable,
+                          this);
+    ans = std::async(std::launch::async, func);
+}
+
+void AxisStatusCtrl::WaitingEnable(){
+    is_waiting_enable = true;
+    std::this_thread::sleep_for(std::chrono::microseconds(800 * 1000));
+    is_waiting_enable = false;
 }
 
 void AxisStatusCtrl::RspMiReady(){
@@ -98,8 +113,6 @@ void AxisStatusCtrl::UpdateServoState(bool force){
         enable = _ESP && !servo_warn && (sync_warn & (0x01<<i)) == 0 && !svf;
 
         if(enable == last_enable[i] && last_svf[i] == svf && !force){
-            last_enable[i] = enable;
-            last_svf[i] = svf;
             continue;
         }
 
@@ -111,17 +124,39 @@ void AxisStatusCtrl::UpdateServoState(bool force){
 
 //    // 判断是否所有轴都上了使能，如果是，打开伺服就绪信号
 //    if(change){
-//        bool ready = true;
+//        uint64_t srvon_mask = 0x00;
 //        for(int i=0; i<channel->chn_axis_count; i++){
-//            if(last_enable[i] != axis_mask[i]){
-//                ready = false;
-//                break;
-//            }
+//            if(last_enable[i])
+//                srvon_mask |= (0x01 << i);
 //        }
-//        if(ready){
-//            F->SA = true;
-//        }else{
-//            F->SA = false;
-//        }
+//        UpdateSA(srvon_mask);
 //    }
+}
+
+void AxisStatusCtrl::InitRealPhyAxisMask(){
+    for(int i = 0; i < channel->chn_axis_count; i++){
+        if(axis[i].axis_interface != VIRTUAL_AXIS)
+        {
+            real_phy_axis = real_phy_axis | (0x01 << i);    //初始化实际物理轴mask
+        }
+    }
+}
+
+void AxisStatusCtrl::UpdateSA(uint64_t srvon_mask){
+    if(is_waiting_enable)
+        return;
+    uint64_t line_axis = real_phy_axis;
+    for(int i=0; i<channel->chn_axis_count; i++){
+        // 主轴或者伺服关断的轴不影响伺服就绪状态
+        if(axis[i].axis_type == AXIS_SPINDLE || (SVF & (0x01<<i))){
+            line_axis &= ~(0x01 << i);
+            srvon_mask &= ~(0x01 << i);
+        }
+    }
+
+    if((line_axis & srvon_mask) == line_axis){
+        F->SA = 1;
+    }else{
+        F->SA = 0;
+    }
 }

@@ -91,7 +91,7 @@ private:
 
 	bool GetCodeData(DataAddr addr, double &data);   //获取指定地址字的数据
 	bool HasCodeData(DataAddr addr);    //是否有指定地址字数据
-	bool GetTargetPos(DPointChn &target, uint32_t &axis_mask, uint8_t *pmc_count = nullptr);         //获取目标点坐标
+    bool GetTargetPos(DPointChn &target, uint32_t &axis_mask, uint8_t *count = nullptr);         //获取目标点坐标
 	void GetParaData(double **param, uint8_t &pc, uint32_t &mask);    //获取自变量参数
 	
 	bool GetAxisExData(uint8_t name, uint8_t name_ex, double &data);    //用轴扩展名称获取指令数据

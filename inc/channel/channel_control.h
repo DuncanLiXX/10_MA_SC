@@ -51,6 +51,8 @@ public:
 	void SetMcArmComm(MCArmCommunication *comm){this->m_p_mc_arm_comm = comm;}   //设置MC-ARM通讯接口
 
     SpindleControl *GetSpdCtrl(){return m_p_spindle;}
+    const GRegBits *GetGReg(){return m_p_g_reg;}
+    PmcAxisCtrl *GetPmcAxisCtrl();
 
 
 //	bool OpenFile(const char *file_name);   //打开待编译文件
@@ -457,7 +459,7 @@ private:
 #endif
 
 
-	bool SendMachineStateCmdToHmi(uint8_t mach_state);     //向HMI发送加工状态命令
+    bool SendMachineStateCmdToHmi(uint8_t mach_state);     //向HMI发送加工状态命令
 	bool SendWorkModeCmdToHmi(uint8_t chn_work_mode); 		//向HMI发送工作模式命令
 	bool SendChnStatusChangeCmdToHmi(uint16_t status_type);	//向HMI发送通道状态改变命令
 	bool SendModeChangToHmi(uint16_t mode_type);			//向HMI发送非G模态状态改变命令，包含T/D/H/F/S
@@ -474,7 +476,8 @@ private:
 	//设置MC状态接口
 	void SendIntpModeCmdToMc(uint16_t intp_mode);      //向MC模块发送插补工作模式命令
 	void SendWorkModeToMc(uint16_t work_mode);    //向MC模块发送加工模式命令，主要用于区分插补目标位置，方便计算不同模式的余移动量
-	void PauseMc();		//暂停MC模块的运行
+    void SendMachineStateToMc(uint8_t state); //向MC模块发送SC当前加工状态
+    void PauseMc();		//暂停MC模块的运行
 	void SetMcAxisOrigin(uint8_t axis_index);		//向MC设置轴的工件坐标系原点
 	void SetMcAxisOrigin(uint8_t axis_index, int64_t origin_pos); //向MC设置轴的工件坐标系原点
 	void ActiveMcOrigin(bool active_flag);		//激活设置的工件坐标系
@@ -668,7 +671,6 @@ private://私有成员变量
 	uint32_t m_mask_intp_axis;      //通道插补轴mask，按通道轴顺序
 	uint8_t m_n_intp_axis_count;    //通道插补轴个数
 	uint32_t m_mask_pmc_axis;       //PMC通道轴mask，按通道轴顺序
-	uint8_t m_n_pmc_axis_count;     //PMC轴个数
 
 	ErrorType m_error_code;      	//错误码
 

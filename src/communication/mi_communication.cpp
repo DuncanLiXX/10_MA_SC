@@ -45,6 +45,9 @@ const uint32_t kSharedMemMapMask = (kSharedMemMapSize - 1);	 	//地址掩码 0x0FFFF
 #define ReadRegister16_M(x,y) {volatile int16_t *virt_addr = (volatile int16_t*) ( m_p_shared_base + ((int32_t)x & kSharedMemMapMask));\
 	y = *(virt_addr);}
 
+#define ReadRegister16U_M(x,y) {volatile uint16_t *virt_addr = (volatile uint16_t*) ( m_p_shared_base + ((int32_t)x & kSharedMemMapMask));\
+    y = *(virt_addr);}
+
 #define ReadRegister8_M(x,y) {volatile int8_t *virt_addr = (volatile int8_t*) ( m_p_shared_base + ((int32_t)x & kSharedMemMapMask));\
 	y = *(virt_addr);}
 
@@ -253,7 +256,7 @@ void MICommunication::SendOperateCmd(uint16_t opt, uint8_t axis, uint16_t enable
 
 void MICommunication::SendAxisEnableCmd(uint8_t axis, bool enable, uint8_t pos_req)
 {
-    printf("SendAxisEnable:axis = %d, enable = %d\n",axis,true);
+    printf("SendAxisEnable:axis = %d, enable = %d\n",axis,enable);
 
     // opt为1，代表是轴使能操作
     MiCmdFrame cmd;
@@ -389,15 +392,18 @@ void MICommunication::SendEnSyncAxis(uint8_t master, uint8_t slave, bool enable)
     WriteCmd(cmd);
 }
 
-void MICommunication::SendHandwheelTrace(uint8_t chn, bool enable, bool reverse)
+void MICommunication::SendHandwheelState(uint8_t chn,
+                                         bool trace_enable,
+                                         bool trace_reverse,
+                                         bool insert_enable)
 {
     MiCmdFrame cmd;
     memset(&cmd, 0x00, sizeof(cmd));
     cmd.data.cmd = CMD_MI_SET_HANDWHEEL_TRACE;
 
-    cmd.data.data[0] = enable?0x10:0x00;
-    cmd.data.data[1] = reverse;   //手轮反向引导使能
-    cmd.data.data[2] = 0;
+    cmd.data.data[0] = trace_enable?0x10:0x00;
+    cmd.data.data[1] = trace_reverse;   //手轮反向引导使能
+    cmd.data.data[2] = insert_enable?0x10:0x00;
 
     cmd.data.axis_index = NO_AXIS;
     cmd.data.reserved = chn;
@@ -433,20 +439,22 @@ void MICommunication::SendHandwheelInsertAxis(uint8_t chn, uint8_t axis)
     WriteCmd(cmd);
 }
 
-void MICommunication::SendHardLimitState(uint64_t mask)
+void MICommunication::SendHardLimitState(bool is_positive,uint64_t mask)
 {
     MiCmdFrame cmd;
     memset(&cmd, 0x00, sizeof(cmd));
     cmd.data.cmd = CMD_MI_SET_HARD_LIMIT;
 
     uint16_t *p_mask = (uint16_t*)&mask;
-    cmd.data.data[0] = *p_mask;
-    cmd.data.data[1] = *(p_mask+1);
-    cmd.data.data[2] = *(p_mask+2);
-    cmd.data.data[3] = *(p_mask+3);
+    cmd.data.data[0] = is_positive;
+    cmd.data.data[1] = *p_mask;
+    cmd.data.data[2] = *(p_mask+1);
+    cmd.data.data[3] = *(p_mask+2);
+    cmd.data.data[4] = *(p_mask+3);
 
     cmd.data.axis_index = NO_AXIS;
     cmd.data.reserved = 0xFF;
+    WriteCmd(cmd);
 }
 
 /**
@@ -739,7 +747,9 @@ bool MICommunication::ReadSyncMachErr(uint64_t &value)
  * @param pos_intp[out] : 数组，返回轴位置插补
  * @param count ：轴个数
  */ 
-void MICommunication::ReadPhyAxisCurFedBckPos(double *pos_fb, double *pos_intp,double *speed,double *torque, uint8_t count){
+void MICommunication::ReadPhyAxisCurFedBckPos(double *pos_fb, double *pos_intp,
+                                              double *speed,double *torque,
+                                              double *angle,uint8_t count){
 	if(pos_fb == nullptr || pos_intp == nullptr)
 		return;
 
@@ -762,6 +772,7 @@ void MICommunication::ReadPhyAxisCurFedBckPos(double *pos_fb, double *pos_intp,d
 	int64_t pos_tmp;
 	int32_t val_tmp;
     int16_t torque_tmp;
+    uint16_t angle_tmp;
 	for(int i = 0; i < count; i++){
 		ReadRegister64_M(SHARED_MEM_AXIS_MAC_POS_FB(i), pos_tmp);  //读反馈位置
 		df = pos_tmp;
@@ -781,6 +792,12 @@ void MICommunication::ReadPhyAxisCurFedBckPos(double *pos_fb, double *pos_intp,d
             ReadRegister16_M(SHARED_MEM_AXIS_TORQUE(i), torque_tmp); //读反馈力矩值
             torque[i] = torque_tmp;
 		}
+
+        if(angle != nullptr){
+            ReadRegister16U_M(SHARED_MEM_AXIS_SPD_ANGLE(i), angle_tmp); //读主轴角度
+            angle[i] = angle_tmp/100.0;
+        }
+
 	}
 
 	WriteRegister32_M(SHARED_MEM_AXIS_READ_OVER, 1);  //置位读取完成标志
@@ -856,6 +873,17 @@ void MICommunication::ReadPhyAxisCurFedBckSpeedTorque(double *speed, double *tor
 }
 
 #endif
+
+void MICommunication::ReadSpindleAndle(uint16_t *angle, uint8_t count){ // 读取主轴角度
+    if(!angle)
+        return;
+    //判断写完成标志
+    int32_t flag = 0;
+    ReadRegister32_M(SHARED_MEM_AXIS_WRITE_OVER, flag);
+    if(flag == 0){
+        return;   //MI未更新，直接返回
+    }
+}
 
 /**
  * @brief 读取物理轴机械插补位置
@@ -1005,8 +1033,6 @@ bool MICommunication::ReadCmd(MiCmdFrame &data){
 
 
 	if(flag1 == 1 && flag2 == 0){//有数据待读取
-	//	printf("read mi cmd: %d, %d, addr=0x%x\n", flag1, flag2, SHARED_MEM_CMD_RECV_WF(m_n_cur_recv_cmd_index));
-
 		//读取数据
 		ReadRegister32_M(SHARED_MEM_CMD_RECV_DATA0(m_n_cur_recv_cmd_index), data.data_w[0]);
 		ReadRegister32_M(SHARED_MEM_CMD_RECV_DATA1(m_n_cur_recv_cmd_index), data.data_w[1]);
@@ -1018,8 +1044,9 @@ bool MICommunication::ReadCmd(MiCmdFrame &data){
 		WriteRegister16_M(SHARED_MEM_CMD_RECV_RF(m_n_cur_recv_cmd_index), 1);
 
 		//读取指针下移
-		if(++m_n_cur_recv_cmd_index >= MI_CMD_FIFO_DEPTH)
+        if(++m_n_cur_recv_cmd_index >= MI_CMD_FIFO_DEPTH){
 			m_n_cur_recv_cmd_index = 0;
+        }
 
 	}
 	else

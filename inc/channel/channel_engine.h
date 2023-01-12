@@ -146,6 +146,8 @@ void SetMcArmComm(MCArmCommunication *comm){this->m_p_mc_arm_comm = comm;}   //É
 
 	double GetPhyAxisMachSpeedFeedback(uint8_t index){return m_df_phy_axis_speed_feedback[index];}  //»ñÈ¡Ö¸¶¨ÎïÀíÖáµÄµ±Ç°·´À¡ËÙ¶È
 	double GetPhyAxisMachTorqueFeedback(uint8_t index){return m_df_phy_axis_torque_feedback[index];}  //»ñÈ¡Ö¸¶¨ÎïÀíÖáµÄµ±Ç°·´À¡Á¦¾Ø
+    double GetSpdAngleFeedback(uint8_t index){return m_df_spd_angle[index];}    //»ñÈ¡Ö¸¶¨ÖáµÄÖ÷Öá½Ç¶È·´À¡
+    double GetPmcAxisRemain(uint8_t index){return m_df_pmc_axis_remain[index];} //»ñÈ¡PMCÖáÓàÒÆ¶¯Á¿·´À¡
 	
 	double GetPhyAxisMachPosIntp(uint8_t index){return m_df_phy_axis_pos_intp[index];}   //·µ»ØÖ¸¶¨ÎïÀíÖáµÄµ±Ç°²å²¹»úĞµ×ø±ê
 	void StartUpdateProcess();		//¿ªÊ¼Ä£¿éÉı¼¶²Ù×÷
@@ -167,6 +169,8 @@ void SetMcArmComm(MCArmCommunication *comm){this->m_p_mc_arm_comm = comm;}   //É
 
 	FRegBits *GetChnFRegBits(uint8_t chn_index);     //»ñÈ¡Ö¸¶¨Í¨µÀµÄF¼Ä´æÆ÷Ö¸Õë
 	const GRegBits *GetChnGRegBits(uint8_t chn_index);      //»ñÈ¡Ö¸¶¨Í¨µÀµÄG¼Ä´æÆ÷Ö¸Õë
+
+    PmcAxisCtrl *GetChnPmcAxisCtrl(uint8_t chn_index); //»ñÈ¡Ö¸¶¨Í¨µÀµÄPMCÖá¿ØÖÆ×é¼ş
 
 	static void InitPoweroffHandler();			//³õÊ¼¹ØÁªµôµçĞÅºÅºÍµôµç´¦Àíº¯Êı
 
@@ -194,7 +198,7 @@ void SetMcArmComm(MCArmCommunication *comm){this->m_p_mc_arm_comm = comm;}   //É
 
 
     void SetMiWorkMode(uint8_t value);   //ÉèÖÃMIÄ£¿é¹¤×÷Ä£Ê½
-    void SetMiHandwheelTrace(bool flag, uint8_t chn);   //ÉèÖÃMIÄ£¿éÊÖÂÖ¸ú×ÙÄ£Ê½
+    void UpdateHandwheelState(uint8_t chn);   //ÉèÖÃMIÄ£¿éÊÖÂÖ¸ú×ÙÄ£Ê½
     void SetMiHandwheelInsert(bool flag, uint8_t chn);  //ÉèÖÃMIÄ£¿éÊÖÂÖ²åÈëÄ£Ê½
     void SetMiCurChannel();   //ÉèÖÃMIµ±Ç°Í¨µÀºÅ
 
@@ -543,6 +547,7 @@ private:  //Ë½ÓĞ³ÉÔ±±äÁ¿
 	double *m_df_phy_axis_speed_feedback;        //ÎïÀíÖáµ±Ç°·´À¡ËÙ¶È
 	double *m_df_phy_axis_torque_feedback;        //ÎïÀíÖáµ±Ç°·´À¡Á¦¾Ø
 //#endif	
+    double *m_df_spd_angle;     // Ö÷Öáµ±Ç°½Ç¶È·´À¡
 
     uint64_t m_n_phy_axis_svo_on;		//ÎïÀíÖáÊ¹ÄÜ±êÖ¾
 
@@ -563,7 +568,8 @@ private:  //Ë½ÓĞ³ÉÔ±±äÁ¿
     FRegister m_f_reg_last;             //ÉÏÒ»ÖÜÆÚµÄF¼Ä´æÆ÷
 
 	bool m_b_emergency;				//¼±Í£×´Ì¬±êÖ¾  true--¼±Í£×´Ì¬    false--·Ç¼±Í£×´Ì¬
-    uint64_t m_hard_limit_last{0};  //ÉÏÒ»ÖÜÆÚµÄÓ²ÏŞÎ»±ê¼Ç
+    uint64_t m_pos_hard_limit_last{0};  //ÉÏÒ»ÖÜÆÚµÄÓ²ÏŞÎ»±ê¼Ç
+    uint64_t m_neg_hard_limit_last{0};  //ÉÏÒ»ÖÜÆÚµÄÓ²ÏŞÎ»±ê¼Ç
     uint64_t m_hard_limit_postive;	//Ó²ÏŞÎ»´¥·¢±êÖ¾£¬ÕıÏò   64bit´ú±í64Öá
 	uint64_t m_hard_limit_negative; //Ó²ÏŞÎ»´¥·¢±êÖ¾£¬¸ºÏò
 

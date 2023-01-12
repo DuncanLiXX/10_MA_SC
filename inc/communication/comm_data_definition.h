@@ -105,6 +105,7 @@ enum McCmdCode{
 	CMD_MC_SET_CHN_WORK_MODE = 0x0016,      //设置通道的加工模式（自动、MDA、手动）
 	CMD_MC_SET_G84_INTP_MODE = 0x0017,      //设置MC的特殊插补模式G84（刚性攻丝）
 	CMD_MC_STOP_G31_CMD = 0x0018,           //通知MC停止G31移动命令
+    CMD_MC_MACHINE_STATE = 0x0019,          //通知MC加工状态发生改变
 	CMD_MC_SET_CHN_PLAN_MODE = 0x0020,		//设置通道加工速度规划模式
 	CMD_MC_SET_CHN_PLAN_PARAM = 0x0021,		//设置通道加工速度规划参数
 	CMD_MC_SET_CHN_PLAN_SWITCH = 0x0022,	//设置通道加工速度功能开关

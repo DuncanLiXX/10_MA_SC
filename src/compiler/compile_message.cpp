@@ -2373,7 +2373,7 @@ RapidMsg::RapidMsg(const DPointChn &source, const DPointChn &target, const uint3
 
 //	this->m_p_pmc_target = nullptr;
 //	this->m_pmc_move_mask = 0;
-	this->m_n_pmc_count = 0;
+    this->m_n_pmc_count = 0;
 //	this->m_b_inc_pos = false;
 	m_n_exec_step = 0;
 
@@ -2410,15 +2410,15 @@ void RapidMsg::SetData(void *rec){
  * @param pmc_count ： PMC轴数
  * @param inc : 是否增量模式位置
  */
-void RapidMsg::SetPmcAxisData(uint8_t pmc_count){
+void RapidMsg::SetPmcAxisCount(uint8_t pmc_mask){
 
-	this->m_n_pmc_count = pmc_count;
+    this->m_n_pmc_count = pmc_mask;
 
 
-	if(m_n_pmc_count > 0){
-		SetFlag(FLAG_WAIT_MOVE_OVER, true);   //需要等待运动到位
-		SetFlag(FLAG_BLOCK_OVER, true);		  //块结束
-	}
+//    if(m_n_pmc_count > 0){
+//		SetFlag(FLAG_WAIT_MOVE_OVER, true);   //需要等待运动到位
+//		SetFlag(FLAG_BLOCK_OVER, true);		  //块结束
+//	}
 }
 
 /**
@@ -2551,7 +2551,7 @@ RapidMsg& RapidMsg::operator=( const RapidMsg& msg){
 	this->m_point_source = msg.m_point_source;
 	this->m_io_data = msg.m_io_data;
 
-	this->m_n_pmc_count = msg.m_n_pmc_count;
+    this->m_n_pmc_count = msg.m_n_pmc_count;
 //	this->m_pmc_move_mask = msg.m_pmc_move_mask;
 //	this->m_b_inc_pos = msg.m_b_inc_pos;
 	this->m_n_exec_step = msg.m_n_exec_step;
@@ -2581,7 +2581,7 @@ bool operator ==( const RapidMsg &one, RapidMsg &two){
 			one.m_point_target == two.m_point_target &&
 			one.m_point_source == two.m_point_source &&
 			one.m_io_data == two.m_io_data &&
-			one.m_n_pmc_count == two.m_n_pmc_count)
+            one.m_n_pmc_count == two.m_n_pmc_count)
 		return true;
 	return false;
 }
@@ -2599,7 +2599,7 @@ LineMsg::LineMsg(const DPointChn &source, const DPointChn &target, const double 
 
 //	m_p_pmc_target = nullptr;
 //	m_pmc_move_mask = 0;
-	m_n_pmc_count = 0;
+    m_n_pmc_count = 0;
 //	m_b_inc_pos = false;
 	m_n_exec_step = 0;
 
@@ -2637,20 +2637,13 @@ void LineMsg::SetData(void *rec){
  * @brief 设置PMC轴的运动数据
  * @param pmc_count ： PMC轴数
  */
-void LineMsg::SetPmcAxisData(uint8_t pmc_count){
-//	if(this->m_p_pmc_target){
-//		delete []m_p_pmc_target;
-//		m_p_pmc_target = nullptr;
-//	}
-	printf("LineMsg::SetPmcAxisData: %hhu\n", pmc_count);
-	this->m_n_pmc_count = pmc_count;
-//	this->m_pmc_move_mask = axis_mask;
-//	this->m_b_inc_pos = inc;
+void LineMsg::SetPmcAxisCount(uint8_t pmc_mask){
+    this->m_n_pmc_count = pmc_mask;
 
-	if(m_n_pmc_count > 0){
-		SetFlag(FLAG_WAIT_MOVE_OVER, true);   //需要等待运动到位
-		SetFlag(FLAG_BLOCK_OVER, true);		//块结束
-	}
+//    if(m_n_pmc_count > 0){
+//		SetFlag(FLAG_WAIT_MOVE_OVER, true);   //需要等待运动到位
+//		SetFlag(FLAG_BLOCK_OVER, true);		//块结束
+//	}
 }
 
 /**
@@ -2790,7 +2783,7 @@ LineMsg& LineMsg::operator=( const LineMsg& msg){
 	this->m_point_source = msg.m_point_source;
 	this->m_io_data = msg.m_io_data;
 
-	this->m_n_pmc_count = msg.m_n_pmc_count;
+    this->m_n_pmc_count = msg.m_n_pmc_count;
 //	this->m_pmc_move_mask = msg.m_pmc_move_mask;
 //	this->m_b_inc_pos = msg.m_b_inc_pos;
 	this->m_n_exec_step = msg.m_n_exec_step;
@@ -2822,7 +2815,7 @@ bool operator ==( const LineMsg &one, LineMsg &two){
 			one.m_point_target == two.m_point_target &&
 			one.m_point_source == two.m_point_source &&
 			one.m_io_data == two.m_io_data &&
-			one.m_n_pmc_count == two.m_n_pmc_count)
+            one.m_n_pmc_count == two.m_n_pmc_count)
 		return true;
 	return false;
 }
@@ -2944,6 +2937,15 @@ bool ArcMsg::CalArcCenter(const DPointChn &src, const DPointChn &tar, const doub
 	printf("cal arc center: (%lf, %lf, %lf)\n", cen.m_df_point[0], cen.m_df_point[1], cen.m_df_point[2]);
 
 	return true;
+}
+
+void ArcMsg::SetPmcAxisCount(uint8_t pmc_count){
+    this->m_n_pmc_count = pmc_count;
+
+//    if(m_n_pmc_count > 0){
+//        SetFlag(FLAG_WAIT_MOVE_OVER, true);   //需要等待运动到位
+//        SetFlag(FLAG_BLOCK_OVER, true);		//块结束
+//    }
 }
 
 /**

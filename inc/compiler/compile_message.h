@@ -598,8 +598,8 @@ public:
 
 	void SetIoData(uint8_t data){this->m_io_data = data;}   //设置IO数据
 
-	void SetPmcAxisData(uint8_t pmc_count);   //设置PMC轴的运动数据
-	uint8_t GetPmcAxisCount(){return this->m_n_pmc_count;}   //获取运动PMC轴数
+    void SetPmcAxisCount(uint8_t count);   //设置PMC轴的运动数据
+    uint8_t GetPmcAxisCount(){return this->m_n_pmc_count;}   //获取运动PMC轴数
 //	double *GetPmcTarget(uint8_t &count, uint32_t &mask, bool &inc);   //获取PMC轴的运动目标数据
 	uint8_t GetExecStep(){return m_n_exec_step;}		//获取当前步骤
 	void SetExecStep(uint8_t step){m_n_exec_step = step;} //设置执行步骤
@@ -612,7 +612,7 @@ private:
 
 //	double *m_p_pmc_target;  //PMC轴的目标位置
 //	uint32_t m_pmc_move_mask;   //PMC移动轴mask
-	uint8_t m_n_pmc_count;     //PMC移动轴数量
+    uint8_t m_n_pmc_count;     //PMC移动轴数量
 //	bool m_b_inc_pos;          //PMC轴目标地址是否增量模式
 	uint8_t m_n_exec_step;     //执行阶段标志
 };
@@ -642,8 +642,8 @@ public:
 
 	void SetIoData(uint8_t data){this->m_io_data = data;}   //设置IO数据
 
-	void SetPmcAxisData(uint8_t pmc_count);   //设置PMC轴的运动数据
-	uint8_t GetPmcAxisCount(){return this->m_n_pmc_count;}   //获取运动PMC轴数
+    void SetPmcAxisCount(uint8_t pmc_mask);   //设置PMC轴的运动数据
+    uint8_t GetPmcAxisCount(){return this->m_n_pmc_count;}   //获取运动PMC轴数
 //	double *GetPmcTarget(uint8_t &count, uint32_t &mask, bool &inc);   //获取PMC轴的运动目标数据
 	uint8_t GetExecStep(){return m_n_exec_step;}		//获取当前步骤
 	void SetExecStep(uint8_t step){m_n_exec_step = step;} //设置执行步骤
@@ -656,7 +656,7 @@ protected:
 	uint32_t m_axis_move_mask;  //移动轴mask，bit0-bit15分别标志通道第1-16轴是否有移动指令
 	uint8_t m_io_data;       //io输出数据，0x00表示无IO输出   从1开始，有效范围1~127
 
-	uint8_t m_n_pmc_count;     //PMC移动轴数量
+    uint8_t m_n_pmc_count;     //PMC移动轴数量
 	uint8_t m_n_exec_step;     //执行阶段标志
     //	double *m_p_pmc_target;  //PMC轴的目标位置
     //	uint32_t m_pmc_move_mask;   //PMC移动轴mask
@@ -754,6 +754,7 @@ public:
 	CompensateMsg& operator=( const CompensateMsg& msg);  //赋值运算符
 	friend bool operator ==( const CompensateMsg &one, CompensateMsg &two);  //判断运算符
 	int GetGcode(){return m_n_g_code;};
+
 private:
 	uint16_t m_n_data;   //数据，对于G41/G42为D值，对于G43/G44为H值
 	uint16_t m_n_data_last;   //之前的数据，对于G41/G42为D值，对于G43/G44为H值，用于手轮反向引导
@@ -817,6 +818,8 @@ public:
 
 	ArcMsg& operator=( const ArcMsg& msg);  //赋值运算符
 	friend bool operator ==( const ArcMsg &one, ArcMsg &two);  //判断运算符
+    void SetPmcAxisCount(uint8_t count);   //设置PMC轴的运动数据
+    uint8_t GetPmcAxisCount(){return this->m_n_pmc_count;}   //获取运动PMC轴数
 
 private:
 	int8_t m_flag_direct;  	//轨迹方向标志，-1:clockwise,1:anticlockwise  //顺时针(-1)，逆时针(1)
@@ -827,8 +830,9 @@ private:
 	double m_df_feed;		//进给速度   单位：mm/min
 	uint32_t m_axis_move_mask;  //移动轴mask，bit0-bit15分别标志通道第1-16轴是否有移动指令
 	uint8_t m_io_data;       //io输出数据，0x00表示无IO输出   从1开始，有效范围1~127
-	uint16_t m_gmode_2;     //加工平面模态
+    uint16_t m_gmode_2;     //加工平面模态
 	double i_number, j_number, r_number;
+    uint8_t m_n_pmc_count;     //PMC移动轴数量
 };
 
 /**

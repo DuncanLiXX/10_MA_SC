@@ -64,6 +64,7 @@ class ChannelEngine;   //通道引擎
 #define SHARED_MEM_PMC_AXIS_REMAIN_DIS(n) (SHARED_MEM_AXIS_MAC_POS_INTP(n)+0x20)           //第n轴的余移动量（PMC轴有效）
 #define SHARED_MEM_AXIS_MAC_POS_INTP_AFTER(n) (SHARED_MEM_AXIS_MAC_POS_INTP(n)+0x28)       //第n轴的插补后加减速之后输出的机械坐标
 #define SHARED_MEM_AXIS_TORQUE(n) (SHARED_MEM_AXIS_MAC_POS_INTP(n)+0x30)   			    //第n轴的实时力矩反馈
+#define SHARED_MEM_AXIS_SPD_ANGLE(n) (SHARED_MEM_AXIS_MAC_POS_INTP(n)+0x32)   			    //第n轴的实时主轴角度反馈
 #define SHARED_MEM_AXIS_READ_OVER (SHARED_MEM_AXIS_STATUS_BASE+0x1000)   					//轴数据的读取完成标志
 #define SHARED_MEM_AXIS_WRITE_OVER (SHARED_MEM_AXIS_STATUS_BASE+0x1004)   				    //轴数据的写入完成标志
 #define SHARED_MEM_TAP_ERR(n) (SHARED_MEM_AXIS_MAC_POS_INTP(n)+0x1040)                  //第n个攻丝组的刚性攻丝误差
@@ -182,11 +183,13 @@ public:
 
 	ErrorType GetErrorCode(){return m_error_code;}	//返回最近的错误码
 
-	void ReadPhyAxisCurFedBckPos(double *pos_fb, double *pos_intp,double *speed,double *torque, uint8_t count);    //读取物理轴位置、速度、力矩
+    void ReadPhyAxisCurFedBckPos(double *pos_fb, double *pos_intp,double *speed,double *torque,double *angle, uint8_t count);    //读取物理轴位置、速度、力矩
 	void ReadPhyAxisFbPos(double *pos_fb, uint8_t *phy_axis, uint8_t count); //读取指定物理轴的反馈位置
 #ifdef USES_SPEED_TORQUE_CTRL
 	void ReadPhyAxisCurFedBckSpeedTorque(double *speed, double *torque, uint8_t count);    //读取物理轴速度和力矩
 #endif
+    void ReadSpindleAndle(uint16_t *angle,uint8_t count);   //读取主轴实时角度反馈
+
 //	void ReadPhyAxisIntpPos(double *pos, uint8_t count);   //读取物理轴机械插补位置
 	bool ReadPhyAxisSpeed(int32_t *speed, uint8_t index);  	//读取指定物理轴速度
     void ReadPhyAxisEncoder(int64_t *encoder, uint8_t count);   //读取物理轴当前编码器反馈
@@ -246,16 +249,17 @@ public:
     // chn: 通道号
     // enable: 是否开启手轮跟踪
     // reverse: 是否反向跟踪
-    void SendHandwheelTrace(uint8_t chn, bool enable, bool reverse);
+    void SendHandwheelState(uint8_t chn, bool trace_enable, bool trace_reverse,
+                            bool insert_enable);
     // chn: 通道号
     // enable: 是否开启手轮插入
     void SendHandwheelInsert(uint8_t chn, bool enable);
     // chn: 通道号
     // axis: 手轮插入轴选
     void SendHandwheelInsertAxis(uint8_t chn, uint8_t axis);
-    // chn: 通道号
+    // is_positive: 是否为正限位
     // mask: 告警掩码 每一bit代表一个轴是否处于告警状态
-    void SendHardLimitState(uint64_t mask);
+    void SendHardLimitState(bool is_positive,uint64_t mask);
 
 	bool ReadEncoderWarn(uint64_t &value);		//读取轴编码器告警标志
 	bool ReadServoHLimitFlag(bool pos_flag, uint64_t &value);   //读取伺服限位告警信息

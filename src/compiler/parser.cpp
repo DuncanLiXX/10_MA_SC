@@ -162,7 +162,6 @@ bool Parser::CompileMacro(){
 
 	res = this->CreateMacroMsg(macro_cmd);
 
-
 	//给本行最后一条指令置FLAG_LAST_REC标志
 	if(res){
 		ListNode<RecordMsg *> *tail = this->m_p_parser_result->TailNode();
@@ -537,7 +536,6 @@ bool Parser::AnalyzeGCode(LexerGCode *gcode){
 			return false;
 		}
 	}
-
 
 	//处理02组模态指令：G17/G18/G19 平面指定指令
 	if(m_mode_mask & GMODE_02){

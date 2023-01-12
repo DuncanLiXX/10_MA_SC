@@ -5500,7 +5500,7 @@ bool ChannelControl::ExecuteMessage(){
     //printf("enter ExecuteMessage\n");
     int count = m_p_output_msg_list->GetLength();
     if(count == 0){
-        return true;
+    	return true;
     }
 
     bool res = false;
@@ -5620,7 +5620,7 @@ bool ChannelControl::ExecuteMessage(){
         if(line_no != msg->GetLineNo() || type != msg->GetMsgType()){
             line_no = msg->GetLineNo();
             type = msg->GetMsgType();
-            //printf("---------->excute message line no %llu  msg type: %d flag: %d\n", line_no, msg_type, msg->GetFlags().all);
+            printf("---------->excute message line no %llu  msg type: %d flag: %d\n", line_no, msg_type, msg->GetFlags().all);
         }
         // @test zk
 

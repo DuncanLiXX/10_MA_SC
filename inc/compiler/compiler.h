@@ -316,6 +316,9 @@ private://私有成员
     uint8_t m_n_restart_mode;     //加工复位模式，0--非加工复位   1--正常加工复位    2--快速加工复位
     uint64_t m_n_restart_line;    //加工复位目的行号
     char m_last_main_file[kMaxPathLen];        //最后加载的程序
+
+    // @add zk
+    bool compiler_lock = false;  // 防止子程序调用 编译先于与扫描执行
 };
 
 

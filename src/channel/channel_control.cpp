@@ -5464,14 +5464,12 @@ bool ChannelControl::IsStepMode(){
  * @return true--³É¹¦  false--Ê§°Ü
  */
 bool ChannelControl::ExecuteMessage(){
-    printf("enter ExecuteMessage\n");
+    //printf("enter ExecuteMessage\n");
     int count = m_p_output_msg_list->GetLength();
     if(count == 0){
-    	printf("aaaaa\n");
     	return true;
     }
 
-    printf("bbbbb\n");
     bool res = false;
     RecordMsg *msg = nullptr;
     ListNode<RecordMsg *> *node = nullptr;   //
@@ -5562,7 +5560,7 @@ bool ChannelControl::ExecuteMessage(){
     }else{
         node = m_p_output_msg_list->HeadNode();
     }
-    printf("ccccc\n");
+
     while(node != nullptr){
         msg = static_cast<RecordMsg *>(node->data);
         end_cmd = 0;

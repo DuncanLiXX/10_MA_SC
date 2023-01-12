@@ -853,7 +853,7 @@ END: if (line != nullptr)
     //	m_thread_prescan = 0;
     m_b_breakout_prescan = false;
     this->m_b_prescan_in_stack = false;
-
+    this->compiler_lock = false;
     printf("exit compiler PreScan, thread id = %ld\n", syscall(SYS_gettid));
 }
 
@@ -2333,6 +2333,8 @@ bool Compiler::RunMessage() {
     bool res = true;
     RecordMsg *msg = nullptr;
 
+    if(compiler_lock) return false;
+
     //	int count = m_p_parser_result->GetLength();
 
     ListNode<RecordMsg *> *node = m_p_parser_result->HeadNode();
@@ -2369,9 +2371,11 @@ bool Compiler::RunMessage() {
                 break;
             case SUBPROG_CALL_MSG:
                 res = this->RunSubProgCallMsg(msg);
+                compiler_lock = true;
                 break;
             case MACRO_PROG_CALL_MSG:
                 res = this->RunMacroProgCallMsg(msg);
+                compiler_lock = true;
                 break;
             case COORD_MSG:
                 res = this->RunCoordMsg(msg);
@@ -2399,6 +2403,7 @@ bool Compiler::RunMessage() {
                 break;
             case LOOP_MSG:
                 res = this->RunLoopMsg(msg);
+                compiler_lock = true;
                 break;
             case ARC_MSG:
                 res = this->RunArcMsg(msg);

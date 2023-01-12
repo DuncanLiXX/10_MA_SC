@@ -612,7 +612,7 @@ private:
 
 //	double *m_p_pmc_target;  //PMC轴的目标位置
 //	uint32_t m_pmc_move_mask;   //PMC移动轴mask
-    uint8_t m_n_pmc_count;     //PMC移动轴数量
+    uint8_t m_n_pmc_count{0};     //PMC移动轴数量
 //	bool m_b_inc_pos;          //PMC轴目标地址是否增量模式
 	uint8_t m_n_exec_step;     //执行阶段标志
 };
@@ -656,7 +656,7 @@ protected:
 	uint32_t m_axis_move_mask;  //移动轴mask，bit0-bit15分别标志通道第1-16轴是否有移动指令
 	uint8_t m_io_data;       //io输出数据，0x00表示无IO输出   从1开始，有效范围1~127
 
-    uint8_t m_n_pmc_count;     //PMC移动轴数量
+    uint8_t m_n_pmc_count{0};     //PMC移动轴数量
 	uint8_t m_n_exec_step;     //执行阶段标志
     //	double *m_p_pmc_target;  //PMC轴的目标位置
     //	uint32_t m_pmc_move_mask;   //PMC移动轴mask
@@ -832,7 +832,7 @@ private:
 	uint8_t m_io_data;       //io输出数据，0x00表示无IO输出   从1开始，有效范围1~127
     uint16_t m_gmode_2;     //加工平面模态
 	double i_number, j_number, r_number;
-    uint8_t m_n_pmc_count;     //PMC移动轴数量
+    uint8_t m_n_pmc_count{0};     //PMC移动轴数量
 };
 
 /**

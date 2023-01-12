@@ -51,7 +51,7 @@ struct ChannelStatusCollect{
 	int8_t cur_manual_move_dir;		//当前手动移动方向，0--停止   1--正向   -1--负向
 	uint8_t cur_axis;				//当前轴号,通道轴号
 	uint8_t spindle_mode;           //主轴工作方式，0：速度控制方式；1：位置控制方式
-	int8_t spindle_dir;				//主轴方向，-1：反转；0：停转；1：正转
+    int8_t spindle_dir;				//(弃用)主轴方向，-1：反转；0：停转；1：正转
 	uint8_t returned_to_ref_point;	//是否已回参考点，bit0-bit7分别表示轴0-7是否已回参考点
 	uint8_t es_button_on;			//急停按键是否处于按下状态，每一个bit表示一个急停按键
 	char cur_nc_file_name[kMaxFileNameLen];	//当前加工主程序文件名

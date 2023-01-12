@@ -92,7 +92,7 @@ uint32_t SpindleControl::GetSCode()
     return cnc_speed;
 }
 
-void SpindleControl::InputPolar(Spindle::CncPolar polar)
+void SpindleControl::InputPolar(Spindle::Polar polar)
 {
     if(!spindle)
         return;
@@ -563,7 +563,7 @@ uint16_t SpindleControl::GetMaxSpeed()
 }
 
 // 根据当前状态获取主轴转向
-CncPolar SpindleControl::CalPolar()
+Polar SpindleControl::CalPolar()
 {
     if(!spindle)
         return Stop;
@@ -573,7 +573,7 @@ CncPolar SpindleControl::CalPolar()
         // 主轴定向功能，极性由参数ORM设定
         if(SOR == 1)
         {
-            return (CncPolar)ORM;
+            return (Polar)ORM;
         }
         /*
          * TCW    CWM    极性
@@ -597,7 +597,7 @@ CncPolar SpindleControl::CalPolar()
     {
         polar = SGN;
     }
-    return (CncPolar)polar;
+    return (Polar)polar;
 }
 
 // 根据当前状态获取DA电平值
@@ -641,7 +641,7 @@ bool SpindleControl::UpdateSpindleLevel(uint16_t speed)
     if(!spindle)
         return false;
     // 获取方向
-    CncPolar polar = CalPolar();
+    Polar polar = CalPolar();
     if(polar == Stop)
     {
         return false;
@@ -734,7 +734,7 @@ void SpindleControl::SendSpdSpeedToMi()
 {
     if(!spindle)
         return;
-    CncPolar polar;
+    Polar polar;
     int32_t output;
     // 位置模式
     if(mode == Position){
@@ -792,7 +792,7 @@ void SpindleControl::ProcessORCMA(bool ORCMA)
         }
         mi->SendSpdLocateCmd(chn, phy_axis+1,true);
     }else{
-        CncPolar polar = CalPolar();
+        Polar polar = CalPolar();
         bool need_enable = (polar == Positive || polar == Negative);
         // 取消定向时，根据之前状态来恢复电机使能
         if(motor_enable != need_enable)

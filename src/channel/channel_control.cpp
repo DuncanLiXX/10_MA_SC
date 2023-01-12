@@ -1128,11 +1128,12 @@ int ChannelControl::GetMacroVar(const int index, double &value){
 bool ChannelControl::GetSysVarValue(const int index, double&value){
 
     if(index == 1220){    //主轴状态
-        if(this->m_channel_status.spindle_dir == SPD_DIR_STOP)
+        Spindle::Polar polar = m_p_spindle->CalPolar();
+        if(polar == Polar::Stop)
             value = 5;
-        else if(this->m_channel_status.spindle_dir == SPD_DIR_POSITIVE)
+        else if(polar == Polar::Positive)
             value = 3;
-        else if(this->m_channel_status.spindle_dir == SPD_DIR_NEGATIVE)
+        else if(polar == Polar::Negative)
             value = 4;
     }
 #ifdef USES_INDEPEND_BASE_TOOL_OFFSET
@@ -6762,25 +6763,31 @@ bool ChannelControl::ExecuteAuxMsg(RecordMsg *msg){
                 break;
             }
 
-            // 主轴不存在或者主轴为虚拟轴，不执行主轴辅助功能
-            if((mcode == 3 || mcode == 4 || mcode == 5
-                || mcode == 19 || mcode == 20 || mcode == 26
-                || mcode == 27 || mcode == 28 || mcode == 29)
-                    && m_p_spindle->Type() != 2){
-                tmp->SetExecStep(m_index, 0xFF);    //置位结束状态
-                break;
-            }
-
 
             if(tmp->GetExecStep(m_index) == 0){
                 //TODO 将代码发送给PMC
                 g_ptr_trace->PrintLog(LOG_ALARM, "执行的M代码：M%02d", mcode);
                 this->SendMCodeToPmc(mcode, m_index);
 
-                gettimeofday(&m_time_m_start[m_index], NULL);   //
-
+                gettimeofday(&m_time_m_start[m_index], NULL);
                 tmp->IncreaseExecStep(m_index);
             }else if(tmp->GetExecStep(m_index) == 1){
+                // 主轴不存在或者主轴为虚拟轴，不执行主轴辅助功能
+                if((mcode == 3 || mcode == 4 || mcode == 5
+                    || mcode == 19 || mcode == 20 || mcode == 26
+                    || mcode == 27 || mcode == 28 || mcode == 29)
+                        && m_p_spindle->Type() != 2){
+                    gettimeofday(&time_now, NULL);
+                    time_elpase = (time_now.tv_sec-m_time_m_start[m_index].tv_sec)*1000000+time_now.tv_usec-m_time_m_start[m_index].tv_usec;
+                    if(time_elpase < 100000){
+                        this->SetMFSig(m_index, true);    //置位选通信号
+                    }else{
+                        this->SetMFSig(m_index, false);    //复位选通信号
+                        tmp->SetExecStep(m_index, 0xFF);    //置位结束状态
+                    }
+                    break;
+                }
+
                 //等待TMF延时，置位MF选通信号
                 gettimeofday(&time_now, NULL);
                 time_elpase = (time_now.tv_sec-m_time_m_start[m_index].tv_sec)*1000000+time_now.tv_usec-m_time_m_start[m_index].tv_usec;
@@ -6794,12 +6801,12 @@ bool ChannelControl::ExecuteAuxMsg(RecordMsg *msg){
                 // 如果当前在正转状态下再给M03，那么ProcessPMCSignal就扫描不到变化了
                 // 这里需要做特殊处理
                 if(mcode == 3 && m_p_g_reg->SFR && m_p_spindle->Type() == 2){
-                    m_p_spindle->InputPolar(CncPolar::Positive);
+                    m_p_spindle->InputPolar(Polar::Positive);
                 }else if(mcode == 4 && m_p_g_reg->SRV && m_p_spindle->Type() == 2){
-                    m_p_spindle->InputPolar(CncPolar::Negative);
+                    m_p_spindle->InputPolar(Polar::Negative);
                 }else if(mcode == 5 && m_p_g_reg->SFR == 0 && m_p_g_reg->SRV == 0
                          && m_p_spindle->Type() == 2){
-                    m_p_spindle->InputPolar(CncPolar::Stop);
+                    m_p_spindle->InputPolar(Polar::Stop);
                 }
             }else if(tmp->GetExecStep(m_index) == 2){
                 //等待FIN信号

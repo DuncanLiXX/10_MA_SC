@@ -17,7 +17,7 @@ struct SCAxisConfig;
  */
 
 namespace Spindle {
-enum CncPolar
+enum Polar
 {
     Stop = -1,
     Positive = 0,
@@ -38,7 +38,7 @@ enum Mode
 typedef struct
 {
     bool tap_flag{false};       // 攻丝标记
-    CncPolar polar{Stop};       // 主轴方向
+    Polar polar{Stop};       // 主轴方向
     double F{0.0};              // 攻丝进给
     uint16_t S{0};              // 主轴转速
     uint8_t phy_axis{0};        // 主轴轴号
@@ -73,7 +73,7 @@ public:
     // 1.主轴停: SRV==0&&SFR==0
     // 2.主轴正转: SRV==0&&SFR==1
     // 3.主轴反转: SRV==1&&SFR==0
-    void InputPolar(Spindle::CncPolar polar);
+    void InputPolar(Spindle::Polar polar);
 
     // 主轴模式由 刚性攻丝信号RGTAP(G61.0) 决定
     // 1.速度模式: RGTAP==0
@@ -112,12 +112,12 @@ public:
     int32_t GetSpindleSpeed();  // 获取真实主轴转速，带有方向，用于hmi显示转速 单位:rpm
 
     double GetSpdAngle();  // 获取主轴角度 单位：度
+    Spindle::Polar CalPolar();    // 根据当前状态获取主轴转向
 
 private:
     void UpdateParams();        // 更新常用主轴参数到成员变量中
     void UpdateSpindleState();  // 根据当前状态更新转速
     uint16_t GetMaxSpeed();     // 获取当前档位最大转速
-    Spindle::CncPolar CalPolar();    // 根据当前状态获取主轴转向
     int32_t CalDaOutput();     // 根据当前状态获取DA电平值
 
     // 根据当前速度更新档位输出
@@ -164,7 +164,7 @@ public:
 
     Spindle::Level to_level{Spindle::Low};        // 目标档位
     Spindle::Level level{Spindle::Low};           // 当前档位
-    Spindle::CncPolar cnc_polar{Spindle::Stop};    // 主轴方向
+    Spindle::Polar cnc_polar{Spindle::Stop};    // 主轴方向
     uint32_t cnc_speed{0};              // S代码的转速 单位:rpm
     double tap_feed{0.0};                    // 攻丝进给
 

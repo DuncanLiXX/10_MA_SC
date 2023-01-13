@@ -8675,7 +8675,7 @@ void ChannelEngine::ProcessPmcSignal(){
             MachiningState state = (MachiningState)ctrl->GetChnStatus().machining_state;
             // 运行或者暂停状态才能手轮插入
             if(g_reg->HSIA != 0 && state != MS_RUNNING && state != MS_PAUSED){
-                CreateError(ERR_HW_INSERT_INVALID, INFO_LEVEL, CLEAR_BY_AUTO, 0, i);
+                CreateError(ERR_HW_INSERT_INVALID, INFO_LEVEL, CLEAR_BY_MCP_RESET, 0, i);
             }else{
                 UpdateHandwheelState(i);
             }

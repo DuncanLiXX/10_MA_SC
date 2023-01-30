@@ -464,6 +464,7 @@ enum ErrorType {
 
     ERR_HW_REV_OVER = 1650,             //手轮反向跟踪无更多数据   级别：警告
     ERR_HW_INSERT_INVALID = 1651,       //手轮插入无效
+    ERR_HW_INSERT_INFO = 1652,          //提示信息：使用手轮插入后需用坐标系指令清除
 
     ERR_TOOL_LIFE_OVER = 1660,          //刀具寿命到达
     ERR_TOOL_LIFE_COMING = 1661,        //刀具寿命即将到达     级别：警告

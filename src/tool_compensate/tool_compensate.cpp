@@ -190,12 +190,15 @@ void ToolCompensate::ProcessData(ListNode<RecordMsg *> *node){
 
 			if(tmsg->GetGCode() == G40_CMD){
 				interp.convert_cutter_compensation_off(&interp._setup);
+				//break;
 
 			}else if(tmsg->GetGCode() == G41_CMD){
 				interp.convert_cutter_compensation_on(LEFT,this->comp_radius,&interp._setup);
+				//break;
 
 			}else if(tmsg->GetGCode() == G42_CMD){
 				interp.convert_cutter_compensation_on(RIGHT,this->comp_radius,&interp._setup);
+				//break;
 
 			}
 
@@ -218,8 +221,8 @@ void ToolCompensate::ProcessData(ListNode<RecordMsg *> *node){
 
 				CodeMsgType msg_type = msg->GetMsgType();
 
-				if(msg_type == COORD_MSG || msg_type == LOOP_MSG ||  msg_type == REF_RETURN_MSG
-				 ||msg_type == RESTART_OVER_MSG || msg_type == AUTO_TOOL_MEASURE_MSG){
+				if(msg_type == LOOP_MSG ||msg_type == RESTART_OVER_MSG ||
+						msg_type == AUTO_TOOL_MEASURE_MSG){
 					//interp.convert_cutter_compensation_off(&interp._setup);
 					interp.convert_close_compensation(&interp._setup);
 				}

@@ -70,13 +70,13 @@ enum BackgroundTask {
 };
 
 
-void get_memoccupy(MEM_OCCUPY *mem); //对无类型get函数含有一个形参结构体类弄的指针O
+double get_memoccupy(MEM_OCCUPY *mem); //对无类型get函数含有一个形参结构体类弄的指针O
 
 
 int get_cpuoccupy(CPU_OCCUPY *cpust); //对无类型get函数含有一个形参结构体类弄的指针O
 
 
-void cal_cpuoccupy(CPU_OCCUPY *o, CPU_OCCUPY *n);
+double cal_cpuoccupy(CPU_OCCUPY *o, CPU_OCCUPY *n);
 // @test zk
 
 
@@ -167,7 +167,7 @@ private:
     void ProcessHmiSysBackupCmd(HMICmdFrame &cmd);         //处理HMI备份命令
     void ProcessHmiSysRecoverCmd(HMICmdFrame &cmd);        //处理HMI恢复命令
     void ProcessHmiClearAlarmFile(HMICmdFrame &cmd);       //处理HMI清除报警文件命令
-
+    void ProcessHmiGetCPUInfo(HMICmdFrame &cmd);						   //处理HMI获取CPU 内存占用信息
 	uint16_t GetFrameNumber(){return  (++m_n_frame_number&0x8000) ? (m_n_frame_number=0) : m_n_frame_number;}   //获取最新帧号
 
 	int GetNcFileCount(const char *path);    //获取NC加工文件个数
@@ -250,6 +250,8 @@ private:
 	ErrorType m_error_code;           //错误码
 	MEM_OCCUPY mem_stat;
 	CPU_OCCUPY cpu_stat;
+	double cpu_percent;  //cpu占用率
+	double mem_percent;  //内存占用率
 
 
 };

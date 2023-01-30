@@ -1055,6 +1055,9 @@ int HMICommunication::ProcessHmiCmd(){
             case CMD_HMI_CLEAR_ALARMFILE:         //HMIÏòSCÇëÇóÇå¿Õ±¨¾¯ÎÄ¼ş
                 ProcessHmiClearAlarmFile(cmd);
                 break;
+            case CMD_HMI_GET_CPU_INFO:
+            	ProcessHmiGetCPUInfo(cmd);
+            	break;
 			default:
 				g_ptr_trace->PrintLog(LOG_ALARM, "ÊÕµ½²»Ö§³ÖµÄHMIÖ¸Áîcmd=%d", cmd.cmd);
 				break;
@@ -1318,36 +1321,36 @@ int HMICommunication::Monitor(){
 
 	   	}
 
-	   	// @test zk
+	   	//@test zk
 	   	count1 ++;
 
-	   	if(count1 >= 100){
+	   	if(count1 >= 10){
 			count1 = 0;
 	   		//»ñÈ¡ÄÚ´æ
 			//(MemTotal - MemFree)/ MemTotal
-			get_memoccupy((MEM_OCCUPY *)&mem_stat);
-			/*printf("[MemTotal] = %lu\n "
+			mem_percent = get_memoccupy((MEM_OCCUPY *)&mem_stat);
+
+			/*
+			printf("[MemTotal] = %lu\n "
 					"[MemFree] = %lu\n "
 					"[Buffers] = %lu\n "
 					"[Cached] = %lu\n "
 					"[SwapCached] = %lu\n ",
 					mem_stat.MemTotal, mem_stat.MemFree, mem_stat.Buffers, mem_stat.Cached, mem_stat.SwapCached);*/
 
-			 //printf("%.3f\n", mem_stat.MemFree * 1.0 / ( mem_stat.MemTotal * 1.0  ) );
+			 // printf("%.3f\n", mem_stat.MemFree * 1.0 / ( mem_stat.MemTotal * 1.0  ) );
 			 //µÚÒ»´Î»ñÈ¡cpuÊ¹ÓÃÇé¿ö
 			 CPU_OCCUPY cpu_cur;
 			 get_cpuoccupy((CPU_OCCUPY *)&cpu_cur);
 
 			 //¼ÆËãcpuÊ¹ÓÃÂÊ
-			 cal_cpuoccupy((CPU_OCCUPY *)&cpu_stat, (CPU_OCCUPY *)&cpu_cur);
+			 cpu_percent = cal_cpuoccupy((CPU_OCCUPY *)&cpu_stat, (CPU_OCCUPY *)&cpu_cur);
 			 cpu_stat = cpu_cur;
 	   	}
-		 // @test zk
+		//@test zk
 	   usleep(50000);
-	 //  	usleep(200000);
-
+	 //usleep(200000);
 	}
-
 	return res;
 }
 
@@ -2699,6 +2702,18 @@ void HMICommunication::ProcessHmiClearAlarmFile(HMICmdFrame &cmd)
         }
     }
     SendCmd(cmd);
+}
+
+void HMICommunication::ProcessHmiGetCPUInfo(HMICmdFrame &cmd){
+	cmd.frame_number |= 0x8000;
+	memset(cmd.data, 0, sizeof(cmd.data));
+	double cpu_info[2];
+	cpu_info[0] = cpu_percent;
+	cpu_info[1] = mem_percent;
+
+	memcpy(cmd.data, &cpu_info, sizeof(cpu_info));
+	cmd.data_len = sizeof(cpu_info);
+	SendCmd(cmd);
 }
 
 /**
@@ -4782,7 +4797,7 @@ void HMICommunication::ProcessFileTransError(){
 }
 
 //@test zk
-void get_memoccupy(MEM_OCCUPY *mem) //¶ÔÎŞÀàĞÍgetº¯Êıº¬ÓĞÒ»¸öĞÎ²Î½á¹¹ÌåÀàÅªµÄÖ¸ÕëO
+double get_memoccupy(MEM_OCCUPY *mem) //¶ÔÎŞÀàĞÍgetº¯Êıº¬ÓĞÒ»¸öĞÎ²Î½á¹¹ÌåÀàÅªµÄÖ¸ÕëO
 {
     FILE *fd;
     char buff[256];
@@ -4808,6 +4823,8 @@ void get_memoccupy(MEM_OCCUPY *mem) //¶ÔÎŞÀàĞÍgetº¯Êıº¬ÓĞÒ»¸öĞÎ²Î½á¹¹ÌåÀàÅªµÄÖ¸Õ
     sscanf(buff, "%s %lu", m->name5, &m->SwapCached);
 
     fclose(fd);     //¹Ø±ÕÎÄ¼şfd
+
+    return (m->MemTotal*1.0 - m->MemFree*1.0)/m->MemTotal*1.0;
 }
 
 
@@ -4829,7 +4846,7 @@ int get_cpuoccupy(CPU_OCCUPY *cpust) //¶ÔÎŞÀàĞÍgetº¯Êıº¬ÓĞÒ»¸öĞÎ²Î½á¹¹ÌåÀàÅªµÄÖ¸
 }
 
 
-void cal_cpuoccupy(CPU_OCCUPY *o, CPU_OCCUPY *n)
+double cal_cpuoccupy(CPU_OCCUPY *o, CPU_OCCUPY *n)
 {
     unsigned long od, nd;
     double cpu_use = 0;
@@ -4841,6 +4858,6 @@ void cal_cpuoccupy(CPU_OCCUPY *o, CPU_OCCUPY *n)
     cpu_use = idle / sum;
     idle = n->user + n->system + n->nice - o->user - o->system - o->nice;
     cpu_use = idle / sum;
-    //printf("---cpu use---: %.3f\n",cpu_use);
+    return cpu_use;
 }
 //@test zk

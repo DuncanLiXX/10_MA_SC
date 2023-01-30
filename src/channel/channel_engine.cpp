@@ -2897,7 +2897,6 @@ void ChannelEngine::ProcessHmiCmd(HMICmdFrame &cmd){
         if ((stream = fopen("/sys/bus/iio/devices/iio:device0/in_temp0_raw", "w+"))== NULL)
         {
             fprintf(stderr,"Cannot open output file.\n");
-
         }
 
         fseek(stream, SEEK_SET, 0);

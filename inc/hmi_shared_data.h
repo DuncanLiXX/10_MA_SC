@@ -200,6 +200,7 @@ enum HMICmdCode {
     CMD_HMI_CLEAR_ALARMFILE,         //HMI向SC请求清空报警文件 0x40
     CMD_HMI_ABSOLUTE_REF_SET,        //HMI向SC请求绝对式编码器设零 0x41
     CMD_HMI_SET_ALL_TOOL_OFFSET,     //HMI向SC请求设置所有刀偏值 0x42
+	CMD_HMI_GET_CPU_INFO,            //HMI向SC获取 CPU 内存 占用信息
 
 
 	//SC-->HMI

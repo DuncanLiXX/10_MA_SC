@@ -496,8 +496,8 @@ bool Compiler::ReloadScene(bool bRecPos) {
     //	this->m_n_thread_state = scene.thread_state;
 
     // 要实现子程序调用 固定循环保持模态 注释这个条件  但不知道会不会引发其他问题
-    if(this->m_n_sub_program != SUB_PROG) //子程序调用不用恢复模态
-    	this->m_compiler_status = scene.compiler_status;
+    //if(this->m_n_sub_program != SUB_PROG) //子程序调用不用恢复模态
+    this->m_compiler_status = scene.compiler_status;
 	//printf("========================= 9 model group %d\n", m_compiler_status.mode.gmode[9]);
     this->m_n_compile_state = scene.file_state;
     this->m_n_head_state = scene.head_state;
@@ -3127,7 +3127,7 @@ bool Compiler::RunCompensateMsg(RecordMsg *msg) {
         SCToolOffsetConfig * offset_config = g_ptr_parm_manager->GetToolConfig(m_n_channel_index);
         int d_value = tmp->GetCompValue();
         if(d_value > kMaxToolCount  or d_value < 0) return false;
-
+        printf("===== d value: %d\n", d_value);
         if(d_value == 0){
             this->m_p_tool_compensate->setToolRadius(0);
         }else {
@@ -3138,7 +3138,7 @@ bool Compiler::RunCompensateMsg(RecordMsg *msg) {
 
     } else if (gcode == G43_CMD || gcode == G44_CMD || gcode == G43_4_CMD) {  //刀具长度补偿
         tmp->SetCompLastValue(m_compiler_status.mode.h_mode);  //记录历史值
-        if(*m_p_simulate_mode != SIM_NONE)  //非仿真模式，刀长补偿才有效
+        if(*m_p_simulate_mode != SIM_NONE) //非仿真模式，刀长补偿才有效
             m_compiler_status.mode.h_mode = tmp->GetCompValue();   //修改编译器状态
     }else if(gcode == G49_CMD){
         tmp->SetCompLastValue(m_compiler_status.mode.h_mode);  //记录历史值

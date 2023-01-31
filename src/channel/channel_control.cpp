@@ -1941,7 +1941,8 @@ END:
  * @brief 设置当前行号从MC模块获取
  */
 void ChannelControl::SetCurLineNoFromMc(){
-    if(this->m_n_macroprog_count == 0 || this->m_p_general_config->debug_mode > 0)  //调试模式下或者没有宏程序调用
+
+	if(this->m_n_macroprog_count == 0 || this->m_p_general_config->debug_mode > 0)  //调试模式下或者没有宏程序调用
         m_b_lineno_from_mc = true;
 }
 
@@ -2428,6 +2429,7 @@ void ChannelControl::SendMonitorData(bool bAxis, bool btime){
     //	m_channel_rt_status.machining_time = (uint32_t)this->m_n_run_thread_state;  //for test  ,线程状态
     //	m_channel_rt_status.machining_time_remains = m_channel_mc_status.buf_data_count;
     //	m_channel_rt_status.machining_time_remains = this->m_n_send_mc_data_err;    //for test ,数据发送失败次数
+
     if(m_channel_mc_status.cur_mode == MC_MODE_AUTO &&
         #ifdef USES_ADDITIONAL_PROGRAM
             m_n_add_prog_type == NONE_ADD &&

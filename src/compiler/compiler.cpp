@@ -662,7 +662,6 @@ REDO:
             }
         } else
             c_next = *(pcur + 1);   //ÏÂÒ»¸ö×Ö·û
-
     }
 
     if (!beof) {

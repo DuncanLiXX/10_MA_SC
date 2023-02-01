@@ -482,7 +482,7 @@ bool Compiler::ReloadScene(bool bRecPos) {
     }
 
     //宏程序调用有部分模态不用恢复
-    // @modify zk  测试得到 M98 类型为SUB_PROG G65 P 类型为 MACRO_PROG
+    // @modify zk  测试得到 M98 类型为SUB_PROG G65 P、固定循环 类型为 MACRO_PROG
     if(this->m_n_sub_program == MACRO_PROG){
     	mode_tmp = this->m_compiler_status.mode;
     }
@@ -498,7 +498,7 @@ bool Compiler::ReloadScene(bool bRecPos) {
     // 要实现子程序调用 固定循环保持模态 注释这个条件  但不知道会不会引发其他问题
     //if(this->m_n_sub_program != SUB_PROG) //子程序调用不用恢复模态
     this->m_compiler_status = scene.compiler_status;
-	//printf("========================= 9 model group %d\n", m_compiler_status.mode.gmode[9]);
+
     this->m_n_compile_state = scene.file_state;
     this->m_n_head_state = scene.head_state;
     this->m_ln_cur_line_no = scene.ln_cur_line_no;
@@ -3997,7 +3997,7 @@ bool Compiler::RunLoopMsg(RecordMsg *msg) {
     this->m_n_sub_call_times = 1;//调用次数
 
     //打开子程序文件
-    this->m_n_sub_program = SUB_PROG;
+    this->m_n_sub_program = MACRO_PROG;
     char filepath[kMaxPathLen] = { 0 };   //文件路径
 
     sub_msg->GetMacroProgName(filepath, true);

@@ -1941,7 +1941,8 @@ END:
  * @brief 设置当前行号从MC模块获取
  */
 void ChannelControl::SetCurLineNoFromMc(){
-    if(this->m_n_macroprog_count == 0 || this->m_p_general_config->debug_mode > 0)  //调试模式下或者没有宏程序调用
+
+	if(this->m_n_macroprog_count == 0 || this->m_p_general_config->debug_mode > 0)  //调试模式下或者没有宏程序调用
         m_b_lineno_from_mc = true;
 }
 
@@ -2428,6 +2429,7 @@ void ChannelControl::SendMonitorData(bool bAxis, bool btime){
     //	m_channel_rt_status.machining_time = (uint32_t)this->m_n_run_thread_state;  //for test  ,线程状态
     //	m_channel_rt_status.machining_time_remains = m_channel_mc_status.buf_data_count;
     //	m_channel_rt_status.machining_time_remains = this->m_n_send_mc_data_err;    //for test ,数据发送失败次数
+
     if(m_channel_mc_status.cur_mode == MC_MODE_AUTO &&
         #ifdef USES_ADDITIONAL_PROGRAM
             m_n_add_prog_type == NONE_ADD &&
@@ -3936,6 +3938,11 @@ void ChannelControl::SetMachineState(uint8_t mach_state){
     if(mach_state == MS_PAUSED || mach_state == MS_WARNING){
         this->m_p_f_reg->STL = 0;
         this->m_p_f_reg->SPL = 1;
+        //this->m_b_need_change_to_pause = true;
+        // @TODO 之后加个报警信号 让提出去触发暂停信号
+        // 这里无法直接改G信号  这里 pause 会造成死锁
+        //this->m_p_channel_engine->Pause();
+
     }else if(mach_state == MS_READY || mach_state == MS_STOPPING){
         this->m_p_f_reg->STL = 0;
         this->m_p_f_reg->SPL = 0;
@@ -4316,8 +4323,7 @@ void *ChannelControl::CompileThread(void *args){
  */
 int ChannelControl::Run(){
     int res = ERR_NONE;
-    //初始化
-
+    //  初始化
     //	struct timeval tvStart;
     //	struct timeval tvNow;
     //	unsigned int nTimeDelay = 0;
@@ -4368,7 +4374,10 @@ int ChannelControl::Run(){
 					}
 				}
 				else{
-					m_n_run_thread_state = WAIT_RUN;//执行失败，状态切换到WAIT_RUN
+					if(m_error_code != ERR_NONE){
+						m_n_run_thread_state = ERROR; //编译出错
+					}else
+						m_n_run_thread_state = WAIT_RUN;//执行失败，状态切换到WAIT_RUN
 				}
 			}
 			else if(m_p_compiler->GetLineData())
@@ -4475,13 +4484,11 @@ int ChannelControl::Run(){
         }
         else if(m_n_run_thread_state == WAIT_EXECUTE)
         {
-            //printf("m_n_run_thread_state = WAIT_EXECUTE\n");
-
             pthread_mutex_lock(&m_mutex_change_state);
-            //printf("locked 10\n");
+
             bf = ExecuteMessage();
             pthread_mutex_unlock(&m_mutex_change_state);
-            //printf("unlocked 10\n");
+
             if(!bf){
                 if(m_error_code != ERR_NONE){
                     g_ptr_trace->PrintTrace(TRACE_WARNING, CHANNEL_CONTROL_SC, "execute message error4, %d\n", m_error_code);
@@ -4490,25 +4497,25 @@ int ChannelControl::Run(){
                 else{
                     usleep(10000);
                 }
-
             }
         }
         else if(m_n_run_thread_state == WAIT_RUN)
         {
-            //printf("m_n_run_thread_state = WAIT_RUN\n");
             pthread_mutex_lock(&m_mutex_change_state);
-            //printf("locked 11\n");
+
             bf = m_p_compiler->RunMessage();
+
             if(!ExecuteMessage()){
                 if(m_error_code != ERR_NONE){
                     g_ptr_trace->PrintTrace(TRACE_WARNING, CHANNEL_CONTROL_SC, "execute message error5, %d\n", m_error_code);
                     m_n_run_thread_state = ERROR; //编译出错
                 }
             }
+
             pthread_mutex_unlock(&m_mutex_change_state);
             //printf("unlocked 11\n");
             if(!bf){
-                usleep(10000);
+            	usleep(10000);
                 m_n_run_thread_state = WAIT_RUN;    //防止在ExecuteMessage（）函数中修改m_n_run_thread_state
             }
             else if(m_n_run_thread_state != ERROR){
@@ -8091,6 +8098,27 @@ bool ChannelControl::ExecuteCompensateMsg(RecordMsg *msg){
     if(this->m_simulate_mode != SIM_NONE)
         this->m_pos_simulate_cur_work = compmsg->GetTargetPos();  //保存仿真模式当前位置
 
+
+    if(type == G41_CMD || type == G42_CMD || type == G40_CMD){//半径补偿，先更新到MC模态信息
+	   		//this->m_channel_status.cur_d_code = value;
+	   		//this->SendModeChangToHmi(D_MODE);
+
+	   if(m_simulate_mode == SIM_NONE || m_simulate_mode == SIM_MACHINING){  //非仿真模式或者加工仿真
+		   this->m_mc_mode_exec.bits.mode_g40 = (type-G40_CMD)/10;
+		   //this->m_mc_mode_exec.bits.mode_d = value;
+
+		   if(this->IsStepMode()){
+			   this->RefreshModeInfo(m_mc_mode_exec);	//单段模式需要立即更新模态
+		   }
+	   }
+
+	   m_n_run_thread_state = RUN;
+	   return true;
+   }
+
+
+
+
     int count = 0;
 
     if(msg->IsNeedWaitMsg() && (m_simulate_mode == SIM_NONE || m_simulate_mode == SIM_MACHINING)){//需要等待的命令
@@ -8154,31 +8182,13 @@ bool ChannelControl::ExecuteCompensateMsg(RecordMsg *msg){
         }
     }
 
-
     bool flag = this->m_n_hw_trace_state==REVERSE_TRACE?true:false;    //是否反向引导
+        int value = flag?compmsg->GetLastCompValue():compmsg->GetCompValue();
     //切换补偿值，更新模态
-    int value = flag?compmsg->GetLastCompValue():compmsg->GetCompValue();
+
     uint16_t offset_mc = 0;  //mc中的当前刀偏
     int32_t z_axis_offset = 0;
     uint16_t intp_mode = 0;
-
-    /*if(type == G41_CMD || type == G42_CMD || type == G40_CMD){//半径补偿，先更新到MC模态信息
-        //		this->m_channel_status.cur_d_code = value;
-        //		this->SendModeChangToHmi(D_MODE);
-
-        if(m_simulate_mode == SIM_NONE || m_simulate_mode == SIM_MACHINING){  //非仿真模式或者加工仿真
-            this->m_mc_mode_exec.bits.mode_g40 = (type-G40_CMD)/10;
-            this->m_mc_mode_exec.bits.mode_d = value;
-
-            if(this->IsStepMode()){
-                this->RefreshModeInfo(m_mc_mode_exec);	//单段模式需要立即更新模态
-            }
-        }
-
-        if(!OutputData(msg, true))
-            return false;
-
-    }*/
 
     if(type == G43_CMD || type == G44_CMD || type == G49_CMD){//G43/G44    即时更新到通道状态的模态信息中
 

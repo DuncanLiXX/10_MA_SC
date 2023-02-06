@@ -1672,7 +1672,7 @@ void ChannelEngine::SendMonitorData(bool bAxis, bool btime){
     //#endif
 
     if(m_n_pmc_axis_count > 0)
-        this->m_p_mi_comm->ReadPmcAxisRemainDis(m_df_pmc_axis_remain, m_n_pmc_axis_count);   // 读取余移动量
+        this->m_p_mi_comm->ReadPmcAxisRemainDis(m_df_pmc_axis_remain, m_p_general_config->axis_count);   // 读取余移动量
 
     for(int i = 0; i < this->m_p_general_config->chn_count; i++){
         this->m_p_channel_control[i].SendMonitorData(bAxis, btime);
@@ -2897,7 +2897,6 @@ void ChannelEngine::ProcessHmiCmd(HMICmdFrame &cmd){
         if ((stream = fopen("/sys/bus/iio/devices/iio:device0/in_temp0_raw", "w+"))== NULL)
         {
             fprintf(stderr,"Cannot open output file.\n");
-
         }
 
         fseek(stream, SEEK_SET, 0);
@@ -8677,8 +8676,11 @@ void ChannelEngine::ProcessPmcSignal(){
             MachiningState state = (MachiningState)ctrl->GetChnStatus().machining_state;
             // 运行或者暂停状态才能手轮插入
             if(g_reg->HSIA != 0 && state != MS_RUNNING && state != MS_PAUSED){
-                CreateError(ERR_HW_INSERT_INVALID, INFO_LEVEL, CLEAR_BY_AUTO, 0, i);
+                CreateError(ERR_HW_INSERT_INVALID, INFO_LEVEL, CLEAR_BY_MCP_RESET, 0, i);
             }else{
+                if(g_reg->HSIA != 0){
+                    CreateError(ERR_HW_INSERT_INFO, INFO_LEVEL, CLEAR_BY_MCP_RESET, 0, i);
+                }
                 UpdateHandwheelState(i);
             }
         }

@@ -9,6 +9,7 @@
 #include "spindle_control.h"
 #include "pmc_axis_ctrl.h"
 #include "sync_axis_ctrl.h"
+#include "channel_engine.h"
 
 ShowSc::ShowSc()
 {
@@ -899,6 +900,14 @@ void ShowSc::PrintPmcAxisCtrl()
         AddPair(s,"cmd[2].distance",cfg->m_pmc_cmd_buffer[2].distance);
         s.append("\n");
     }
+
+    ChannelEngine *engine = ChannelEngine::GetInstance();
+    string axis_indexs = "[ ";
+    for(unsigned int i = 0; i<chn_config->chn_axis_count; i++){
+        axis_indexs = axis_indexs + to_string(engine->GetPmcAxisRemain(i)) + " ";
+    }
+    axis_indexs = axis_indexs + "]";
+    AddPair(s,"pmc_axis_remain",axis_indexs);
     SendMsg(s);
 }
 

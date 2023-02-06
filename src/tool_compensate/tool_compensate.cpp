@@ -140,7 +140,7 @@ void ToolCompensate::ProcessData(ListNode<RecordMsg *> *node){
 		case ARC_MSG:{
 			ArcMsg * tmsg = (ArcMsg *) msg;
             if(tmsg->GetPmcAxisCount() > 0){
-                this->m_p_output_msg_list->Append(node);
+            	this->m_p_output_msg_list->Append(node);
                 break;
             }
 			block * pblock = interp.interp_block();
@@ -189,33 +189,20 @@ void ToolCompensate::ProcessData(ListNode<RecordMsg *> *node){
 			printf("compensate gcode %d\n", tmsg->GetGCode());
 
 			if(tmsg->GetGCode() == G40_CMD){
-
 				interp.convert_cutter_compensation_off(&interp._setup);
-
-				delete msg;
-				delete node;
-			}else if(tmsg->GetGCode() == G41_CMD){
-
-				interp.convert_cutter_compensation_on(LEFT,this->comp_radius,&interp._setup);
-
-                delete msg;
-                delete node;
+				//break;
 
 			}else if(tmsg->GetGCode() == G41_CMD){
-
 				interp.convert_cutter_compensation_on(LEFT,this->comp_radius,&interp._setup);
-                delete msg;
-                delete node;
+				//break;
+
 			}else if(tmsg->GetGCode() == G42_CMD){
 				interp.convert_cutter_compensation_on(RIGHT,this->comp_radius,&interp._setup);
+				//break;
 
-                delete msg;
-                delete node;
-			}else{
-
-				// G43 G44 G49 µ¶³¤²¹³¥
-				this->m_p_output_msg_list->Append(node);
 			}
+
+			this->m_p_output_msg_list->Append(node);
 
 			break;
 		}
@@ -234,8 +221,8 @@ void ToolCompensate::ProcessData(ListNode<RecordMsg *> *node){
 
 				CodeMsgType msg_type = msg->GetMsgType();
 
-				if(msg_type == COORD_MSG || msg_type == LOOP_MSG ||  msg_type == REF_RETURN_MSG
-				 ||msg_type == RESTART_OVER_MSG || msg_type == AUTO_TOOL_MEASURE_MSG){
+				if(msg_type == LOOP_MSG ||msg_type == RESTART_OVER_MSG ||
+						msg_type == AUTO_TOOL_MEASURE_MSG){
 					//interp.convert_cutter_compensation_off(&interp._setup);
 					interp.convert_close_compensation(&interp._setup);
 				}

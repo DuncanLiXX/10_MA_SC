@@ -200,6 +200,7 @@ enum HMICmdCode {
     CMD_HMI_CLEAR_ALARMFILE,         //HMI向SC请求清空报警文件 0x40
     CMD_HMI_ABSOLUTE_REF_SET,        //HMI向SC请求绝对式编码器设零 0x41
     CMD_HMI_SET_ALL_TOOL_OFFSET,     //HMI向SC请求设置所有刀偏值 0x42
+	CMD_HMI_GET_CPU_INFO,            //HMI向SC获取 CPU 内存 占用信息
 
 
 	//SC-->HMI
@@ -463,6 +464,7 @@ enum ErrorType {
 
     ERR_HW_REV_OVER = 1650,             //手轮反向跟踪无更多数据   级别：警告
     ERR_HW_INSERT_INVALID = 1651,       //手轮插入无效
+    ERR_HW_INSERT_INFO = 1652,          //提示信息：使用手轮插入后需用坐标系指令清除
 
     ERR_TOOL_LIFE_OVER = 1660,          //刀具寿命到达
     ERR_TOOL_LIFE_COMING = 1661,        //刀具寿命即将到达     级别：警告

@@ -818,7 +818,7 @@ void SpindleControl::ProcessModeChanged(Spindle::Mode mode)
         mi->SetAxisRefCur(phy_axis+1,pos);
         //printf("SetAxisRefCur: axis=%d, pos = %lf\n",phy_axis+1,pos);
         printf("RspCtrlMode:Position\n");
-        control->SyncMcPosition();
+        //control->SyncMcPosition();
         std::this_thread::sleep_for(std::chrono::microseconds(100*1000));
         F->RGMP = 1;
     }else{

@@ -2332,7 +2332,9 @@ bool Compiler::RunMessage() {
     bool res = true;
     RecordMsg *msg = nullptr;
 
-    if(compiler_lock) return false;
+    if(compiler_lock){
+    	return false;
+    }
 
     //	int count = m_p_parser_result->GetLength();
 

@@ -70,6 +70,7 @@ public://公共接口
 
 	bool IsExactStop(){return m_compiler_status.exact_stop_flag;}   //是否处于准停状态
 	bool IsEndOfFile(){return m_b_eof;}    //是否到达文件尾
+	bool IsPreScaning(){return compiler_lock;}  // 是否正在预扫描
 	bool IsSubProgram(){return (bool)m_n_sub_program;}   	//是否在子程序中
 
 	void SetOutputMsgList(OutputMsgList *output_msg){m_p_tool_compensate->SetOutputMsgList(output_msg);}  //设置指令消息输出缓冲区指针

@@ -4442,7 +4442,7 @@ int ChannelControl::Run(){
 
 #ifndef USES_WOOD_MACHINE   //木工专机不检查M30结束指令
             if(m_p_compiler->IsEndOfFile() && !m_p_compiler->IsCompileOver() &&
-                    this->m_channel_status.chn_work_mode == AUTO_MODE
+                    this->m_channel_status.chn_work_mode == AUTO_MODE && !m_p_compiler->IsPreScaning()
         #ifdef USES_ADDITIONAL_PROGRAM
                     && this->m_n_add_prog_type != CONTINUE_START_ADD
         #endif

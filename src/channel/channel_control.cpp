@@ -4382,11 +4382,12 @@ int ChannelControl::Run(){
 			}
 			else if(m_p_compiler->GetLineData())
 			{
-                //printf("33333\n");
+                printf("33333\n");
 				//printf("----------------------------> GetLineData\n");
 				//获取一行源码
 				if(!m_p_compiler->CompileLine())  //编译一行代码
 				{
+					printf("4444444\n");
 					m_n_run_thread_state = ERROR; //编译出错
 					g_ptr_trace->PrintTrace(TRACE_WARNING, CHANNEL_CONTROL_SC, "#####Compile Error#####\n");
 				}

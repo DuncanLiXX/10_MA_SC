@@ -451,7 +451,7 @@ bool Compiler::SaveScene() {
  * @param bRecPos : 是否恢复当前位置， true--恢复  false--不恢复
  * @return true--成功   false--失败
  */
-bool Compiler::ReloadScene(bool bRecPos) {
+bool Compiler::ReloadScene(bool bRecPos){
     CompilerScene scene;
     DPointChn pos_tmp;
     ModeCollect mode_tmp;
@@ -3990,9 +3990,6 @@ bool Compiler::RunLoopMsg(RecordMsg *msg) {
         pm = pm>>1;
         i++;
     }
-
-    // @test zk  不打开子程序  代码控制固定循环
-    //return true;
 
     this->m_n_sub_call_times = 1;//调用次数
 

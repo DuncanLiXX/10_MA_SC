@@ -278,8 +278,6 @@ bool AsFileMapInfo::Swapup(){
 		return false;  //”≥…‰ ß∞‹
 	}
 
-
-
 	return true;
 }
 

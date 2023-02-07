@@ -2341,8 +2341,6 @@ bool Compiler::RunMessage() {
     ListNode<RecordMsg *> *node = m_p_parser_result->HeadNode();
     CodeMsgType msg_type = NORMAL_MSG;
 
-    printf("------> run message ...\n");
-
     while (node != nullptr) {
         msg = static_cast<RecordMsg *>(node->data);
 
@@ -2460,13 +2458,6 @@ bool Compiler::RunMessage() {
 
             this->m_p_parser_result->RemoveHead();
             this->m_p_block_msg_list->Append(node);   //压入分段队列
-            //			if(ListNode<RecordMsg *>::new_count > 0){
-            //				printf("m_p_block_msg_list new count :%d\n", m_p_block_msg_list->HeadNode()->new_count);
-            //				printf("m_m_p_parser_result new count :%d\n", m_p_parser_result->HeadNode()->new_count);
-            //				printf("m_p_output_msg_list new count :%d\n", m_p_output_msg_list->HeadNode()->new_count);
-            //
-            //			}
-            //	printf("appedn msg to output list: %d\n", msg->GetMsgType());
 
         }
 
@@ -2626,7 +2617,6 @@ bool Compiler::RunSubProgCallMsg(RecordMsg *msg) {
         if (!this->OpenFile(filepath, (bool)m_n_sub_program)){ //尝试打开nc文件失败
             return false;
         }
-
     }
 
     if (m_work_mode == AUTO_COMPILER)
@@ -3135,7 +3125,7 @@ bool Compiler::RunCompensateMsg(RecordMsg *msg) {
             double radius = offset_config->radius_compensation[d_value - 1] + offset_config->radius_wear[d_value-1];
             this->m_p_tool_compensate->setToolRadius(radius);
         }
-        m_p_channel_control->UpdateModeData(D_MODE, d_value);//llx add,由SC直接更新D模态，不经过MC
+        //m_p_channel_control->UpdateModeData(D_MODE, d_value);//llx add,由SC直接更新D模态，不经过MC
 
     } else if (gcode == G43_CMD || gcode == G44_CMD || gcode == G43_4_CMD) {  //刀具长度补偿
         tmp->SetCompLastValue(m_compiler_status.mode.h_mode);  //记录历史值

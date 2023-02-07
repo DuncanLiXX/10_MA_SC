@@ -588,9 +588,8 @@ void ChannelControl::InitialChannelStatus(){
 
     //	strcpy(m_channel_status.cur_nc_file_name, "20.nc");	//for test
     g_ptr_parm_manager->GetCurNcFile(this->m_n_channel_index, m_channel_status.cur_nc_file_name);
-
-
 }
+
 
 /**
  * @brief 通道复位函数
@@ -4382,7 +4381,6 @@ int ChannelControl::Run(){
 			}
 			else if(m_p_compiler->GetLineData())
 			{
-                //printf("33333\n");
 				//printf("----------------------------> GetLineData\n");
 				//获取一行源码
 				if(!m_p_compiler->CompileLine())  //编译一行代码
@@ -4441,7 +4439,7 @@ int ChannelControl::Run(){
 
 #ifndef USES_WOOD_MACHINE   //木工专机不检查M30结束指令
             if(m_p_compiler->IsEndOfFile() && !m_p_compiler->IsCompileOver() &&
-                    this->m_channel_status.chn_work_mode == AUTO_MODE
+                    this->m_channel_status.chn_work_mode == AUTO_MODE && !m_p_compiler->IsPreScaning()
         #ifdef USES_ADDITIONAL_PROGRAM
                     && this->m_n_add_prog_type != CONTINUE_START_ADD
         #endif
@@ -4527,7 +4525,6 @@ int ChannelControl::Run(){
         {
             usleep(10000);   //非运行状态，线程挂起10ms
         }
-
     }
 
     return res;
@@ -8098,27 +8095,6 @@ bool ChannelControl::ExecuteCompensateMsg(RecordMsg *msg){
     if(this->m_simulate_mode != SIM_NONE)
         this->m_pos_simulate_cur_work = compmsg->GetTargetPos();  //保存仿真模式当前位置
 
-
-    if(type == G41_CMD || type == G42_CMD || type == G40_CMD){//半径补偿，先更新到MC模态信息
-	   		//this->m_channel_status.cur_d_code = value;
-	   		//this->SendModeChangToHmi(D_MODE);
-
-	   if(m_simulate_mode == SIM_NONE || m_simulate_mode == SIM_MACHINING){  //非仿真模式或者加工仿真
-		   this->m_mc_mode_exec.bits.mode_g40 = (type-G40_CMD)/10;
-		   //this->m_mc_mode_exec.bits.mode_d = value;
-
-		   if(this->IsStepMode()){
-			   this->RefreshModeInfo(m_mc_mode_exec);	//单段模式需要立即更新模态
-		   }
-	   }
-
-	   m_n_run_thread_state = RUN;
-	   return true;
-   }
-
-
-
-
     int count = 0;
 
     if(msg->IsNeedWaitMsg() && (m_simulate_mode == SIM_NONE || m_simulate_mode == SIM_MACHINING)){//需要等待的命令
@@ -8181,6 +8157,24 @@ bool ChannelControl::ExecuteCompensateMsg(RecordMsg *msg){
                 return false;
         }
     }
+
+    // @test zk
+	if(type == G41_CMD || type == G42_CMD || type == G40_CMD){//半径补偿，先更新到MC模态信息
+		if(m_simulate_mode == SIM_NONE || m_simulate_mode == SIM_MACHINING){  //非仿真模式或者加工仿真
+		   this->m_mc_mode_exec.bits.mode_g40 = (type-G40_CMD)/10;
+		   //this->m_mc_mode_exec.bits.mode_d = value;
+
+		   if(this->IsStepMode()){
+			   this->RefreshModeInfo(m_mc_mode_exec);	//单段模式需要立即更新模态
+		   }
+		}
+
+		this->m_channel_status.cur_d_code = compmsg->GetCompValue();;
+		this->SendModeChangToHmi(D_MODE);
+		m_n_run_thread_state = RUN;
+		return true;
+	}
+	// @test zk
 
     bool flag = this->m_n_hw_trace_state==REVERSE_TRACE?true:false;    //是否反向引导
         int value = flag?compmsg->GetLastCompValue():compmsg->GetCompValue();
@@ -16110,7 +16104,6 @@ int ChannelControl::BreakContinueProcess(){
                 this->PausePmcAxis(NO_AXIS, false);  //继续运行PMC轴
             }else if(IsMcNeedStart()){
                 this->StartMcIntepolate();
-                printf("-----------55555---------\n");
             }
             gettimeofday(&m_time_start_maching, nullptr);  //初始化启动时间
             m_time_remain = 0;                             //初始化剩余加工时间

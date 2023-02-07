@@ -5290,6 +5290,8 @@ void ChannelEngine::SetManualStep(uint16_t step){
     //		this->m_p_channel_control[i].SetManualStep(tt);
     //	}
 
+    g_ptr_tracelog_processor->SendToHmi(kPanelOper, kDebug, "[手动步长]切换为 " + to_string(step));
+
     uint8_t chn_count = m_p_channel_mode_group[m_n_cur_chn_group_index].GetChannelCount();
     for(uint8_t i = 0; i < chn_count; i++)
         this->m_p_channel_control[m_p_channel_mode_group[m_n_cur_chn_group_index].GetChannel(i)].SetManualStep(tt);
@@ -5322,7 +5324,7 @@ void ChannelEngine::SetManualStep(uint8_t chn, uint8_t step){
 
     const vector<string> table = {"1", "10", "100", "1000"};
     if (step > 0 && step < table.size())
-        g_ptr_tracelog_processor->SendToHmi(kPanelOper, kDebug, "[增量倍率]切换为 " + table[step]);
+        g_ptr_tracelog_processor->SendToHmi(kPanelOper, kDebug, "[手动步长]切换为 " + table[step]);
     this->m_p_channel_control[chn].SetManualStep(step);
 }
 

@@ -55,7 +55,6 @@ bool AsFileMapInfo::OpenFile(const char *name, bool sub_flag){
 	else
 		CloseFile();
 
-
 	strcpy(str_file_name, name);
 
 	if(strlen(str_file_name) == 0)
@@ -69,7 +68,6 @@ bool AsFileMapInfo::OpenFile(const char *name, bool sub_flag){
 //		g_ptr_trace->PrintLog(LOG_ALARM, "获取文件[%s]大小失败！", str_file_name);
 //		return false;
 //	}
-
 //	printf("page size = %ld\n", sysconf(_SC_PAGE_SIZE));
 
 	fp_cur = open(str_file_name, O_RDONLY); //只读打开文件

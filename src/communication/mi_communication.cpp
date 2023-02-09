@@ -209,7 +209,6 @@ int MICommunication::QuitThread(){
  * @return
  */
 bool MICommunication::InitSharedMemory(){
-
 	//打开设备文件
 	m_n_mem_file = open("/dev/mem", O_RDWR | O_SYNC);
 	if (m_n_mem_file == -1) {
@@ -1386,6 +1385,27 @@ bool MICommunication::ReadPmcReg(int sec, uint8_t *reg){
 	return true;
 }
 
+bool MICommunication::ReadPmcPeriod(){
+	// PMC 运行周期寄存器偏移 0x8E000   读写标志偏移  0x8FFF0
+
+
+
+	int64_t * period = (int64_t *)(m_p_shared_base + 0x8E000);
+	int32_t * RWFlag = (int32_t *)(m_p_shared_base + 0x8FFF0);
+
+	if(*RWFlag != 0) return false;
+
+	int64_t p1 = *period;
+	int64_t p2 = *(period + 1);
+
+	pmc_period1 = p1 / 1000;
+	pmc_period2 = p2 / 1000;
+
+	*RWFlag = 1;
+
+	return true;
+}
+
 /**
  * @brief 写入PMC寄存器，按地址段写入
  * @param sec
@@ -1550,7 +1570,6 @@ bool MICommunication::ProcessCmdFun(){
 //		case CMD_MI_SHAKEHAND:
 //			break;
 //		}
-
 		//转给ChannelEngine执行
 		m_p_channel_engine->ProcessMiCmd(cmd_frame);
 //		printf("get mi cmd : %d \n", cmd_frame.data.cmd);

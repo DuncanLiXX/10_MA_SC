@@ -67,6 +67,10 @@ void SpindleControl::Reset()
     UpdateParams();
 }
 
+
+
+
+
 void SpindleControl::InputSCode(uint32_t s_code)
 {
     if(!spindle)
@@ -836,6 +840,7 @@ void SpindleControl::ProcessSwitchLevel()
 
     //延时TM us后发送SF信号
     std::this_thread::sleep_for(std::chrono::microseconds(TM));
+    //usleep(TM); @zk 为什么不用 usleep???
     F->SF = 1;
     printf("set SF 1\n");
 

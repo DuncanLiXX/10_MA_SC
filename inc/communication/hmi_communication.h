@@ -197,7 +197,6 @@ private:
 	static HMICommunication *m_p_instance;    //单实例对象
 	static sem_t m_sem_udp_recv;     //接收到UDP命令的信号
 	sem_t m_sem_tcp_file;             //开启tcp文件传输信号
-
     sem_t m_sem_background;           //后台线程工作信号
 //	sem_t m_sem_tcp_send_test;        //tcp传输测试信号
 

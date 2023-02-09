@@ -2094,15 +2094,13 @@ bool Compiler::GetLineData() {
     bool bFirst = false;    //遇到第一个非空白字符
     bool bSwapdown = false;  //向下翻页
 
-    char c_cur = *m_p_cur_file_pos;     //当前字符
+    char c_cur = *m_p_cur_file_pos;   //当前字符
 
     char c_next = '\0';   //下一个字符
     uint64_t block_limit = m_p_file_map_info->ln_map_start
             + m_p_file_map_info->ln_map_blocksize;
 
     this->m_compiler_status.jump_flag = false;
-
-
 
 REDO:
     //读取下一个字符

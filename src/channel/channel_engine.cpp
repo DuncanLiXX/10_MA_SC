@@ -2402,7 +2402,6 @@ void ChannelEngine::ProcessMiGetESBCmd(MiCmdFrame &cmd){
 
     uint32_t res = LoadEsbData(index, cmd.data.data[3]); //加载ESB文件数据
 
-    printf("===== write esb cmd %d\n", res);
     memcpy(cmd.data.data, &res, sizeof(uint32_t));
     cmd.data.data[2] = index;
 
@@ -2681,7 +2680,7 @@ int32_t ChannelEngine::LoadEsbData(uint16_t index, uint16_t &flag){
         return res;   //文件大小不匹配
     }
 
-    printf("read esb file size : %d\n", file_size);
+    //printf("read esb file size : %d\n", file_size);
 
     int fp = open(file_path, O_RDONLY); //只读打开文件
     if(fp < 0){
@@ -2707,7 +2706,7 @@ int32_t ChannelEngine::LoadEsbData(uint16_t index, uint16_t &flag){
     closedir(pdir);
     g_ptr_trace->PrintTrace(TRACE_INFO, CHANNEL_ENGINE_SC, "Exit ChannelEngine::LoadEsbData(), flag=%hu, bytes=%d", flag, res);
 
-    printf("===== read esb file size: %d\n", res);
+    //printf("===== read esb file size: %d\n", res);
     return res;
 }
 
@@ -8105,7 +8104,6 @@ void *ChannelEngine::RefreshMiStatusThread(void *args){
  */
 bool ChannelEngine::RefreshMiStatusFun(){
     uint64_t count = 0;   //计数
-
     uint64_t warn_flag = 0;
 
     uint64_t value64 = 0;
@@ -8176,6 +8174,7 @@ bool ChannelEngine::RefreshMiStatusFun(){
             this->m_p_mi_comm->ReadPmcReg(PMC_REG_Y, m_p_pmc_reg->GetRegPtr8(PMC_REG_Y));
             this->m_p_mi_comm->ReadPmcReg(PMC_REG_R, m_p_pmc_reg->GetRegPtr8(PMC_REG_R));
             this->m_p_mi_comm->ReadPmcReg(PMC_REG_A, m_p_pmc_reg->GetRegPtr8(PMC_REG_A));
+            this->m_p_mi_comm->ReadPmcPeriod();
 
 
             //			if(count %200 == 0)

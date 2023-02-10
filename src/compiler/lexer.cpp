@@ -991,7 +991,6 @@ bool Lexer::ProcessWord(){
 				g_ptr_trace->PrintTrace(TRACE_ERROR, COMPILER_LEXER, "错误：无法解析的宏指令[%s]！", m_alph_buf);
 			}
 			else{//合法宏指令
-
 				m_has_macro_cmd = true;
 				m_in_alph = false;
 //				printf("GET Macro cmd = %d  %s\n", m_macro_cmd, m_alph_buf);

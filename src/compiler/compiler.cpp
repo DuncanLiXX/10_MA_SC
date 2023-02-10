@@ -936,10 +936,6 @@ void Compiler::PreScanLine1(char *buf, uint64_t offset, uint64_t line_no,
             pc++;
             continue;
         }
-
-        if (strchr("XYZBCJKUV", *pc) != nullptr){  //加快扫描速度
-            //return;
-        }
         else if (*pc == '(') { //进入跨行注释
             flag = true;
             pc++;

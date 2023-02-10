@@ -3911,7 +3911,6 @@ bool ChannelControl::SendOpenFileCmdToHmi(char *filename){
  * @param mach_state
  */
 void ChannelControl::SetMachineState(uint8_t mach_state){
-	printf("===============\n");
     // @modify zk ��¼֮ǰ״̬
 	uint8_t old_stat = m_channel_status.machining_state;
 

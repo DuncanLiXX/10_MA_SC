@@ -1768,6 +1768,7 @@ bool Parser::SetMacroVar(int index, double value, bool init){
  * @return true--成功  false--失败
  */
 bool Parser::CreateErrorMsg(const ErrorType err){
+
 	RecordMsg *new_msg = new ErrorMsg(err);
 	if(new_msg == nullptr){
 		//内存分配失败，告警
@@ -1775,6 +1776,7 @@ bool Parser::CreateErrorMsg(const ErrorType err){
 		return false;
 	}
 	new_msg->SetLineNo(this->m_p_lexer_result->line_no);  //设置当前行号
+
 	if(this->m_p_compiler_status->jump_flag){
 		new_msg->SetFlag(FLAG_JUMP, true);
 		this->m_error_code = ERR_NONE;

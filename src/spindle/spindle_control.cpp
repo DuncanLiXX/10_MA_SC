@@ -394,6 +394,7 @@ void SpindleControl::InputRTNT(bool RTNT)
 
     ChannelEngine *engine = ChannelEngine::GetInstance();
     ChannelControl *control = engine->GetChnControl(0);
+
     if(control->GetChnStatus().chn_work_mode == AUTO_MODE){
         CreateError(ERR_SPD_RTNT_IN_AUTO,
                     INFO_LEVEL,

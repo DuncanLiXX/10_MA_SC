@@ -31,6 +31,7 @@
 #include "pmc_register.h"
 
 
+
 //Ç°ÖÃÉùÃ÷
 class ChannelControl;   //Í¨µÀ¿ØÖÆÀà
 class HMICommunication; //HMIÍ¨Ñ¶Àà
@@ -307,6 +308,10 @@ void SetMcArmComm(MCArmCommunication *comm){this->m_p_mc_arm_comm = comm;}   //É
 
     void ClearAxisRefEncoder(int axisID);                        // Çå³ı¾ø¶ÔÊ½Áãµã±àÂëÆ÷
 
+    bool SetPmcActive(uint64_t phy_axis);   //¼¤»îPMCÖá
+    bool RstPmcActive(uint64_t phy_axis);   //È¡Ïû¼¤»îPMCÖá
+    bool GetPmcActive(uint64_t phy_axis);   //PMCÖáÊÇ·ñ¼¤»î
+
 private:	//Ë½ÓĞ³ÉÔ±º¯Êı
 	ChannelEngine();   //¹¹Ôìº¯Êı
 
@@ -492,6 +497,8 @@ private:	//Ë½ÓĞ³ÉÔ±º¯Êı
 
 
 
+
+
 private:  //Ë½ÓĞ³ÉÔ±±äÁ¿
 	static ChannelEngine *m_p_instance;    //Î¨Ò»ÊµÀıÖ¸Õë
 	ChannelModeGroup *m_p_channel_mode_group;  //Í¨µÀ·½Ê½×é
@@ -608,6 +615,7 @@ private:  //Ë½ÓĞ³ÉÔ±±äÁ¿
 	uint64_t m_n_runover_axis_mask;   //µ±Ç°ÔËĞĞÍê³ÉµÄÖáµÄmask
 	PmcAxisCtrl m_pmc_axis_ctrl[kMaxPmcAxisCtrlGroup];    //PMCÖá¿ØÖÆ
 	uint8_t m_n_cur_pmc_axis;       //µ±Ç°PMCÖá  0xFF±íÊ¾µ±Ç°Ã»ÓĞÑ¡ÔñPMCÖá
+    uint64_t m_pmc_axis_active_mask;    //ÒÑ¼¤»îµÄPMCÖá
 
 	uint16_t m_mask_import_param;    //µ¼Èë²ÎÊı±êÖ¾
 	
@@ -623,6 +631,7 @@ private:  //Ë½ÓĞ³ÉÔ±±äÁ¿
 
     uint8_t m_MLK_mask{0x00};       //»úĞµËø×¡Öámask
     double m_MLK_pos[kMaxAxisChn]; //»úĞµËø×¡×ø±êÖµ
+
 };
 
 #endif /* INC_CHANNEL_CHANNEL_ENGINE_H_ */

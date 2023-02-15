@@ -53,6 +53,7 @@ public:
     SpindleControl *GetSpdCtrl(){return m_p_spindle;}
     const GRegBits *GetGReg(){return m_p_g_reg;}
     PmcAxisCtrl *GetPmcAxisCtrl();
+    void RefreshPmcAxis();
 
 
 //	bool OpenFile(const char *file_name);   //打开待编译文件
@@ -182,8 +183,6 @@ public:
 	bool EmergencyStop();		//急停处理
 
 	void Reset();               //复位通道状态
-
-	uint32_t GetPmcAxisMask(){return this->m_mask_pmc_axis;}   //获取通道PMC轴掩码
 
 	void ProcessHmiSetRefCmd(HMICmdFrame &cmd);			//处理设置参考点命令
 
@@ -670,7 +669,6 @@ private://私有成员变量
 
 	uint32_t m_mask_intp_axis;      //通道插补轴mask，按通道轴顺序
 	uint8_t m_n_intp_axis_count;    //通道插补轴个数
-	uint32_t m_mask_pmc_axis;       //PMC通道轴mask，按通道轴顺序
 
 	ErrorType m_error_code;      	//错误码
 

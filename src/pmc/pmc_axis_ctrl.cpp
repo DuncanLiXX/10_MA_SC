@@ -100,13 +100,49 @@ bool PmcAxisCtrl::Active(bool flag){
     if(this->m_b_active == flag)
         return true;
 
-    printf("PmcAxisCtrl::Active[%hhu]:%hhu\n", this->m_n_group_index, flag);
+    //printf("PmcAxisCtrl::Active[%hhu]:%hhu\n", this->m_n_group_index, flag);
 
     //检查_EAXSL信号
     FRegBits *freg0 = m_p_channel_engine->GetChnFRegBits(0);
     if(freg0->_EAXSL == 1)
         return false;  //
 
+    for (auto itr = axis_list.begin(); itr != axis_list.end(); ++itr)
+    {
+        if ((*itr)->axis_pmc)
+        {
+            m_b_active = flag;//通道被激活这个变量对我来说没有用
+
+            //激活channel_control中的变量
+            if (flag)
+            {
+                m_p_channel_engine->SetPmcActive((*itr)->axis_index);
+            }
+            else
+            {
+                m_p_channel_engine->RstPmcActive((*itr)->axis_index);
+            }
+            //刷新Phaser
+            SCSystemConfig *sys = ParmManager::GetInstance()->GetSystemConfig();
+            for (int i = 0; i < sys->chn_count; ++i)
+            {
+                m_p_channel_engine->GetChnControl(i)->RefreshPmcAxis();
+            }
+
+            //通知MI进行轴切换
+            MiCmdFrame cmd;
+            memset(&cmd, 0x00, sizeof(cmd));
+            cmd.data.cmd = CMD_MI_SET_AXIS_CHN_PHY_MAP;
+            cmd.data.reserved = flag ? 0x10 : 0;
+            cmd.data.axis_index = (*itr)->axis_index+1;
+            cmd.data.data[0] = (*itr)->axis_index+1;
+            //cmd.data.data[1] = flag ? 1 : 0;  // 0--初始配置  1--动态切换
+            cmd.data.data[1] = 1;
+            this->m_p_mi_comm->WriteCmd(cmd);
+
+
+        }
+    }
     this->m_b_active = flag;
 
     if(flag){
@@ -314,9 +350,13 @@ void PmcAxisCtrl::Pause(bool flag){
 bool PmcAxisCtrl::WriteCmd(PmcAxisCtrlCmd &cmd){
     //写入PMC指令
     if(!this->m_b_buffer && this->m_n_cmd_count > 0)  //缓冲无效
+    {
         return false;
+    }
     if(this->m_n_cmd_count == 3 || !this->IsActive())  //缓冲已满,或者未激活
+    {
         return false;
+    }
 
     //	switch(this->m_n_group_index%4){
     //	case 0:
@@ -512,7 +552,7 @@ void PmcAxisCtrl::ExecuteCmd(){
                 pmc_cmd.data.cmd = 0x00;    //绝对坐标模式
             }
 
-            //		printf("pmc axis execute cmd: speed = %u, dis = %lld\n", speed, dis);
+            //printf("pmc axis execute cmd: speed = %u, dis = %lld\n", speed, dis);
 
             this->m_p_channel_engine->SendPmcAxisCmd(pmc_cmd);
 

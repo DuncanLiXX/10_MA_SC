@@ -337,8 +337,8 @@ bool Compiler::SetCurPos(const DPoint &cur_pos) {
     //			m_compiler_status.cur_pos.a5, m_compiler_status.cur_pos.a6, cur_pos.x, cur_pos.y, cur_pos.z, cur_pos.a4, cur_pos.a5, cur_pos.a6);
     //	this->m_compiler_status.cur_pos = cur_pos;
 
-    int count = 0;
-    uint32_t mask = this->m_p_channel_control->GetPmcAxisMask();   //PMC轴的掩码
+    int count = 0; 
+    uint32_t mask = m_p_parser->GetPmcAxisMask();//PMC轴的掩码
     for(int i = 0; i < this->m_p_channel_config->chn_axis_count && count < 8; i++){
         if(mask & (0x01<<i))
             continue;   //跳过PMC轴
@@ -2934,6 +2934,7 @@ bool Compiler::RunRapidMsg(RecordMsg *msg) {
     m_compiler_status.mode.gmode[9] = G80_CMD;  //自动取消循环指令
     //	m_compiler_status.cur_pos = tmp->GetTargetPos(); //更新编译当前位置
     this->SetCurPos(tmp->GetTargetPos());
+
     return true;
 }
 
@@ -4783,6 +4784,11 @@ void Compiler::SetAxisNameEx(bool flag){
     this->m_p_parser->SetAxisNameEx(flag);
 }
 
+void Compiler::RefreshPmcAxis()
+{
+    m_p_parser->RefreshAxisName();
+}
+
 /**
  * @brief 设置加工复位参数
  * @param line : 复位行号
@@ -5043,7 +5049,7 @@ void Compiler::ProcessFiveAxisRotPos(DPointChn &tar, DPointChn &src, uint32_t ma
     double *pdes = tar.m_df_point;
     double dd = 0, dd_d = 0;
 
-    uint32_t pmc_mask = this->m_p_channel_control->GetPmcAxisMask();
+    uint32_t pmc_mask = m_p_parser->GetPmcAxisMask();//PMC轴的掩码
     mask &= (~pmc_mask);    //去掉PMC轴
     for(uint8_t i = 0; i < this->m_p_channel_config->chn_axis_count; i++){
         if(axis_mask & (0x01<<i)){

@@ -43,6 +43,8 @@ public:
 
 	void SetAxisNameEx(bool flag);   //设置轴名称扩展下标使能
 
+    uint32_t GetPmcAxisMask();
+
 private:
 	bool CompileMacro();   //编译宏指令
 	bool CompileGCode();   //编译G/M/S/T指令

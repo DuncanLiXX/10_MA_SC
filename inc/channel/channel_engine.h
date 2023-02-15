@@ -632,6 +632,9 @@ private:  //私有成员变量
     uint8_t m_MLK_mask{0x00};       //机械锁住轴mask
     double m_MLK_pos[kMaxAxisChn]; //机械锁住坐标值
 
+#ifdef TAP_TEST
+    FILE *m_fd;
+#endif
 };
 
 #endif /* INC_CHANNEL_CHANNEL_ENGINE_H_ */

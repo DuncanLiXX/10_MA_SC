@@ -111,7 +111,7 @@ bool PmcAxisCtrl::Active(bool flag){
     {
         if ((*itr)->axis_pmc)
         {
-            m_b_active = flag;//通道被激活这个变量对我来说没有用
+            m_b_active = flag;
 
             //激活channel_control中的变量
             if (flag)

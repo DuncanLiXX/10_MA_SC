@@ -8952,6 +8952,47 @@ void ChannelEngine::ProcessPmcSignal(){
     }
     inited = true;
 
+#ifdef TAP_TEST
+    static string pathname = string(PATH_LOG_FILE) + "data.txt";
+    for (int i = 0; i < m_p_general_config->chn_count; ++i)
+    {
+        if (m_p_channel_control[i].IsMachinRunning())
+        {
+            if (!m_fd)
+            {
+                m_fd = fopen(pathname.c_str(), "a+");
+                if (!m_fd)
+                    std::cout << ">>>>>> open err" << std::endl;
+            }
+
+            if (m_fd)
+            {
+                this->m_p_mi_comm->ReadPhyAxisCurFedBckPos(m_df_phy_axis_pos_feedback, m_df_phy_axis_pos_intp,m_df_phy_axis_speed_feedback,
+                                                           m_df_phy_axis_torque_feedback, m_df_spd_angle, m_p_general_config->axis_count);
+                //Z轴数据
+                string z_tar_pos = to_string(m_df_phy_axis_pos_feedback[2]) + '\t';
+                string z_real_pos = to_string(m_df_phy_axis_pos_intp[2]) +'\t';
+
+                //主轴数据
+                string spd_tar_pos = to_string(m_df_phy_axis_pos_feedback[m_p_channel_control[i].GetSpdCtrl()->GetPhyAxis()]) + '\t';
+                string spd_real_pos = to_string(m_df_phy_axis_pos_feedback[m_p_channel_control[i].GetSpdCtrl()->GetPhyAxis()]) + '\t';
+
+                string msg = z_tar_pos + z_real_pos + spd_tar_pos + spd_real_pos + '\n';
+                fwrite(msg.c_str(), sizeof(char), msg.size(), m_fd);
+            }
+        }
+        else
+        {
+            if (m_fd)
+            {
+                fflush(m_fd);
+                fclose(m_fd);
+                m_fd = nullptr;
+            }
+        }
+    }
+#endif
+
     //处理PMC的告警，即A地址寄存器
     this->ProcessPmcAlarm();
 
@@ -11522,7 +11563,7 @@ void ChannelEngine::ReturnRefPoint(){
                 if (this->m_p_axis_config[i].ret_ref_mode == 1)
                     this->EcatIncAxisFindRefWithZeroSignal(i);//增量式编码器只支持有挡块回零
                 else //不支持无挡块回零
-                    CreateError(ERR_RET_SYNC_ERR, WARNING_LEVEL, CLEAR_BY_MCP_RESET, 0, CHANNEL_ENGINE_INDEX, i);
+                    CreateError(ERR_RET_NOT_SUPPORT, WARNING_LEVEL, CLEAR_BY_MCP_RESET, 0, CHANNEL_ENGINE_INDEX, i);
             }
             else
             {  //绝对式编码器

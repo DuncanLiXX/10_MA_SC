@@ -835,7 +835,6 @@ private://私有成员变量
 
 	double G52offset[kMaxAxisChn];
 	bool G52Active = false;
-
 };
 
 #endif /* INC_CHANNEL_CHANNEL_CONTROL_H_ */

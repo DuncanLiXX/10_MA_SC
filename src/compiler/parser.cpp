@@ -1774,6 +1774,7 @@ bool Parser::SetMacroVar(int index, double value, bool init){
  * @return true--成功  false--失败
  */
 bool Parser::CreateErrorMsg(const ErrorType err){
+
 	RecordMsg *new_msg = new ErrorMsg(err);
 	if(new_msg == nullptr){
 		//内存分配失败，告警
@@ -1781,6 +1782,7 @@ bool Parser::CreateErrorMsg(const ErrorType err){
 		return false;
 	}
 	new_msg->SetLineNo(this->m_p_lexer_result->line_no);  //设置当前行号
+
 	if(this->m_p_compiler_status->jump_flag){
 		new_msg->SetFlag(FLAG_JUMP, true);
 		this->m_error_code = ERR_NONE;
@@ -2416,7 +2418,14 @@ bool Parser::CreateArcMsg(const int gcode){
 //		return false;
 //	}
     double i_number = 0, j_number = 0, r_number = 0;
-	//TODO 检查参数
+
+	if(!m_b_f_code){//未指定F值
+		printf("ERR_NO_F_DATA\n");
+		m_error_code = ERR_NO_F_DATA;
+		return false;
+	}
+
+    //TODO 检查参数
 	DPointChn source = this->m_p_compiler_status->cur_pos;   //起点坐标
 	DPointChn target, center;  //终点坐标，圆心坐标
 	double radius = 0.0;  //半径

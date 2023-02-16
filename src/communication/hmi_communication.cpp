@@ -753,8 +753,6 @@ int HMICommunication::ResendHmiCmd(){
 		usleep(100000);  //ÐÝÃß100ms
 	}
 
-
-
 	return res;
 }
 
@@ -2707,9 +2705,16 @@ void HMICommunication::ProcessHmiClearAlarmFile(HMICmdFrame &cmd)
 void HMICommunication::ProcessHmiGetCPUInfo(HMICmdFrame &cmd){
 	cmd.frame_number |= 0x8000;
 	memset(cmd.data, 0, sizeof(cmd.data));
-	double cpu_info[2];
+
+
+	double cpu_info[4];
 	cpu_info[0] = cpu_percent;
 	cpu_info[1] = mem_percent;
+	cpu_info[2] = pmc_period1;
+	cpu_info[3] = pmc_period2;
+
+	// printf("===== %lf %lf %lf %lf\n",
+	// cpu_info[0],cpu_info[1],cpu_info[2],cpu_info[3]);
 
 	memcpy(cmd.data, &cpu_info, sizeof(cpu_info));
 	cmd.data_len = sizeof(cpu_info);

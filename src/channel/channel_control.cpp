@@ -2035,6 +2035,7 @@ void ChannelControl::PauseRunGCode(){
             this->PauseMc();
         }
 
+        printf("========== 1111111111111\n");
         this->m_p_f_reg->STL = 0;
         this->m_p_f_reg->SPL = 1;
 
@@ -3906,8 +3907,10 @@ bool ChannelControl::SendOpenFileCmdToHmi(char *filename){
  * @param mach_state
  */
 void ChannelControl::SetMachineState(uint8_t mach_state){
+    // @modify zk 记录之前状态
+	uint8_t old_stat = m_channel_status.machining_state;
 
-    g_ptr_trace->PrintTrace(TRACE_INFO, CHANNEL_CONTROL_SC, "Enter SetMachineState, old = %d, new = %d, m_n_run_thread_state = %d\n", m_channel_status.machining_state, mach_state, m_n_run_thread_state);
+	g_ptr_trace->PrintTrace(TRACE_INFO, CHANNEL_CONTROL_SC, "Enter SetMachineState, old = %d, new = %d, m_n_run_thread_state = %d\n", m_channel_status.machining_state, mach_state, m_n_run_thread_state);
     if(m_channel_status.machining_state == mach_state)
         return;
 
@@ -3928,19 +3931,21 @@ void ChannelControl::SetMachineState(uint8_t mach_state){
     //	}
 
     SendMachineStateCmdToHmi(mach_state);   //通知HMI
-    SendMachineStateToMc(mach_state); //通知mc
+    SendMachineStateToMc(mach_state);       //通知mc
 
-    if(mach_state == MS_PAUSED || mach_state == MS_WARNING){
-        this->m_p_f_reg->STL = 0;
+    if((mach_state == MS_PAUSED || mach_state == MS_WARNING) && old_stat == MS_RUNNING){
+    	this->m_p_f_reg->STL = 0;
         this->m_p_f_reg->SPL = 1;
+        printf("111111111111111\n");
         //this->m_b_need_change_to_pause = true;
-        // @TODO 之后加个报警信号 让提出去触发暂停信号
+        // @TODO 之后加个报警信号 提出去触发暂停信号
         // 这里无法直接改G信号  这里 pause 会造成死锁
         //this->m_p_channel_engine->Pause();
 
     }else if(mach_state == MS_READY || mach_state == MS_STOPPING){
         this->m_p_f_reg->STL = 0;
         this->m_p_f_reg->SPL = 0;
+        printf("222222222222222\n");
     }else if(mach_state == MS_RUNNING){
         this->m_p_f_reg->STL = 1;
         this->m_p_f_reg->SPL = 0;
@@ -7945,10 +7950,8 @@ bool ChannelControl::ExecuteLoopMsg(RecordMsg *msg){
     if(m_simulate_mode == SIM_OUTLINE && m_simulate_mode == SIM_TOOLPATH){  //轮廓仿真，刀路仿真
         //设置当前行号
         SetCurLineNo(msg->GetLineNo());
-
         m_n_subprog_count++;
         m_n_macroprog_count++;
-
         return true;
     }
     //等待MC分块的插补到位信号，以及MI的运行到位信号

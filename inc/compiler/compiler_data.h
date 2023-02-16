@@ -33,7 +33,8 @@ const int kMaxLineSize = 256;   //一行G代码最大字节数
 const int kMaxAxisNameCount = 9;   //通道轴名称个数，最多9个“X/Y/Z/A/B/C/U/V/W”
 
 const int kMaxAlphaBufLen = 16;  //单词解析缓冲长度
-const int kMaxDigitBufLen = 16;  //数值解析缓冲长度
+// @zk modify 数值过大 溢出朝相反方向运动 @todo 找出溢出最小位数
+const int kMaxDigitBufLen = 11;  //数值解析缓冲长度
 
 extern const int kMaxFileMapSize;   //文件内存映射区最大值
 extern const int kMaxGCodeCount;     //系统定义G指令最大值
@@ -328,10 +329,10 @@ struct LexerGCode{
 	int t_value[kMaxTCodeInLine];    //记录一行中出现的T代码值，如果是宏表达式则存储macro_expression中的索引号的负值,索引号从1开始
 	uint8_t tcode_count;          //一行中T代码的个数
 
-	double pos_value[kMaxAxisNameCount][16];    //带下标的轴目标位置数据,[X/Y/Z/A/B/C/U/V/W][1~9]
+	double pos_value[kMaxAxisNameCount][16];     //带下标的轴目标位置数据,[X/Y/Z/A/B/C/U/V/W][1~9]
 	uint16_t mask_pos[kMaxAxisNameCount];        //带下标的轴目标数据掩码:X=0,Y=1,Z=2,A=3,B=4,C=5,U=6,V=7,W=8, BIT0~BIT15代表下标1~16
 	uint16_t mask_pos_macro[kMaxAxisNameCount];  //标记哪些扩展轴名称数据字为宏表达式
-	uint16_t mask_dot_ex[kMaxAxisNameCount];             //标记哪些轴名称扩展字段的数据带小数点
+	uint16_t mask_dot_ex[kMaxAxisNameCount];     //标记哪些轴名称扩展字段的数据带小数点
 
 	MacroExpression macro_expression[kMaxMacroInLine];  //记录宏表达式
 
@@ -382,8 +383,6 @@ struct ModeCollect{
 	uint8_t h_mode;		//H代码模态值,掉电保存
 	uint8_t d_mode;		//D代码模态值,掉电保存
 	uint8_t t_mode;		//T代码模态值,掉电保存
-
-
 };
 
 

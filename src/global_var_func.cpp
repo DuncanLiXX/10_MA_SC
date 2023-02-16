@@ -26,6 +26,8 @@
 SystemState g_sys_state;    //系统状态
 SystemInfo g_sys_info;      //系统信息，包括版本和CPU占用率等
 
+double pmc_period1;  // 1级pmc时间
+double pmc_period2;  // 2级pmc时间
 
 HMICommunication *g_ptr_hmi_comm = nullptr;   //HMI通讯接口
 MICommunication *g_ptr_mi_comm = nullptr; 		//MI通讯接口

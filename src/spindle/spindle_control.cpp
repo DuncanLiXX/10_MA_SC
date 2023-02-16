@@ -67,6 +67,10 @@ void SpindleControl::Reset()
     UpdateParams();
 }
 
+
+
+
+
 void SpindleControl::InputSCode(uint32_t s_code)
 {
     if(!spindle)
@@ -390,6 +394,7 @@ void SpindleControl::InputRTNT(bool RTNT)
 
     ChannelEngine *engine = ChannelEngine::GetInstance();
     ChannelControl *control = engine->GetChnControl(0);
+
     if(control->GetChnStatus().chn_work_mode == AUTO_MODE){
         CreateError(ERR_SPD_RTNT_IN_AUTO,
                     INFO_LEVEL,
@@ -836,6 +841,7 @@ void SpindleControl::ProcessSwitchLevel()
 
     //延时TM us后发送SF信号
     std::this_thread::sleep_for(std::chrono::microseconds(TM));
+    //usleep(TM); @zk 为什么不用 usleep???
     F->SF = 1;
     printf("set SF 1\n");
 

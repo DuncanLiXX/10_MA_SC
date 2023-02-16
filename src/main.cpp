@@ -950,7 +950,6 @@ int main()
 
 //		CheckNetState("eth0");  //¼ì²âÍøÂç×´Ì¬
 
-
         g_ptr_chn_engine->DoIdle();
 
         usleep(100000);

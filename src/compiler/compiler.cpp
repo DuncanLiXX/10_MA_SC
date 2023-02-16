@@ -936,10 +936,6 @@ void Compiler::PreScanLine1(char *buf, uint64_t offset, uint64_t line_no,
             pc++;
             continue;
         }
-
-        if (strchr("XYZBCJKUV", *pc) != nullptr){  //加快扫描速度
-            //return;
-        }
         else if (*pc == '(') { //进入跨行注释
             flag = true;
             pc++;
@@ -2094,15 +2090,13 @@ bool Compiler::GetLineData() {
     bool bFirst = false;    //遇到第一个非空白字符
     bool bSwapdown = false;  //向下翻页
 
-    char c_cur = *m_p_cur_file_pos;     //当前字符
+    char c_cur = *m_p_cur_file_pos;   //当前字符
 
     char c_next = '\0';   //下一个字符
     uint64_t block_limit = m_p_file_map_info->ln_map_start
             + m_p_file_map_info->ln_map_blocksize;
 
     this->m_compiler_status.jump_flag = false;
-
-
 
 REDO:
     //读取下一个字符
@@ -3636,14 +3630,15 @@ bool Compiler::RunMacroMsg(RecordMsg *msg) {
 
 
             IfElseOffset node;
-            printf("===== node vectors vector size: %d\n", m_node_vectors_vector.size());
+            //printf("===== node vectors vector size: %d\n", m_node_vectors_vector.size());
 
             for(vector<IfElseOffset> node_vector : m_node_vectors_vector){
             	// @test
-                printf("===== node lino: %llu, tmp lino: %llu\n", node_vector.at(0).line_no, tmp->GetLineNo());
+                //printf("===== node lino: %llu, tmp lino: %llu\n", node_vector.at(0).line_no, tmp->GetLineNo());
 
             	if(node_vector.at(0).line_no == tmp->GetLineNo()){
-                    node = node_vector.at(0);
+            		printf("===== node lino: %llu, tmp lino: %llu\n", node_vector.at(0).line_no, tmp->GetLineNo());
+            		node = node_vector.at(0);
                 }
             }
 
@@ -3678,9 +3673,10 @@ bool Compiler::RunMacroMsg(RecordMsg *msg) {
                 if(!JumpLine(node.line_no, node.offset, tmp))
                     printf("------ jump line failed!!!\n");
             }
-            m_node_stack_run.push_back(node);
-            m_else_jump_stack_run.push_back(m_b_else_jump);
 
+            m_node_stack_run.push_back(node);
+            printf("===== push back size: %d\n", m_node_stack_run.size());
+            m_else_jump_stack_run.push_back(m_b_else_jump);
         }
         break;
     }
@@ -3786,7 +3782,7 @@ bool Compiler::RunMacroMsg(RecordMsg *msg) {
             return false;
         }
 
-        m_node_stack_run.pop_back();
+    	m_node_stack_run.pop_back();
         m_else_jump_stack_run.pop_back();
         m_b_else_jump = m_else_jump_stack_run.back();
         break;
@@ -4749,8 +4745,11 @@ bool Compiler::CheckJumpGoto(uint64_t line_src, uint64_t line_des){
 
     while(m_node_stack_run.size() != 0){
         // 目标行号 大于 栈顶节点记录行号  弹出
-        if(line_des > m_node_stack_run.back().line_no){
-            m_node_stack_run.pop_back();
+
+		IfElseOffset node = m_node_stack_run.back();
+
+		if(line_des > m_node_vectors_vector.at(node.vec_index).back().line_no){
+        	m_node_stack_run.pop_back();
             m_else_jump_stack_run.pop_back();
         }else{
             break;

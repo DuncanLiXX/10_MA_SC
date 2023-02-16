@@ -105,7 +105,10 @@ bool PmcAxisCtrl::Active(bool flag){
     //检查_EAXSL信号
     FRegBits *freg0 = m_p_channel_engine->GetChnFRegBits(0);
     if(freg0->_EAXSL == 1)
-        return false;  //
+        return false;
+
+    if (!CanActive())
+        return false;
 
     for (auto itr = axis_list.begin(); itr != axis_list.end(); ++itr)
     {
@@ -113,9 +116,8 @@ bool PmcAxisCtrl::Active(bool flag){
         {
             m_b_active = flag;
 
-            //激活channel_control中的变量
             if (flag)
-            {
+            {//激活
                 m_p_channel_engine->SetPmcActive((*itr)->axis_index);
             }
             else
@@ -143,7 +145,6 @@ bool PmcAxisCtrl::Active(bool flag){
 
         }
     }
-    this->m_b_active = flag;
 
     if(flag){
         // 状态
@@ -162,6 +163,24 @@ bool PmcAxisCtrl::Active(bool flag){
             break;
         }
     }
+    return true;
+}
+
+bool PmcAxisCtrl::CanActive()
+{
+    for (auto itr = axis_list.begin(); itr != axis_list.end(); ++itr)//未建立参考点
+    {
+        if (!m_p_channel_engine->GetAxisRetRefFlag((*itr)->axis_index))
+            return false;
+    }
+
+    SCSystemConfig *sys = ParmManager::GetInstance()->GetSystemConfig();//不处于运行状态
+    for (int i = 0; i < sys->chn_count; ++i)
+    {
+        if (m_p_channel_engine->GetChnControl()[i].IsMachinRunning())
+            return false;
+    }
+
     return true;
 }
 
@@ -340,6 +359,24 @@ void PmcAxisCtrl::Pause(bool flag){
         break;
     }
 
+}
+
+/**
+ * @brief 获取已激活的PMC轴
+ * @return 物理轴号
+ */
+std::vector<uint64_t> PmcAxisCtrl::GetActivePmcAxis()
+{
+    std::vector<uint64_t> vecAxis;
+    if (m_b_active) {
+        for (auto itr = axis_list.begin(); itr != axis_list.end(); ++itr)
+        {
+            if ((*itr)->axis_pmc) {
+                vecAxis.push_back((*itr)->axis_index);
+            }
+        }
+    }
+    return vecAxis;
 }
 
 /**

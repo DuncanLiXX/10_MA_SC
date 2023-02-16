@@ -30,6 +30,8 @@
 
 #include "pmc_register.h"
 
+//#define TAP_TEST
+
 
 
 //Ç°ÖÃÉùÃ÷
@@ -311,6 +313,7 @@ void SetMcArmComm(MCArmCommunication *comm){this->m_p_mc_arm_comm = comm;}   //É
     bool SetPmcActive(uint64_t phy_axis);   //¼¤»îPMCÖá
     bool RstPmcActive(uint64_t phy_axis);   //È¡Ïû¼¤»îPMCÖá
     bool GetPmcActive(uint64_t phy_axis);   //PMCÖáÊÇ·ñ¼¤»î
+    bool GetAxisRetRefFlag(uint64_t phy_axis);  //ÊÇ·ñ½¨Á¢²Î¿¼µã
 
 private:	//Ë½ÓĞ³ÉÔ±º¯Êı
 	ChannelEngine();   //¹¹Ôìº¯Êı
@@ -440,6 +443,7 @@ private:	//Ë½ÓĞ³ÉÔ±º¯Êı
     void InitPhyAxisChn();		//³õÊ¼»¯ÎïÀíÖáÓëÍ¨µÀµÄÓ³Éä
     void SendMiPhyAxisEncoder();     //ÏòMI·¢ËÍÎïÀíÖáµÄ·´À¡
     void SetAxisRetRefFlag();    //ÏòMI·¢ËÍ¸÷Öá»Ø²Î¿¼µã½áÊø±êÖ¾
+
     // MLK:ËùÓĞÖáËø×¡
     // MLKI:¸÷ÖáËø×¡×´Ì¬
     void SetMLKState(uint8_t MLK, uint8_t MLKI); //ÏòMI·¢ËÍ¸÷Öá»úĞµËø×¡×´Ì¬

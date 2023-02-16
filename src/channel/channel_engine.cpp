@@ -676,6 +676,17 @@ void ChannelEngine::SetAxisRetRefFlag(){
 }
 
 /**
+ * @brief 获取指定的物理轴是否已经建立参考点
+ * @param phy_axis, 物理轴号0
+ * @return true 建立， flase 未建立
+ */
+bool ChannelEngine::GetAxisRetRefFlag(uint64_t phy_axis)
+{
+    bool flag = m_n_mask_ret_ref_over & (0x01 << phy_axis);
+    return flag;
+}
+
+/**
  * @brief 向MI发送各轴机械锁住状态
  */
 void ChannelEngine::SetMLKState(uint8_t MLK, uint8_t MLKI)
@@ -1673,7 +1684,10 @@ void ChannelEngine::SendMonitorData(bool bAxis, bool btime){
     //#endif
 
     if(m_n_pmc_axis_count > 0)
+    {
         this->m_p_mi_comm->ReadPmcAxisRemainDis(m_df_pmc_axis_remain, m_p_general_config->axis_count);   // 读取余移动量
+        //std::cout << "m_df_pmc_axis_remain: " << m_df_pmc_axis_remain[3] << std::endl;
+    }
 
     for(int i = 0; i < this->m_p_general_config->chn_count; i++){
         this->m_p_channel_control[i].SendMonitorData(bAxis, btime);
@@ -8958,15 +8972,15 @@ void ChannelEngine::ProcessPmcSignal(){
     {
         if (m_p_channel_control[i].IsMachinRunning())
         {
-            if (!m_fd)
+            if (m_fd && g_reg->RGTAP == 1)
             {
-                m_fd = fopen(pathname.c_str(), "a+");
                 if (!m_fd)
-                    std::cout << ">>>>>> open err" << std::endl;
-            }
+                {
+                    m_fd = fopen(pathname.c_str(), "a+");
+                    if (!m_fd)
+                        std::cout << ">>>>>> open err" << std::endl;
+                }
 
-            if (m_fd)
-            {
                 this->m_p_mi_comm->ReadPhyAxisCurFedBckPos(m_df_phy_axis_pos_feedback, m_df_phy_axis_pos_intp,m_df_phy_axis_speed_feedback,
                                                            m_df_phy_axis_torque_feedback, m_df_spd_angle, m_p_general_config->axis_count);
                 //Z轴数据
@@ -8975,7 +8989,7 @@ void ChannelEngine::ProcessPmcSignal(){
 
                 //主轴数据
                 string spd_tar_pos = to_string(m_df_phy_axis_pos_feedback[m_p_channel_control[i].GetSpdCtrl()->GetPhyAxis()]) + '\t';
-                string spd_real_pos = to_string(m_df_phy_axis_pos_feedback[m_p_channel_control[i].GetSpdCtrl()->GetPhyAxis()]) + '\t';
+                string spd_real_pos = to_string(m_df_phy_axis_pos_intp[m_p_channel_control[i].GetSpdCtrl()->GetPhyAxis()]) + '\t';
 
                 string msg = z_tar_pos + z_real_pos + spd_tar_pos + spd_real_pos + '\n';
                 fwrite(msg.c_str(), sizeof(char), msg.size(), m_fd);

@@ -6025,23 +6025,24 @@ void ChannelEngine::ManualMoveStop(uint8_t phy_axis){
         this->m_p_channel_control[chn].ManualMoveStop(0x01<<chn_axis);
     }else if (!GetPmcActive(phy_axis)) {
         //ScPrintf("ManualMoveStop axis=%u",phy_axis);
-        //MiCmdFrame cmd;
-        //memset(&cmd, 0x00, sizeof(MiCmdFrame));
+        MiCmdFrame cmd;
+        memset(&cmd, 0x00, sizeof(MiCmdFrame));
 
-        //cmd.data.axis_index = phy_axis+1;
-        //cmd.data.reserved = chn+1;
-        //cmd.data.cmd = CMD_MI_PAUSE_PMC_AXIS;
-        //cmd.data.data[0] = 0x30;   //停止指定轴运动，并抛弃当前运动指令
+        cmd.data.axis_index = phy_axis+1;
+        cmd.data.reserved = chn+1;
+        cmd.data.cmd = CMD_MI_PAUSE_PMC_AXIS;
+        cmd.data.data[0] = 0x30;   //停止指定轴运动，并抛弃当前运动指令
 
-        //m_p_mi_comm->WriteCmd(cmd);
+        m_p_mi_comm->WriteCmd(cmd);
 
-        //this->m_n_run_axis_mask &= ~(0x01L<<phy_axis);
-        //if(this->m_n_run_axis_mask == this->m_n_runover_axis_mask){
-        //    m_n_run_axis_mask = 0;
-        //    m_n_runover_axis_mask = 0;
-        //}
-        m_error_code = ERR_PMC_IVALID_USED;
-        CreateError(ERR_PMC_IVALID_USED, ERROR_LEVEL, CLEAR_BY_MCP_RESET, 0, 0xFF);
+        this->m_n_run_axis_mask &= ~(0x01L<<phy_axis);
+        if(this->m_n_run_axis_mask == this->m_n_runover_axis_mask){
+            m_n_run_axis_mask = 0;
+            m_n_runover_axis_mask = 0;
+        }
+
+        //m_error_code = ERR_PMC_IVALID_USED;
+        //CreateError(ERR_PMC_IVALID_USED, ERROR_LEVEL, CLEAR_BY_MCP_RESET, 0, 0xFF);
     }
 }
 
@@ -8982,6 +8983,15 @@ void ChannelEngine::ProcessPmcSignal(){
             {
                 this->m_p_mi_comm->ReadPhyAxisCurFedBckPos(m_df_phy_axis_pos_feedback, m_df_phy_axis_pos_intp,m_df_phy_axis_speed_feedback,
                                                            m_df_phy_axis_torque_feedback, m_df_spd_angle, m_p_general_config->axis_count);
+
+                //X轴数据
+                //string X_tar_pos = to_string(m_df_phy_axis_pos_feedback[2]) + '\t';
+                //string X_real_pos = to_string(m_df_phy_axis_pos_intp[2]) +'\t';
+
+                //Y轴数据
+                //string y_tar_pos = to_string(m_df_phy_axis_pos_feedback[2]) + '\t';
+                //string y_real_pos = to_string(m_df_phy_axis_pos_intp[2]) +'\t';
+
                 //Z轴数据
                 string z_tar_pos = to_string(m_df_phy_axis_pos_feedback[2]) + '\t';
                 string z_real_pos = to_string(m_df_phy_axis_pos_intp[2]) +'\t';
@@ -8991,6 +9001,8 @@ void ChannelEngine::ProcessPmcSignal(){
                 string spd_real_pos = to_string(m_df_phy_axis_pos_intp[m_p_channel_control[i].GetSpdCtrl()->GetPhyAxis()]) + '\t';
 
                 string msg = z_tar_pos + z_real_pos + spd_tar_pos + spd_real_pos + '\n';
+
+                //string msg = X_tar_pos + X_real_pos + y_tar_pos + y_real_pos + z_tar_pos + z_real_pos + '\n';
                 fwrite(msg.c_str(), sizeof(char), msg.size(), m_fd);
             }
         }

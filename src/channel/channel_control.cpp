@@ -6184,6 +6184,10 @@ bool ChannelControl::ExecuteAuxMsg(RecordMsg *msg){
                         g_ptr_parm_manager->SetTotalWorkPiece(m_n_channel_index, m_channel_status.workpiece_count_total);
                         this->SendWorkCountToHmi(m_channel_status.workpiece_count, m_channel_status.workpiece_count_total);  //通知HMI更新加工计数
 
+                        if (m_channel_status.workpiece_require != 0 && m_channel_status.workpiece_count >= m_channel_status.workpiece_require)
+                        {//已到达需求件数
+                            CreateError(ERR_REACH_WORK_PIECE, INFO_LEVEL, CLEAR_BY_MCP_RESET);
+                        }
                         this->ResetMode();   //模态恢复默认值
 
                         //激活工件坐标系参数
@@ -6672,6 +6676,11 @@ bool ChannelControl::ExecuteAuxMsg(RecordMsg *msg){
                     g_ptr_parm_manager->SetTotalWorkPiece(m_n_channel_index, m_channel_status.workpiece_count_total);
                     this->SendWorkCountToHmi(m_channel_status.workpiece_count, m_channel_status.workpiece_count_total);  //通知HMI更新加工计数
 
+                    if (m_channel_status.workpiece_require != 0 && m_channel_status.workpiece_count >= m_channel_status.workpiece_require)
+                    {//已到达需求件数
+                        CreateError(ERR_REACH_WORK_PIECE, INFO_LEVEL, CLEAR_BY_MCP_RESET);
+                    }
+
 #ifdef USES_GRIND_MACHINE
                     if(this->m_channel_status.workpiece_count >= this->m_p_mech_arm_param->grind_wheel_life){
                         //砂轮到寿
@@ -6833,7 +6842,6 @@ bool ChannelControl::ExecuteAuxMsg(RecordMsg *msg){
                     gettimeofday(&m_time_m_start[m_index], NULL);   //开始计时
                 else{
                     gettimeofday(&time_now, NULL);
-
                     time_elpase = (time_now.tv_sec-m_time_m_start[m_index].tv_sec)*1000000+time_now.tv_usec-m_time_m_start[m_index].tv_usec;
                     if(time_elpase > kMCodeTimeout && !this->GetMExcSig(m_index)){//超过200ms任未进入执行状态，则告警“不支持的M代码”
                         CreateError(ERR_M_CODE, ERROR_LEVEL, CLEAR_BY_MCP_RESET, mcode, m_n_channel_index);

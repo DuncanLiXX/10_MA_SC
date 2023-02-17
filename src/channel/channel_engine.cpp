@@ -3594,7 +3594,7 @@ void ChannelEngine::GetParamValueFromCmd(ParamUpdate *data, char *src){
 
     //	double ff = 66.0;
     //	char *pc = (char *)&ff;
-    switch(data->value_type){
+	switch(data->value_type){
     case 0:
         memcpy(&data->value.value_uint8, src, 1);
         break;
@@ -3784,7 +3784,7 @@ void ChannelEngine::ProcessHmiGetParam(HMICmdFrame &cmd){
             cmd.data_len = sizeof(HmiAxisConfig);
             memcpy(cmd.data+1, &this->m_p_axis_config[index], cmd.data_len);
             cmd.data_len += 1;
-            //		printf("get axis config succeed, data_len:%hu\n", cmd.data_len);
+            //printf("get axis config succeed, data_len:%hu\n", cmd.data_len);
         }
 
         break;

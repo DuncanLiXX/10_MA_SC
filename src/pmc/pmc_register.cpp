@@ -67,11 +67,6 @@ void PmcRegister::Initialize(){
 
 		this->InitRegFile();
 
-//		m_n_fp = open(PATH_PMC_REG, O_RDWR);
-//		if(m_n_fp < 0){
-//			g_ptr_trace->PrintTrace(TRACE_ERROR, PMC_REGISTER, "打开pmc寄存器文件失败！");
-//			return;//文件打开失败
-//		}
 	}else{//文件存在
 		bool init_reg = false;   //是否重新初始化文件，如果发现有寄存器不匹配则重新初始化
 		m_n_fp = open(PATH_PMC_REG, O_RDWR);

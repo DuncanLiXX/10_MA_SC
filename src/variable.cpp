@@ -228,9 +228,7 @@ bool Variable::GetVarValue(int index, double &value, bool &init){
 	}else if(index >=50000 && index < 55000){    //扩展保持型公共变量
 		init = this->m_b_init_user_macro[index-50000];
 		value = this->m_df_user_macro[index-50000];
-
 	}else if(index >= 1000){	//系统变量
-
 		if((index >= 5061 && index <= 5080) ||
 				(index >= 5421 && index <= 5440)){
 			if(!chn_ctrl->IsSkipCaptured()){   //G31捕获失败

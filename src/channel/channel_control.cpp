@@ -197,11 +197,6 @@ ChannelControl::~ChannelControl() {
         m_p_output_msg_list_mda = nullptr;
     }
 
-    //	if(m_p_output_buffer != nullptr){//销毁运动指令发送缓冲
-    //		delete m_p_output_buffer;
-    //		m_p_output_buffer = nullptr;
-    //	}
-
     //释放编译器对象
     if(m_p_compiler != nullptr){
         delete m_p_compiler;
@@ -577,7 +572,6 @@ void ChannelControl::InitialChannelStatus(){
         this->m_error_code = ERR_CHN_SPINDLE_OVERRUN;
     }
 
-
     //	strcpy(m_channel_status.cur_nc_file_name, "20.nc");	//for test
     g_ptr_parm_manager->GetCurNcFile(this->m_n_channel_index, m_channel_status.cur_nc_file_name);
 }
@@ -762,7 +756,6 @@ void ChannelControl::Reset(){
     this->SetMachineState(state);  //更新通道状态
 
     this->ResetMode();   //复位通道模态数据
-
 
     this->m_p_f_reg->SPL = 0;
     this->m_p_f_reg->STL = 0;
@@ -2063,8 +2056,6 @@ void ChannelControl::PauseRunGCode(){
     }else
         return;
 
-
-
     if(m_simulate_mode != SIM_NONE)
         state = MS_READY;   //仿真模式直接置为READY
 
@@ -2147,8 +2138,8 @@ void ChannelControl::StopRunGCode(bool reset){
         }
 
         m_p_output_msg_list->Clear();
-        //		m_p_output_msg_list_auto->Clear();
-        //		m_p_output_msg_list_mda->Clear();
+        //m_p_output_msg_list_auto->Clear();
+        //m_p_output_msg_list_mda->Clear();
 
         SetCurLineNo(1);
     }
@@ -2159,9 +2150,8 @@ void ChannelControl::StopRunGCode(bool reset){
 
     this->SetMachineState(state);  //更新通道状态
 
-    this->m_p_f_reg->SPL = 0;
+    //this->m_p_f_reg->SPL = 0;
     this->m_p_f_reg->STL = 0;
-
 }
 
 
@@ -2188,7 +2178,6 @@ void ChannelControl::PauseMc(){
 	}else
 		// @bug  部分SC这个指令发送无效 导致 SC假死  PMC能亮 但无法动作
 		this->SendIntpModeCmdToMc(MC_MODE_MANUAL);
-
 }
 
 /**
@@ -3933,23 +3922,44 @@ void ChannelControl::SetMachineState(uint8_t mach_state){
     SendMachineStateCmdToHmi(mach_state);   //通知HMI
     SendMachineStateToMc(mach_state);       //通知mc
 
-    if((mach_state == MS_PAUSED || mach_state == MS_WARNING) && old_stat == MS_RUNNING){
+    printf("========== old_stat %d, cur_stat %d\n", old_stat, mach_state);
+
+    // @modify zk 修改之后处理
+    if(mach_state == MS_PAUSED){
+    	this->m_p_f_reg->STL = 0;
+		this->m_p_f_reg->SPL = 1;
+    }else if(mach_state == MS_WARNING && old_stat == MS_RUNNING){
+    	this->m_p_f_reg->STL = 0;
+		this->m_p_f_reg->SPL = 1;
+    }else if(mach_state == MS_READY){
+    	this->m_p_f_reg->STL = 0;
+		this->m_p_f_reg->SPL = 0;
+    }else if(mach_state == MS_RUNNING){
+    	this->m_p_f_reg->STL = 1;
+    	this->m_p_f_reg->SPL = 0;
+    }
+
+    // @modify zk 之前的处理
+    /* if(mach_state == MS_PAUSED || mach_state == MS_WARNING){
     	this->m_p_f_reg->STL = 0;
         this->m_p_f_reg->SPL = 1;
         printf("111111111111111\n");
         //this->m_b_need_change_to_pause = true;
-        // @TODO 之后加个报警信号 提出去触发暂停信号
-        // 这里无法直接改G信号  这里 pause 会造成死锁
+        //@TODO 之后加个报警信号 提出去触发暂停信号
+        //这里无法直接改G信号  这里 pause 会造成死锁
         //this->m_p_channel_engine->Pause();
 
+    //}else if(mach_state == MS_READY || mach_state == MS_STOPPING){
     }else if(mach_state == MS_READY || mach_state == MS_STOPPING){
+
         this->m_p_f_reg->STL = 0;
         this->m_p_f_reg->SPL = 0;
-        printf("222222222222222\n");
+        printf("22222222222222\n");
     }else if(mach_state == MS_RUNNING){
         this->m_p_f_reg->STL = 1;
         this->m_p_f_reg->SPL = 0;
-    }
+        printf("33333333333333\n");
+    }*/
 
     g_ptr_trace->PrintTrace(TRACE_INFO, CHANNEL_CONTROL_SC, "exit SetMachineState, old = %d, new = %d\n", m_channel_status.machining_state, mach_state);
 }
@@ -5957,6 +5967,7 @@ bool ChannelControl::ExecuteAuxMsg(RecordMsg *msg){
             ResetMcLineNo();//复位MC模块当前行号
             this->SetCurLineNo(1);
 
+            printf("nnnnnnnnnn\n");
             this->m_p_f_reg->STL = 0;
             this->m_p_f_reg->SPL = 0;
             this->m_p_f_reg->OP = 0;
@@ -5979,6 +5990,7 @@ bool ChannelControl::ExecuteAuxMsg(RecordMsg *msg){
                 ResetMcLineNo();//复位MC模块当前行号
                 this->SetCurLineNo(1);
 
+                printf("kkkkkkkkkkkk\n");
                 this->m_p_f_reg->STL = 0;
                 this->m_p_f_reg->SPL = 0;
                 this->m_p_f_reg->OP = 0;
@@ -6159,6 +6171,7 @@ bool ChannelControl::ExecuteAuxMsg(RecordMsg *msg){
                         this->SetCurLineNo(1);
                     }
 
+                    printf("LLLLLLLLLLLLL\n");
                     this->m_p_f_reg->STL = 0;
                     this->m_p_f_reg->SPL = 0;
                     this->m_p_f_reg->OP = 0;
@@ -6701,6 +6714,7 @@ bool ChannelControl::ExecuteAuxMsg(RecordMsg *msg){
             ResetMcLineNo();//复位MC模块当前行号
             this->SetCurLineNo(1);
 
+            printf("xxxxxxxxxxxxxxx\n");
             this->m_p_f_reg->STL = 0;
             this->m_p_f_reg->SPL = 0;
             this->m_p_f_reg->OP = 0;
@@ -7016,7 +7030,6 @@ bool ChannelControl::ExecuteLineMsg(RecordMsg *msg, bool flag_block){
     if(this->m_simulate_mode == SIM_OUTLINE || this->m_simulate_mode == SIM_TOOLPATH){
         this->m_channel_status.gmode[1] = G01_CMD;    //仿真模式下，立即修改当前模式,不通知HMI
         this->m_pos_simulate_cur_work = linemsg->GetTargetPos();
-
         this->SetCurLineNo(msg->GetLineNo());
     }
 
@@ -8661,12 +8674,10 @@ bool ChannelControl::ExecuteSubProgCallMsg(RecordMsg *msg){
 
                 //TODO 向HMI发送命令打开子文件
                 if(this->m_channel_status.chn_work_mode == AUTO_MODE){
-
-                    if(sub_msg->GetSubProgType() == 2 ||
+                	if(sub_msg->GetSubProgType() == 2 ||
                             sub_msg->GetSubProgType() == 4 ||
                             sub_msg->GetSubProgType() == 6){
-
-                        char file[kMaxFileNameLen];
+                    	char file[kMaxFileNameLen];
                         memset(file, 0x00, kMaxFileNameLen);
                         sub_msg->GetSubProgName(file, false);
                         this->SendOpenFileCmdToHmi(file);
@@ -8675,13 +8686,15 @@ bool ChannelControl::ExecuteSubProgCallMsg(RecordMsg *msg){
 
                 //设置当前行号
                 SetCurLineNo(msg->GetLineNo());
-
+                printf("11111\n");
                 this->m_p_f_reg->DM98 = 1;
                 sub_msg->IncreaseExecStep(0);
             }else if(sub_msg->GetExecStep(0) == 1){
-                sub_msg->IncreaseExecStep(0);
+            	printf("22222\n");
+            	sub_msg->IncreaseExecStep(0);
             }else if(sub_msg->GetExecStep(0) == 2){
-                this->m_p_f_reg->DM98 = 0;
+            	printf("33333\n");
+            	this->m_p_f_reg->DM98 = 0;
                 sub_msg->SetExecStep(0, 0);
             }
 
@@ -8890,7 +8903,6 @@ bool ChannelControl::ExecuteAutoToolMeasureMsg(RecordMsg *msg){
         this->SetMcStepMode(false);
         //	this->m_b_need_change_to_pause = false;
     }
-
     return true;
 }
 
@@ -15930,7 +15942,6 @@ bool ChannelControl::CancelBreakContinueThread(){
             printf("Failed to breakcontinue thread!");
             return false;
         }
-
     }
     return true;
 }
@@ -16000,7 +16011,6 @@ void ChannelControl::SaveAutoScene(bool flag){
     m_scene_auto.p_last_output_msg = this->m_p_last_output_msg;
 
     m_scene_auto.need_reload_flag = flag;
-
 }
 
 /**
@@ -16638,7 +16648,7 @@ bool ChannelControl::EmergencyStop(){
     //OP信号复位
     this->m_p_f_reg->OP = 0;
 
-    this->m_p_f_reg->SPL = 0;
+    //this->m_p_f_reg->SPL = 0;
     this->m_p_f_reg->STL = 0;
 
     return true;

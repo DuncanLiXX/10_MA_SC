@@ -63,8 +63,7 @@ private:
 	void InitKeepVar();					//初始化非易失性宏变量
 	void InitMacroVar();
 	bool GetSysVar(int index, double &value);		//获取系统变量，double型
-	bool GetSysVar(int index, int &value);		//获取系统变量，int型
-
+	bool GetSysVar(int index, int &value);		    //获取系统变量，int型
 	bool SetSysVar(int index, double value);		//设置系统变量，double型
 	bool SetSysVar(int index, int value);			//设置系统变量，int型
 

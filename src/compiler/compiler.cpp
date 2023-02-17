@@ -147,7 +147,6 @@ Compiler::~Compiler() {
     //		delete m_p_file_map_info_mda;
     //		m_p_file_map_info_mda = nullptr;
     //	}
-
 }
 
 /**
@@ -363,8 +362,6 @@ bool Compiler::SetCurPos(const DPointChn &cur_pos) {
     //			m_compiler_status.cur_pos.m_df_point[4], m_compiler_status.cur_pos.m_df_point[5], cur_pos.m_df_point[0], cur_pos.m_df_point[1], cur_pos.m_df_point[2],
     //			cur_pos.m_df_point[3], cur_pos.m_df_point[4], cur_pos.m_df_point[5]);
     this->m_compiler_status.cur_pos = cur_pos;
-
-
     return true;
 }
 
@@ -437,8 +434,7 @@ bool Compiler::SaveScene() {
         return false;
     }
 
-
-    printf("save scene2, m_work_mode:%d, scene.work_mode = %d, scene.cur_file_pos=%u\n",
+    printf("save scene2, m_work_mode:%d, scene.work_mode = %d, scene.cur_file_pos=%llu\n",
            m_work_mode, scene.work_mode, (uint32_t)scene.ptr_cur_file_pos);
     for(IfElseOffset node: scene.node_stack_run){
         printf("node line no: %llu\n", node.line_no);
@@ -776,7 +772,6 @@ void Compiler::PreScan() {
 
 
     /*** test if else */
-
     printf("*********************************************\n");
     for(unsigned int i=0; i<m_node_vectors_vector.size(); i++){
         vector<IfElseOffset> node_vector = m_node_vectors_vector.at(i);
@@ -787,7 +782,6 @@ void Compiler::PreScan() {
         }
         printf("\n");
     }
-
     /*** test if else */
 
     if (total_size != read_size) { //没有完整读取文件，告警
@@ -1342,8 +1336,6 @@ void Compiler::PreScanLine1(char *buf, uint64_t offset, uint64_t line_no,
         else_cmd = false;
         elseif_cmd = false;
     }
-
-
 }
 
 /**
@@ -2582,7 +2574,7 @@ bool Compiler::RunSubProgCallMsg(RecordMsg *msg) {
 
     //打开子程序文件
     this->m_n_sub_program = SUB_PROG;
-    char filepath[kMaxPathLen] = { 0 };   //文件路径
+    char filepath[kMaxPathLen] = {0};   //文件路径
     if (sub_loc == 1) {   //同文件子程序
         ListNode < SubProgOffset > *node = m_p_list_subprog->HeadNode();
         uint64_t offset_sub = 0;
@@ -4745,9 +4737,7 @@ bool Compiler::CheckJumpGoto(uint64_t line_src, uint64_t line_des){
 
     while(m_node_stack_run.size() != 0){
         // 目标行号 大于 栈顶节点记录行号  弹出
-
 		IfElseOffset node = m_node_stack_run.back();
-
 		if(line_des > m_node_vectors_vector.at(node.vec_index).back().line_no){
         	m_node_stack_run.pop_back();
             m_else_jump_stack_run.pop_back();

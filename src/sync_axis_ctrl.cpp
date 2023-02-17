@@ -115,7 +115,6 @@ void SyncAxisCtrl::RspSyncAxis(int64_t mask)
     }
 
     sync_mask = mask;
-
 }
 
 void SyncAxisCtrl::RspEnSyncAxis(bool enable, bool success)

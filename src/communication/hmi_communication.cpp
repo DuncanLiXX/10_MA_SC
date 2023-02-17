@@ -786,7 +786,6 @@ void HMICommunication::RecvHmiCmd(){
 		res = recvfrom(m_soc_udp_recv, &data, kMaxHmiCmdFrameLen, 0, (struct sockaddr *)&cmd_node.ip_addr, &m_n_addr_len);
 
 		if(res == -1 && errno == EAGAIN){	//无数据可读
-
 			break;
 		}else if (res == 0){
 			printf("recvfrom error, errno = %d\n", errno);
@@ -839,7 +838,6 @@ void HMICommunication::RecvHmiCmd(){
 int HMICommunication::ProcessHmiCmd(){
 	int res = ERR_NONE;
 //	struct timespec time_out= {0, 10000000};   //信号等待超时时间
-
 
 	HMICmdRecvNode cmd_node;
 	HMICmdFrame &cmd = cmd_node.cmd;
@@ -1064,7 +1062,6 @@ int HMICommunication::ProcessHmiCmd(){
 
         usleep(10000);   //休眠10ms
 	}
-
 
 	return res;
 }

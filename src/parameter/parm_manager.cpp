@@ -1400,9 +1400,9 @@ bool ParmManager::ReadAxisConfig(){
             m_sc_axis_config[i].spd_gear_speed_high = m_ini_axis->GetIntValueOrDefault(sname, "spd_gear_speed_high", 10000);
             m_sc_axis_config[i].spd_gear_switch_speed1 = m_ini_axis->GetIntValueOrDefault(sname, "spd_gear_switch_speed1", 1500);
             m_sc_axis_config[i].spd_gear_switch_speed2 = m_ini_axis->GetIntValueOrDefault(sname, "spd_gear_switch_speed2", 5000);
-            m_sc_axis_config[i].spd_sync_error_gain = m_ini_axis->GetIntValueOrDefault(sname, "spd_sync_error_gain", 200);
-            m_sc_axis_config[i].spd_speed_feed_gain = m_ini_axis->GetIntValueOrDefault(sname, "spd_speed_feed_gain", 60000);
-            m_sc_axis_config[i].spd_pos_ratio_gain = m_ini_axis->GetIntValueOrDefault(sname, "spd_pos_ratio_gain", 100000);
+            m_sc_axis_config[i].spd_sync_error_gain = m_ini_axis->GetIntValueOrDefault(sname, "spd_sync_error_gain", 0.2);
+            m_sc_axis_config[i].spd_speed_feed_gain = m_ini_axis->GetIntValueOrDefault(sname, "spd_speed_feed_gain", 60.0);
+            m_sc_axis_config[i].spd_pos_ratio_gain = m_ini_axis->GetIntValueOrDefault(sname, "spd_pos_ratio_gain", 20.0);
             m_sc_axis_config[i].spd_rtnt_rate_on = m_ini_axis->GetIntValueOrDefault(sname, "spd_rtnt_rate_on", 0);
             m_sc_axis_config[i].spd_rtnt_rate = m_ini_axis->GetIntValueOrDefault(sname, "spd_rtnt_rate", 100);
             m_sc_axis_config[i].spd_rtnt_distance = m_ini_axis->GetIntValueOrDefault(sname, "spd_rtnt_distance", 0);
@@ -4381,6 +4381,7 @@ bool ParmManager::UpdateAxisParam(uint8_t axis_index, uint32_t param_no, ParamVa
 		g_ptr_trace->PrintLog(LOG_ALARM, "轴参数更新，轴号非法：%hhu", axis_index);
 		return false;
 	}
+
 	char sname[32];	//section name
 	char kname[64];	//key name
 
@@ -4862,20 +4863,23 @@ bool ParmManager::UpdateAxisParam(uint8_t axis_index, uint32_t param_no, ParamVa
         m_ini_axis->SetIntValue(sname, kname,value.value_uint16);
         break;
     case 1715:	//B方式档2->档3电机转速
-        sprintf(kname, "spd_gear_switch_speed2");
+    	sprintf(kname, "spd_gear_switch_speed2");
         m_ini_axis->SetIntValue(sname, kname,value.value_uint16);
         break;
     case 1716:	//攻丝同步误差增益
-        sprintf(kname, "spd_sync_error_gain");
-        m_ini_axis->SetIntValue(sname, kname,value.value_uint32);
+    	printf("----- %lf\n", value.value_double);
+    	sprintf(kname, "spd_sync_error_gain");
+        m_ini_axis->SetDoubleValue(sname, kname, value.value_double);
         break;
     case 1717:	//攻丝轴速度前馈增益
-        sprintf(kname, "spd_speed_feed_gain");
-        m_ini_axis->SetIntValue(sname, kname,value.value_uint32);
+    	printf("----- %lf\n", value.value_double);
+    	sprintf(kname, "spd_speed_feed_gain");
+        m_ini_axis->SetDoubleValue(sname, kname, value.value_double);
         break;
     case 1718:	//攻丝轴位置比例增益
+    	printf("----- %lf\n", value.value_double);
         sprintf(kname, "spd_pos_ratio_gain");
-        m_ini_axis->SetIntValue(sname, kname,value.value_uint32);
+        m_ini_axis->SetDoubleValue(sname, kname, value.value_double);
         break;
     case 1719:	//攻丝回退期间，倍率是否有效
         sprintf(kname, "spd_rtnt_rate_on");
@@ -5138,7 +5142,6 @@ void ParmManager::ActiveParam(ParamUpdate *data, uint8_t active_type){
 		this->m_list_reset->Append(*data);
 	}else if(active_type == 2){		//新一次加工生效
 		this->m_list_new_start->Append(*data);
-
 	}else if(active_type == 3){		//立即生效
 		this->ActiveParam(data);
 	}else{
@@ -6362,14 +6365,17 @@ void ParmManager::ActiveAxisParam(uint8_t axis_index, uint32_t param_no, ParamVa
     case 1715:	//B方式档2->档3电机转速
         this->m_sc_axis_config[axis_index].spd_gear_switch_speed2 = value.value_uint16;
         break;
-    case 1716:	//攻丝同步误差增益
-        this->m_sc_axis_config[axis_index].spd_sync_error_gain = value.value_uint32;
+    case 1716:	//攻丝同步误差增益 @test
+    	printf("===== %lf\n", value.value_double);
+        this->m_sc_axis_config[axis_index].spd_sync_error_gain = value.value_double;
         break;
     case 1717:	//攻丝轴速度前馈增益
-        this->m_sc_axis_config[axis_index].spd_speed_feed_gain = value.value_uint32;
+    	printf("===== %lf\n", value.value_double);
+    	this->m_sc_axis_config[axis_index].spd_speed_feed_gain = value.value_double;
         break;
     case 1718:	//攻丝轴位置比例增益
-        this->m_sc_axis_config[axis_index].spd_pos_ratio_gain = value.value_uint32;
+        printf("===== %lf\n", value.value_double);
+    	this->m_sc_axis_config[axis_index].spd_pos_ratio_gain = value.value_double;
         break;
     case 1719:	//攻丝回退期间，倍率是否有效
         this->m_sc_axis_config[axis_index].spd_rtnt_rate_on = value.value_uint8;

@@ -18,7 +18,7 @@ const char *MacroFuncs[] = {"FIX","FUP","ROUND","ABS","SIN","COS","TAN","ASIN","
 const uint8_t MacroOptPriority[] = {3,3,3,3,3,3,3,3,3,3,
 									 3,3,3,3,3,3,0,0,0,0,
 									 0,0,1,1,2,2,4,0,1,1,
-									 2,2};//宏表达式中运算符优先级，定义顺序与MacroOpt对应
+									 2, 2};//宏表达式中运算符优先级，定义顺序与MacroOpt对应
 
 /*******************************************************MacroExpProcessor类的实现*******************************************************************/
 /**
@@ -130,6 +130,7 @@ bool MacroExpProcessor::PushOpt(MacroOpt opt){
 
 	}
 	else if(opt == MACRO_OPT_COMMA){ //','  弹出m_stack_opt中的数据压入m_stack_exp中，直到遇到'['
+
 		while(!m_stack_opt.empty()){
 
 			tmp = m_stack_opt.top();
@@ -224,7 +225,6 @@ bool MacroExpProcessor::PushOpt(MacroOpt opt){
 				m_stack_opt.push(rec);
 				m_stack_prio.push(MacroOptPriority[opt]);
 				m_b_bracket_pair = false;
-
 			}
 		}
 		m_top_opt = opt;
@@ -707,7 +707,6 @@ bool Lexer::GetOneRecord(){
 	m_in_digit = false;
 	m_in_macro_exp = false;
 	m_in_alph = false;
-
 	m_n_axis_name_ex = 0;
 	return res;
 }
@@ -735,12 +734,11 @@ bool Lexer::GetOneGCode(){
 				const char *pf = strchr(strAxisNames, this->m_cur_domain);
 				int index_name = pf-strAxisNames;
 
-				g_code->mask_pos[index_name] |= (0x01<<(m_n_axis_name_ex-1));   //置位轴目标数据mask
-				g_code->mask_pos_macro[index_name] |= (0x01<<(m_n_axis_name_ex-1));   //置位轴目标数据mask
+				g_code->mask_pos[index_name] |= (0x01<<(m_n_axis_name_ex-1));          //置位轴目标数据mask
+				g_code->mask_pos_macro[index_name] |= (0x01<<(m_n_axis_name_ex-1));    //置位轴目标数据mask
 				g_code->pos_value[index_name][m_n_axis_name_ex-1] = m_macro_count-1;   //保存轴目标位置表达式索引
 
 	//			printf("GetOneGCode->macro_exp, index_name=%d, mask=0x%x\n", index_name, g_code->mask_pos_macro[index_name]);
-
 
 			}else{
 				g_code->mask_value |= (0x01<<domain_index);

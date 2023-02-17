@@ -88,8 +88,8 @@ public:
 
     DPointChn& operator=( const DPointChn& c);
     DPointChn& operator=( const double& value);
-    DPointChn& operator+=( const DPointChn& adder  );
-    DPointChn& operator-=( const DPointChn& subber );
+    DPointChn& operator+=( const DPointChn& adder);
+    DPointChn& operator-=( const DPointChn& subber);
     DPointChn& operator*=( const double& modulus);
     DPointChn& operator/=( const double& modulus);
 

@@ -478,6 +478,8 @@ bool Parser::AnalyzeGCode(LexerGCode *gcode){
 	bool user_defined_code = false;  //是否有用户自定义指令
 	bool macro_call_flag = false;   //当前是否处于宏程序调用状态
 
+
+
 	if(((m_mode_mask & GMODE_00) && (m_mode_code[0] == G65_CMD)) ||  //G65宏程序调用
 			(m_mode_mask & GMODE_09) ||                              //固定循环指令
 			(((m_mode_mask & GMODE_01) == 0) && (m_p_compiler_status->mode.gmode[9] != G80_CMD))){
@@ -2530,7 +2532,6 @@ bool Parser::CreateArcMsg(const int gcode){
 		else{
 			//判断是否整圆
 			circle_flag = 1;    //IJK编程，起点和终点重合则为整圆
-
 			major_flag = -1;    //优弧
 		}
 
@@ -2664,9 +2665,7 @@ bool Parser::CreateClearCirclePosMsg(){
 	uint32_t mask = 0;
 	double data;  //临时数据
 
-
 	int gcode = 2000;  //G200
-
 
 	//读取参数
 	if(GetCodeData(P_DATA, data)){
@@ -3367,7 +3366,7 @@ bool Parser::GetTargetPos(DPointChn &target, uint32_t &axis_mask, uint8_t *count
 		}else{//无扩展下标
 			 addr = static_cast<DataAddr>(m_axis_name[i]-'A');
 			 if(GetCodeData(addr, data)){//有此参数，读取成功
-				if(((g_code->mask_dot & (0x01<<addr)) == 0) &&
+				 if(((g_code->mask_dot & (0x01<<addr)) == 0) &&
 						((g_code->mask_macro & (0x01<<addr)) == 0)){  //没有小数点并且非宏表达式
 					data /= 1000.;   //省略小数点则以um为单位
 				}

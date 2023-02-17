@@ -59,7 +59,6 @@ struct SystemState {
 	uint8_t system_boot_stage;     	//系统启动步骤,标志系统启动的当前阶段
 	char hmi_host_addr[16];        //当前连接的HMI主机IP地址
 	char local_host_addr[16];      //本地IP地址
-
 };
 
 /**

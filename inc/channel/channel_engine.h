@@ -30,7 +30,7 @@
 
 #include "pmc_register.h"
 
-#define TAP_TEST
+//#define TAP_TEST
 
 
 

@@ -89,7 +89,8 @@ ChannelEngine::ChannelEngine() {
     m_b_power_off = false;
     m_b_reset_rst_signal = false;
 
-    this->m_n_cur_pmc_axis = 0xFF;   //默认没有当前轴
+    this->m_n_cur_pmc_axis = 0xFF;      //默认没有当前轴
+    this->m_pmc_axis_active_mask = 0;   //默认所有轴都没有激活PMC轴
 
     this->m_hard_limit_negative = 0;
     this->m_hard_limit_postive = 0;
@@ -672,6 +673,17 @@ void ChannelEngine::SetAxisRetRefFlag(){
     memcpy(cmd.data.data, &this->m_n_mask_ret_ref_over, sizeof(uint64_t));
 
     this->m_p_mi_comm->WriteCmd(cmd);
+}
+
+/**
+ * @brief 获取指定的物理轴是否已经建立参考点
+ * @param phy_axis, 物理轴号0
+ * @return true 建立， flase 未建立
+ */
+bool ChannelEngine::GetAxisRetRefFlag(uint64_t phy_axis)
+{
+    bool flag = m_n_mask_ret_ref_over & (0x01 << phy_axis);
+    return flag;
 }
 
 /**
@@ -1636,7 +1648,7 @@ void ChannelEngine::SendPmcAxisToHmi(){
     PmcAxisPos axis;
     int size = sizeof(PmcAxisPos);
     for(uint8_t i = 0; i < this->m_p_general_config->axis_count; i++){
-        if(this->m_p_axis_config[i].axis_pmc == 0)
+        if (!GetPmcActive(i))
             continue;
         axis.axis_no = i;  //从0开始编号
         axis.mach_pos = this->m_df_phy_axis_pos_feedback[i];
@@ -1672,7 +1684,10 @@ void ChannelEngine::SendMonitorData(bool bAxis, bool btime){
     //#endif
 
     if(m_n_pmc_axis_count > 0)
+    {
         this->m_p_mi_comm->ReadPmcAxisRemainDis(m_df_pmc_axis_remain, m_p_general_config->axis_count);   // 读取余移动量
+        //std::cout << "m_df_pmc_axis_remain: " << m_df_pmc_axis_remain[3] << std::endl;
+    }
 
     for(int i = 0; i < this->m_p_general_config->chn_count; i++){
         this->m_p_channel_control[i].SendMonitorData(bAxis, btime);
@@ -3525,11 +3540,14 @@ void ChannelEngine::ProcessHmiAxisMoveCmd(HMICmdFrame &cmd){
         dir = cmd.data[5];
         double vel = speed;
 
-        if(this->m_p_axis_config[axis].axis_pmc){ //PMC轴
-            if(speed > 0)
-                this->ManualMovePmc(axis, 99999, vel, true);
-            else
-                this->ManualMoveStop(axis);
+        if (GetPmcActive(axis)) {
+            //if(speed > 0)
+            //    this->ManualMovePmc(axis, 99999, vel, true);
+            //else
+            //    this->ManualMoveStop(axis);
+            m_error_code = ERR_PMC_IVALID_USED;
+            CreateError(ERR_PMC_IVALID_USED, ERROR_LEVEL, CLEAR_BY_MCP_RESET, 0, 0xFF);
+            return;
         }else{
             if(speed > 0)
                 this->ManualMove(axis, dir, vel, 99999);
@@ -3550,8 +3568,10 @@ void ChannelEngine::ProcessHmiAxisMoveCmd(HMICmdFrame &cmd){
         if(speed == 0)
             vel = this->m_p_axis_config[axis].rapid_speed;  //速度给0则使用轴参数中的定位速度
 
-        if(this->m_p_axis_config[axis].axis_pmc){ //PMC轴
-            this->ManualMovePmc(axis, tar_pos, vel, false);
+        if (GetPmcActive(axis)) {
+            //this->ManualMovePmc(axis, tar_pos, vel, false);
+            m_error_code = ERR_PMC_IVALID_USED;
+            CreateError(ERR_PMC_IVALID_USED, ERROR_LEVEL, CLEAR_BY_MCP_RESET, 0, 0xFF);
         }else{
             this->ManualMove(axis, dir, vel, tar_pos-this->GetPhyAxisMachPosFeedback(axis));
         }
@@ -4328,7 +4348,7 @@ bool ChannelEngine::GetSoftLimt(ManualMoveDir dir, uint8_t phy_axis, double &lim
     uint8_t chn_axis = 0, chn = 0;
     chn = this->GetAxisChannel(phy_axis, chn_axis);
     bool flag = false; // 是否找到了限位位置
-    for(int i=0; i<3; i++){
+    for(int i=0; i<2; i++){//第三限位去掉
         if(dir == DIR_POSITIVE && enable[i] &&
                 (!flag || (positive[i] < limit))){
             flag = true;
@@ -4711,7 +4731,7 @@ void ChannelEngine::ProcessPmcAxisFindRef(uint8_t phy_axis){
 
 #endif
     }else{
-        if(this->m_p_axis_config[phy_axis].axis_pmc > 0){
+        if (GetPmcActive(phy_axis)) {
             this->m_pmc_axis_ctrl[m_p_axis_config[phy_axis].axis_pmc-1].ExecCmdOver(true);
         }
     }
@@ -5639,7 +5659,7 @@ void ChannelEngine::ManualMoveAbs(uint8_t phy_axis, double vel, double pos){
     uint8_t chn_axis = 0, chn = 0;
     chn = this->GetAxisChannel(phy_axis, chn_axis);
 
-    if(m_p_axis_config[phy_axis].axis_pmc == 0 && chn != CHANNEL_ENGINE_INDEX){ //通道轴
+    if (!GetPmcActive(phy_axis) && chn != CHANNEL_ENGINE_INDEX) {
         McCmdFrame cmd;
         memset(&cmd, 0x00, sizeof(McCmdFrame));
 
@@ -5666,7 +5686,7 @@ void ChannelEngine::ManualMoveAbs(uint8_t phy_axis, double vel, double pos){
             m_p_mc_arm_comm->WriteCmd(cmd);
 
         printf("ChannelEngine::ManualMoveAbs: axis = %d, tar_pos = %lld\n", phy_axis, tar_pos);
-    }else if(m_p_axis_config[phy_axis].axis_pmc){  //PMC轴
+    }else if (GetPmcActive(phy_axis)) {
 #ifdef USES_GRIND_MACHINE
         //动作前夹爪必须上到位，保护措施
         if(this->m_p_pmc_reg->GReg().bits[0].left_claw_up_check == 0 ||
@@ -5674,25 +5694,27 @@ void ChannelEngine::ManualMoveAbs(uint8_t phy_axis, double vel, double pos){
             return;
         }
 #endif
-        PmcCmdFrame cmd;
-        memset(&cmd, 0x00, sizeof(PmcCmdFrame));
+        //PmcCmdFrame cmd;
+        //memset(&cmd, 0x00, sizeof(PmcCmdFrame));
 
-        cmd.data.axis_index = phy_axis+1;   //轴号从1开始
-        cmd.data.axis_index |= 0xFF00;      //标志通道引擎
-        cmd.data.cmd = 0;   //绝对位置
+        //cmd.data.axis_index = phy_axis+1;   //轴号从1开始
+        //cmd.data.axis_index |= 0xFF00;      //标志通道引擎
+        //cmd.data.cmd = 0;   //绝对位置
 
         //设置速度
-        uint32_t feed = vel*1000/60;   //转换单位为um/s
+        //uint32_t feed = vel*1000/60;   //转换单位为um/s
 
-        memcpy(&cmd.data.data[1], &tar_pos, sizeof(tar_pos));  //设置目标位置
-        memcpy(&cmd.data.data[5], &feed, sizeof(feed)); //设置速度
+        //memcpy(&cmd.data.data[1], &tar_pos, sizeof(tar_pos));  //设置目标位置
+        //memcpy(&cmd.data.data[5], &feed, sizeof(feed)); //设置速度
 
-        this->m_n_run_axis_mask |= 0x01L<<phy_axis;  //设置当前运行轴
+        //this->m_n_run_axis_mask |= 0x01L<<phy_axis;  //设置当前运行轴
 
-        this->m_p_mi_comm->SendPmcCmd(cmd);
+        //this->m_p_mi_comm->SendPmcCmd(cmd);
 
-        printf("ChannelEngine::ManualMove_pmc: axis = %d, tar_pos = %lld\n", phy_axis, tar_pos);
-
+        //printf("ChannelEngine::ManualMove_pmc: axis = %d, tar_pos = %lld\n", phy_axis, tar_pos);
+        m_error_code = ERR_PMC_IVALID_USED;
+        CreateError(ERR_PMC_IVALID_USED, ERROR_LEVEL, CLEAR_BY_MCP_RESET, 0, 0xFF);
+        return;
     }
 }
 
@@ -5727,7 +5749,7 @@ void ChannelEngine::ManualMove(uint8_t phy_axis, int8_t dir, double vel, double 
 
     int64_t n_inc_dis = tar_pos -  m_p_channel_control[chn].GetAxisCurIntpTarPos(chn_axis, true)*1e7;
 
-    if(m_p_axis_config[phy_axis].axis_pmc == 0 && chn != CHANNEL_ENGINE_INDEX){ //通道轴
+    if (!GetPmcActive(phy_axis) && chn != CHANNEL_ENGINE_INDEX) {
         McCmdFrame cmd;
         memset(&cmd, 0x00, sizeof(McCmdFrame));
 
@@ -5753,25 +5775,26 @@ void ChannelEngine::ManualMove(uint8_t phy_axis, int8_t dir, double vel, double 
             m_p_mc_arm_comm->WriteCmd(cmd);
 
         //	printf("ChannelEngine::ManualMove: axis = %d, tar_pos = %lld\n", phy_axis, tar_pos);
-    }else if(m_p_axis_config[phy_axis].axis_pmc){  //PMC轴
-        PmcCmdFrame cmd;
-        memset(&cmd, 0x00, sizeof(PmcCmdFrame));
+    }else if (GetPmcActive(phy_axis)) {
+        //PmcCmdFrame cmd;
+        //memset(&cmd, 0x00, sizeof(PmcCmdFrame));
 
-        cmd.data.axis_index = phy_axis+1;   //轴号从1开始
-        cmd.data.axis_index |= 0xFF00;      //标志通道引擎
-        cmd.data.cmd = 0x100;   //增量位置
+        //cmd.data.axis_index = phy_axis+1;   //轴号从1开始
+        //cmd.data.axis_index |= 0xFF00;      //标志通道引擎
+        //cmd.data.cmd = 0x100;   //增量位置
 
         //设置速度
-        uint32_t feed = vel*1000/60;   //转换单位为um/s
-        memcpy(&cmd.data.data[1], &n_inc_dis, sizeof(n_inc_dis));  //设置目标位置
-        memcpy(&cmd.data.data[5], &feed, sizeof(feed)); //设置速度
+        //uint32_t feed = vel*1000/60;   //转换单位为um/s
+        //memcpy(&cmd.data.data[1], &n_inc_dis, sizeof(n_inc_dis));  //设置目标位置
+        //memcpy(&cmd.data.data[5], &feed, sizeof(feed)); //设置速度
 
-        this->m_n_run_axis_mask |= 0x01L<<phy_axis;  //设置当前运行轴
+        //this->m_n_run_axis_mask |= 0x01L<<phy_axis;  //设置当前运行轴
 
-        this->m_p_mi_comm->SendPmcCmd(cmd);
+        //this->m_p_mi_comm->SendPmcCmd(cmd);
 
         //		printf("ChannelEngine::ManualMove_pmc: axis = %d, tar_pos = %lld\n", phy_axis, tar_pos);
-
+        m_error_code = ERR_PMC_IVALID_USED;
+        CreateError(ERR_PMC_IVALID_USED, ERROR_LEVEL, CLEAR_BY_MCP_RESET, 0, 0xFF);
     }
 }
 
@@ -5998,25 +6021,27 @@ void ChannelEngine::ManualMoveStop(uint8_t phy_axis){
 
     uint8_t chn = 0, chn_axis = 0;
     chn = this->GetAxisChannel(phy_axis, chn_axis);
-    if(this->m_p_axis_config[phy_axis].axis_pmc == 0 && chn != CHANNEL_ENGINE_INDEX){
+    if(!GetPmcActive(phy_axis) && chn != CHANNEL_ENGINE_INDEX){
         this->m_p_channel_control[chn].ManualMoveStop(0x01<<chn_axis);
-    }else if(this->m_p_axis_config[phy_axis].axis_pmc){  //PMC轴
+    }else if (!GetPmcActive(phy_axis)) {
         //ScPrintf("ManualMoveStop axis=%u",phy_axis);
-        MiCmdFrame cmd;
-        memset(&cmd, 0x00, sizeof(MiCmdFrame));
+        //MiCmdFrame cmd;
+        //memset(&cmd, 0x00, sizeof(MiCmdFrame));
 
-        cmd.data.axis_index = phy_axis+1;
-        cmd.data.reserved = chn+1;
-        cmd.data.cmd = CMD_MI_PAUSE_PMC_AXIS;
-        cmd.data.data[0] = 0x30;   //停止指定轴运动，并抛弃当前运动指令
+        //cmd.data.axis_index = phy_axis+1;
+        //cmd.data.reserved = chn+1;
+        //cmd.data.cmd = CMD_MI_PAUSE_PMC_AXIS;
+        //cmd.data.data[0] = 0x30;   //停止指定轴运动，并抛弃当前运动指令
 
-        m_p_mi_comm->WriteCmd(cmd);
+        //m_p_mi_comm->WriteCmd(cmd);
 
-        this->m_n_run_axis_mask &= ~(0x01L<<phy_axis);
-        if(this->m_n_run_axis_mask == this->m_n_runover_axis_mask){
-            m_n_run_axis_mask = 0;
-            m_n_runover_axis_mask = 0;
-        }
+        //this->m_n_run_axis_mask &= ~(0x01L<<phy_axis);
+        //if(this->m_n_run_axis_mask == this->m_n_runover_axis_mask){
+        //    m_n_run_axis_mask = 0;
+        //    m_n_runover_axis_mask = 0;
+        //}
+        m_error_code = ERR_PMC_IVALID_USED;
+        CreateError(ERR_PMC_IVALID_USED, ERROR_LEVEL, CLEAR_BY_MCP_RESET, 0, 0xFF);
     }
 }
 
@@ -6055,7 +6080,7 @@ void ChannelEngine::PmcAxisRunOver(MiCmdFrame &cmd){
         }else if(this->m_n_run_axis_mask == 0)
             return;
 
-        if(this->m_p_axis_config[phy_axis].axis_pmc > 0){
+        if (GetPmcActive(phy_axis)) {
             if(m_pmc_axis_ctrl[m_p_axis_config[phy_axis].axis_pmc-1].GetCmdCount() > 0 &&
                     !m_pmc_axis_ctrl[m_p_axis_config[phy_axis].axis_pmc-1].IsPaused()){   //有数据，非暂停状态
                 m_pmc_axis_ctrl[m_p_axis_config[phy_axis].axis_pmc-1].ExecCmdOver(true);
@@ -7418,7 +7443,8 @@ void ChannelEngine::InitMiParam(){
        m_p_mi_comm->SendMiParam<uint8_t>(index, 1002, axis_config->axis_interface);   //轴接口类型
        m_p_mi_comm->SendMiParam<uint8_t>(index, 1001, axis_config->axis_type);		//轴类型
        m_p_mi_comm->SendMiParam<uint8_t>(index, 1003, axis_config->axis_port);		//从站号或者对应轴口号
-       m_p_mi_comm->SendMiParam<uint8_t>(index, 1006, axis_config->axis_pmc);			//是否PMC轴
+       //m_p_mi_comm->SendMiParam<uint8_t>(index, 1006, axis_config->axis_pmc);			//是否PMC轴
+       m_p_mi_comm->SendMiParam<uint8_t>(index, 1006, 0);                               //PMC轴由梯图来激活
        m_p_mi_comm->SendMiParam<double>(index, 1100, axis_config->kp1);			//kp1
        m_p_mi_comm->SendMiParam<double>(index, 1101, axis_config->kp2);			//kp2
        m_p_mi_comm->SendMiParam<double>(index, 1102, axis_config->ki);			//ki
@@ -7718,11 +7744,11 @@ void ChannelEngine::SendMiBacklash(uint8_t axis){
         uint16_t enable = 0;
         memcpy(&cmd.data.data[6], &enable, 2);
     }
-    std::cout << "axis: " << (int)cmd.data.axis_index << std::endl;
-    std::cout << "backlash_enable: " << (int)m_p_axis_config[axis].backlash_enable << std::endl;
-    std::cout << "backlash_forward: " << (double)m_p_axis_config[axis].backlash_forward << std::endl;
-    std::cout << "backlash_negative: " << (double)m_p_axis_config[axis].backlash_negative << std::endl;
-    std::cout << "backlash_step: " << (int)m_p_axis_config[axis].backlash_step << std::endl;
+    //std::cout << "axis: " << (int)cmd.data.axis_index << std::endl;
+    //std::cout << "backlash_enable: " << (int)m_p_axis_config[axis].backlash_enable << std::endl;
+    //std::cout << "backlash_forward: " << (double)m_p_axis_config[axis].backlash_forward << std::endl;
+    //std::cout << "backlash_negative: " << (double)m_p_axis_config[axis].backlash_negative << std::endl;
+    //std::cout << "backlash_step: " << (int)m_p_axis_config[axis].backlash_step << std::endl;
     this->m_p_mi_comm->WriteCmd(cmd);
 }
 
@@ -8680,6 +8706,11 @@ void ChannelEngine::ProcessPmcSignal(){
                 if(g_reg->HSIA != 0){
                     CreateError(ERR_HW_INSERT_INFO, INFO_LEVEL, CLEAR_BY_MCP_RESET, 0, i);
                 }
+                for(int axis = 0; axis < m_p_channel_config[chn].chn_axis_count; axis++){
+                    if( ((g_reg->HSIA >> axis) & 0x01) && GetPmcActive(axis) ){
+                        CreateError(ERR_HW_INSERT_INVALID, INFO_LEVEL, CLEAR_BY_MCP_RESET, 0, i);
+                    }
+                }
                 UpdateHandwheelState(i);
             }
         }
@@ -8934,6 +8965,47 @@ void ChannelEngine::ProcessPmcSignal(){
     }
     inited = true;
 
+#ifdef TAP_TEST
+    static string pathname = string(PATH_LOG_FILE) + "data.txt";
+    for (int i = 0; i < m_p_general_config->chn_count; ++i)
+    {
+        if (m_p_channel_control[i].IsMachinRunning())
+        {
+            if (m_fd && g_reg->RGTAP == 1)
+            {
+                if (!m_fd)
+                {
+                    m_fd = fopen(pathname.c_str(), "a+");
+                    if (!m_fd)
+                        std::cout << ">>>>>> open err" << std::endl;
+                }
+
+                this->m_p_mi_comm->ReadPhyAxisCurFedBckPos(m_df_phy_axis_pos_feedback, m_df_phy_axis_pos_intp,m_df_phy_axis_speed_feedback,
+                                                           m_df_phy_axis_torque_feedback, m_df_spd_angle, m_p_general_config->axis_count);
+                //Z轴数据
+                string z_tar_pos = to_string(m_df_phy_axis_pos_feedback[2]) + '\t';
+                string z_real_pos = to_string(m_df_phy_axis_pos_intp[2]) +'\t';
+
+                //主轴数据
+                string spd_tar_pos = to_string(m_df_phy_axis_pos_feedback[m_p_channel_control[i].GetSpdCtrl()->GetPhyAxis()]) + '\t';
+                string spd_real_pos = to_string(m_df_phy_axis_pos_intp[m_p_channel_control[i].GetSpdCtrl()->GetPhyAxis()]) + '\t';
+
+                string msg = z_tar_pos + z_real_pos + spd_tar_pos + spd_real_pos + '\n';
+                fwrite(msg.c_str(), sizeof(char), msg.size(), m_fd);
+            }
+        }
+        else
+        {
+            if (m_fd)
+            {
+                fflush(m_fd);
+                fclose(m_fd);
+                m_fd = nullptr;
+            }
+        }
+    }
+#endif
+
     //处理PMC的告警，即A地址寄存器
     this->ProcessPmcAlarm();
 
@@ -9051,6 +9123,7 @@ void ChannelEngine::ProcessPmcAxisCtrl(){
         freg = &m_p_pmc_reg->FReg().bits[i];
 
         //处理PMC轴通道激活
+        static bool last_eax[kMaxChnCount][4] = {{false}, {false}, {false}, {false}};
         bool eax[4] = {greg->EAX1, greg->EAX2, greg->EAX3, greg->EAX4};
         bool embuf[4] = {greg->EMBUFA, greg->EMBUFB, greg->EMBUFC, greg->EMBUFD};
         uint8_t ebuf[4] = {greg->EBUFA, greg->EBUFB, greg->EBUFC, greg->EBUFD};
@@ -9072,6 +9145,18 @@ void ChannelEngine::ProcessPmcAxisCtrl(){
                 CreateError(ERR_PMC_AXIS_CTRL_CHANGE, ERROR_LEVEL, CLEAR_BY_MCP_RESET, i*4+j+1, CHANNEL_ENGINE_INDEX);
                 return;
             }
+
+            //0->1 选通PMC通道
+            if (last_eax[i][j] == 0 && eax[j] == 1)
+            {
+                m_pmc_axis_ctrl[i*4+j].Active(true);
+            }
+            //1->0 关闭PMC通道
+            else if (last_eax[i][j] == 1 && eax[j] == 0)
+            {
+                m_pmc_axis_ctrl[i*4+j].Active(false);
+            }
+
 
             // 轴正在移动的状态下打开选通信号，报警
             if(!m_pmc_axis_ctrl[i*4+j].Active(eax[j])){
@@ -9107,7 +9192,9 @@ void ChannelEngine::ProcessPmcAxisCtrl(){
             this->m_pmc_axis_ctrl[4*i+j].Pause(estp[j]);
 
         }
+        memcpy(last_eax[i], eax, sizeof(eax));
     }
+
 }
 
 /**
@@ -11489,7 +11576,7 @@ void ChannelEngine::ReturnRefPoint(){
                 if (this->m_p_axis_config[i].ret_ref_mode == 1)
                     this->EcatIncAxisFindRefWithZeroSignal(i);//增量式编码器只支持有挡块回零
                 else //不支持无挡块回零
-                    CreateError(ERR_RET_SYNC_ERR, WARNING_LEVEL, CLEAR_BY_MCP_RESET, 0, CHANNEL_ENGINE_INDEX, i);
+                    CreateError(ERR_RET_NOT_SUPPORT, WARNING_LEVEL, CLEAR_BY_MCP_RESET, 0, CHANNEL_ENGINE_INDEX, i);
             }
             else
             {  //绝对式编码器
@@ -11696,6 +11783,47 @@ int ChannelEngine::GetRemainDay()
     if (remainDay < 0)
         remainDay = 0;
     return remainDay;
+}
+
+/**
+ * @brief 激活PMC轴
+ * @param  phy_axis 物理轴号,从0开始
+ * @return
+ */
+bool ChannelEngine::SetPmcActive(uint64_t phy_axis)
+{
+    if (phy_axis >= max_axis_cnt) //最多支持64个轴
+        return false;
+    m_pmc_axis_active_mask |= (0x01 << phy_axis);
+    return true;
+}
+
+/**
+ * @brief 取消激活PMC轴
+ * @param  phy_axis 物理轴号,从0开始
+ * @return
+ */
+bool ChannelEngine::RstPmcActive(uint64_t phy_axis)
+{
+    if (phy_axis >= max_axis_cnt) //最多支持64个轴
+        return false;
+    m_pmc_axis_active_mask &= ~(0x01 << phy_axis);
+    return true;
+}
+
+/**
+ * @brief 获取PMC轴激活状态
+ * @param  phy_axis 物理轴号,从0开始
+ * @return
+ */
+bool ChannelEngine::GetPmcActive(uint64_t phy_axis)
+{
+    if (phy_axis >= max_axis_cnt) //最多支持64个轴
+        return false;
+    if ( m_pmc_axis_active_mask & (0x01 << phy_axis) )
+        return true;
+    else
+        return false;
 }
 
 

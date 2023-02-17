@@ -288,7 +288,6 @@ bool ChannelControl::Initialize(uint8_t chn_index, ChannelEngine *engine, HMICom
 
     this->m_mask_intp_axis = 0;
     this->m_n_intp_axis_count = 0;
-    this->m_mask_pmc_axis = 0;
 
     m_b_need_change_to_pause = false;
 
@@ -334,16 +333,9 @@ bool ChannelControl::Initialize(uint8_t chn_index, ChannelEngine *engine, HMICom
             }
         }
 
-        //初始化PMC轴信息
-        if(m_p_axis_config[phy_axis-1].axis_pmc > 0){
-            this->m_mask_pmc_axis |= (0x01<<i);
-            this->m_mask_intp_axis |= (0x01<<i);
-            this->m_n_intp_axis_count++;
-        }else{
-        //}else if(m_p_axis_config[phy_axis-1].axis_type != AXIS_SPINDLE){   //插补轴, 排除主轴
-            this->m_mask_intp_axis |= (0x01<<i);
-            this->m_n_intp_axis_count++;
-        }
+        //PMC轴不在这里激活，通过梯图来激活
+        this->m_mask_intp_axis |= (0x01<<i);
+        this->m_n_intp_axis_count++;
 
 #ifdef USES_SPEED_TORQUE_CTRL
         // 轴控制模式，初始化配置到当前状态
@@ -1599,6 +1591,11 @@ PmcAxisCtrl *ChannelControl::GetPmcAxisCtrl(){
     return m_p_channel_engine->GetChnPmcAxisCtrl(this->m_n_channel_index);
 }
 
+void ChannelControl::RefreshPmcAxis()
+{
+    m_p_compiler->RefreshPmcAxis();
+}
+
 /**
  * @brief 清除加工累计时间
  */
@@ -2320,7 +2317,7 @@ void ChannelControl::DoIdle(uint32_t count){
 void ChannelControl::RefreshAxisIntpPos(){
     int count = 0;
     for(int i = 0; i < m_p_channel_config->chn_axis_count && count < 8; i++){
-        if(this->m_mask_pmc_axis & (0x01<<i)){
+        if(g_ptr_chn_engine->GetPmcActive(this->GetPhyAxis(i))) {
             m_channel_rt_status.cur_pos_work.m_df_point[i] = m_channel_rt_status.cur_pos_machine.m_df_point[i];   //pmc轴的工件坐标同机械坐标
             m_channel_rt_status.tar_pos_work.m_df_point[i] = m_channel_rt_status.cur_pos_machine.m_df_point[i] + m_p_channel_engine->GetPmcAxisRemain(i);   //pmc轴余移动量从mi读取
             count++;
@@ -2445,7 +2442,6 @@ void ChannelControl::SendMonitorData(bool bAxis, bool btime){
 
     //处于刚攻状态需要读取刚攻误差
     if(m_p_g_reg->RGTAP == 1){
-        //m_channel_rt_status.tap_err_now = m_p_spindle->GetTapErr();
         m_p_mi_comm->ReadTapErr(&m_channel_rt_status.tap_err,
                                 &m_channel_rt_status.tap_err_now,
                                 1);
@@ -6848,7 +6844,6 @@ bool ChannelControl::ExecuteAuxMsg(RecordMsg *msg){
                 tmp->IncreaseExecStep(m_index);
 
             }else if(tmp->GetExecStep(m_index) == 3){
-
                 if(this->m_p_g_reg->FIN == 0 && !this->GetMFINSig(m_index)){
                     tmp->SetExecStep(m_index, 2);
                     break;
@@ -6977,8 +6972,7 @@ bool ChannelControl::ExecuteLineMsg(RecordMsg *msg, bool flag_block){
     for(int i=0; i<m_p_channel_config->chn_axis_count; i++){
         if((mask & (0x01<<i)) == 0)
             continue;
-
-        if( m_p_axis_config[i].axis_pmc > 0 && GetPmcAxisCtrl()[m_p_axis_config[i].axis_pmc-1].IsActive()){
+        if (g_ptr_chn_engine->GetPmcActive(GetPhyAxis(i))) {
             m_error_code = ERR_PMC_IVALID_USED;
             CreateError(ERR_PMC_IVALID_USED, ERROR_LEVEL, CLEAR_BY_MCP_RESET, 0, m_n_channel_index);
             return false;
@@ -7060,8 +7054,7 @@ bool ChannelControl::ExecuteRapidMsg(RecordMsg *msg, bool flag_block){
     for(int i=0; i<m_p_channel_config->chn_axis_count; i++){
         if((mask & (0x01<<i)) == 0)
             continue;
-
-        if( m_p_axis_config[i].axis_pmc > 0 && GetPmcAxisCtrl()[m_p_axis_config[i].axis_pmc-1].IsActive()){
+        if (g_ptr_chn_engine->GetPmcActive(GetPhyAxis(i))) {
             m_error_code = ERR_PMC_IVALID_USED;
             CreateError(ERR_PMC_IVALID_USED, ERROR_LEVEL, CLEAR_BY_MCP_RESET, 0, m_n_channel_index);
             return false;
@@ -7147,7 +7140,7 @@ bool ChannelControl::ExecuteArcMsg(RecordMsg *msg, bool flag_block){
         if((mask & (0x01<<i)) == 0)
             continue;
 
-        if( m_p_axis_config[i].axis_pmc > 0 && GetPmcAxisCtrl()[m_p_axis_config[i].axis_pmc-1].IsActive()){
+        if (g_ptr_chn_engine->GetPmcActive(GetPhyAxis(i))) {
             m_error_code = ERR_PMC_IVALID_USED;
             CreateError(ERR_PMC_IVALID_USED, ERROR_LEVEL, CLEAR_BY_MCP_RESET, 0, m_n_channel_index);
             return false;
@@ -10241,7 +10234,7 @@ bool ChannelControl::ExecuteTimeWaitMsg(RecordMsg *msg){
 
     m_n_run_thread_state = RUN;
 
-    //	printf("execute time wait msg, time delay : %llu ms\n", cur_time-timemsg->GetStartTime());
+    //printf("execute time wait msg, time delay : %llu ms\n", cur_time-timemsg->GetStartTime());
 
     return true;
 }
@@ -11124,8 +11117,10 @@ void ChannelControl::ManualMove(int8_t dir){
         n_inc_dis = GetCurManualStep()*1e4*dir;
     }
 
-    if(this->m_mask_pmc_axis & (0x01<<m_channel_status.cur_axis)){
-        this->ManualMovePmc(dir);
+    if(g_ptr_chn_engine->GetPmcActive(this->GetPhyAxis(m_channel_status.cur_axis))) {
+        //this->ManualMovePmc(dir);
+        m_error_code = ERR_PMC_IVALID_USED;
+        CreateError(ERR_PMC_IVALID_USED, ERROR_LEVEL, CLEAR_BY_MCP_RESET, 0, m_n_channel_index);
         return;
     }
 
@@ -11268,8 +11263,10 @@ int ChannelControl::GetCurManualStep(){
  */
 void ChannelControl::ManualMove(uint8_t axis, double pos, double vel, bool workcoord_flag){
 
-    if(this->m_mask_pmc_axis & (0x01<<axis)){
-        this->ManualMovePmc(axis, pos, vel);
+    if(g_ptr_chn_engine->GetPmcActive(this->GetPhyAxis(axis))) {
+        //this->ManualMovePmc(axis, pos, vel);
+        m_error_code = ERR_PMC_IVALID_USED;
+        CreateError(ERR_PMC_IVALID_USED, ERROR_LEVEL, CLEAR_BY_MCP_RESET, 0, m_n_channel_index);
         return;
     }
 
@@ -11327,7 +11324,9 @@ void ChannelControl::ManualMoveStop(){
 
     m_channel_status.cur_manual_move_dir = DIR_STOP;
 
-    if(this->m_mask_pmc_axis & (0x01<<m_channel_status.cur_axis)){   //PMC轴运动中
+    if(g_ptr_chn_engine->GetPmcActive(this->GetPhyAxis(m_channel_status.cur_axis))) {
+        //PMC轴的Stop动作没有屏蔽，如果屏蔽此处，担心某些特殊情况停不下来
+        std::cout << "ChannelControl::ManualMoveStop() pmc axis " << (int)m_channel_status.cur_axis << std::endl;
         this->ManualMovePmcStop();
         return;
     }
@@ -12424,7 +12423,7 @@ double ChannelControl::GetAxisCurMachPos(uint8_t axis_index){
     if(phy_axis == 0xFF)
         return pos;
 
-    if(this->m_p_axis_config[phy_axis].axis_pmc > 0){ //PMC轴需要从通道引擎获取位置
+    if (g_ptr_chn_engine->GetPmcActive(phy_axis)){
         return this->m_p_channel_engine->GetPhyAxisMachPosFeedback(phy_axis);
     }
 

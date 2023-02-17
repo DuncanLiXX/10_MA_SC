@@ -30,6 +30,9 @@
 
 #include "pmc_register.h"
 
+//#define TAP_TEST
+
+
 
 //Ç°ÖÃÉùÃ÷
 class ChannelControl;   //Í¨µÀ¿ØÖÆÀà
@@ -307,6 +310,11 @@ void SetMcArmComm(MCArmCommunication *comm){this->m_p_mc_arm_comm = comm;}   //É
 
     void ClearAxisRefEncoder(int axisID);                        // Çå³ı¾ø¶ÔÊ½Áãµã±àÂëÆ÷
 
+    bool SetPmcActive(uint64_t phy_axis);   //¼¤»îPMCÖá
+    bool RstPmcActive(uint64_t phy_axis);   //È¡Ïû¼¤»îPMCÖá
+    bool GetPmcActive(uint64_t phy_axis);   //PMCÖáÊÇ·ñ¼¤»î
+    bool GetAxisRetRefFlag(uint64_t phy_axis);  //ÊÇ·ñ½¨Á¢²Î¿¼µã
+
 private:	//Ë½ÓĞ³ÉÔ±º¯Êı
 	ChannelEngine();   //¹¹Ôìº¯Êı
 
@@ -435,6 +443,7 @@ private:	//Ë½ÓĞ³ÉÔ±º¯Êı
     void InitPhyAxisChn();		//³õÊ¼»¯ÎïÀíÖáÓëÍ¨µÀµÄÓ³Éä
     void SendMiPhyAxisEncoder();     //ÏòMI·¢ËÍÎïÀíÖáµÄ·´À¡
     void SetAxisRetRefFlag();    //ÏòMI·¢ËÍ¸÷Öá»Ø²Î¿¼µã½áÊø±êÖ¾
+
     // MLK:ËùÓĞÖáËø×¡
     // MLKI:¸÷ÖáËø×¡×´Ì¬
     void SetMLKState(uint8_t MLK, uint8_t MLKI); //ÏòMI·¢ËÍ¸÷Öá»úĞµËø×¡×´Ì¬
@@ -489,6 +498,8 @@ private:	//Ë½ÓĞ³ÉÔ±º¯Êı
 	void CheckTmpDir();    //²âÊÔtmpÄ¿Â¼ÊÇ·ñ´æÔÚ£¬²»´æÔÚÔò´´½¨
 
     int GetRemainDay();     //»ñÈ¡×¢²áÊ£ÓàÊ±¼ä
+
+
 
 
 
@@ -608,6 +619,7 @@ private:  //Ë½ÓĞ³ÉÔ±±äÁ¿
 	uint64_t m_n_runover_axis_mask;   //µ±Ç°ÔËĞĞÍê³ÉµÄÖáµÄmask
 	PmcAxisCtrl m_pmc_axis_ctrl[kMaxPmcAxisCtrlGroup];    //PMCÖá¿ØÖÆ
 	uint8_t m_n_cur_pmc_axis;       //µ±Ç°PMCÖá  0xFF±íÊ¾µ±Ç°Ã»ÓĞÑ¡ÔñPMCÖá
+    uint64_t m_pmc_axis_active_mask;    //ÒÑ¼¤»îµÄPMCÖá
 
 	uint16_t m_mask_import_param;    //µ¼Èë²ÎÊı±êÖ¾
 	
@@ -623,6 +635,10 @@ private:  //Ë½ÓĞ³ÉÔ±±äÁ¿
 
     uint8_t m_MLK_mask{0x00};       //»úĞµËø×¡Öámask
     double m_MLK_pos[kMaxAxisChn]; //»úĞµËø×¡×ø±êÖµ
+
+#ifdef TAP_TEST
+    FILE *m_fd;
+#endif
 };
 
 #endif /* INC_CHANNEL_CHANNEL_ENGINE_H_ */

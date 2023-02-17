@@ -88,6 +88,7 @@ void Parser::RefreshAxisName(){
 //	char names[10] = "XYZABCUVW";
 	SCChannelConfig *chn_config = g_ptr_parm_manager->GetChannelConfig(m_n_channel_index);
 	SCAxisConfig *axis_config = g_ptr_parm_manager->GetAxisConfig();    //物理轴配置
+    ChannelControl *channel_control = g_ptr_chn_engine->GetChnControl(m_n_channel_index);
 //	printf("Parser axis name:");
 	for(uint8_t i = 0; i < chn_config->chn_axis_count; i++){
 		phy_axis = chn_config->chn_axis_phy[i];
@@ -101,7 +102,7 @@ void Parser::RefreshAxisName(){
 //				printf("%c%hhu, ", m_axis_name[i], m_axis_name_ex[i]);
 			}
 
-			if(axis_config[phy_axis-1].axis_pmc){
+            if(g_ptr_chn_engine->GetPmcActive(phy_axis-1)) {
 				m_mask_pmc_axis |= (0x01<<i);   //标记pmc轴
 				m_n_pmc_axis_count++;
 			}
@@ -117,7 +118,12 @@ void Parser::RefreshAxisName(){
 void Parser::SetAxisNameEx(bool flag){
 
 	this->m_b_axis_name_ex = flag;
-	this->RefreshAxisName();
+    this->RefreshAxisName();
+}
+
+uint32_t Parser::GetPmcAxisMask()
+{
+    return m_mask_pmc_axis;
 }
 
 /**
@@ -3204,6 +3210,7 @@ bool Parser::GetCodeData(DataAddr addr, double &data){
 
 	uint32_t mask = (0x01<<addr);
 	MacroVarValue res;
+
     if(g_code->mask_value & mask){ //是否存在addr参数
 		if(g_code->mask_macro & mask){ //表达式
 			int exp_index = static_cast<int>(g_code->value[addr]);
@@ -3223,7 +3230,7 @@ bool Parser::GetCodeData(DataAddr addr, double &data){
 		}
 		g_code->mask_value &= (~mask);   //使用过后就复位此参数mask
 	}else{//无此地址字数据
-		//printf("Get %c data: no data\n", 'A'+addr);
+        //printf("Get %c data: no data\n", 'A'+addr);
 		//data = g_code->value[addr];
 		return false;
 	}
@@ -3352,10 +3359,11 @@ bool Parser::GetTargetPos(DPointChn &target, uint32_t &axis_mask, uint8_t *count
 //				if((this->m_mask_pmc_axis & tm) == 0 && this->m_p_compiler_status->mode.gmode[3] == G91_CMD){  //插补轴且增量编程模式
 //					*p_target_pos += *p_source_pos;
 //				}
-
 				axis_mask |= tm;  //设置轴mask
                 if(this->m_mask_pmc_axis & tm)
+                {
                     pmc_axis_count++;   //计数PMC轴
+                }
 
 			}else if(m_error_code == ERR_NONE){ //无此参数,使用起点相应轴位置
 				*p_target_pos = *p_source_pos;
@@ -3376,8 +3384,10 @@ bool Parser::GetTargetPos(DPointChn &target, uint32_t &axis_mask, uint8_t *count
 //				}
 
 				axis_mask |= tm;  //设置轴mask
-                if(this->m_mask_pmc_axis & tm)
+                if(this->m_mask_pmc_axis & tm) {
                     pmc_axis_count++;   //计数PMC轴
+                }
+
 			 }else if(m_error_code == ERR_NONE){ //无此参数,使用起点相应轴位置
 				*p_target_pos = *p_source_pos;
 			 }else{//异常

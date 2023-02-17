@@ -225,6 +225,8 @@ const int kGraphPosBufCount = 300;    //图形位置数据缓冲，用于仿真绘图的高频位置
 //轴名称允许字符
 const char strAxisNames[] = "XYZABCUVW";
 
+const int max_axis_cnt = 64;    //系统支持的最大轴数
+
 //spartan6程序加载管脚定义
 #define SP6_PROGRAM "963"   //906+57
 #define SP6_INIT "962"      //906+56;

@@ -85,6 +85,8 @@ public://公共接口
 
 	void SetAxisNameEx(bool flag);   //设置轴名称扩展下标使能
 
+    void RefreshPmcAxis();
+
 	void SetRestartPara(const uint64_t line, const uint8_t mode);    //设置加工复位参数
 
 	void SetSimulateMode(SimulateMode *mode){this->m_p_simulate_mode = mode;}   //设置仿真模式

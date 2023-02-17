@@ -8114,7 +8114,7 @@ void *ChannelEngine::RefreshMiStatusThread(void *args){
     }
 
     while(!g_sys_state.system_ready){  //等待系统启动
-        //		printf("ChannelEngine::RefreshMiStatusThread wait system ready[0x%hhx]!\n", g_sys_state.module_ready_mask);
+        //printf("ChannelEngine::RefreshMiStatusThread wait system ready[0x%hhx]!\n", g_sys_state.module_ready_mask);
         usleep(10000);
     }
 
@@ -8164,7 +8164,7 @@ bool ChannelEngine::RefreshMiStatusFun(){
 
         //读取欠压信号
         if(!m_b_power_off && g_sys_state.system_ready && this->m_p_mc_comm->ReadUnderVoltWarn()){
-            printf("OFF\n");
+        	printf("OFF\n");
             m_b_power_off = true;
 
             SaveDataPoweroff();
@@ -8971,15 +8971,15 @@ void ChannelEngine::ProcessPmcSignal(){
     {
         if (m_p_channel_control[i].IsMachinRunning())
         {
+            if (!m_fd)
+            {
+                m_fd = fopen(pathname.c_str(), "a+");
+                if (!m_fd)
+                    std::cout << ">>>>>> open err" << std::endl;
+            }
+
             if (m_fd && g_reg->RGTAP == 1)
             {
-                if (!m_fd)
-                {
-                    m_fd = fopen(pathname.c_str(), "a+");
-                    if (!m_fd)
-                        std::cout << ">>>>>> open err" << std::endl;
-                }
-
                 this->m_p_mi_comm->ReadPhyAxisCurFedBckPos(m_df_phy_axis_pos_feedback, m_df_phy_axis_pos_intp,m_df_phy_axis_speed_feedback,
                                                            m_df_phy_axis_torque_feedback, m_df_spd_angle, m_p_general_config->axis_count);
                 //Z轴数据

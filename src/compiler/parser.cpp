@@ -2021,8 +2021,6 @@ bool Parser::CreateAuxMsg(int *mcode, uint8_t total){
 	if(this->m_p_compiler_status->jump_flag)
 		new_msg->SetFlag(FLAG_JUMP, true);
 	m_p_parser_result->Append(new_msg);
-
-
 	ProcessLastBlockRec(new_msg);
 
 	return true;

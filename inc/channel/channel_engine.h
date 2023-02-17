@@ -30,8 +30,7 @@
 
 #include "pmc_register.h"
 
-//#define TAP_TEST
-
+#define TAP_TEST
 
 
 //前置声明
@@ -49,7 +48,6 @@ struct SCSystemConfig; //SC通道配置
 struct SCChannelConfig;  //SC通道配置
 struct SCAxisConfig;	//SC轴配置
 struct ParamUpdate;		//参数升级结构
-
 
 
 /**

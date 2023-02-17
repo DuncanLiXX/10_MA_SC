@@ -1825,9 +1825,7 @@ void HMICommunication::ProcessHmiShakehand(HMICmdRecvNode &cmd_node){
 		}else{
 			resp.cmd_extension = REFUSE;   //设备忙
 			resp.data_len = 0x00;
-
 		}
-
 
 		//发送回复
 		resp.frame_number = (cmd.frame_number | 0x8000);  //回复帧号

@@ -559,6 +559,8 @@ void PmcAxisCtrl::ExecuteCmd(){
     for(unsigned int i = 0; i < axis_list.size(); i++){
         SCAxisConfig *axis = axis_list.at(i);
         uint8_t cmd = m_pmc_cmd_buffer[this->m_n_buf_exec].cmd;   //指令
+
+        std::cout << "PmcAxisCtrl::ExecuteCmd" << (int)cmd << std::endl;
         if(cmd == 0x00 || cmd == 0x01 || cmd == 0x10 || cmd == 0x11){  //快速定位、切削进给
             uint32_t speed = m_pmc_cmd_buffer[this->m_n_buf_exec].speed;        //速度，单位转换
             int64_t dis = m_pmc_cmd_buffer[this->m_n_buf_exec].distance*1e4;       //移动距离，单位转换：um-->0.1nm
@@ -641,9 +643,12 @@ void PmcAxisCtrl::ExecuteCmd(){
                 break;
             }
             uint32_t ms = m_pmc_cmd_buffer[this->m_n_buf_exec].distance;
-            auto func = std::bind(&PmcAxisCtrl::Process04Cmd,
-                                  this, std::placeholders::_1);
-            std::async(std::launch::async, func, ms);
+            //auto func = std::bind(&PmcAxisCtrl::Process04Cmd,
+            //                      this, std::placeholders::_1);
+            //std::async(std::launch::async, func, ms);
+            std::thread wait(&PmcAxisCtrl::Process04Cmd, this, ms);
+
+            wait.detach();
             break; // 暂停指令只需执行一次即可
         }else if(cmd == 0x05){   //回参考点动作
             //this->m_p_channel_engine->ProcessPmcAxisFindRef(axis->axis_index);
@@ -761,5 +766,26 @@ void PmcAxisCtrl::ExecuteCmd(){
 
 void PmcAxisCtrl::Process04Cmd(uint32_t ms){
     std::this_thread::sleep_for(std::chrono::microseconds(ms * 1000));
-    this->ExecCmdOver(true);
+
+    bool bOver = false;
+    switch(this->m_n_group_index%4){
+    case 0:
+        if (this->m_p_f_reg->EACNT1)
+            bOver = true;
+        break;
+    case 1:
+        if (this->m_p_f_reg->EACNT2)
+            bOver = true;
+        break;
+    case 2:
+        if (this->m_p_f_reg->EACNT3)
+            bOver = true;
+        break;
+    case 3:
+        if (this->m_p_f_reg->EACNT4)
+            bOver = true;
+        break;
+    }
+    if (bOver)
+        this->ExecCmdOver(true);
 }

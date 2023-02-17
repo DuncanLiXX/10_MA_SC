@@ -469,6 +469,8 @@ enum ErrorType {
     ERR_TOOL_LIFE_OVER = 1660,          //刀具寿命到达
     ERR_TOOL_LIFE_COMING = 1661,        //刀具寿命即将到达     级别：警告
 
+    ERR_REACH_WORK_PIECE = 1662,        //已到达加工件数   级别：警告
+
     //主轴告警
     ERR_SPD_TAP_START_FAIL  = 1700, //刚性攻丝失败(没有进入位置模式)
     ERR_SPD_RUN_IN_TAP      = 1701, //刚攻状态发送速度指令

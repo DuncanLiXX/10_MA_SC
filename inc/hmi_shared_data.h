@@ -1290,8 +1290,12 @@ struct HmiAxisConfig{
     uint16_t post_filter_time_2;        //插补后滤波器二级时间常数  单位：ms
 
     uint8_t backlash_enable;					//反向间隙是否生效
-    int16_t backlash_forward;					//正向反向间隙，单位：um(deg)
-    int16_t backlash_negative;					//负向反向间隙，单位：um(deg)
+    //int16_t backlash_forward;					//正向反向间隙，单位：um(deg)
+    //int16_t backlash_negative;					//负向反向间隙，单位：um(deg)
+    double backlash_forward;					//正向反向间隙，单位：mm(deg)
+    double backlash_negative;                   //负向反向间隙，单位：mm(deg)
+    int16_t backlash_step;                      //反向间隙步长，单位：um(20-300)
+
 
     uint8_t  pc_type;							//螺补类型  0 单向螺补  1 双向螺补
     uint8_t  pc_enable;							//螺补是否生效

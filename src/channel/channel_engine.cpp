@@ -9155,10 +9155,11 @@ void ChannelEngine::ProcessPmcAxisCtrl(){
                     && eax[j]){
                 this->m_error_code = ERR_PMC_AXIS_CTRL_CHANGE;
                 CreateError(ERR_PMC_AXIS_CTRL_CHANGE, ERROR_LEVEL, CLEAR_BY_MCP_RESET, i*4+j+1, CHANNEL_ENGINE_INDEX);
+                memcpy(last_eax[i], eax, sizeof(eax));
                 return;
             }
 
-            bool ret = false;
+            bool ret = true;
             //0->1 选通PMC通道
             if (last_eax[i][j] == 0 && eax[j] == 1)
             {
@@ -9173,6 +9174,7 @@ void ChannelEngine::ProcessPmcAxisCtrl(){
             if(!ret){
                 this->m_error_code = ERR_PMC_AXIS_CTRL_CHANGE;
                 CreateError(ERR_PMC_AXIS_CTRL_CHANGE, ERROR_LEVEL, CLEAR_BY_MCP_RESET, i*4+j+1, CHANNEL_ENGINE_INDEX);
+                memcpy(last_eax[i], eax, sizeof(eax));
                 return;
             }
 

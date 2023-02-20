@@ -171,14 +171,18 @@ bool PmcAxisCtrl::CanActive()
     for (auto itr = axis_list.begin(); itr != axis_list.end(); ++itr)//未建立参考点
     {
         if (!m_p_channel_engine->GetAxisRetRefFlag((*itr)->axis_index))
+        {
             return false;
+        }
     }
 
     SCSystemConfig *sys = ParmManager::GetInstance()->GetSystemConfig();//不处于运行状态
     for (int i = 0; i < sys->chn_count; ++i)
     {
         if (m_p_channel_engine->GetChnControl()[i].IsMachinRunning())
+        {
             return false;
+        }
     }
 
     return true;

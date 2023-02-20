@@ -40,7 +40,7 @@ public:
     void RspMiReady();
 
     // 更新伺服状态
-    // force 0:一定会重发使能状态  1:需要更改使能时才往mi发命令
+    // force 0:需要更改使能时才往mi发命令 1:一定会重发使能状态
     void UpdateServoState(bool force = false);
 
     void InitRealPhyAxisMask();

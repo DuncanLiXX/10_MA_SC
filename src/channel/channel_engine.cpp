@@ -9158,20 +9158,19 @@ void ChannelEngine::ProcessPmcAxisCtrl(){
                 return;
             }
 
+            bool ret = false;
             //0->1 选通PMC通道
             if (last_eax[i][j] == 0 && eax[j] == 1)
             {
-                m_pmc_axis_ctrl[i*4+j].Active(true);
+                ret = m_pmc_axis_ctrl[i*4+j].Active(true);
             }
             //1->0 关闭PMC通道
             else if (last_eax[i][j] == 1 && eax[j] == 0)
             {
-                m_pmc_axis_ctrl[i*4+j].Active(false);
+                ret = m_pmc_axis_ctrl[i*4+j].Active(false);
             }
 
-
-            // 轴正在移动的状态下打开选通信号，报警
-            if(!m_pmc_axis_ctrl[i*4+j].Active(eax[j])){
+            if(!ret){
                 this->m_error_code = ERR_PMC_AXIS_CTRL_CHANGE;
                 CreateError(ERR_PMC_AXIS_CTRL_CHANGE, ERROR_LEVEL, CLEAR_BY_MCP_RESET, i*4+j+1, CHANNEL_ENGINE_INDEX);
                 return;

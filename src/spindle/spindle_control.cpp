@@ -778,6 +778,7 @@ void SpindleControl::SendSpdSpeedToMi()
     cmd.data.axis_index = phy_axis+1;
     cmd.data.data[0] = (int16_t)output;
     ScPrintf("send spindle DA output: %d\n",output);
+    printf("===== send spindle DA output: %d\n",output);
     mi->WriteCmd(cmd);
 }
 

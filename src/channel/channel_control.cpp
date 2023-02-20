@@ -4404,6 +4404,7 @@ int ChannelControl::Run(){
 					if(m_p_compiler->RunMessage()){
                         //printf("----------------------------> RunMessage\n");
 						if(!ExecuteMessage()){
+							//printf("----------------------------> ExecuteMessage\n");
 							if(m_error_code != ERR_NONE){
 
 								g_ptr_trace->PrintTrace(TRACE_WARNING, CHANNEL_CONTROL_SC, "execute message error2, %d\n", m_error_code);
@@ -5511,7 +5512,6 @@ bool ChannelControl::IsStepMode(){
  * @return true--成功  false--失败
  */
 bool ChannelControl::ExecuteMessage(){
-    //printf("enter ExecuteMessage\n");
     int count = m_p_output_msg_list->GetLength();
     if(count == 0){
     	return true;
@@ -8644,7 +8644,7 @@ bool ChannelControl::ExecuteSubProgCallMsg(RecordMsg *msg){
 
     if(mcode == 98){
 
-        if(flag){//反向引导
+    	if(flag){//反向引导
             m_n_subprog_count -= 1;
 
             if(sub_msg->GetSubProgType() == 2 ||
@@ -8694,9 +8694,9 @@ bool ChannelControl::ExecuteSubProgCallMsg(RecordMsg *msg){
             if(sub_msg->GetExecStep(0) > 0)
                 return false;
         }
-
     }
-
+    //printf("=====================================\n");
+    //m_n_run_thread_state = RUN;
     return true;
 }
 

@@ -37,6 +37,7 @@ public:
 
 	bool Active(bool flag);           //激活此PMC控制通道
 	bool IsActive(){return m_b_active;}     //是否已经激活
+    bool CanActive();                       //是否能够激活
 	bool SetGroupIndex(uint8_t index);      //设置轴控制寄存器组号
 	bool WriteCmd(PmcAxisCtrlCmd &cmd);     //写入PMC指令
 	void ExecCmdOver(bool res);        //指令执行完毕
@@ -47,8 +48,9 @@ public:
 	void SetBuffState(bool flag);    //设置缓冲状态   flag：true--缓冲有效   false--缓冲无效
 	void SetStepStop(bool flag);     //设置程序段停止
 
-	void Reset();          //执行复位动作
+    void Reset();                   //执行复位动作
 	void Pause(bool flag);			//轴暂停
+    std::vector<uint64_t> GetActivePmcAxis();
 
 private:
 	uint8_t GetRecvBufIndex();   //获得当前接收缓冲的索引号

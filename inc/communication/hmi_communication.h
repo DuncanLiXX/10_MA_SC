@@ -119,7 +119,6 @@ private:
 
 	int Clean();     //处理善后事宜
 
-
 	int ResendHmiCmd();                  //HMI命令重发函数
 	int ProcessHmiCmd();                 //处理接收的HMI命令
 	void RecvHmiCmd();					//接收HMI的UDP命令
@@ -191,8 +190,6 @@ private:
 
 	int UnpackConfigBakFile();      //解压处理配置打包文件
 
-
-
 private:
 	static HMICommunication *m_p_instance;    //单实例对象
 	static sem_t m_sem_udp_recv;     //接收到UDP命令的信号
@@ -251,8 +248,6 @@ private:
 	CPU_OCCUPY cpu_stat;
 	double cpu_percent;  //cpu占用率
 	double mem_percent;  //内存占用率
-
-
 };
 
 //用于文件另存为线程传递参数
@@ -261,7 +256,5 @@ struct SaveAsParam{
 	char path_old[kMaxPathLen];   //原文件绝对路径
 	char path_new[kMaxPathLen];   //新文件绝对路径
 };
-
-
 
 #endif /* HMICOMMUNICATION_H_ */

@@ -199,9 +199,9 @@ void SpindleControl::StartRigidTap(double feed)
     mi->SendTapAxisCmd(chn, phy_axis+1, z_axis+1);
     printf("SendTapAxisCmd spd=%d,z=%d\n",phy_axis+1,z_axis+1);
     //·¢ËÍ¹¥Ë¿²ÎÊý
-    mi->SendTapParams(chn,spindle->spd_sync_error_gain,
-                      spindle->spd_speed_feed_gain,
-                      spindle->spd_pos_ratio_gain);
+    mi->SendTapParams(chn,(uint32_t)(spindle->spd_sync_error_gain*1000),
+    		(uint32_t)(spindle->spd_speed_feed_gain*1000),
+			(uint32_t)(spindle->spd_pos_ratio_gain*1000));
     //·¢ËÍ¹¥Ë¿±ÈÀý
     mi->SendTapRatioCmd(chn, tap_ratio);
     //´ò¿ª¹¥Ë¿×´Ì¬
@@ -233,7 +233,7 @@ void SpindleControl::CancelRigidTap()
         return;
     ChannelEngine *engine = ChannelEngine::GetInstance();
     ChannelControl *control = engine->GetChnControl(0);
-    ChannelRealtimeStatus status = control->GetRealtimeStatus();
+	ChannelRealtimeStatus status = control->GetRealtimeStatus();
     SendMcRigidTapFlag(false);
     mi->SendTapStateCmd(chn, false);
     mi->SendTapRatioCmd(chn, 0);

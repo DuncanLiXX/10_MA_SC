@@ -174,7 +174,6 @@ struct SCAxisConfig{
 	uint8_t axis_linear_type;				//直线轴类型
 	uint8_t axis_pmc;						//是否PMC轴
 
-
 	double kp1;								//自动比例参数
 	double kp2;								//手动比例参数
 	double ki;								//积分参数
@@ -293,9 +292,9 @@ struct SCAxisConfig{
     uint16_t spd_gear_speed_high;               //齿轮高档位最高转速 rpm
     uint16_t spd_gear_switch_speed1;            //B方式档1->档2电机转速
     uint16_t spd_gear_switch_speed2;            //B方式档2->档3电机转速
-    uint32_t spd_sync_error_gain;               //同步误差增益  范围为0~1000，默认为200
-    uint32_t spd_speed_feed_gain;               //轴速度前馈增益 范围为0~100000，默认为60000
-    uint32_t spd_pos_ratio_gain;                //轴位置比例增益 范围0~200000，默认为100000
+    double spd_sync_error_gain;               //同步误差增益  范围为0~1000，默认为200
+    double spd_speed_feed_gain;               //轴速度前馈增益 范围为0~100000，默认为60000
+    double spd_pos_ratio_gain;                //轴位置比例增益 范围0~200000，默认为100000
     uint8_t spd_rtnt_rate_on;                   //攻丝回退期间，倍率是否有效 0：强制100%  1：有效
     uint8_t spd_rtnt_rate;                      //攻丝回退倍率 单位：1%
     int32_t spd_rtnt_distance;                 //攻丝回退的额外回退值 单位：um

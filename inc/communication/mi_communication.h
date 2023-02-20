@@ -71,9 +71,6 @@ class ChannelEngine;   //通道引擎
 #define SHARED_MEM_TAP_ERR_NOW(n) (SHARED_MEM_AXIS_MAC_POS_INTP(n)+0x1044)                  //第n个攻丝组的刚性攻丝误差
 #define SHARED_MEM_TAP_READ_OVER (SHARED_MEM_AXIS_STATUS_BASE+0x1240)                  //第n个攻丝组的刚性攻丝误差
 #define SHARED_MEM_TAP_WRITE_OVER (SHARED_MEM_AXIS_STATUS_BASE+0x1244)                  //第n个攻丝组的刚性攻丝误差
-
-
-
 //通道状态寄存器
 
 
@@ -197,9 +194,7 @@ public:
     void ReadTapErr(int32_t *err, int32_t *err_now,uint8_t cnt = 8);  // 读取特定攻丝组的攻丝误差(最大值)
 	bool ReadCmd(MiCmdFrame &data);    //读取指令
 	bool WriteCmd(MiCmdFrame &data, bool resend = false);   //发送指令
-
 	bool SendPmcCmd(PmcCmdFrame &data, bool resend = false);     //发送PMC轴运动指令
-
 	bool GetPmcRegByte(const int reg_type, uint8_t &value);  	//获取PMC单字节寄存器的值
 	bool SetPmcRegByte(const int reg_type, const uint8_t value);	//设置PMC单字节寄存器的值
 
@@ -282,9 +277,7 @@ public:
         MiCmdFrame cmd;
         memset(&cmd, 0x00, sizeof(cmd));
         cmd.data.cmd = CMD_MI_SET_PARAM;
-
         cmd.data.axis_index = axis;
-
         memcpy(cmd.data.data, &para_no, 4);
         memcpy(&cmd.data.data[2], &data, sizeof(T));
 

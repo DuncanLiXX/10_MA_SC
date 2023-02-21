@@ -272,7 +272,9 @@ void PmcAxisCtrl::Reset(){
             printf("EBSYA = %hhu, EBUFA = %hhu\n", this->m_p_f_reg->EBSYA, this->m_p_g_reg->EBUFA);
             this->m_p_f_reg->EACNT1 = 0;
             if(!m_b_buffer)//检查EMBUFg缓存无效信号
+            {
                 this->m_p_f_reg->EBSYA = m_p_f_reg->EBSYA?0:1;
+            }
 
             printf("PmcAxisCtrl::Reset over, EBSYA = %hhu, EBUFA = %hhu\n", this->m_p_f_reg->EBSYA, this->m_p_g_reg->EBUFA);
             break;
@@ -336,9 +338,6 @@ void PmcAxisCtrl::Reset(){
         }
 
     }
-
-
-
 }
 
 /**
@@ -563,6 +562,25 @@ void PmcAxisCtrl::ExecCmdOver(bool res){
 
 }
 
+void PmcAxisCtrl::SetErrState(int id)
+{
+    switch(this->m_n_group_index%4){
+    case 0:
+        this->m_p_f_reg->EBSYA = this->m_p_f_reg->EBSYA?0:1;
+        break;
+    case 1:
+        this->m_p_f_reg->EBSYA = this->m_p_f_reg->EBSYA?0:1;
+        break;
+    case 2:
+        this->m_p_f_reg->EBSYA = this->m_p_f_reg->EBSYA?0:1;
+        break;
+    case 3:
+        this->m_p_f_reg->EBSYA = this->m_p_f_reg->EBSYA?0:1;
+        break;
+    }
+    CreateError(ERR_PMC_IVALID_USED, ERROR_LEVEL, CLEAR_BY_MCP_RESET, id, CHANNEL_ENGINE_INDEX);
+}
+
 /**
  * @brief 执行当前执行缓冲中的指令
  */
@@ -665,7 +683,6 @@ void PmcAxisCtrl::ExecuteCmd(){
             break; // 暂停指令只需执行一次即可
         }else if(cmd == 0x05){   //回参考点动作
             //this->m_p_channel_engine->ProcessPmcAxisFindRef(axis->axis_index);
-
             uint32_t speed = axis->rapid_speed;        //速度，单位转换
             double cur_pos = m_p_channel_engine->GetPhyAxisMachPosFeedback(axis->axis_index);
             int64_t dis = (axis->axis_home_pos[0] - cur_pos)*1e7;       //移动距离，单位转换：mm-->0.1nm

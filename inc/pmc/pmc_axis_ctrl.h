@@ -40,7 +40,8 @@ public:
     bool CanActive();                       //是否能够激活
 	bool SetGroupIndex(uint8_t index);      //设置轴控制寄存器组号
 	bool WriteCmd(PmcAxisCtrlCmd &cmd);     //写入PMC指令
-	void ExecCmdOver(bool res);        //指令执行完毕
+    void ExecCmdOver(bool res);        //指令执行完毕
+    void SetErrState(int id);                //设置为错误状态
 
 	uint8_t GetCmdCount(){return this->m_n_cmd_count;}    //返回当前缓冲命令数
 	bool IsPaused(){return m_b_pause;}    //是否暂停状态
@@ -62,7 +63,7 @@ public:
 	bool m_b_active;           //本控制组是否激活
 	bool m_b_buffer;           //缓冲是否有效    true--有效   false--无效
 	bool m_b_step_stop;        //程序段停止有效   true--停止有效    false--停止无效
-	bool m_b_pause;				//暂停状态   true--暂停中     false--不在暂停状态
+    bool m_b_pause;				//暂停状态   true--暂停中     false--不在暂停状态
 	uint8_t m_n_cmd_count;      //缓冲中指令数量
 //	uint8_t m_n_buf_recv;       //输入缓冲区索引号
 //	uint8_t m_n_buf_wait;       //等待缓冲区索引号

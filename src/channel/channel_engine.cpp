@@ -9144,8 +9144,16 @@ void ChannelEngine::ProcessPmcAxisCtrl(){
         int32_t dis[4] = {greg->EIDA, greg->EIDB, greg->EIDC, greg->EIDD};
         uint16_t spd[4] = {greg->EIFA, greg->EIFB, greg->EIFC, greg->EIFD};
         for(uint8_t j = 0; j < 4; j++){
+
             if(m_pmc_axis_ctrl[i*4+j].axis_list.size() == 0)
+            {
+                if (ebuf[j] != ebsy[j])
+                {
+                    std::cout << "ebuf[j]: " << (int)ebuf[j] << " ebsy[j]: " << ebsy[j] << std::endl;
+                    m_pmc_axis_ctrl[4*i+j].SetErrState(i*4+j+1);
+                }
                 continue;
+            }
 
             // 当前存在待读入的命令
             // 避免选通信号一打开就直接执行命令，需要报警
@@ -9177,7 +9185,12 @@ void ChannelEngine::ProcessPmcAxisCtrl(){
             }
 
             if(!m_pmc_axis_ctrl[4*i+j].IsActive()){
-
+                if (ebuf[j] != ebsy[j])
+                {
+                    std::cout << "ebuf[j]: " << (int)ebuf[j] << " ebsy[j]: " << (int)ebsy[j] << std::endl;
+                    m_pmc_axis_ctrl[4*i+j].SetErrState(i*4+j+1);
+                    //CreateError(ERR_PMC_IVALID_USED, ERROR_LEVEL, CLEAR_BY_MCP_RESET, i*4+j+1, CHANNEL_ENGINE_INDEX);
+                }
                 continue;  //未激活
             }
 

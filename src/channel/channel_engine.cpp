@@ -8916,9 +8916,7 @@ void ChannelEngine::ProcessPmcSignal(){
         //第一参考点
         if(fabs(m_df_phy_axis_pos_feedback[i]-m_p_axis_config[i].axis_home_pos[0]) < prec){
             if(byte < 8)
-            {
                 freg->ZP11 |= (0x01<<bit);
-            }
             else
                 freg->ZP12 |= (0x01<<bit);
         }else{

@@ -17,6 +17,7 @@
 #include <functional>
 #include <future>
 #include "channel_control.h"
+#include "spindle_control.h"
 
 /**
  * @brief 构造函数
@@ -176,12 +177,20 @@ bool PmcAxisCtrl::CanActive()
         }
     }
 
-    SCSystemConfig *sys = ParmManager::GetInstance()->GetSystemConfig();//不处于运行状态
-    for (int i = 0; i < sys->chn_count; ++i)
+    for (int i = 0; i < m_p_channel_engine->GetChnCount(); ++i)
     {
-        if (m_p_channel_engine->GetChnControl()[i].IsMachinRunning())
+        if (m_p_channel_engine->GetChnControl()[i].IsMachinRunning())//运行状态不能激活
         {
             return false;
+        }
+
+        for (auto itr = axis_list.begin(); itr != axis_list.end(); ++itr)//主轴不能激活
+        {
+            if (m_p_channel_engine->GetChnControl()[i].GetSpdCtrl()->GetPhyAxis()
+                    == (*itr)->axis_index)
+            {
+                return false;
+            }
         }
     }
 

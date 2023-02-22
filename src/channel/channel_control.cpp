@@ -3923,7 +3923,7 @@ void ChannelControl::SetMachineState(uint8_t mach_state){
     SendMachineStateCmdToHmi(mach_state);   //通知HMI
     SendMachineStateToMc(mach_state);       //通知mc
 
-    printf("========== old_stat %d, cur_stat %d\n", old_stat, mach_state);
+    //printf("========== old_stat %d, cur_stat %d\n", old_stat, mach_state);
 
     // @modify zk 修改之后处理
     if(mach_state == MS_PAUSED){
@@ -4374,7 +4374,6 @@ int ChannelControl::Run(){
 				}
 			}else if(m_p_compiler->GetErrorCode() != ERR_NONE)
 			{
-                //printf("22222\n");
 				//编译器出错，但需要继续执行已编译指令
 				if(m_p_compiler->RunMessage()){
                     if(!ExecuteMessage()){
@@ -4406,6 +4405,7 @@ int ChannelControl::Run(){
 					if(m_p_compiler->RunMessage()){
                         //printf("----------------------------> RunMessage\n");
 						if(!ExecuteMessage()){
+							//printf("----------------------------> ExecuteMessage\n");
 							if(m_error_code != ERR_NONE){
 
 								g_ptr_trace->PrintTrace(TRACE_WARNING, CHANNEL_CONTROL_SC, "execute message error2, %d\n", m_error_code);
@@ -5515,7 +5515,6 @@ bool ChannelControl::IsStepMode(){
  * @return true--成功  false--失败
  */
 bool ChannelControl::ExecuteMessage(){
-    //printf("enter ExecuteMessage\n");
     int count = m_p_output_msg_list->GetLength();
     if(count == 0){
     	return true;
@@ -5912,7 +5911,8 @@ bool ChannelControl::ExecuteMessage(){
  * @return true--成功  false--失败，PL中缓冲已满或者等待运行到位
  */
 bool ChannelControl::ExecuteAuxMsg(RecordMsg *msg){
-    AuxMsg *tmp = (AuxMsg *)msg;
+
+	AuxMsg *tmp = (AuxMsg *)msg;
     uint8_t m_count = tmp->GetMCount();   //一行中M代码总数
     uint8_t m_index = 0;
     int mcode = 0;
@@ -5970,7 +5970,6 @@ bool ChannelControl::ExecuteAuxMsg(RecordMsg *msg){
             ResetMcLineNo();//复位MC模块当前行号
             this->SetCurLineNo(1);
 
-            printf("nnnnnnnnnn\n");
             this->m_p_f_reg->STL = 0;
             this->m_p_f_reg->SPL = 0;
             this->m_p_f_reg->OP = 0;
@@ -5993,7 +5992,6 @@ bool ChannelControl::ExecuteAuxMsg(RecordMsg *msg){
                 ResetMcLineNo();//复位MC模块当前行号
                 this->SetCurLineNo(1);
 
-                printf("kkkkkkkkkkkk\n");
                 this->m_p_f_reg->STL = 0;
                 this->m_p_f_reg->SPL = 0;
                 this->m_p_f_reg->OP = 0;
@@ -6174,7 +6172,6 @@ bool ChannelControl::ExecuteAuxMsg(RecordMsg *msg){
                         this->SetCurLineNo(1);
                     }
 
-                    printf("LLLLLLLLLLLLL\n");
                     this->m_p_f_reg->STL = 0;
                     this->m_p_f_reg->SPL = 0;
                     this->m_p_f_reg->OP = 0;
@@ -6717,7 +6714,6 @@ bool ChannelControl::ExecuteAuxMsg(RecordMsg *msg){
             ResetMcLineNo();//复位MC模块当前行号
             this->SetCurLineNo(1);
 
-            printf("xxxxxxxxxxxxxxx\n");
             this->m_p_f_reg->STL = 0;
             this->m_p_f_reg->SPL = 0;
             this->m_p_f_reg->OP = 0;
@@ -8651,7 +8647,7 @@ bool ChannelControl::ExecuteSubProgCallMsg(RecordMsg *msg){
 
     if(mcode == 98){
 
-        if(flag){//反向引导
+    	if(flag){//反向引导
             m_n_subprog_count -= 1;
 
             if(sub_msg->GetSubProgType() == 2 ||
@@ -8689,14 +8685,11 @@ bool ChannelControl::ExecuteSubProgCallMsg(RecordMsg *msg){
 
                 //设置当前行号
                 SetCurLineNo(msg->GetLineNo());
-                printf("11111\n");
                 this->m_p_f_reg->DM98 = 1;
                 sub_msg->IncreaseExecStep(0);
             }else if(sub_msg->GetExecStep(0) == 1){
-            	printf("22222\n");
             	sub_msg->IncreaseExecStep(0);
             }else if(sub_msg->GetExecStep(0) == 2){
-            	printf("33333\n");
             	this->m_p_f_reg->DM98 = 0;
                 sub_msg->SetExecStep(0, 0);
             }
@@ -8704,9 +8697,9 @@ bool ChannelControl::ExecuteSubProgCallMsg(RecordMsg *msg){
             if(sub_msg->GetExecStep(0) > 0)
                 return false;
         }
-
     }
-
+    //printf("=====================================\n");
+    //m_n_run_thread_state = RUN;
     return true;
 }
 
@@ -8935,10 +8928,10 @@ bool ChannelControl::ExecuteRestartOverMsg(RecordMsg *msg){
  * @return
  */
 bool ChannelControl::ExecuteMacroCmdMsg(RecordMsg *msg){
-    //	MacroCmdMsg *macro_msg = static_cast<MacroCmdMsg *>(msg);
-    //	printf("enter execute macro cmd message\n");
+    // MacroCmdMsg *macro_msg = static_cast<MacroCmdMsg *>(msg);
+    // printf("enter execute macro cmd message\n");
 
-    if(this->m_n_restart_mode != NOT_RESTART &&
+	if(this->m_n_restart_mode != NOT_RESTART &&
             msg->GetLineNo() < this->m_n_restart_line
         #ifdef USES_ADDITIONAL_PROGRAM
             && this->m_n_add_prog_type == NONE_ADD      //非附加程序运行状态
@@ -16678,7 +16671,6 @@ bool ChannelControl::EmergencyStop(){
 
     //OP信号复位
     this->m_p_f_reg->OP = 0;
-
     //this->m_p_f_reg->SPL = 0;
     this->m_p_f_reg->STL = 0;
 

@@ -30,7 +30,7 @@
 
 #include "pmc_register.h"
 
-#define TAP_TEST
+//#define TAP_TEST
 
 
 //前置声明
@@ -635,7 +635,7 @@ private:  //私有成员变量
     double m_MLK_pos[kMaxAxisChn]; //机械锁住坐标值
 
 #ifdef TAP_TEST
-    FILE *m_fd;
+    FILE *m_fd = nullptr;
 #endif
 };
 

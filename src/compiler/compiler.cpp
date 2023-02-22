@@ -2075,7 +2075,6 @@ bool Compiler::GetLineData() {
         m_p_cur_file_pos = m_p_file_map_info->ptr_map_file;
     }
 
-
     int index = 0;
     int last_char_type = 0;   //Ç°Ò»¸ö×Ö·ûÀàĞÍ£¬0±íÊ¾·Ç×Ö·ûÒ²·ÇÊı×Ö£¬1±íÊ¾×Ö·û£¬2±íÊ¾Êı×Ö
     bool bSpace = false;   //Ç°Ò»¸ö×Ö·ûÎª¿Õ°××Ö·û
@@ -2096,7 +2095,6 @@ REDO:
         if (m_ln_read_size >= m_p_file_map_info->ln_file_size - 1) {  //µ½´ïÎÄ¼şÎ²
             c_next = '\0';
         } else {
-            printf("enter getlinedata111113333\n");
             if (m_p_file_map_info->Swapdown()) {
                 bSwapdown = true;
                 c_next = *m_p_file_map_info->ptr_map_file;
@@ -2111,7 +2109,7 @@ REDO:
 
     this->m_lexer_result.line_no = this->m_ln_cur_line_no;   //¸üĞÂĞĞºÅ
     this->m_lexer_result.offset = this->m_ln_read_size;      //±£´æĞĞÊ×Æ«ÒÆÁ¿
-    //	printf("getline lineno = %lld\n", this->m_lexer_result.line_no);
+
     while (!m_b_eof && (c_cur != '\r' || c_next != '\n') &&//¼æÈİÁ½ÖÖ»»ĞĞ¸ñÊ½£¨\r\nºÍ\n£©
            (c_cur != '\n')) {
         if (!m_b_comment) {
@@ -2259,7 +2257,6 @@ REDO:
             res = false;
 #endif
         }
-
     }
 
     return res;
@@ -2355,12 +2352,14 @@ bool Compiler::RunMessage() {
                 res = RunAuxMsg(msg);
                 break;
             case SUBPROG_CALL_MSG:
-                res = this->RunSubProgCallMsg(msg);
-                compiler_lock = true;
+            	compiler_lock = true;
+            	res = this->RunSubProgCallMsg(msg);
+
                 break;
             case MACRO_PROG_CALL_MSG:
-                res = this->RunMacroProgCallMsg(msg);
-                compiler_lock = true;
+            	compiler_lock = true;
+            	res = this->RunMacroProgCallMsg(msg);
+
                 break;
             case COORD_MSG:
                 res = this->RunCoordMsg(msg);
@@ -2387,8 +2386,8 @@ bool Compiler::RunMessage() {
                 res = this->RunToolMsg(msg);
                 break;
             case LOOP_MSG:
-                res = this->RunLoopMsg(msg);
-                compiler_lock = true;
+            	compiler_lock = true;
+            	res = this->RunLoopMsg(msg);
                 break;
             case ARC_MSG:
                 res = this->RunArcMsg(msg);
@@ -2554,6 +2553,7 @@ bool Compiler::RunSubProgCallMsg(RecordMsg *msg) {
     SubProgCallMsg *sub_msg = (SubProgCallMsg *) msg;
 
     int sub_index = sub_msg->GetSubProgIndex();
+
 
     //²éÕÒ×Ó³ÌĞò
     int sub_loc = this->FindSubProgram(sub_index);
@@ -4474,9 +4474,11 @@ int Compiler::FindSubProgram(int sub_name, bool file_only) {   //²éÕÒ²¢´ò¿ª×Ó³ÌĞ
 
     //ÔÚ³ÌĞòÄÚ²¿ËÑË÷
     if(!file_only){
-        ListNode < SubProgOffset > *node = m_p_list_subprog->HeadNode();
+        ListNode <SubProgOffset> *node = m_p_list_subprog->HeadNode();
         while (node != nullptr) {
             if (node->data.sub_index == sub_name) {
+                printf("sub name: %d\n", sub_name);
+                compiler_lock = false;
                 return 1;
             }
             node = node->next;

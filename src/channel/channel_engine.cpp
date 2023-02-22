@@ -8082,7 +8082,7 @@ void ChannelEngine::Emergency(uint8_t chn){
         if(m_p_axis_config[i].axis_interface != VIRTUAL_AXIS && m_p_axis_config[i].axis_type != AXIS_SPINDLE	//非主轴并且非虚拟轴
                 && m_p_axis_config[i].feedback_mode == INCREMENTAL_ENCODER )
         {
-            //			m_n_mask_ret_ref_over &= ~(0x01<<i);   //
+            //m_n_mask_ret_ref_over &= ~(0x01<<i);   //
             this->SetRetRefFlag(i, false);
         }
     }

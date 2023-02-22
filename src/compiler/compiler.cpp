@@ -492,7 +492,7 @@ bool Compiler::ReloadScene(bool bRecPos){
     //	this->m_n_thread_state = scene.thread_state;
 
     // 要实现子程序调用 固定循环保持模态 注释这个条件  但不知道会不会引发其他问题
-    //if(this->m_n_sub_program != SUB_PROG) //子程序调用不用恢复模态
+    // if(this->m_n_sub_program != SUB_PROG) //子程序调用不用恢复模态
     this->m_compiler_status = scene.compiler_status;
 
     this->m_n_compile_state = scene.file_state;
@@ -505,7 +505,6 @@ bool Compiler::ReloadScene(bool bRecPos){
     this->m_p_last_move_msg = scene.p_last_move_msg;
     this->m_n_sub_call_times = scene.n_sub_call_times;
 
-
     *m_p_list_label = scene.list_label;
     *m_p_list_subprog = scene.list_subprog;
     *m_p_list_loop = scene.list_loop;
@@ -517,7 +516,6 @@ bool Compiler::ReloadScene(bool bRecPos){
     m_else_jump_stack_run = scene.else_jump_stack_run;
     m_b_else_jump = scene.else_jump;
     /***********************************/
-
 
 #ifdef USES_WOOD_MACHINE
     *m_p_list_spd_start = scene.list_spd_start;
@@ -1766,10 +1764,10 @@ bool Compiler::CompileOver() {
  */
 void Compiler::RecycleCompile() {
     printf("compiler::RecycleCompile\n");
-    //	if (m_n_sub_program != MAIN_PROG) {  //子程序可以循环调用
-    //		printf("sub prog return\n");
-    //		return;
-    //	}
+    //if (m_n_sub_program != MAIN_PROG) {  //子程序可以循环调用
+	//	printf("sub prog return\n");
+	//	return;
+    //}
     this->m_p_file_map_info->ResetFile();  //文件复位到头部
     this->m_compiler_status.mode.Reset();
     if (m_work_mode == AUTO_COMPILER && m_n_sub_program == MAIN_PROG)
@@ -2521,9 +2519,9 @@ bool Compiler::RunAuxMsg(RecordMsg *msg) {
             //		break;
         case 99:   //M99
             if (m_n_sub_program != MAIN_PROG) {
-                this->ReturnFromSubProg();   //子程序则返回调用程序
+            	this->ReturnFromSubProg();   //子程序则返回调用程序
             } else {
-                this->m_b_compile_over = true;
+            	this->m_b_compile_over = true;
             }
 
             printf("compiler run M99\n");
@@ -4273,7 +4271,7 @@ bool Compiler::DoParser() {
  * @return 0--调用失败   其它--调用成功
  */
 int Compiler::CallMarcoProgWithNoPara(int macro_index, bool flag){
-    //查找子程序
+	//查找子程序
     int macro_loc = this->FindSubProgram(macro_index);
 
     if (macro_loc == 0 || macro_loc == 1) {
@@ -4368,13 +4366,16 @@ void Compiler::GetMacroSubProgPath(int macro_group, int macro_index, bool abs_pa
  * @return  true--成功   false--失败
  */
 bool Compiler::ReturnFromSubProg() {
-    printf("Return from sub program, sub_prog=%d, call_time=%d\n", m_n_sub_program, m_n_sub_call_times);
+    //return true;
+	printf("Return from sub program, sub_prog=%d, call_time=%d\n", m_n_sub_program, m_n_sub_call_times);
     if (this->m_n_sub_program != MAIN_PROG) {
 
-        if(--m_n_sub_call_times > 0){  //多次调用未结束
-            this->RecycleCompile();
+    	if(--m_n_sub_call_times > 0){  //多次调用未结束
+    		this->RecycleCompile();
             return true;
         }
+
+    	printf("bbbbbbbbbbbbbb\n");
 
         //预扫描线程是否结束，未结束则退出
         void* thread_result;
@@ -4455,10 +4456,11 @@ bool Compiler::ReturnFromSubProg() {
         if(p != nullptr){
             strcpy(file, p+1);
         }
+
         SubProgReturnMsg *msg = new SubProgReturnMsg(file, ret_macro_prog);
         msg->SetLineNo(this->m_ln_cur_line_no-1);
         m_p_block_msg_list->Append(msg);
-        printf("@@@@@@insert block subprogret msg : %s, line=%lld\n", file, msg->GetLineNo());
+        printf("@@@@@@insert block subprogret msg : %s, line=%llu\n", file, this->m_ln_cur_line_no-1);
     }
 
     return true;

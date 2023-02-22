@@ -1147,7 +1147,7 @@ bool ChannelControl::GetSysVarValue(const int index, double&value){
     }else if(index >= 4001 && index <= 4030){   //上
 
     }else if(index >= 4201 && index <= 4230){    //当前G指令模态
-        value = this->m_channel_status.gmode[index-4201];  //模态为G指令乘以10，G43.4保存为434
+    	value = this->m_channel_status.gmode[index-4201];  //模态为G指令乘以10，G43.4保存为434
         value /= 10;
     }else if(index == 4307){   //当前D值
         value = this->m_channel_status.cur_d_code;
@@ -6663,9 +6663,11 @@ bool ChannelControl::ExecuteAuxMsg(RecordMsg *msg){
                 if(m_n_subprog_count > 0){
                     m_n_subprog_count--;
                     m_b_ret_from_macroprog = false;
+                    printf("1111111111111111111111\n");
                 }
                 else{
-                    m_p_compiler->RecycleCompile();   //主程序则循环调用
+                	printf("2222222222222222222222\n");
+                	m_p_compiler->RecycleCompile();   //主程序则循环调用
 
                     this->m_channel_status.workpiece_count++;  //工件计数加一
                     g_ptr_parm_manager->SetCurWorkPiece(m_n_channel_index, m_channel_status.workpiece_count);
@@ -9205,9 +9207,7 @@ bool ChannelControl::ExecutePolarIntpMsg(RecordMsg *msg){
         //			m_channel_rt_status.tar_pos_work = m_channel_mc_status.intp_tar_pos;
         this->RefreshAxisIntpPos();
 
-
         this->m_p_compiler->SetCurPos(this->m_channel_mc_status.intp_pos);   //同步编译器位置
-
 
         polarmsg->SetExecStep(3);  //跳转下一步
         return false;

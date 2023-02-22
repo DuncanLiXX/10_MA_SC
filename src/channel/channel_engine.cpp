@@ -4609,7 +4609,7 @@ void ChannelEngine::ProcessHmiSetPmcReg(HMICmdFrame &cmd){
                 printf("failed to set pmc register\n");
                 cmd.cmd_extension = FAILED;
             }
-            printf("set pmc reg: sec = %hu, index = %hu, value = %hhu\n", reg_sec, reg_index, reg_value8);
+            //printf("set pmc reg: sec = %hu, index = %hu, value = %hhu\n", reg_sec, reg_index, reg_value8);
         }else{
             bit_index = cmd.data[4];
             bit_count = cmd.data[5];
@@ -8979,7 +8979,7 @@ void ChannelEngine::ProcessPmcSignal(){
                     std::cout << ">>>>>> open err" << std::endl;
             }
 
-            if (m_fd && g_reg->RGTAP == 1)
+            if (m_fd && (g_reg->RGTAP == 1 or g_reg->RTNT))
             {
                 this->m_p_mi_comm->ReadPhyAxisCurFedBckPos(m_df_phy_axis_pos_feedback, m_df_phy_axis_pos_intp,m_df_phy_axis_speed_feedback,
                                                            m_df_phy_axis_torque_feedback, m_df_spd_angle, m_p_general_config->axis_count);

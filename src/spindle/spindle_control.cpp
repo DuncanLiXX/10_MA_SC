@@ -946,7 +946,8 @@ void SpindleControl::ProcessRTNT()
         mi->SendAxisEnableCmd(phy_axis+1, true);
     std::this_thread::sleep_for(std::chrono::microseconds(1000 * 1000));
     if(!motor_enable){
-        CreateError(ERR_SPD_RTNT_FAIL,
+        printf("===== motor_enable = false!!!\n");
+    	CreateError(ERR_SPD_RTNT_FAIL,
                     ERROR_LEVEL,
                     CLEAR_BY_MCP_RESET);
         return;
@@ -963,7 +964,8 @@ void SpindleControl::ProcessRTNT()
     running_rtnt = true;
     if(!control->CallMacroProgram(6100))
     {
-        CreateError(ERR_SPD_RTNT_FAIL,
+        printf("===== CallMacroProgram call failed!!!\n");
+    	CreateError(ERR_SPD_RTNT_FAIL,
                     ERROR_LEVEL,
                     CLEAR_BY_MCP_RESET);
         running_rtnt = false;

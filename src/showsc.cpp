@@ -283,6 +283,7 @@ void ShowSc::PrintMcStatus()
     AddPair(s,"cur_feed",mc_status->cur_feed);
     AddPair(s,"rated_feed",mc_status->rated_feed);
     AddPair(s,"axis_over_mask",mc_status->axis_over_mask);
+    AddPair(s,"manu_axis_over_mask",mc_status->manu_axis_over_mask);
 
     AddPair(s,"mode_g17",mc_status->mc_mode.bits.mode_g17);
     AddPair(s,"mode_g90",mc_status->mc_mode.bits.mode_g90);
@@ -563,6 +564,11 @@ void ShowSc::PrintChnConfig()
     AddPair(s,"chn_max_corner_acc",cfg->chn_max_corner_acc);
     AddPair(s,"chn_max_arc_acc",cfg->chn_max_arc_acc);
     AddPair(s,"chn_s_cut_filter_time",cfg->chn_s_cut_filter_time);
+
+    AddPair(s,"tap_max_acc",cfg->tap_max_acc);
+    AddPair(s,"tap_max_dec",cfg->tap_max_dec);
+    AddPair(s,"tap_plan_mode",cfg->tap_plan_mode);
+    AddPair(s,"tap_s_cut_filter_time",cfg->tap_s_cut_filter_time);
 
     AddPair(s,"default_plane",cfg->default_plane);
     AddPair(s,"default_cmd_mode",cfg->default_cmd_mode);

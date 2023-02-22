@@ -61,6 +61,7 @@ class ChannelEngine;
 #define MC_SOFT_LIMIT_MASK(n)   (MC_STATUS_DATA_BASE+0x180+0x04*n)    //第n通道的超软限位的轴Mask,n=0,1,只支持两通道，低16bit为负向限位，高16bit为正向限位
 #define MC_POS_ERR_MASK(n)      (MC_STATUS_DATA_BASE+0x188+0x02*n)    //第n通道的位置指令过大的轴mask,n=0,1,只支持两通道
 #define MC_ERR_FLAG(n) 		     (MC_STATUS_DATA_BASE+0x1A0+0x04*n) 		//MC通道错误标志段, n=0,1,只支持两通道
+#define MC_MANU_INTPOVER_MASK(n) (MC_STATUS_DATA_BASE+0x1A8+0x02*n) //第n通道的轴插补到位(手动)mask，n=0,1,只支持两通道
 //#define MC_BLOCK_RUN_OVER(n)   (MC_STATUS_DATA_BASE+0x150+0x04*n/2) //第n通道的分块插补到位标志
 //#define MC_STEP_RUN_OVER(n)	 (MC_STATUS_DATA_BASE+0x140+0x04*n/2)	//第n通道的单段插补到位标志
 #define MC_RUN_OVER_FLAG		 (MC_STATUS_DATA_BASE+0x140)	//低16bit为单段插补到位标志，高16bit为分块插补到位标志，都是一个bit表示一个通道，
@@ -168,6 +169,9 @@ public:
 
 	//更新指定通道轴到位标志
 	void ReadChnAxisRunoverMask(const uint8_t chn_index, uint32_t &axis_mask);
+
+    //更新指定通道轴到位(手动)标志
+    void ReadChnManuAxisRunoverMask(const uint8_t chn_index, uint32_t &axis_mask);
 
 	//读取通道当前坐标系
 	void ReadChnCurCoord(uint8_t chn_index, uint16_t &coord);

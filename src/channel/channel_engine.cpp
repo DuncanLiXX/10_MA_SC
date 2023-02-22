@@ -1558,6 +1558,7 @@ void ChannelEngine::InitMcParam(){
         this->m_p_channel_control[i].SetMcStepMode(false);
         this->m_p_channel_control[i].SetMcChnPlanMode();
         this->m_p_channel_control[i].SetMcChnPlanParam();
+        this->m_p_channel_control[i].SetMcTapPlanParam();
         this->m_p_channel_control[i].SetMcChnPlanFun();
         this->m_p_channel_control[i].SetMcChnCornerStopParam();
         this->m_p_channel_control[i].SetChnAxisName();
@@ -1767,17 +1768,24 @@ void ChannelEngine::ProcessMcCmdRsp(McCmdFrame &rsp){
  */
 void ChannelEngine::ProcessMcVersionCmd(McCmdFrame &cmd){
     //处理MC模块返回的版本信息
-    uint16_t data1 = cmd.data.data[0], data2 = cmd.data.data[1], data3 = cmd.data.data[2], data4 = cmd.data.data[3];
-    uint16_t data5 = cmd.data.data[4];
-    uint8_t v_a = (data2>>8)&0xFF;
-    uint8_t v_b = (data2)&0xFF;
-    uint8_t v_c = (data1>>8)&0xFF;
-    uint8_t v_d = (data1)&0xFF;
-    uint8_t v_h = (data5)/100;
-    uint8_t v_m = (data5)%100;
+    uint8_t main_ver = cmd.data.data[0] >> 8;
+    uint8_t child_ver = cmd.data.data[0] & 0xFF;
+    uint8_t branch_ver = cmd.data.data[1];
+    uint16_t year = cmd.data.data[2];
+    uint8_t month = cmd.data.data[3] >> 8;
+    uint8_t day = cmd.data.data[3];
+    uint8_t hour = cmd.data.data[4] >> 8;
+    uint8_t minute = cmd.data.data[4];
+    uint8_t second = cmd.data.data[5] >> 8;
 
-    sprintf(g_sys_info.sw_version_info.mc, "%c%hhu.%hhu.%hhu.%hu%04hu%02hu%02hu", v_a==0?'P':'V', v_b, v_c, v_d, data3, data4,
-            v_h,v_m);
+//    uint8_t v_a = (data2>>8)&0xFF;
+//    uint8_t v_b = (data2)&0xFF;
+//    uint8_t v_c = (data1>>8)&0xFF;
+//    uint8_t v_d = (data1)&0xFF;
+//    uint8_t v_h = (data5)/100;
+//    uint8_t v_m = (data5)%100;
+
+    sprintf(g_sys_info.sw_version_info.mc, "MC-%02hu.%02hu.%02hu", main_ver, child_ver, branch_ver);
 }
 
 /**

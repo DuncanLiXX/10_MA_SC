@@ -132,6 +132,7 @@ struct ChannelMcStatus{
     int32_t cur_feed;		//当前进给速度,um/s
     int32_t rated_feed;	//当前给定进给速度，um/s
 	uint32_t axis_over_mask;  	//轴插补到位mask
+    uint32_t manu_axis_over_mask; //轴插补到位(手动)mask
 	McModeStatus mc_mode;		  //MC当前模态
 	McErrorFlag mc_error;        //MC错误状态
 	uint32_t run_over;

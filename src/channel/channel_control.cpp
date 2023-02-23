@@ -2993,6 +2993,7 @@ bool ChannelControl::SetCurProcParamIndex(uint8_t index){
         //将新参数更新到MC
         this->SetMcChnPlanMode();
         this->SetMcChnPlanParam();
+        this->SetMcTapPlanParam();
         this->SetMcChnCornerStopParam();
         this->SetMcChnPlanFun();
 #ifdef USES_WOOD_MACHINE
@@ -4616,6 +4617,8 @@ bool ChannelControl::RefreshStatusFun(){
 
 			//更新当前轴到位标志
 			this->m_p_mc_comm->ReadChnAxisRunoverMask(m_n_channel_index, m_channel_mc_status.axis_over_mask);
+            //更新当前轴到位(手动)标志
+            this->m_p_mc_comm->ReadChnManuAxisRunoverMask(m_n_channel_index, m_channel_mc_status.manu_axis_over_mask);
 
 			//更新当前MC告警标志
 			this->m_p_mc_comm->ReadMcErrFlag(m_n_channel_index, m_channel_mc_status.mc_error.all);
@@ -12249,6 +12252,34 @@ void ChannelControl::SetMcChnPlanParam(){
 
     tmp = m_p_channel_config->chn_max_corner_acc/10;    //单位转换  mm/s^2-->10mm/s^2
     cmd.data.data[6] = tmp;
+
+
+    if(!this->m_b_mc_on_arm)
+        m_p_mc_comm->WriteCmd(cmd);
+    else
+        m_p_mc_arm_comm->WriteCmd(cmd);
+}
+
+/**
+ * @brief 设置刚性攻丝加工规划参数
+ */
+void ChannelControl::SetMcTapPlanParam(){
+    McCmdFrame cmd;
+    memset(&cmd, 0x00, sizeof(McCmdFrame));
+
+    cmd.data.channel_index = m_n_channel_index;
+
+    cmd.data.cmd = CMD_MC_SET_TAP_PLAN_PARAM;
+
+    uint16_t tmp = m_p_channel_config->tap_max_acc/10;    //单位转换  mm/s^2-->10mm/s^2
+    cmd.data.data[0] = tmp;
+    tmp = m_p_channel_config->tap_max_dec/10;    //单位转换  mm/s^2-->10mm/s^2
+    cmd.data.data[1] = tmp;
+
+    cmd.data.data[2] = m_p_channel_config->tap_plan_mode;
+
+    tmp = m_p_channel_config->tap_s_cut_filter_time;
+    cmd.data.data[3] = tmp;
 
 
     if(!this->m_b_mc_on_arm)

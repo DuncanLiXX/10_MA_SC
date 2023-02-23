@@ -554,7 +554,13 @@ bool ParmManager::ReadChnConfig(){
 			m_sc_channel_config[i].chn_max_dec = m_ini_chn->GetDoubleValueOrDefault(sname, "chn_max_dec", 2000);	//mm/s^2
 			m_sc_channel_config[i].chn_max_corner_acc = m_ini_chn->GetDoubleValueOrDefault(sname, "chn_max_corner_acc", 800);	//mm/s^2
 			m_sc_channel_config[i].chn_max_arc_acc = m_ini_chn->GetDoubleValueOrDefault(sname, "chn_max_arc_acc", 1000);	//mm/s^2
-			m_sc_channel_config[i].chn_s_cut_filter_time = m_ini_chn->GetIntValueOrDefault(sname, "chn_s_cut_filter_time", 5);	//ms
+            m_sc_channel_config[i].chn_s_cut_filter_time = m_ini_chn->GetIntValueOrDefault(sname, "chn_s_cut_filter_time", 5);	//ms
+
+            m_sc_channel_config[i].tap_max_acc = m_ini_chn->GetDoubleValueOrDefault(sname, "tap_max_acc", 2000);	//mm/s^2
+            m_sc_channel_config[i].tap_max_dec = m_ini_chn->GetDoubleValueOrDefault(sname, "tap_max_dec", 2000);	//mm/s^2
+            m_sc_channel_config[i].tap_plan_mode = m_ini_chn->GetIntValueOrDefault(sname, "tap_plan_mode", 1);
+            m_sc_channel_config[i].tap_s_cut_filter_time = m_ini_chn->GetIntValueOrDefault(sname, "tap_s_cut_filter_time", 5);	//ms
+
 
 			m_sc_channel_config[i].chn_spd_limit_on_axis = m_ini_chn->GetIntValueOrDefault(sname, "chn_spd_limit_on_axis", 1);
 			m_sc_channel_config[i].chn_spd_limit_on_acc = m_ini_chn->GetIntValueOrDefault(sname, "chn_spd_limit_on_acc", 1);
@@ -652,6 +658,11 @@ bool ParmManager::ReadChnConfig(){
 			m_sc_channel_config[i].chn_max_arc_acc = 1000;	//mm/s^2
 			m_sc_channel_config[i].chn_s_cut_filter_time = 5;	//ms
 
+            m_sc_channel_config[i].tap_max_acc = 2000;	//mm/s^2
+            m_sc_channel_config[i].tap_max_dec = 2000;	//mm/s^2
+            m_sc_channel_config[i].tap_plan_mode = 1;
+            m_sc_channel_config[i].tap_s_cut_filter_time = 5;
+
 			m_sc_channel_config[i].chn_spd_limit_on_axis = 1;
 			m_sc_channel_config[i].chn_spd_limit_on_acc = 1;
 			m_sc_channel_config[i].chn_spd_limit_on_curvity = 1;
@@ -745,6 +756,12 @@ bool ParmManager::ReadChnConfig(){
 			m_ini_chn->AddKeyValuePair(string("chn_max_corner_acc"), string("800"), ns);
 			m_ini_chn->AddKeyValuePair(string("chn_max_arc_acc"), string("1000"), ns);
 			m_ini_chn->AddKeyValuePair(string("chn_s_cut_filter_time"), string("5"), ns);
+
+            m_ini_chn->AddKeyValuePair(string("tap_max_acc"), string("2000"), ns);
+            m_ini_chn->AddKeyValuePair(string("tap_max_dec"), string("2000"), ns);
+            m_ini_chn->AddKeyValuePair(string("tap_plan_mode"), string("1"), ns);
+            m_ini_chn->AddKeyValuePair(string("tap_s_cut_filter_time"), string("5"), ns);
+
 
 			m_ini_chn->AddKeyValuePair(string("chn_spd_limit_on_axis"), string("1"), ns);
 			m_ini_chn->AddKeyValuePair(string("chn_spd_limit_on_acc"), string("1"), ns);
@@ -4273,6 +4290,23 @@ bool ParmManager::UpdateChnParam(uint8_t chn_index, uint32_t param_no, ParamValu
 		sprintf(kname, "auto_tool_measure");
 		m_ini_chn->SetIntValue(sname, kname, value.value_uint8);
 		break;
+    case 353:	//刚性攻丝最大加速度
+        sprintf(kname, "tap_max_acc");
+        m_ini_chn->SetDoubleValue(sname, kname, value.value_double);
+        break;
+    case 354:	//刚性攻丝最大减速度
+        sprintf(kname, "tap_max_dec");
+        m_ini_chn->SetDoubleValue(sname, kname, value.value_double);
+        break;
+    case 355:	//刚性攻丝规划模式
+        sprintf(kname, "tap_plan_mode");
+        m_ini_chn->SetIntValue(sname, kname, value.value_int8);
+        break;
+    case 356:	//刚性攻丝S型规划时间常数
+        sprintf(kname, "tap_s_cut_filter_time");
+        m_ini_chn->SetIntValue(sname, kname, value.value_uint16);
+        break;
+
 	case 400:	//加工代码跟踪
 		sprintf(kname, "gcode_trace");
 		m_ini_chn->SetIntValue(sname, kname, value.value_uint8);
@@ -5785,6 +5819,22 @@ void ParmManager::ActiveChnParam(uint8_t chn_index, uint32_t param_no, ParamValu
 	case 352:	//对刀仪自动对刀功能
 		this->m_sc_channel_config[chn_index].auto_tool_measure = value.value_uint8;
 		break;
+    case 353:	//刚性攻丝最大加速度
+        this->m_sc_channel_config[chn_index].tap_max_acc = value.value_double;
+        chn_engine->GetChnControl(chn_index)->SetMcTapPlanParam();
+        break;
+    case 354:	//刚性攻丝最大减速度
+        this->m_sc_channel_config[chn_index].tap_max_dec = value.value_double;
+        chn_engine->GetChnControl(chn_index)->SetMcTapPlanParam();
+        break;
+    case 355:	//刚性攻丝规划模式
+        this->m_sc_channel_config[chn_index].tap_plan_mode = value.value_int8;
+        chn_engine->GetChnControl(chn_index)->SetMcTapPlanParam();
+        break;
+    case 356:	//刚性攻丝S型规划时间常数
+        this->m_sc_channel_config[chn_index].tap_s_cut_filter_time = value.value_uint16;
+        chn_engine->GetChnControl(chn_index)->SetMcTapPlanParam();
+        break;
 	case 400:	//加工代码跟踪
 		this->m_sc_channel_config[chn_index].gcode_trace = value.value_uint8;
 		break;

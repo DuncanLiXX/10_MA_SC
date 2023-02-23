@@ -582,6 +582,16 @@ void MCCommunication::ReadChnAxisRunoverMask(const uint8_t chn_index, uint32_t &
 		WriteRegister(MC_STATUS_READ_REQ, 0);  //读取后置0
 }
 
+void MCCommunication::ReadChnManuAxisRunoverMask(const uint8_t chn_index, uint32_t &axis_mask){
+    if(++m_n_read_status_sem == 1)
+        WriteRegister(MC_STATUS_READ_REQ, 1);  //读取前置1
+
+    ReadRegister(MC_MANU_INTPOVER_MASK(chn_index), axis_mask);
+
+    if(--m_n_read_status_sem == 0)
+        WriteRegister(MC_STATUS_READ_REQ, 0);  //读取后置0
+}
+
 /**
  * @brief 读取分块插补到位标志
  * @param chn_index : 通道号, 范围[0,1]，只支持两通道

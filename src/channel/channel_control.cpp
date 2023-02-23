@@ -4450,7 +4450,7 @@ int ChannelControl::Run(){
 
 #ifndef USES_WOOD_MACHINE   //木工专机不检查M30结束指令
             if(m_p_compiler->IsEndOfFile() && !m_p_compiler->IsCompileOver() &&
-                    this->m_channel_status.chn_work_mode == AUTO_MODE && !m_p_compiler->IsPreScaning()
+                    this->m_channel_status.chn_work_mode == AUTO_MODE && !m_p_compiler->IsPreScaning() && !m_p_compiler->IsSubProgram()
         #ifdef USES_ADDITIONAL_PROGRAM
                     && this->m_n_add_prog_type != CONTINUE_START_ADD
         #endif
@@ -4458,9 +4458,8 @@ int ChannelControl::Run(){
             {
 
             	m_n_run_thread_state = ERROR;
-
                 g_ptr_trace->PrintLog(LOG_ALARM, "CHN[%d]语法错误，未找到结束指令！", m_n_channel_index);
-                CreateError(ERR_NO_END, ERROR_LEVEL, CLEAR_BY_MCP_RESET, 0, m_n_channel_index);
+                                                                                                                    CreateError(ERR_NO_END, ERROR_LEVEL, CLEAR_BY_MCP_RESET, 0, m_n_channel_index);
             }
 #endif
             pthread_mutex_unlock(&m_mutex_change_state);
@@ -8696,8 +8695,6 @@ bool ChannelControl::ExecuteSubProgCallMsg(RecordMsg *msg){
                 return false;
         }
     }
-    //printf("=====================================\n");
-    //m_n_run_thread_state = RUN;
     return true;
 }
 

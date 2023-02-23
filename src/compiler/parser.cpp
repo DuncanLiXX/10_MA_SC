@@ -3238,6 +3238,7 @@ bool Parser::GetCodeData(DataAddr addr, double &data){
 
 /**
  * @brief 获取自变量参数,除了G/L/N/O/P外其余字母均可做自变量，最多21个
+ * @modify zk 解除P变量限制
  * @param param[out] : 返回自变量值，动态分配内存，使用后需自行释放
  * @param pc[out] ： 返回自变量个数
  * @param mask[out] ： 返回自变量mask
@@ -3249,13 +3250,12 @@ void Parser::GetParaData(double **param, uint8_t &pc, uint32_t &mask){
 	if(param == nullptr)
 		return;
 
-
-	//先统计自变量数量
 	int dd = A_DATA;
 	uint32_t tm = g_code->mask_value;
 	while(tm != 0){
 		if(tm & 0x01){
-			if(dd != G_DATA && dd!= L_DATA && dd != N_DATA && dd != O_DATA && dd != P_DATA){
+			//先统计自变量数量  @modify zk 解除P变量限制
+			if(dd != G_DATA && dd!= L_DATA && dd != N_DATA && dd != O_DATA){
 				pc++;
 				mask |= (0x01<<dd);
 			}

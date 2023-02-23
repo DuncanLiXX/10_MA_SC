@@ -1783,7 +1783,6 @@ void Compiler::RecycleCompile() {
     m_b_comment = false;
     m_b_left = false;
     m_b_compile_over = false;
-
 }
 
 /**
@@ -2592,8 +2591,12 @@ bool Compiler::RunSubProgCallMsg(RecordMsg *msg) {
         this->m_ln_read_size = offset_sub;
         this->m_p_cur_file_pos = m_p_file_map_info->ptr_map_file
                 + m_ln_read_size - m_p_file_map_info->ln_map_start;
-
         this->m_ln_cur_line_no = node->data.line_no;
+
+        ln_read_size = this->m_ln_read_size;
+        p_cur_file_pos = this->m_p_cur_file_pos;
+        ln_cur_line_no = this->m_ln_cur_line_no;
+        isSubInSameFile = true;
     } else {
         sub_msg->GetSubProgName(filepath, true);
         sub_msg->SetLastProgFile(this->m_p_file_map_info->str_file_name+strlen(PATH_NC_FILE));  // ±£´æµ±Ç°ÎÄ¼þÂ·¾¶£¬Ïà¶ÔÂ·¾¶
@@ -2622,7 +2625,6 @@ bool Compiler::RunMacroProgCallMsg(RecordMsg *msg){
         return true;
 
     if (!this->m_b_prescan_over && m_thread_prescan != 0){ //Ô¤É¨ÃèÎ´½áÊø£¬ÔÝ²»Ö´ÐÐ
-
         return false;
     }
 
@@ -2683,8 +2685,13 @@ bool Compiler::RunMacroProgCallMsg(RecordMsg *msg){
         this->m_ln_read_size = offset_sub;
         this->m_p_cur_file_pos = m_p_file_map_info->ptr_map_file
                 + m_ln_read_size - m_p_file_map_info->ln_map_start;
-
         this->m_ln_cur_line_no = node->data.line_no;
+
+        ln_read_size = this->m_ln_read_size;
+        p_cur_file_pos = this->m_p_cur_file_pos;
+        ln_cur_line_no = this->m_ln_cur_line_no;
+        isSubInSameFile = true;
+
     } else {
         sub_msg->GetMacroProgName(filepath, true);
 
@@ -3962,7 +3969,7 @@ bool Compiler::RunLoopMsg(RecordMsg *msg) {
     // @zk ½«¹Ì¶¨Ñ­»·Ö¸ÁîÖ¸¶¨µÄ²ÎÊý ±£´æµ½¾Ö²¿±äÁ¿ (¸²¸Ç X_ Y_ Z_ ...)
     while(pm != 0){
         if(pm & 0x01){
-            pv->SetVarValue(kLoopParamToLocalVarIndex[i], *pp);
+        	pv->SetVarValue(kLoopParamToLocalVarIndex[i], *pp);
             pp++;
         }
         pm = pm>>1;
@@ -4368,8 +4375,23 @@ bool Compiler::ReturnFromSubProg() {
 
 	printf("Return from sub program, sub_prog=%d, call_time=%d\n", m_n_sub_program, m_n_sub_call_times);
     if (this->m_n_sub_program != MAIN_PROG) {
+    	// ¶à´Îµ÷ÓÃÎ´½áÊø
+    	// Èç¹ûÊÇÍ¬³ÌÐòÄÚ×Ó³ÌÐòµ÷ÓÃ¶à´Î  ²»ÄÜÑ­»·±àÒë  Òª¼ÇÂ¼½Úµã²¢»Ö¸´
 
-    	if(--m_n_sub_call_times > 0){  //¶à´Îµ÷ÓÃÎ´½áÊø
+    	if(--m_n_sub_call_times > 0){
+    		if(isSubInSameFile){
+    			if (!this->m_p_file_map_info->JumpTo(ln_read_size)) {   //Ó³ÉäÊ§°Ü
+					CreateErrorMsg(ERR_JUMP_SUB_PROG, m_ln_cur_line_no);  //×Ó³ÌÐòÌø×ªÊ§°Ü
+					return false;
+				}
+
+			    this->m_ln_read_size = ln_read_size;
+				this->m_p_cur_file_pos = p_cur_file_pos;
+				this->m_ln_cur_line_no = ln_cur_line_no;
+				printf("===== lino: %llu\n", ln_cur_line_no);
+    			return true;
+    		}
+
     		this->RecycleCompile();
             return true;
         }
@@ -4545,7 +4567,7 @@ int Compiler::FindSubProgram(int sub_name, bool file_only) {   //²éÕÒ²¢´ò¿ª×Ó³ÌÐ
         else
             sprintf(filepath, "%sO%d.NC", PATH_NC_SUB_FILE, sub_name);   //Æ´½ÓÎÄ¼þ¾ø¶ÔÂ·¾¶
 
-        if (access(filepath, F_OK) == 0) {	//´æÔÚ¶ÔÓ¦ÎÄ¼þ
+        if (access(filepath, F_OK) == 0){	//´æÔÚ¶ÔÓ¦ÎÄ¼þ
             return 7;
         }
     }
@@ -4917,7 +4939,7 @@ void Compiler::SaveLoopParam(LoopMsg *loop){
     //½«µ±Ç°²ÎÊýÐ´ÈëÈ«¾Ö±äÁ¿
     while(pm != 0){
         if(pm & 0x01){
-            pv->SetVarValue(kLoopParamToGlobalVarIndex[i], *pp);
+        	pv->SetVarValue(kLoopParamToGlobalVarIndex[i], *pp);
             pp++;
         }
         pm = pm>>1;

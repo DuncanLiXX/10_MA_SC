@@ -16639,8 +16639,8 @@ bool ChannelControl::EmergencyStop(){
     }
 
     // 取消刚性攻丝状态
-    if(m_p_spindle->isTapEnable())
-        m_p_spindle->CancelRigidTap();
+    //if(m_p_spindle->isTapEnable())
+        //m_p_spindle->CancelRigidTap();
 
     //	if(this->m_n_M29_flag){  //主轴恢复速度控制
     //		this->ProcessM29Reset();

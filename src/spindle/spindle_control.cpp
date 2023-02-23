@@ -128,6 +128,9 @@ void SpindleControl::SetMode(Mode mode)
 {
     if(!spindle)
         return;
+
+    printf("==========  set spindle mode: %d\n", mode);
+
     if(mode == Speed)
         mi->SendAxisCtrlModeSwitchCmd(phy_axis+1, 2);
     else if(mode == Position)
@@ -166,6 +169,9 @@ void SpindleControl::StartRigidTap(double feed)
     if(!spindle || spindle->axis_interface == 0)
         return;
     // 如果不在位置模式，报警：速度模式下不能刚性攻丝
+
+    printf("========== start gigid tap: %lf\n", feed);
+
     if(mode != Position){
         CreateError(ERR_SPD_TAP_START_FAIL,
                     ERROR_LEVEL,
@@ -231,6 +237,9 @@ void SpindleControl::CancelRigidTap()
 {
     if(!spindle || spindle->axis_interface == 0)
         return;
+
+    printf("========== CancelRigidTap \n");
+
     ChannelEngine *engine = ChannelEngine::GetInstance();
     ChannelControl *control = engine->GetChnControl(0);
 	ChannelRealtimeStatus status = control->GetRealtimeStatus();
@@ -260,6 +269,8 @@ void SpindleControl::InputSSTP(bool _SSTP)
 {
     if(!spindle)
         return;
+
+    printf("SpindleControl::InputSSTP _SSTP = %d\n", _SSTP);
     ScPrintf("SpindleControl::InputSSTP _SSTP = %d\n", _SSTP);
 
     this->_SSTP = _SSTP;
@@ -279,6 +290,7 @@ void SpindleControl::InputSOR(bool SOR)
 {
     if(!spindle)
         return;
+    printf("InputSOR:SOR = %d\n",SOR);
     ScPrintf("InputSOR:SOR = %d\n",SOR);
     this->SOR = SOR;
     // 修改主轴使能状态
@@ -291,6 +303,7 @@ void SpindleControl::InputSOV(uint8_t SOV)
 {
     if(!spindle)
         return;
+    printf("SpindleControl::InputSOV SOV = %d\n", SOV);
     ScPrintf("SpindleControl::InputSOV SOV = %d\n", SOV);
 
     // 位置模式下不能修改主轴倍率
@@ -304,6 +317,7 @@ void SpindleControl::InputRI(uint16_t RI)
 {
     if(!spindle)
         return;
+    printf("SpindleControl::InputRI RI = %d\n", RI);
     ScPrintf("SpindleControl::InputRI RI = %d\n", RI);
 
     this->RI = RI;
@@ -317,6 +331,7 @@ void SpindleControl::InputSGN(bool SGN)
 {
     if(!spindle)
         return;
+    printf("SpindleControl::InputSGN SGN = %d\n", SGN);
     ScPrintf("SpindleControl::InputSGN SGN = %d\n", SGN);
 
     this->SGN = SGN;
@@ -330,6 +345,7 @@ void SpindleControl::InputSSIN(bool SSIN)
 {
     if(!spindle)
         return;
+    printf("SpindleControl::InputSSIN SSIN = %d\n", SSIN);
     ScPrintf("SpindleControl::InputSSIN SSIN = %d\n", SSIN);
 
     this->SSIN = SSIN;
@@ -340,6 +356,7 @@ void SpindleControl::InputSIND(bool SIND)
 {
     if(!spindle)
         return;
+    printf("SpindleControl::InputSIND SIND = %d\n", SIND);
     ScPrintf("SpindleControl::InputSIND SIND = %d\n", SIND);
 
     this->SIND = SIND;
@@ -351,6 +368,7 @@ void SpindleControl::InputORCMA(bool ORCMA)
     static std::future<void> ans;
     if(!spindle)
         return;
+    printf("SpindleControl::InputORCMA ORCMA = %d\n", ORCMA);
     ScPrintf("SpindleControl::InputORCMA ORCMA = %d\n", ORCMA);
     auto func = std::bind(&SpindleControl::ProcessORCMA,
                           this, std::placeholders::_1);
@@ -361,6 +379,7 @@ void SpindleControl::InputRGTAP(bool RGTAP)
 {
     if(!spindle)
         return;
+    printf("SpindleControl::InputRGTAP RGTAP = %d\n", RGTAP);
     ScPrintf("SpindleControl::InputRGTAP RGTAP = %d\n", RGTAP);
 
     this->RGTAP = RGTAP;
@@ -374,6 +393,7 @@ void SpindleControl::InputRGMD(bool RGMD)
 {
     if(!spindle)
         return;
+    printf("SpindleControl::InputRGMD RGMD = %d\n", RGMD);
     ScPrintf("SpindleControl::InputRGMD RGMD = %d\n", RGMD);
 
     this->RGMD = RGMD;
@@ -390,6 +410,7 @@ void SpindleControl::InputRTNT(bool RTNT)
     this->RTNT = RTNT;
     if(!RTNT || !spindle)
         return;
+    printf("SpindleControl::InputRTNT RTNT = %d\n", RTNT);
     ScPrintf("SpindleControl::InputRTNT RTNT = %d\n", RTNT);
 
     ChannelEngine *engine = ChannelEngine::GetInstance();
@@ -421,6 +442,7 @@ void SpindleControl::RspORCMA(bool success)
 {
     if(!spindle)
         return;
+    printf("SpindleControl::RspORCMA : success = %d\n",success);
     ScPrintf("SpindleControl::RspORCMA : success = %d\n",success);
     // 定位成功，将ORAR置为1，通知PMC定位动作完成
     if(success && ORCMA){

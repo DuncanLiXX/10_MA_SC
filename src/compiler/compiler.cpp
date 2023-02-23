@@ -2584,7 +2584,7 @@ bool Compiler::RunSubProgCallMsg(RecordMsg *msg) {
         }
 
         if (!this->m_p_file_map_info->JumpTo(offset_sub)) {   //映射失败
-            CreateErrorMsg(ERR_JUMP_SUB_PROG, msg->GetLineNo());  //子程序跳转失败
+        	CreateErrorMsg(ERR_JUMP_SUB_PROG, msg->GetLineNo());  //子程序跳转失败
             return false;
         }
 
@@ -2598,6 +2598,9 @@ bool Compiler::RunSubProgCallMsg(RecordMsg *msg) {
         ln_cur_line_no = this->m_ln_cur_line_no;
         isSubInSameFile = true;
     } else {
+
+    	isSubInSameFile = false;
+
         sub_msg->GetSubProgName(filepath, true);
         sub_msg->SetLastProgFile(this->m_p_file_map_info->str_file_name+strlen(PATH_NC_FILE));  // 保存当前文件路径，相对路径
         //独立子文件打开
@@ -2678,7 +2681,7 @@ bool Compiler::RunMacroProgCallMsg(RecordMsg *msg){
         }
 
         if (!this->m_p_file_map_info->JumpTo(offset_sub)) {   //映射失败
-            CreateErrorMsg(ERR_JUMP_SUB_PROG, msg->GetLineNo());  //子程序跳转失败
+        	CreateErrorMsg(ERR_JUMP_SUB_PROG, msg->GetLineNo());  //子程序跳转失败
             return false;
         }
 
@@ -2693,6 +2696,9 @@ bool Compiler::RunMacroProgCallMsg(RecordMsg *msg){
         isSubInSameFile = true;
 
     } else {
+
+    	isSubInSameFile = false;
+
         sub_msg->GetMacroProgName(filepath, true);
 
         sub_msg->SetLastProgFile(this->m_p_file_map_info->str_file_name+strlen(PATH_NC_FILE));  //保存当前文件路径, 相对路径，发送给HMI
@@ -4379,16 +4385,16 @@ bool Compiler::ReturnFromSubProg() {
     	// 如果是同程序内子程序调用多次  不能循环编译  要记录节点并恢复
 
     	if(--m_n_sub_call_times > 0){
+    		// 子程序在同一个文件里 还有些情况处理不了
     		if(isSubInSameFile){
     			if (!this->m_p_file_map_info->JumpTo(ln_read_size)) {   //映射失败
-					CreateErrorMsg(ERR_JUMP_SUB_PROG, m_ln_cur_line_no);  //子程序跳转失败
+    				CreateErrorMsg(ERR_JUMP_SUB_PROG, m_ln_cur_line_no);  //子程序跳转失败
 					return false;
 				}
 
 			    this->m_ln_read_size = ln_read_size;
 				this->m_p_cur_file_pos = p_cur_file_pos;
 				this->m_ln_cur_line_no = ln_cur_line_no;
-				printf("===== lino: %llu\n", ln_cur_line_no);
     			return true;
     		}
 

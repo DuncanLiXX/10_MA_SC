@@ -102,6 +102,9 @@ public://公共接口
     // file_only:只搜索实际文件
     int FindSubProgram(int sub_name, bool file_only = false);   //查找并打开子程序
 
+
+    int getSubCallTimes(){ return m_n_sub_call_times;}
+
 #ifdef USES_WOOD_MACHINE
 	bool FindPreStartSpdCmd(uint64_t line_min , uint64_t line_max, SpindleStartOffset &spd_cmd);   //查找是否存在可预启动的主轴指令
 #endif

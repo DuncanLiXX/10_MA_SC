@@ -2663,9 +2663,9 @@ bool Compiler::RunMacroProgCallMsg(RecordMsg *msg){
 
     //打开子程序文件
     this->m_n_sub_program = MACRO_PROG;
-    char filepath[kMaxPathLen] = { 0 };   //文件路径
+    char filepath[kMaxPathLen] = {0};   //文件路径
     if (macro_loc == 1) {   //同文件子程序
-        ListNode < SubProgOffset > *node = m_p_list_subprog->HeadNode();
+        ListNode <SubProgOffset> *node = m_p_list_subprog->HeadNode();
         uint64_t offset_sub = 0;
         while (node != nullptr) {
             if (node->data.sub_index == macro_index) {
@@ -2693,7 +2693,6 @@ bool Compiler::RunMacroProgCallMsg(RecordMsg *msg){
         if (!this->OpenFile(filepath, (bool)m_n_sub_program)){ //尝试打开nc文件失败
             return false;
         }
-
     }
 
     if (m_work_mode == AUTO_COMPILER)
@@ -4366,7 +4365,7 @@ void Compiler::GetMacroSubProgPath(int macro_group, int macro_index, bool abs_pa
  * @return  true--成功   false--失败
  */
 bool Compiler::ReturnFromSubProg() {
-    //return true;
+
 	printf("Return from sub program, sub_prog=%d, call_time=%d\n", m_n_sub_program, m_n_sub_call_times);
     if (this->m_n_sub_program != MAIN_PROG) {
 
@@ -4374,8 +4373,6 @@ bool Compiler::ReturnFromSubProg() {
     		this->RecycleCompile();
             return true;
         }
-
-    	printf("bbbbbbbbbbbbbb\n");
 
         //预扫描线程是否结束，未结束则退出
         void* thread_result;

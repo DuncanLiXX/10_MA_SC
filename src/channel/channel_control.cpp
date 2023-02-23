@@ -6658,17 +6658,16 @@ bool ChannelControl::ExecuteAuxMsg(RecordMsg *msg){
             tmp->SetExecStep(m_index, 0xFF);    //置位结束状态
             break;
         case 99:   //M99
-            if(tmp->GetExecStep(m_index) == 0){
+        	if(tmp->GetExecStep(m_index) == 0){
                 printf("execute M99, subprog_count = %hhu\n", m_n_subprog_count);
                 if(m_n_subprog_count > 0){
-                    m_n_subprog_count--;
+                    //printf("11111111111111\n");
+                	if(m_p_compiler->getSubCallTimes() == 0) m_n_subprog_count--;
                     m_b_ret_from_macroprog = false;
-                    printf("1111111111111111111111\n");
                 }
                 else{
-                	printf("2222222222222222222222\n");
+                	//printf("22222222222222\n");
                 	m_p_compiler->RecycleCompile();   //主程序则循环调用
-
                     this->m_channel_status.workpiece_count++;  //工件计数加一
                     g_ptr_parm_manager->SetCurWorkPiece(m_n_channel_index, m_channel_status.workpiece_count);
                     this->m_channel_status.workpiece_count_total++;

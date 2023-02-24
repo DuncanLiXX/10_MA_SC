@@ -541,6 +541,7 @@ TraceMesSend::~TraceMesSend()
 void TraceMesSend::on_connect(int)
 {
     subscribe(nullptr, SwitchTopic.c_str());
+    subscribe(nullptr, MarcoSelect.c_str());
     return;
 }
 
@@ -553,6 +554,10 @@ void TraceMesSend::on_message(const mosquitto_message * msg)
     {
         PrintType pt = (PrintType)(atoi(content.c_str()));
         Singleton<ShowSc>::instance().SetPrintType(pt);
+    }
+    else if (strTopic == MarcoSelect)
+    {
+        Singleton<ShowSc>::instance().MarcoSelect(content);
     }
 }
 

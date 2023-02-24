@@ -123,6 +123,7 @@ public:
 
 	void ChangeChnProcParamIndex(uint8_t chn_index, uint8_t proc_index);     //更改当前工艺相关参数
 
+    void UpdateMiLimit(uint8_t axis, uint8_t EXLM, uint8_t RLSOT);
 private:
 	ParmManager();             //构造函数
 	bool ReadSysConfig();    	//读取系统配置

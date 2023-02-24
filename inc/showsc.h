@@ -1,6 +1,8 @@
 #ifndef SHOWSC_H
 #define SHOWSC_H
 
+#include <set>
+#include <mutex>
 #include "singleton.h"
 #include "global_include.h"
 
@@ -26,6 +28,7 @@ struct ChannelMcStatus;
 void ScPrintf(const char * fmt,...);
 
 const std::string SwitchTopic = "/sc/switch";  // 打印类型选择
+const std::string MarcoSelect = "/sc/marco/select"; //宏选择
 const std::string PrintTopic = "/sc/print";    // 打印输出
 
 class ShowSc{
@@ -38,8 +41,9 @@ public:
     void SetInterval(int ms){interval = ms;}
 
     // 设置需要打印的数据类型，打印线程会根据类型来打印
-    void SetPrintType(PrintType type){print_type = type;}
+    void SetPrintType(PrintType type);
     PrintType GetPrintType(){return print_type;}
+    void MarcoSelect(const std::string &content);    // 打印宏选择
 
     // 添加各部件
     void AddComponent(ChannelStatusCollect *p){chn_status = p;}
@@ -108,6 +112,7 @@ private:
     void PrintGRegState();  // 打印G寄存器
     void PrintPmcAxisCtrl();    // 打印PMC轴信息
     void PrintSyncAxisCtrl();   // 打印同步轴信息
+    void PrintMarcoValue();     // 打印宏变量
 
 private:
     PrintType print_type{TypePrintOutput};
@@ -136,6 +141,8 @@ private:
     bool exit_flag{false};
     int msg_new_count{0};
     int msg_delete_count{0};
+    std::set<int> m_marco_select;
+    std::mutex m_marco_mutex;
 };
 
 #endif

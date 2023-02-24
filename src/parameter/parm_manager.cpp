@@ -6834,6 +6834,28 @@ void ParmManager::ChangeChnProcParamIndex(uint8_t chn_index, uint8_t proc_index)
 
 }
 
+void ParmManager::UpdateMiLimit(uint8_t axis, uint8_t EXLM, uint8_t RLSOT)
+{
+    if (RLSOT)
+    {
+        g_ptr_parm_manager->UpdateMiParam(axis + 1, 1502, 0);
+        g_ptr_parm_manager->UpdateMiParam(axis + 1, 1505, 0);
+    }
+    else
+    {
+        if (!EXLM)
+        {//1软限位生效
+            g_ptr_parm_manager->UpdateMiParam(axis + 1, 1502, 1);
+            g_ptr_parm_manager->UpdateMiParam(axis + 1, 1505, 0);
+        }
+        else
+        {//2软限位生效
+            g_ptr_parm_manager->UpdateMiParam(axis + 1, 1502, 0);
+            g_ptr_parm_manager->UpdateMiParam(axis + 1, 1505, 1);
+        }
+    }
+}
+
 /**
  * @brief 获取PMC轴个数
  * @return pmc轴的个数

@@ -1311,6 +1311,14 @@ void ChannelEngine::InitPoweroffHandler(){
     printf("########succeed to init power off \n");
 }
 
+void ChannelEngine::UpdateMiLimitValue(uint8_t EXLM, uint8_t RLSOT)
+{
+    std::cout << "ChannelEngine::UpdateMiLimitValue" << std::endl;
+    for(int i=0; i<m_p_channel_config->chn_axis_count; i++){
+        g_ptr_parm_manager->UpdateMiLimit(i, EXLM, RLSOT);
+    }
+}
+
 /**
  * @brief 掉电处理函数
  * @param signo
@@ -1852,6 +1860,7 @@ void ChannelEngine::ProcessMiCmd(MiCmdFrame &cmd){
         this->m_p_mi_comm->WriteCmd(cmd);
         if(!m_b_recv_mi_heartbeat){
             m_b_recv_mi_heartbeat = true;
+            g_sys_state.module_ready_mask |= MI_START;
             this->InitMiParam();
         }
         break;
@@ -2447,6 +2456,12 @@ void ChannelEngine::ProcessMiAlarm(MiCmdFrame &cmd){
     alarm_id = alarm_id<<16;
     alarm_id += cmd.data.data[0];   //低16位
     alarm_level = cmd.data.data[2];
+
+    if (alarm_level == FATAL_LEVEL)
+        clear_type = CLEAR_BY_RESET_POWER;
+    else
+        clear_type = CLEAR_BY_MCP_RESET;
+
 
     //    if(alarm_level >= WARNING_LEVEL)
     //        clear_type = CLEAR_BY_CLEAR_BUTTON;
@@ -3486,8 +3501,8 @@ void ChannelEngine::ProcessHmiAbsoluteRefSet(HMICmdFrame &cmd)
                     if ((m_p_axis_config[i].absolute_ref_mode == 0 && m_p_axis_config[i].feedback_mode == 1)
                         || m_p_axis_config[i].axis_interface == 0)
                     {
-                        if (GetSyncAxisCtrl()->CheckSyncState(i) != 2)
-                        {//不为从动轴
+                        if (GetSyncAxisCtrl()->CheckSyncState(i) != 2 && !GetPmcActive(i))
+                        {//不为从动轴,Pmc轴未激活
                             m_n_mask_ret_ref |= (0x01<<i);   //设置需要回零的轴
                             m_p_axis_config[i].ret_ref_index = index++;
                         }
@@ -3506,8 +3521,8 @@ void ChannelEngine::ProcessHmiAbsoluteRefSet(HMICmdFrame &cmd)
                 if ((m_p_axis_config[phy_axis].absolute_ref_mode == 0 && m_p_axis_config[phy_axis].feedback_mode == 1)         //绝对式
                     || m_p_axis_config[phy_axis].axis_interface == 0)
                 {
-                    if (GetSyncAxisCtrl()->CheckSyncState(phy_axis) != 2)
-                    {//不为从动轴
+                    if (GetSyncAxisCtrl()->CheckSyncState(phy_axis) != 2 && !GetPmcActive(phy_axis))
+                    {//不为从动轴,Pmc轴未激活
                         cmd.cmd_extension = 0;
                         m_b_ret_ref = true;
                         m_n_mask_ret_ref = (0x01<<phy_axis);
@@ -5317,7 +5332,7 @@ void ChannelEngine::SetManualStep(uint16_t step){
     //		this->m_p_channel_control[i].SetManualStep(tt);
     //	}
 
-    g_ptr_tracelog_processor->SendToHmi(kPanelOper, kDebug, "[手动步长]切换为 " + to_string(step));
+    //g_ptr_tracelog_processor->SendToHmi(kPanelOper, kDebug, "[模式选择] 增量 * " + to_string(step));
 
     uint8_t chn_count = m_p_channel_mode_group[m_n_cur_chn_group_index].GetChannelCount();
     for(uint8_t i = 0; i < chn_count; i++)
@@ -5349,9 +5364,9 @@ void ChannelEngine::SetManualStep(uint8_t chn, uint8_t step){
         break;
     }
 
-    const vector<string> table = {"1", "10", "100", "1000"};
+    const vector<string> table = {"0", "1", "10", "100"};
     if (step > 0 && step < table.size())
-        g_ptr_tracelog_processor->SendToHmi(kPanelOper, kDebug, "[手动步长]切换为 " + table[step]);
+        g_ptr_tracelog_processor->SendToHmi(kPanelOper, kDebug, "[模式选择] 增量 * " + table[step]);
     this->m_p_channel_control[chn].SetManualStep(step);
 }
 
@@ -7505,9 +7520,11 @@ void ChannelEngine::InitMiParam(){
         //软限位
        m_p_mi_comm->SendMiParam<double>(index, 1500, axis_config->soft_limit_max_1);
        m_p_mi_comm->SendMiParam<double>(index, 1501, axis_config->soft_limit_min_1);
-       m_p_mi_comm->SendMiParam<uint8_t>(index, 1502, axis_config->soft_limit_check_1);
+       //m_p_mi_comm->SendMiParam<uint8_t>(index, 1502, axis_config->soft_limit_check_1);//梯图控制
+       m_p_mi_comm->SendMiParam<uint8_t>(index, 1502, 0);//梯图控制
        m_p_mi_comm->SendMiParam<double>(index, 1503, axis_config->soft_limit_max_2);
-       m_p_mi_comm->SendMiParam<double>(index, 1504, axis_config->soft_limit_min_2);
+       //m_p_mi_comm->SendMiParam<double>(index, 1504, axis_config->soft_limit_min_2);
+       m_p_mi_comm->SendMiParam<uint8_t>(index, 1504, 0);//梯图控制
        m_p_mi_comm->SendMiParam<uint8_t>(index, 1505, axis_config->soft_limit_check_2);
        m_p_mi_comm->SendMiParam<double>(index, 1506, axis_config->soft_limit_max_3);
        m_p_mi_comm->SendMiParam<double>(index, 1507, axis_config->soft_limit_min_3);
@@ -8124,13 +8141,64 @@ void *ChannelEngine::RefreshMiStatusThread(void *args){
 
     while(!g_sys_state.system_ready){  //等待系统启动
         //printf("ChannelEngine::RefreshMiStatusThread wait system ready[0x%hhx]!\n", g_sys_state.module_ready_mask);
-        usleep(10000);
+        if(g_sys_state.module_ready_mask & MI_START){
+            chn_engine->RefreshPmcNotReady();
+        }
+        else{
+            usleep(10000);
+        }
     }
 
     chn_engine->RefreshMiStatusFun();
 
     printf("Quit ChannelEnigine::RefreshMiStatusThread!!\n");
     pthread_exit(NULL);
+}
+
+void ChannelEngine::RefreshPmcNotReady()
+{
+    uint8_t *p_f_reg = m_p_pmc_reg->FReg().all;
+    uint8_t *p_g_reg = m_p_pmc_reg->GetRegPtr8(PMC_REG_G);
+
+    //未完全启动前只刷新G,F信号
+    this->m_p_mi_comm->WritePmcReg(PMC_REG_F, p_f_reg);
+    memcpy(m_g_reg_last.all, p_g_reg, sizeof(m_g_reg_last.all));
+    memcpy(m_f_reg_last.all, p_f_reg, sizeof(m_f_reg_last.all));
+    this->m_p_mi_comm->ReadPmcReg(PMC_REG_G, p_g_reg);
+
+    const GRegBits *g_reg = nullptr;
+    GRegBits *g_reg_last = nullptr;
+    FRegBits *f_reg = nullptr;
+    FRegBits *f_reg_last = nullptr;
+    //只响应梯图的复位和急停信号
+    for(int i = 0; i < this->m_p_general_config->chn_count; i++){
+        g_reg = &m_p_pmc_reg->GReg().bits[i];
+        g_reg_last = &m_g_reg_last.bits[i];
+        f_reg = &m_p_pmc_reg->FReg().bits[i];
+        f_reg_last = &m_f_reg_last.bits[i];
+        //FRegBits *f_reg_last = nullptr;
+        if(g_reg->RRW == 1 && g_reg_last->RRW == 0){
+            this->SystemReset();
+        }
+        if(g_reg->ERS == 1 && g_reg_last->ERS == 0){
+            this->SystemReset();
+        }
+        if(g_reg->_ESP == 0 && !m_b_emergency){ //进入急停
+            f_reg->RST = 1;
+            m_axis_status_ctrl->InputEsp(g_reg->_ESP);
+            g_ptr_tracelog_processor->SendToHmi(kProcessInfo, kDebug, "进入急停");
+            this->Emergency();
+            m_b_emergency = 1;
+        }else if(g_reg->_ESP == 1 && m_b_emergency){ // 取消急停
+            m_b_emergency = false;
+            m_axis_status_ctrl->InputEsp(g_reg->_ESP);
+            g_ptr_tracelog_processor->SendToHmi(kProcessInfo, kDebug, "解除急停");
+            f_reg->RST = 0;
+        }
+        if(f_reg_last->MERS == 1)   // MDI复位请求
+            f_reg->MERS = 0;
+    }
+    usleep(8000);  //8ms周期，比PMC周期相同
 }
 
 /**
@@ -8162,7 +8230,6 @@ bool ChannelEngine::RefreshMiStatusFun(){
     uint8_t *p_e_reg = m_p_pmc_reg->GetRegPtr8(PMC_REG_E);
 #endif
 
-
     while(!g_sys_state.system_quit){
 
         if((g_sys_state.module_ready_mask & MI_READY) == 0){  //MI未准备好则等待
@@ -8173,7 +8240,7 @@ bool ChannelEngine::RefreshMiStatusFun(){
 
         //读取欠压信号
         if(!m_b_power_off && g_sys_state.system_ready && this->m_p_mc_comm->ReadUnderVoltWarn()){
-        	printf("OFF\n");
+            printf("OFF\n");
             m_b_power_off = true;
 
             SaveDataPoweroff();
@@ -8580,9 +8647,15 @@ void ChannelEngine::ProcessPmcSignal(){
                     bool curState = g_reg->MLKI & (0x01 << i);
                     bool lastState = g_reg_last->MLKI & (0x01 << i);
                     if (curState && !lastState)
-                        g_ptr_tracelog_processor->SendToHmi(kPanelOper, kDebug, "轴 " + to_string(i) + "开启[机械锁]");
+                    {
+                        //g_ptr_tracelog_processor->SendToHmi(kPanelOper, kDebug, "轴 " + to_string(i) + "开启[机械锁]");
+                        g_ptr_tracelog_processor->SendToHmi(kPanelOper, kDebug, "开启Z轴锁住");
+                    }
                     if (!curState && lastState)
-                        g_ptr_tracelog_processor->SendToHmi(kPanelOper, kDebug, "轴 " + to_string(i) + "关闭[机械锁]");
+                    {
+                        //g_ptr_tracelog_processor->SendToHmi(kPanelOper, kDebug, "轴 " + to_string(i) + "关闭[机械锁]");
+                        g_ptr_tracelog_processor->SendToHmi(kPanelOper, kDebug, "关闭Z轴锁住");
+                    }
                 }
             }
         }
@@ -8590,6 +8663,7 @@ void ChannelEngine::ProcessPmcSignal(){
         // 限位开关选择信号
         if(g_reg->EXLM != g_reg_last->EXLM || g_reg->RLSOT != g_reg_last->RLSOT){
             SetSoftLimitSignal(g_reg->EXLM, g_reg->RLSOT);
+            UpdateMiLimitValue(g_reg->EXLM, g_reg->RLSOT);
         }
 
         if(g_reg->SYNC != g_reg_last->SYNC){
@@ -8822,7 +8896,7 @@ void ChannelEngine::ProcessPmcSignal(){
 #endif
     }
     //处理轴的限位信号，虽然64个轴的限位信号平均分布在四个通道中，但是处理时不分通道
-    if(!this->m_b_ret_ref){  //回参考点过程中屏蔽限位
+    //if(!this->m_b_ret_ref){  //回参考点过程中屏蔽限位，回零过程也需要开启硬限位
         chn = m_p_general_config->axis_count/16;
         if(m_p_general_config->axis_count%16)
             chn++;
@@ -8871,7 +8945,7 @@ void ChannelEngine::ProcessPmcSignal(){
                 m_p_mi_comm->SendHardLimitState(false,m_neg_hard_limit_last);
             }
         }
-    }
+    //}
 
 
     //复位RST信号
@@ -9154,12 +9228,9 @@ void ChannelEngine::ProcessPmcAxisCtrl(){
         for(uint8_t j = 0; j < 4; j++){
 
             if(m_pmc_axis_ctrl[i*4+j].axis_list.size() == 0)
-            {
+            {//通道没有选通时，梯图写入PMC数据时报警
                 if (ebuf[j] != ebsy[j])
-                {
-                    std::cout << "ebuf[j]: " << (int)ebuf[j] << " ebsy[j]: " << ebsy[j] << std::endl;
                     m_pmc_axis_ctrl[4*i+j].SetErrState(i*4+j+1);
-                }
                 continue;
             }
 
@@ -9192,13 +9263,10 @@ void ChannelEngine::ProcessPmcAxisCtrl(){
                 return;
             }
 
-            if(!m_pmc_axis_ctrl[4*i+j].IsActive()){
+            if(!m_pmc_axis_ctrl[4*i+j].IsActive())
+            {//通道没有激活时，梯图写入PMC轴数据时报警
                 if (ebuf[j] != ebsy[j])
-                {
-                    std::cout << "ebuf[j]: " << (int)ebuf[j] << " ebsy[j]: " << (int)ebsy[j] << std::endl;
                     m_pmc_axis_ctrl[4*i+j].SetErrState(i*4+j+1);
-                    //CreateError(ERR_PMC_IVALID_USED, ERROR_LEVEL, CLEAR_BY_MCP_RESET, i*4+j+1, CHANNEL_ENGINE_INDEX);
-                }
                 continue;  //未激活
             }
 

@@ -16638,6 +16638,8 @@ bool ChannelControl::EmergencyStop(){
         this->CancelBreakContinueThread();
     }
 
+    m_p_spindle->EStop();
+
     // È¡Ïû¸ÕÐÔ¹¥Ë¿×´Ì¬
     //if(m_p_spindle->isTapEnable())
         //m_p_spindle->CancelRigidTap();

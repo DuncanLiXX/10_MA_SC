@@ -67,10 +67,6 @@ void SpindleControl::Reset()
     UpdateParams();
 }
 
-
-
-
-
 void SpindleControl::InputSCode(uint32_t s_code)
 {
     if(!spindle)
@@ -101,6 +97,9 @@ void SpindleControl::InputPolar(Spindle::Polar polar)
     if(!spindle)
         return;
     ScPrintf("SpindleControl::InputPolar %d\n",polar);
+
+    cnc_polar = polar;
+
     if(polar == Positive || polar == Negative){
         // 收到正/反转信号
         if(motor_enable){
@@ -121,15 +120,13 @@ void SpindleControl::InputPolar(Spindle::Polar polar)
             printf("SendAxisEnable enable = %d\n",false);
         }
     }
-    cnc_polar = polar;
+
 }
 
 void SpindleControl::SetMode(Mode mode)
 {
     if(!spindle)
         return;
-
-    printf("==========  set spindle mode: %d\n", mode);
 
     if(mode == Speed)
         mi->SendAxisCtrlModeSwitchCmd(phy_axis+1, 2);
@@ -169,8 +166,6 @@ void SpindleControl::StartRigidTap(double feed)
     if(!spindle || spindle->axis_interface == 0)
         return;
     // 如果不在位置模式，报警：速度模式下不能刚性攻丝
-
-    printf("========== start gigid tap: %lf\n", feed);
 
     if(mode != Position){
         CreateError(ERR_SPD_TAP_START_FAIL,
@@ -238,7 +233,7 @@ void SpindleControl::CancelRigidTap()
     if(!spindle || spindle->axis_interface == 0)
         return;
 
-    printf("========== CancelRigidTap \n");
+    std::this_thread::sleep_for(std::chrono::microseconds(100*1000));
 
     ChannelEngine *engine = ChannelEngine::GetInstance();
     ChannelControl *control = engine->GetChnControl(0);
@@ -246,12 +241,10 @@ void SpindleControl::CancelRigidTap()
     SendMcRigidTapFlag(false);
     mi->SendTapStateCmd(chn, false);
     mi->SendTapRatioCmd(chn, 0);
-    std::this_thread::sleep_for(std::chrono::microseconds(100*1000));
     double pos = status.cur_pos_machine.GetAxisValue(phy_axis);
     //mi->SetAxisRefCur(phy_axis+1,pos);
 
     tap_enable = false;
-
 
     // 给信号梯图来取消攻丝
     if(F->RGSPP)
@@ -600,7 +593,7 @@ Polar SpindleControl::CalPolar()
         // 主轴定向功能，极性由参数ORM设定
         if(SOR == 1)
         {
-            return (Polar)ORM;
+        	return (Polar)ORM;
         }
         /*
          * TCW    CWM    极性
@@ -611,7 +604,7 @@ Polar SpindleControl::CalPolar()
          */
         else if(TCW == 0)
         {
-            polar = CWM;
+        	polar = CWM;
         }
         else
         {
@@ -773,6 +766,7 @@ void SpindleControl::SendSpdSpeedToMi()
 
     // 获取方向
     polar = CalPolar();
+
     if(polar == Stop)
     {
         output = 0;
@@ -800,7 +794,6 @@ void SpindleControl::SendSpdSpeedToMi()
     cmd.data.axis_index = phy_axis+1;
     cmd.data.data[0] = (int16_t)output;
     ScPrintf("send spindle DA output: %d\n",output);
-    printf("===== send spindle DA output: %d\n",output);
     mi->WriteCmd(cmd);
 }
 
@@ -1011,4 +1004,23 @@ void SpindleControl::ProcessRTNT()
     }
     F->RTPT = 1;
     ResetTapFlag();
+}
+
+void SpindleControl::EStop(){
+
+
+	int16_t output = 0;
+	output += spindle->zero_compensation; // 加上零漂
+
+	MiCmdFrame cmd;
+	memset(&cmd, 0x00, sizeof(cmd));
+	cmd.data.cmd = CMD_MI_SET_SPD_SPEED;
+	cmd.data.axis_index = phy_axis+1;
+	cmd.data.data[0] = (int16_t)output;
+	printf("===== send spindle DA output: %d\n",output);
+	mi->WriteCmd(cmd);
+
+	if(tap_enable) CancelRigidTap();
+
+	//if(m_n_M29_flag) ProcessM29Reset();
 }

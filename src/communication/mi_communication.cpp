@@ -1398,8 +1398,10 @@ bool MICommunication::ReadPmcPeriod(){
 	int64_t p1 = *period;
 	int64_t p2 = *(period + 1);
 
-	pmc_period1 = p1 / 1000;
-	pmc_period2 = p2 / 1000;
+	pmc_period1 = p1 / 1000.0;
+	pmc_period2 = p2 / 1000.0;
+
+	//printf("pmc ==========  %lf %lf\n", pmc_period1, pmc_period2);
 
 	*RWFlag = 1;
 

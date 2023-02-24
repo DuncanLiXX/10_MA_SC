@@ -114,6 +114,8 @@ public:
     double GetSpdAngle();  // 获取主轴角度 单位：度
     Spindle::Polar CalPolar();    // 根据当前状态获取主轴转向
 
+    void EStop();
+
 private:
     void UpdateParams();        // 更新常用主轴参数到成员变量中
     void UpdateSpindleState();  // 根据当前状态更新转速

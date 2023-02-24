@@ -1566,6 +1566,7 @@ void ChannelEngine::InitMcParam(){
         this->m_p_channel_control[i].SetMcStepMode(false);
         this->m_p_channel_control[i].SetMcChnPlanMode();
         this->m_p_channel_control[i].SetMcChnPlanParam();
+        this->m_p_channel_control[i].SetMcTapPlanParam();
         this->m_p_channel_control[i].SetMcChnPlanFun();
         this->m_p_channel_control[i].SetMcChnCornerStopParam();
         this->m_p_channel_control[i].SetChnAxisName();
@@ -1775,17 +1776,24 @@ void ChannelEngine::ProcessMcCmdRsp(McCmdFrame &rsp){
  */
 void ChannelEngine::ProcessMcVersionCmd(McCmdFrame &cmd){
     //处理MC模块返回的版本信息
-    uint16_t data1 = cmd.data.data[0], data2 = cmd.data.data[1], data3 = cmd.data.data[2], data4 = cmd.data.data[3];
-    uint16_t data5 = cmd.data.data[4];
-    uint8_t v_a = (data2>>8)&0xFF;
-    uint8_t v_b = (data2)&0xFF;
-    uint8_t v_c = (data1>>8)&0xFF;
-    uint8_t v_d = (data1)&0xFF;
-    uint8_t v_h = (data5)/100;
-    uint8_t v_m = (data5)%100;
+    uint8_t main_ver = cmd.data.data[0] >> 8;
+    uint8_t child_ver = cmd.data.data[0] & 0xFF;
+    uint8_t branch_ver = cmd.data.data[1];
+    uint16_t year = cmd.data.data[2];
+    uint8_t month = cmd.data.data[3] >> 8;
+    uint8_t day = cmd.data.data[3];
+    uint8_t hour = cmd.data.data[4] >> 8;
+    uint8_t minute = cmd.data.data[4];
+    uint8_t second = cmd.data.data[5] >> 8;
 
-    sprintf(g_sys_info.sw_version_info.mc, "%c%hhu.%hhu.%hhu.%hu%04hu%02hu%02hu", v_a==0?'P':'V', v_b, v_c, v_d, data3, data4,
-            v_h,v_m);
+//    uint8_t v_a = (data2>>8)&0xFF;
+//    uint8_t v_b = (data2)&0xFF;
+//    uint8_t v_c = (data1>>8)&0xFF;
+//    uint8_t v_d = (data1)&0xFF;
+//    uint8_t v_h = (data5)/100;
+//    uint8_t v_m = (data5)%100;
+
+    sprintf(g_sys_info.sw_version_info.mc, "MC-%02hu.%02hu.%02hu", main_ver, child_ver, branch_ver);
 }
 
 /**
@@ -4624,7 +4632,7 @@ void ChannelEngine::ProcessHmiSetPmcReg(HMICmdFrame &cmd){
                 printf("failed to set pmc register\n");
                 cmd.cmd_extension = FAILED;
             }
-            printf("set pmc reg: sec = %hu, index = %hu, value = %hhu\n", reg_sec, reg_index, reg_value8);
+            //printf("set pmc reg: sec = %hu, index = %hu, value = %hhu\n", reg_sec, reg_index, reg_value8);
         }else{
             bit_index = cmd.data[4];
             bit_count = cmd.data[5];
@@ -8099,7 +8107,7 @@ void ChannelEngine::Emergency(uint8_t chn){
         if(m_p_axis_config[i].axis_interface != VIRTUAL_AXIS && m_p_axis_config[i].axis_type != AXIS_SPINDLE	//非主轴并且非虚拟轴
                 && m_p_axis_config[i].feedback_mode == INCREMENTAL_ENCODER )
         {
-            //			m_n_mask_ret_ref_over &= ~(0x01<<i);   //
+            //m_n_mask_ret_ref_over &= ~(0x01<<i);   //
             this->SetRetRefFlag(i, false);
         }
     }
@@ -9051,7 +9059,7 @@ void ChannelEngine::ProcessPmcSignal(){
                     std::cout << ">>>>>> open err" << std::endl;
             }
 
-            if (m_fd && g_reg->RGTAP == 1)
+            if (m_fd && (g_reg->RGTAP == 1 or g_reg->RTNT))
             {
                 this->m_p_mi_comm->ReadPhyAxisCurFedBckPos(m_df_phy_axis_pos_feedback, m_df_phy_axis_pos_intp,m_df_phy_axis_speed_feedback,
                                                            m_df_phy_axis_torque_feedback, m_df_spd_angle, m_p_general_config->axis_count);

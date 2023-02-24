@@ -118,6 +118,7 @@ enum McCmdCode{
 	CMD_MC_SET_CHN_TOOL_LIFE = 0x0029,      //设置通道当前刀具寿命
 	CMD_MC_SET_G84_PARAM = 0x002A,			//设置刚攻参数
 	CMD_MC_SET_FLIP_COMP_PARAM = 0x002B,    //设置木工挑角补偿参数   木工机专用
+    CMD_MC_SET_TAP_PLAN_PARAM = 0x002C,		//设置刚性攻丝加工规划参数
 
 
 	CMD_MC_SET_MULTI_AXIS_MODE = 0x0030,	//设置多轴联动模式

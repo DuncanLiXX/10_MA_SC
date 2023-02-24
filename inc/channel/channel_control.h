@@ -205,6 +205,7 @@ public:
 
 	void SetMcChnPlanMode();			//设置加工速度规划方式
 	void SetMcChnPlanParam();			//设置通道加工速度规划参数
+    void SetMcTapPlanParam();           //设置刚性攻丝加工规划参数
 	void SetMcChnPlanFun();			//设置通道加工速度功能开关
 	void SetMcChnCornerStopParam();		//设置拐角准停参数
 

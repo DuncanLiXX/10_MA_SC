@@ -1147,7 +1147,7 @@ bool ChannelControl::GetSysVarValue(const int index, double&value){
     }else if(index >= 4001 && index <= 4030){   //上
 
     }else if(index >= 4201 && index <= 4230){    //当前G指令模态
-        value = this->m_channel_status.gmode[index-4201];  //模态为G指令乘以10，G43.4保存为434
+    	value = this->m_channel_status.gmode[index-4201];  //模态为G指令乘以10，G43.4保存为434
         value /= 10;
     }else if(index == 4307){   //当前D值
         value = this->m_channel_status.cur_d_code;
@@ -2993,6 +2993,7 @@ bool ChannelControl::SetCurProcParamIndex(uint8_t index){
         //将新参数更新到MC
         this->SetMcChnPlanMode();
         this->SetMcChnPlanParam();
+        this->SetMcTapPlanParam();
         this->SetMcChnCornerStopParam();
         this->SetMcChnPlanFun();
 #ifdef USES_WOOD_MACHINE
@@ -4450,7 +4451,7 @@ int ChannelControl::Run(){
 
 #ifndef USES_WOOD_MACHINE   //木工专机不检查M30结束指令
             if(m_p_compiler->IsEndOfFile() && !m_p_compiler->IsCompileOver() &&
-                    this->m_channel_status.chn_work_mode == AUTO_MODE && !m_p_compiler->IsPreScaning()
+                    this->m_channel_status.chn_work_mode == AUTO_MODE && !m_p_compiler->IsPreScaning() && !m_p_compiler->IsSubProgram()
         #ifdef USES_ADDITIONAL_PROGRAM
                     && this->m_n_add_prog_type != CONTINUE_START_ADD
         #endif
@@ -4458,9 +4459,8 @@ int ChannelControl::Run(){
             {
 
             	m_n_run_thread_state = ERROR;
-
                 g_ptr_trace->PrintLog(LOG_ALARM, "CHN[%d]语法错误，未找到结束指令！", m_n_channel_index);
-                CreateError(ERR_NO_END, ERROR_LEVEL, CLEAR_BY_MCP_RESET, 0, m_n_channel_index);
+                                                                                                                    CreateError(ERR_NO_END, ERROR_LEVEL, CLEAR_BY_MCP_RESET, 0, m_n_channel_index);
             }
 #endif
             pthread_mutex_unlock(&m_mutex_change_state);
@@ -4617,6 +4617,8 @@ bool ChannelControl::RefreshStatusFun(){
 
 			//更新当前轴到位标志
 			this->m_p_mc_comm->ReadChnAxisRunoverMask(m_n_channel_index, m_channel_mc_status.axis_over_mask);
+            //更新当前轴到位(手动)标志
+            this->m_p_mc_comm->ReadChnManuAxisRunoverMask(m_n_channel_index, m_channel_mc_status.manu_axis_over_mask);
 
 			//更新当前MC告警标志
 			this->m_p_mc_comm->ReadMcErrFlag(m_n_channel_index, m_channel_mc_status.mc_error.all);
@@ -6658,15 +6660,16 @@ bool ChannelControl::ExecuteAuxMsg(RecordMsg *msg){
             tmp->SetExecStep(m_index, 0xFF);    //置位结束状态
             break;
         case 99:   //M99
-            if(tmp->GetExecStep(m_index) == 0){
+        	if(tmp->GetExecStep(m_index) == 0){
                 printf("execute M99, subprog_count = %hhu\n", m_n_subprog_count);
                 if(m_n_subprog_count > 0){
-                    m_n_subprog_count--;
+                    //printf("11111111111111\n");
+                	if(m_p_compiler->getSubCallTimes() == 0) m_n_subprog_count--;
                     m_b_ret_from_macroprog = false;
                 }
                 else{
-                    m_p_compiler->RecycleCompile();   //主程序则循环调用
-
+                	//printf("22222222222222\n");
+                	m_p_compiler->RecycleCompile();   //主程序则循环调用
                     this->m_channel_status.workpiece_count++;  //工件计数加一
                     g_ptr_parm_manager->SetCurWorkPiece(m_n_channel_index, m_channel_status.workpiece_count);
                     this->m_channel_status.workpiece_count_total++;
@@ -8695,8 +8698,6 @@ bool ChannelControl::ExecuteSubProgCallMsg(RecordMsg *msg){
                 return false;
         }
     }
-    //printf("=====================================\n");
-    //m_n_run_thread_state = RUN;
     return true;
 }
 
@@ -9205,9 +9206,7 @@ bool ChannelControl::ExecutePolarIntpMsg(RecordMsg *msg){
         //			m_channel_rt_status.tar_pos_work = m_channel_mc_status.intp_tar_pos;
         this->RefreshAxisIntpPos();
 
-
         this->m_p_compiler->SetCurPos(this->m_channel_mc_status.intp_pos);   //同步编译器位置
-
 
         polarmsg->SetExecStep(3);  //跳转下一步
         return false;
@@ -12271,6 +12270,34 @@ void ChannelControl::SetMcChnPlanParam(){
 
     tmp = m_p_channel_config->chn_max_corner_acc/10;    //单位转换  mm/s^2-->10mm/s^2
     cmd.data.data[6] = tmp;
+
+
+    if(!this->m_b_mc_on_arm)
+        m_p_mc_comm->WriteCmd(cmd);
+    else
+        m_p_mc_arm_comm->WriteCmd(cmd);
+}
+
+/**
+ * @brief 设置刚性攻丝加工规划参数
+ */
+void ChannelControl::SetMcTapPlanParam(){
+    McCmdFrame cmd;
+    memset(&cmd, 0x00, sizeof(McCmdFrame));
+
+    cmd.data.channel_index = m_n_channel_index;
+
+    cmd.data.cmd = CMD_MC_SET_TAP_PLAN_PARAM;
+
+    uint16_t tmp = m_p_channel_config->tap_max_acc/10;    //单位转换  mm/s^2-->10mm/s^2
+    cmd.data.data[0] = tmp;
+    tmp = m_p_channel_config->tap_max_dec/10;    //单位转换  mm/s^2-->10mm/s^2
+    cmd.data.data[1] = tmp;
+
+    cmd.data.data[2] = m_p_channel_config->tap_plan_mode;
+
+    tmp = m_p_channel_config->tap_s_cut_filter_time;
+    cmd.data.data[3] = tmp;
 
 
     if(!this->m_b_mc_on_arm)

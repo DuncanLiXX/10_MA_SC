@@ -2722,7 +2722,7 @@ void HMICommunication::ProcessHmiGetCPUInfo(HMICmdFrame &cmd){
  */
 void HMICommunication::ProcessHmiVirtualMOPCmd(HMICmdFrame &cmd){
 //	static bool kk = false;
-	printf("Get Virtual MOP Key : %d, len = %d, channel_index = %d,  cmd = %d, data= %hhu\n", cmd.cmd_extension,cmd.data_len,cmd.channel_index,cmd.cmd, cmd.data[0]);
+	//printf("Get Virtual MOP Key : %d, len = %d, channel_index = %d,  cmd = %d, data= %hhu\n", cmd.cmd_extension,cmd.data_len,cmd.channel_index,cmd.cmd, cmd.data[0]);
 
 	//发送回复数据
     cmd.frame_number |= 0x8000;

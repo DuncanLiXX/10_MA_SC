@@ -228,6 +228,7 @@ bool Variable::GetVarValue(int index, double &value, bool &init){
 	}else if(index >=50000 && index < 55000){    //扩展保持型公共变量
 		init = this->m_b_init_user_macro[index-50000];
 		value = this->m_df_user_macro[index-50000];
+		printf("===== GetVarValue value: %lf init: %d index: %d\n", value, init, index);
 	}else if(index >= 1000){	//系统变量
 		if((index >= 5061 && index <= 5080) ||
 				(index >= 5421 && index <= 5440)){
@@ -294,6 +295,7 @@ bool Variable::SetVarValue(int index, double value){
 		this->m_b_init_user_macro[index-50000] = true;
 		this->m_df_user_macro[index-50000] = value;
 		this->SaveMacroComm(index);   //保存到文件
+		printf("===== SetVarValue value: %lf index: %d\n", value, index);
 	}else if(index >= 1000){	//系统变量
 		return this->SetSysVar(index, value);
 	}else{

@@ -102,6 +102,9 @@ public://公共接口
     // file_only:只搜索实际文件
     int FindSubProgram(int sub_name, bool file_only = false);   //查找并打开子程序
 
+
+    int getSubCallTimes(){ return m_n_sub_call_times;}
+
 #ifdef USES_WOOD_MACHINE
 	bool FindPreStartSpdCmd(uint64_t line_min , uint64_t line_max, SpindleStartOffset &spd_cmd);   //查找是否存在可预启动的主轴指令
 #endif
@@ -228,10 +231,8 @@ private://私有成员
 	OutputMsgList *m_p_block_msg_list;	//处理分段标志的缓冲队列
 	RecordMsg *m_p_last_move_msg;    //当前已编译数据中最后一条轴移动指令
 
-
 	OutputMsgList *m_p_block_msg_list_auto;	//AUTO模式处理分段标志的缓冲队列
 	OutputMsgList *m_p_block_msg_list_mda;	//MDA模式处理分段标志的缓冲队列
-
 
 	bool m_b_check;    //是否进行语法检查
 
@@ -254,6 +255,10 @@ private://私有成员
 
 	SimulateMode *m_p_simulate_mode;  //仿真模式
 
+	bool isSubInSameFile{false};      // 子程序在同一个程序内
+	uint64_t ln_read_size;
+	char * p_cur_file_pos;
+	uint64_t ln_cur_line_no;
 
 	//文件操作
 	char *m_p_cur_file_pos;     //当前文件读取位置指针
@@ -295,7 +300,7 @@ private://私有成员
 	vector<int> m_stack_vector_index_prescan;
 	// 记录每个IF中 ELSE 个数的栈
 	vector<int> m_stack_else_count_prescan;
-	/***************运行时********************************************/
+	/***************运行时********************/
 	// 运行时 记录当前处理的节点栈
 	vector<IfElseOffset> m_node_stack_run;
 	// 运行时 记录是否遇到else跳转栈
@@ -308,13 +313,11 @@ private://私有成员
 
 	int m_n_s_code_in_prescan;      //预扫描中记录当前S指令值
 #endif
-	bool m_b_prescan_over;     //预扫描结束
+	bool m_b_prescan_over;         //预扫描结束
 	bool m_b_breakout_prescan;     //中断预扫描线程标志
-	bool m_b_prescan_in_stack;       //预扫描栈中的文件
-
-	Variable *m_p_variable;    //宏变量指针
-
-	bool m_b_axis_name_ex;   //允许轴名称扩展下标
+	bool m_b_prescan_in_stack;     //预扫描栈中的文件
+	Variable *m_p_variable;        //宏变量指针
+	bool m_b_axis_name_ex;         //允许轴名称扩展下标
 
     uint8_t m_n_restart_mode;     //加工复位模式，0--非加工复位   1--正常加工复位    2--快速加工复位
     uint64_t m_n_restart_line;    //加工复位目的行号

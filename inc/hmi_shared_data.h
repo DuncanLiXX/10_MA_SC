@@ -1181,7 +1181,10 @@ struct HmiChnConfig{
 	double chn_max_arc_acc;				//最大向心加速度	//单位：mm/s^2
 	uint16_t chn_s_cut_filter_time;		//切削进给S型规划时间常数  //单位：ms
 
-
+    double tap_max_acc;                 //刚性攻丝最大加速度	//单位：mm/s^2
+    double tap_max_dec;                 //刚性攻丝最大减速度	//单位：mm/s^2
+    int8_t tap_plan_mode;              //刚性攻丝规划模式  0：T型  1：S型
+    uint16_t tap_s_cut_filter_time;     //刚性攻丝S型规划时间常数  //单位：ms
 
     uint8_t default_plane;			//默认平面	   0：G17  1：G18  2：G19
     uint8_t default_cmd_mode;		//默认指令模式   0：G90  1：G91

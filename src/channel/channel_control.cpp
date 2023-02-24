@@ -3651,11 +3651,11 @@ bool ChannelControl::SendWorkModeCmdToHmi(uint8_t chn_work_mode){
     cmd.data_len = 0x00;
 
     const vector<string> table =
-        {"非法模式", "自动模式", "MDA模式", "手动单步模式", "手动连续模式", "手轮模式", "编辑模式", "原点模式"};
+        {"非法模式", "自动模式", "MDI模式", "增量模式", "手动模式", "手轮模式", "编辑模式", "回零模式"};
     if (chn_work_mode > 0 && chn_work_mode < table.size())
     {
         g_ptr_tracelog_processor->SendToHmi(kPanelOper, kDebug,
-                                            string("[工作模式]切换为 " + table[chn_work_mode]));
+                                            string("[模式选择] " + table[chn_work_mode]));
     }
 
 
@@ -9236,6 +9236,7 @@ bool ChannelControl::ExecutePolarIntpMsg(RecordMsg *msg){
  * @return
  */
 static int wait_times = 0;
+static timeval m_time_ret;
 bool ChannelControl::ExecuteRefReturnMsg(RecordMsg *msg){
     RefReturnMsg *refmsg = (RefReturnMsg *)msg;
 
@@ -9372,6 +9373,7 @@ bool ChannelControl::ExecuteRefReturnMsg(RecordMsg *msg){
                     if(phy_axis != 0xff){
                         this->ManualMove(i, pos[i], m_p_axis_config[phy_axis].rapid_speed, true);  //工件坐标系
                         printf("manual move axis=%hhu, target=%lf, speed=%lf\n", i, pos[i], m_p_axis_config[phy_axis].rapid_speed);
+                        gettimeofday(&m_time_ret, NULL);
                     }
 
                 }
@@ -9380,25 +9382,33 @@ bool ChannelControl::ExecuteRefReturnMsg(RecordMsg *msg){
             refmsg->SetExecStep(1);	//跳转下一步
             return false;
         case 1:
+        {
+            struct timeval time_now;
+            gettimeofday(&time_now, NULL);
+            unsigned int time_elpase = (time_now.tv_sec-m_time_ret.tv_sec)*1000000+time_now.tv_usec-m_time_ret.tv_usec;
+            if (time_elpase >= 50000) {//等待MC刷新axis_over_mask标记
+                //第二步：等待对应轴到位
+                for(i = 0; i < m_p_channel_config->chn_axis_count; i++){
+                    if(axis_mask & (0x01<<i)){
+                        //if(fabs(this->m_channel_rt_status.cur_pos_work.GetAxisValue(i) - pos[i]) > 1e-3){ //未到位
+                        if ((m_channel_mc_status.axis_over_mask & (0x01<<i)) == 0) {
+                            //						printf("step 1: axis %hhu cur pos = %lf, target=%lf\n", i, m_channel_rt_status.cur_pos_work.GetAxisValue(i), pos[i]);
+                            flag = false;
+                            //phy_axis = this->GetPhyAxis(i);
+                            //if(phy_axis != 0xff){
+                            //    this->ManualMove(i, pos[i], m_p_axis_config[phy_axis].rapid_speed, true);  //工件坐标系
 
-            //第二步：等待对应轴到位
-            for(i = 0; i < m_p_channel_config->chn_axis_count; i++){
-                if(axis_mask & (0x01<<i)){
-                    if(fabs(this->m_channel_rt_status.cur_pos_work.GetAxisValue(i) - pos[i]) > 1e-3){ //未到位
-                        //						printf("step 1: axis %hhu cur pos = %lf, target=%lf\n", i, m_channel_rt_status.cur_pos_work.GetAxisValue(i), pos[i]);
-                        flag = false;
-                        phy_axis = this->GetPhyAxis(i);
-                        if(phy_axis != 0xff){
-                            this->ManualMove(i, pos[i], m_p_axis_config[phy_axis].rapid_speed, true);  //工件坐标系
+                            //}
+                            //    printf("cur work pos = %lf, tar pos = %lf\n", m_channel_rt_status.cur_pos_work.GetAxisPos(i), pos[i]);
 
                         }
-                        //	printf("cur work pos = %lf, tar pos = %lf\n", m_channel_rt_status.cur_pos_work.GetAxisPos(i), pos[i]);
                     }
                 }
+                if(flag)
+                    refmsg->SetExecStep(2);  //跳转下一步
             }
-            if(flag)
-                refmsg->SetExecStep(2);  //跳转下一步
             return false;
+        }
         case 2:
 
             printf("ret ref, step 2\n");
@@ -9420,6 +9430,7 @@ bool ChannelControl::ExecuteRefReturnMsg(RecordMsg *msg){
                     }
                 }
                 refmsg->SetExecStep(3);  //跳转下一步
+                gettimeofday(&m_time_ret, NULL);
                 return false;
 
             }else{
@@ -9433,37 +9444,44 @@ bool ChannelControl::ExecuteRefReturnMsg(RecordMsg *msg){
                     }
                 }
                 refmsg->SetExecStep(3);  //跳转下一步
+                gettimeofday(&m_time_ret, NULL);
                 return false;
             }
 
         case 3:{
+            struct timeval time_now;
+            gettimeofday(&time_now, NULL);
+            unsigned int time_elpase = (time_now.tv_sec-m_time_ret.tv_sec)*1000000+time_now.tv_usec-m_time_ret.tv_usec;
+            if (time_elpase > 50000) {
+                //第四步：等待struct timeval time_now;
 
-        	//第四步：等待对应的轴到位
-
-			for(i = 0; i < m_p_channel_config->chn_axis_count; i++){
-				phy_axis = this->GetPhyAxis(i);
-				double target_pos =  m_p_axis_config[phy_axis].axis_home_pos[0];
+                for(i = 0; i < m_p_channel_config->chn_axis_count; i++){
+                    phy_axis = this->GetPhyAxis(i);
+                    double target_pos =  m_p_axis_config[phy_axis].axis_home_pos[0];
 #ifdef USES_RET_REF_TO_MACH_ZERO
-            double target_pos = 0;
+                double target_pos = 0;
 #endif
-                if(gcode == G30_CMD) target_pos = m_p_axis_config[phy_axis].axis_home_pos[ref_id-1];
-                uint8_t mlk_mask = m_p_channel_engine->GetMlkMask();
-                if((axis_mask & (0x01<<i)) && !(mlk_mask & (0x01 << i))){
-                    if(fabs(this->m_channel_rt_status.cur_pos_machine.GetAxisValue(i) - target_pos) > 5e-3){ //未到位
-                        //printf("step 3: axis %hhu cur pos = %lf, target=%lf\n", i, m_channel_rt_status.cur_pos_machine.GetAxisValue(i), target_pos);
-                        flag = false;
-                        phy_axis = this->GetPhyAxis(i);
-                        if(phy_axis != 0xff){
-                            //printf("phy_axis: %d target_pos: %lf\n", phy_axis, target_pos);
-                            this->ManualMove(i, target_pos, m_p_axis_config[phy_axis].rapid_speed);  //机械坐标系
+                    if(gcode == G30_CMD) target_pos = m_p_axis_config[phy_axis].axis_home_pos[ref_id-1];
+                    uint8_t mlk_mask = m_p_channel_engine->GetMlkMask();
+                    if((axis_mask & (0x01<<i)) && !(mlk_mask & (0x01 << i))){
+
+                        if ((m_channel_mc_status.axis_over_mask & (0x01<<i)) == 0) {
+                        //if(fabs(this->m_channel_rt_status.cur_pos_machine.GetAxisValue(i) - target_pos) > 5e-3){ //未到位
+                            //printf("step 3: axis %hhu cur pos = %lf, target=%lf\n", i, m_channel_rt_status.cur_pos_machine.GetAxisValue(i), target_pos);
+                            flag = false;
+                            //phy_axis = this->GetPhyAxis(i);
+                            //if(phy_axis != 0xff){
+                                //printf("phy_axis: %d target_pos: %lf\n", phy_axis, target_pos);
+                             //   this->ManualMove(i, target_pos, m_p_axis_config[phy_axis].rapid_speed);  //机械坐标系
+                            //}
                         }
                     }
                 }
-			}
 
-            if(flag){
-                refmsg->SetExecStep(4);  //跳转下一步
-                //printf("ret ref, jump to step 4\n");
+                if(flag){
+                    refmsg->SetExecStep(4);  //跳转下一步
+                    //printf("ret ref, jump to step 4\n");
+                }
             }
             return false;
         }
@@ -10751,7 +10769,7 @@ void ChannelControl::SetAutoRatio(uint8_t ratio){
     //	printf("ChannelControl::SetAutoRatio, chn=%hhu, old_r = %hhu, ratio=%hhu\n", m_n_channel_index, m_channel_status.auto_ratio, ratio);
     this->m_channel_status.auto_ratio = ratio;
 
-    g_ptr_tracelog_processor->SendToHmi(kPanelOper, kDebug, "[自动倍率]切换为 "+to_string(ratio));
+    g_ptr_tracelog_processor->SendToHmi(kPanelOper, kDebug, "[进给倍率]切换为 "+to_string(ratio));
     //通知MC
     this->SetMcRatio();
 
@@ -10784,7 +10802,7 @@ void ChannelControl::SetRapidRatio(uint8_t ratio){
 
     this->m_channel_status.rapid_ratio = ratio;
 
-    g_ptr_tracelog_processor->SendToHmi(kPanelOper, kDebug, "[快速倍率]切换为 "+to_string(ratio));
+    g_ptr_tracelog_processor->SendToHmi(kPanelOper, kDebug, "[快移倍率]切换为 "+to_string(ratio));
 
     //通知MC
     this->SetMcRatio();

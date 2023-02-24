@@ -178,6 +178,7 @@ void SetMcArmComm(MCArmCommunication *comm){this->m_p_mc_arm_comm = comm;}   //É
 
 //	void SetAxisSoftLimit(uint8_t axis);   //ÉèÖÃÖ¸¶¨ÖáµÄÈíÏŞÎ»¿ª¹Ø
 //	void SetAxisSoftLimitValue(uint8_t axis, uint8_t index);   //ÉèÖÃÖ¸¶¨ÖáµÄÈíÏŞÎ»Öµ
+    void UpdateMiLimitValue(uint8_t EXLM, uint8_t RLSOT);
 
 	uint32_t GetDaPrecision(){return this->m_n_da_prec;}  //·µ»ØDA¾«¶ÈÖµ
 
@@ -313,10 +314,13 @@ void SetMcArmComm(MCArmCommunication *comm){this->m_p_mc_arm_comm = comm;}   //É
     bool GetPmcActive(uint64_t phy_axis);   //PMCÖáÊÇ·ñ¼¤»î
     bool GetAxisRetRefFlag(uint64_t phy_axis);  //ÊÇ·ñ½¨Á¢²Î¿¼µã
 
+    int GetCurChannelIndex() { return m_n_cur_channle_index; }
+
 private:	//Ë½ÓĞ³ÉÔ±º¯Êı
 	ChannelEngine();   //¹¹Ôìº¯Êı
 
 	static void *RefreshMiStatusThread(void *args); //MI×´Ì¬¸üĞÂÏß³Ìº¯Êı
+    void RefreshPmcNotReady();
 	bool RefreshMiStatusFun();  //¸üĞÂMIµÄ×´Ì¬
 
 	void SendIntepolateCycle();			//ÏòMC·¢ËÍ²å²¹ÖÜÆÚ²ÎÊı

@@ -100,6 +100,7 @@ enum PrintType{
     TypePrintOutput =           18,//print输出
     TypePmcAxis =               19,//PMC轴状态
     TypeSyncAxis =              20,//同步轴状态
+    TypeMarcoShow =             21,//显示需要显示的宏参数
 };
 
 namespace mosqpp {

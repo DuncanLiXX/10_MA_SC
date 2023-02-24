@@ -6,6 +6,7 @@
 #include <functional>
 #include <future>
 #include <string>
+#include <sstream>
 #include "spindle_control.h"
 #include "pmc_axis_ctrl.h"
 #include "sync_axis_ctrl.h"
@@ -23,6 +24,37 @@ ShowSc::ShowSc()
 ShowSc::~ShowSc()
 {
 
+}
+
+void ShowSc::SetPrintType(PrintType type)
+{
+    print_type = type;
+    if (type == TypeMarcoShow)
+    {
+        SetInterval(8);
+    }
+    else
+    {
+        SetInterval(200);
+    }
+}
+
+void ShowSc::MarcoSelect(const string &content)
+{
+    static constexpr char spe = ',';
+    std::stringstream ss(content);
+    std::string str;
+    std::lock_guard<std::mutex> lock(m_marco_mutex);
+    while(getline(ss, str, spe))
+    {
+        int i = atoi(str.c_str());
+        std::cout << i << std::endl;
+        if (i > 0) {
+            m_marco_select.insert(i);
+        }else if (i < 0) {
+            m_marco_select.erase(abs(i));
+        }
+    }
 }
 
 void ScPrintf(const char * fmt,...)
@@ -89,6 +121,9 @@ void ShowSc::ProcessPrintThread()
             PrintPmcAxisCtrl();break;
         case TypeSyncAxis:
             PrintSyncAxisCtrl();break;
+        case TypeMarcoShow:
+            PrintMarcoValue();break;
+
         default:break;
         }
 
@@ -963,6 +998,29 @@ void ShowSc::PrintSyncAxisCtrl()
         AddPair(s,"work mode","INVALID_MODE");
     AddPair(s,"wait_en_index",sync_axis_ctrl->wait_en_index);
 
+    SendMsg(s);
+}
+
+void ShowSc::PrintMarcoValue()
+{
+    string s = "";
+    {
+        std::lock_guard<std::mutex> lock(m_marco_mutex);
+        for (auto itr = m_marco_select.begin(); itr != m_marco_select.end(); ++itr)
+        {
+            int channel_index = g_ptr_chn_engine->GetCurChannelIndex();
+            bool init = false; double value = 0;
+            bool ret = g_ptr_chn_engine->GetMacroVarValue(channel_index, *itr, init, value);
+            if (ret && init)
+            {
+                AddPair(s, std::to_string(*itr), std::to_string(value));
+            }
+            else
+            {
+                AddPair(s, std::to_string(*itr), "NA");
+            }
+        }
+    }
     SendMsg(s);
 }
 

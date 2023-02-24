@@ -486,7 +486,7 @@ enum ErrorType {
     ERR_SPD_LOCATE_FAIL     = 1711, //主轴定向失败
 
 	//PMC轴告警
-    ERR_PMC_AXIS_CTRL_CHANGE    = 1900, //PMC轴控制状态下切换
+    ERR_PMC_AXIS_CTRL_CHANGE    = 1900, //PMC轴控制非法切换
     ERR_PMC_SPEED_ERROR         = 1901, //PMC轴速度异常
     ERR_PMC_IVALID_USED         = 1902, //PMC轴非法使用
 
@@ -1635,10 +1635,13 @@ enum ModuleReadyFlag{
 	NONE_READY = 0x00,	//无就绪模块
 	SC_READY = 0x01,	//SC模块
 	MC_READY = 0x02,	//MC模块
-	MI_READY = 0x04,	//MI模块
+    MI_READY = 0x04,    //MI启动完成
 	PL_READY = 0x08,	//PL模块
 	SPANTAN_READY = 0x10,	//SPANTAN模块
 	HMI_READY = 0x20,	//HMI模块
+    MI_START = 0x40,	//MI模块（MI启动前即可开始刷新G信号，否则无法处理复位类型的请求）
+
+
 
 #ifdef	USES_MC_B_BOARD
 	NC_READY = 0x0F,    //NC模块都就绪，即除HMI模块外都就绪,MC-B没有SPANTAN

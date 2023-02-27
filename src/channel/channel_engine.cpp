@@ -1786,13 +1786,6 @@ void ChannelEngine::ProcessMcVersionCmd(McCmdFrame &cmd){
     uint8_t minute = cmd.data.data[4];
     uint8_t second = cmd.data.data[5] >> 8;
 
-//    uint8_t v_a = (data2>>8)&0xFF;
-//    uint8_t v_b = (data2)&0xFF;
-//    uint8_t v_c = (data1>>8)&0xFF;
-//    uint8_t v_d = (data1)&0xFF;
-//    uint8_t v_h = (data5)/100;
-//    uint8_t v_m = (data5)%100;
-
     sprintf(g_sys_info.sw_version_info.mc, "MC-%02hu.%02hu.%02hu", main_ver, child_ver, branch_ver);
 }
 
@@ -1807,7 +1800,7 @@ void ChannelEngine::ProcessMiVersionCmd(MiCmdFrame &cmd){
     uint8_t v_c = (cmd.data.data[1]>>8)&0xFF;
     uint8_t v_d = (cmd.data.data[1])&0xFF;
 
-    sprintf(g_sys_info.sw_version_info.mi, "%c%hhu.%hhu.%hhu", v_a==0?'P':'V', v_b, v_c, v_d);
+    sprintf(g_sys_info.sw_version_info.mi, "MI-%02hhu.%02hhu.%02hhu", v_b, v_c, v_d);
 
     printf("get MI Version: %s\n", g_sys_info.sw_version_info.mi);
 }

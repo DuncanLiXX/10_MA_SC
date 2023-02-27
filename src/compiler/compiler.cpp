@@ -32,14 +32,11 @@ Compiler::Compiler(ChannelControl *chn_ctrl) {
     m_n_channel_index = chn_ctrl->GetChnIndex();
     m_p_variable = chn_ctrl->GetMacroVar();
     m_p_channel_config = nullptr;
-
     m_p_block_msg_list = nullptr;
     m_p_parser_result = nullptr;
     m_p_parser_res_auto = nullptr;
     m_p_parser_res_mda = nullptr;
-
     m_p_last_move_msg = nullptr;
-
     m_p_simulate_mode = chn_ctrl->GetSimulateModePtr();
 
     //m_tool_compensate.SetChannelIndex(m_n_channel_index);

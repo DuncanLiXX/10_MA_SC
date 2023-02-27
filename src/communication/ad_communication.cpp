@@ -336,7 +336,6 @@ int ADCommunication::ProcessADCmd(){
 		usleep(20000);   //ĞİÃß20ms
 	}
 
-
 	return res;
 }
 
@@ -349,7 +348,6 @@ void ADCommunication::RecvADCmd(){
 		g_ptr_trace->PrintTrace(TRACE_WARNING, AD_COMMUNICATION, "¸¨ÖúÉè±¸UDPÃüÁî»º³åÂú£¡");
 		return;
 	}
-
 
 	HMICmdRecvNode cmd_node;
 	HMICmdFrame &data = cmd_node.cmd;
@@ -428,7 +426,6 @@ void ADCommunication::ProcessSetMacroVarCmd(HMICmdFrame &cmd, sockaddr_in &addr)
 	double value = 0;
 	bool init = false;
 
-
 	uint8_t chn = cmd.channel_index;	//Í¨µÀºÅ
 	uint32_t index = 0;			//ºê±äÁ¿Ë÷ÒıºÅ
 	memcpy(&index, cmd.data, 4);
@@ -452,7 +449,6 @@ void ADCommunication::ProcessSetMacroVarCmd(HMICmdFrame &cmd, sockaddr_in &addr)
 
 	cmd.frame_number |= 0x8000;
 	this->SendCmd(cmd, addr);
-
 }
 
 /**

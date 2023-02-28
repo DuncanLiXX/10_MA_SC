@@ -1007,7 +1007,7 @@ void SpindleControl::ProcessRTNT()
 }
 
 void SpindleControl::EStop(){
-
+    if(!spindle) return;
 
 	int16_t output = 0;
 	output += spindle->zero_compensation; // º”…œ¡„∆Ø

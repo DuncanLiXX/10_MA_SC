@@ -4160,16 +4160,16 @@ void ChannelEngine::SaveToolInfo(){
 }
 #endif
 
-void ChannelEngine::SetProgProtect(bool flag)
+void ChannelEngine::SetProgProtect(int level)
 {
     HMICmdFrame hmi_cmd;
     hmi_cmd.channel_index = CHANNEL_ENGINE_INDEX;
     hmi_cmd.cmd = CMD_SC_NOTIFY_PROTECT_STATUS;
     hmi_cmd.cmd_extension = 0;
-    hmi_cmd.data_len = sizeof(flag);
-    memcpy(&hmi_cmd.data[0], &flag, hmi_cmd.data_len);
+    hmi_cmd.data_len = sizeof(level);
+    memcpy(&hmi_cmd.data[0], &level, hmi_cmd.data_len);
 
-    std::cout << "SetProgProtect: " << flag << std::endl;
+    std::cout << "SetProgProtect: " << level << std::endl;
     m_p_hmi_comm->SendCmd(hmi_cmd);
 }
 
@@ -8176,18 +8176,18 @@ void ChannelEngine::RefreshPmcNotReady()
         if(g_reg->ERS == 1 && g_reg_last->ERS == 0){
             this->SystemReset();
         }
-        if(g_reg->_ESP == 0 && !m_b_emergency){ //进入急停
-            f_reg->RST = 1;
-            m_axis_status_ctrl->InputEsp(g_reg->_ESP);
-            g_ptr_tracelog_processor->SendToHmi(kProcessInfo, kDebug, "进入急停");
-            this->Emergency();
-            m_b_emergency = 1;
-        }else if(g_reg->_ESP == 1 && m_b_emergency){ // 取消急停
-            m_b_emergency = false;
-            m_axis_status_ctrl->InputEsp(g_reg->_ESP);
-            g_ptr_tracelog_processor->SendToHmi(kProcessInfo, kDebug, "解除急停");
-            f_reg->RST = 0;
-        }
+//        if(g_reg->_ESP == 0 && !m_b_emergency){ //进入急停
+//            f_reg->RST = 1;
+//            m_axis_status_ctrl->InputEsp(g_reg->_ESP);
+//            g_ptr_tracelog_processor->SendToHmi(kProcessInfo, kDebug, "进入急停");
+//            this->Emergency();
+//            m_b_emergency = 1;
+//        }else if(g_reg->_ESP == 1 && m_b_emergency){ // 取消急停
+//            m_b_emergency = false;
+//            m_axis_status_ctrl->InputEsp(g_reg->_ESP);
+//            g_ptr_tracelog_processor->SendToHmi(kProcessInfo, kDebug, "解除急停");
+//            f_reg->RST = 0;
+//        }
         if(f_reg_last->MERS == 1)   // MDI复位请求
             f_reg->MERS = 0;
     }
@@ -8576,9 +8576,7 @@ void ChannelEngine::ProcessPmcSignal(){
             m_cur_svf = g_reg->SVF;
         }
 
-        if(g_reg_last->KEY != g_reg->KEY){
-            SetProgProtect(g_reg->KEY);
-        }
+
 
         // 处理G信号 切换当前通道
         if(g_reg_last->CHNC != g_reg->CHNC)
@@ -8724,6 +8722,15 @@ void ChannelEngine::ProcessPmcSignal(){
         // 换刀信号
         if(g_reg->GTC != g_reg_last->GTC) {
             ctrl->SetSysVarValue(4320, g_reg->GTC);
+        }
+
+        //程序保护
+        if (g_reg_last->KEY4 != g_reg->KEY4
+            || g_reg_last->KEY3 != g_reg->KEY3
+            || g_reg_last->KEY2 != g_reg->KEY2
+            || g_reg_last->KEY1 != g_reg->KEY1)
+        {
+            ProcessPMCProtect();
         }
 
         //通知类型的信号，只保留一个周期
@@ -11935,5 +11942,24 @@ void ChannelEngine::PrintDebugInfo(){
             this->m_p_channel_control[i].PrintDebugInfo();
         }
     }
+}
+
+void ChannelEngine::ProcessPMCProtect()
+{
+    int channelId = GetCurChannelIndex();
+    const GRegBits *g_reg = &m_p_pmc_reg->GReg().bits[channelId];
+
+    // 程序保护
+    int level = 0;
+    if (g_reg->KEY1)
+        level = 1;
+    if (g_reg->KEY2)
+        level = 2;
+    if (g_reg->KEY3)
+        level = 3;
+    if (g_reg->KEY4)
+        level = 4;
+
+    SetProgProtect(level);
 }
 

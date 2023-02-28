@@ -16650,6 +16650,7 @@ bool ChannelControl::EmergencyStop(){
     pthread_mutex_unlock(&m_mutex_change_state);
     //printf("unlocked 15\n");
     //停止MC执行
+
     this->PauseMc();
 
     if(this->m_thread_breakcontinue > 0){//处于断点继续线程执行过程中，则退出断点继续线程
@@ -16688,7 +16689,6 @@ bool ChannelControl::EmergencyStop(){
     //OP信号复位
     this->m_p_f_reg->OP = 0;
     //this->m_p_f_reg->SPL = 0;
-    this->m_p_f_reg->STL = 0;
 
     return true;
 

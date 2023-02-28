@@ -1841,8 +1841,7 @@ void HMICommunication::ProcessHmiShakehand(HMICmdRecvNode &cmd_node){
 #ifdef USES_LICENSE_FUNC
 		m_p_channel_engine->CheckLicense(true);
 #endif
-
-			g_ptr_alarm_processor->SendToHmi();  //将现有错误发送给HMI
+            ProcessHmiReady();
 		}
 		else
 			g_ptr_trace->PrintLog(LOG_ALARM, "系统已连接HMI[%s]，拒绝来自[%s]的HMI 连接, %d！",
@@ -2713,7 +2712,16 @@ void HMICommunication::ProcessHmiGetCPUInfo(HMICmdFrame &cmd){
 
 	memcpy(cmd.data, &cpu_info, sizeof(cpu_info));
 	cmd.data_len = sizeof(cpu_info);
-	SendCmd(cmd);
+    SendCmd(cmd);
+}
+
+void HMICommunication::ProcessHmiReady()
+{
+    //将现有错误发送给HMI
+    g_ptr_alarm_processor->SendToHmi();
+
+    //发送程序保护状态
+    g_ptr_chn_engine->ProcessPMCProtect();
 }
 
 /**

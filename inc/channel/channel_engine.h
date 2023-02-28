@@ -30,7 +30,7 @@
 
 #include "pmc_register.h"
 
-// #define TAP_TEST
+#define TAP_TEST
 
 
 //Ç°ÖÃÉùÃ÷
@@ -295,7 +295,8 @@ void SetMcArmComm(MCArmCommunication *comm){this->m_p_mc_arm_comm = comm;}   //É
     uint8_t GetMlkMask(){return m_MLK_mask;}    // »ñÈ¡»úĞµËø×¡±ê¼Ç
     double* GetMlkPos(){return m_MLK_pos;}      // »ñÈ¡»úĞµËø×¡Î»ÖÃ
 
-    void SetProgProtect(bool flag);     // ÉèÖÃ³ÌĞò±£»¤×´Ì¬
+    void ProcessPMCProtect();   //´¦Àí³ÌĞò±£»¤
+    void SetProgProtect(int level);     // ÉèÖÃ³ÌĞò±£»¤×´Ì¬
     bool UpdateMcModel(const string &mcPath);
 
     // ¼ì²âÊÇ·ñÈíÏŞÎ»³¬ÏŞ

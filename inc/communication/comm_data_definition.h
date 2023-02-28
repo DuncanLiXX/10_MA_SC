@@ -212,6 +212,7 @@ enum MiCmdCode{
 	CMD_MI_REFRESH_AXIS_ZERO = 0x08,        //MI通知SC更新轴零点偏移
 	CMD_MI_HW_TRACE_STATE_CHANGED = 0x09,   //MI通知SC手轮跟踪状态切换
 	CMD_MI_GET_ESB = 0x0A,                  //MI向SC获取ESB设备数据
+    CMD_MI_PLC_READY = 0x0B,                //MI向SC通知PMC准备好
 
 	//SC->MI
 	CMD_MI_RD_PMC_REG = 0x100,				//SC读取PMC寄存器值

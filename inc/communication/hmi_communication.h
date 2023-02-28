@@ -166,7 +166,8 @@ private:
     void ProcessHmiSysBackupCmd(HMICmdFrame &cmd);         //处理HMI备份命令
     void ProcessHmiSysRecoverCmd(HMICmdFrame &cmd);        //处理HMI恢复命令
     void ProcessHmiClearAlarmFile(HMICmdFrame &cmd);       //处理HMI清除报警文件命令
-    void ProcessHmiGetCPUInfo(HMICmdFrame &cmd);						   //处理HMI获取CPU 内存占用信息
+    void ProcessHmiGetCPUInfo(HMICmdFrame &cmd);					   //处理HMI获取CPU 内存占用信息
+    void ProcessHmiReady();
 	uint16_t GetFrameNumber(){return  (++m_n_frame_number&0x8000) ? (m_n_frame_number=0) : m_n_frame_number;}   //获取最新帧号
 
 	int GetNcFileCount(const char *path);    //获取NC加工文件个数

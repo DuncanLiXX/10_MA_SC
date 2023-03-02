@@ -5602,6 +5602,7 @@ void ChannelEngine::SetJPState(uint8_t chn, uint8_t JP, uint8_t last_JP, ChnWork
             SetCurAxis(chn, chn_axis);
             ManualMove(DIR_POSITIVE);
             g_ptr_tracelog_processor->SendToHmi(kPanelOper, kDebug, "点动[轴" + to_string(chn_axis) + "]+");
+            usleep(200000);
         }else if(mode == MANUAL_MODE){ // 轴正向移动松开，并且为手动连续模式
             ManualMoveStop(m_p_channel_config[chn].chn_axis_phy[i]-1);
             //g_ptr_tracelog_processor->SendToHmi(kPanelOper, kDebug, "点动释放[轴" + to_string(chn_axis) + "]+");
@@ -7638,24 +7639,24 @@ void ChannelEngine::SendMiPcParam(uint8_t axis){
     //放置数据
     uint16_t count = m_p_axis_config[axis].pc_count;
     uint16_t offset = m_p_axis_config[axis].pc_offset-1;  //起始编号，0开始
-    uint32_t inter = m_p_axis_config[axis].pc_inter_dist*1000;   //转换为微米单位
+    int64_t inter = m_p_axis_config[axis].pc_inter_dist*1000;   //转换为微米单位
     uint16_t ref_index = m_p_axis_config[axis].pc_ref_index-1;   //参考点对应位置，0开始
     //uint16_t ref_index = 0;   //参考点对应位置，0开始
     uint16_t pc_type = this->m_p_axis_config[axis].pc_type;
     uint16_t pc_enable = m_p_axis_config[axis].pc_enable;
 
-    //std::cout << "SendMiPcParam() " << std::endl;
-    //std::cout << "axis: " << (int)cmd.data.axis_index << std::endl;
-    //std::cout << "count: " << (int)count << std::endl;
-    //std::cout << "offset: " << (int)offset << std::endl;
-    //std::cout << "inter: " << (int)inter << std::endl;
-    //std::cout << "ref_index: " << (int)ref_index << std::endl;
-    //std::cout << "pc_type: " << (int)pc_type << std::endl;
-    //std::cout << "pc_enable: " << (int)pc_enable << std::endl;
+    std::cout << "SendMiPcParam() " << std::endl;
+    std::cout << "axis: " << (int)cmd.data.axis_index << std::endl;
+    std::cout << "count: " << (int)count << std::endl;
+    std::cout << "offset: " << (int)offset << std::endl;
+    std::cout << "inter: " << (int)inter << std::endl;
+    std::cout << "ref_index: " << (int)ref_index << std::endl;
+    std::cout << "pc_type: " << (int)pc_type << std::endl;
+    std::cout << "pc_enable: " << (int)pc_enable << std::endl;
 
     memcpy(cmd.data.data, &count, 2);  //补偿数据个数
     memcpy(&cmd.data.data[1], &offset, 2);   //起始编号
-    memcpy(&cmd.data.data[2], &inter, 4); 	 //补偿间隔 ， um单位，32位整型
+    memcpy(&cmd.data.data[2], &inter, 4); 	 //补偿间隔 ， um单位，64位整型
     memcpy(&cmd.data.data[4], &ref_index, 2);     //参考点对应位置
     memcpy(&cmd.data.data[5], &pc_type, 1);     //补偿类型  0--单向螺补   1--双向螺补
     memcpy(&cmd.data.data[6], &pc_enable, 1);

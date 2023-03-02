@@ -311,4 +311,9 @@ enum ThreadRunFlag{
     THREAD_BACKGROUND =  0x20,  //处理耗时命令
 };
 
+enum PMC_CONSUME_TYPE {
+    CONSUME_TYPE_NONE = 0,
+    CONSUME_TYPE_WORK_COUNT = 1,    // 工件计数
+};
+
 #endif /* INC_COMMUNICATION_COMM_DATA_DEFINITION_H_ */

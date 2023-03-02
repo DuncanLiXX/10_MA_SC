@@ -858,7 +858,8 @@ struct GRegBits{
 	//G52
 	uint8_t :8;
 	//G53
-	uint8_t :8;
+    uint8_t WKCNT:1;    //工件计数改变     G53.0
+    uint8_t :7;
 	//G54
 	uint8_t :8;
 	//G55

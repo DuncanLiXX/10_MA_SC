@@ -369,6 +369,8 @@ public:
     uint8_t GetChnAxisFromPhyAxis(uint8_t phy_axis); //获得对应物理轴的通道轴索引号，0开始
 
     void SyncMcPosition();  // 同步位置
+    void AddWorkCountPiece(int addnum);  //增加工件计数
+
 
 private:
 	void InitialChannelStatus();		//初始化通道状态
@@ -604,8 +606,6 @@ private:
     //void ProcessM29Reset();     //处理M29状态复位流程
 
 	void MiDebugFunc(int mcode);      //发送MI调试指令
-
-
 
 #ifdef USES_TWINING_FUNC
 	void ActiveTwiningFunc(int active);   //开关缠绕功能

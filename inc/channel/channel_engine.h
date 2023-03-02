@@ -27,6 +27,9 @@
 #include <sys/ioctl.h>
 #include <stdio.h>
 #include <signal.h>
+#include <future>
+#include <condition_variable>
+#include <mutex>
 
 #include "pmc_register.h"
 
@@ -401,7 +404,7 @@ private:	//私有成员函数
 	void ProcessPmcSignal();		//处理PMC的G变量
 	void ProcessPmcAxisCtrl();		//处理PMC轴控制信号
 	void ProcessPmcDataWnd();       //处理PMC数据窗口
-
+    void ProcessPmcConsuming();     //梯图刷新耗时任务提取到此线程处理
 
 
 	void ProcessPmcAlarm();    //处理PMC告警
@@ -642,6 +645,12 @@ private:  //私有成员变量
 #ifdef TAP_TEST
     FILE *m_fd = nullptr;
 #endif
+
+    //梯图扫描周期的耗时操作
+    std::future<void>           m_pmc_consume_ft;
+    std::mutex                  m_pmc_consume_mtx;
+    std::condition_variable     m_pmc_consume_cond;
+    PMC_CONSUME_TYPE            m_pmc_consume_type = CONSUME_TYPE_NONE;
 };
 
 #endif /* INC_CHANNEL_CHANNEL_ENGINE_H_ */

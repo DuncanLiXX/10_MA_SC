@@ -1131,6 +1131,12 @@ void ChannelEngine::Initialize(HMICommunication *hmi_comm, MICommunication *mi_c
         return;
     }
 
+    //处理PMC中的耗时任务
+    auto process = std::bind(&ChannelEngine::ProcessPmcConsuming,
+                             this);
+    m_pmc_consume_ft = std::async(std::launch::async, process);
+
+
     this->InitPoweroffHandler();
     printf("succeed to initialize channel engine\n");
 
@@ -8733,6 +8739,15 @@ void ChannelEngine::ProcessPmcSignal(){
             ProcessPMCProtect();
         }
 
+        //工件计数
+        if (g_reg_last->WKCNT == 0 && g_reg->WKCNT == 1)
+        {
+            std::cout << ">>>>>>>>>>>>>>>>>>>>>>>>>>WKCNT notify" << std::endl;
+            std::lock_guard<std::mutex> lck(m_pmc_consume_mtx);
+            m_pmc_consume_type = CONSUME_TYPE_WORK_COUNT;
+            m_pmc_consume_cond.notify_all();
+        }
+
         //通知类型的信号，只保留一个周期
         {
             if(f_reg_last->RTPT == 1)   // 攻丝回退结束信号
@@ -9123,6 +9138,29 @@ void ChannelEngine::ProcessPmcDataWnd(){
         }
     }else if((greg->ESTB == 0) && freg->EREND){
         freg->EREND = 0;   //复位PMC读取数据信号
+    }
+}
+
+void ChannelEngine::ProcessPmcConsuming()
+{
+    while(1)
+    {
+        std::unique_lock<std::mutex> lck(m_pmc_consume_mtx);
+        while(m_pmc_consume_type == 0) {
+            m_pmc_consume_cond.wait(lck);
+        }
+
+        switch(m_pmc_consume_type){
+        case CONSUME_TYPE_WORK_COUNT:
+        {
+            std::cout << "CONSUME_TYPE_WORK_COUNT"<< std::endl;
+            m_p_channel_control[m_n_cur_channle_index].AddWorkCountPiece(1);
+        }
+            break;
+        default:
+            break;
+        }
+        m_pmc_consume_type = CONSUME_TYPE_NONE;
     }
 }
 

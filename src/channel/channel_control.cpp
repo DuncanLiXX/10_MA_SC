@@ -6177,16 +6177,16 @@ bool ChannelControl::ExecuteAuxMsg(RecordMsg *msg){
 
                     //工件计数加一
                     if(this->m_channel_status.chn_work_mode == AUTO_MODE){
-                        this->m_channel_status.workpiece_count++;
-                        g_ptr_parm_manager->SetCurWorkPiece(m_n_channel_index, m_channel_status.workpiece_count);
-                        this->m_channel_status.workpiece_count_total++;
-                        g_ptr_parm_manager->SetTotalWorkPiece(m_n_channel_index, m_channel_status.workpiece_count_total);
-                        this->SendWorkCountToHmi(m_channel_status.workpiece_count, m_channel_status.workpiece_count_total);  //通知HMI更新加工计数
+//                        this->m_channel_status.workpiece_count++;
+//                        g_ptr_parm_manager->SetCurWorkPiece(m_n_channel_index, m_channel_status.workpiece_count);
+//                        this->m_channel_status.workpiece_count_total++;
+//                        g_ptr_parm_manager->SetTotalWorkPiece(m_n_channel_index, m_channel_status.workpiece_count_total);
+//                        this->SendWorkCountToHmi(m_channel_status.workpiece_count, m_channel_status.workpiece_count_total);  //通知HMI更新加工计数
 
-                        if (m_channel_status.workpiece_require != 0 && m_channel_status.workpiece_count >= m_channel_status.workpiece_require)
-                        {//已到达需求件数
-                            CreateError(ERR_REACH_WORK_PIECE, INFO_LEVEL, CLEAR_BY_MCP_RESET);
-                        }
+//                        if (m_channel_status.workpiece_require != 0 && m_channel_status.workpiece_count >= m_channel_status.workpiece_require)
+//                        {//已到达需求件数
+//                            CreateError(ERR_REACH_WORK_PIECE, INFO_LEVEL, CLEAR_BY_MCP_RESET);
+//                        }
                         this->ResetMode();   //模态恢复默认值
 
                         //激活工件坐标系参数
@@ -6670,16 +6670,16 @@ bool ChannelControl::ExecuteAuxMsg(RecordMsg *msg){
                 else{
                 	//printf("22222222222222\n");
                 	m_p_compiler->RecycleCompile();   //主程序则循环调用
-                    this->m_channel_status.workpiece_count++;  //工件计数加一
-                    g_ptr_parm_manager->SetCurWorkPiece(m_n_channel_index, m_channel_status.workpiece_count);
-                    this->m_channel_status.workpiece_count_total++;
-                    g_ptr_parm_manager->SetTotalWorkPiece(m_n_channel_index, m_channel_status.workpiece_count_total);
-                    this->SendWorkCountToHmi(m_channel_status.workpiece_count, m_channel_status.workpiece_count_total);  //通知HMI更新加工计数
+//                    this->m_channel_status.workpiece_count++;  //工件计数加一
+//                    g_ptr_parm_manager->SetCurWorkPiece(m_n_channel_index, m_channel_status.workpiece_count);
+//                    this->m_channel_status.workpiece_count_total++;
+//                    g_ptr_parm_manager->SetTotalWorkPiece(m_n_channel_index, m_channel_status.workpiece_count_total);
+//                    this->SendWorkCountToHmi(m_channel_status.workpiece_count, m_channel_status.workpiece_count_total);  //通知HMI更新加工计数
 
-                    if (m_channel_status.workpiece_require != 0 && m_channel_status.workpiece_count >= m_channel_status.workpiece_require)
-                    {//已到达需求件数
-                        CreateError(ERR_REACH_WORK_PIECE, INFO_LEVEL, CLEAR_BY_MCP_RESET);
-                    }
+//                    if (m_channel_status.workpiece_require != 0 && m_channel_status.workpiece_count >= m_channel_status.workpiece_require)
+//                    {//已到达需求件数
+//                        CreateError(ERR_REACH_WORK_PIECE, INFO_LEVEL, CLEAR_BY_MCP_RESET);
+//                    }
 
 #ifdef USES_GRIND_MACHINE
                     if(this->m_channel_status.workpiece_count >= this->m_p_mech_arm_param->grind_wheel_life){
@@ -6793,7 +6793,7 @@ bool ChannelControl::ExecuteAuxMsg(RecordMsg *msg){
 
             if(tmp->GetExecStep(m_index) == 0){
                 //TODO 将代码发送给PMC
-                g_ptr_trace->PrintLog(LOG_ALARM, "执行的M代码：M%02d", mcode);
+                g_ptr_trace->PrintLog(LOG_ALARM, "default:执行的M代码：M%02d", mcode);
                 this->SendMCodeToPmc(mcode, m_index);
 
                 gettimeofday(&m_time_m_start[m_index], NULL);
@@ -6843,6 +6843,7 @@ bool ChannelControl::ExecuteAuxMsg(RecordMsg *msg){
                     gettimeofday(&time_now, NULL);
                     time_elpase = (time_now.tv_sec-m_time_m_start[m_index].tv_sec)*1000000+time_now.tv_usec-m_time_m_start[m_index].tv_usec;
                     if(time_elpase > kMCodeTimeout && !this->GetMExcSig(m_index)){//超过200ms任未进入执行状态，则告警“不支持的M代码”
+                        std::cout << "mcode: " << (int)mcode << " ME: " << (int)this->GetMExcSig(m_index) << " FIN: " << (int)this->m_p_g_reg->FIN << std::endl;
                         CreateError(ERR_M_CODE, ERROR_LEVEL, CLEAR_BY_MCP_RESET, mcode, m_n_channel_index);
                         this->m_error_code = ERR_M_CODE;
                     }else
@@ -18337,6 +18338,20 @@ void ChannelControl::MiDebugFunc(int mcode){
     cmd.data.data[0] = mcode;
 
     this->m_p_mi_comm->WriteCmd(cmd);
+}
+
+void ChannelControl::AddWorkCountPiece(int addNum)
+{
+    this->m_channel_status.workpiece_count += addNum;
+    g_ptr_parm_manager->SetCurWorkPiece(m_n_channel_index, m_channel_status.workpiece_count);
+    this->m_channel_status.workpiece_count_total += addNum;
+    g_ptr_parm_manager->SetTotalWorkPiece(m_n_channel_index, m_channel_status.workpiece_count_total);
+    this->SendWorkCountToHmi(m_channel_status.workpiece_count, m_channel_status.workpiece_count_total);  //通知HMI更新加工计数
+
+    if (m_channel_status.workpiece_require != 0 && m_channel_status.workpiece_count >= m_channel_status.workpiece_require)
+    {//已到达需求件数
+        CreateError(ERR_REACH_WORK_PIECE, INFO_LEVEL, CLEAR_BY_MCP_RESET);
+    }
 }
 
 #ifdef USES_SPEED_TORQUE_CTRL

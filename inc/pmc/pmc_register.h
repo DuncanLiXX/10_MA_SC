@@ -871,8 +871,8 @@ struct GRegBits{
 	//G60
 	uint8_t :8;
 	//G61
-    uint8_t RGTAP:1;    // 刚性攻丝信号 G61.0
-    uint8_t RGMD:1;     // 刚性攻丝模式切换信号 G61.1
+    uint8_t RGTAP:1;    // 刚性攻丝信号 G61.0  同步
+    uint8_t RGMD:1;     // 刚性攻丝模式切换信号 G61.1 位置
     uint8_t :6;
 	//G62
     uint8_t :6;

@@ -8084,15 +8084,12 @@ void ChannelEngine::Emergency(uint8_t chn){
 
     this->ClearPmcAxisMoveData();   //清空PMC轴运动数据
 
-
     //记录复位操作结束时间，供RST信号延时后复位
     gettimeofday(&this->m_time_rst_over, NULL);
     // lidianqiang:急停后，rst信号需要保持为1。等解除急停并且按下复位后才恢复
     // m_b_reset_rst_signal = true;
 
-
     //置位F寄存器
-
 
     //复位增量式编码器轴的回参考点完成标志
 #ifndef USES_WOOD_MACHINE

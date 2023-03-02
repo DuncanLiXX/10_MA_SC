@@ -104,6 +104,7 @@ public://公共接口
 
 
     int getSubCallTimes(){ return m_n_sub_call_times;}
+    bool needJumpUpper(){return isJumpUpper;}
 
 #ifdef USES_WOOD_MACHINE
 	bool FindPreStartSpdCmd(uint64_t line_min , uint64_t line_max, SpindleStartOffset &spd_cmd);   //查找是否存在可预启动的主轴指令
@@ -243,9 +244,7 @@ private://私有成员
 	ProgramType m_n_sub_program;       //当前所处程序类型，0--主程序   1--子程序   2--宏程序
 	bool m_b_comment;           //当前是否注释状态,允许跨行注释
 	bool m_b_left;              //是否（）注释形式,即是否找到‘（’
-
-	int m_n_sub_call_times;		//当前子程序调用次数
-
+	int m_n_sub_call_times{0};		//当前子程序调用次数
 	ErrorType m_error_code;    //错误码
 
 //	CompilerMainState m_n_main_state;   //编译主循环状态
@@ -255,6 +254,7 @@ private://私有成员
 
 	SimulateMode *m_p_simulate_mode;  //仿真模式
 
+	bool isJumpUpper{false};
 	bool isSubInSameFile{false};      // 子程序在同一个程序内
 	uint64_t ln_read_size;
 	char * p_cur_file_pos;

@@ -52,6 +52,7 @@ Compiler::Compiler(ChannelControl *chn_ctrl) {
     m_p_mc_communication = MCCommunication::GetInstance();   //初始化MC通讯接口
 
     InitCompiler();
+
     if (m_error_code != ERR_NONE) {
         printf("Failed to init compiler!\n");
     }
@@ -60,6 +61,7 @@ Compiler::Compiler(ChannelControl *chn_ctrl) {
     {
         this->m_p_tool_compensate_auto->SetChannelIndex(m_n_channel_index);
     }
+
     if(this->m_p_tool_compensate_mda != nullptr)
     {
         this->m_p_tool_compensate_mda->SetChannelIndex(m_n_channel_index);
@@ -1946,6 +1948,10 @@ void Compiler::Reset(){
     m_else_jump_stack_run.clear();
     m_b_else_jump = false;
     /********************************/
+    isJumpUpper = false;
+    isSubInSameFile = false;
+    ln_read_size = 0;
+    ln_cur_line_no = 1;
 }
 
 /**
@@ -2028,7 +2034,7 @@ bool Compiler::GetLineData() {
     //
     //	gettimeofday(&tvStart, NULL);
 
-    //	printf("enter getlinedata\n");
+	//printf("enter getlinedata\n");
 
     bool res = true;
     if(m_p_file_map_info == nullptr || m_b_compile_over) {  //编译结束
@@ -2061,7 +2067,7 @@ bool Compiler::GetLineData() {
         }
         return true;
 #else
-        return false;   //直接返回
+        if(m_n_sub_program == MAIN_PROG) return false;
 #endif
     }
 
@@ -2074,19 +2080,19 @@ bool Compiler::GetLineData() {
     bool bSpace = false;   //前一个字符为空白字符
     bool bFirst = false;    //遇到第一个非空白字符
     bool bSwapdown = false;  //向下翻页
-
     char c_cur = *m_p_cur_file_pos;   //当前字符
-
     char c_next = '\0';   //下一个字符
     uint64_t block_limit = m_p_file_map_info->ln_map_start
             + m_p_file_map_info->ln_map_blocksize;
 
     this->m_compiler_status.jump_flag = false;
 
+
 REDO:
     //读取下一个字符
     if (m_ln_read_size >= block_limit - 1) {   //到达映射块尾部
-        if (m_ln_read_size >= m_p_file_map_info->ln_file_size - 1) {  //到达文件尾
+
+    	if (m_ln_read_size >= m_p_file_map_info->ln_file_size - 1) {  //到达文件尾
             c_next = '\0';
         } else {
             if (m_p_file_map_info->Swapdown()) {
@@ -2104,8 +2110,9 @@ REDO:
     this->m_lexer_result.line_no = this->m_ln_cur_line_no;   //更新行号
     this->m_lexer_result.offset = this->m_ln_read_size;      //保存行首偏移量
 
-    while (!m_b_eof && (c_cur != '\r' || c_next != '\n') &&//兼容两种换行格式（\r\n和\n）
-           (c_cur != '\n')) {
+    //while (!m_b_eof && (c_cur != '\r' || c_next != '\n') &&//兼容两种换行格式（\r\n和\n）
+	while (!m_b_eof && (c_cur != '\r' || c_next != '\n') &&
+    		(c_cur != '\n')) {
         if (!m_b_comment) {
             if (c_cur == '(') {
                 m_b_comment = true;
@@ -2195,10 +2202,8 @@ REDO:
         m_line_buf[index - 1] = '\0';
         index--;
     }
-
     //跳过行尾字符，指向下一行行首
     if (!m_b_eof) {
-
         if (c_cur == '\n') {
             m_p_cur_file_pos += 1;
             m_ln_read_size += 1;
@@ -2217,7 +2222,7 @@ REDO:
 
     } else {
         //		this->StopCompile();
-        g_ptr_trace->PrintTrace(TRACE_DETAIL, COMPILER_CHN, "end of the file\n");
+    	g_ptr_trace->PrintTrace(TRACE_DETAIL, COMPILER_CHN, "end of the file\n");
     }
 
     if (index == 0) {  //如果空白行且文件未结束，则继续读取下一行
@@ -2337,7 +2342,7 @@ bool Compiler::RunMessage() {
             if(cur_line != msg->GetLineNo() || type != msg->GetMsgType()){
                 cur_line = msg->GetLineNo();
                 type = msg->GetMsgType();
-                printf("compiler run message  line no: %llu,  type: %d\n", cur_line, msg_type);
+                //printf("compiler run message  line no: %llu,  type: %d\n", cur_line, msg_type);
             }
             // @test zk
 
@@ -2502,7 +2507,12 @@ bool Compiler::RunAuxMsg(RecordMsg *msg) {
             } else {
                 this->m_b_compile_over = true;
                 printf("compiler run M30\n");
-
+                // @add zk  子程序调用标志位复位
+                isJumpUpper = false;
+                isSubInSameFile = false;
+                ln_read_size = 0;
+                ln_cur_line_no = 1;
+                // @add zk  子程序调用标志位复位
             }
 
             break;
@@ -3613,7 +3623,7 @@ bool Compiler::RunMacroMsg(RecordMsg *msg) {
         break;
     case MACRO_CMD_IF:{
     	//@test
-    	printf("===== IF CMD %llu\n", tmp->GetLineNo());
+    	//printf("===== IF CMD %llu\n", tmp->GetLineNo());
         if(!tmp->GetMacroExpCalFlag(0)){
             if(!m_p_parser->GetExpressionResult(tmp->GetMacroExp(0), tmp->GetMacroExpResult(0))) {//表达式运算失败
                 m_error_code = m_p_parser->GetErrorCode();
@@ -3636,7 +3646,7 @@ bool Compiler::RunMacroMsg(RecordMsg *msg) {
                 //printf("===== node lino: %llu, tmp lino: %llu\n", node_vector.at(0).line_no, tmp->GetLineNo());
 
             	if(node_vector.at(0).line_no == tmp->GetLineNo()){
-            		printf("===== node lino: %llu, tmp lino: %llu\n", node_vector.at(0).line_no, tmp->GetLineNo());
+            		//printf("===== node lino: %llu, tmp lino: %llu\n", node_vector.at(0).line_no, tmp->GetLineNo());
             		node = node_vector.at(0);
                 }
             }
@@ -3674,7 +3684,7 @@ bool Compiler::RunMacroMsg(RecordMsg *msg) {
             }
 
             m_node_stack_run.push_back(node);
-            printf("===== push back size: %d\n", m_node_stack_run.size());
+            //printf("===== push back size: %d\n", m_node_stack_run.size());
             m_else_jump_stack_run.push_back(m_b_else_jump);
         }
         break;
@@ -3682,7 +3692,7 @@ bool Compiler::RunMacroMsg(RecordMsg *msg) {
     case MACRO_CMD_ELSEIF:{
 
     	//@test
-		printf("===== ELSEIF CMD %llu\n", tmp->GetLineNo());
+		//printf("===== ELSEIF CMD %llu\n", tmp->GetLineNo());
 
     	if(m_node_stack_run.size() == 0){
             printf("IF ELSE 不匹配, 没有if入栈但遇到  else/ elseif\n");
@@ -3747,7 +3757,7 @@ bool Compiler::RunMacroMsg(RecordMsg *msg) {
     case MACRO_CMD_ELSE:{
 
     	//@test
-		printf("===== ELSE CMD %llu\n", tmp->GetLineNo());
+		//printf("===== ELSE CMD %llu\n", tmp->GetLineNo());
 
     	if(m_node_stack_run.size() == 0){
             printf("IF ELSE 不匹配, 没有if入栈但遇到  else/ elseif 222\n");
@@ -3773,7 +3783,7 @@ bool Compiler::RunMacroMsg(RecordMsg *msg) {
     case MACRO_CMD_ENDIF:{
 
     	//@test
-		printf("===== ENDIF CMD %llu\n", tmp->GetLineNo());
+		//printf("===== ENDIF CMD %llu\n", tmp->GetLineNo());
 
     	if(m_node_stack_run.size() == 0){
             printf("IF ELSE 不匹配, 没有if入栈但遇到  endif \n");
@@ -3811,6 +3821,8 @@ bool Compiler::JumpLine(int line_no, uint64_t offset, MacroCmdMsg *tmp){
     this->m_p_cur_file_pos = m_p_file_map_info->ptr_map_file
             + m_ln_read_size - m_p_file_map_info->ln_map_start;
 
+    // 若跳转了行号 需要把文件结束标志复位
+    m_b_eof = false;
     this->m_ln_cur_line_no = line_no;
     return true;
 }
@@ -3945,7 +3957,6 @@ bool Compiler::RunLoopMsg(RecordMsg *msg) {
 
     // @test zk  将当前局部变量存到scene中  清零当前局部变量。
     pv->PushLocalVar();
-
 
     //赋值自变量参数到局部变量
     uint8_t pc = 0;
@@ -4383,6 +4394,7 @@ bool Compiler::ReturnFromSubProg() {
 
     	if(--m_n_sub_call_times > 0){
     		// 子程序在同一个文件里 还有些情况处理不了
+    		isJumpUpper = false;
     		if(isSubInSameFile){
     			if (!this->m_p_file_map_info->JumpTo(ln_read_size)) {   //映射失败
     				CreateErrorMsg(ERR_JUMP_SUB_PROG, m_ln_cur_line_no);  //子程序跳转失败
@@ -4392,15 +4404,19 @@ bool Compiler::ReturnFromSubProg() {
 			    this->m_ln_read_size = ln_read_size;
 				this->m_p_cur_file_pos = p_cur_file_pos;
 				this->m_ln_cur_line_no = ln_cur_line_no;
+				m_b_eof = false;
     			return true;
     		}
 
     		this->RecycleCompile();
             return true;
+
+        }else{
+        	isJumpUpper = true;
         }
 
         //预扫描线程是否结束，未结束则退出
-        void* thread_result;
+        void * thread_result;
         int res = 0;
         if (!m_b_prescan_over && m_thread_prescan != 0) {//预扫描线程未结束，退出并等待其结束
             //先退出之前的线程

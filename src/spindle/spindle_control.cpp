@@ -71,6 +71,10 @@ void SpindleControl::InputSCode(uint32_t s_code)
 {
     if(!spindle)
         return;
+
+
+    printf("SpindleControl::InputSCode s_code = %d\n", s_code);
+
     ScPrintf("SpindleControl::InputSCode s_code = %d\n", s_code);
     F->scode_0 = (s_code&0xFF);
     F->scode_1 = ((s_code>>8)&0xFF);
@@ -92,11 +96,14 @@ uint32_t SpindleControl::GetSCode()
     return cnc_speed;
 }
 
+// 主轴方向输入
 void SpindleControl::InputPolar(Spindle::Polar polar)
 {
     if(!spindle)
         return;
+
     ScPrintf("SpindleControl::InputPolar %d\n",polar);
+    printf("SpindleControl::InputPolar %d\n",polar);
 
     cnc_polar = polar;
 
@@ -161,6 +168,7 @@ void SpindleControl::SetTapFeed(double feed)
     tap_feed = feed;
 }
 
+// 开始刚性攻丝
 void SpindleControl::StartRigidTap(double feed)
 {
     if(!spindle || spindle->axis_interface == 0)
@@ -228,20 +236,25 @@ void SpindleControl::StartRigidTap(double feed)
     SaveTapState();
 }
 
+// 取消刚性攻丝
 void SpindleControl::CancelRigidTap()
 {
     if(!spindle || spindle->axis_interface == 0)
         return;
 
-    std::this_thread::sleep_for(std::chrono::microseconds(100*1000));
-
     ChannelEngine *engine = ChannelEngine::GetInstance();
     ChannelControl *control = engine->GetChnControl(0);
 	ChannelRealtimeStatus status = control->GetRealtimeStatus();
-    SendMcRigidTapFlag(false);
-    mi->SendTapStateCmd(chn, false);
+
+	SendMcRigidTapFlag(false);
+
+	mi->SendTapStateCmd(chn, false);
+
     mi->SendTapRatioCmd(chn, 0);
-    double pos = status.cur_pos_machine.GetAxisValue(phy_axis);
+
+    std::this_thread::sleep_for(std::chrono::microseconds(100*1000));
+
+    //double pos = status.cur_pos_machine.GetAxisValue(phy_axis);
     //mi->SetAxisRefCur(phy_axis+1,pos);
 
     tap_enable = false;
@@ -257,7 +270,7 @@ void SpindleControl::ResetTapFlag()
     SaveTapState();
 }
 
-// _SSTP信号输入 低有效
+// _SSTP信号输入 低有效   主轴停止信号
 void SpindleControl::InputSSTP(bool _SSTP)
 {
     if(!spindle)
@@ -279,6 +292,7 @@ void SpindleControl::InputSSTP(bool _SSTP)
     UpdateSpindleState();
 }
 
+// 主轴准停
 void SpindleControl::InputSOR(bool SOR)
 {
     if(!spindle)
@@ -292,6 +306,7 @@ void SpindleControl::InputSOR(bool SOR)
     UpdateSpindleState();
 }
 
+// 设置主轴倍率
 void SpindleControl::InputSOV(uint8_t SOV)
 {
     if(!spindle)
@@ -306,6 +321,7 @@ void SpindleControl::InputSOV(uint8_t SOV)
     UpdateSpindleState();
 }
 
+// 主轴转速外部输入
 void SpindleControl::InputRI(uint16_t RI)
 {
     if(!spindle)
@@ -320,6 +336,7 @@ void SpindleControl::InputRI(uint16_t RI)
     }
 }
 
+// 主轴方向PMC输入
 void SpindleControl::InputSGN(bool SGN)
 {
     if(!spindle)
@@ -334,6 +351,7 @@ void SpindleControl::InputSGN(bool SGN)
     }
 }
 
+// 主轴方向控制选择  0 CNC控制  1 PMC控制
 void SpindleControl::InputSSIN(bool SSIN)
 {
     if(!spindle)
@@ -345,6 +363,7 @@ void SpindleControl::InputSSIN(bool SSIN)
     UpdateSpindleState();
 }
 
+// 主轴速度控制选择    0 CNC控制  1 PMC控制
 void SpindleControl::InputSIND(bool SIND)
 {
     if(!spindle)
@@ -356,6 +375,7 @@ void SpindleControl::InputSIND(bool SIND)
     UpdateSpindleState();
 }
 
+// 定位信号
 void SpindleControl::InputORCMA(bool ORCMA)
 {
     static std::future<void> ans;
@@ -368,6 +388,7 @@ void SpindleControl::InputORCMA(bool ORCMA)
     ans = std::async(std::launch::async, func, ORCMA);
 }
 
+// 刚性攻丝模式切换
 void SpindleControl::InputRGTAP(bool RGTAP)
 {
     if(!spindle)
@@ -379,9 +400,10 @@ void SpindleControl::InputRGTAP(bool RGTAP)
     if(RGTAP)
         StartRigidTap(tap_feed);
     else
-        CancelRigidTap();
+    	CancelRigidTap();
 }
 
+// 主轴控制模式切换 (同步)
 void SpindleControl::InputRGMD(bool RGMD)
 {
     if(!spindle)
@@ -397,6 +419,7 @@ void SpindleControl::InputRGMD(bool RGMD)
         SetMode(Speed);
 }
 
+// 攻丝回退信号
 void SpindleControl::InputRTNT(bool RTNT)
 {
     static std::future<void> ans;
@@ -417,6 +440,13 @@ void SpindleControl::InputRTNT(bool RTNT)
     }
 
     // 加载攻丝状态
+    printf("===== SSIN %d SIND %d _SSTP %d\n", SSIN, SIND, _SSTP);
+
+    while(_SSTP == 0){
+    	usleep(100000);
+    	printf("===== %d\n", _SSTP);
+    }
+
     if(SSIN == 1 || SIND == 1 || _SSTP == 0 ||
             !LoadTapState(tap_state) || !tap_state.tap_flag)
     {
@@ -431,6 +461,7 @@ void SpindleControl::InputRTNT(bool RTNT)
     ans = std::async(std::launch::async, func);
 }
 
+// 主轴定位
 void SpindleControl::RspORCMA(bool success)
 {
     if(!spindle)
@@ -838,13 +869,11 @@ void SpindleControl::ProcessModeChanged(Spindle::Mode mode)
         double pos = status.cur_pos_machine.GetAxisValue(phy_axis);
         mi->SetAxisRefCur(phy_axis+1,pos);
         //printf("SetAxisRefCur: axis=%d, pos = %lf\n",phy_axis+1,pos);
-        printf("RspCtrlMode:Position\n");
         //control->SyncMcPosition();
         std::this_thread::sleep_for(std::chrono::microseconds(100*1000));
         F->RGMP = 1;
     }else{
         F->RGMP = 0;
-        printf("RspCtrlMode:Speed\n");
     }
 
     this->mode = mode;
@@ -903,7 +932,7 @@ void SpindleControl::ProcessSwitchLevel()
 
 void SpindleControl::SendMcRigidTapFlag(bool enable)
 {
-    McCmdFrame cmd;
+	McCmdFrame cmd;
     memset(&cmd, 0x00, sizeof(McCmdFrame));
 
     cmd.data.channel_index = chn;
@@ -954,14 +983,15 @@ bool SpindleControl::LoadTapState(TapState &state)
     return true;
 }
 
+// 攻丝回退处理
 void SpindleControl::ProcessRTNT()
 {
-    // 如果主轴不在使能状态，先上使能
+
+	// 如果主轴不在使能状态，先上使能
     if(!motor_enable)
         mi->SendAxisEnableCmd(phy_axis+1, true);
     std::this_thread::sleep_for(std::chrono::microseconds(1000 * 1000));
     if(!motor_enable){
-        printf("===== motor_enable = false!!!\n");
     	CreateError(ERR_SPD_RTNT_FAIL,
                     ERROR_LEVEL,
                     CLEAR_BY_MCP_RESET);
@@ -979,7 +1009,6 @@ void SpindleControl::ProcessRTNT()
     running_rtnt = true;
     if(!control->CallMacroProgram(6100))
     {
-        printf("===== CallMacroProgram call failed!!!\n");
     	CreateError(ERR_SPD_RTNT_FAIL,
                     ERROR_LEVEL,
                     CLEAR_BY_MCP_RESET);
@@ -1007,20 +1036,13 @@ void SpindleControl::ProcessRTNT()
 }
 
 void SpindleControl::EStop(){
-    if(!spindle) return;
+	if(!spindle) return;
 
-	int16_t output = 0;
-	output += spindle->zero_compensation; // 加上零漂
+	InputPolar(Stop);
 
-	MiCmdFrame cmd;
-	memset(&cmd, 0x00, sizeof(cmd));
-	cmd.data.cmd = CMD_MI_SET_SPD_SPEED;
-	cmd.data.axis_index = phy_axis+1;
-	cmd.data.data[0] = (int16_t)output;
-	printf("===== send spindle DA output: %d\n",output);
-	mi->WriteCmd(cmd);
-
-	if(tap_enable) CancelRigidTap();
+	if(tap_enable){
+		CancelRigidTap();
+	}
 
 	//if(m_n_M29_flag) ProcessM29Reset();
 }

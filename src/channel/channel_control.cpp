@@ -1879,7 +1879,7 @@ void ChannelControl::StartRunGCode(){
 
         gettimeofday(&m_time_start_maching, nullptr);  //初始化启动时间
 
-        //		printf("StartRunGCode:m_n_run_thread_state, %d\n", m_n_run_thread_state);
+        //printf("StartRunGCode:m_n_run_thread_state, %d\n", m_n_run_thread_state);
         if(m_n_run_thread_state == IDLE || m_n_run_thread_state == PAUSE){
             m_n_run_thread_state = RUN;  //置为运行状态
         }
@@ -4401,11 +4401,11 @@ int ChannelControl::Run(){
 				}
                 else{
 
-                	//printf("----------------------------> CompileLine\n");
+                    //printf("----------------------------> CompileLine\n");
 					if(m_p_compiler->RunMessage()){
                         //printf("----------------------------> RunMessage\n");
 						if(!ExecuteMessage()){
-							//printf("----------------------------> ExecuteMessage\n");
+                            //printf("----------------------------> ExecuteMessage\n");
 							if(m_error_code != ERR_NONE){
 
 								g_ptr_trace->PrintTrace(TRACE_WARNING, CHANNEL_CONTROL_SC, "execute message error2, %d\n", m_error_code);
@@ -8571,6 +8571,8 @@ bool ChannelControl::ExecuteErrorMsg(RecordMsg *msg){
     if(err->GetInfoType() == 1){  //告警
         this->m_error_code = (ErrorType)err->GetErrorCode();
         printf("execute error msg: %d, %llu\n", m_error_code, err->GetLineNo());
+        if (!m_b_lineno_from_mc)    //llx add,处理加工文件名和行号对应不上问题
+            SetCurLineNo(err->GetLineNo());
         this->m_n_run_thread_state = ERROR;
         CreateError(err->GetErrorCode(), ERROR_LEVEL, CLEAR_BY_MCP_RESET, 0, m_n_channel_index);
     }else if(err->GetInfoType() == 0){  //提示

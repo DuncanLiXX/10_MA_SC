@@ -598,6 +598,7 @@ void PmcAxisCtrl::ExecuteCmd(){
             if(cmd == 0x00 && !axis->pmc_g00_by_EIFg){ // 使用定位速度作为快移速度
                 speed = axis->rapid_speed;
             }
+            std::cout << "---------->distance: " << m_pmc_cmd_buffer[this->m_n_buf_exec].distance << std::endl;
             if(cmd == 0x00 || cmd == 0x01){
                 if(speed < axis->pmc_min_speed || speed > axis->pmc_max_speed){
                     CreateError(ERR_PMC_SPEED_ERROR,

@@ -4017,6 +4017,7 @@ bool Compiler::RunErrorMsg(RecordMsg *msg) {
     if(tmp->GetInfoType() == 1){  //´íÎóĞÅÏ¢
         this->m_error_code = (ErrorType)tmp->GetErrorCode();
     }
+
     printf("run error message! errcode = %d, infotype = %d, line = %lld\n", m_error_code, tmp->GetInfoType(), tmp->GetLineNo());
 
     return true;

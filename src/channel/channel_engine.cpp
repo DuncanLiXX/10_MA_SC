@@ -8652,7 +8652,7 @@ void ChannelEngine::ProcessPmcSignal(){
         }
 
         // 限位开关选择信号
-        if(g_reg->EXLM != g_reg_last->EXLM || g_reg->RLSOT != g_reg_last->RLSOT){
+        if(g_reg->EXLM != g_reg_last->EXLM || g_reg->RLSOT != g_reg_last->RLSOT || !inited){
             SetSoftLimitSignal(g_reg->EXLM, g_reg->RLSOT);
             UpdateMiLimitValue(g_reg->EXLM, g_reg->RLSOT);
         }
@@ -11450,7 +11450,7 @@ void ChannelEngine::EcatAxisFindRefNoZeroSignal(uint8_t phy_axis){
         int64_t pos = m_p_axis_config[phy_axis].axis_home_pos[0]*1e7;   //单位转换,0.1nm
         memcpy(&cmd.data.data[1], &pos, sizeof(int64_t));
         cmd.data.data[5] = this->m_p_axis_config[phy_axis].ref_signal;
-        cmd.data.data[6] = this->m_p_axis_config[phy_axis].ret_ref_dir;
+        cmd.data.data[6] = -this->m_p_axis_config[phy_axis].ret_ref_dir;
 
         this->m_p_mi_comm->WriteCmd(cmd);
 

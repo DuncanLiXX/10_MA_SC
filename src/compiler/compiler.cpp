@@ -2477,6 +2477,8 @@ bool Compiler::RunMessage() {
     }else{
         printf("----compiler run message %llu failed\n", lineNo);
     }*/
+    if (!res)   //llx add,处理2033报警，下次启动卡死问题
+        compiler_lock = false;
 
     return res;
 }

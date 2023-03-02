@@ -4460,7 +4460,7 @@ int ChannelControl::Run(){
 
             	m_n_run_thread_state = ERROR;
                 g_ptr_trace->PrintLog(LOG_ALARM, "CHN[%d]语法错误，未找到结束指令！", m_n_channel_index);
-                                                                                                                    CreateError(ERR_NO_END, ERROR_LEVEL, CLEAR_BY_MCP_RESET, 0, m_n_channel_index);
+                CreateError(ERR_NO_END, ERROR_LEVEL, CLEAR_BY_MCP_RESET, 0, m_n_channel_index);
             }
 #endif
             pthread_mutex_unlock(&m_mutex_change_state);

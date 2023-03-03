@@ -72,9 +72,6 @@ void SpindleControl::InputSCode(uint32_t s_code)
     if(!spindle)
         return;
 
-
-    printf("SpindleControl::InputSCode s_code = %d\n", s_code);
-
     ScPrintf("SpindleControl::InputSCode s_code = %d\n", s_code);
     F->scode_0 = (s_code&0xFF);
     F->scode_1 = ((s_code>>8)&0xFF);
@@ -103,7 +100,6 @@ void SpindleControl::InputPolar(Spindle::Polar polar)
         return;
 
     ScPrintf("SpindleControl::InputPolar %d\n",polar);
-    printf("SpindleControl::InputPolar %d\n",polar);
 
     cnc_polar = polar;
 
@@ -276,7 +272,6 @@ void SpindleControl::InputSSTP(bool _SSTP)
     if(!spindle)
         return;
 
-    printf("SpindleControl::InputSSTP _SSTP = %d\n", _SSTP);
     ScPrintf("SpindleControl::InputSSTP _SSTP = %d\n", _SSTP);
 
     this->_SSTP = _SSTP;
@@ -311,7 +306,6 @@ void SpindleControl::InputSOV(uint8_t SOV)
 {
     if(!spindle)
         return;
-    printf("SpindleControl::InputSOV SOV = %d\n", SOV);
     ScPrintf("SpindleControl::InputSOV SOV = %d\n", SOV);
 
     // 位置模式下不能修改主轴倍率
@@ -326,7 +320,6 @@ void SpindleControl::InputRI(uint16_t RI)
 {
     if(!spindle)
         return;
-    printf("SpindleControl::InputRI RI = %d\n", RI);
     ScPrintf("SpindleControl::InputRI RI = %d\n", RI);
 
     this->RI = RI;
@@ -341,7 +334,6 @@ void SpindleControl::InputSGN(bool SGN)
 {
     if(!spindle)
         return;
-    printf("SpindleControl::InputSGN SGN = %d\n", SGN);
     ScPrintf("SpindleControl::InputSGN SGN = %d\n", SGN);
 
     this->SGN = SGN;
@@ -356,7 +348,6 @@ void SpindleControl::InputSSIN(bool SSIN)
 {
     if(!spindle)
         return;
-    printf("SpindleControl::InputSSIN SSIN = %d\n", SSIN);
     ScPrintf("SpindleControl::InputSSIN SSIN = %d\n", SSIN);
 
     this->SSIN = SSIN;
@@ -368,7 +359,6 @@ void SpindleControl::InputSIND(bool SIND)
 {
     if(!spindle)
         return;
-    printf("SpindleControl::InputSIND SIND = %d\n", SIND);
     ScPrintf("SpindleControl::InputSIND SIND = %d\n", SIND);
 
     this->SIND = SIND;
@@ -381,7 +371,6 @@ void SpindleControl::InputORCMA(bool ORCMA)
     static std::future<void> ans;
     if(!spindle)
         return;
-    printf("SpindleControl::InputORCMA ORCMA = %d\n", ORCMA);
     ScPrintf("SpindleControl::InputORCMA ORCMA = %d\n", ORCMA);
     auto func = std::bind(&SpindleControl::ProcessORCMA,
                           this, std::placeholders::_1);
@@ -393,7 +382,6 @@ void SpindleControl::InputRGTAP(bool RGTAP)
 {
     if(!spindle)
         return;
-    printf("SpindleControl::InputRGTAP RGTAP = %d\n", RGTAP);
     ScPrintf("SpindleControl::InputRGTAP RGTAP = %d\n", RGTAP);
 
     this->RGTAP = RGTAP;
@@ -408,7 +396,6 @@ void SpindleControl::InputRGMD(bool RGMD)
 {
     if(!spindle)
         return;
-    printf("SpindleControl::InputRGMD RGMD = %d\n", RGMD);
     ScPrintf("SpindleControl::InputRGMD RGMD = %d\n", RGMD);
 
     this->RGMD = RGMD;
@@ -426,7 +413,6 @@ void SpindleControl::InputRTNT(bool RTNT)
     this->RTNT = RTNT;
     if(!RTNT || !spindle)
         return;
-    printf("SpindleControl::InputRTNT RTNT = %d\n", RTNT);
     ScPrintf("SpindleControl::InputRTNT RTNT = %d\n", RTNT);
 
     ChannelEngine *engine = ChannelEngine::GetInstance();
@@ -443,8 +429,8 @@ void SpindleControl::InputRTNT(bool RTNT)
     printf("===== SSIN %d SIND %d _SSTP %d\n", SSIN, SIND, _SSTP);
 
     while(_SSTP == 0){
+    	printf("===== _SSTP %d\n", _SSTP);
     	usleep(100000);
-    	printf("===== %d\n", _SSTP);
     }
 
     if(SSIN == 1 || SIND == 1 || _SSTP == 0 ||
@@ -466,7 +452,6 @@ void SpindleControl::RspORCMA(bool success)
 {
     if(!spindle)
         return;
-    printf("SpindleControl::RspORCMA : success = %d\n",success);
     ScPrintf("SpindleControl::RspORCMA : success = %d\n",success);
     // 定位成功，将ORAR置为1，通知PMC定位动作完成
     if(success && ORCMA){
@@ -830,7 +815,8 @@ void SpindleControl::SendSpdSpeedToMi()
 
 void SpindleControl::ProcessORCMA(bool ORCMA)
 {
-    this->ORCMA = ORCMA;
+
+    std::this_thread::sleep_for(std::chrono::microseconds(100 * 1000));
     if(ORCMA){
         // 如果主轴不在使能状态，先上使能
         if(!motor_enable)
@@ -858,6 +844,7 @@ void SpindleControl::ProcessORCMA(bool ORCMA)
         }
         mi->SendSpdLocateCmd(chn, phy_axis+1,false);
     }
+    this->ORCMA = ORCMA;
 }
 
 void SpindleControl::ProcessModeChanged(Spindle::Mode mode)

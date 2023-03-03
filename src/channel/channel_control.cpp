@@ -1879,7 +1879,7 @@ void ChannelControl::StartRunGCode(){
 
         gettimeofday(&m_time_start_maching, nullptr);  //初始化启动时间
 
-        //		printf("StartRunGCode:m_n_run_thread_state, %d\n", m_n_run_thread_state);
+        //printf("StartRunGCode:m_n_run_thread_state, %d\n", m_n_run_thread_state);
         if(m_n_run_thread_state == IDLE || m_n_run_thread_state == PAUSE){
             m_n_run_thread_state = RUN;  //置为运行状态
         }
@@ -4400,11 +4400,11 @@ int ChannelControl::Run(){
 				}
                 else{
 
-                	//printf("----------------------------> CompileLine\n");
+                    //printf("----------------------------> CompileLine\n");
 					if(m_p_compiler->RunMessage()){
                         //printf("----------------------------> RunMessage\n");
 						if(!ExecuteMessage()){
-							//printf("----------------------------> ExecuteMessage\n");
+                            //printf("----------------------------> ExecuteMessage\n");
 							if(m_error_code != ERR_NONE){
 
 								g_ptr_trace->PrintTrace(TRACE_WARNING, CHANNEL_CONTROL_SC, "execute message error2, %d\n", m_error_code);
@@ -4457,7 +4457,7 @@ int ChannelControl::Run(){
 
             	m_n_run_thread_state = ERROR;
                 g_ptr_trace->PrintLog(LOG_ALARM, "CHN[%d]语法错误，未找到结束指令！", m_n_channel_index);
-                                                                                                                    CreateError(ERR_NO_END, ERROR_LEVEL, CLEAR_BY_MCP_RESET, 0, m_n_channel_index);
+                CreateError(ERR_NO_END, ERROR_LEVEL, CLEAR_BY_MCP_RESET, 0, m_n_channel_index);
             }
 #endif
             pthread_mutex_unlock(&m_mutex_change_state);
@@ -6052,6 +6052,11 @@ bool ChannelControl::ExecuteAuxMsg(RecordMsg *msg){
 
     bool bRet = true;
     struct timeval time_now;
+
+    //llx test
+    struct timeval time_now_test;
+    unsigned int time_elpase_test = 0;
+
     unsigned int time_elpase = 0;
     //	uint64_t mask = 0;
     for(m_index = 0; m_index < m_count; m_index++){
@@ -6174,16 +6179,16 @@ bool ChannelControl::ExecuteAuxMsg(RecordMsg *msg){
 
                     //工件计数加一
                     if(this->m_channel_status.chn_work_mode == AUTO_MODE){
-                        this->m_channel_status.workpiece_count++;
-                        g_ptr_parm_manager->SetCurWorkPiece(m_n_channel_index, m_channel_status.workpiece_count);
-                        this->m_channel_status.workpiece_count_total++;
-                        g_ptr_parm_manager->SetTotalWorkPiece(m_n_channel_index, m_channel_status.workpiece_count_total);
-                        this->SendWorkCountToHmi(m_channel_status.workpiece_count, m_channel_status.workpiece_count_total);  //通知HMI更新加工计数
+//                        this->m_channel_status.workpiece_count++;
+//                        g_ptr_parm_manager->SetCurWorkPiece(m_n_channel_index, m_channel_status.workpiece_count);
+//                        this->m_channel_status.workpiece_count_total++;
+//                        g_ptr_parm_manager->SetTotalWorkPiece(m_n_channel_index, m_channel_status.workpiece_count_total);
+//                        this->SendWorkCountToHmi(m_channel_status.workpiece_count, m_channel_status.workpiece_count_total);  //通知HMI更新加工计数
 
-                        if (m_channel_status.workpiece_require != 0 && m_channel_status.workpiece_count >= m_channel_status.workpiece_require)
-                        {//已到达需求件数
-                            CreateError(ERR_REACH_WORK_PIECE, INFO_LEVEL, CLEAR_BY_MCP_RESET);
-                        }
+//                        if (m_channel_status.workpiece_require != 0 && m_channel_status.workpiece_count >= m_channel_status.workpiece_require)
+//                        {//已到达需求件数
+//                            CreateError(ERR_REACH_WORK_PIECE, INFO_LEVEL, CLEAR_BY_MCP_RESET);
+//                        }
                         this->ResetMode();   //模态恢复默认值
 
                         //激活工件坐标系参数
@@ -6489,7 +6494,8 @@ bool ChannelControl::ExecuteAuxMsg(RecordMsg *msg){
                 else{
                     gettimeofday(&time_now, NULL);
                     time_elpase = (time_now.tv_sec-m_time_m_start[m_index].tv_sec)*1000000+time_now.tv_usec-m_time_m_start[m_index].tv_usec;
-                    if(time_elpase > kMCodeTimeout && !this->GetMExcSig(m_index)){//超过200ms任未进入执行状态，则告警“不支持的M代码”
+                    if(time_elpase > kMCodeTimeout && !this->GetMExcSig(m_index)
+                            && this->m_p_g_reg->FIN == 0 && !this->GetMFINSig(m_index)/*再次判断FIN，此时的内存数据可能已经刷新*/){//超过200ms任未进入执行状态，则告警“不支持的M代码”
                         CreateError(ERR_M_CODE, ERROR_LEVEL, CLEAR_BY_MCP_RESET, mcode, m_n_channel_index);
                         this->m_error_code = ERR_M_CODE;
                     }else
@@ -6665,16 +6671,16 @@ bool ChannelControl::ExecuteAuxMsg(RecordMsg *msg){
                 }
                 else{
                 	m_p_compiler->RecycleCompile();   //主程序则循环调用
-                    this->m_channel_status.workpiece_count++;  //工件计数加一
-                    g_ptr_parm_manager->SetCurWorkPiece(m_n_channel_index, m_channel_status.workpiece_count);
-                    this->m_channel_status.workpiece_count_total++;
-                    g_ptr_parm_manager->SetTotalWorkPiece(m_n_channel_index, m_channel_status.workpiece_count_total);
-                    this->SendWorkCountToHmi(m_channel_status.workpiece_count, m_channel_status.workpiece_count_total);  //通知HMI更新加工计数
+//                    this->m_channel_status.workpiece_count++;  //工件计数加一
+//                    g_ptr_parm_manager->SetCurWorkPiece(m_n_channel_index, m_channel_status.workpiece_count);
+//                    this->m_channel_status.workpiece_count_total++;
+//                    g_ptr_parm_manager->SetTotalWorkPiece(m_n_channel_index, m_channel_status.workpiece_count_total);
+//                    this->SendWorkCountToHmi(m_channel_status.workpiece_count, m_channel_status.workpiece_count_total);  //通知HMI更新加工计数
 
-                    if (m_channel_status.workpiece_require != 0 && m_channel_status.workpiece_count >= m_channel_status.workpiece_require)
-                    {//已到达需求件数
-                        CreateError(ERR_REACH_WORK_PIECE, INFO_LEVEL, CLEAR_BY_MCP_RESET);
-                    }
+//                    if (m_channel_status.workpiece_require != 0 && m_channel_status.workpiece_count >= m_channel_status.workpiece_require)
+//                    {//已到达需求件数
+//                        CreateError(ERR_REACH_WORK_PIECE, INFO_LEVEL, CLEAR_BY_MCP_RESET);
+//                    }
 
 #ifdef USES_GRIND_MACHINE
                     if(this->m_channel_status.workpiece_count >= this->m_p_mech_arm_param->grind_wheel_life){
@@ -6788,7 +6794,7 @@ bool ChannelControl::ExecuteAuxMsg(RecordMsg *msg){
 
             if(tmp->GetExecStep(m_index) == 0){
                 //TODO 将代码发送给PMC
-                g_ptr_trace->PrintLog(LOG_ALARM, "执行的M代码：M%02d", mcode);
+                g_ptr_trace->PrintLog(LOG_ALARM, "default:执行的M代码：M%02d", mcode);
                 this->SendMCodeToPmc(mcode, m_index);
 
                 gettimeofday(&m_time_m_start[m_index], NULL);
@@ -6818,6 +6824,10 @@ bool ChannelControl::ExecuteAuxMsg(RecordMsg *msg){
 
                 gettimeofday(&m_time_m_start[m_index], NULL);
                 this->SetMFSig(m_index, true);    //置位选通信号
+
+                //llx test
+                gettimeofday(&m_time_test, NULL);
+
                 tmp->IncreaseExecStep(m_index);
 
                 // 如果当前在正转状态下再给M03，那么ProcessPMCSignal就扫描不到变化了
@@ -6832,12 +6842,29 @@ bool ChannelControl::ExecuteAuxMsg(RecordMsg *msg){
                 }
             }else if(tmp->GetExecStep(m_index) == 2){
                 //等待FIN信号
-                if(this->m_p_g_reg->FIN == 1 || this->GetMFINSig(m_index))
+                if(this->m_p_g_reg->FIN == 1 || this->GetMFINSig(m_index)) {
                     gettimeofday(&m_time_m_start[m_index], NULL);   //开始计时
+
+                    //llx test
+                    gettimeofday(&time_now_test, NULL);
+                    time_elpase_test = (time_now_test.tv_sec-m_time_test.tv_sec)*1000000+time_now_test.tv_usec-m_time_test.tv_usec;
+                    std::cout << "+++++++++++++++++++++++++++++timeval: " << (int)time_elpase_test << std::endl;
+                    std::cout << "mcode: " << (int)mcode << " ME: " << (int)this->GetMExcSig(m_index) << " FIN: " << (int)this->m_p_g_reg->FIN << std::endl;
+                    std::cout << "mfin: " << (int)this->GetMFINSig(m_index) << std::endl;
+                }
                 else{
                     gettimeofday(&time_now, NULL);
                     time_elpase = (time_now.tv_sec-m_time_m_start[m_index].tv_sec)*1000000+time_now.tv_usec-m_time_m_start[m_index].tv_usec;
-                    if(time_elpase > kMCodeTimeout && !this->GetMExcSig(m_index)){//超过200ms任未进入执行状态，则告警“不支持的M代码”
+                    if(time_elpase > kMCodeTimeout && !this->GetMExcSig(m_index)
+                        && this->m_p_g_reg->FIN == 0 && !this->GetMFINSig(m_index)/*再次判断FIN，此时的内存数据可能已经刷新*/){//超过200ms任未进入执行状态，则告警“不支持的M代码”
+
+                        //llx test
+                        gettimeofday(&time_now_test, NULL);
+                        time_elpase_test = (time_now_test.tv_sec-m_time_test.tv_sec)*1000000+time_now_test.tv_usec-m_time_test.tv_usec;
+                        std::cout << "+++++++++++++++++++++++++++++timeval: " << (int)time_elpase_test << std::endl;
+                        std::cout << "mcode: " << (int)mcode << " ME: " << (int)this->GetMExcSig(m_index) << " FIN: " << (int)this->m_p_g_reg->FIN << std::endl;
+                        std::cout << "mfin: " << (int)this->GetMFINSig(m_index) << std::endl;
+
                         CreateError(ERR_M_CODE, ERROR_LEVEL, CLEAR_BY_MCP_RESET, mcode, m_n_channel_index);
                         this->m_error_code = ERR_M_CODE;
                     }else
@@ -8567,6 +8594,8 @@ bool ChannelControl::ExecuteErrorMsg(RecordMsg *msg){
     if(err->GetInfoType() == 1){  //告警
         this->m_error_code = (ErrorType)err->GetErrorCode();
         printf("execute error msg: %d, %llu\n", m_error_code, err->GetLineNo());
+        if (!m_b_lineno_from_mc)    //llx add,处理加工文件名和行号对应不上问题
+            SetCurLineNo(err->GetLineNo());
         this->m_n_run_thread_state = ERROR;
         CreateError(err->GetErrorCode(), ERROR_LEVEL, CLEAR_BY_MCP_RESET, 0, m_n_channel_index);
     }else if(err->GetInfoType() == 0){  //提示
@@ -11117,7 +11146,6 @@ void ChannelControl::ManualMove(int8_t dir){
     if(CheckSoftLimit((ManualMoveDir)dir, phy_axis,
                       GetAxisCurMachPos(m_channel_status.cur_axis))){
         // ScPrintf("soft limit active, manual move abs return \n");
-        std::cout << "soft limit active, manual move abs return\n";
         return;
     }else if(GetSoftLimt((ManualMoveDir)dir, phy_axis, limit) && dir == DIR_POSITIVE && tar_pos > limit*1e7){
         tar_pos = limit * 1e7;
@@ -11126,6 +11154,8 @@ void ChannelControl::ManualMove(int8_t dir){
     }
     //ScPrintf("GetAxisCurIntpTarPos = %llf", GetAxisCurIntpTarPos(m_channel_status.cur_axis, true)*1e7);
     int64_t n_inc_dis = tar_pos - GetAxisCurIntpTarPos(m_channel_status.cur_axis, true)*1e7;
+
+    //std::cout << "GetAxisCurIntpTarPos: " << GetAxisCurIntpTarPos(m_channel_status.cur_axis, true)*1e7 << std::endl;
     if((m_p_channel_engine->GetMlkMask() & (0x01<<m_channel_status.cur_axis))
             && GetChnWorkMode() == MANUAL_STEP_MODE){
         n_inc_dis = GetCurManualStep()*1e4*dir;
@@ -11164,7 +11194,6 @@ void ChannelControl::ManualMove(int8_t dir){
 
     cmd.data.data[6] = 0x02;   //增量目标位置
 
-    std::cout << "WriteCmd:move" << std::endl;
     if(!this->m_b_mc_on_arm)
         m_p_mc_comm->WriteCmd(cmd);
     else
@@ -16650,6 +16679,7 @@ bool ChannelControl::EmergencyStop(){
     pthread_mutex_unlock(&m_mutex_change_state);
     //printf("unlocked 15\n");
     //停止MC执行
+
     this->PauseMc();
 
     if(this->m_thread_breakcontinue > 0){//处于断点继续线程执行过程中，则退出断点继续线程
@@ -16688,7 +16718,6 @@ bool ChannelControl::EmergencyStop(){
     //OP信号复位
     this->m_p_f_reg->OP = 0;
     //this->m_p_f_reg->SPL = 0;
-    this->m_p_f_reg->STL = 0;
 
     return true;
 
@@ -18335,6 +18364,20 @@ void ChannelControl::MiDebugFunc(int mcode){
     cmd.data.data[0] = mcode;
 
     this->m_p_mi_comm->WriteCmd(cmd);
+}
+
+void ChannelControl::AddWorkCountPiece(int addNum)
+{
+    this->m_channel_status.workpiece_count += addNum;
+    g_ptr_parm_manager->SetCurWorkPiece(m_n_channel_index, m_channel_status.workpiece_count);
+    this->m_channel_status.workpiece_count_total += addNum;
+    g_ptr_parm_manager->SetTotalWorkPiece(m_n_channel_index, m_channel_status.workpiece_count_total);
+    this->SendWorkCountToHmi(m_channel_status.workpiece_count, m_channel_status.workpiece_count_total);  //通知HMI更新加工计数
+
+    if (m_channel_status.workpiece_require != 0 && m_channel_status.workpiece_count >= m_channel_status.workpiece_require)
+    {//已到达需求件数
+        CreateError(ERR_REACH_WORK_PIECE, INFO_LEVEL, CLEAR_BY_MCP_RESET);
+    }
 }
 
 #ifdef USES_SPEED_TORQUE_CTRL

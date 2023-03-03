@@ -838,10 +838,13 @@ struct GRegBits{
 	uint8_t :8;
 	//G46
 	uint8_t :1;
-	uint8_t SBK:1;     //单程序段信号    G46.1
-	uint8_t SBS:1;     //选停信号         G46.2
-    uint8_t KEY:1;     //程序锁住信号  G46.3
-    uint8_t :4;
+    uint8_t SBK:1;     //单程序段信号     G46.1
+    uint8_t SBS:1;     //选停信号        G46.2
+    uint8_t KEY1:1;     //程序锁住信号1     G46.3
+    uint8_t KEY2:1;     //程序锁住信号2     G46.4
+    uint8_t KEY3:1;     //程序锁住信号3     G46.5
+    uint8_t KEY4:1;     //程序锁住信号4     G46.6
+    uint8_t :1;
 	//G47
 	uint8_t :8;
 	//G48
@@ -855,7 +858,8 @@ struct GRegBits{
 	//G52
 	uint8_t :8;
 	//G53
-	uint8_t :8;
+    uint8_t WKCNT:1;    //工件计数改变     G53.0
+    uint8_t :7;
 	//G54
 	uint8_t :8;
 	//G55

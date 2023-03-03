@@ -27,6 +27,9 @@
 #include <sys/ioctl.h>
 #include <stdio.h>
 #include <signal.h>
+#include <future>
+#include <condition_variable>
+#include <mutex>
 
 #include "pmc_register.h"
 
@@ -295,7 +298,8 @@ void SetMcArmComm(MCArmCommunication *comm){this->m_p_mc_arm_comm = comm;}   //É
     uint8_t GetMlkMask(){return m_MLK_mask;}    // »ñÈ¡»úĞµËø×¡±ê¼Ç
     double* GetMlkPos(){return m_MLK_pos;}      // »ñÈ¡»úĞµËø×¡Î»ÖÃ
 
-    void SetProgProtect(bool flag);     // ÉèÖÃ³ÌĞò±£»¤×´Ì¬
+    void ProcessPMCProtect();   //´¦Àí³ÌĞò±£»¤
+    void SetProgProtect(int level);     // ÉèÖÃ³ÌĞò±£»¤×´Ì¬
     bool UpdateMcModel(const string &mcPath);
 
     // ¼ì²âÊÇ·ñÈíÏŞÎ»³¬ÏŞ
@@ -400,7 +404,7 @@ private:	//Ë½ÓĞ³ÉÔ±º¯Êı
 	void ProcessPmcSignal();		//´¦ÀíPMCµÄG±äÁ¿
 	void ProcessPmcAxisCtrl();		//´¦ÀíPMCÖá¿ØÖÆĞÅºÅ
 	void ProcessPmcDataWnd();       //´¦ÀíPMCÊı¾İ´°¿Ú
-
+    void ProcessPmcConsuming();     //ÌİÍ¼Ë¢ĞÂºÄÊ±ÈÎÎñÌáÈ¡µ½´ËÏß³Ì´¦Àí
 
 
 	void ProcessPmcAlarm();    //´¦ÀíPMC¸æ¾¯
@@ -641,6 +645,12 @@ private:  //Ë½ÓĞ³ÉÔ±±äÁ¿
 #ifdef TAP_TEST
     FILE *m_fd = nullptr;
 #endif
+
+    //ÌİÍ¼É¨ÃèÖÜÆÚµÄºÄÊ±²Ù×÷
+    std::future<void>           m_pmc_consume_ft;
+    std::mutex                  m_pmc_consume_mtx;
+    std::condition_variable     m_pmc_consume_cond;
+    PMC_CONSUME_TYPE            m_pmc_consume_type = CONSUME_TYPE_NONE;
 };
 
 #endif /* INC_CHANNEL_CHANNEL_ENGINE_H_ */

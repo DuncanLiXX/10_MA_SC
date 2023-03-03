@@ -1131,6 +1131,12 @@ void ChannelEngine::Initialize(HMICommunication *hmi_comm, MICommunication *mi_c
         return;
     }
 
+    //处理PMC中的耗时任务
+    auto process = std::bind(&ChannelEngine::ProcessPmcConsuming,
+                             this);
+    m_pmc_consume_ft = std::async(std::launch::async, process);
+
+
     this->InitPoweroffHandler();
     printf("succeed to initialize channel engine\n");
 
@@ -4160,16 +4166,16 @@ void ChannelEngine::SaveToolInfo(){
 }
 #endif
 
-void ChannelEngine::SetProgProtect(bool flag)
+void ChannelEngine::SetProgProtect(int level)
 {
     HMICmdFrame hmi_cmd;
     hmi_cmd.channel_index = CHANNEL_ENGINE_INDEX;
     hmi_cmd.cmd = CMD_SC_NOTIFY_PROTECT_STATUS;
     hmi_cmd.cmd_extension = 0;
-    hmi_cmd.data_len = sizeof(flag);
-    memcpy(&hmi_cmd.data[0], &flag, hmi_cmd.data_len);
+    hmi_cmd.data_len = sizeof(level);
+    memcpy(&hmi_cmd.data[0], &level, hmi_cmd.data_len);
 
-    std::cout << "SetProgProtect: " << flag << std::endl;
+    std::cout << "SetProgProtect: " << level << std::endl;
     m_p_hmi_comm->SendCmd(hmi_cmd);
 }
 
@@ -5596,6 +5602,7 @@ void ChannelEngine::SetJPState(uint8_t chn, uint8_t JP, uint8_t last_JP, ChnWork
             SetCurAxis(chn, chn_axis);
             ManualMove(DIR_POSITIVE);
             g_ptr_tracelog_processor->SendToHmi(kPanelOper, kDebug, "点动[轴" + to_string(chn_axis) + "]+");
+            usleep(100000);
         }else if(mode == MANUAL_MODE){ // 轴正向移动松开，并且为手动连续模式
             ManualMoveStop(m_p_channel_config[chn].chn_axis_phy[i]-1);
             //g_ptr_tracelog_processor->SendToHmi(kPanelOper, kDebug, "点动释放[轴" + to_string(chn_axis) + "]+");
@@ -7632,24 +7639,24 @@ void ChannelEngine::SendMiPcParam(uint8_t axis){
     //放置数据
     uint16_t count = m_p_axis_config[axis].pc_count;
     uint16_t offset = m_p_axis_config[axis].pc_offset-1;  //起始编号，0开始
-    uint32_t inter = m_p_axis_config[axis].pc_inter_dist*1000;   //转换为微米单位
+    int64_t inter = m_p_axis_config[axis].pc_inter_dist*1000;   //转换为微米单位
     uint16_t ref_index = m_p_axis_config[axis].pc_ref_index-1;   //参考点对应位置，0开始
     //uint16_t ref_index = 0;   //参考点对应位置，0开始
     uint16_t pc_type = this->m_p_axis_config[axis].pc_type;
     uint16_t pc_enable = m_p_axis_config[axis].pc_enable;
 
-    //std::cout << "SendMiPcParam() " << std::endl;
-    //std::cout << "axis: " << (int)cmd.data.axis_index << std::endl;
-    //std::cout << "count: " << (int)count << std::endl;
-    //std::cout << "offset: " << (int)offset << std::endl;
-    //std::cout << "inter: " << (int)inter << std::endl;
-    //std::cout << "ref_index: " << (int)ref_index << std::endl;
-    //std::cout << "pc_type: " << (int)pc_type << std::endl;
-    //std::cout << "pc_enable: " << (int)pc_enable << std::endl;
+    std::cout << "SendMiPcParam() " << std::endl;
+    std::cout << "axis: " << (int)cmd.data.axis_index << std::endl;
+    std::cout << "count: " << (int)count << std::endl;
+    std::cout << "offset: " << (int)offset << std::endl;
+    std::cout << "inter: " << (int)inter << std::endl;
+    std::cout << "ref_index: " << (int)ref_index << std::endl;
+    std::cout << "pc_type: " << (int)pc_type << std::endl;
+    std::cout << "pc_enable: " << (int)pc_enable << std::endl;
 
     memcpy(cmd.data.data, &count, 2);  //补偿数据个数
     memcpy(&cmd.data.data[1], &offset, 2);   //起始编号
-    memcpy(&cmd.data.data[2], &inter, 4); 	 //补偿间隔 ， um单位，32位整型
+    memcpy(&cmd.data.data[2], &inter, 4); 	 //补偿间隔 ， um单位，64位整型
     memcpy(&cmd.data.data[4], &ref_index, 2);     //参考点对应位置
     memcpy(&cmd.data.data[5], &pc_type, 1);     //补偿类型  0--单向螺补   1--双向螺补
     memcpy(&cmd.data.data[6], &pc_enable, 1);
@@ -8173,18 +8180,18 @@ void ChannelEngine::RefreshPmcNotReady()
         if(g_reg->ERS == 1 && g_reg_last->ERS == 0){
             this->SystemReset();
         }
-        if(g_reg->_ESP == 0 && !m_b_emergency){ //进入急停
-            f_reg->RST = 1;
-            m_axis_status_ctrl->InputEsp(g_reg->_ESP);
-            g_ptr_tracelog_processor->SendToHmi(kProcessInfo, kDebug, "进入急停");
-            this->Emergency();
-            m_b_emergency = 1;
-        }else if(g_reg->_ESP == 1 && m_b_emergency){ // 取消急停
-            m_b_emergency = false;
-            m_axis_status_ctrl->InputEsp(g_reg->_ESP);
-            g_ptr_tracelog_processor->SendToHmi(kProcessInfo, kDebug, "解除急停");
-            f_reg->RST = 0;
-        }
+//        if(g_reg->_ESP == 0 && !m_b_emergency){ //进入急停
+//            f_reg->RST = 1;
+//            m_axis_status_ctrl->InputEsp(g_reg->_ESP);
+//            g_ptr_tracelog_processor->SendToHmi(kProcessInfo, kDebug, "进入急停");
+//            this->Emergency();
+//            m_b_emergency = 1;
+//        }else if(g_reg->_ESP == 1 && m_b_emergency){ // 取消急停
+//            m_b_emergency = false;
+//            m_axis_status_ctrl->InputEsp(g_reg->_ESP);
+//            g_ptr_tracelog_processor->SendToHmi(kProcessInfo, kDebug, "解除急停");
+//            f_reg->RST = 0;
+//        }
         if(f_reg_last->MERS == 1)   // MDI复位请求
             f_reg->MERS = 0;
     }
@@ -8573,9 +8580,7 @@ void ChannelEngine::ProcessPmcSignal(){
             m_cur_svf = g_reg->SVF;
         }
 
-        if(g_reg_last->KEY != g_reg->KEY){
-            SetProgProtect(g_reg->KEY);
-        }
+
 
         // 处理G信号 切换当前通道
         if(g_reg_last->CHNC != g_reg->CHNC)
@@ -8651,7 +8656,7 @@ void ChannelEngine::ProcessPmcSignal(){
         }
 
         // 限位开关选择信号
-        if(g_reg->EXLM != g_reg_last->EXLM || g_reg->RLSOT != g_reg_last->RLSOT){
+        if(g_reg->EXLM != g_reg_last->EXLM || g_reg->RLSOT != g_reg_last->RLSOT || !inited){
             SetSoftLimitSignal(g_reg->EXLM, g_reg->RLSOT);
             UpdateMiLimitValue(g_reg->EXLM, g_reg->RLSOT);
         }
@@ -8721,6 +8726,24 @@ void ChannelEngine::ProcessPmcSignal(){
         // 换刀信号
         if(g_reg->GTC != g_reg_last->GTC) {
             ctrl->SetSysVarValue(4320, g_reg->GTC);
+        }
+
+        //程序保护
+        if (g_reg_last->KEY4 != g_reg->KEY4
+            || g_reg_last->KEY3 != g_reg->KEY3
+            || g_reg_last->KEY2 != g_reg->KEY2
+            || g_reg_last->KEY1 != g_reg->KEY1)
+        {
+            ProcessPMCProtect();
+        }
+
+        //工件计数
+        if (g_reg_last->WKCNT == 0 && g_reg->WKCNT == 1)
+        {
+            std::cout << ">>>>>>>>>>>>>>>>>>>>>>>>>>WKCNT notify" << std::endl;
+            std::lock_guard<std::mutex> lck(m_pmc_consume_mtx);
+            m_pmc_consume_type = CONSUME_TYPE_WORK_COUNT;
+            m_pmc_consume_cond.notify_all();
         }
 
         //通知类型的信号，只保留一个周期
@@ -9113,6 +9136,29 @@ void ChannelEngine::ProcessPmcDataWnd(){
         }
     }else if((greg->ESTB == 0) && freg->EREND){
         freg->EREND = 0;   //复位PMC读取数据信号
+    }
+}
+
+void ChannelEngine::ProcessPmcConsuming()
+{
+    while(1)
+    {
+        std::unique_lock<std::mutex> lck(m_pmc_consume_mtx);
+        while(m_pmc_consume_type == 0) {
+            m_pmc_consume_cond.wait(lck);
+        }
+
+        switch(m_pmc_consume_type){
+        case CONSUME_TYPE_WORK_COUNT:
+        {
+            std::cout << "CONSUME_TYPE_WORK_COUNT"<< std::endl;
+            m_p_channel_control[m_n_cur_channle_index].AddWorkCountPiece(1);
+        }
+            break;
+        default:
+            break;
+        }
+        m_pmc_consume_type = CONSUME_TYPE_NONE;
     }
 }
 
@@ -11440,7 +11486,7 @@ void ChannelEngine::EcatAxisFindRefNoZeroSignal(uint8_t phy_axis){
         int64_t pos = m_p_axis_config[phy_axis].axis_home_pos[0]*1e7;   //单位转换,0.1nm
         memcpy(&cmd.data.data[1], &pos, sizeof(int64_t));
         cmd.data.data[5] = this->m_p_axis_config[phy_axis].ref_signal;
-        cmd.data.data[6] = this->m_p_axis_config[phy_axis].ret_ref_dir;
+        cmd.data.data[6] = -this->m_p_axis_config[phy_axis].ret_ref_dir;
 
         this->m_p_mi_comm->WriteCmd(cmd);
 
@@ -11932,5 +11978,24 @@ void ChannelEngine::PrintDebugInfo(){
             this->m_p_channel_control[i].PrintDebugInfo();
         }
     }
+}
+
+void ChannelEngine::ProcessPMCProtect()
+{
+    int channelId = GetCurChannelIndex();
+    const GRegBits *g_reg = &m_p_pmc_reg->GReg().bits[channelId];
+
+    // 程序保护
+    int level = 0;
+    if (g_reg->KEY1)
+        level = 1;
+    if (g_reg->KEY2)
+        level = 2;
+    if (g_reg->KEY3)
+        level = 3;
+    if (g_reg->KEY4)
+        level = 4;
+
+    SetProgProtect(level);
 }
 

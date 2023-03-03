@@ -1023,7 +1023,6 @@ void SpindleControl::ProcessRTNT()
 }
 
 void SpindleControl::EStop(){
-
 	if(!spindle) return;
 
 	InputPolar(Stop);

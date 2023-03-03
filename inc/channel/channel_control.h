@@ -369,6 +369,8 @@ public:
     uint8_t GetChnAxisFromPhyAxis(uint8_t phy_axis); //获得对应物理轴的通道轴索引号，0开始
 
     void SyncMcPosition();  // 同步位置
+    void AddWorkCountPiece(int addnum);  //增加工件计数
+
 
 private:
 	void InitialChannelStatus();		//初始化通道状态
@@ -605,8 +607,6 @@ private:
 
 	void MiDebugFunc(int mcode);      //发送MI调试指令
 
-
-
 #ifdef USES_TWINING_FUNC
 	void ActiveTwiningFunc(int active);   //开关缠绕功能
 #endif
@@ -761,6 +761,9 @@ private://私有成员变量
 	struct timeval m_time_t_start[kMaxTCodeInLine];     //T指令执行的开始时间
 	struct timeval m_time_start_maching;     //开始自动加工的时间，用于加工计时
     int32_t        m_time_remain;            //剩余加工时间
+
+    //for test llx
+    struct timeval m_time_test;
 
 	uint64_t m_n_mask_clear_pos;		//位置清整数圈轴标志
 

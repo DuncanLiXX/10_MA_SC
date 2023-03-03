@@ -2482,6 +2482,8 @@ bool Compiler::RunMessage() {
     }else{
         printf("----compiler run message %llu failed\n", lineNo);
     }*/
+    if (!res)   //llx add,处理2033报警，下次启动卡死问题
+        compiler_lock = false;
 
     return res;
 }
@@ -4028,6 +4030,7 @@ bool Compiler::RunErrorMsg(RecordMsg *msg) {
     if(tmp->GetInfoType() == 1){  //错误信息
         this->m_error_code = (ErrorType)tmp->GetErrorCode();
     }
+
     printf("run error message! errcode = %d, infotype = %d, line = %lld\n", m_error_code, tmp->GetInfoType(), tmp->GetLineNo());
 
     return true;

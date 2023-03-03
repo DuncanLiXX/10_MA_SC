@@ -762,6 +762,9 @@ private://私有成员变量
 	struct timeval m_time_start_maching;     //开始自动加工的时间，用于加工计时
     int32_t        m_time_remain;            //剩余加工时间
 
+    //for test llx
+    struct timeval m_time_test;
+
 	uint64_t m_n_mask_clear_pos;		//位置清整数圈轴标志
 
 	//IO触发位置捕获功能相关

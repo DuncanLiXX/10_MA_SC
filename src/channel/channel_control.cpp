@@ -6052,6 +6052,11 @@ bool ChannelControl::ExecuteAuxMsg(RecordMsg *msg){
 
     bool bRet = true;
     struct timeval time_now;
+
+    //llx test
+    struct timeval time_now_test;
+    unsigned int time_elpase_test = 0;
+
     unsigned int time_elpase = 0;
     //	uint64_t mask = 0;
     for(m_index = 0; m_index < m_count; m_index++){
@@ -6489,7 +6494,8 @@ bool ChannelControl::ExecuteAuxMsg(RecordMsg *msg){
                 else{
                     gettimeofday(&time_now, NULL);
                     time_elpase = (time_now.tv_sec-m_time_m_start[m_index].tv_sec)*1000000+time_now.tv_usec-m_time_m_start[m_index].tv_usec;
-                    if(time_elpase > kMCodeTimeout && !this->GetMExcSig(m_index)){//超过200ms任未进入执行状态，则告警“不支持的M代码”
+                    if(time_elpase > kMCodeTimeout && !this->GetMExcSig(m_index)
+                            && this->m_p_g_reg->FIN == 0 && !this->GetMFINSig(m_index)/*再次判断FIN，此时的内存数据可能已经刷新*/){//超过200ms任未进入执行状态，则告警“不支持的M代码”
                         CreateError(ERR_M_CODE, ERROR_LEVEL, CLEAR_BY_MCP_RESET, mcode, m_n_channel_index);
                         this->m_error_code = ERR_M_CODE;
                     }else
@@ -6818,6 +6824,10 @@ bool ChannelControl::ExecuteAuxMsg(RecordMsg *msg){
 
                 gettimeofday(&m_time_m_start[m_index], NULL);
                 this->SetMFSig(m_index, true);    //置位选通信号
+
+                //llx test
+                gettimeofday(&m_time_test, NULL);
+
                 tmp->IncreaseExecStep(m_index);
 
                 // 如果当前在正转状态下再给M03，那么ProcessPMCSignal就扫描不到变化了
@@ -6832,13 +6842,29 @@ bool ChannelControl::ExecuteAuxMsg(RecordMsg *msg){
                 }
             }else if(tmp->GetExecStep(m_index) == 2){
                 //等待FIN信号
-                if(this->m_p_g_reg->FIN == 1 || this->GetMFINSig(m_index))
+                if(this->m_p_g_reg->FIN == 1 || this->GetMFINSig(m_index)) {
                     gettimeofday(&m_time_m_start[m_index], NULL);   //开始计时
+
+                    //llx test
+                    gettimeofday(&time_now_test, NULL);
+                    time_elpase_test = (time_now_test.tv_sec-m_time_test.tv_sec)*1000000+time_now_test.tv_usec-m_time_test.tv_usec;
+                    std::cout << "+++++++++++++++++++++++++++++timeval: " << (int)time_elpase_test << std::endl;
+                    std::cout << "mcode: " << (int)mcode << " ME: " << (int)this->GetMExcSig(m_index) << " FIN: " << (int)this->m_p_g_reg->FIN << std::endl;
+                    std::cout << "mfin: " << (int)this->GetMFINSig(m_index) << std::endl;
+                }
                 else{
                     gettimeofday(&time_now, NULL);
                     time_elpase = (time_now.tv_sec-m_time_m_start[m_index].tv_sec)*1000000+time_now.tv_usec-m_time_m_start[m_index].tv_usec;
-                    if(time_elpase > kMCodeTimeout && !this->GetMExcSig(m_index)){//超过200ms任未进入执行状态，则告警“不支持的M代码”
+                    if(time_elpase > kMCodeTimeout && !this->GetMExcSig(m_index)
+                        && this->m_p_g_reg->FIN == 0 && !this->GetMFINSig(m_index)/*再次判断FIN，此时的内存数据可能已经刷新*/){//超过200ms任未进入执行状态，则告警“不支持的M代码”
+
+                        //llx test
+                        gettimeofday(&time_now_test, NULL);
+                        time_elpase_test = (time_now_test.tv_sec-m_time_test.tv_sec)*1000000+time_now_test.tv_usec-m_time_test.tv_usec;
+                        std::cout << "+++++++++++++++++++++++++++++timeval: " << (int)time_elpase_test << std::endl;
                         std::cout << "mcode: " << (int)mcode << " ME: " << (int)this->GetMExcSig(m_index) << " FIN: " << (int)this->m_p_g_reg->FIN << std::endl;
+                        std::cout << "mfin: " << (int)this->GetMFINSig(m_index) << std::endl;
+
                         CreateError(ERR_M_CODE, ERROR_LEVEL, CLEAR_BY_MCP_RESET, mcode, m_n_channel_index);
                         this->m_error_code = ERR_M_CODE;
                     }else
@@ -11120,7 +11146,6 @@ void ChannelControl::ManualMove(int8_t dir){
     if(CheckSoftLimit((ManualMoveDir)dir, phy_axis,
                       GetAxisCurMachPos(m_channel_status.cur_axis))){
         // ScPrintf("soft limit active, manual move abs return \n");
-        std::cout << "soft limit active, manual move abs return\n";
         return;
     }else if(GetSoftLimt((ManualMoveDir)dir, phy_axis, limit) && dir == DIR_POSITIVE && tar_pos > limit*1e7){
         tar_pos = limit * 1e7;
@@ -11129,6 +11154,8 @@ void ChannelControl::ManualMove(int8_t dir){
     }
     //ScPrintf("GetAxisCurIntpTarPos = %llf", GetAxisCurIntpTarPos(m_channel_status.cur_axis, true)*1e7);
     int64_t n_inc_dis = tar_pos - GetAxisCurIntpTarPos(m_channel_status.cur_axis, true)*1e7;
+
+    //std::cout << "GetAxisCurIntpTarPos: " << GetAxisCurIntpTarPos(m_channel_status.cur_axis, true)*1e7 << std::endl;
     if((m_p_channel_engine->GetMlkMask() & (0x01<<m_channel_status.cur_axis))
             && GetChnWorkMode() == MANUAL_STEP_MODE){
         n_inc_dis = GetCurManualStep()*1e4*dir;
@@ -11167,7 +11194,6 @@ void ChannelControl::ManualMove(int8_t dir){
 
     cmd.data.data[6] = 0x02;   //增量目标位置
 
-    std::cout << "WriteCmd:move" << std::endl;
     if(!this->m_b_mc_on_arm)
         m_p_mc_comm->WriteCmd(cmd);
     else

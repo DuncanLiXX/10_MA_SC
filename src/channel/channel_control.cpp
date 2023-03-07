@@ -7008,6 +7008,9 @@ bool ChannelControl::ExecuteLineMsg(RecordMsg *msg, bool flag_block){
         }
     }
 
+
+    std::cout << "++++++++++++++mask: " << (int)mask << " feed: " << linemsg->GetFeed() << " pmcCount:" << (int)linemsg->GetPmcAxisCount() << std::endl;
+
     if(msg->IsNeedWaitMsg() && (m_simulate_mode == SIM_NONE || m_simulate_mode == SIM_MACHINING)){//需要等待的命令
 
         if(linemsg->GetExecStep() == 0){ //只有第一步开始执行时需要等待
@@ -11132,7 +11135,9 @@ void ChannelControl::ManualMove(int8_t dir){
         }
     }
     //设置目标位置
-    int64_t cur_pos = GetAxisCurMachPos(m_channel_status.cur_axis)*1e7;  //当前位置
+
+    //int64_t cur_pos = GetAxisCurMachPos(m_channel_status.cur_axis)*1e7;  //当前位置
+    int64_t cur_pos = GetAxisCurIntpTarPos(m_channel_status.cur_axis, false)*1e7;
     int64_t tar_pos = 0;
     if(GetChnWorkMode() == MANUAL_STEP_MODE){ //手动单步
         tar_pos = cur_pos + GetCurManualStep()*1e4*dir;		//转换单位为0.1nm
@@ -11155,7 +11160,8 @@ void ChannelControl::ManualMove(int8_t dir){
     //ScPrintf("GetAxisCurIntpTarPos = %llf", GetAxisCurIntpTarPos(m_channel_status.cur_axis, true)*1e7);
     int64_t n_inc_dis = tar_pos - GetAxisCurIntpTarPos(m_channel_status.cur_axis, true)*1e7;
 
-    //std::cout << "GetAxisCurIntpTarPos: " << GetAxisCurIntpTarPos(m_channel_status.cur_axis, true)*1e7 << std::endl;
+    std::cout << "tar_pos: " << tar_pos << std::endl;
+    std::cout << "GetAxisCurIntpTarPos: " << GetAxisCurIntpTarPos(m_channel_status.cur_axis, true)*1e7 << std::endl;
     if((m_p_channel_engine->GetMlkMask() & (0x01<<m_channel_status.cur_axis))
             && GetChnWorkMode() == MANUAL_STEP_MODE){
         n_inc_dis = GetCurManualStep()*1e4*dir;

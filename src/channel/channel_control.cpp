@@ -9418,8 +9418,9 @@ bool ChannelControl::ExecuteRefReturnMsg(RecordMsg *msg){
                 for(i = 0; i < m_p_channel_config->chn_axis_count; i++){
                     if(axis_mask & (0x01<<i)){
                         //if(fabs(this->m_channel_rt_status.cur_pos_work.GetAxisValue(i) - pos[i]) > 1e-3){ //未到位
-                        if ((m_channel_mc_status.axis_over_mask & (0x01<<i)) == 0) {
-                            //						printf("step 1: axis %hhu cur pos = %lf, target=%lf\n", i, m_channel_rt_status.cur_pos_work.GetAxisValue(i), pos[i]);
+                        if ((m_channel_mc_status.manu_axis_over_mask & (0x01<<i)) == 0) {
+                            //                        printf("step 1: axis %hhu cur pos = %lf, target=%lf\n", i, m_channel_rt_status.cur_pos_work.GetAxisValue(i), pos[i]);
+
                             flag = false;
                             //phy_axis = this->GetPhyAxis(i);
                             //if(phy_axis != 0xff){
@@ -9481,7 +9482,6 @@ bool ChannelControl::ExecuteRefReturnMsg(RecordMsg *msg){
             unsigned int time_elpase = (time_now.tv_sec-m_time_ret.tv_sec)*1000000+time_now.tv_usec-m_time_ret.tv_usec;
             if (time_elpase > 50000) {
                 //第四步：等待struct timeval time_now;
-
                 for(i = 0; i < m_p_channel_config->chn_axis_count; i++){
                     phy_axis = this->GetPhyAxis(i);
                     double target_pos =  m_p_axis_config[phy_axis].axis_home_pos[0];
@@ -9492,7 +9492,7 @@ bool ChannelControl::ExecuteRefReturnMsg(RecordMsg *msg){
                     uint8_t mlk_mask = m_p_channel_engine->GetMlkMask();
                     if((axis_mask & (0x01<<i)) && !(mlk_mask & (0x01 << i))){
 
-                        if ((m_channel_mc_status.axis_over_mask & (0x01<<i)) == 0) {
+                        if ((m_channel_mc_status.manu_axis_over_mask & (0x01<<i)) == 0) {
                         //if(fabs(this->m_channel_rt_status.cur_pos_machine.GetAxisValue(i) - target_pos) > 5e-3){ //未到位
                             //printf("step 3: axis %hhu cur pos = %lf, target=%lf\n", i, m_channel_rt_status.cur_pos_machine.GetAxisValue(i), target_pos);
                             flag = false;
@@ -11159,9 +11159,6 @@ void ChannelControl::ManualMove(int8_t dir){
     }
     //ScPrintf("GetAxisCurIntpTarPos = %llf", GetAxisCurIntpTarPos(m_channel_status.cur_axis, true)*1e7);
     int64_t n_inc_dis = tar_pos - GetAxisCurIntpTarPos(m_channel_status.cur_axis, true)*1e7;
-
-    std::cout << "tar_pos: " << tar_pos << std::endl;
-    std::cout << "GetAxisCurIntpTarPos: " << GetAxisCurIntpTarPos(m_channel_status.cur_axis, true)*1e7 << std::endl;
     if((m_p_channel_engine->GetMlkMask() & (0x01<<m_channel_status.cur_axis))
             && GetChnWorkMode() == MANUAL_STEP_MODE){
         n_inc_dis = GetCurManualStep()*1e4*dir;

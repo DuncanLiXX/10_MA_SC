@@ -84,6 +84,7 @@ ChannelEngine::ChannelEngine() {
     m_n_cur_chn_group_index = 0;
 
     m_b_recv_mi_heartbeat = false;
+    m_b_recv_mi_plc_ready = false;
     m_b_init_mi_over = false;
     m_b_emergency = false;
     m_b_power_off = false;
@@ -1859,9 +1860,18 @@ void ChannelEngine::ProcessMiCmd(MiCmdFrame &cmd){
         this->m_p_mi_comm->WriteCmd(cmd);
         if(!m_b_recv_mi_heartbeat){
             m_b_recv_mi_heartbeat = true;
-            g_sys_state.module_ready_mask |= MI_START;
             this->InitMiParam();
         }
+        break;
+    case CMD_MI_PLC_READY:
+    {
+        cmd.data.cmd |= 0x8000;
+        this->m_p_mi_comm->WriteCmd(cmd);
+        if(!m_b_recv_mi_plc_ready){
+            m_b_recv_mi_plc_ready = true;
+            g_sys_state.module_ready_mask |= MI_START;
+        }
+    }
         break;
     case CMD_MI_OPERATE:
         this->ProcessMiOperateCmdRsp(cmd); // 轴操作指令回复
@@ -8180,18 +8190,18 @@ void ChannelEngine::RefreshPmcNotReady()
         if(g_reg->ERS == 1 && g_reg_last->ERS == 0){
             this->SystemReset();
         }
-//        if(g_reg->_ESP == 0 && !m_b_emergency){ //进入急停
-//            f_reg->RST = 1;
-//            m_axis_status_ctrl->InputEsp(g_reg->_ESP);
-//            g_ptr_tracelog_processor->SendToHmi(kProcessInfo, kDebug, "进入急停");
-//            this->Emergency();
-//            m_b_emergency = 1;
-//        }else if(g_reg->_ESP == 1 && m_b_emergency){ // 取消急停
-//            m_b_emergency = false;
-//            m_axis_status_ctrl->InputEsp(g_reg->_ESP);
-//            g_ptr_tracelog_processor->SendToHmi(kProcessInfo, kDebug, "解除急停");
-//            f_reg->RST = 0;
-//        }
+        if(g_reg->_ESP == 0 && !m_b_emergency){ //进入急停
+            f_reg->RST = 1;
+            m_axis_status_ctrl->InputEsp(g_reg->_ESP);
+            g_ptr_tracelog_processor->SendToHmi(kProcessInfo, kDebug, "进入急停");
+            this->Emergency();
+            m_b_emergency = 1;
+        }else if(g_reg->_ESP == 1 && m_b_emergency){ // 取消急停
+            m_b_emergency = false;
+            m_axis_status_ctrl->InputEsp(g_reg->_ESP);
+            g_ptr_tracelog_processor->SendToHmi(kProcessInfo, kDebug, "解除急停");
+            f_reg->RST = 0;
+        }
         if(f_reg_last->MERS == 1)   // MDI复位请求
             f_reg->MERS = 0;
     }

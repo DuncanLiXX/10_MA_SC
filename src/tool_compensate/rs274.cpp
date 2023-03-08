@@ -303,10 +303,11 @@ int Interp::comp_get_current(setup_pointer settings,
 int Interp::comp_set_current(setup_pointer settings,
 		                     double x, double y, double z)
 {
-    settings->current_x = x;
+
+	settings->current_x = x;
     settings->current_y = y;
     settings->current_z = z;
-	return 0;
+    return 0;
 }
 
 int Interp::comp_get_programmed(setup_pointer settings,
@@ -800,12 +801,37 @@ int Interp::convert_cutter_compensation_on(int side, double radius,
 										   setup_pointer settings)
 {
 	settings->cutter_comp_radius = radius;
+
+	if(settings->cutter_comp_side != side){
+		printf("settings->cutter_comp_side : %d\n", settings->cutter_comp_side);
+		//this->reset();
+		//@TODO 刀补方向切换处理
+		/*
+		if(settings->cutter_comp_side && settings->cutter_comp_radius > 0.0 &&
+			!settings->cutter_comp_firstmove){
+			double cx, cy, cz;
+			comp_get_current(settings, &cx, &cy, &cz);
+			move_endpoint_and_flush(settings, cx, cy);
+			dequeue_canons(settings);
+			settings->current_x = settings->program_x;
+			settings->current_y = settings->program_y;
+			settings->current_z = settings->program_z;
+			settings->arc_not_allowed = true;
+		}
+
+		settings->cutter_comp_side = false;
+		settings->cutter_comp_firstmove = true;
+		settings->cutter_comp_lastmove = false;
+		isCompOn = false;*/
+	}
+
 	settings->cutter_comp_side = side;
 	isCompOn =  true;
 	return 0;
 }
 
 int Interp::convert_close_compensation(setup_pointer settings){
+
 	if(settings->cutter_comp_side && settings->cutter_comp_radius > 0.0 &&
 		!settings->cutter_comp_firstmove){
 		double cx, cy, cz;
@@ -817,6 +843,7 @@ int Interp::convert_close_compensation(setup_pointer settings){
 		settings->current_z = settings->program_z;
 		settings->arc_not_allowed = true;
 	}
+
 	settings->cutter_comp_side = false;
 	settings->cutter_comp_firstmove = true;
 	settings->cutter_comp_lastmove = false;
@@ -847,7 +874,6 @@ int Interp::convert_straight(int move,
 	if((settings->cutter_comp_side) &&
 	   (settings->cutter_comp_radius > 0.0))
 	{
-
 		if (settings->cutter_comp_firstmove)
             status = convert_straight_comp1(move, block, settings, end_x, end_y, end_z,
                                             AA_end, BB_end, CC_end, u_end, v_end, w_end);
@@ -1496,7 +1522,7 @@ void Interp::calc_mid_first_comp(double x1, double y1,
 	midx = x1 + radius*tvecx;
 	midy = y1 + radius*tvecy;
 
-	//printf("===================midx %lf  midy %lf\n", midx, midy);
+	printf("=========== mid x: %lf mid y: %lf \n", midx, midy);
 }
 
 void dequeue_canons(setup_pointer settings)

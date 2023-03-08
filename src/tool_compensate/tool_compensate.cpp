@@ -75,8 +75,6 @@ void ToolCompensate::ProcessData(ListNode<RecordMsg *> *node){
     //this->m_p_output_msg_list->Append(node);
     //return;
 
-
-
     switch(msg->GetMsgType()){
 		case RAPID_MSG:{
 			RapidMsg * tmsg = (RapidMsg *)msg;
@@ -190,16 +188,10 @@ void ToolCompensate::ProcessData(ListNode<RecordMsg *> *node){
 
 			if(tmsg->GetGCode() == G40_CMD){
 				interp.convert_cutter_compensation_off(&interp._setup);
-				//break;
-
 			}else if(tmsg->GetGCode() == G41_CMD){
 				interp.convert_cutter_compensation_on(LEFT,this->comp_radius,&interp._setup);
-				//break;
-
 			}else if(tmsg->GetGCode() == G42_CMD){
 				interp.convert_cutter_compensation_on(RIGHT,this->comp_radius,&interp._setup);
-				//break;
-
 			}
 
 			this->m_p_output_msg_list->Append(node);

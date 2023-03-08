@@ -2407,16 +2407,17 @@ void ChannelControl::SendMonitorData(bool bAxis, bool btime){
         }
     }
 
-
-
     m_channel_rt_status.cur_feed = m_channel_mc_status.cur_feed;
     //	m_channel_rt_status.machining_time = m_channel_mc_status.auto_block_over;
     //	m_channel_rt_status.machining_time = (uint32_t)this->m_n_run_thread_state;  //for test  ,线程状态
     //	m_channel_rt_status.machining_time_remains = m_channel_mc_status.buf_data_count;
     //	m_channel_rt_status.machining_time_remains = this->m_n_send_mc_data_err;    //for test ,数据发送失败次数
 
-    //@test zk
-    //printf("===== lino: %ld\n", m_channel_mc_status.cur_line_no);
+    //@test zk  MDA 模式下显示行号
+    if(m_channel_mc_status.cur_mode == MC_MODE_MDA &&
+    		m_channel_mc_status.cur_line_no > 0){
+    	m_channel_rt_status.line_no = m_channel_mc_status.cur_line_no;
+    }
 
     if(m_channel_mc_status.cur_mode == MC_MODE_AUTO &&
         #ifdef USES_ADDITIONAL_PROGRAM
@@ -7277,6 +7278,9 @@ bool ChannelControl::ExecuteCoordMsg(RecordMsg *msg){
         DPointChn point = coordmsg->GetTargetPos();
         uint32_t axis_mask = coordmsg->GetAxisMask();
 
+        //  当局部坐标偏置都为0时  取消局部坐标系
+        bool flag_cancel_g52 = true;
+
         switch(coordmsg->GetExecStep()){
         case 0:
             //第一步：更新坐标系的值 激活坐标系
@@ -7325,8 +7329,9 @@ bool ChannelControl::ExecuteCoordMsg(RecordMsg *msg){
             printf("execute coord msg[%hu] error, step = %hhu\n", gcode, coordmsg->GetExecStep());
             break;
         }
-        G52Active = true;
+
         // @add  zk
+        G52Active = true;
 
     }else if(gcode == G53_CMD){ //机械坐标系
 
@@ -7337,7 +7342,8 @@ bool ChannelControl::ExecuteCoordMsg(RecordMsg *msg){
             this->m_pos_simulate_cur_work = coordmsg->GetTargetPos();
 
     }else if(m_simulate_mode == SIM_NONE || m_simulate_mode == SIM_MACHINING){  //非仿真模式或者加工仿真模式
-        uint16_t coord_mc = 0;
+
+    	uint16_t coord_mc = 0;
         switch(coordmsg->GetExecStep()){
         case 0:
             //第一步：更新模态，将新工件坐标系发送到MC

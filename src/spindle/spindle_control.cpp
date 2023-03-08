@@ -250,8 +250,8 @@ void SpindleControl::CancelRigidTap()
 
     std::this_thread::sleep_for(std::chrono::microseconds(100*1000));
 
-    //double pos = status.cur_pos_machine.GetAxisValue(phy_axis);
-    //mi->SetAxisRefCur(phy_axis+1,pos);
+    double pos = status.cur_pos_machine.GetAxisValue(phy_axis);
+    mi->SetAxisRefCur(phy_axis+1,pos);
 
     tap_enable = false;
 
@@ -428,13 +428,8 @@ void SpindleControl::InputRTNT(bool RTNT)
     // 加载攻丝状态
     printf("===== SSIN %d SIND %d _SSTP %d\n", SSIN, SIND, _SSTP);
 
-    while(_SSTP == 0){
-    	printf("===== _SSTP %d\n", _SSTP);
-    	usleep(100000);
-    }
-
-    if(SSIN == 1 || SIND == 1 || _SSTP == 0 ||
-            !LoadTapState(tap_state) || !tap_state.tap_flag)
+    //if(SSIN == 1 || SIND == 1 || _SSTP == 0 ||
+    if(!LoadTapState(tap_state) || !tap_state.tap_flag)
     {
         CreateError(ERR_SPD_RTNT_INVALID,
                     ERROR_LEVEL,
@@ -875,7 +870,6 @@ void SpindleControl::ProcessSwitchLevel()
     std::this_thread::sleep_for(std::chrono::microseconds(TM));
     //usleep(TM); @zk 为什么不用 usleep???
     F->SF = 1;
-    printf("set SF 1\n");
 
     // 记录档位
     if(F->GR1O){
@@ -973,7 +967,6 @@ bool SpindleControl::LoadTapState(TapState &state)
 // 攻丝回退处理
 void SpindleControl::ProcessRTNT()
 {
-
 	// 如果主轴不在使能状态，先上使能
     if(!motor_enable)
         mi->SendAxisEnableCmd(phy_axis+1, true);
@@ -994,6 +987,7 @@ void SpindleControl::ProcessRTNT()
     ChannelEngine *engine = ChannelEngine::GetInstance();
     ChannelControl *control = engine->GetChnControl(0);
     running_rtnt = true;
+
     if(!control->CallMacroProgram(6100))
     {
     	CreateError(ERR_SPD_RTNT_FAIL,
@@ -1002,6 +996,7 @@ void SpindleControl::ProcessRTNT()
         running_rtnt = false;
         return;
     }
+
     std::this_thread::sleep_for(std::chrono::microseconds(500 * 1000));
 
     // 等待回退到位
@@ -1025,7 +1020,7 @@ void SpindleControl::ProcessRTNT()
 void SpindleControl::EStop(){
 	if(!spindle) return;
 
-	InputPolar(Stop);
+	//InputPolar(Stop);
 
 	if(tap_enable){
 		CancelRigidTap();

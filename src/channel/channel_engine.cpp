@@ -4848,9 +4848,15 @@ void ChannelEngine::ProcessPmcRefRet(uint8_t phy_axis){
     }
 
     if(m_p_axis_config[phy_axis].axis_interface == VIRTUAL_AXIS || m_p_axis_config[phy_axis].axis_type == AXIS_SPINDLE)	//主轴和虚拟轴不用回参考点
-    {  //增量编码器，禁止回参考点
+    {
         printf("no ret ref, return\n");
         return;   //不用回参考点的轴禁止将回零标志复位
+    }
+
+    if (GetSyncAxisCtrl()->CheckSyncState(phy_axis) == 2 || GetPmcActive(phy_axis))
+    {   //不为从动轴,Pmc轴未激活
+        printf("no ret ref, return\n");
+        return;
     }
 
     this->SetRetRefMask(phy_axis);
@@ -9088,12 +9094,12 @@ void ChannelEngine::ProcessPmcSignal(){
                                                            m_df_phy_axis_torque_feedback, m_df_spd_angle, m_p_general_config->axis_count);
 
                 //X轴数据
-                //string X_tar_pos = to_string(m_df_phy_axis_pos_feedback[2]) + '\t';
-                //string X_real_pos = to_string(m_df_phy_axis_pos_intp[2]) +'\t';
+                //string X_tar_pos = to_string(m_df_phy_axis_pos_feedback[0]) + '\t';
+                //string X_real_pos = to_string(m_df_phy_axis_pos_intp[0]) +'\t';
 
                 //Y轴数据
-                //string y_tar_pos = to_string(m_df_phy_axis_pos_feedback[2]) + '\t';
-                //string y_real_pos = to_string(m_df_phy_axis_pos_intp[2]) +'\t';
+                //string y_tar_pos = to_string(m_df_phy_axis_pos_feedback[1]) + '\t';
+                //string y_real_pos = to_string(m_df_phy_axis_pos_intp[1]) +'\t';
 
                 //Z轴数据
                 string z_tar_pos = to_string(m_df_phy_axis_pos_feedback[2]) + '\t';
@@ -9106,6 +9112,7 @@ void ChannelEngine::ProcessPmcSignal(){
                 string msg = z_tar_pos + z_real_pos + spd_tar_pos + spd_real_pos + '\n';
 
                 //string msg = X_tar_pos + X_real_pos + y_tar_pos + y_real_pos + z_tar_pos + z_real_pos + '\n';
+                //string msg = X_tar_pos + X_real_pos + '\n';
                 fwrite(msg.c_str(), sizeof(char), msg.size(), m_fd);
             }
         }

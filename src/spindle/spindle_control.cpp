@@ -810,7 +810,6 @@ void SpindleControl::SendSpdSpeedToMi()
 
 void SpindleControl::ProcessORCMA(bool ORCMA)
 {
-
     std::this_thread::sleep_for(std::chrono::microseconds(100 * 1000));
     if(ORCMA){
         // 如果主轴不在使能状态，先上使能
@@ -1020,11 +1019,5 @@ void SpindleControl::ProcessRTNT()
 void SpindleControl::EStop(){
 	if(!spindle) return;
 
-	//InputPolar(Stop);
-
-	if(tap_enable){
-		CancelRigidTap();
-	}
-
-	//if(m_n_M29_flag) ProcessM29Reset();
+	InputPolar(Stop);
 }

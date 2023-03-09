@@ -8566,9 +8566,9 @@ void ChannelEngine::ProcessPmcSignal(){
             m_axis_status_ctrl->InputEsp(g_reg->_ESP);
             g_ptr_tracelog_processor->SendToHmi(kProcessInfo, kDebug, "进入急停");
             this->Emergency();
-            m_b_emergency = 1;
+            m_b_emergency = true;
         }else if(g_reg->_ESP == 1 && m_b_emergency){ // 取消急停
-            m_b_emergency = false;
+        	m_b_emergency = false;
             m_axis_status_ctrl->InputEsp(g_reg->_ESP);
             g_ptr_tracelog_processor->SendToHmi(kProcessInfo, kDebug, "解除急停");
             f_reg->RST = 0;

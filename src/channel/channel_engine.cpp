@@ -84,6 +84,7 @@ ChannelEngine::ChannelEngine() {
     m_n_cur_chn_group_index = 0;
 
     m_b_recv_mi_heartbeat = false;
+    m_b_recv_mi_plc_ready = false;
     m_b_init_mi_over = false;
     m_b_emergency = false;
     m_b_power_off = false;
@@ -1859,9 +1860,18 @@ void ChannelEngine::ProcessMiCmd(MiCmdFrame &cmd){
         this->m_p_mi_comm->WriteCmd(cmd);
         if(!m_b_recv_mi_heartbeat){
             m_b_recv_mi_heartbeat = true;
-            g_sys_state.module_ready_mask |= MI_START;
             this->InitMiParam();
         }
+        break;
+    case CMD_MI_PLC_READY:
+    {
+        cmd.data.cmd |= 0x8000;
+        this->m_p_mi_comm->WriteCmd(cmd);
+        if(!m_b_recv_mi_plc_ready){
+            m_b_recv_mi_plc_ready = true;
+            g_sys_state.module_ready_mask |= MI_START;
+        }
+    }
         break;
     case CMD_MI_OPERATE:
         this->ProcessMiOperateCmdRsp(cmd); // 轴操作指令回复
@@ -4838,9 +4848,15 @@ void ChannelEngine::ProcessPmcRefRet(uint8_t phy_axis){
     }
 
     if(m_p_axis_config[phy_axis].axis_interface == VIRTUAL_AXIS || m_p_axis_config[phy_axis].axis_type == AXIS_SPINDLE)	//主轴和虚拟轴不用回参考点
-    {  //增量编码器，禁止回参考点
+    {
         printf("no ret ref, return\n");
         return;   //不用回参考点的轴禁止将回零标志复位
+    }
+
+    if (GetSyncAxisCtrl()->CheckSyncState(phy_axis) == 2 || GetPmcActive(phy_axis))
+    {   //不为从动轴,Pmc轴未激活
+        printf("no ret ref, return\n");
+        return;
     }
 
     this->SetRetRefMask(phy_axis);
@@ -5602,7 +5618,7 @@ void ChannelEngine::SetJPState(uint8_t chn, uint8_t JP, uint8_t last_JP, ChnWork
             SetCurAxis(chn, chn_axis);
             ManualMove(DIR_POSITIVE);
             g_ptr_tracelog_processor->SendToHmi(kPanelOper, kDebug, "点动[轴" + to_string(chn_axis) + "]+");
-            usleep(100000);
+            usleep(200000);
         }else if(mode == MANUAL_MODE){ // 轴正向移动松开，并且为手动连续模式
             ManualMoveStop(m_p_channel_config[chn].chn_axis_phy[i]-1);
             //g_ptr_tracelog_processor->SendToHmi(kPanelOper, kDebug, "点动释放[轴" + to_string(chn_axis) + "]+");
@@ -5627,7 +5643,7 @@ void ChannelEngine::SetJNState(uint8_t chn, uint8_t JN, uint8_t last_JN, ChnWork
 
             SetCurAxis(chn, chn_axis);
             ManualMove(DIR_NEGATIVE);
-
+            usleep(200000);
             g_ptr_tracelog_processor->SendToHmi(kPanelOper, kDebug, "点动[轴" + to_string(chn_axis) + "]-");
         }else if(mode == MANUAL_MODE){ // 轴正向移动松开，并且为手动连续模式
             ManualMoveStop(m_p_channel_config[chn].chn_axis_phy[i]-1);
@@ -8180,18 +8196,18 @@ void ChannelEngine::RefreshPmcNotReady()
         if(g_reg->ERS == 1 && g_reg_last->ERS == 0){
             this->SystemReset();
         }
-//        if(g_reg->_ESP == 0 && !m_b_emergency){ //进入急停
-//            f_reg->RST = 1;
-//            m_axis_status_ctrl->InputEsp(g_reg->_ESP);
-//            g_ptr_tracelog_processor->SendToHmi(kProcessInfo, kDebug, "进入急停");
-//            this->Emergency();
-//            m_b_emergency = 1;
-//        }else if(g_reg->_ESP == 1 && m_b_emergency){ // 取消急停
-//            m_b_emergency = false;
-//            m_axis_status_ctrl->InputEsp(g_reg->_ESP);
-//            g_ptr_tracelog_processor->SendToHmi(kProcessInfo, kDebug, "解除急停");
-//            f_reg->RST = 0;
-//        }
+        if(g_reg->_ESP == 0 && !m_b_emergency){ //进入急停
+            f_reg->RST = 1;
+            m_axis_status_ctrl->InputEsp(g_reg->_ESP);
+            g_ptr_tracelog_processor->SendToHmi(kProcessInfo, kDebug, "进入急停");
+            this->Emergency();
+            m_b_emergency = 1;
+        }else if(g_reg->_ESP == 1 && m_b_emergency){ // 取消急停
+            m_b_emergency = false;
+            m_axis_status_ctrl->InputEsp(g_reg->_ESP);
+            g_ptr_tracelog_processor->SendToHmi(kProcessInfo, kDebug, "解除急停");
+            f_reg->RST = 0;
+        }
         if(f_reg_last->MERS == 1)   // MDI复位请求
             f_reg->MERS = 0;
     }
@@ -9078,12 +9094,12 @@ void ChannelEngine::ProcessPmcSignal(){
                                                            m_df_phy_axis_torque_feedback, m_df_spd_angle, m_p_general_config->axis_count);
 
                 //X轴数据
-                //string X_tar_pos = to_string(m_df_phy_axis_pos_feedback[2]) + '\t';
-                //string X_real_pos = to_string(m_df_phy_axis_pos_intp[2]) +'\t';
+                //string X_tar_pos = to_string(m_df_phy_axis_pos_feedback[0]) + '\t';
+                //string X_real_pos = to_string(m_df_phy_axis_pos_intp[0]) +'\t';
 
                 //Y轴数据
-                //string y_tar_pos = to_string(m_df_phy_axis_pos_feedback[2]) + '\t';
-                //string y_real_pos = to_string(m_df_phy_axis_pos_intp[2]) +'\t';
+                //string y_tar_pos = to_string(m_df_phy_axis_pos_feedback[1]) + '\t';
+                //string y_real_pos = to_string(m_df_phy_axis_pos_intp[1]) +'\t';
 
                 //Z轴数据
                 string z_tar_pos = to_string(m_df_phy_axis_pos_feedback[2]) + '\t';
@@ -9096,6 +9112,7 @@ void ChannelEngine::ProcessPmcSignal(){
                 string msg = z_tar_pos + z_real_pos + spd_tar_pos + spd_real_pos + '\n';
 
                 //string msg = X_tar_pos + X_real_pos + y_tar_pos + y_real_pos + z_tar_pos + z_real_pos + '\n';
+                //string msg = X_tar_pos + X_real_pos + '\n';
                 fwrite(msg.c_str(), sizeof(char), msg.size(), m_fd);
             }
         }

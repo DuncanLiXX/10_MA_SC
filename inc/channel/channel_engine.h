@@ -578,6 +578,7 @@ private:  //私有成员变量
 	bool m_b_get_mc_update_status;  //接收到MC升级状态
 
 	bool m_b_recv_mi_heartbeat;     //标志首次收到MI的心跳包，此时可以开始给ＭＩ发送初始化参数
+    bool m_b_recv_mi_plc_ready;     //PMC准备好信号
 	bool m_b_init_mi_over;			//标志给MI发送初始化参数完成
 
 	PmcRegister *m_p_pmc_reg;			//PMC寄存器

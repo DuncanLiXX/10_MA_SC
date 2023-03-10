@@ -360,7 +360,7 @@ bool Compiler::SetCurPos(const DPointChn &cur_pos) {
     //			m_compiler_status.cur_pos.m_df_point[0], m_compiler_status.cur_pos.m_df_point[1], m_compiler_status.cur_pos.m_df_point[2], m_compiler_status.cur_pos.m_df_point[3],
     //			m_compiler_status.cur_pos.m_df_point[4], m_compiler_status.cur_pos.m_df_point[5], cur_pos.m_df_point[0], cur_pos.m_df_point[1], cur_pos.m_df_point[2],
     //			cur_pos.m_df_point[3], cur_pos.m_df_point[4], cur_pos.m_df_point[5]);
-    this->m_compiler_status.cur_pos = cur_pos;
+	this->m_compiler_status.cur_pos = cur_pos;
     return true;
 }
 
@@ -766,7 +766,6 @@ void Compiler::PreScan() {
             count = 0;
         }
     }
-
 
     /*** test if else */
     printf("*********************************************\n");
@@ -1942,7 +1941,6 @@ void Compiler::Reset(){
     m_stack_loop.empty();  //清空循环位置数据
 
     /********************************/
-
     // 复位运行时记录
     m_node_stack_run.clear();
     m_else_jump_stack_run.clear();
@@ -2894,8 +2892,6 @@ bool Compiler::RunModeMsg(RecordMsg *msg) {
         m_compiler_status.mode.gmode[GetModeGroup(gcode)] = gcode;   //修改编译器G模态
         break;
     }
-
-
     return true;
 }
 

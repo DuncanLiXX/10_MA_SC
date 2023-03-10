@@ -227,7 +227,6 @@ void ToolCompensate::ProcessData(ListNode<RecordMsg *> *node){
 	if(interp.err_code != 0){
 		err_code = interp.err_code;
 	}
-
 }
 
 void ToolCompensate::ResetAllDatas(){

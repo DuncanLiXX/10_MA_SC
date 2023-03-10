@@ -81,13 +81,13 @@ typedef block * block_pointer;
 
 typedef struct setup_struct
 {
-	double current_x;                             // current X-axis position
-	double current_y;                             // current Y-axis position
-	double current_z;                             // current Z-axis position
+	double current_x{0.0};                             // current X-axis position
+	double current_y{0.0};                             // current Y-axis position
+	double current_z{0.0};                             // current Z-axis position
 
-	double program_x;                             // program x, used when cutter comp on
-	double program_y;                             // program y, used when cutter comp on
-	double program_z;
+	double program_x{0.0};                             // program x, used when cutter comp on
+	double program_y{0.0};                             // program y, used when cutter comp on
+	double program_z{0.0};
 
 	/*
 	double origin_offset_x;                       // origin offset x

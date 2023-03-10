@@ -4813,6 +4813,8 @@ bool ChannelControl::RefreshStatusFun(){
 				this->m_p_mc_comm->ReadChnPosErrMask(m_n_channel_index, m_channel_mc_status.pos_error_mask);
 			else
 				this->m_p_mc_arm_comm->ReadChnPosErrMask(m_n_channel_index, m_channel_mc_status.pos_error_mask);
+
+			printf("============ ERR_POS_ERR ===============\n");
 			CreateError(ERR_POS_ERR, ERROR_LEVEL, CLEAR_BY_MCP_RESET, m_channel_mc_status.pos_error_mask, m_n_channel_index);
 		}
 

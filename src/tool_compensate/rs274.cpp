@@ -40,9 +40,9 @@ void setOutputMsgList(OutputMsgList * output_msg_list){
 void Interp::reset(){
 	this->convert_close_compensation(&_setup);
 	err_code = ERR_NONE;
-	_setup.current_x = 0.0;
-	_setup.current_y = 0.0;
-	_setup.current_z = 0.0;
+	//_setup.current_x = 0.0;
+	//_setup.current_y = 0.0;
+	//_setup.current_z = 0.0;
 
 	_setup.program_x = 0.0;
 	_setup.program_y = 0.0;

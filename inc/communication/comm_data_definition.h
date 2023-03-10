@@ -229,7 +229,7 @@ enum MiCmdCode{
 	CMD_MI_CLEAR_ROT_AXIS_POS = 0x010B,		//SC对旋转轴位置清整数圈
 	CMD_MI_SET_AXIS_CHN_PHY_MAP = 0x010C,   //SC设置通道轴与物理轴的映射关系
 	CMD_MI_SET_AXIS_INIT_ENCODER = 0x010D,  //SC设置上次断电前的轴编码器反馈
-	CMD_MI_DO_SYNC_AXIS = 0x010E,			//SC指令MI进行同步轴同步
+    CMD_MI_DO_SYNC_AXIS = 0x010E,			//SC指令MI进行同步轴同步
 	CMD_MI_SET_WORK_MODE = 0x010F,		    //SC设置工作模式
 	CMD_MI_ENABLE_FOLLOW = 0x0110,			//使能调高器跟随功能
 	CMD_MI_SET_LASER_OUTPUT = 0x0111,		//设置激光调高器输出IO

@@ -10772,7 +10772,7 @@ void ChannelControl::SetFuncState(int state, uint8_t mode){
         }
     }
 
-    const vector<string> table = {"单段执行", "空运行", "选停", "手轮跟踪", "程序跳段", "编辑锁", "机床锁",
+    const vector<string> table = {"单段执行", "空运行", "选择停止", "手轮模拟", "单段跳跃", "编辑锁", "机床锁",
                                  "机床辅助锁", "手动快速"};
     if(state >= 0 && state < (int)table.size())
     {

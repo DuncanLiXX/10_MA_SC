@@ -42,7 +42,8 @@ const map<int, SDLINK_SPEC> ChannelEngine::m_SDLINK_MAP =
     {1,     {"SA1",  9-3,    4,      true}},
     {3,     {"SC1",  16,     16,     false}},
     {4,     {"SD1",  12-3,   8,      true}},
-    {5,     {"SE1",  7-3,    8,      true}}
+    {5,     {"SE1",  7-3,    8,      true}},
+    {6,     {"SE2",  12-3,   11,     true}},
 };
 
 const uint32_t MC_UPDATE_BLOCK_SIZE = 100;		//MC升级文件帧，每帧包含100字节数据,50个uint16
@@ -876,8 +877,10 @@ void ChannelEngine::UpdateHandwheelState(uint8_t chn){
     }
     if(axis_no == 0){
         insert_enable = false;
+        g_ptr_tracelog_processor->SendToHmi(kPanelOper, kDebug, "关闭[手轮插入]");
     }else{
         insert_enable = true;
+        g_ptr_tracelog_processor->SendToHmi(kPanelOper, kDebug, "开启[手轮插入]");
     }
     if(trace_enable){
         insert_enable = false;
@@ -1133,9 +1136,9 @@ void ChannelEngine::Initialize(HMICommunication *hmi_comm, MICommunication *mi_c
     }
 
     //处理PMC中的耗时任务
-    auto process = std::bind(&ChannelEngine::ProcessPmcConsuming,
+    auto process = std::bind(&ChannelEngine::ProcessConsumingTask,
                              this);
-    m_pmc_consume_ft = std::async(std::launch::async, process);
+    m_task_consume_ft = std::async(std::launch::async, process);
 
 
     this->InitPoweroffHandler();
@@ -8647,9 +8650,9 @@ void ChannelEngine::ProcessPmcSignal(){
             if (g_reg->MLK != g_reg_last->MLK)
             {
                 if (g_reg->MLK)
-                    g_ptr_tracelog_processor->SendToHmi(kPanelOper, kDebug, "开启[机械锁住]");
+                    g_ptr_tracelog_processor->SendToHmi(kPanelOper, kDebug, "开启[机械锁定]");
                 else
-                    g_ptr_tracelog_processor->SendToHmi(kPanelOper, kDebug, "关闭[机械锁住]");
+                    g_ptr_tracelog_processor->SendToHmi(kPanelOper, kDebug, "关闭[机械锁定]");
             }
             else
             {
@@ -8660,12 +8663,12 @@ void ChannelEngine::ProcessPmcSignal(){
                     if (curState && !lastState)
                     {
                         //g_ptr_tracelog_processor->SendToHmi(kPanelOper, kDebug, "轴 " + to_string(i) + "开启[机械锁]");
-                        g_ptr_tracelog_processor->SendToHmi(kPanelOper, kDebug, "开启Z轴锁住");
+                        g_ptr_tracelog_processor->SendToHmi(kPanelOper, kDebug, "开启[Z轴锁定]");
                     }
                     if (!curState && lastState)
                     {
                         //g_ptr_tracelog_processor->SendToHmi(kPanelOper, kDebug, "轴 " + to_string(i) + "关闭[机械锁]");
-                        g_ptr_tracelog_processor->SendToHmi(kPanelOper, kDebug, "关闭Z轴锁住");
+                        g_ptr_tracelog_processor->SendToHmi(kPanelOper, kDebug, "关闭[Z轴锁定]");
                     }
                 }
             }
@@ -8758,9 +8761,9 @@ void ChannelEngine::ProcessPmcSignal(){
         if (g_reg_last->WKCNT == 0 && g_reg->WKCNT == 1)
         {
             std::cout << ">>>>>>>>>>>>>>>>>>>>>>>>>>WKCNT notify" << std::endl;
-            std::lock_guard<std::mutex> lck(m_pmc_consume_mtx);
-            m_pmc_consume_type = CONSUME_TYPE_WORK_COUNT;
-            m_pmc_consume_cond.notify_all();
+            std::lock_guard<std::mutex> lck(m_task_consume_mtx);
+            m_task_consume_type = CONSUME_TYPE_WORK_COUNT;
+            m_task_consume_cond.notify_all();
         }
 
         //通知类型的信号，只保留一个周期
@@ -9157,26 +9160,35 @@ void ChannelEngine::ProcessPmcDataWnd(){
     }
 }
 
-void ChannelEngine::ProcessPmcConsuming()
+void ChannelEngine::ProcessConsumingTask()
 {
     while(1)
     {
-        std::unique_lock<std::mutex> lck(m_pmc_consume_mtx);
-        while(m_pmc_consume_type == 0) {
-            m_pmc_consume_cond.wait(lck);
+        std::unique_lock<std::mutex> lck(m_task_consume_mtx);
+        while(m_task_consume_type == 0) {
+            m_task_consume_cond.wait(lck);
         }
 
-        switch(m_pmc_consume_type){
+        switch(m_task_consume_type){
         case CONSUME_TYPE_WORK_COUNT:
         {
             std::cout << "CONSUME_TYPE_WORK_COUNT"<< std::endl;
             m_p_channel_control[m_n_cur_channle_index].AddWorkCountPiece(1);
         }
             break;
+        case CONSUME_TYPE_SERVE_GUIDE:
+        {
+            //if ()
+            {
+                this->m_p_mi_comm->ReadPhyAxisCurFedBckPos(m_df_phy_axis_pos_feedback, m_df_phy_axis_pos_intp,m_df_phy_axis_speed_feedback,
+                    m_df_phy_axis_torque_feedback, m_df_spd_angle, m_p_general_config->axis_count);
+            }
+        }
+            break;
         default:
             break;
         }
-        m_pmc_consume_type = CONSUME_TYPE_NONE;
+        m_task_consume_type = CONSUME_TYPE_NONE;
     }
 }
 

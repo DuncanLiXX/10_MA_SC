@@ -56,7 +56,7 @@ AlarmProcessor::~AlarmProcessor() {
  * @return нч
  */
 void AlarmProcessor::SetErrorInfo(ErrorInfo* error_info) {
-//	printf("enter AlarmProcessor::SetErrorInfo()\n");
+    //printf("enter AlarmProcessor::SetErrorInfo()\n");
     assert(error_info != NULL);
 
     pthread_mutex_lock(&m_mutex);

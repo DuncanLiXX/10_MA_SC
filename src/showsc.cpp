@@ -689,6 +689,7 @@ void ShowSc::PrintAxisConfig(int axis)
     AddPair(s,"ret_ref_speed_second", cfg->ret_ref_speed_second);
     AddPair(s,"ref_offset_pos", cfg->ref_offset_pos);
     AddPair(s,"ref_z_distance_max", cfg->ref_z_distance_max);
+    AddPair(s,"ref_complete", cfg->ref_complete);
 
     AddPair(s,"rapid_acc",cfg->rapid_acc);
     AddPair(s,"manual_acc",cfg->manual_acc);

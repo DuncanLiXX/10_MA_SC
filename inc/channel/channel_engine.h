@@ -269,6 +269,8 @@ void SetMcArmComm(MCArmCommunication *comm){this->m_p_mc_arm_comm = comm;}   //É
 
     bool NotifyHmiAxisRefChanged(uint8_t phy_axis);     //Í¨ÖªHMIÖá²Î¿¼µã¶ÔÓ¦µÄ±àÂëÆ÷Öµ±ä¸ü
 
+    bool NotidyHmiAxisRefComplete(uint8_t phy_axis);    //Í¨ÖªHMI²Î¿¼µã½¨Á¢×´Ì¬·¢Éú¸Ä±ä
+
     bool NotifyHmiPitchCompDataChanged();        //Í¨ÖªHMIÂİ²¹Êı¾İ¸ü¸Ä
 
     bool ProcessPcDataImport();      //´¦ÀíÂİ²¹µ¼ÈëÊı¾İ
@@ -404,7 +406,7 @@ private:	//Ë½ÓĞ³ÉÔ±º¯Êı
 	void ProcessPmcSignal();		//´¦ÀíPMCµÄG±äÁ¿
 	void ProcessPmcAxisCtrl();		//´¦ÀíPMCÖá¿ØÖÆĞÅºÅ
 	void ProcessPmcDataWnd();       //´¦ÀíPMCÊı¾İ´°¿Ú
-    void ProcessPmcConsuming();     //ÌİÍ¼Ë¢ĞÂºÄÊ±ÈÎÎñÌáÈ¡µ½´ËÏß³Ì´¦Àí
+    void ProcessConsumingTask();     //ÌİÍ¼Ë¢ĞÂºÄÊ±ÈÎÎñÌáÈ¡µ½´ËÏß³Ì´¦Àí
 
 
 	void ProcessPmcAlarm();    //´¦ÀíPMC¸æ¾¯
@@ -481,6 +483,8 @@ private:	//Ë½ÓĞ³ÉÔ±º¯Êı
     void EcatIncAxisFindRefNoZeroSignal(uint8_t phy_axis);       // ×ÜÏßÔöÁ¿Ê½ÎŞ»ù×¼»Ø²Î¿¼µã£¬½ö¸ù¾İZĞÅºÅ×÷Îª¾«»ù×¼»ØÁã
     void SetSubAxisRefPoint(int axisID, double pos);             // ´Ó¶¯Öá»ØÁã
     void ClearSubAxisRefFlag(int axisID);                        // Çå³ıÖØ¶¯Öá»ØÁã±êÖ¾
+    void SetAxisComplete(int axisID);                            // ÉèÖÃ¾ø¶ÔÊ½±àÂëÆ÷ÓĞÎŞ»Ø¹ıÁã±ê¼Ç
+    void GotoZeroPos(int axisID);                                // ÔË¶¯µ½Áãµã×ø±ê
 
 
 	void PmcAxisRunOver(MiCmdFrame &cmd);    //PMCÖáÔËĞĞµ½Î»
@@ -647,11 +651,12 @@ private:  //Ë½ÓĞ³ÉÔ±±äÁ¿
     FILE *m_fd = nullptr;
 #endif
 
-    //ÌİÍ¼É¨ÃèÖÜÆÚµÄºÄÊ±²Ù×÷
-    std::future<void>           m_pmc_consume_ft;
-    std::mutex                  m_pmc_consume_mtx;
-    std::condition_variable     m_pmc_consume_cond;
-    PMC_CONSUME_TYPE            m_pmc_consume_type = CONSUME_TYPE_NONE;
+    //ºóÌ¨´¦ÀíºÄÊ±²Ù×÷
+    std::future<void>           m_task_consume_ft;
+    std::mutex                  m_task_consume_mtx;
+    std::condition_variable     m_task_consume_cond;
+    TASK_CONSUME_TYPE           m_task_consume_type = CONSUME_TYPE_NONE;
+
 };
 
 #endif /* INC_CHANNEL_CHANNEL_ENGINE_H_ */

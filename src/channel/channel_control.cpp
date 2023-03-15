@@ -305,7 +305,8 @@ bool ChannelControl::Initialize(uint8_t chn_index, ChannelEngine *engine, HMICom
         }
         if(m_p_axis_config[phy_axis-1].axis_interface == VIRTUAL_AXIS   //虚拟轴不用建立参考点
             || m_p_axis_config[phy_axis-1].axis_type == AXIS_SPINDLE	//主轴不用建立参数点
-            || (m_p_axis_config[phy_axis-1].feedback_mode == ABSOLUTE_ENCODER && m_p_axis_config[phy_axis-1].ref_encoder != kAxisRefNoDef))  //已经建立参考点的绝对式编码器，不用再次建立参考点
+            //|| (m_p_axis_config[phy_axis-1].feedback_mode == ABSOLUTE_ENCODER && m_p_axis_config[phy_axis-1].ref_encoder != kAxisRefNoDef))  //已经建立参考点的绝对式编码器，不用再次建立参考点
+            || (m_p_axis_config[phy_axis-1].feedback_mode == ABSOLUTE_ENCODER && m_p_axis_config[phy_axis-1].ref_complete != 0))  //已经建立参考点的绝对式编码器，不用再次建立参考点
         {
             m_channel_status.returned_to_ref_point |= (0x01<<i);
         }

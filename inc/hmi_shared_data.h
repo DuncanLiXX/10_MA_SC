@@ -1395,6 +1395,8 @@ struct HmiAxisConfig{
     uint8_t pmc_g00_by_EIFg;                //PMC轴快移速度来源 0：定位速度 1：EIFg信号
     uint16_t pmc_min_speed;                 //最小PMC移动速度
     uint16_t pmc_max_speed;                 //最大PMC移动速度
+
+    int    ref_complete;                    //参考点是否建立
 };
 
 /**

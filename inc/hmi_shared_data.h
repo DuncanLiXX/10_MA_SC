@@ -554,11 +554,7 @@ enum ErrorType {
     ARC_TO_ARC_SAME_CENTER  = 2057, //圆弧接圆弧刀补不能计算同心圆弧
     MOVE_SMALLER_THAN_CMPRADIUS     = 2058, //移动距离小于刀补半径 无法计算刀补
     ERR_CAL_SPD_TAP_POS     = 2059,   // 无法计算刚性攻丝时的主轴位置
-	INVALID_COMPENSATE_PLANE = 2060,  // G18/G19平面暂不支持刀补
-	ARC_NOT_ALLOWED2		 = 2061,  // 刀补建立第一段不支持圆弧轨迹
-	G31_NOT_ALLOWED			 = 2062,  // 刀补过程中不支持G31跳段
-	DWORD_INVALID			 = 2063,  // 刀补中无法执行D指令
-	G41_G42_CHANGE			 = 2064,  // 不支持 G41_G42 中途切换
+
 
 	//刀补告警	5000~6999
     ERR_CANCEL_R_COMP_WITHOUT_MOVE      = 5000, //取消刀具半径补偿时没有轴移动
@@ -574,6 +570,11 @@ enum ErrorType {
     ERR_R_COMP_CHANGE_AFTER_ESTABLISH   = 5010, //刀具半径补偿不能在建立后立即改变
     ERR_R_COMP_UNDER_FIXED_CYCLE        = 5011, //固定循环中不能使用刀具半径补偿
     ERR_R_COMP_GENERATE_FAIL            = 5012, //刀补轨迹生成失败
+	INVALID_COMPENSATE_PLANE 			= 5013,  // G18/G19平面暂不支持刀补
+	ARC_NOT_ALLOWED2		 			= 5014,  // 刀补建立第一段不支持圆弧轨迹
+	G31_NOT_ALLOWED			 			= 5015,  // 刀补过程中不支持G31跳段
+	DWORD_INVALID			 			= 5016,  // 刀补中无法执行D指令
+	G41_G42_CHANGE			 			= 5017,  // 不支持 G41_G42 中途切换
 
 
 	//通讯告警	7000~7999

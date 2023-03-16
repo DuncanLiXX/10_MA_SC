@@ -38,6 +38,8 @@ public:
 
     void clearError();
 
+    void setPlane(int plane){this->plane = plane;}
+
     ErrorType err_code = ERR_NONE;
 
 private:
@@ -46,10 +48,10 @@ private:
 	OutputMsgList *m_p_output_msg_list;   //待输出至MC的指令消息队列
 	
 	ToolRec m_cur_tool;
-
     DPointChn cur_point;
     RecordMsg * msg;
     double comp_radius;
+    int plane = 170;
 };
 
 #endif /* TOOL_COMPENSATE_H_ */

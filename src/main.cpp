@@ -491,7 +491,6 @@ int LoadMiData(){
     reg_map_size = PAGE_SIZE * (file_size/PAGE_SIZE + 1);   //加载文件大小向上取整到页的整数倍
     reg_mem_map_mask = (reg_map_size - 1);
 
-
     //打开设备文件
     printf("映射内存地址空间\n");
     mem_file = open("/dev/mem", O_RDWR | O_SYNC);
@@ -593,8 +592,6 @@ int Initialize(){
 
     GetDiskVersion(g_sys_info.sw_version_info.platform, kMaxVersionLen); //获取统一版本号
     g_sys_state.system_boot_stage = STEP_INIT_TRACE;
-
-
 
     //创建日志调试接口对象
     g_ptr_trace = TraceInfo::GetInstance();

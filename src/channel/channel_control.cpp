@@ -3301,7 +3301,6 @@ void ChannelControl::SetAxisRefEncoder(uint8_t axis, int64_t encoder){
  * @param axis : 物理轴编号
  */
 void ChannelControl::ActiveAxisZCapture(uint8_t axis){
-
     MiCmdFrame cmd;
     memset(&cmd, 0x00, sizeof(cmd));
     cmd.data.cmd = CMD_MI_ACTIVE_Z_CAPT;
@@ -3316,7 +3315,6 @@ void ChannelControl::ActiveAxisZCapture(uint8_t axis){
  */
 void ChannelControl::SendMiClearPosCmd(uint8_t axis, int mode){
     //	printf("SendMiClearPosCmd:%hhu, %d\n", axis, mode);
-
     MiCmdFrame cmd;
     memset(&cmd, 0x00, sizeof(cmd));
     cmd.data.cmd = CMD_MI_CLEAR_ROT_AXIS_POS;
@@ -6851,9 +6849,9 @@ bool ChannelControl::ExecuteAuxMsg(RecordMsg *msg){
                     //llx test
                     gettimeofday(&time_now_test, NULL);
                     time_elpase_test = (time_now_test.tv_sec-m_time_test.tv_sec)*1000000+time_now_test.tv_usec-m_time_test.tv_usec;
-                    std::cout << "+++++++++++++++++++++++++++++timeval: " << (int)time_elpase_test << std::endl;
-                    std::cout << "mcode: " << (int)mcode << " ME: " << (int)this->GetMExcSig(m_index) << " FIN: " << (int)this->m_p_g_reg->FIN << std::endl;
-                    std::cout << "mfin: " << (int)this->GetMFINSig(m_index) << std::endl;
+                    //std::cout << "+++++++++++++++++++++++++++++timeval: " << (int)time_elpase_test << std::endl;
+                    //std::cout << "mcode: " << (int)mcode << " ME: " << (int)this->GetMExcSig(m_index) << " FIN: " << (int)this->m_p_g_reg->FIN << std::endl;
+                    //std::cout << "mfin: " << (int)this->GetMFINSig(m_index) << std::endl;
                 }
                 else{
                     gettimeofday(&time_now, NULL);
@@ -6864,9 +6862,9 @@ bool ChannelControl::ExecuteAuxMsg(RecordMsg *msg){
                         //llx test
                         gettimeofday(&time_now_test, NULL);
                         time_elpase_test = (time_now_test.tv_sec-m_time_test.tv_sec)*1000000+time_now_test.tv_usec-m_time_test.tv_usec;
-                        std::cout << "+++++++++++++++++++++++++++++timeval: " << (int)time_elpase_test << std::endl;
-                        std::cout << "mcode: " << (int)mcode << " ME: " << (int)this->GetMExcSig(m_index) << " FIN: " << (int)this->m_p_g_reg->FIN << std::endl;
-                        std::cout << "mfin: " << (int)this->GetMFINSig(m_index) << std::endl;
+                        //std::cout << "+++++++++++++++++++++++++++++timeval: " << (int)time_elpase_test << std::endl;
+                        //std::cout << "mcode: " << (int)mcode << " ME: " << (int)this->GetMExcSig(m_index) << " FIN: " << (int)this->m_p_g_reg->FIN << std::endl;
+                        //std::cout << "mfin: " << (int)this->GetMFINSig(m_index) << std::endl;
 
                         CreateError(ERR_M_CODE, ERROR_LEVEL, CLEAR_BY_MCP_RESET, mcode, m_n_channel_index);
                         this->m_error_code = ERR_M_CODE;
@@ -7271,9 +7269,10 @@ bool ChannelControl::ExecuteCoordMsg(RecordMsg *msg){
                 continue;
 			double offset = GetAxisCurMachPos(i) - point.GetAxisValue(i);
 			m_p_chn_g92_offset->offset[i] = offset;
-			printf("===== %d %lf\n", i, m_p_chn_g92_offset->offset[i]);
 		}
 		G52Active = false;
+		G92Active = true;
+
 	}
 	// @add zk
 
@@ -7302,7 +7301,6 @@ bool ChannelControl::ExecuteCoordMsg(RecordMsg *msg){
 					origin_pos += point.GetAxisValue(i)* 1e7;
 					G52offset[i] = point.GetAxisValue(i);
 
-					printf("===== axis: %d origin_pos: %ld\n", i, origin_pos);
 					this->SetMcAxisOrigin(i, origin_pos);
         		}
             }
@@ -11648,7 +11646,7 @@ void ChannelControl::SetMcAxisOrigin(uint8_t axis_index, int64_t origin_pos){
     cmd.data.data[2] = (origin_pos>>32)&0xFFFF;
     cmd.data.data[3] = (origin_pos>>48)&0xFFFF;
 
-    printf("SetMcAxisOrigin2, axis: %d value: %ld\n", axis_index, origin_pos);
+    printf("SetMcAxisOrigin2, axis: %d value: %lld\n", axis_index, origin_pos);
 
     if(!this->m_b_mc_on_arm)
         m_p_mc_comm->WriteCmd(cmd);
@@ -11903,19 +11901,30 @@ void ChannelControl::SetMcCoord(bool flag){
     if(flag){
         for(int i = 0; i < m_p_channel_config->chn_axis_count; i++){
             //this->SetMcAxisOrigin(i);
-            int64_t origin_pos = (int64_t)(m_p_chn_coord_config[0].offset[i] * 1e7);  //基本工件坐标系
+            printf("=============================axis %d ======================\n", i);
+            int64_t origin_pos = 0;
+            if(!G92Active) origin_pos = (int64_t)(m_p_chn_coord_config[0].offset[i] * 1e7);  //基本工件坐标系
+
+        	printf("===== basic offset  axis: %i offset %lld\n", i, origin_pos);
             int coord_index = m_channel_status.gmode[14];
             if(coord_index <= G59_CMD ){
-                origin_pos += m_p_chn_coord_config[coord_index/10-53].offset[i] * 1e7;    //单位由mm转换为0.1nm
+            	origin_pos += (int64_t)(m_p_chn_coord_config[coord_index/10-53].offset[i] * 1e7);    //单位由mm转换为0.1nm
+            	printf("===== g54 offset  axis: %i offset %lld\n", i, (int64_t)(m_p_chn_coord_config[coord_index/10-53].offset[i] * 1e7));
             }else if(coord_index <= G5499_CMD){
-                origin_pos += m_p_chn_ex_coord_config[coord_index/10-5401].offset[i] * 1e7;    //单位由mm转换为0.1nm
+                origin_pos += (int64_t)(m_p_chn_ex_coord_config[coord_index/10-5401].offset[i] * 1e7);    //单位由mm转换为0.1nm
+                printf("===== g5401 offset  axis: %i offset %lld\n", i, (int64_t)(m_p_chn_ex_coord_config[coord_index/10-5401].offset[i] * 1e7));
             }
 
             origin_pos += (int64_t)(m_p_chn_g92_offset->offset[i] * 1e7);
+            printf("===== g92 offset  axis: %i offset %lld\n", i, (int64_t)(m_p_chn_g92_offset->offset[i] * 1e7));
+
+            printf("===== coord_index: %d SetMcCoord axis: %d origin: %lld\n", coord_index, i, origin_pos);
 
             this->SetMcAxisOrigin(i, origin_pos);
         }
     }
+
+    G92Active = false;
 
     this->ActiveMcOrigin(flag);
 }

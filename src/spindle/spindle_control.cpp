@@ -377,7 +377,7 @@ void SpindleControl::InputORCMA(bool ORCMA)
     ans = std::async(std::launch::async, func, ORCMA);
 }
 
-// 刚性攻丝模式切换
+// 刚性攻丝模式切换 同步
 void SpindleControl::InputRGTAP(bool RGTAP)
 {
     if(!spindle)
@@ -391,7 +391,7 @@ void SpindleControl::InputRGTAP(bool RGTAP)
     	CancelRigidTap();
 }
 
-// 主轴控制模式切换 (同步)
+// 主轴控制模式切换   位置模式
 void SpindleControl::InputRGMD(bool RGMD)
 {
     if(!spindle)
@@ -843,7 +843,9 @@ void SpindleControl::ProcessORCMA(bool ORCMA)
 
 void SpindleControl::ProcessModeChanged(Spindle::Mode mode)
 {
-    if(mode == Position){
+    printf("========== ProcessModeChanged  %d\n", mode);
+
+	if(mode == Position){
         ChannelEngine *engine = ChannelEngine::GetInstance();
         ChannelControl *control = engine->GetChnControl(0);
         ChannelRealtimeStatus status = control->GetRealtimeStatus();
@@ -1018,6 +1020,8 @@ void SpindleControl::ProcessRTNT()
 
 void SpindleControl::EStop(){
 	if(!spindle) return;
+
+	while(fabs(GetSpindleSpeed()) > 1){}
 
 	InputPolar(Stop);
 }

@@ -8681,10 +8681,10 @@ void ChannelEngine::ProcessPmcSignal(){
             UpdateMiLimitValue(g_reg->EXLM, g_reg->RLSOT);
         }
 
-        if(g_reg->SYNC != g_reg_last->SYNC){
+        if(g_reg->SYNC != g_reg_last->SYNC || (!inited && g_reg->SYNC)){
             m_sync_axis_ctrl->InputSync(g_reg->SYNC);
         }
-        if(g_reg->SYNCJ != g_reg_last->SYNCJ){
+        if(g_reg->SYNCJ != g_reg_last->SYNCJ || (!inited && g_reg->SYNCJ)){
             m_sync_axis_ctrl->InputSyncJ(g_reg->SYNCJ);
         }
 
@@ -8752,7 +8752,8 @@ void ChannelEngine::ProcessPmcSignal(){
         if (g_reg_last->KEY4 != g_reg->KEY4
             || g_reg_last->KEY3 != g_reg->KEY3
             || g_reg_last->KEY2 != g_reg->KEY2
-            || g_reg_last->KEY1 != g_reg->KEY1)
+            || g_reg_last->KEY1 != g_reg->KEY1
+            || !inited)
         {
             ProcessPMCProtect();
         }

@@ -453,8 +453,8 @@ enum ErrorType {
 
     ERR_NO_CUR_RUN_DATA = 1500,         //找不到当前运行数据
 
-    ERR_TOOL_MEAS_POS = 1600,           //对刀位置未设置
-    ERR_AUTO_TOOL_MEASURE = 1601,       //自动对刀失败
+    ERR_TOOL_MEAS_POS = 1600,           //对刀位置未设置，未使用
+    ERR_AUTO_TOOL_MEASURE = 1601,       //自动对刀失败，未使用
 
     ERR_HW_REV_OVER = 1650,             //手轮反向跟踪无更多数据   级别：警告
     ERR_HW_INSERT_INVALID = 1651,       //手轮插入无效
@@ -1394,6 +1394,9 @@ struct HmiAxisConfig{
     uint8_t pmc_g00_by_EIFg;                //PMC轴快移速度来源 0：定位速度 1：EIFg信号
     uint16_t pmc_min_speed;                 //最小PMC移动速度
     uint16_t pmc_max_speed;                 //最大PMC移动速度
+
+    int    ref_complete;                    //参考点是否建立
+    bool init_backlash_dir;                 //螺补初始化方向
 };
 
 /**

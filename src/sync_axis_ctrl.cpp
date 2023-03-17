@@ -60,10 +60,14 @@ void SyncAxisCtrl::InputMode(ChnWorkMode mode)
 }
 
 void SyncAxisCtrl::UpdateMask(int64_t mask){
-    if(mask == sync_mask)
-        return;
 
-    for(int i = 0; i < chn_config->chn_axis_count; i++){
+    if (mask == sync_mask)
+    {
+        return;
+    }
+
+    for (int i = 0; i < chn_config->chn_axis_count; i++)
+    {
         bool need_sync = (mask & (0x01 << i));
         bool is_sync = axis_config[i].sync_axis;
 
@@ -73,68 +77,51 @@ void SyncAxisCtrl::UpdateMask(int64_t mask){
                         0, CHANNEL_ENGINE_INDEX, i);
             return;
         }
-    }
 
-    // 建立同步需要两个步骤：
-    // 1.给mi发送同步mask
-    // 2.打开同步使能
-
-    // 这里先执行第一步，等命令回复后再打开使能
-    wait_sync_mask = mask;
-    mi->SendSyncAxis(mask);
-    ScPrintf("UpdateMask: mask = %lld\n",mask);
-}
-
-void SyncAxisCtrl::RspSyncAxis(int64_t mask)
-{
-    ScPrintf("RspSyncAxis: mask = %lld\n",mask);
-
-    for(int i = 0; i < chn_config->chn_axis_count; i++){
-        bool sync_now = (mask & (0x01<<i));
-        bool sync_last = (sync_mask & (0x01<<i));
-        bool sync_wait = (wait_sync_mask & (0x01<<i));
-
-        // 建立同步失败
-        if(sync_wait != sync_now && sync_wait){
-            CreateError(ERR_EN_SYNC_AXIS, ERROR_LEVEL, CLEAR_BY_MCP_RESET,
-                        0, CHANNEL_ENGINE_INDEX, i);
-            return;
-        }
-        // 取消同步失败
-        if(sync_wait != sync_now && !sync_wait){
-            CreateError(ERR_DIS_SYNC_AXIS, ERROR_LEVEL, CLEAR_BY_MCP_RESET,
-                        0, CHANNEL_ENGINE_INDEX, i);
-            return;
-        }
-
-        // 同步状态发生了改变，还要改变使能状态
-        if(sync_now ^ sync_last){
-            wait_en_index = i;
-            mi->SendEnSyncAxis(axis_config[i].master_axis_no,i+1,sync_now);
+        int masterId = axis_config[i].master_axis_no;
+        bool in_wait = wait_en_index & (0x01 << masterId);
+        if (is_sync && !in_wait)
+        {
+            bool last_sync = sync_state & (0x01 << masterId);
+            if (last_sync != need_sync)
+            {
+                wait_en_index |= (0x01 << masterId);         //进入等待状态
+                mi->SendEnSyncAxis(axis_config[i].master_axis_no, i+1, need_sync);
+            }
         }
     }
 
     sync_mask = mask;
 }
 
-void SyncAxisCtrl::RspEnSyncAxis(bool enable, bool success)
+void SyncAxisCtrl::RspEnSyncAxis(int axisId, bool enable, bool success)
 {
-    ScPrintf("RspSyncAxis: enable = %d,success = %d\n",enable, success);
+    ScPrintf("RspSyncAxis: axisId = %d, enable = %d, success = %d\n", axisId, enable, success);
 
-    if(!success){
-        wait_en_index = -1;
-        return;
+    wait_en_index &= ~(0x01 << axisId);
+    if (!success)
+    {
+        if(enable){
+            CreateError(ERR_EN_SYNC_AXIS, ERROR_LEVEL, CLEAR_BY_MCP_RESET,
+                0, CHANNEL_ENGINE_INDEX, axisId);
+            return;
+        }
+        else
+        {
+            CreateError(ERR_DIS_SYNC_AXIS, ERROR_LEVEL, CLEAR_BY_MCP_RESET,
+                0, CHANNEL_ENGINE_INDEX, axisId);
+            return;
+        }
     }
-    if(wait_en_index < 0 || wait_en_index >= chn_config->chn_axis_count)
-        return;
 
-    if(enable){
-        sync_en |= 0x01 << wait_en_index;
-    }else{
-        sync_en &= ~(0x01 << wait_en_index);
+    if (enable)
+    {
+        sync_state |= (0x01 << axisId);
     }
-
-    wait_en_index = -1;
+    else
+    {
+        sync_state &= ~(0x01 << axisId);
+    }
 }
 
 int SyncAxisCtrl::CheckSyncState(uint8_t axis_index)
@@ -146,10 +133,13 @@ int SyncAxisCtrl::CheckSyncState(uint8_t axis_index)
         bool flag = (sync_mask >> i) & 0x01;
         if(!flag)
             continue;
-        if(axis_config[i].master_axis_no - 1 == axis_index)
-            return 1;
-        else if(i == axis_index)
-            return 2;
+        if (sync_state & (0x01 << axis_config[i].master_axis_no))//已经建立关系
+        {
+            if(axis_config[i].master_axis_no - 1 == axis_index)
+                return 1;
+            else if(i == axis_index)
+                return 2;
+        }
     }
 
     return 0;
@@ -164,8 +154,11 @@ uint8_t SyncAxisCtrl::GetSlaveAxis(uint8_t master_index)
         bool flag = (sync_mask >> i) & 0x01;
         if(!flag)
             continue;
-        if(axis_config[i].master_axis_no - 1 == master_index)
-            mask |= (0x01 << i);
+        if (sync_state & (0x01 << axis_config[i].master_axis_no))//已经建立关系
+        {
+            if(axis_config[i].master_axis_no - 1 == master_index)
+                mask |= (0x01 << i);
+        }
     }
     return mask;
 }

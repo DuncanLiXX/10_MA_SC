@@ -305,7 +305,8 @@ bool ChannelControl::Initialize(uint8_t chn_index, ChannelEngine *engine, HMICom
         }
         if(m_p_axis_config[phy_axis-1].axis_interface == VIRTUAL_AXIS   //虚拟轴不用建立参考点
             || m_p_axis_config[phy_axis-1].axis_type == AXIS_SPINDLE	//主轴不用建立参数点
-            || (m_p_axis_config[phy_axis-1].feedback_mode == ABSOLUTE_ENCODER && m_p_axis_config[phy_axis-1].ref_encoder != kAxisRefNoDef))  //已经建立参考点的绝对式编码器，不用再次建立参考点
+            //|| (m_p_axis_config[phy_axis-1].feedback_mode == ABSOLUTE_ENCODER && m_p_axis_config[phy_axis-1].ref_encoder != kAxisRefNoDef))  //已经建立参考点的绝对式编码器，不用再次建立参考点
+            || (m_p_axis_config[phy_axis-1].feedback_mode == ABSOLUTE_ENCODER && m_p_axis_config[phy_axis-1].ref_complete != 0))  //已经建立参考点的绝对式编码器，不用再次建立参考点
         {
             m_channel_status.returned_to_ref_point |= (0x01<<i);
         }
@@ -2415,7 +2416,8 @@ void ChannelControl::SendMonitorData(bool bAxis, bool btime){
 
     //@test zk  MDA 模式下显示行号
     if(m_channel_mc_status.cur_mode == MC_MODE_MDA &&
-    		m_channel_mc_status.cur_line_no > 0){
+            m_channel_mc_status.cur_line_no > 0 &&
+            !m_b_manual_call_macro/*llx add 宏程序调用不能显示行号*/){ //没有调用宏程序
     	m_channel_rt_status.line_no = m_channel_mc_status.cur_line_no;
     }
 
@@ -4978,9 +4980,10 @@ void ChannelControl::SetCurLineNo(uint32_t line_no){
         return;
 #endif
     if(this->m_n_macroprog_count == 0 || this->m_p_general_config->debug_mode > 0)
+    {
         this->m_channel_rt_status.line_no = line_no;
-    //	printf("ChannelControl::SetCurLineNo: %u\n", line_no);
-
+        printf("ChannelControl::SetCurLineNo: %u\n", line_no);
+    }
     ResetMcLineNo();//复位MC模块当前行号
 }
 
@@ -10770,7 +10773,7 @@ void ChannelControl::SetFuncState(int state, uint8_t mode){
         }
     }
 
-    const vector<string> table = {"单段执行", "空运行", "选停", "手轮跟踪", "程序跳段", "编辑锁", "机床锁",
+    const vector<string> table = {"单段执行", "空运行", "选择停止", "手轮模拟", "单段跳跃", "编辑锁", "机床锁",
                                  "机床辅助锁", "手动快速"};
     if(state >= 0 && state < (int)table.size())
     {
@@ -11164,7 +11167,7 @@ void ChannelControl::ManualMove(int8_t dir){
         tar_pos = limit * 1e7;
     }
     //ScPrintf("GetAxisCurIntpTarPos = %llf", GetAxisCurIntpTarPos(m_channel_status.cur_axis, true)*1e7);
-    int64_t n_inc_dis = tar_pos - GetAxisCurIntpTarPos(m_channel_status.cur_axis, true)*1e7;
+    int64_t n_inc_dis = tar_pos - GetAxisCurIntpTarPos(m_channel_status.cur_axis, false)*1e7;
     if((m_p_channel_engine->GetMlkMask() & (0x01<<m_channel_status.cur_axis))
             && GetChnWorkMode() == MANUAL_STEP_MODE){
         n_inc_dis = GetCurManualStep()*1e4*dir;
@@ -19301,7 +19304,6 @@ bool ChannelControl::CallMacroProgram(uint16_t macro_index){
         if(!m_p_compiler->FindSubProgram(macro_index, true)){
             return false;
         }
-
 
         char cmd_buf[256];
         memset (cmd_buf, 0x00, 256);

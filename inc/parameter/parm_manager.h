@@ -93,6 +93,8 @@ public:
 
 	bool UpdateAxisRef(uint8_t axis, int64_t value);	//更新指定轴的参考点编码器值
 
+    bool UpdateAxisComplete(uint8_t axis, int complete);
+
 	bool UpdatePcData(uint8_t axis_index, bool dir_flag, uint16_t offset, uint16_t count, double *data);    //更新螺补数据
 
 	bool UpdateIoRemapInfo(IoRemapInfo &info);    //更新IO重映射数据

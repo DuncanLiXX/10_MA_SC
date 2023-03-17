@@ -1338,6 +1338,7 @@ bool ParmManager::ReadAxisConfig(){
             m_sc_axis_config[i].ret_ref_speed_second = m_ini_axis->GetDoubleValueOrDefault(sname, "ret_ref_speed_second", 100);
             m_sc_axis_config[i].ref_offset_pos = m_ini_axis->GetDoubleValueOrDefault(sname, "ref_offset_pos", 0);
             m_sc_axis_config[i].ref_z_distance_max = m_ini_axis->GetDoubleValueOrDefault(sname, "ref_z_distance_max", 0);
+            m_sc_axis_config[i].ref_complete = m_ini_axis->GetDoubleValueOrDefault(sname, "ref_complete", 0);
 
 			m_sc_axis_config[i].rapid_acc = m_ini_axis->GetDoubleValueOrDefault(sname, "rapid_acc", 1500);
 			m_sc_axis_config[i].manual_acc = m_ini_axis->GetDoubleValueOrDefault(sname, "manual_acc", 2000);
@@ -1353,6 +1354,7 @@ bool ParmManager::ReadAxisConfig(){
 
             m_sc_axis_config[i].backlash_forward = m_ini_axis->GetDoubleValueOrDefault(sname, "backlash_forward", 0);
             m_sc_axis_config[i].backlash_negative = m_ini_axis->GetDoubleValueOrDefault(sname, "backlash_negative", 0);
+            m_sc_axis_config[i].init_backlash_dir = m_ini_axis->GetBoolValueOrDefault(sname, "init_backlash_dir", true);
 			m_sc_axis_config[i].backlash_enable = m_ini_axis->GetIntValueOrDefault(sname, "backlash_enable", 1);
             m_sc_axis_config[i].backlash_step = m_ini_axis->GetIntValueOrDefault(sname, "backlash_step", 20);
 			m_sc_axis_config[i].pc_offset = m_ini_axis->GetIntValueOrDefault(sname, "pc_offset", 1+400*i);
@@ -1508,6 +1510,7 @@ bool ParmManager::ReadAxisConfig(){
             m_sc_axis_config[i].ret_ref_speed_second = 100;
             m_sc_axis_config[i].ref_offset_pos = 0;
             m_sc_axis_config[i].ref_z_distance_max = 0;
+            m_sc_axis_config[i].ref_complete = 0;
 
 			m_sc_axis_config[i].rapid_acc = 1500;
 			m_sc_axis_config[i].manual_acc = 2000;
@@ -1522,6 +1525,7 @@ bool ParmManager::ReadAxisConfig(){
 			m_sc_axis_config[i].backlash_forward = 0;
 			m_sc_axis_config[i].backlash_negative = 0;
             m_sc_axis_config[i].backlash_step = 20;
+            m_sc_axis_config[i].init_backlash_dir = true;
 			m_sc_axis_config[i].pc_offset = 1+400*i;
 			m_sc_axis_config[i].pc_count = 0;
 			m_sc_axis_config[i].pc_ref_index = 1;
@@ -4621,7 +4625,15 @@ bool ParmManager::UpdateAxisParam(uint8_t axis_index, uint32_t param_no, ParamVa
         sprintf(kname, "absolute_ref_mode");
         m_ini_axis->SetIntValue(sname, kname, value.value_int8);
         break;
-
+    case 1319:
+        sprintf(kname, "ref_complete");
+        if (!value.value_int32)//只接收0值
+            m_ini_axis->SetIntValue(sname, kname, value.value_int32);
+        break;
+    case 1320:
+        sprintf(kname, "init_backlash_dir");
+        m_ini_axis->SetBoolValue(sname, kname, value.value_int8);
+        break;
 	case 1350:	//手动速度
 		sprintf(kname, "manual_speed");
 		m_ini_axis->SetDoubleValue(sname, kname, value.value_double);
@@ -5160,7 +5172,36 @@ bool ParmManager::UpdateAxisRef(uint8_t axis, int64_t value){
 	m_ini_axis->Save();
 
 //	printf("save axis %hhu ref origin point\n", axis);
-	return true;
+    return true;
+}
+
+/**
+ * @brief 更新指定轴的参考点状态
+ * @param axis : 轴号， 从0开始
+ * @param value
+ * @return
+ */
+bool ParmManager::UpdateAxisComplete(uint8_t axis, int complete)
+{
+    if(axis >= this->m_sc_system_config->max_axis_count){   //支持参数修改后一次重启
+        g_ptr_trace->PrintLog(LOG_ALARM, "轴参考点编码器值更新，轴号非法：%hhu", axis);
+        return false;
+    }
+    char sname[32];	//section name
+    char kname[64];	//key name
+
+    memset(sname, 0x00, sizeof(sname));
+    memset(kname, 0x00, sizeof(kname));
+
+    sprintf(sname, "axis_%hhu", axis+1);
+
+    sprintf(kname, "ref_complete");
+    m_ini_axis->SetIntValue(sname, kname, complete);  //64位整型
+
+    m_ini_axis->Save();
+
+//	printf("save axis %hhu ref origin point\n", axis);
+    return true;
 }
 
 /**
@@ -6158,6 +6199,16 @@ void ParmManager::ActiveAxisParam(uint8_t axis_index, uint32_t param_no, ParamVa
         break;
     case 1318:  //绝对式电机回零方式
         this->m_sc_axis_config[axis_index].absolute_ref_mode = value.value_int8;
+        break;
+    case 1319:  //建立参考点状态
+        if (value.value_int32 == 0)
+        {
+            this->m_sc_axis_config[axis_index].ref_complete = 0;
+            g_ptr_chn_engine->ClearAxisRefEncoder(axis_index);
+        }
+        break;
+    case 1320:  //反向间隙，初始方向
+        this->m_sc_axis_config[axis_index].init_backlash_dir = value.value_int8;
         break;
 	case 1350:	//手动速度
 		this->m_sc_axis_config[axis_index].manual_speed = value.value_double;

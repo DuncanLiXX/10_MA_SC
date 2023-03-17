@@ -514,6 +514,14 @@ bool AxisConfig_Backup_Info::UnPackage(zip_t *zip, string prefix)
                 if (m_ini_axis.SetInt64Value(*itr, key, kAxisRefNoDef))
                     return false;
             }
+
+            key = "ref_complete";
+            if (m_ini_axis.HasKey(*itr, key))
+            {
+                std::cout << "setIntValue: [" << *itr << "] = " << key << std::endl;
+                if (m_ini_axis.SetInt64Value(*itr, key, 0))
+                    return false;
+            }
         }
         if (m_ini_axis.Save())
             return false;

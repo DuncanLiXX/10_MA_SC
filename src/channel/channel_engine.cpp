@@ -42,7 +42,8 @@ const map<int, SDLINK_SPEC> ChannelEngine::m_SDLINK_MAP =
     {1,     {"SA1",  9-3,    4,      true}},
     {3,     {"SC1",  16,     16,     false}},
     {4,     {"SD1",  12-3,   8,      true}},
-    {5,     {"SE1",  7-3,    8,      true}}
+    {5,     {"SE1",  7-3,    8,      true}},
+    {6,     {"SE2",  12-3,   11,     true}},
 };
 
 const uint32_t MC_UPDATE_BLOCK_SIZE = 100;		//MC升级文件帧，每帧包含100字节数据,50个uint16
@@ -120,8 +121,6 @@ ChannelEngine::ChannelEngine() {
     m_mc_run_mi_flag = false;
 
     this->CheckTmpDir();
-
-    this->InitBdioDev();
 
     ShowSc& showSc = Singleton<ShowSc>::instance();
     showSc.SetPrintType(TypePrintOutput);
@@ -256,7 +255,7 @@ void ChannelEngine::ReadIoDev_pmc2(){
                     ifs.read(reinterpret_cast<char *>(&val), sizeof(val));
                     val = BigLittleSwitch32(val);
                     return val;
-        };
+            };
             HandWheelMapInfoVec infoVec;
             bool selectedHandWheel = false;
 
@@ -295,7 +294,8 @@ void ChannelEngine::ReadIoDev_pmc2(){
                         m_list_bdio_dev.Clear();
                         std::cout << static_cast<int>(devInfo.group_index) << " not sequence " << std::endl;
                         CreateError(ERR_PMC_SDLINK_CONFIG, ERROR_LEVEL, CLEAR_BY_RESET_POWER);
-                        break;
+                        ifs.close();
+                        return;
                     }
                 }
 
@@ -303,7 +303,8 @@ void ChannelEngine::ReadIoDev_pmc2(){
                 {
                     m_list_bdio_dev.Clear();
                     CreateError(ERR_PMC_SDLINK_CONFIG, ERROR_LEVEL, CLEAR_BY_RESET_POWER);
-                    break;
+                    ifs.close();
+                    return;
                 }
 
                 m_list_bdio_dev.Append(devInfo);
@@ -876,8 +877,10 @@ void ChannelEngine::UpdateHandwheelState(uint8_t chn){
     }
     if(axis_no == 0){
         insert_enable = false;
+        g_ptr_tracelog_processor->SendToHmi(kPanelOper, kDebug, "关闭[手轮插入]");
     }else{
         insert_enable = true;
+        g_ptr_tracelog_processor->SendToHmi(kPanelOper, kDebug, "开启[手轮插入]");
     }
     if(trace_enable){
         insert_enable = false;
@@ -976,7 +979,6 @@ void ChannelEngine::Initialize(HMICommunication *hmi_comm, MICommunication *mi_c
     this->m_p_chn_proc_param = parm->GetChnProcParam();
     this->m_p_axis_proc_param = parm->GetAxisProcParam();
 
-
     //创建PMC寄存器类对象
     this->m_p_pmc_reg = new PmcRegister();
     if(m_p_pmc_reg == nullptr){
@@ -1046,6 +1048,8 @@ void ChannelEngine::Initialize(HMICommunication *hmi_comm, MICommunication *mi_c
         m_p_channel_control[i].Initialize(i, this, hmi_comm, mi_comm, mc_comm, parm, m_p_pmc_reg);
     }
 
+    this->InitBdioDev();
+
     printf("init pmc axis ctrl \n");
     //初始设置PMC通道控制对象
     for(uint8_t i = 0; i < kMaxPmcAxisCtrlGroup; i++)
@@ -1063,7 +1067,7 @@ void ChannelEngine::Initialize(HMICommunication *hmi_comm, MICommunication *mi_c
     for(int i = 0; i < this->m_p_general_config->axis_count; i++){
         if(m_p_axis_config[i].axis_interface == VIRTUAL_AXIS    //虚拟轴不用建立参考点
             || m_p_axis_config[i].axis_type == AXIS_SPINDLE     //主轴不用建立参数点
-            || (m_p_axis_config[i].feedback_mode != INCREMENTAL_ENCODER && m_p_axis_config[i].feedback_mode != NO_ENCODER && m_p_axis_config[i].ref_encoder != kAxisRefNoDef))    //已经建立参考点的绝对式编码器，不用再次建立参考点
+            || (m_p_axis_config[i].feedback_mode == ABSOLUTE_ENCODER /*&& m_p_axis_config[i].ref_encoder != kAxisRefNoDef*/ && m_p_axis_config[i].ref_complete == 1))    //已经建立参考点的绝对式编码器，不用再次建立参考点
         {
             //			m_n_mask_ret_ref_over |= (0x01<<i);
             this->SetRetRefFlag(i, true);
@@ -1133,9 +1137,9 @@ void ChannelEngine::Initialize(HMICommunication *hmi_comm, MICommunication *mi_c
     }
 
     //处理PMC中的耗时任务
-    auto process = std::bind(&ChannelEngine::ProcessPmcConsuming,
+    auto process = std::bind(&ChannelEngine::ProcessConsumingTask,
                              this);
-    m_pmc_consume_ft = std::async(std::launch::async, process);
+    m_task_consume_ft = std::async(std::launch::async, process);
 
 
     this->InitPoweroffHandler();
@@ -2123,9 +2127,10 @@ void ChannelEngine::ProcessSkipCmdRsp(MiCmdFrame &cmd){
  * @param cmd : MI响应命令包
  */
 void ChannelEngine::ProcessMiEnSyncAxisRsp(MiCmdFrame &cmd){
+    int axisId = cmd.data.data[0];
     bool enable = cmd.data.data[1];
     bool success = (cmd.data.data[2]==0);
-    m_sync_axis_ctrl->RspEnSyncAxis(enable,success);
+    m_sync_axis_ctrl->RspEnSyncAxis(axisId, enable,success);
 }
 
 void ChannelEngine::ProcessMiSpdLocateRsp(MiCmdFrame &cmd)
@@ -2140,7 +2145,7 @@ void ChannelEngine::ProcessMiOperateCmdRsp(MiCmdFrame &cmd)
     uint8_t axis = cmd.data.axis_index;
     //printf("cmd.data.data[1] = %d\n",cmd.data.data[1]);
     bool enable = cmd.data.data[1];
-    if(type == MOTOR_ON_FLAG){
+    if(type == MOTOR_ON_FLAG){      
         m_p_channel_control[0].GetSpdCtrl()->RspAxisEnable(axis,enable);
     }
 }
@@ -2255,6 +2260,28 @@ bool ChannelEngine::NotifyHmiAxisRefChanged(uint8_t phy_axis){
     memcpy(&cmd.data[1], &param_no, sizeof(uint32_t));
     cmd.data[5] = 7;    //值类型，int64
     memcpy(&cmd.data[6], &this->m_p_axis_config[phy_axis].ref_encoder, sizeof(int64_t));
+
+    return this->m_p_hmi_comm->SendCmd(cmd);
+}
+
+/**
+ * @brief 通知HMI轴参考点状态发生变化
+ * @param phy_axis ： 物理轴号，从0开始
+ * @return true--成功    false--失败
+ */
+bool ChannelEngine::NotidyHmiAxisRefComplete(uint8_t phy_axis)
+{
+    HMICmdFrame cmd;
+    memset((void *)&cmd, 0x00, sizeof(HMICmdFrame));
+    cmd.channel_index = CHANNEL_ENGINE_INDEX;
+    cmd.cmd = CMD_SC_PARAM_CHANGED;
+    cmd.cmd_extension = AXIS_CONFIG;
+    cmd.data_len = 14;
+    cmd.data[0] = phy_axis;
+    uint32_t param_no = 1319;
+    memcpy(&cmd.data[1], &param_no, sizeof(uint32_t));
+    cmd.data[5] = 6;    //值类型，int32
+    memcpy(&cmd.data[6], &this->m_p_axis_config[phy_axis].ref_complete, sizeof(int32_t));
 
     return this->m_p_hmi_comm->SendCmd(cmd);
 }
@@ -2534,9 +2561,9 @@ void ChannelEngine::ProcessMiClearPosRsp(MiCmdFrame &cmd){
  * @param cmd
  */
 void ChannelEngine::ProcessMiSyncAxis(MiCmdFrame &cmd){
-    int64_t mask = 0;
-    memcpy(&mask, cmd.data.data, 8);
-    m_sync_axis_ctrl->RspSyncAxis(mask);
+    //int64_t mask = 0;
+    //memcpy(&mask, cmd.data.data, 8);
+    //m_sync_axis_ctrl->RspSyncAxis(mask);
 }
 
 /**
@@ -3516,6 +3543,9 @@ void ChannelEngine::ProcessHmiAbsoluteRefSet(HMICmdFrame &cmd)
                         {//不为从动轴,Pmc轴未激活
                             m_n_mask_ret_ref |= (0x01<<i);   //设置需要回零的轴
                             m_p_axis_config[i].ret_ref_index = index++;
+                            this->m_p_axis_config[i].ref_complete = 0;
+                            g_ptr_parm_manager->UpdateAxisComplete(i, 0);
+                            ClearAxisRefEncoder(i);
                         }
                     }
                 }
@@ -3534,6 +3564,9 @@ void ChannelEngine::ProcessHmiAbsoluteRefSet(HMICmdFrame &cmd)
                 {
                     if (GetSyncAxisCtrl()->CheckSyncState(phy_axis) != 2 && !GetPmcActive(phy_axis))
                     {//不为从动轴,Pmc轴未激活
+                        this->m_p_axis_config[phy_axis].ref_complete = 0;
+                        g_ptr_parm_manager->UpdateAxisComplete(phy_axis, 0);
+                        ClearAxisRefEncoder(phy_axis);
                         cmd.cmd_extension = 0;
                         m_b_ret_ref = true;
                         m_n_mask_ret_ref = (0x01<<phy_axis);
@@ -7530,7 +7563,8 @@ void ChannelEngine::InitMiParam(){
         if(axis_config->axis_interface != VIRTUAL_AXIS &&
                 axis_config->feedback_mode != NO_ENCODER &&
                 axis_config->feedback_mode != INCREMENTAL_ENCODER &&
-                axis_config->ref_encoder != kAxisRefNoDef){ //写入参考点数据
+                axis_config->ref_encoder != kAxisRefNoDef /*&&
+                axis_config->ref_complete == 1*/){ //写入参考点数据
             this->m_p_mi_comm->SetAxisRef(index, axis_config->ref_encoder);
             printf("send mi ref encoder : %lld\n", axis_config->ref_encoder);
         }
@@ -7551,6 +7585,8 @@ void ChannelEngine::InitMiParam(){
         //发送主轴启动时间、制动时间
        m_p_mi_comm->SendMiParam<uint16_t>(index, 1605, axis_config->spd_start_time);
        m_p_mi_comm->SendMiParam<uint16_t>(index, 1606, axis_config->spd_stop_time);
+
+       //
 
         //发送反向间隙参数
         this->SendMiBacklash(i);
@@ -7576,6 +7612,8 @@ void ChannelEngine::InitMiParam(){
     this->SendMiPhyAxisEncoder();
 
     this->SetAxisRetRefFlag();   //发送回参考点结束标志
+
+    //建立同步轴关系
 
     //发送轴参数设置完成命令
     MiCmdFrame cmd;
@@ -8651,9 +8689,9 @@ void ChannelEngine::ProcessPmcSignal(){
             if (g_reg->MLK != g_reg_last->MLK)
             {
                 if (g_reg->MLK)
-                    g_ptr_tracelog_processor->SendToHmi(kPanelOper, kDebug, "开启[机械锁住]");
+                    g_ptr_tracelog_processor->SendToHmi(kPanelOper, kDebug, "开启[机械锁定]");
                 else
-                    g_ptr_tracelog_processor->SendToHmi(kPanelOper, kDebug, "关闭[机械锁住]");
+                    g_ptr_tracelog_processor->SendToHmi(kPanelOper, kDebug, "关闭[机械锁定]");
             }
             else
             {
@@ -8664,12 +8702,12 @@ void ChannelEngine::ProcessPmcSignal(){
                     if (curState && !lastState)
                     {
                         //g_ptr_tracelog_processor->SendToHmi(kPanelOper, kDebug, "轴 " + to_string(i) + "开启[机械锁]");
-                        g_ptr_tracelog_processor->SendToHmi(kPanelOper, kDebug, "开启Z轴锁住");
+                        g_ptr_tracelog_processor->SendToHmi(kPanelOper, kDebug, "开启[Z轴锁定]");
                     }
                     if (!curState && lastState)
                     {
                         //g_ptr_tracelog_processor->SendToHmi(kPanelOper, kDebug, "轴 " + to_string(i) + "关闭[机械锁]");
-                        g_ptr_tracelog_processor->SendToHmi(kPanelOper, kDebug, "关闭Z轴锁住");
+                        g_ptr_tracelog_processor->SendToHmi(kPanelOper, kDebug, "关闭[Z轴锁定]");
                     }
                 }
             }
@@ -8762,9 +8800,9 @@ void ChannelEngine::ProcessPmcSignal(){
         if (g_reg_last->WKCNT == 0 && g_reg->WKCNT == 1)
         {
             std::cout << ">>>>>>>>>>>>>>>>>>>>>>>>>>WKCNT notify" << std::endl;
-            std::lock_guard<std::mutex> lck(m_pmc_consume_mtx);
-            m_pmc_consume_type = CONSUME_TYPE_WORK_COUNT;
-            m_pmc_consume_cond.notify_all();
+            std::lock_guard<std::mutex> lck(m_task_consume_mtx);
+            m_task_consume_type = CONSUME_TYPE_WORK_COUNT;
+            m_task_consume_cond.notify_all();
         }
 
         //通知类型的信号，只保留一个周期
@@ -9099,25 +9137,26 @@ void ChannelEngine::ProcessPmcSignal(){
                                                            m_df_phy_axis_torque_feedback, m_df_spd_angle, m_p_general_config->axis_count);
 
                 //X轴数据
-                //string X_tar_pos = to_string(m_df_phy_axis_pos_feedback[0]) + '\t';
-                //string X_real_pos = to_string(m_df_phy_axis_pos_intp[0]) +'\t';
+                //string X_real_pos = to_string(m_df_phy_axis_pos_feedback[0]) + '\t';
+                //string X_tar_pos = to_string(m_df_phy_axis_pos_intp[0]) +'\t';
 
                 //Y轴数据
-                //string y_tar_pos = to_string(m_df_phy_axis_pos_feedback[1]) + '\t';
-                //string y_real_pos = to_string(m_df_phy_axis_pos_intp[1]) +'\t';
+                //string y_real_pos = to_string(m_df_phy_axis_pos_feedback[1]) + '\t';
+                //string y_tar_pos = to_string(m_df_phy_axis_pos_intp[1]) +'\t';
 
                 //Z轴数据
-                string z_tar_pos = to_string(m_df_phy_axis_pos_feedback[2]) + '\t';
-                string z_real_pos = to_string(m_df_phy_axis_pos_intp[2]) +'\t';
+                string z_real_pos = to_string(m_df_phy_axis_pos_feedback[2]) + '\t';
+                string z_tar_pos = to_string(m_df_phy_axis_pos_intp[2]) +'\t';
 
                 //主轴数据
-                string spd_tar_pos = to_string(m_df_phy_axis_pos_feedback[m_p_channel_control[i].GetSpdCtrl()->GetPhyAxis()]) + '\t';
-                string spd_real_pos = to_string(m_df_phy_axis_pos_intp[m_p_channel_control[i].GetSpdCtrl()->GetPhyAxis()]) + '\t';
+                string spd_real_pos = to_string(m_df_phy_axis_pos_feedback[m_p_channel_control[i].GetSpdCtrl()->GetPhyAxis()]) + '\t';
+                string spd_tar_pos = to_string(m_df_phy_axis_pos_intp[m_p_channel_control[i].GetSpdCtrl()->GetPhyAxis()]) + '\t';
 
                 string msg = z_tar_pos + z_real_pos + spd_tar_pos + spd_real_pos + '\n';
 
                 //string msg = X_tar_pos + X_real_pos + y_tar_pos + y_real_pos + z_tar_pos + z_real_pos + '\n';
                 //string msg = X_tar_pos + X_real_pos + '\n';
+                //string msg = X_real_pos + X_tar_pos + y_real_pos + y_tar_pos + '\n';
                 fwrite(msg.c_str(), sizeof(char), msg.size(), m_fd);
             }
         }
@@ -9161,26 +9200,35 @@ void ChannelEngine::ProcessPmcDataWnd(){
     }
 }
 
-void ChannelEngine::ProcessPmcConsuming()
+void ChannelEngine::ProcessConsumingTask()
 {
     while(1)
     {
-        std::unique_lock<std::mutex> lck(m_pmc_consume_mtx);
-        while(m_pmc_consume_type == 0) {
-            m_pmc_consume_cond.wait(lck);
+        std::unique_lock<std::mutex> lck(m_task_consume_mtx);
+        while(m_task_consume_type == 0) {
+            m_task_consume_cond.wait(lck);
         }
 
-        switch(m_pmc_consume_type){
+        switch(m_task_consume_type){
         case CONSUME_TYPE_WORK_COUNT:
         {
             std::cout << "CONSUME_TYPE_WORK_COUNT"<< std::endl;
             m_p_channel_control[m_n_cur_channle_index].AddWorkCountPiece(1);
         }
             break;
+        case CONSUME_TYPE_SERVE_GUIDE:
+        {
+            //if ()
+            {
+                this->m_p_mi_comm->ReadPhyAxisCurFedBckPos(m_df_phy_axis_pos_feedback, m_df_phy_axis_pos_intp,m_df_phy_axis_speed_feedback,
+                    m_df_phy_axis_torque_feedback, m_df_spd_angle, m_p_general_config->axis_count);
+            }
+        }
+            break;
         default:
             break;
         }
-        m_pmc_consume_type = CONSUME_TYPE_NONE;
+        m_task_consume_type = CONSUME_TYPE_NONE;
     }
 }
 
@@ -9643,7 +9691,7 @@ void ChannelEngine::RemapFile(char *file){
  */
 void ChannelEngine::ResetOPSignal(uint8_t chn_index){
     if(chn_index != CHANNEL_ENGINE_INDEX){
-        this->m_p_channel_control[chn_index].ResetOPSignal();
+            this->m_p_channel_control[chn_index].ResetOPSignal();
     }else{
         for(uint8_t i = 0; i < this->m_p_general_config->chn_count; i++)
             this->m_p_channel_control[i].ResetOPSignal();
@@ -9656,7 +9704,6 @@ void ChannelEngine::ResetOPSignal(uint8_t chn_index){
  * @param value
  */
 void ChannelEngine::SetALSignal(uint8_t chn_index, bool value){
-
     if(chn_index != CHANNEL_ENGINE_INDEX){
         this->m_p_channel_control[chn_index].SetALSignal(value);
     }else{
@@ -9934,6 +9981,7 @@ void ChannelEngine::AxisFindRefNoZeroSignal(uint8_t phy_axis){
             this->m_b_ret_ref_auto = false;
             m_n_ret_ref_auto_cur = 0;
         }
+        SetAxisComplete(phy_axis);
         std::cout << "step 2, ref finish\n";
 
         break;
@@ -10129,7 +10177,7 @@ void ChannelEngine::EcatIncAxisFindRefWithZeroSignal(uint8_t phy_axis){
         if(fabs(this->GetPhyAxisMachPosFeedback(phy_axis) - m_df_ret_ref_tar_pos[phy_axis]) <= 0.010){  //运行到位还是未找到Z信号
             std::cout << "step 9, not find z singal" << std::endl;
             this->SendMiAxisZCaptureCmd(phy_axis, false);
-            m_n_ret_ref_step[phy_axis] = 20;   //跳转失败处理
+            m_n_ret_ref_step[phy_axis] = 21;   //跳转失败处理
         }
     }
         break;
@@ -10266,34 +10314,49 @@ void ChannelEngine::EcatIncAxisFindRefWithZeroSignal(uint8_t phy_axis){
         this->SendMonitorData(false, false);  //再次读取实时位置
 
         if(fabs(this->GetPhyAxisMachPosFeedback(phy_axis)- dis) <= 0.010){  //到位
+
             m_n_ret_ref_step[phy_axis]++;  //跳转下一步
             std::cout << "step 17" << std::endl;
+            gettimeofday(&this->m_time_ret_ref[phy_axis], NULL);
         }
         break;
     case 18:  //回参考点完成
-        printf("axis %u return ref over\n", phy_axis);
-//        if(this->m_p_axis_config[phy_axis].feedback_mode == ABSOLUTE_ENCODER ||
-//            this->m_p_axis_config[phy_axis].feedback_mode == LINEAR_ENCODER){  //绝对值需获取机械零点的编码器值并保存，方便断点后恢复坐标
-//                MiCmdFrame mi_cmd;
-//                memset(&mi_cmd, 0x00, sizeof(mi_cmd));
-//                mi_cmd.data.cmd = CMD_MI_GET_ZERO_ENCODER;
-//                mi_cmd.data.axis_index = phy_axis+1;
+    {
+        struct timeval time_now;
+        gettimeofday(&time_now, NULL);
+        unsigned int time_elpase = (time_now.tv_sec-m_time_ret_ref[phy_axis].tv_sec)*1000000+time_now.tv_usec-m_time_ret_ref[phy_axis].tv_usec;
+        if(time_elpase >= 200000){ //延时200ms
+            printf("axis %u return ref over\n", phy_axis);
+    //        if(this->m_p_axis_config[phy_axis].feedback_mode == ABSOLUTE_ENCODER ||
+    //            this->m_p_axis_config[phy_axis].feedback_mode == LINEAR_ENCODER){  //绝对值需获取机械零点的编码器值并保存，方便断点后恢复坐标
+    //                MiCmdFrame mi_cmd;
+    //                memset(&mi_cmd, 0x00, sizeof(mi_cmd));
+    //                mi_cmd.data.cmd = CMD_MI_GET_ZERO_ENCODER;
+    //                mi_cmd.data.axis_index = phy_axis+1;
 
-//                this->m_p_mi_comm->WriteCmd(mi_cmd);
-//        }
-        this->SetRetRefFlag(phy_axis, true);
-        this->m_p_pmc_reg->FReg().bits[0].in_ref_point |= (0x01<<phy_axis);   //置位到参考点标志
+    //                this->m_p_mi_comm->WriteCmd(mi_cmd);
+    //        }
 
-        this->m_n_mask_ret_ref &= ~(0x01<<phy_axis);
-        m_n_ret_ref_step[phy_axis] = 0;
+            this->SetRetRefFlag(phy_axis, true);
+            this->m_p_pmc_reg->FReg().bits[0].in_ref_point |= (0x01<<phy_axis);   //置位到参考点标志
 
-        if(m_n_mask_ret_ref == 0){
-            this->m_b_ret_ref = false;
-            this->m_b_ret_ref_auto = false;
-            m_n_ret_ref_auto_cur = 0;
+            this->m_n_mask_ret_ref &= ~(0x01<<phy_axis);
+            m_n_ret_ref_step[phy_axis] = 0;
+
+            if (GetSyncAxisCtrl()->CheckSyncState(phy_axis) == 1)
+            {//从动轴建立机械坐标
+                SetSubAxisRefPoint(phy_axis, 0);
+            }
+
+            if(m_n_mask_ret_ref == 0){
+                this->m_b_ret_ref = false;
+                this->m_b_ret_ref_auto = false;
+                m_n_ret_ref_auto_cur = 0;
+            }
+            std::cout << "step 18, home finish" << std::endl;
         }
-        std::cout << "step 18, home finish" << std::endl;
         break;
+    }
     case 20: //失败处理
         this->m_n_mask_ret_ref &= ~(0x01<<phy_axis);
         m_n_ret_ref_step[phy_axis] = 0;
@@ -10306,6 +10369,19 @@ void ChannelEngine::EcatIncAxisFindRefWithZeroSignal(uint8_t phy_axis){
         std::cout << "step 20, home failed" << std::endl;
         m_error_code = ERR_RET_REF_FAILED;
         CreateError(ERR_RET_REF_FAILED, WARNING_LEVEL, CLEAR_BY_MCP_RESET, 0, CHANNEL_ENGINE_INDEX, phy_axis+1);
+        break;
+    case 21:
+        this->m_n_mask_ret_ref &= ~(0x01<<phy_axis);
+        m_n_ret_ref_step[phy_axis] = 0;
+
+        if(m_n_mask_ret_ref == 0){
+            this->m_b_ret_ref = false;
+            this->m_b_ret_ref_auto = false;
+            m_n_ret_ref_auto_cur = 0;
+        }
+        std::cout << "step 21, home failed" << std::endl;
+        m_error_code = ERR_RET_REF_Z_ERR;
+        CreateError(ERR_RET_REF_Z_ERR, WARNING_LEVEL, CLEAR_BY_MCP_RESET, 0, CHANNEL_ENGINE_INDEX, phy_axis+1);
         break;
     default:
         break;
@@ -10471,6 +10547,63 @@ void ChannelEngine::ClearSubAxisRefFlag(int axisID)
     }
 }
 
+/**
+ * @brief 设置绝对式编码器有无回过零标记
+ * @param axisID : 物理轴号，从0开始
+ */
+void ChannelEngine::SetAxisComplete(int axisID)
+{
+    if (axisID >= 0 && axisID <m_p_general_config->axis_count)
+    {
+        this->m_p_axis_config[axisID].ref_complete = true;
+        g_ptr_parm_manager->UpdateAxisComplete(axisID, true);
+        this->NotidyHmiAxisRefComplete(axisID);
+    }
+}
+
+/**
+ * @brief 运动到零点坐标
+ * @param axisID : 物理轴号，从0开始
+ */
+void ChannelEngine::GotoZeroPos(int phy_axis)
+{
+    switch(this->m_n_ret_ref_step[phy_axis]){
+    case 0: {// 设置原点
+        std::cout << "step 0: GotoZeroPos " << (int)phy_axis << std::endl;
+        this->SetRetRefFlag(phy_axis, true);
+        this->m_p_pmc_reg->FReg().bits[0].in_ref_point |= (0x01<<phy_axis);   //置位到参考点标志
+        m_n_ret_ref_step[phy_axis] = 1;  //跳转下一步
+    }
+        break;
+    case 1: {                            //运动到第一参考点
+        this->ManualMoveAbs(phy_axis, m_p_axis_config[phy_axis].rapid_speed, m_p_axis_config[phy_axis].axis_home_pos[0]);
+        m_n_ret_ref_step[phy_axis] = 2;  //跳转下一步
+    }
+        break;
+    case 2:                            //运动完成
+        if(fabs(this->GetPhyAxisMachPosFeedback(phy_axis) - m_p_axis_config[phy_axis].axis_home_pos[0]) <= 0.010){  //到位
+            m_n_ret_ref_step[phy_axis] = 3;
+            std::cout << "step 2, move over" << std::endl;
+        }
+
+        break;
+
+    case 3:
+        this->m_n_mask_ret_ref &= ~(0x01<<phy_axis);
+        m_n_ret_ref_step[phy_axis] = 0;
+
+        if(m_n_mask_ret_ref == 0){
+            this->m_b_ret_ref = false;
+            this->m_b_ret_ref_auto = false;
+            m_n_ret_ref_auto_cur = 0;
+        }
+        std::cout << "step 3, home finish" << std::endl;
+        break;
+    default:
+        break;
+    }
+}
+
 
 /**
  * @brief 清除绝对式零点编码器值
@@ -10478,20 +10611,68 @@ void ChannelEngine::ClearSubAxisRefFlag(int axisID)
  */
 void ChannelEngine::ClearAxisRefEncoder(int axisID)
 {
-    if (axisID > 0 && axisID <m_p_general_config->axis_count)
+    if (axisID >= 0 && axisID < m_p_general_config->axis_count)
     {
-        this->m_p_axis_config[axisID].ref_encoder = kAxisRefNoDef;
-        g_ptr_parm_manager->UpdateAxisRef(axisID, kAxisRefNoDef);
-        this->NotifyHmiAxisRefChanged(axisID);
+        //判断是否是绝对式编码器
+        if (m_p_axis_config[axisID].feedback_mode == ABSOLUTE_ENCODER)
+        {
+            this->m_p_axis_config[axisID].ref_encoder = kAxisRefNoDef;
+            g_ptr_parm_manager->UpdateAxisRef(axisID, kAxisRefNoDef);
 
-        int axisMask = GetSyncAxisCtrl()->GetSlaveAxis(axisID);
-        for (int i = 0; i < this->m_p_general_config->axis_count; ++i) {
-            if(axisMask & (0x01<<i)){
-                std::cout << "ChannelEngine::ClearAxisRefEncoder " << axisID << std::endl;
-                this->m_p_axis_config[i].ref_encoder = kAxisRefNoDef;
-                g_ptr_parm_manager->UpdateAxisRef(i, kAxisRefNoDef);
-                this->NotifyHmiAxisRefChanged(i);
+            //this->m_p_axis_config[axisID].ref_complete = 0;
+            //g_ptr_parm_manager->UpdateAxisComplete(axisID, 0);
+
+            this->m_n_mask_ret_ref_over &= ~(0x01<<axisID);
+
+            uint8_t chn = axisID/16;
+            uint8_t sec = axisID%16;
+            uint8_t bit = axisID%8;
+            if(sec < 8)
+                m_p_pmc_reg->FReg().bits[chn].ZRF1 &= ~(0x01<<bit);
+            else
+                m_p_pmc_reg->FReg().bits[chn].ZRF2 &= ~(0x01<<bit);
+
+            uint8_t chn_axis = 0;
+            chn = this->GetAxisChannel(axisID, chn_axis);
+            if(chn != CHANNEL_ENGINE_INDEX){
+                if(this->m_p_channel_control != nullptr)
+                    this->m_p_channel_control[chn].SetRefPointFlag(chn_axis, false);
             }
+            this->NotifyHmiAxisRefChanged(axisID);
+
+
+            //同步轴处理
+            int axisMask = GetSyncAxisCtrl()->GetSlaveAxis(axisID);
+            for (int i = 0; i < this->m_p_general_config->axis_count; ++i) {
+                if(axisMask & (0x01<<i)){
+                    this->m_p_axis_config[i].ref_encoder = kAxisRefNoDef;
+                    g_ptr_parm_manager->UpdateAxisRef(i, kAxisRefNoDef);
+
+                    this->m_p_axis_config[i].ref_complete = 0;
+                    g_ptr_parm_manager->UpdateAxisComplete(i, 0);
+
+                    this->m_n_mask_ret_ref_over &= ~(0x01<<i);
+
+                    uint8_t chn = i/16;
+                    uint8_t sec = i%16;
+                    uint8_t bit = i%8;
+                    if(sec < 8)
+                        m_p_pmc_reg->FReg().bits[chn].ZRF1 &= ~(0x01<<bit);
+                    else
+                        m_p_pmc_reg->FReg().bits[chn].ZRF2 &= ~(0x01<<bit);
+
+                    uint8_t chn_axis = 0;
+                    chn = this->GetAxisChannel(i, chn_axis);
+                    if(chn != CHANNEL_ENGINE_INDEX){
+                        if(this->m_p_channel_control != nullptr)
+                            this->m_p_channel_control[chn].SetRefPointFlag(i, false);
+                    }
+
+                    this->NotifyHmiAxisRefChanged(i);
+                }
+            }
+
+            this->SetAxisRetRefFlag();
         }
     }
 }
@@ -11280,6 +11461,7 @@ void ChannelEngine::EcatAxisFindRefWithZeroSignal(uint8_t phy_axis){
             this->m_b_ret_ref_auto = false;
             m_n_ret_ref_auto_cur = 0;
         }
+        SetAxisComplete(phy_axis);
         std::cout << "step 19, ref finish" << std::endl;
         break;
     case 20: //失败处理
@@ -11675,6 +11857,7 @@ void ChannelEngine::EcatAxisFindRefNoZeroSignal(uint8_t phy_axis){
             this->m_b_ret_ref_auto = false;
             m_n_ret_ref_auto_cur = 0;
         }
+        SetAxisComplete(phy_axis);
         std::cout << "step 19, ref finish\n";
         break;
     case 20: //失败处理
@@ -11744,13 +11927,20 @@ void ChannelEngine::ReturnRefPoint(){
                 }
                 else
                 {
-                    if (this->m_p_axis_config[i].absolute_ref_mode == 0) //回零标记点设定方式
+                    if (this->m_p_axis_config[i].ref_complete == 0)
                     {
-                        this->AxisFindRefNoZeroSignal(i);
+                        if (this->m_p_axis_config[i].absolute_ref_mode == 0) //回零标记点设定方式
+                        {
+                            this->AxisFindRefNoZeroSignal(i);
+                        }
+                        else if (this->m_p_axis_config[i].absolute_ref_mode == 1) //无挡块回零方式
+                        {
+                            this->EcatAxisFindRefNoZeroSignal(i);
+                        }
                     }
-                    else if (this->m_p_axis_config[i].absolute_ref_mode == 1) //无挡块回零方式
-                    {
-                        this->EcatAxisFindRefNoZeroSignal(i);
+                    else
+                    {//绝对式编码器建立机械坐标系之后，执行运动零坐标动作
+                        GotoZeroPos(i);
                     }
                 }
             }

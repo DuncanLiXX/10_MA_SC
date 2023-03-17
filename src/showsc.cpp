@@ -689,6 +689,7 @@ void ShowSc::PrintAxisConfig(int axis)
     AddPair(s,"ret_ref_speed_second", cfg->ret_ref_speed_second);
     AddPair(s,"ref_offset_pos", cfg->ref_offset_pos);
     AddPair(s,"ref_z_distance_max", cfg->ref_z_distance_max);
+    AddPair(s,"ref_complete", cfg->ref_complete);
 
     AddPair(s,"rapid_acc",cfg->rapid_acc);
     AddPair(s,"manual_acc",cfg->manual_acc);
@@ -964,11 +965,11 @@ void ShowSc::PrintSyncAxisCtrl()
     sync_mask = sync_mask + "]";
     AddPair(s,"sync_mask",sync_mask);
     string sync_en = "[ ";
-    for(int i = 0; i < chn_config->chn_axis_count; i++){
-        sync_en = sync_en + to_string(bool(sync_axis_ctrl->sync_en & (0x01 << i))) + " ";
-    }
-    sync_en = sync_en + "]";
-    AddPair(s,"sync_en",sync_en);
+    //for(int i = 0; i < chn_config->chn_axis_count; i++){
+    //    sync_en = sync_en + to_string(bool(sync_axis_ctrl->sync_en & (0x01 << i))) + " ";
+    //}
+    //sync_en = sync_en + "]";
+    //AddPair(s,"sync_en",sync_en);
 
     string SYNC = "[ ";
     for(int i = 0; i < chn_config->chn_axis_count; i++){

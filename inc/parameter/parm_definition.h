@@ -213,7 +213,6 @@ struct SCAxisConfig{
     double ref_offset_pos;                //回参考点后的偏移量 单位:mm
     double ref_z_distance_max;            //搜索Z脉冲最大移动距离
 
-
 	double manual_speed;					//手动进给速度，单位:mm/min
 	double rapid_speed;						//定位速度，单位:mm/min
 	double reset_speed;						//复位速度，单位：mm/min
@@ -334,6 +333,10 @@ struct SCAxisConfig{
     uint8_t pmc_g00_by_EIFg;                //PMC轴快移速度来源 0：定位速度 1：EIFg信号
     uint16_t pmc_min_speed;                 //最小PMC移动速度
     uint16_t pmc_max_speed;                 //最大PMC移动速度
+
+    int ref_complete;                       //参考点是否建立
+
+    bool init_backlash_dir;                 //反向间隙初始化方向
 };
 
 /**

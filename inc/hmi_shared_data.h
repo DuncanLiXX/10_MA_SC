@@ -233,8 +233,6 @@ enum HMICmdCode {
     CMD_SC_BACKUP_STATUS,           //SC通知HMI当前备份状态     0x7E
     CMD_SC_NOTIFY_TRACELOG,         //SC通知HMI操作记录        0x7F
     CMD_SC_NOTIFY_PROTECT_STATUS,   //SC通知HMI保护状态        0x80
-
-
 	CMD_HMI_GUARD = 255       //HMI命令字卫兵 0xFF
 };
 
@@ -410,14 +408,11 @@ enum ErrorType {
     ERR_DIS_SYNC_AXIS       = 151,  //同步轴解除同步失败
     ERR_INIT_SYNC_AXIS      = 152,  //同步轴初始化同步失败
 
-
     ERR_VOLTAGE_OVER        = 500,  //过压告警
     ERR_VOLTAGE_UNDER       = 501,  //欠压告警
     ERR_BATTERY_VOL_UNDER   = 502,  //电池电压低
     ERR_AXIS_CURRENT_OVER   = 503,  //轴过流告警
     ERR_USB_CURRENT_OVER    = 504,  //USB过流告警
-
-
 
     ERR_RET_REF_FAILED      = 600,  //回参考点失败
     ERR_AXIS_REF_NONE       = 601,  //轴未回参考点
@@ -427,7 +422,6 @@ enum ErrorType {
     ERR_RET_REF_Z_ERR       = 605,  //搜索Z脉冲位置超限，原点建立失败
     ERR_RET_SYNC_ERR        = 606,  //从动轴禁止回零
     ERR_RET_NOT_SUPPORT     = 607,  //不支持的回零方式
-
 
 	//加工告警	1000~1999
     ERR_EMERGENCY = 1000,               //紧急停止
@@ -559,7 +553,7 @@ enum ErrorType {
     CONCAVE_CORNER_ERROR    = 2056,
     ARC_TO_ARC_SAME_CENTER  = 2057, //圆弧接圆弧刀补不能计算同心圆弧
     MOVE_SMALLER_THAN_CMPRADIUS     = 2058, //移动距离小于刀补半径 无法计算刀补
-    ERR_CAL_SPD_TAP_POS     = 2059, // 无法计算刚性攻丝时的主轴位置
+    ERR_CAL_SPD_TAP_POS     = 2059,   // 无法计算刚性攻丝时的主轴位置
 
 
 	//刀补告警	5000~6999
@@ -576,6 +570,11 @@ enum ErrorType {
     ERR_R_COMP_CHANGE_AFTER_ESTABLISH   = 5010, //刀具半径补偿不能在建立后立即改变
     ERR_R_COMP_UNDER_FIXED_CYCLE        = 5011, //固定循环中不能使用刀具半径补偿
     ERR_R_COMP_GENERATE_FAIL            = 5012, //刀补轨迹生成失败
+	INVALID_COMPENSATE_PLANE 			= 5013,  // G18/G19平面暂不支持刀补
+	ARC_NOT_ALLOWED2		 			= 5014,  // 刀补建立第一段不支持圆弧轨迹
+	G31_NOT_ALLOWED			 			= 5015,  // 刀补过程中不支持G31跳段
+	DWORD_INVALID			 			= 5016,  // 刀补中无法执行D指令
+	G41_G42_CHANGE			 			= 5017,  // 不支持 G41_G42 中途切换
 
 
 	//通讯告警	7000~7999

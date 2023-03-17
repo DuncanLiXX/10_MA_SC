@@ -504,6 +504,15 @@ bool Parser::AnalyzeGCode(LexerGCode *gcode){
 			if(!this->CreateToolMsg(gcode->t_value, gcode->tcode_count))
 				return false;
 		}
+
+		//@test zk 截取 D H的值  原规则 D H 并未单独作为指令被处理
+		if(gcode->mask_value&(0x01<<D_DATA)){
+
+		}
+
+		if(gcode->mask_value&(0x01 << H_DATA)){
+
+		}
 	}
 
 	//处理自定义指令,第39组模态
@@ -2352,6 +2361,7 @@ bool Parser::CreateLineMsg(){
 //    }
 
 	new_msg = new LineMsg(source, target, m_p_compiler_status->mode.f_mode, axis_mask);
+
 	if(new_msg == nullptr){
 		//TODO 内存分配失败，告警
 		CreateError(ERR_MEMORY_NEW, FATAL_LEVEL, CLEAR_BY_RESET_POWER);
@@ -3345,11 +3355,14 @@ bool Parser::GetTargetPos(DPointChn &target, uint32_t &axis_mask, uint8_t *count
     uint8_t pmc_axis_count = 0;
 	uint8_t axis_name_idx = 0;
 	uint32_t tm = 0x01;
+	bool has_valid_world = false;
+
 	for(i = 0; i < chn_config->chn_axis_count; i++){
 //		addr = static_cast<DataAddr>(m_axis_name[i]-'A');
 
 		axis_name_idx = chn_config->chn_axis_name[i];
 		if(m_b_axis_name_ex && chn_config->chn_axis_name_ex[i] > 0){  //有扩展下标
+			has_valid_world = true;
 			if(this->GetAxisExData(axis_name_idx, this->m_axis_name_ex[i], data)){  //有数据
 				if(((g_code->mask_dot_ex[axis_name_idx] & (0x01<<(chn_config->chn_axis_name_ex[i]-1))) == 0) &&
 						((g_code->mask_pos_macro[axis_name_idx] & (0x01<<(chn_config->chn_axis_name_ex[i]-1))) == 0)){  //没有小数点并且非宏表达式
@@ -3374,6 +3387,7 @@ bool Parser::GetTargetPos(DPointChn &target, uint32_t &axis_mask, uint8_t *count
 		}else{//无扩展下标
 			 addr = static_cast<DataAddr>(m_axis_name[i]-'A');
 			 if(GetCodeData(addr, data)){//有此参数，读取成功
+				 has_valid_world = true;
 				 if(((g_code->mask_dot & (0x01<<addr)) == 0) &&
 						((g_code->mask_macro & (0x01<<addr)) == 0)){  //没有小数点并且非宏表达式
 					data /= 1000.;   //省略小数点则以um为单位
@@ -3399,6 +3413,14 @@ bool Parser::GetTargetPos(DPointChn &target, uint32_t &axis_mask, uint8_t *count
 		p_target_pos++;
 		p_source_pos++;
 	}
+
+	//@ add zk G00 G01没有任何有效参数
+	//--与其他系统比较 决定支持 G00 G01 不带任何 xyz参数
+	/*
+	if(!has_valid_world){
+		m_error_code = ERR_LACK_OF_PARAM;   //缺少必要参数
+		return false;
+	}*/
 
     if(count)
         *count = pmc_axis_count;

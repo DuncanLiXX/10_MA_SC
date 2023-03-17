@@ -2883,6 +2883,7 @@ bool Compiler::RunModeMsg(RecordMsg *msg) {
     case G19_CMD:
         tmp->SetLastGCode(m_compiler_status.mode.gmode[GetModeGroup(gcode)]);   //设置历史数据，用于手轮反向引导
         //		this->m_tool_compensate.SetCurPlane(gcode);   //设置刀补模块当前平面
+        this->m_p_tool_compensate->setPlane(gcode);
         break;
     case G84_3_CMD:
         tmp->SetLastGCode(m_compiler_status.mode.gmode[39]);   //设置历史数据，用于手轮反向引导

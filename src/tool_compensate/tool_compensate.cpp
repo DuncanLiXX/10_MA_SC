@@ -71,9 +71,23 @@ void ToolCompensate::Reset(){
  */
 void ToolCompensate::ProcessData(ListNode<RecordMsg *> *node){
 
+
+
 	msg = node->data;
-    //this->m_p_output_msg_list->Append(node);
-    //return;
+
+	// 限制刀补平面
+	if(this->plane != 170){
+
+		if(interp.isCompOn) interp.reset();
+
+		if(msg->GetMsgType() == COMPENSATE_MSG){
+			this->err_code = INVALID_COMPENSATE_PLANE;
+			return;
+		}
+		// 非 G17 平面不进行刀补处理
+		this->m_p_output_msg_list->Append(node);
+		return;
+	}
 
     switch(msg->GetMsgType()){
 		case RAPID_MSG:{
@@ -189,8 +203,10 @@ void ToolCompensate::ProcessData(ListNode<RecordMsg *> *node){
 			if(tmsg->GetGCode() == G40_CMD){
 				interp.convert_cutter_compensation_off(&interp._setup);
 			}else if(tmsg->GetGCode() == G41_CMD){
+
 				interp.convert_cutter_compensation_on(LEFT,this->comp_radius,&interp._setup);
 			}else if(tmsg->GetGCode() == G42_CMD){
+
 				interp.convert_cutter_compensation_on(RIGHT,this->comp_radius,&interp._setup);
 			}
 
@@ -204,14 +220,24 @@ void ToolCompensate::ProcessData(ListNode<RecordMsg *> *node){
 			if(flags & FLAG_EOF) interp.reset();
 
 			if(interp.isCompOn){
+				CodeMsgType msg_type = msg->GetMsgType();
+
+				if(msg_type == SKIP_MSG){
+					err_code = G31_NOT_ALLOWED;
+					return;
+				}
+
 				// 遇到 M30 或 等待移动到位标志  压空刀补队列 完成运动
 				if((flags & FLAG_BLOCK_OVER) or (flags & FLAG_WAIT_MOVE_OVER) or (flags & FLAG_EOF))
 				{
-					interp.flush_comp();
 					// 程序结束 关闭刀补
+					interp.flush_comp();
 				}
 
-				CodeMsgType msg_type = msg->GetMsgType();
+				if(msg_type == COORD_MSG || msg_type == REF_RETURN_MSG){
+
+					interp.convert_close_compensation(&interp._setup);
+				};
 
 				if(msg_type == LOOP_MSG ||msg_type == RESTART_OVER_MSG ||
 						msg_type == AUTO_TOOL_MEASURE_MSG){

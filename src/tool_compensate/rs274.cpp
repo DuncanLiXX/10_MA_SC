@@ -371,6 +371,9 @@ int Interp::convert_arc(int move, block_pointer block, setup_pointer settings)
                      u_end, v_end, w_end,
                      block->i_number, block->j_number);
     } else if (first) {
+    	// FANUC 开启刀补后 第一段不能是圆弧
+    	err_code = ARC_NOT_ALLOWED2;
+    	return 0;
     	status = convert_arc_comp1(move, block, settings, end_x, end_y, end_z,
                                  block->i_number, block->j_number,
                                  AA_end, BB_end, CC_end,
@@ -801,6 +804,12 @@ int Interp::convert_cutter_compensation_on(int side, double radius,
 										   setup_pointer settings)
 {
 	settings->cutter_comp_radius = radius;
+
+	// 暂时禁用 G41 G42 直接切换  需要G40 然后重新建立新刀补
+	if(settings->cutter_comp_side != 0){
+		err_code = G41_G42_CHANGE;
+		return 0;
+	}
 
 	if(settings->cutter_comp_side != side){
 		printf("settings->cutter_comp_side : %d\n", settings->cutter_comp_side);

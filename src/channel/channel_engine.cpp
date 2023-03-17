@@ -1915,6 +1915,8 @@ void ChannelEngine::ProcessMiCmd(MiCmdFrame &cmd){
         break;
     case CMD_MI_SET_AXIS_CTRL_MODE:
         this->ProcessMiAxisCtrlModeRsp(cmd); //修改轴控制模式回复
+        //@test
+        printf("===========MI========= ProcessMiAxisCtrlModeRsp");
         break;
     case CMD_MI_SET_AXIS_MACH_POS:   //设置轴当前机械坐标
         this->ProcessSetAxisCurMachPosRsp(cmd);
@@ -8038,13 +8040,15 @@ void ChannelEngine::SystemReset(){
     printf("system reset\n");
     //各通道复位
     for(int i = 0; i < this->m_p_general_config->chn_count; i++){
-        //        // 攻丝状态禁止复位
-        //        if(this->m_p_channel_control[0].GetSpdCtrl()->isTapEnable()){
-        //            CreateError(ERR_SPD_RESET_IN_TAP,
-        //                        WARNING_LEVEL,
-        //                        CLEAR_BY_MCP_RESET);
-        //            return;
-        //        }
+        // 攻丝状态禁止复位
+        /*  复位流程由梯图控制
+    	if(this->m_p_channel_control[0].GetSpdCtrl()->isTapEnable()){
+        CreateError(ERR_SPD_RESET_IN_TAP,
+					WARNING_LEVEL,
+					CLEAR_BY_MCP_RESET);
+			return;
+		}
+		*/
 
         this->m_p_pmc_reg->FReg().bits[i].RST = 1;  //复位信号
         this->m_p_channel_control[i].Reset();

@@ -718,6 +718,7 @@ bool Lexer::GetOneRecord(){
 bool Lexer::GetOneGCode(){
 	bool res = true;  //处理是否成功
 	LexerGCode *g_code = &(m_p_lexer_result->nc_code.gcode);
+
 	int domain_index = m_cur_domain - 'A';
 
 	m_p_lexer_result->macro_flag = false;   //非宏指令
@@ -791,7 +792,6 @@ bool Lexer::GetOneGCode(){
 
 		}else{
 			g_code->value[domain_index] = atof(m_digit_buf);
-
 			g_code->mask_value |= (0x01<<domain_index);
 			if(m_has_dot)
 				g_code->mask_dot |= (0x01<<domain_index);

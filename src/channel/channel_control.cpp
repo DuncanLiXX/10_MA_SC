@@ -6834,12 +6834,12 @@ bool ChannelControl::ExecuteAuxMsg(RecordMsg *msg){
                 // 如果当前在正转状态下再给M03，那么ProcessPMCSignal就扫描不到变化了
                 // 这里需要做特殊处理
                 if(mcode == 3 && m_p_g_reg->SFR && m_p_spindle->Type() == 2){
-                    m_p_spindle->InputPolar(Polar::Positive);
+                	m_p_spindle->InputPolar(Polar::Positive);
                 }else if(mcode == 4 && m_p_g_reg->SRV && m_p_spindle->Type() == 2){
-                    m_p_spindle->InputPolar(Polar::Negative);
+                	m_p_spindle->InputPolar(Polar::Negative);
                 }else if(mcode == 5 && m_p_g_reg->SFR == 0 && m_p_g_reg->SRV == 0
                          && m_p_spindle->Type() == 2){
-                    m_p_spindle->InputPolar(Polar::Stop);
+                	m_p_spindle->InputPolar(Polar::Stop);
                 }
             }else if(tmp->GetExecStep(m_index) == 2){
                 //等待FIN信号

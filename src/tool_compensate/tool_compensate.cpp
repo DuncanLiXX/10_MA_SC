@@ -239,9 +239,12 @@ void ToolCompensate::ProcessData(ListNode<RecordMsg *> *node){
 					interp.convert_close_compensation(&interp._setup);
 				};
 
-				if(msg_type == LOOP_MSG ||msg_type == RESTART_OVER_MSG ||
-						msg_type == AUTO_TOOL_MEASURE_MSG){
-					//interp.convert_cutter_compensation_off(&interp._setup);
+				if(msg_type == LOOP_MSG){
+
+					interp.convert_close_compensation(&interp._setup);
+				}
+
+				if(msg_type == RESTART_OVER_MSG||msg_type == AUTO_TOOL_MEASURE_MSG){
 					interp.convert_close_compensation(&interp._setup);
 				}
 			}

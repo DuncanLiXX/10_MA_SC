@@ -1333,7 +1333,7 @@ void ChannelEngine::UpdateMiLimitValue(uint8_t EXLM, uint8_t RLSOT)
  * @param context
  */
 void ChannelEngine::PoweroffHandler(int signo, siginfo_t *info, void *context){
-    printf("IN\n");
+    printf("=========  PoweroffHandler  IN\n");
 
     //	static bool power_off_flag = false;
     //	if(power_off_flag)

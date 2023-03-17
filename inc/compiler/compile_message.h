@@ -119,7 +119,7 @@ public:
 	int GetErrorCode(){return m_error_code;}   //返回错误代码
 	void SetErrorCode(int err){m_error_code = err;}   //设置错误代码
 
-	virtual int GetOutputData(GCodeFrame *data, uint32_t mask, bool flag);   	//生成待输出给MC的运动控制数据包
+	virtual int GetOutputData(GCodeFrame *data, uint32_t mask, bool flag);   //生成待输出给MC的运动控制数据包
 
 //	void SetClearInfoFlag(bool flag){this->m_b_clear_info = flag;}   //设置消息清除标志
 //	bool GetClearInfoFlag(){return this->m_b_clear_info;}      //返回消息清除标志
@@ -157,6 +157,12 @@ public:
 	friend bool operator ==( const RestartOverMsg &one, RestartOverMsg &two);  //判断运算符
 };
 
+//@test zk 增加D H指令解析
+//class
+
+
+
+
 /**
  * @brief 模式消息
  */
@@ -177,7 +183,6 @@ public:
 
 	ToolRec GetAToolRec(){return this->m_tool_info;}
 	void SetAToolRec(ToolRec tool){this->m_tool_info = tool;}
-
 
 	ModeMsg& operator=( const ModeMsg& msg);  //赋值运算符
 	friend bool operator ==( const ModeMsg &one, ModeMsg &two);  //判断运算符

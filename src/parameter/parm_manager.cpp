@@ -1354,6 +1354,7 @@ bool ParmManager::ReadAxisConfig(){
 
             m_sc_axis_config[i].backlash_forward = m_ini_axis->GetDoubleValueOrDefault(sname, "backlash_forward", 0);
             m_sc_axis_config[i].backlash_negative = m_ini_axis->GetDoubleValueOrDefault(sname, "backlash_negative", 0);
+            m_sc_axis_config[i].init_backlash_dir = m_ini_axis->GetBoolValueOrDefault(sname, "init_backlash_dir", true);
 			m_sc_axis_config[i].backlash_enable = m_ini_axis->GetIntValueOrDefault(sname, "backlash_enable", 1);
             m_sc_axis_config[i].backlash_step = m_ini_axis->GetIntValueOrDefault(sname, "backlash_step", 20);
 			m_sc_axis_config[i].pc_offset = m_ini_axis->GetIntValueOrDefault(sname, "pc_offset", 1+400*i);
@@ -1524,6 +1525,7 @@ bool ParmManager::ReadAxisConfig(){
 			m_sc_axis_config[i].backlash_forward = 0;
 			m_sc_axis_config[i].backlash_negative = 0;
             m_sc_axis_config[i].backlash_step = 20;
+            m_sc_axis_config[i].init_backlash_dir = true;
 			m_sc_axis_config[i].pc_offset = 1+400*i;
 			m_sc_axis_config[i].pc_count = 0;
 			m_sc_axis_config[i].pc_ref_index = 1;
@@ -4628,6 +4630,10 @@ bool ParmManager::UpdateAxisParam(uint8_t axis_index, uint32_t param_no, ParamVa
         if (!value.value_int32)//只接收0值
             m_ini_axis->SetIntValue(sname, kname, value.value_int32);
         break;
+    case 1320:
+        sprintf(kname, "init_backlash_dir");
+        m_ini_axis->SetBoolValue(sname, kname, value.value_int8);
+        break;
 	case 1350:	//手动速度
 		sprintf(kname, "manual_speed");
 		m_ini_axis->SetDoubleValue(sname, kname, value.value_double);
@@ -6200,6 +6206,9 @@ void ParmManager::ActiveAxisParam(uint8_t axis_index, uint32_t param_no, ParamVa
             this->m_sc_axis_config[axis_index].ref_complete = 0;
             g_ptr_chn_engine->ClearAxisRefEncoder(axis_index);
         }
+        break;
+    case 1320:  //反向间隙，初始方向
+        this->m_sc_axis_config[axis_index].init_backlash_dir = value.value_int8;
         break;
 	case 1350:	//手动速度
 		this->m_sc_axis_config[axis_index].manual_speed = value.value_double;

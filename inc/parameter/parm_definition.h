@@ -334,7 +334,9 @@ struct SCAxisConfig{
     uint16_t pmc_min_speed;                 //最小PMC移动速度
     uint16_t pmc_max_speed;                 //最大PMC移动速度
 
-    int    ref_complete;                    //参考点是否建立
+    int ref_complete;                       //参考点是否建立
+
+    bool init_backlash_dir;                 //反向间隙初始化方向
 };
 
 /**

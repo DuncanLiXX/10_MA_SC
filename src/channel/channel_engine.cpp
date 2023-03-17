@@ -2143,7 +2143,7 @@ void ChannelEngine::ProcessMiOperateCmdRsp(MiCmdFrame &cmd)
     uint8_t axis = cmd.data.axis_index;
     //printf("cmd.data.data[1] = %d\n",cmd.data.data[1]);
     bool enable = cmd.data.data[1];
-    if(type == MOTOR_ON_FLAG){
+    if(type == MOTOR_ON_FLAG){      
         m_p_channel_control[0].GetSpdCtrl()->RspAxisEnable(axis,enable);
     }
 }
@@ -7583,6 +7583,8 @@ void ChannelEngine::InitMiParam(){
         //发送主轴启动时间、制动时间
        m_p_mi_comm->SendMiParam<uint16_t>(index, 1605, axis_config->spd_start_time);
        m_p_mi_comm->SendMiParam<uint16_t>(index, 1606, axis_config->spd_stop_time);
+
+       //
 
         //发送反向间隙参数
         this->SendMiBacklash(i);

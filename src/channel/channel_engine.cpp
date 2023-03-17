@@ -43,7 +43,7 @@ const map<int, SDLINK_SPEC> ChannelEngine::m_SDLINK_MAP =
     {3,     {"SC1",  16,     16,     false}},
     {4,     {"SD1",  12-3,   8,      true}},
     {5,     {"SE1",  7-3,    8,      true}},
-    //{6,     {"SE2",  12-3,   11,     true}},
+    {6,     {"SE2",  12-3,   11,     true}},
 };
 
 const uint32_t MC_UPDATE_BLOCK_SIZE = 100;		//MC升级文件帧，每帧包含100字节数据,50个uint16
@@ -2125,9 +2125,10 @@ void ChannelEngine::ProcessSkipCmdRsp(MiCmdFrame &cmd){
  * @param cmd : MI响应命令包
  */
 void ChannelEngine::ProcessMiEnSyncAxisRsp(MiCmdFrame &cmd){
+    int axisId = cmd.data.data[0];
     bool enable = cmd.data.data[1];
     bool success = (cmd.data.data[2]==0);
-    m_sync_axis_ctrl->RspEnSyncAxis(enable,success);
+    m_sync_axis_ctrl->RspEnSyncAxis(axisId, enable,success);
 }
 
 void ChannelEngine::ProcessMiSpdLocateRsp(MiCmdFrame &cmd)
@@ -2558,9 +2559,9 @@ void ChannelEngine::ProcessMiClearPosRsp(MiCmdFrame &cmd){
  * @param cmd
  */
 void ChannelEngine::ProcessMiSyncAxis(MiCmdFrame &cmd){
-    int64_t mask = 0;
-    memcpy(&mask, cmd.data.data, 8);
-    m_sync_axis_ctrl->RspSyncAxis(mask);
+    //int64_t mask = 0;
+    //memcpy(&mask, cmd.data.data, 8);
+    //m_sync_axis_ctrl->RspSyncAxis(mask);
 }
 
 /**
@@ -7608,6 +7609,8 @@ void ChannelEngine::InitMiParam(){
 
     this->SetAxisRetRefFlag();   //发送回参考点结束标志
 
+    //建立同步轴关系
+
     //发送轴参数设置完成命令
     MiCmdFrame cmd;
     memset(&cmd, 0x00, sizeof(cmd));
@@ -9128,25 +9131,26 @@ void ChannelEngine::ProcessPmcSignal(){
                                                            m_df_phy_axis_torque_feedback, m_df_spd_angle, m_p_general_config->axis_count);
 
                 //X轴数据
-                //string X_tar_pos = to_string(m_df_phy_axis_pos_feedback[0]) + '\t';
-                //string X_real_pos = to_string(m_df_phy_axis_pos_intp[0]) +'\t';
+                //string X_real_pos = to_string(m_df_phy_axis_pos_feedback[0]) + '\t';
+                //string X_tar_pos = to_string(m_df_phy_axis_pos_intp[0]) +'\t';
 
                 //Y轴数据
-                //string y_tar_pos = to_string(m_df_phy_axis_pos_feedback[1]) + '\t';
-                //string y_real_pos = to_string(m_df_phy_axis_pos_intp[1]) +'\t';
+                //string y_real_pos = to_string(m_df_phy_axis_pos_feedback[1]) + '\t';
+                //string y_tar_pos = to_string(m_df_phy_axis_pos_intp[1]) +'\t';
 
                 //Z轴数据
-                string z_tar_pos = to_string(m_df_phy_axis_pos_feedback[2]) + '\t';
-                string z_real_pos = to_string(m_df_phy_axis_pos_intp[2]) +'\t';
+                string z_real_pos = to_string(m_df_phy_axis_pos_feedback[2]) + '\t';
+                string z_tar_pos = to_string(m_df_phy_axis_pos_intp[2]) +'\t';
 
                 //主轴数据
-                string spd_tar_pos = to_string(m_df_phy_axis_pos_feedback[m_p_channel_control[i].GetSpdCtrl()->GetPhyAxis()]) + '\t';
-                string spd_real_pos = to_string(m_df_phy_axis_pos_intp[m_p_channel_control[i].GetSpdCtrl()->GetPhyAxis()]) + '\t';
+                string spd_real_pos = to_string(m_df_phy_axis_pos_feedback[m_p_channel_control[i].GetSpdCtrl()->GetPhyAxis()]) + '\t';
+                string spd_tar_pos = to_string(m_df_phy_axis_pos_intp[m_p_channel_control[i].GetSpdCtrl()->GetPhyAxis()]) + '\t';
 
                 string msg = z_tar_pos + z_real_pos + spd_tar_pos + spd_real_pos + '\n';
 
                 //string msg = X_tar_pos + X_real_pos + y_tar_pos + y_real_pos + z_tar_pos + z_real_pos + '\n';
                 //string msg = X_tar_pos + X_real_pos + '\n';
+                //string msg = X_real_pos + X_tar_pos + y_real_pos + y_tar_pos + '\n';
                 fwrite(msg.c_str(), sizeof(char), msg.size(), m_fd);
             }
         }
@@ -10167,7 +10171,7 @@ void ChannelEngine::EcatIncAxisFindRefWithZeroSignal(uint8_t phy_axis){
         if(fabs(this->GetPhyAxisMachPosFeedback(phy_axis) - m_df_ret_ref_tar_pos[phy_axis]) <= 0.010){  //运行到位还是未找到Z信号
             std::cout << "step 9, not find z singal" << std::endl;
             this->SendMiAxisZCaptureCmd(phy_axis, false);
-            m_n_ret_ref_step[phy_axis] = 20;   //跳转失败处理
+            m_n_ret_ref_step[phy_axis] = 21;   //跳转失败处理
         }
     }
         break;
@@ -10304,34 +10308,49 @@ void ChannelEngine::EcatIncAxisFindRefWithZeroSignal(uint8_t phy_axis){
         this->SendMonitorData(false, false);  //再次读取实时位置
 
         if(fabs(this->GetPhyAxisMachPosFeedback(phy_axis)- dis) <= 0.010){  //到位
+
             m_n_ret_ref_step[phy_axis]++;  //跳转下一步
             std::cout << "step 17" << std::endl;
+            gettimeofday(&this->m_time_ret_ref[phy_axis], NULL);
         }
         break;
     case 18:  //回参考点完成
-        printf("axis %u return ref over\n", phy_axis);
-//        if(this->m_p_axis_config[phy_axis].feedback_mode == ABSOLUTE_ENCODER ||
-//            this->m_p_axis_config[phy_axis].feedback_mode == LINEAR_ENCODER){  //绝对值需获取机械零点的编码器值并保存，方便断点后恢复坐标
-//                MiCmdFrame mi_cmd;
-//                memset(&mi_cmd, 0x00, sizeof(mi_cmd));
-//                mi_cmd.data.cmd = CMD_MI_GET_ZERO_ENCODER;
-//                mi_cmd.data.axis_index = phy_axis+1;
+    {
+        struct timeval time_now;
+        gettimeofday(&time_now, NULL);
+        unsigned int time_elpase = (time_now.tv_sec-m_time_ret_ref[phy_axis].tv_sec)*1000000+time_now.tv_usec-m_time_ret_ref[phy_axis].tv_usec;
+        if(time_elpase >= 200000){ //延时200ms
+            printf("axis %u return ref over\n", phy_axis);
+    //        if(this->m_p_axis_config[phy_axis].feedback_mode == ABSOLUTE_ENCODER ||
+    //            this->m_p_axis_config[phy_axis].feedback_mode == LINEAR_ENCODER){  //绝对值需获取机械零点的编码器值并保存，方便断点后恢复坐标
+    //                MiCmdFrame mi_cmd;
+    //                memset(&mi_cmd, 0x00, sizeof(mi_cmd));
+    //                mi_cmd.data.cmd = CMD_MI_GET_ZERO_ENCODER;
+    //                mi_cmd.data.axis_index = phy_axis+1;
 
-//                this->m_p_mi_comm->WriteCmd(mi_cmd);
-//        }
-        this->SetRetRefFlag(phy_axis, true);
-        this->m_p_pmc_reg->FReg().bits[0].in_ref_point |= (0x01<<phy_axis);   //置位到参考点标志
+    //                this->m_p_mi_comm->WriteCmd(mi_cmd);
+    //        }
 
-        this->m_n_mask_ret_ref &= ~(0x01<<phy_axis);
-        m_n_ret_ref_step[phy_axis] = 0;
+            this->SetRetRefFlag(phy_axis, true);
+            this->m_p_pmc_reg->FReg().bits[0].in_ref_point |= (0x01<<phy_axis);   //置位到参考点标志
 
-        if(m_n_mask_ret_ref == 0){
-            this->m_b_ret_ref = false;
-            this->m_b_ret_ref_auto = false;
-            m_n_ret_ref_auto_cur = 0;
+            this->m_n_mask_ret_ref &= ~(0x01<<phy_axis);
+            m_n_ret_ref_step[phy_axis] = 0;
+
+            if (GetSyncAxisCtrl()->CheckSyncState(phy_axis) == 1)
+            {//从动轴建立机械坐标
+                SetSubAxisRefPoint(phy_axis, 0);
+            }
+
+            if(m_n_mask_ret_ref == 0){
+                this->m_b_ret_ref = false;
+                this->m_b_ret_ref_auto = false;
+                m_n_ret_ref_auto_cur = 0;
+            }
+            std::cout << "step 18, home finish" << std::endl;
         }
-        std::cout << "step 18, home finish" << std::endl;
         break;
+    }
     case 20: //失败处理
         this->m_n_mask_ret_ref &= ~(0x01<<phy_axis);
         m_n_ret_ref_step[phy_axis] = 0;
@@ -10344,6 +10363,19 @@ void ChannelEngine::EcatIncAxisFindRefWithZeroSignal(uint8_t phy_axis){
         std::cout << "step 20, home failed" << std::endl;
         m_error_code = ERR_RET_REF_FAILED;
         CreateError(ERR_RET_REF_FAILED, WARNING_LEVEL, CLEAR_BY_MCP_RESET, 0, CHANNEL_ENGINE_INDEX, phy_axis+1);
+        break;
+    case 21:
+        this->m_n_mask_ret_ref &= ~(0x01<<phy_axis);
+        m_n_ret_ref_step[phy_axis] = 0;
+
+        if(m_n_mask_ret_ref == 0){
+            this->m_b_ret_ref = false;
+            this->m_b_ret_ref_auto = false;
+            m_n_ret_ref_auto_cur = 0;
+        }
+        std::cout << "step 21, home failed" << std::endl;
+        m_error_code = ERR_RET_REF_Z_ERR;
+        CreateError(ERR_RET_REF_Z_ERR, WARNING_LEVEL, CLEAR_BY_MCP_RESET, 0, CHANNEL_ENGINE_INDEX, phy_axis+1);
         break;
     default:
         break;
@@ -10532,6 +10564,8 @@ void ChannelEngine::GotoZeroPos(int phy_axis)
     switch(this->m_n_ret_ref_step[phy_axis]){
     case 0: {// 设置原点
         std::cout << "step 0: GotoZeroPos " << (int)phy_axis << std::endl;
+        this->SetRetRefFlag(phy_axis, true);
+        this->m_p_pmc_reg->FReg().bits[0].in_ref_point |= (0x01<<phy_axis);   //置位到参考点标志
         m_n_ret_ref_step[phy_axis] = 1;  //跳转下一步
     }
         break;

@@ -365,7 +365,7 @@ private:	//私有成员函数
 
 	void ProcessMiClearPosRsp(MiCmdFrame &cmd);		//处理MI返回的清整数圈位置指令回复
 
-	void ProcessMiSyncAxis(MiCmdFrame &cmd);		//处理MI返回的同步轴同步结果
+    void ProcessMiSyncAxis(MiCmdFrame &cmd);		//处理MI返回的同步轴同步结果
 	void ProcessMiHWTraceStateChanged(MiCmdFrame &cmd);   //处理MI发送的手轮跟踪状态切换指令
 
 	void ProcessHmiUpdateReq(HMICmdFrame &cmd);		//处理HMI升级请求

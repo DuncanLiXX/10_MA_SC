@@ -965,11 +965,11 @@ void ShowSc::PrintSyncAxisCtrl()
     sync_mask = sync_mask + "]";
     AddPair(s,"sync_mask",sync_mask);
     string sync_en = "[ ";
-    for(int i = 0; i < chn_config->chn_axis_count; i++){
-        sync_en = sync_en + to_string(bool(sync_axis_ctrl->sync_en & (0x01 << i))) + " ";
-    }
-    sync_en = sync_en + "]";
-    AddPair(s,"sync_en",sync_en);
+    //for(int i = 0; i < chn_config->chn_axis_count; i++){
+    //    sync_en = sync_en + to_string(bool(sync_axis_ctrl->sync_en & (0x01 << i))) + " ";
+    //}
+    //sync_en = sync_en + "]";
+    //AddPair(s,"sync_en",sync_en);
 
     string SYNC = "[ ";
     for(int i = 0; i < chn_config->chn_axis_count; i++){

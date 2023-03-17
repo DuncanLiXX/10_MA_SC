@@ -459,8 +459,8 @@ enum ErrorType {
 
     ERR_NO_CUR_RUN_DATA = 1500,         //找不到当前运行数据
 
-    ERR_TOOL_MEAS_POS = 1600,           //对刀位置未设置
-    ERR_AUTO_TOOL_MEASURE = 1601,       //自动对刀失败
+    ERR_TOOL_MEAS_POS = 1600,           //对刀位置未设置，未使用
+    ERR_AUTO_TOOL_MEASURE = 1601,       //自动对刀失败，未使用
 
     ERR_HW_REV_OVER = 1650,             //手轮反向跟踪无更多数据   级别：警告
     ERR_HW_INSERT_INVALID = 1651,       //手轮插入无效

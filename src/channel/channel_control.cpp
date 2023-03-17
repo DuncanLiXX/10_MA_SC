@@ -2416,7 +2416,8 @@ void ChannelControl::SendMonitorData(bool bAxis, bool btime){
 
     //@test zk  MDA 模式下显示行号
     if(m_channel_mc_status.cur_mode == MC_MODE_MDA &&
-    		m_channel_mc_status.cur_line_no > 0){
+            m_channel_mc_status.cur_line_no > 0 &&
+            !m_b_manual_call_macro/*llx add 宏程序调用不能显示行号*/){ //没有调用宏程序
     	m_channel_rt_status.line_no = m_channel_mc_status.cur_line_no;
     }
 
@@ -4981,9 +4982,10 @@ void ChannelControl::SetCurLineNo(uint32_t line_no){
         return;
 #endif
     if(this->m_n_macroprog_count == 0 || this->m_p_general_config->debug_mode > 0)
+    {
         this->m_channel_rt_status.line_no = line_no;
-    //	printf("ChannelControl::SetCurLineNo: %u\n", line_no);
-
+        printf("ChannelControl::SetCurLineNo: %u\n", line_no);
+    }
     ResetMcLineNo();//复位MC模块当前行号
 }
 
@@ -11167,7 +11169,7 @@ void ChannelControl::ManualMove(int8_t dir){
         tar_pos = limit * 1e7;
     }
     //ScPrintf("GetAxisCurIntpTarPos = %llf", GetAxisCurIntpTarPos(m_channel_status.cur_axis, true)*1e7);
-    int64_t n_inc_dis = tar_pos - GetAxisCurIntpTarPos(m_channel_status.cur_axis, true)*1e7;
+    int64_t n_inc_dis = tar_pos - GetAxisCurIntpTarPos(m_channel_status.cur_axis, false)*1e7;
     if((m_p_channel_engine->GetMlkMask() & (0x01<<m_channel_status.cur_axis))
             && GetChnWorkMode() == MANUAL_STEP_MODE){
         n_inc_dis = GetCurManualStep()*1e4*dir;
@@ -19293,7 +19295,6 @@ bool ChannelControl::CallMacroProgram(uint16_t macro_index){
         if(!m_p_compiler->FindSubProgram(macro_index, true)){
             return false;
         }
-
 
         char cmd_buf[256];
         memset (cmd_buf, 0x00, 256);

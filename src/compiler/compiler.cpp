@@ -3022,7 +3022,6 @@ bool Compiler::RunArcMsg(RecordMsg *msg) {
             p_target_pos++;
             p_source_pos++;
         }
-
     }else{
         //将目标位置换算为工件坐标系
         if(tmp->IsMachCoord())

@@ -1419,9 +1419,9 @@ bool ParmManager::ReadAxisConfig(){
             m_sc_axis_config[i].spd_gear_speed_high = m_ini_axis->GetIntValueOrDefault(sname, "spd_gear_speed_high", 10000);
             m_sc_axis_config[i].spd_gear_switch_speed1 = m_ini_axis->GetIntValueOrDefault(sname, "spd_gear_switch_speed1", 1500);
             m_sc_axis_config[i].spd_gear_switch_speed2 = m_ini_axis->GetIntValueOrDefault(sname, "spd_gear_switch_speed2", 5000);
-            m_sc_axis_config[i].spd_sync_error_gain = m_ini_axis->GetIntValueOrDefault(sname, "spd_sync_error_gain", 0.2);
-            m_sc_axis_config[i].spd_speed_feed_gain = m_ini_axis->GetIntValueOrDefault(sname, "spd_speed_feed_gain", 60.0);
-            m_sc_axis_config[i].spd_pos_ratio_gain = m_ini_axis->GetIntValueOrDefault(sname, "spd_pos_ratio_gain", 20.0);
+            m_sc_axis_config[i].spd_sync_error_gain = m_ini_axis->GetDoubleValueOrDefault(sname, "spd_sync_error_gain", 0.2);
+            m_sc_axis_config[i].spd_speed_feed_gain = m_ini_axis->GetDoubleValueOrDefault(sname, "spd_speed_feed_gain", 60.0);
+            m_sc_axis_config[i].spd_pos_ratio_gain = m_ini_axis->GetDoubleValueOrDefault(sname, "spd_pos_ratio_gain", 20.0);
             m_sc_axis_config[i].spd_rtnt_rate_on = m_ini_axis->GetIntValueOrDefault(sname, "spd_rtnt_rate_on", 0);
             m_sc_axis_config[i].spd_rtnt_rate = m_ini_axis->GetIntValueOrDefault(sname, "spd_rtnt_rate", 100);
             m_sc_axis_config[i].spd_rtnt_distance = m_ini_axis->GetIntValueOrDefault(sname, "spd_rtnt_distance", 0);

@@ -89,8 +89,12 @@ void ToolCompensate::ProcessData(ListNode<RecordMsg *> *node){
 		return;
 	}
 
-    switch(msg->GetMsgType()){
+
+	CodeMsgType msg_type = msg->GetMsgType();
+
+	switch(msg_type){
 		case RAPID_MSG:{
+
 			RapidMsg * tmsg = (RapidMsg *)msg;
             if(tmsg->GetPmcAxisCount() > 0){
                 this->m_p_output_msg_list->Append(node);
@@ -120,6 +124,7 @@ void ToolCompensate::ProcessData(ListNode<RecordMsg *> *node){
 			break;
 		}
 		case LINE_MSG:{
+
 			LineMsg * tmsg = (LineMsg *) msg;
             if(tmsg->GetPmcAxisCount() > 0){
                 this->m_p_output_msg_list->Append(node);
@@ -201,13 +206,30 @@ void ToolCompensate::ProcessData(ListNode<RecordMsg *> *node){
 			printf("compensate gcode %d\n", tmsg->GetGCode());
 
 			if(tmsg->GetGCode() == G40_CMD){
+				comp_cancel_flag = false;
+				comp_side = NOCOMP;
 				interp.convert_cutter_compensation_off(&interp._setup);
 			}else if(tmsg->GetGCode() == G41_CMD){
 
-				interp.convert_cutter_compensation_on(LEFT,this->comp_radius,&interp._setup);
+				if(comp_radius < 0.0){
+					comp_side = RIGHT;
+					interp.convert_cutter_compensation_on(comp_side,fabs(this->comp_radius),&interp._setup);
+				}else{
+					comp_side = LEFT;
+					interp.convert_cutter_compensation_on(comp_side,this->comp_radius,&interp._setup);
+				}
+
+
+
 			}else if(tmsg->GetGCode() == G42_CMD){
 
-				interp.convert_cutter_compensation_on(RIGHT,this->comp_radius,&interp._setup);
+				if(comp_radius < 0.0){
+					comp_side = LEFT;
+					interp.convert_cutter_compensation_on(comp_side,fabs(this->comp_radius),&interp._setup);
+				}else{
+					comp_side = RIGHT;
+					interp.convert_cutter_compensation_on(comp_side,this->comp_radius,&interp._setup);
+				}
 			}
 
 			this->m_p_output_msg_list->Append(node);
@@ -217,10 +239,12 @@ void ToolCompensate::ProcessData(ListNode<RecordMsg *> *node){
 		default:{
 
 			uint16_t flags = msg->GetFlags().all;
-			if(flags & FLAG_EOF) interp.reset();
+			if(flags & FLAG_EOF){
+				interp.reset();
+				comp_cancel_flag = false;
+			}
 
 			if(interp.isCompOn){
-				CodeMsgType msg_type = msg->GetMsgType();
 
 				if(msg_type == SKIP_MSG){
 					err_code = G31_NOT_ALLOWED;
@@ -232,6 +256,7 @@ void ToolCompensate::ProcessData(ListNode<RecordMsg *> *node){
 				{
 					// ³ÌÐò½áÊø ¹Ø±Õµ¶²¹
 					interp.flush_comp();
+					comp_cancel_flag = false;
 				}
 
 				if(msg_type == COORD_MSG || msg_type == REF_RETURN_MSG){
@@ -239,10 +264,27 @@ void ToolCompensate::ProcessData(ListNode<RecordMsg *> *node){
 					interp.convert_close_compensation(&interp._setup);
 				};
 
-				if(msg_type == LOOP_MSG ||msg_type == RESTART_OVER_MSG ||
-						msg_type == AUTO_TOOL_MEASURE_MSG){
-					//interp.convert_cutter_compensation_off(&interp._setup);
+				if(msg_type == LOOP_MSG){
+					LoopMsg *tmsg = (LoopMsg *)msg;
+					if(tmsg->GetGCode() != G80_CMD){
+						interp.convert_close_compensation(&interp._setup);
+						comp_cancel_flag = true;
+					}
+				}
+
+				if(msg_type == RESTART_OVER_MSG||msg_type == AUTO_TOOL_MEASURE_MSG){
 					interp.convert_close_compensation(&interp._setup);
+				}
+			}
+
+			if(msg_type == LOOP_MSG){
+				LoopMsg *tmsg = (LoopMsg *)msg;
+
+				if(tmsg->GetGCode() == G80_CMD){
+					if(comp_cancel_flag && (comp_side != NOCOMP)){
+						interp.convert_cutter_compensation_on(comp_side, fabs(this->comp_radius), &interp._setup);
+						comp_cancel_flag = false;
+					}
 				}
 			}
 

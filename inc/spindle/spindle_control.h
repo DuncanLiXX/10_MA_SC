@@ -133,6 +133,8 @@ private:
     // 根据当前状态发送主轴转速给Mi
     void SendSpdSpeedToMi();
 
+    void SendSpdSpeedToMi(int16_t speed);
+
     // 异步处理主轴定向逻辑
     void ProcessORCMA(bool ORCMA);
     // 异步处理模式切换完成

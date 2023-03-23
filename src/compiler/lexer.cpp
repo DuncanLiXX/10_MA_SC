@@ -413,8 +413,13 @@ bool Lexer::Compile(){
 					break;
 				}
 			}
-			if(*comp_buf == '.')
+			if(*comp_buf == '.'){
+				if(m_has_dot){
+					m_p_lexer_result->error_code = ERR_NC_FORMAT;
+					break;
+				}
 				m_has_dot = true;
+			}
 
 			if(!m_in_digit){
 				m_in_digit = true;

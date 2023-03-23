@@ -51,6 +51,8 @@ private:
     DPointChn cur_point;
     RecordMsg * msg;
     double comp_radius;
+    int comp_side;     //补偿方向
+    int comp_cancel_flag;  //其他G代码取消刀补标志位
     int plane = 170;
 };
 

@@ -1552,7 +1552,7 @@ bool ParmManager::ReadAxisConfig(){
 			m_sc_axis_config[i].zero_compensation = 0;
 			m_sc_axis_config[i].spd_gear_ratio = 1;
 			m_sc_axis_config[i].spd_max_speed = 10000;
-			m_sc_axis_config[i].spd_min_speed = 100;
+			m_sc_axis_config[i].spd_min_speed = 0;
 
 			m_sc_axis_config[i].spd_start_time = 10;
 			m_sc_axis_config[i].spd_stop_time = 5;

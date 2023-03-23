@@ -99,6 +99,10 @@ void SpindleControl::InputPolar(Spindle::Polar polar)
     if(!spindle)
         return;
 
+    if(this->ORCMA){
+    	return;
+    }
+
     ScPrintf("SpindleControl::InputPolar %d\n",polar);
 
     cnc_polar = polar;
@@ -114,28 +118,60 @@ void SpindleControl::InputPolar(Spindle::Polar polar)
             printf("SendAxisEnable enable = %d\n",true);
         }
     }else{
-        // 收到主轴停信号
+
+    	SendSpdSpeedToMi(0);
+
+		while(spindle->axis_interface != 0 && fabs(GetSpindleSpeed()) > 1){usleep(10000);}
+
+    	// 收到主轴停信号
         if(!motor_enable){
             F->SST = 1;
         }else{
             wait_off = true;
+            printf("============= send spindle enable false\n");
             mi->SendAxisEnableCmd(phy_axis+1,false);
             printf("SendAxisEnable enable = %d\n",false);
         }
     }
-
 }
+
+// M26 M27
 
 void SpindleControl::SetMode(Mode mode)
 {
     if(!spindle)
         return;
 
-    if(mode == Speed)
-        mi->SendAxisCtrlModeSwitchCmd(phy_axis+1, 2);
-    else if(mode == Position)
-        mi->SendAxisCtrlModeSwitchCmd(phy_axis+1, 1);
+    if(mode == Speed){
+    	mi->SendAxisEnableCmd(phy_axis+1, false);
+    	mi->SendAxisCtrlModeSwitchCmd(phy_axis+1, 2);
+    }else if(mode == Position){
+        // 速度降为0
+    	SendSpdSpeedToMi(0);
+    	// 检测速度将为0
+    	while(spindle->axis_interface != 0 && fabs(GetSpindleSpeed()) > 1){usleep(10000);}
 
+    	// 如果主轴不在使能状态，先上使能
+    	if(!motor_enable){
+    		mi->SendAxisEnableCmd(phy_axis+1, true);
+    		// 等待主轴上使能回复  2s超时
+    		int count = 0;
+    		while(!motor_enable){
+    			count ++;
+    			if(count > 200){
+    				CreateError(ERR_SPD_TAP_START_FAIL,
+    							ERROR_LEVEL,
+    							CLEAR_BY_MCP_RESET);
+    				count = 0;
+    				return;
+    			}
+    			usleep(10000);
+    		}
+    		count = 0;
+    	}
+
+    	mi->SendAxisCtrlModeSwitchCmd(phy_axis+1, 1);
+    }
     // 模式的修改等mi命令回复
 }
 
@@ -385,10 +421,31 @@ void SpindleControl::InputRGTAP(bool RGTAP)
     ScPrintf("SpindleControl::InputRGTAP RGTAP = %d\n", RGTAP);
 
     this->RGTAP = RGTAP;
-    if(RGTAP)
-        StartRigidTap(tap_feed);
-    else
+    if(RGTAP){
+        // 如果主轴不在使能状态，先上使能
+    	if(!motor_enable){
+    		mi->SendAxisEnableCmd(phy_axis+1, true);
+    		// 等待主轴上使能回复  2s超时
+    		int count = 0;
+    		while(!motor_enable){
+    			count ++;
+    			if(count > 200){
+    				printf("2222222222222222222\n");
+    				CreateError(ERR_SPD_TAP_START_FAIL,
+    							ERROR_LEVEL,
+    							CLEAR_BY_MCP_RESET);
+    				count = 0;
+    				return;
+    			}
+    			usleep(10000);
+    		}
+    		count = 0;
+    	}
+    	StartRigidTap(tap_feed);
+    }
+    else{
     	CancelRigidTap();
+    }
 }
 
 // 主轴控制模式切换   位置模式
@@ -808,45 +865,106 @@ void SpindleControl::SendSpdSpeedToMi()
     mi->WriteCmd(cmd);
 }
 
+void SpindleControl::SendSpdSpeedToMi(int16_t speed){
+	int16_t output = 0;
+	output += spindle->zero_compensation;
+	MiCmdFrame cmd;
+	memset(&cmd, 0x00, sizeof(cmd));
+	cmd.data.cmd = CMD_MI_SET_SPD_SPEED;
+	cmd.data.axis_index = phy_axis+1;
+	cmd.data.data[0] = (int16_t)output;
+	mi->WriteCmd(cmd);
+}
+
 void SpindleControl::ProcessORCMA(bool ORCMA)
 {
-    std::this_thread::sleep_for(std::chrono::microseconds(100 * 1000));
-    if(ORCMA){
-        // 如果主轴不在使能状态，先上使能
+
+	//std::this_thread::sleep_for(std::chrono::microseconds(100 * 1000));
+	printf("===== ProcessORCMA %d\n", ORCMA);
+
+	this->ORCMA = ORCMA;
+
+	if(ORCMA){
+        /*// 如果主轴不在使能状态，先上使能
         if(!motor_enable)
             mi->SendAxisEnableCmd(phy_axis+1, true);
-        std::this_thread::sleep_for(std::chrono::microseconds(1000 * 1000));
-        if(!motor_enable){
-            CreateError(ERR_SPD_LOCATE_FAIL,
-                        ERROR_LEVEL,
-                        CLEAR_BY_MCP_RESET);
-            return;
+        //std::this_thread::sleep_for(std::chrono::microseconds(1000 * 1000));
+
+        // 等待主轴上使能回复  2s超时
+        count = 0;
+        while(!motor_enable){
+        	count ++;
+        	if(count > 200){
+        		printf("1111111111111111111\n");
+
+        		count = 0;
+        		return;
+        	}
+        	usleep(10000);
         }
+        count = 0;*/
+		// 定向前主轴必定下使能  等下使能了再执行上使能
+		//while(motor_enable){usleep(10000);};
+
+		// 如果主轴不在使能状态，先上使能
+    	if(!motor_enable){
+    		printf("============= send spindle enable true\n");
+    		mi->SendAxisEnableCmd(phy_axis+1, true);
+    		//std::this_thread::sleep_for(std::chrono::microseconds(1000 * 1000));
+
+    		// 等待主轴上使能回复  2s超时
+    		int count = 0;
+    		while(!motor_enable){
+    			count ++;
+    			if(count > 200){
+    				printf("333333333333333333333333\n");
+    				CreateError(ERR_SPD_LOCATE_FAIL,
+    							ERROR_LEVEL,
+    							CLEAR_BY_MCP_RESET);
+    				count = 0;
+    				return;
+    			}
+    			usleep(10000);
+    		}
+    		count = 0;
+    	}
+
         mi->SendSpdLocateCmd(chn, phy_axis+1,true);
     }else{
-        Polar polar = CalPolar();
-        bool need_enable = (polar == Positive || polar == Negative);
+        //Polar polar = CalPolar();
+        //bool need_enable = (polar == Positive || polar == Negative);
         // 取消定向时，根据之前状态来恢复电机使能
-        if(motor_enable != need_enable)
+        /*if(motor_enable != need_enable)
             mi->SendAxisEnableCmd(phy_axis+1, need_enable);
-        std::this_thread::sleep_for(std::chrono::microseconds(1000 * 1000));
-        if(motor_enable != need_enable){
-            CreateError(ERR_SPD_LOCATE_FAIL,
-                        ERROR_LEVEL,
-                        CLEAR_BY_MCP_RESET);
-            return;
+
+
+        // 等待主轴上使能回复  2s超时
+        count = 0;
+        while(!motor_enable){
+        	count ++;
+        	if(count > 200){
+        		printf("222222222222222222222\n");
+
+        		count = 0;
+        		return;
+        	}
+        	usleep(10000);
         }
-        mi->SendSpdLocateCmd(chn, phy_axis+1,false);
+        count = 0;*/
+
+    	mi->SendAxisEnableCmd(phy_axis+1, false);
+    	mi->SendSpdLocateCmd(chn, phy_axis+1,false);
     }
-    this->ORCMA = ORCMA;
+
+    return;
 }
 
 void SpindleControl::ProcessModeChanged(Spindle::Mode mode)
 {
     printf("========== ProcessModeChanged  %d\n", mode);
 
-	if(mode == Position){
-        ChannelEngine *engine = ChannelEngine::GetInstance();
+    if(mode == Position){
+    	ChannelEngine *engine = ChannelEngine::GetInstance();
         ChannelControl *control = engine->GetChnControl(0);
         ChannelRealtimeStatus status = control->GetRealtimeStatus();
         double pos = status.cur_pos_machine.GetAxisValue(phy_axis);
@@ -856,7 +974,8 @@ void SpindleControl::ProcessModeChanged(Spindle::Mode mode)
         std::this_thread::sleep_for(std::chrono::microseconds(100*1000));
         F->RGMP = 1;
     }else{
-        F->RGMP = 0;
+    	// 退出位置模式下使能
+    	F->RGMP = 0;
     }
 
     this->mode = mode;
@@ -1020,8 +1139,6 @@ void SpindleControl::ProcessRTNT()
 
 void SpindleControl::EStop(){
 	if(!spindle) return;
-
-	while(fabs(GetSpindleSpeed()) > 1){}
 
 	InputPolar(Stop);
 }

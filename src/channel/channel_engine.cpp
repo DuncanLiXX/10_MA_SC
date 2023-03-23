@@ -1357,7 +1357,7 @@ void ChannelEngine::UpdateMiLimitValue(uint8_t EXLM, uint8_t RLSOT)
  * @param context
  */
 void ChannelEngine::PoweroffHandler(int signo, siginfo_t *info, void *context){
-    printf("IN\n");
+    printf("=========  PoweroffHandler  IN\n");
 
     //	static bool power_off_flag = false;
     //	if(power_off_flag)
@@ -1380,8 +1380,9 @@ void ChannelEngine::PoweroffHandler(int signo, siginfo_t *info, void *context){
  * @brief 掉电时保存数据
  */
 void ChannelEngine::SaveDataPoweroff(){
-
-    //保存PMC寄存器数据
+	system("date >> save.txt");
+	system("echo \"start\" >> save.txt");
+	//保存PMC寄存器数据
     if((this->m_mask_import_param & (0x01<<CONFIG_PMC_REG)) == 0)
         this->m_p_pmc_reg->SaveRegData();
 
@@ -1405,6 +1406,10 @@ void ChannelEngine::SaveDataPoweroff(){
 
     delete g_ptr_trace;
     g_ptr_trace = nullptr;
+
+    system("date >> save.txt");
+	system("echo \"end\" >> save.txt");
+	system("sync");
 }
 
 /**
@@ -1428,7 +1433,6 @@ void ChannelEngine::SyncKeepVar(){
     for(uint8_t i = 0; i < this->m_p_general_config->chn_count; i++){
         this->m_p_channel_control[i].SyncMacroVar();
     }
-
 
 }
 
@@ -8323,6 +8327,8 @@ bool ChannelEngine::RefreshMiStatusFun(){
 
             SaveDataPoweroff();
             g_sys_state.system_quit = true;   //程序退出
+
+
             printf("OUT\n");
             return true;
         }

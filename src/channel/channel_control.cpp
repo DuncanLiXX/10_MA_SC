@@ -2096,7 +2096,6 @@ void ChannelControl::StopRunGCode(bool reset){
 
     this->StopCompilerRun(); //停止编译
 
-
     //TODO 向MC模块发送停止命令
     this->PauseMc();
 
@@ -4474,7 +4473,10 @@ int ChannelControl::Run(){
         {
             //TODO 处理错误
             g_ptr_trace->PrintTrace(TRACE_WARNING, CHANNEL_CONTROL_SC, "Compile Error:%d, %d\n", m_error_code, m_p_compiler->GetErrorCode());
-            //		CreateError(m_error_code, ERROR_LEVEL, CLEAR_BY_MCP_RESET, 0, m_n_channel_index);
+            //CreateError(m_error_code, ERROR_LEVEL, CLEAR_BY_MCP_RESET, 0, m_n_channel_index);
+            // @test zk  解决编译报警但运行并未停止问题
+            PauseMc();
+
             m_n_run_thread_state = STOP;
         }
         else if(m_n_run_thread_state == STOP)
@@ -4982,7 +4984,10 @@ void ChannelControl::SetCurLineNo(uint32_t line_no){
     if(this->m_n_macroprog_count == 0 || this->m_p_general_config->debug_mode > 0)
     {
         this->m_channel_rt_status.line_no = line_no;
+<<<<<<< HEAD
         //printf("ChannelControl::SetCurLineNo: %u\n", line_no);
+=======
+>>>>>>> f41f78887421a0484af480221326559ca37e9c74
     }
     ResetMcLineNo();//复位MC模块当前行号
 }
@@ -6804,7 +6809,8 @@ bool ChannelControl::ExecuteAuxMsg(RecordMsg *msg){
                 gettimeofday(&m_time_m_start[m_index], NULL);
                 tmp->IncreaseExecStep(m_index);
             }else if(tmp->GetExecStep(m_index) == 1){
-                // 主轴不存在或者主轴为虚拟轴，不执行主轴辅助功能
+
+            	// 主轴不存在或者主轴为虚拟轴，不执行主轴辅助功能
                 if((mcode == 3 || mcode == 4 || mcode == 5
                     || mcode == 19 || mcode == 20 || mcode == 26
                     || mcode == 27 || mcode == 28 || mcode == 29)
@@ -6837,26 +6843,30 @@ bool ChannelControl::ExecuteAuxMsg(RecordMsg *msg){
                 // 如果当前在正转状态下再给M03，那么ProcessPMCSignal就扫描不到变化了
                 // 这里需要做特殊处理
                 if(mcode == 3 && m_p_g_reg->SFR && m_p_spindle->Type() == 2){
-                    m_p_spindle->InputPolar(Polar::Positive);
+                	printf("======================= spindle M03\n");
+                	m_p_spindle->InputPolar(Polar::Positive);
                 }else if(mcode == 4 && m_p_g_reg->SRV && m_p_spindle->Type() == 2){
-                    m_p_spindle->InputPolar(Polar::Negative);
+                	printf("======================= spindle M04\n");
+                	m_p_spindle->InputPolar(Polar::Negative);
                 }else if(mcode == 5 && m_p_g_reg->SFR == 0 && m_p_g_reg->SRV == 0
                          && m_p_spindle->Type() == 2){
-                    m_p_spindle->InputPolar(Polar::Stop);
+                	printf("======================= spindle M05\n");
+                	m_p_spindle->InputPolar(Polar::Stop);
                 }
             }else if(tmp->GetExecStep(m_index) == 2){
-                //等待FIN信号
+            	//等待FIN信号
                 if(this->m_p_g_reg->FIN == 1 || this->GetMFINSig(m_index)) {
-                    gettimeofday(&m_time_m_start[m_index], NULL);   //开始计时
+                    //gettimeofday(&m_time_m_start[m_index], NULL);   //开始计时
 
                     //llx test
-                    gettimeofday(&time_now_test, NULL);
-                    time_elpase_test = (time_now_test.tv_sec-m_time_test.tv_sec)*1000000+time_now_test.tv_usec-m_time_test.tv_usec;
+                    //gettimeofday(&time_now_test, NULL);
+                    //time_elpase_test = (time_now_test.tv_sec-m_time_test.tv_sec)*1000000+time_now_test.tv_usec-m_time_test.tv_usec;
                     //std::cout << "+++++++++++++++++++++++++++++timeval: " << (int)time_elpase_test << std::endl;
                     //std::cout << "mcode: " << (int)mcode << " ME: " << (int)this->GetMExcSig(m_index) << " FIN: " << (int)this->m_p_g_reg->FIN << std::endl;
                     //std::cout << "mfin: " << (int)this->GetMFINSig(m_index) << std::endl;
                 }
-                else{
+                else
+                {
                     gettimeofday(&time_now, NULL);
                     time_elpase = (time_now.tv_sec-m_time_m_start[m_index].tv_sec)*1000000+time_now.tv_usec-m_time_m_start[m_index].tv_usec;
                     if(time_elpase > kMCodeTimeout && !this->GetMExcSig(m_index)
@@ -6877,7 +6887,7 @@ bool ChannelControl::ExecuteAuxMsg(RecordMsg *msg){
                 tmp->IncreaseExecStep(m_index);
 
             }else if(tmp->GetExecStep(m_index) == 3){
-                if(this->m_p_g_reg->FIN == 0 && !this->GetMFINSig(m_index)){
+            	if(this->m_p_g_reg->FIN == 0 && !this->GetMFINSig(m_index)){
                     tmp->SetExecStep(m_index, 2);
                     break;
                 }
@@ -6900,7 +6910,7 @@ bool ChannelControl::ExecuteAuxMsg(RecordMsg *msg){
                     m_p_f_reg->ORAR = 0;
                 }
             }else if(tmp->GetExecStep(m_index) == 4){
-                //等待FIN信号复位
+            	//等待FIN信号复位
                 if(this->m_p_g_reg->FIN == 1 || this->GetMFINSig(m_index))
                     break;
 
@@ -6909,10 +6919,8 @@ bool ChannelControl::ExecuteAuxMsg(RecordMsg *msg){
 
                 tmp->IncreaseExecStep(m_index);
             }else{
-                //this->ExecMCode(tmp, m_index);  //执行某些M代码需要系统执行的动作
-
+            	//this->ExecMCode(tmp, m_index);  //执行某些M代码需要系统执行的动作
                 tmp->SetExecStep(m_index, 0xFF);    //置位结束状态
-
             }
             break;
         }
@@ -7012,6 +7020,7 @@ bool ChannelControl::ExecuteLineMsg(RecordMsg *msg, bool flag_block){
             return false;
         }
     }
+
     if(msg->IsNeedWaitMsg() && (m_simulate_mode == SIM_NONE || m_simulate_mode == SIM_MACHINING)){//需要等待的命令
 
         if(linemsg->GetExecStep() == 0){ //只有第一步开始执行时需要等待
@@ -7049,6 +7058,11 @@ bool ChannelControl::ExecuteLineMsg(RecordMsg *msg, bool flag_block){
     }else if(!OutputData(msg, flag_block))
         return false;
 
+
+    if(m_channel_status.gmode[9] != G80_CMD){
+    	m_channel_status.gmode[9] = G80_CMD;
+    	this->SendChnStatusChangeCmdToHmi(G_MODE);
+    }
 
     m_n_run_thread_state = RUN;
 
@@ -7140,7 +7154,12 @@ bool ChannelControl::ExecuteRapidMsg(RecordMsg *msg, bool flag_block){
         this->SetCurLineNo(msg->GetLineNo());
     }
 
-    //printf("*****execute rapid msg out, block_flag=%hhu\n", msg->CheckFlag(FLAG_BLOCK_OVER));
+
+    if(m_channel_status.gmode[9] != G80_CMD){
+		m_channel_status.gmode[9] = G80_CMD;
+		this->SendChnStatusChangeCmdToHmi(G_MODE);
+	}
+
     m_n_run_thread_state = RUN;
 
     return true;
@@ -7185,9 +7204,13 @@ bool ChannelControl::ExecuteArcMsg(RecordMsg *msg, bool flag_block){
 
     if(this->m_simulate_mode == SIM_OUTLINE || this->m_simulate_mode == SIM_TOOLPATH){
         this->m_pos_simulate_cur_work = arc_msg->GetTargetPos();
-
         this->m_channel_status.gmode[1] = arc_msg->GetGCode();    //仿真模式下，立即修改当前模式,不通知HMI
     }
+
+    if(m_channel_status.gmode[9] != G80_CMD){
+		m_channel_status.gmode[9] = G80_CMD;
+		this->SendChnStatusChangeCmdToHmi(G_MODE);
+	}
 
     this->m_n_run_thread_state = RUN;
 
@@ -7282,8 +7305,10 @@ bool ChannelControl::ExecuteCoordMsg(RecordMsg *msg){
         DPointChn point = coordmsg->GetTargetPos();
         uint32_t axis_mask = coordmsg->GetAxisMask();
 
-        //  当局部坐标偏置都为0时  取消局部坐标系
-        bool flag_cancel_g52 = true;
+        //当局部坐标偏置都为0时  取消局部坐标系
+		bool flag_cancel_g52 = true;
+
+
 
         switch(coordmsg->GetExecStep()){
         case 0:
@@ -7291,15 +7316,23 @@ bool ChannelControl::ExecuteCoordMsg(RecordMsg *msg){
         	for(int i = 0; i < kMaxAxisChn; i++){
                 //this->SetMcAxisOrigin(i);
 				if(axis_mask & (0x01<<i)){
+					// ext offset
 					int64_t origin_pos = m_p_chn_coord_config[0].offset[i] * 1e7;  //基本工件坐标系
+
+					// G54XX offset
 					int coord_index = m_channel_status.gmode[14];
 					if(coord_index <= G59_CMD ){
 						origin_pos += m_p_chn_coord_config[coord_index/10-53].offset[i] * 1e7;    //单位由mm转换为0.1nm
 					}else if(coord_index <= G5499_CMD){
 						origin_pos += m_p_chn_ex_coord_config[coord_index/10-5401].offset[i] * 1e7;    //单位由mm转换为0.1nm
 					}
-					origin_pos += point.GetAxisValue(i)* 1e7;
+
+					// G52 offset
+					origin_pos += (int64_t)(point.GetAxisValue(i)* 1e7);
+
 					G52offset[i] = point.GetAxisValue(i);
+
+					if(G52offset[i] > 0.0001) flag_cancel_g52 = false;
 
 					this->SetMcAxisOrigin(i, origin_pos);
         		}
@@ -7334,7 +7367,10 @@ bool ChannelControl::ExecuteCoordMsg(RecordMsg *msg){
         }
 
         // @add  zk
-        G52Active = true;
+        if(flag_cancel_g52)
+        	G52Active = false;
+        else
+        	G52Active = true;
 
     }else if(gcode == G53_CMD){ //机械坐标系
 
@@ -7345,6 +7381,8 @@ bool ChannelControl::ExecuteCoordMsg(RecordMsg *msg){
             this->m_pos_simulate_cur_work = coordmsg->GetTargetPos();
 
     }else if(m_simulate_mode == SIM_NONE || m_simulate_mode == SIM_MACHINING){  //非仿真模式或者加工仿真模式
+
+    	if(G52Active) return true;
 
     	uint16_t coord_mc = 0;
         switch(coordmsg->GetExecStep()){
@@ -7388,8 +7426,6 @@ bool ChannelControl::ExecuteCoordMsg(RecordMsg *msg){
             printf("execute coord msg[%hu] error, step = %hhu\n", gcode, coordmsg->GetExecStep());
             break;
         }
-
-        G52Active = false;
 
     }else{//轮廓仿真，刀路仿真
         //先把当前位置的工件坐标转换为机械坐标
@@ -7799,12 +7835,12 @@ bool ChannelControl::ExecuteModeMsg(RecordMsg *msg){
     printf("execute mode message : %d\n", cmd);
     if(cmd == G98_CMD){
         Variable *pv = GetMacroVar();
-        pv->SetVarValue(198, 1.0);
+        pv->SetVarValue(198, 0.0);
     }
 
     if(cmd == G99_CMD){
         Variable *pv = GetMacroVar();
-        pv->SetVarValue(198, 0.0);
+        pv->SetVarValue(198, 1.0);
     }
 
     if(cmd == G61_CMD){

@@ -189,7 +189,7 @@ public:
     bool SGN;    //PMC输入的主轴方向    G33.5   0：正 1：负
     bool SSIN;   //主轴方向由CNC决定还是PMC决定  G33.6   0：CNC 1：PMC
     bool SIND;   //主轴速度由CNC决定还是PMC决定 G33.7   0：CNC 1：PMC
-    bool ORCMA;  // 主轴定向信号 G70.6
+    bool ORCMA{0};  // 主轴定向信号 G70.6
     bool RGTAP;  //刚攻状态  0：退出刚攻状态  1：进入刚攻状态 G61.0
     bool RGMD;   //主轴控制模式 0：速度模式  1：位置模式 G61.1
     bool RTNT;   //攻丝回退信号 G62.6

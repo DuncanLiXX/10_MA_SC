@@ -96,10 +96,14 @@ uint32_t SpindleControl::GetSCode()
 // 主轴方向输入
 void SpindleControl::InputPolar(Spindle::Polar polar)
 {
-    if(!spindle)
-        return;
+    if(!spindle){
+
+    	printf("inputPolar return no spindle\n");
+    	return;
+    }
 
     if(this->ORCMA){
+    	printf("inputPolar return ORCMA\n");
     	return;
     }
 
@@ -121,10 +125,14 @@ void SpindleControl::InputPolar(Spindle::Polar polar)
 
     	SendSpdSpeedToMi(0);
 
+    	int count = 0;
+
 		while(spindle->axis_interface != 0 && fabs(GetSpindleSpeed()) > 1)
 		{
+			count ++;
 			printf("11111111\n");
 			usleep(10000);
+			if(count > 200) break;
 		}
 
     	// 收到主轴停信号
@@ -152,10 +160,15 @@ void SpindleControl::SetMode(Mode mode)
         // 速度降为0
     	SendSpdSpeedToMi(0);
     	// 检测速度将为0
+
+    	int count = 0;
+
     	while(spindle->axis_interface != 0 && fabs(GetSpindleSpeed()) > 1)
     	{
     		printf("222222222\n");
+    		count ++;
     		usleep(10000);
+    		if(count > 200) break;
     	}
 
     	// 如果主轴不在使能状态，先上使能

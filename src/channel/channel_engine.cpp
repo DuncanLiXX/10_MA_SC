@@ -8735,6 +8735,7 @@ void ChannelEngine::ProcessPmcSignal(){
         // 主轴正转，主轴反转信号
         if(g_reg->SRV != g_reg_last->SRV || g_reg->SFR != g_reg_last->SFR){
 
+        	printf("=================================== M345\n");
         	if(g_reg->SRV == 0 && g_reg->SFR == 0){ // 主轴停
             	ctrl->GetSpdCtrl()->InputPolar(Spindle::Stop);
             }else if(g_reg->SFR == 1){  // 主轴正转
@@ -8806,8 +8807,8 @@ void ChannelEngine::ProcessPmcSignal(){
         //工件计数
         if (g_reg_last->WKCNT == 0 && g_reg->WKCNT == 1)
         {
-            std::cout << ">>>>>>>>>>>>>>>>>>>>>>>>>>WKCNT notify" << std::endl;
-            std::lock_guard<std::mutex> lck(m_task_consume_mtx);
+            //std::cout << ">>>>>>>>>>>>>>>>>>>>>>>>>>WKCNT notify" << std::endl;
+            //std::lock_guard<std::mutex> lck(m_task_consume_mtx);
             m_task_consume_type = CONSUME_TYPE_WORK_COUNT;
             m_task_consume_cond.notify_all();
         }

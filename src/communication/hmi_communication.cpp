@@ -2856,7 +2856,7 @@ void HMICommunication::ProcessHmiVirtualMOPCmd(HMICmdFrame &cmd){
     {
         // this->m_p_channel_engine->SystemReset();
         // 通过MERS(F195.0)导通ERS(G8.7)来实现复位
-        FRegBits *F =this->m_p_channel_engine->GetChnFRegBits(0);
+    	FRegBits *F =this->m_p_channel_engine->GetChnFRegBits(0);
         F->MERS = 1;
     }break;
 	case MOP_KEY_LIGHT:	{				//照明

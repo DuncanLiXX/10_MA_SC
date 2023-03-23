@@ -2340,7 +2340,7 @@ bool Compiler::RunMessage() {
             if(cur_line != msg->GetLineNo() || type != msg->GetMsgType()){
                 cur_line = msg->GetLineNo();
                 type = msg->GetMsgType();
-                //printf("compiler run message  line no: %llu,  type: %d\n", cur_line, msg_type);
+                printf("compiler run message  line no: %llu,  type: %d\n", cur_line, msg_type);
             }
             // @test zk
 

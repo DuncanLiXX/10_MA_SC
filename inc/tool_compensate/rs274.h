@@ -22,7 +22,8 @@ enum queued_canon_type {
 };
 
 enum CUTTER_COMP_DIRECTION {
-    RIGHT = 1,
+    NOCOMP = 0,
+	RIGHT = 1,
     LEFT = 2,
 };
 

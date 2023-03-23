@@ -8734,8 +8734,9 @@ void ChannelEngine::ProcessPmcSignal(){
 
         // 主轴正转，主轴反转信号
         if(g_reg->SRV != g_reg_last->SRV || g_reg->SFR != g_reg_last->SFR){
-            if(g_reg->SRV == 0 && g_reg->SFR == 0){ // 主轴停
-                ctrl->GetSpdCtrl()->InputPolar(Spindle::Stop);
+
+        	if(g_reg->SRV == 0 && g_reg->SFR == 0){ // 主轴停
+            	ctrl->GetSpdCtrl()->InputPolar(Spindle::Stop);
             }else if(g_reg->SFR == 1){  // 主轴正转
                 ctrl->GetSpdCtrl()->InputPolar(Spindle::Positive);
             }else if(g_reg->SRV == 1){  // 主轴反转

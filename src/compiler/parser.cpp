@@ -2470,8 +2470,16 @@ bool Parser::CreateArcMsg(const int gcode){
 		//计算圆心坐标
 		//printf("===== ARC SOURCE %lf %lf %lf\n",
 		//		source.GetAxisValue(0), source.GetAxisValue(1), source.GetAxisValue(2));
-        if(!CalArcCenter(source, target, radius, major_flag*dir_flag, center)){
-        	return false; //产生错误，返回
+
+
+        DPointChn target_pos = target;
+        if (this->m_p_compiler_status->mode.gmode[3] == G91_CMD)
+        {
+            target_pos += source;
+        }
+
+        if(!CalArcCenter(source, target_pos, radius, major_flag*dir_flag, center)){
+			return false; //产生错误，返回
 		}
 
 	}
@@ -2524,11 +2532,17 @@ bool Parser::CreateArcMsg(const int gcode){
 //
 //		printf("tar[%lf, %lf, %lf]\n", target.x, target.y, target.z);
 
-		if(source != target){
+        DPointChn target_pos = target;
+        if (this->m_p_compiler_status->mode.gmode[3] == G91_CMD)
+        {
+            target_pos += source;
+        }
+
+        if(source != target_pos){
 			DPlane cen = Point2Plane(center, m_p_compiler_status->mode.gmode[2]);
-			DPlane tar = Point2Plane(target, m_p_compiler_status->mode.gmode[2]);
-			double dr2 = GetVectLength(cen,
-										tar);
+            DPlane tar = Point2Plane(target_pos, m_p_compiler_status->mode.gmode[2]);
+            double dr2 = GetVectLength(cen, tar);
+
 			if(fabs(dr2-radius) > 2e-3){  //起点和终点到圆心距离差超过2um则告警
 				printf("cal arc error, %lf, %lf, %d\n", dr2, radius, m_p_compiler_status->mode.gmode[2]);
 				m_error_code = ERR_ARC_INVALID_DATA;

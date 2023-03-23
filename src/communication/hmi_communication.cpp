@@ -1054,6 +1054,9 @@ int HMICommunication::ProcessHmiCmd(){
             case CMD_HMI_GET_CPU_INFO:
             	ProcessHmiGetCPUInfo(cmd);
             	break;
+            case CMD_HMI_SERVE_DATA_REQUEST:
+                ProcessHmiServoDataRequest(cmd);
+                break;
 			default:
 				g_ptr_trace->PrintLog(LOG_ALARM, "收到不支持的HMI指令cmd=%d", cmd.cmd);
 				break;
@@ -2712,6 +2715,26 @@ void HMICommunication::ProcessHmiGetCPUInfo(HMICmdFrame &cmd){
 
 	memcpy(cmd.data, &cpu_info, sizeof(cpu_info));
 	cmd.data_len = sizeof(cpu_info);
+    SendCmd(cmd);
+}
+
+void HMICommunication::ProcessHmiServoDataRequest(HMICmdFrame &cmd)
+{
+    cmd.frame_number |= 0x8000;
+
+    memset(cmd.data, 0, sizeof(cmd.data));
+
+    if (g_ptr_chn_engine->GetChnControl(cmd.channel_index)->IsMachinRunning()
+            || !g_ptr_chn_engine->m_serverGuide.IsIdle())
+    {//不处于空闲状态
+        cmd.cmd_extension = REFUSE;
+        SendCmd(cmd);
+        return;
+    }
+
+    g_ptr_chn_engine->m_serverGuide.StartRecord();
+
+    cmd.cmd_extension = APPROVE;
     SendCmd(cmd);
 }
 

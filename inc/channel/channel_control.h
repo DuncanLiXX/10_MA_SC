@@ -371,7 +371,6 @@ public:
     void SyncMcPosition();  // 同步位置
     void AddWorkCountPiece(int addnum);  //增加工件计数
 
-
 private:
 	void InitialChannelStatus();		//初始化通道状态
     static void *CompileThread(void *args);  //G代码运行线程函数

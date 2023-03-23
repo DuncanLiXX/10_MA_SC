@@ -28,6 +28,7 @@ set(SC_SRC
         src/showsc.cpp
         src/sync_axis_ctrl.cpp
         src/axis_status_ctrl.cpp
+        src/servo_guide.cpp
 )
 
 set(CHANNEL_SRC

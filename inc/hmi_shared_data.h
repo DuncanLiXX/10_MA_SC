@@ -57,6 +57,7 @@ const int kMaxProcParamCount = 10;    //系统支持的工艺参数最大组数
 #define PORT_UDP_CMD_SEND (9101)   //UDP命令发送目的端口
 #define PORT_TCP_MONITOR     (9210)  //TCP监控数据端口，用于发送
 #define PORT_TCP_FILE        (9220)   //TCP文件传输端口
+#define PORT_TCP_DATA        (9230)   //TCP数据传输
 
 #define STR_HMI_SHAKE  "HELLO ARADEX CNC"  //握手字符串
 #define STR_HMI_SHAKE_RESP "HELLO ARADEX HMI"  //握手回复字符串
@@ -200,7 +201,8 @@ enum HMICmdCode {
     CMD_HMI_CLEAR_ALARMFILE,         //HMI向SC请求清空报警文件 0x40
     CMD_HMI_ABSOLUTE_REF_SET,        //HMI向SC请求绝对式编码器设零 0x41
     CMD_HMI_SET_ALL_TOOL_OFFSET,     //HMI向SC请求设置所有刀偏值 0x42
-	CMD_HMI_GET_CPU_INFO,            //HMI向SC获取 CPU 内存 占用信息
+    CMD_HMI_GET_CPU_INFO,            //HMI向SC获取 CPU 内存 占用信息
+    CMD_HMI_SERVE_DATA_REQUEST,      //HMI向SC请求准备伺服引导
 
 
 	//SC-->HMI

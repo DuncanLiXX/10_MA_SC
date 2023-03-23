@@ -1696,7 +1696,7 @@ void ChannelControl::StartRunGCode(){
     }
     if(axis_mask != 0){
         this->m_error_code = ERR_AXIS_REF_NONE;
-        CreateError(m_error_code, WARNING_LEVEL, CLEAR_BY_MCP_RESET, axis_mask, m_n_channel_index);
+        CreateError(m_error_code, ERROR_LEVEL, CLEAR_BY_MCP_RESET, axis_mask, m_n_channel_index);
         //	this->SendMessageToHmi(MSG_TIPS, MSG_ID_AXIS_REF);
         return;
     }
@@ -4592,7 +4592,7 @@ bool ChannelControl::RefreshStatusFun(){
 			//更新当前给定进给速度
 			this->m_p_mc_comm->ReadRatedFeed(m_n_channel_index, m_channel_mc_status.rated_feed);
 
-			//更新当前运行指令`
+            //更新当前运行指令
 			this->m_p_mc_comm->ReadCurCmd(m_n_channel_index, m_channel_mc_status.cur_cmd);
 
 			//更新MC当前缓冲数据量
@@ -4982,7 +4982,7 @@ void ChannelControl::SetCurLineNo(uint32_t line_no){
     if(this->m_n_macroprog_count == 0 || this->m_p_general_config->debug_mode > 0)
     {
         this->m_channel_rt_status.line_no = line_no;
-        printf("ChannelControl::SetCurLineNo: %u\n", line_no);
+        //printf("ChannelControl::SetCurLineNo: %u\n", line_no);
     }
     ResetMcLineNo();//复位MC模块当前行号
 }
@@ -7001,6 +7001,7 @@ bool ChannelControl::ExecuteLineMsg(RecordMsg *msg, bool flag_block){
         }
     }
 
+
     uint32_t mask = linemsg->GetAxisMoveMask();
     for(int i=0; i<m_p_channel_config->chn_axis_count; i++){
         if((mask & (0x01<<i)) == 0)
@@ -7011,10 +7012,6 @@ bool ChannelControl::ExecuteLineMsg(RecordMsg *msg, bool flag_block){
             return false;
         }
     }
-
-
-    std::cout << "++++++++++++++mask: " << (int)mask << " feed: " << linemsg->GetFeed() << " pmcCount:" << (int)linemsg->GetPmcAxisCount() << std::endl;
-
     if(msg->IsNeedWaitMsg() && (m_simulate_mode == SIM_NONE || m_simulate_mode == SIM_MACHINING)){//需要等待的命令
 
         if(linemsg->GetExecStep() == 0){ //只有第一步开始执行时需要等待
@@ -7143,7 +7140,7 @@ bool ChannelControl::ExecuteRapidMsg(RecordMsg *msg, bool flag_block){
         this->SetCurLineNo(msg->GetLineNo());
     }
 
-    //	printf("*****execute rapid msg out, block_flag=%hhu\n", msg->CheckFlag(FLAG_BLOCK_OVER));
+    //printf("*****execute rapid msg out, block_flag=%hhu\n", msg->CheckFlag(FLAG_BLOCK_OVER));
     m_n_run_thread_state = RUN;
 
     return true;
@@ -11146,7 +11143,7 @@ void ChannelControl::ManualMove(int8_t dir){
     //设置目标位置
 
     //int64_t cur_pos = GetAxisCurMachPos(m_channel_status.cur_axis)*1e7;  //当前位置
-    int64_t cur_pos = GetAxisCurIntpTarPos(m_channel_status.cur_axis, false)*1e7;
+    int64_t cur_pos = GetAxisCurIntpTarPos(m_channel_status.cur_axis, true)*1e7;
     int64_t tar_pos = 0;
     if(GetChnWorkMode() == MANUAL_STEP_MODE){ //手动单步
         tar_pos = cur_pos + GetCurManualStep()*1e4*dir;		//转换单位为0.1nm
@@ -11166,8 +11163,8 @@ void ChannelControl::ManualMove(int8_t dir){
     }else if(GetSoftLimt((ManualMoveDir)dir, phy_axis, limit) && dir == DIR_NEGATIVE && tar_pos < limit*1e7){
         tar_pos = limit * 1e7;
     }
-    //ScPrintf("GetAxisCurIntpTarPos = %llf", GetAxisCurIntpTarPos(m_channel_status.cur_axis, true)*1e7);
-    int64_t n_inc_dis = tar_pos - GetAxisCurIntpTarPos(m_channel_status.cur_axis, false)*1e7;
+    ScPrintf("GetAxisCurIntpTarPos = %llf", GetAxisCurIntpTarPos(m_channel_status.cur_axis, true)*1e7);
+    int64_t n_inc_dis = tar_pos - GetAxisCurIntpTarPos(m_channel_status.cur_axis, true)*1e7;
     if((m_p_channel_engine->GetMlkMask() & (0x01<<m_channel_status.cur_axis))
             && GetChnWorkMode() == MANUAL_STEP_MODE){
         n_inc_dis = GetCurManualStep()*1e4*dir;
@@ -11381,7 +11378,6 @@ void ChannelControl::ManualMoveStop(){
 
     if(g_ptr_chn_engine->GetPmcActive(this->GetPhyAxis(m_channel_status.cur_axis))) {
         //PMC轴的Stop动作没有屏蔽，如果屏蔽此处，担心某些特殊情况停不下来
-        std::cout << "ChannelControl::ManualMoveStop() pmc axis " << (int)m_channel_status.cur_axis << std::endl;
         this->ManualMovePmcStop();
         return;
     }

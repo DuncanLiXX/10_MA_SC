@@ -689,6 +689,27 @@ bool ChannelEngine::GetAxisRetRefFlag(uint64_t phy_axis)
 }
 
 /**
+ * @brief 激活后台线程
+ * @param consumeType, 后台进程编号
+ */
+bool ChannelEngine::SetConsumeTask(TASK_CONSUME_TYPE consumeType)
+{
+    if (m_task_consume_type == CONSUME_TYPE_NONE)
+    {
+        std::cout << "notify consume task " << (int)consumeType << std::endl;
+        std::lock_guard<std::mutex> lck(m_task_consume_mtx);
+        m_task_consume_type = consumeType;
+        m_task_consume_cond.notify_all();
+        return true;
+    }
+    else
+    {
+        std::cout << "busy consume task " << (int)consumeType << std::endl;
+        return false;
+    }
+}
+
+/**
  * @brief 向MI发送各轴机械锁住状态
  */
 void ChannelEngine::SetMLKState(uint8_t MLK, uint8_t MLKI)
@@ -1115,7 +1136,6 @@ void ChannelEngine::Initialize(HMICommunication *hmi_comm, MICommunication *mi_c
     printf("license info: flag = %c, deadline=%04d-%02d-%02d\n", this->m_lic_info.licflag, this->m_lic_info.dead_line.year,
            this->m_lic_info.dead_line.month, this->m_lic_info.dead_line.day);
 #endif
-
 
     //创建状态刷新刷新线程
     pthread_attr_init(&attr);
@@ -3607,6 +3627,7 @@ void ChannelEngine::ProcessHmiAxisMoveCmd(HMICmdFrame &cmd){
         dir = cmd.data[5];
         double vel = speed;
 
+        std::cout << "ProcessHmiAxisMoveCmd " << std::endl;
         if (GetPmcActive(axis)) {
             //if(speed > 0)
             //    this->ManualMovePmc(axis, 99999, vel, true);
@@ -3635,6 +3656,7 @@ void ChannelEngine::ProcessHmiAxisMoveCmd(HMICmdFrame &cmd){
         if(speed == 0)
             vel = this->m_p_axis_config[axis].rapid_speed;  //速度给0则使用轴参数中的定位速度
 
+        printf("ChannelEngine::ProcessHmiAxisMoveCmd:axis=%hhu, vel=%lf, dir=%hhu\n", axis, vel, dir);
         if (GetPmcActive(axis)) {
             //this->ManualMovePmc(axis, tar_pos, vel, false);
             m_error_code = ERR_PMC_IVALID_USED;
@@ -5866,7 +5888,7 @@ void ChannelEngine::ManualMove(uint8_t phy_axis, int8_t dir, double vel, double 
 
         //this->m_p_mi_comm->SendPmcCmd(cmd);
 
-        //		printf("ChannelEngine::ManualMove_pmc: axis = %d, tar_pos = %lld\n", phy_axis, tar_pos);
+        //printf("ChannelEngine::ManualMove_pmc: axis = %d, tar_pos = %lld\n", phy_axis, tar_pos);
         m_error_code = ERR_PMC_IVALID_USED;
         CreateError(ERR_PMC_IVALID_USED, ERROR_LEVEL, CLEAR_BY_MCP_RESET, 0, 0xFF);
     }
@@ -7586,7 +7608,8 @@ void ChannelEngine::InitMiParam(){
        m_p_mi_comm->SendMiParam<uint16_t>(index, 1605, axis_config->spd_start_time);
        m_p_mi_comm->SendMiParam<uint16_t>(index, 1606, axis_config->spd_stop_time);
 
-       //
+       //反向间隙初始化方向
+       m_p_mi_comm->SendMiParam<uint8_t>(index, 1607, axis_config->init_backlash_dir);
 
         //发送反向间隙参数
         this->SendMiBacklash(i);
@@ -7701,14 +7724,14 @@ void ChannelEngine::SendMiPcParam(uint8_t axis){
     uint16_t pc_type = this->m_p_axis_config[axis].pc_type;
     uint16_t pc_enable = m_p_axis_config[axis].pc_enable;
 
-    std::cout << "SendMiPcParam() " << std::endl;
-    std::cout << "axis: " << (int)cmd.data.axis_index << std::endl;
-    std::cout << "count: " << (int)count << std::endl;
-    std::cout << "offset: " << (int)offset << std::endl;
-    std::cout << "inter: " << (int)inter << std::endl;
-    std::cout << "ref_index: " << (int)ref_index << std::endl;
-    std::cout << "pc_type: " << (int)pc_type << std::endl;
-    std::cout << "pc_enable: " << (int)pc_enable << std::endl;
+    //std::cout << "SendMiPcParam() " << std::endl;
+    //std::cout << "axis: " << (int)cmd.data.axis_index << std::endl;
+    //std::cout << "count: " << (int)count << std::endl;
+    //std::cout << "offset: " << (int)offset << std::endl;
+    //std::cout << "inter: " << (int)inter << std::endl;
+    //std::cout << "ref_index: " << (int)ref_index << std::endl;
+    //std::cout << "pc_type: " << (int)pc_type << std::endl;
+    //std::cout << "pc_enable: " << (int)pc_enable << std::endl;
 
     memcpy(cmd.data.data, &count, 2);  //补偿数据个数
     memcpy(&cmd.data.data[1], &offset, 2);   //起始编号
@@ -7913,14 +7936,14 @@ void ChannelEngine::SetSlaveInfo(){
             cmd.data.data[5] = data5;
 
             //test
-            printf("node data0 %d------------------\n", cmd.data.data[0]);
-            printf("node data1 %d------------------\n", cmd.data.data[1]);
-            printf("node data2 %d------------------\n", cmd.data.data[2]);
-            printf("node data3 %d------------------\n", cmd.data.data[3]);
-            printf("node data4 %d------------------\n", cmd.data.data[4]);
-            printf("node data5 %d------------------\n", cmd.data.data[5]);
-            printf("node data6 %d------------------\n", cmd.data.data[6]);
-            printf("\n");
+            //printf("node data0 %d------------------\n", cmd.data.data[0]);
+            //printf("node data1 %d------------------\n", cmd.data.data[1]);
+            //printf("node data2 %d------------------\n", cmd.data.data[2]);
+            //printf("node data3 %d------------------\n", cmd.data.data[3]);
+            //printf("node data4 %d------------------\n", cmd.data.data[4]);
+            //printf("node data5 %d------------------\n", cmd.data.data[5]);
+            //printf("node data6 %d------------------\n", cmd.data.data[6]);
+            //printf("\n");
 
             //数据发送
             this->m_p_mi_comm->WriteCmd(cmd);
@@ -7944,14 +7967,14 @@ void ChannelEngine::SetSlaveInfo(){
     cmd.data.data[3] = handwheel_count;
 
     //test
-    printf("node data0 %d------------------\n", cmd.data.data[0]);
-    printf("node data1 %d------------------\n", cmd.data.data[1]);
-    printf("node data2 %d------------------\n", cmd.data.data[2]);
-    printf("node data3 %d------------------\n", cmd.data.data[3]);
-    printf("node data4 %d------------------\n", cmd.data.data[4]);
-    printf("node data5 %d------------------\n", cmd.data.data[5]);
-    printf("node data6 %d------------------\n", cmd.data.data[6]);
-    printf("\n");
+    //printf("node data0 %d------------------\n", cmd.data.data[0]);
+    //printf("node data1 %d------------------\n", cmd.data.data[1]);
+    //printf("node data2 %d------------------\n", cmd.data.data[2]);
+    //printf("node data3 %d------------------\n", cmd.data.data[3]);
+    //printf("node data4 %d------------------\n", cmd.data.data[4]);
+    //printf("node data5 %d------------------\n", cmd.data.data[5]);
+    //printf("node data6 %d------------------\n", cmd.data.data[6]);
+    //printf("\n");
 
     this->m_p_mi_comm->WriteCmd(cmd);
 
@@ -8799,10 +8822,7 @@ void ChannelEngine::ProcessPmcSignal(){
         //工件计数
         if (g_reg_last->WKCNT == 0 && g_reg->WKCNT == 1)
         {
-            std::cout << ">>>>>>>>>>>>>>>>>>>>>>>>>>WKCNT notify" << std::endl;
-            std::lock_guard<std::mutex> lck(m_task_consume_mtx);
-            m_task_consume_type = CONSUME_TYPE_WORK_COUNT;
-            m_task_consume_cond.notify_all();
+            SetConsumeTask(CONSUME_TYPE_WORK_COUNT);
         }
 
         //通知类型的信号，只保留一个周期
@@ -9119,57 +9139,66 @@ void ChannelEngine::ProcessPmcSignal(){
     inited = true;
 
 #ifdef TAP_TEST
-    static string pathname = string(PATH_LOG_FILE) + "data.txt";
-    for (int i = 0; i < m_p_general_config->chn_count; ++i)
-    {
-        if (m_p_channel_control[i].IsMachinRunning())
-        {
-            if (!m_fd)
-            {
-                m_fd = fopen(pathname.c_str(), "a+");
-                if (!m_fd)
-                    std::cout << ">>>>>> open err" << std::endl;
-            }
+//    static string pathname = string(PATH_LOG_FILE) + "data.txt";
+//    for (int i = 0; i < m_p_general_config->chn_count; ++i)
+//    {
+//        if (m_p_channel_control[i].IsMachinRunning())
+//        {
+//            if (!m_fd)
+//            {
+//                m_fd = fopen(pathname.c_str(), "a+");
+//                if (!m_fd)
+//                    std::cout << ">>>>>> open err" << std::endl;
+//            }
 
-            if (m_fd && (g_reg->RGTAP == 1 or g_reg->RTNT))
-            {
-                this->m_p_mi_comm->ReadPhyAxisCurFedBckPos(m_df_phy_axis_pos_feedback, m_df_phy_axis_pos_intp,m_df_phy_axis_speed_feedback,
-                                                           m_df_phy_axis_torque_feedback, m_df_spd_angle, m_p_general_config->axis_count);
+//            if (m_fd /*&& (g_reg->RGTAP == 1 or g_reg->RTNT)*/)
+//            {
+//                this->m_p_mi_comm->ReadPhyAxisCurFedBckPos(m_df_phy_axis_pos_feedback, m_df_phy_axis_pos_intp,m_df_phy_axis_speed_feedback,
+//                                                           m_df_phy_axis_torque_feedback, m_df_spd_angle, m_p_general_config->axis_count);
 
-                //X轴数据
-                //string X_real_pos = to_string(m_df_phy_axis_pos_feedback[0]) + '\t';
-                //string X_tar_pos = to_string(m_df_phy_axis_pos_intp[0]) +'\t';
+//                //X轴数据
+//                string X_real_pos = to_string(m_df_phy_axis_pos_feedback[0]) + '\t';
+//                string X_tar_pos = to_string(m_df_phy_axis_pos_intp[0]) +'\t';
 
-                //Y轴数据
-                //string y_real_pos = to_string(m_df_phy_axis_pos_feedback[1]) + '\t';
-                //string y_tar_pos = to_string(m_df_phy_axis_pos_intp[1]) +'\t';
+//                //Y轴数据
+//                string y_real_pos = to_string(m_df_phy_axis_pos_feedback[1]) + '\t';
+//                string y_tar_pos = to_string(m_df_phy_axis_pos_intp[1]) +'\t';
 
-                //Z轴数据
-                string z_real_pos = to_string(m_df_phy_axis_pos_feedback[2]) + '\t';
-                string z_tar_pos = to_string(m_df_phy_axis_pos_intp[2]) +'\t';
+//                //Z轴数据
+//                //string z_real_pos = to_string(m_df_phy_axis_pos_feedback[2]) + '\t';
+//                //string z_tar_pos = to_string(m_df_phy_axis_pos_intp[2]) +'\t';
 
-                //主轴数据
-                string spd_real_pos = to_string(m_df_phy_axis_pos_feedback[m_p_channel_control[i].GetSpdCtrl()->GetPhyAxis()]) + '\t';
-                string spd_tar_pos = to_string(m_df_phy_axis_pos_intp[m_p_channel_control[i].GetSpdCtrl()->GetPhyAxis()]) + '\t';
+//                //主轴数据
+//                //string spd_real_pos = to_string(m_df_phy_axis_pos_feedback[m_p_channel_control[i].GetSpdCtrl()->GetPhyAxis()]) + '\t';
+//                //string spd_tar_pos = to_string(m_df_phy_axis_pos_intp[m_p_channel_control[i].GetSpdCtrl()->GetPhyAxis()]) + '\t';
 
-                string msg = z_tar_pos + z_real_pos + spd_tar_pos + spd_real_pos + '\n';
+//                //string msg = z_tar_pos + z_real_pos + spd_tar_pos + spd_real_pos + '\n';
 
-                //string msg = X_tar_pos + X_real_pos + y_tar_pos + y_real_pos + z_tar_pos + z_real_pos + '\n';
-                //string msg = X_tar_pos + X_real_pos + '\n';
-                //string msg = X_real_pos + X_tar_pos + y_real_pos + y_tar_pos + '\n';
-                fwrite(msg.c_str(), sizeof(char), msg.size(), m_fd);
-            }
-        }
-        else
-        {
-            if (m_fd)
-            {
-                fflush(m_fd);
-                fclose(m_fd);
-                m_fd = nullptr;
-            }
-        }
-    }
+//                //string msg = X_tar_pos + X_real_pos + y_tar_pos + y_real_pos + z_tar_pos + z_real_pos + '\n';
+//                //string msg = X_tar_pos + X_real_pos + '\n';
+//                string msg = X_real_pos + X_tar_pos + y_real_pos + y_tar_pos + '\n';
+//                fwrite(msg.c_str(), sizeof(char), msg.size(), m_fd);
+//            }
+//        }
+//        else
+//        {
+//            if (m_fd)
+//            {
+//                fflush(m_fd);
+//                fclose(m_fd);
+//                m_fd = nullptr;
+//            }
+//        }
+//    }
+//    for (int i = 0; i < m_p_general_config->chn_count; ++i)
+//    {
+//        if (m_p_channel_control[i].IsMachinRunning())
+//            m_serverGuide.StartRecord();
+//        else
+//            m_serverGuide.EndRecord();
+//    }
+
+
 #endif
 
     //处理PMC的告警，即A地址寄存器
@@ -9202,26 +9231,51 @@ void ChannelEngine::ProcessPmcDataWnd(){
 
 void ChannelEngine::ProcessConsumingTask()
 {
-    while(1)
+    while(!g_sys_state.system_quit)
     {
         std::unique_lock<std::mutex> lck(m_task_consume_mtx);
         while(m_task_consume_type == 0) {
-            m_task_consume_cond.wait(lck);
+            m_task_consume_cond.wait(lck, [this](){ return m_task_consume_type != 0;} );
         }
 
+        std::cout << "start consume_type " << (int)CONSUME_TYPE_WORK_COUNT << std::endl;
         switch(m_task_consume_type){
         case CONSUME_TYPE_WORK_COUNT:
         {
-            std::cout << "CONSUME_TYPE_WORK_COUNT"<< std::endl;
             m_p_channel_control[m_n_cur_channle_index].AddWorkCountPiece(1);
         }
             break;
         case CONSUME_TYPE_SERVE_GUIDE:
         {
-            //if ()
+            //TODO 需要增加判断
+            //m_serverGuide.InitSocket();
+            //此处判断是否已经建立连接，建立连接后才能开始采样
+
+            if (!m_serverGuide.Accept())
+                break;
+
+            //启动另一个线程，处理数据发送
+            //std::thread thread(&ServeGuide::ProcessData, &m_serverGuide);
+            //thread.detach();
+
+            while(!g_sys_state.system_quit)
             {
-                this->m_p_mi_comm->ReadPhyAxisCurFedBckPos(m_df_phy_axis_pos_feedback, m_df_phy_axis_pos_intp,m_df_phy_axis_speed_feedback,
-                    m_df_phy_axis_torque_feedback, m_df_spd_angle, m_p_general_config->axis_count);
+                if (m_serverGuide.RefreshRecording())
+                {
+                    if (m_serverGuide.IsTimeout())//采样周期
+                    {
+                        this->m_p_mi_comm->ReadPhyAxisCurFedBckPos(m_df_phy_axis_pos_feedback, m_df_phy_axis_pos_intp,m_df_phy_axis_speed_feedback,
+                            m_df_phy_axis_torque_feedback, m_df_spd_angle, m_p_general_config->axis_count);
+                        //根据不同类型生成不同数据
+                        std::pair<double, double> data = std::make_pair(m_df_phy_axis_pos_feedback[0], m_df_phy_axis_pos_feedback[1]);
+                        m_serverGuide.RecordData(data);
+                    }
+                }
+                else if (m_serverGuide.IsEmpty())
+                {//退出循环
+                    std::cout << "exit consume_type_serve_guide" << std::endl;
+                    break;
+                }
             }
         }
             break;
@@ -9336,7 +9390,10 @@ void ChannelEngine::ProcessPmcAxisCtrl(){
             if(m_pmc_axis_ctrl[i*4+j].axis_list.size() == 0)
             {//通道没有选通时，梯图写入PMC数据时报警
                 if (ebuf[j] != ebsy[j])
+                {
+                    std::cout << "SetErrState" << std::endl;
                     m_pmc_axis_ctrl[4*i+j].SetErrState(i*4+j+1);
+                }
                 continue;
             }
 
@@ -10345,7 +10402,7 @@ void ChannelEngine::EcatIncAxisFindRefWithZeroSignal(uint8_t phy_axis){
 
             if (GetSyncAxisCtrl()->CheckSyncState(phy_axis) == 1)
             {//从动轴建立机械坐标
-                SetSubAxisRefPoint(phy_axis, 0);
+                SetSubAxisRefPoint(phy_axis, m_p_axis_config[phy_axis].axis_home_pos[0]);
             }
 
             if(m_n_mask_ret_ref == 0){
@@ -10558,6 +10615,15 @@ void ChannelEngine::SetAxisComplete(int axisID)
         this->m_p_axis_config[axisID].ref_complete = true;
         g_ptr_parm_manager->UpdateAxisComplete(axisID, true);
         this->NotidyHmiAxisRefComplete(axisID);
+    }
+
+    int axisMask = GetSyncAxisCtrl()->GetSlaveAxis(axisID);
+    for (int i = 0; i < this->m_p_general_config->axis_count; ++i) {
+        if(axisMask & (0x01<<i)){
+            this->m_p_axis_config[i].ref_complete = true;
+            g_ptr_parm_manager->UpdateAxisComplete(i, true);
+            this->NotidyHmiAxisRefComplete(i);
+        }
     }
 }
 
@@ -11901,6 +11967,9 @@ void ChannelEngine::ReturnRefPoint(){
                 continue;
             count++;
         }
+
+        SetCurAxis(m_n_cur_channle_index, i);
+
         if(this->m_p_axis_config[i].axis_interface == VIRTUAL_AXIS)
         {// 虚拟轴
             this->AxisFindRefNoZeroSignal(i);

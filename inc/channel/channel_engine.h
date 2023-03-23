@@ -20,6 +20,7 @@
 #include "pmc_axis_ctrl.h"
 #include "channel_data.h"
 #include "parm_manager.h"
+#include "servo_guide.h"
 
 #include "license_interface.h"
 
@@ -322,6 +323,9 @@ void SetMcArmComm(MCArmCommunication *comm){this->m_p_mc_arm_comm = comm;}   //É
 
     int GetCurChannelIndex() { return m_n_cur_channle_index; }
 
+    bool SetConsumeTask(TASK_CONSUME_TYPE consumeType); //¼¤»îºóÌ¨Ïß³Ì
+
+    ServeGuide  m_serverGuide;
 private:	//Ë½ÓÐ³ÉÔ±º¯Êý
 	ChannelEngine();   //¹¹Ôìº¯Êý
 
@@ -656,7 +660,6 @@ private:  //Ë½ÓÐ³ÉÔ±±äÁ¿
     std::mutex                  m_task_consume_mtx;
     std::condition_variable     m_task_consume_cond;
     TASK_CONSUME_TYPE           m_task_consume_type = CONSUME_TYPE_NONE;
-
 };
 
 #endif /* INC_CHANNEL_CHANNEL_ENGINE_H_ */

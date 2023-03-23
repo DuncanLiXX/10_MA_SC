@@ -167,6 +167,7 @@ private:
     void ProcessHmiSysRecoverCmd(HMICmdFrame &cmd);        //处理HMI恢复命令
     void ProcessHmiClearAlarmFile(HMICmdFrame &cmd);       //处理HMI清除报警文件命令
     void ProcessHmiGetCPUInfo(HMICmdFrame &cmd);					   //处理HMI获取CPU 内存占用信息
+    void ProcessHmiServoDataRequest(HMICmdFrame &cmd);     //处理HMI请求开始伺服引导
     void ProcessHmiReady();
 	uint16_t GetFrameNumber(){return  (++m_n_frame_number&0x8000) ? (m_n_frame_number=0) : m_n_frame_number;}   //获取最新帧号
 

@@ -16,7 +16,7 @@
 
 #define USES_FIVE_AXIS_FUNC     //五轴功能
 
-//#define USES_LICENSE_FUNC     //授权功能
+#define USES_LICENSE_FUNC     //授权功能
 
 //#define USES_TCP_FILE_TRANS_KEEP     //tcp文件传输连接保持，不用每次重新建立连接
 

@@ -3053,7 +3053,7 @@ bool Compiler::RunFeedMsg(RecordMsg *msg) {
     FeedMsg *tmp = (FeedMsg *) msg;
 
     m_compiler_status.mode.f_mode = tmp->GetFeed();
-
+    this->m_p_channel_control->m_cur_setfeed = tmp->GetFeed()*1000/60;//um/s
     //printf("run feed message: %lf~~~~~\n", m_compiler_status.mode.f_mode);
 
     return true;

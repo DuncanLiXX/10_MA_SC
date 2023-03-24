@@ -4777,8 +4777,10 @@ bool ChannelControl::RefreshStatusFun(){
 
 		//更新用户给定进给速度
 		if((m_channel_status.chn_work_mode == AUTO_MODE || m_channel_status.chn_work_mode == MDA_MODE) &&   //手动模式下F模态固定为0，不更新
-				m_channel_status.rated_feed != m_channel_mc_status.rated_feed){
-			m_channel_status.rated_feed = m_channel_mc_status.rated_feed;
+                /*m_channel_status.rated_feed != m_channel_mc_status.rated_feed*/
+                m_channel_status.rated_feed != this->m_cur_setfeed){
+            //m_channel_status.rated_feed = m_channel_mc_status.rated_feed;
+            m_channel_status.rated_feed = this->m_cur_setfeed;
 			this->SendModeChangToHmi(F_MODE);
 		}
 
@@ -4984,10 +4986,7 @@ void ChannelControl::SetCurLineNo(uint32_t line_no){
     if(this->m_n_macroprog_count == 0 || this->m_p_general_config->debug_mode > 0)
     {
         this->m_channel_rt_status.line_no = line_no;
-<<<<<<< HEAD
         //printf("ChannelControl::SetCurLineNo: %u\n", line_no);
-=======
->>>>>>> f41f78887421a0484af480221326559ca37e9c74
     }
     ResetMcLineNo();//复位MC模块当前行号
 }

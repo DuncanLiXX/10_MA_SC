@@ -4397,6 +4397,17 @@ bool ChannelEngine::CheckSoftLimit(ManualMoveDir dir, uint8_t phy_axis, double p
     double positive[3];
     double negative[3];
     bool enable[3];
+
+    std::cout << "ChannelEngine::CheckSoftLimit" << std::endl;
+    std::cout << "soft_limit_max 1 " << m_p_axis_config[phy_axis].soft_limit_max_1;
+    std::cout << "soft_limit_min 1 " << m_p_axis_config[phy_axis].soft_limit_min_1;
+    std::cout << "soft_limit_max 2 " << m_p_axis_config[phy_axis].soft_limit_max_2;
+    std::cout << "soft_limit_min 2 " << m_p_axis_config[phy_axis].soft_limit_min_2;
+    std::cout << "soft_limit_max 3 " << m_p_axis_config[phy_axis].soft_limit_max_3;
+    std::cout << "soft_limit_min 3 " << m_p_axis_config[phy_axis].soft_limit_min_3;
+    std::cout << "pos " << pos;
+    std::cout << "dir: " << (int)dir << std::endl;
+
     positive[0] = m_p_axis_config[phy_axis].soft_limit_max_1;
     positive[1] = m_p_axis_config[phy_axis].soft_limit_max_2;
     positive[2] = m_p_axis_config[phy_axis].soft_limit_max_3;
@@ -4406,6 +4417,11 @@ bool ChannelEngine::CheckSoftLimit(ManualMoveDir dir, uint8_t phy_axis, double p
     enable[0] = m_p_axis_config[phy_axis].soft_limit_check_1;
     enable[1] = m_p_axis_config[phy_axis].soft_limit_check_2;
     enable[2] = m_p_axis_config[phy_axis].soft_limit_check_3;
+
+    for (int i = 0; i < 3; ++i)
+    {
+        std::cout << " enable[i]: " << enable[i] << std::endl;
+    }
     uint8_t chn_axis = 0, chn = 0;
     chn = this->GetAxisChannel(phy_axis, chn_axis);
     for(int i=0; i<3; i++){
@@ -5737,7 +5753,9 @@ void ChannelEngine::ManualMoveAbs(uint8_t phy_axis, double vel, double pos){
     int64_t cur_pos = this->m_df_phy_axis_pos_feedback[phy_axis]*1e7;  //当前位置
     //设置目标位置
     int64_t tar_pos = pos * 1e7;   //单位转换：mm-->0.1nms
+    std::cout << "pos: " << pos << " tar_pos: " << tar_pos << std::endl;
     ManualMoveDir dir = (tar_pos > cur_pos)?DIR_POSITIVE:DIR_NEGATIVE;  //移动方向
+    std::cout << "dir: " << (int)dir << std::endl;
 
     //检查硬限位
     if(CheckAxisHardLimit(phy_axis, dir)){   //硬限位告警，直接返回
@@ -6208,8 +6226,8 @@ void ChannelEngine::PmcAxisRunOver(MiCmdFrame &cmd){
  */
 bool ChannelEngine::CheckAxisHardLimit(uint8_t phy_axis, int8_t dir){
     printf("cur phy axis: %hhu, dir = %hhu, post_mask = 0x%llx, neg_mask = 0x%llx\n", phy_axis, dir, this->m_hard_limit_postive, m_hard_limit_negative);
-    if(this->m_b_ret_ref || this->m_b_ret_ref_auto)   //回参考点时屏蔽硬限位
-        return false;
+    //if(this->m_b_ret_ref || this->m_b_ret_ref_auto)   //回参考点时屏蔽硬限位  //回参考点时也需要硬限位检查
+    //    return false;
     if(dir == DIR_POSITIVE){
         if(this->m_hard_limit_postive & (0x01<<phy_axis))
             return true;
@@ -7592,7 +7610,7 @@ void ChannelEngine::InitMiParam(){
                 axis_config->ref_encoder != kAxisRefNoDef /*&&
                 axis_config->ref_complete == 1*/){ //写入参考点数据
             this->m_p_mi_comm->SetAxisRef(index, axis_config->ref_encoder);
-            printf("send mi ref encoder : %lld\n", axis_config->ref_encoder);
+            //printf("send mi ref encoder : %lld\n", axis_config->ref_encoder);
         }
 
         //软限位

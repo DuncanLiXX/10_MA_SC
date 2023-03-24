@@ -7294,8 +7294,8 @@ bool ChannelControl::ExecuteCoordMsg(RecordMsg *msg){
 		G92Active = true;
 
 	}
-	// @add zk
 
+	// @add zk
 	if(gcode == G52_CMD){//局部坐标系
 
         // @add  zk

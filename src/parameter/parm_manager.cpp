@@ -2110,7 +2110,6 @@ bool ParmManager::ReadExCoordConfig(){
 					m_sc_ex_coord_config[i][j].offset[k] = m_ini_ex_coord->GetDoubleValueOrDefault(sname, kname, 0.0);
 				}
 			}
-
 		}
 
 		g_ptr_trace->PrintTrace(TRACE_INFO, PARAM_MANAGER, "读取扩展工件坐标系配置文件成功！\n");

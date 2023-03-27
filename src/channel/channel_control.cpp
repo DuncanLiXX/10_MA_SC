@@ -11957,6 +11957,9 @@ void ChannelControl::SetMcCoord(bool flag){
         		// ext offset
         		origin_pos += (int64_t)(m_p_chn_coord_config[0].offset[i] * 1e7);  //基本工件坐标系
 
+				// g92 offset
+				origin_pos += (int64_t)(m_p_chn_g92_offset->offset[i] * 1e7);
+
         		// g54xx offset
         		int coord_index = m_channel_status.gmode[14];
 				if(coord_index <= G59_CMD ){
@@ -11966,9 +11969,6 @@ void ChannelControl::SetMcCoord(bool flag){
 					origin_pos += (int64_t)(m_p_chn_ex_coord_config[coord_index/10-5401].offset[i] * 1e7);    //单位由mm转换为0.1nm
 					printf("===== g5401 offset  axis: %i offset %lld\n", i, (int64_t)(m_p_chn_ex_coord_config[coord_index/10-5401].offset[i] * 1e7));
 				}
-
-				// g92 offset
-				origin_pos += (int64_t)(m_p_chn_g92_offset->offset[i] * 1e7);
         	}
 
         	this->SetMcAxisOrigin(i, origin_pos);

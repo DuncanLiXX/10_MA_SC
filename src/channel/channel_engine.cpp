@@ -1069,7 +1069,7 @@ void ChannelEngine::Initialize(HMICommunication *hmi_comm, MICommunication *mi_c
             || m_p_axis_config[i].axis_type == AXIS_SPINDLE     //主轴不用建立参数点
             || (m_p_axis_config[i].feedback_mode == ABSOLUTE_ENCODER /*&& m_p_axis_config[i].ref_encoder != kAxisRefNoDef*/ && m_p_axis_config[i].ref_complete == 1))    //已经建立参考点的绝对式编码器，不用再次建立参考点
         {
-            //			m_n_mask_ret_ref_over |= (0x01<<i);
+            //m_n_mask_ret_ref_over |= (0x01<<i);
             this->SetRetRefFlag(i, true);
         }
     }
@@ -8291,12 +8291,11 @@ bool ChannelEngine::RefreshMiStatusFun(){
 
     while(!g_sys_state.system_quit){
 
-        if((g_sys_state.module_ready_mask & MI_READY) == 0){  //MI未准备好则等待
+    	if((g_sys_state.module_ready_mask & MI_READY) == 0){  //MI未准备好则等待
             printf("wait MI_READY signal!\n");
             usleep(8000);
             continue;
         }
-
         //读取欠压信号
         if(!m_b_power_off && g_sys_state.system_ready && this->m_p_mc_comm->ReadUnderVoltWarn()){
             printf("OFF\n");

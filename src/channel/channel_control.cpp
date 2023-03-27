@@ -2374,7 +2374,7 @@ void ChannelControl::SendMonitorData(bool bAxis, bool btime){
     for(uint8_t i =0; i < this->m_p_channel_config->chn_axis_count; i++){
         phy_axis = this->m_p_channel_config->chn_axis_phy[i]; // phy_axis = this->m_channel_status.cur_chn_axis_phy[i];
         if(phy_axis > 0){
-            pos[i] = this->m_p_channel_engine->GetPhyAxisMachPosFeedback(phy_axis-1);
+        	pos[i] = this->m_p_channel_engine->GetPhyAxisMachPosFeedback(phy_axis-1);
             speed[i] = this->m_p_channel_engine->GetPhyAxisMachSpeedFeedback(phy_axis-1);
             torque[i] = this->m_p_channel_engine->GetPhyAxisMachTorqueFeedback(phy_axis-1);
             angle[i] = this->m_p_channel_engine->GetSpdAngleFeedback(phy_axis-1);

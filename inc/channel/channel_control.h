@@ -310,6 +310,7 @@ public:
 	uint8_t GetFiveAxisRotMaskNoLimt(){return this->m_mask_5axis_rot_nolimit;}  //返回五轴无线旋转轴的mask
 
 	void SetMcChnFiveAxisParam();			//初始化通道五轴相关参数
+    void SetMcChnFiveAxisV2Param();         //初始化通道新五轴相关参数
 	void UpdateFiveAxisParam(FiveAxisParamType type);   //设置五轴参数
 #endif
 
@@ -648,6 +649,7 @@ private://私有成员变量
 	uint64_t m_mask_5axis_rot_nolimit_phyaxis;  //可以无限旋转的通道轴的物理轴mask,
 	bool m_b_5axis_clear_rot;    //五轴旋转轴清整数圈标志，不需要提前初始化，使用时会提前初始化   true--清位置   false--不清位置
 #endif
+    SCFiveAxisV2Config *m_p_chn_5axisV2_config; // 新五轴配置
 
 #ifdef USES_GRIND_MACHINE
 	GrindConfig *m_p_grind_config;       //磨床参数

@@ -36,6 +36,7 @@ ParmManager::ParmManager(){
 	m_sc_system_config = nullptr;
 	m_sc_channel_config = nullptr;
 	m_sc_axis_config = nullptr;
+    m_sc_5axisV2_config = nullptr;
 	m_sc_tool_config = nullptr;
 	m_sc_tool_pot_config = nullptr;
 	m_sc_coord_config = nullptr;
@@ -51,6 +52,7 @@ ParmManager::ParmManager(){
 	m_ini_system = new IniFile();		//系统配置文件
 	m_ini_chn = new IniFile();			//通道配置文件
 	m_ini_axis = new IniFile();			//轴配置文件
+    m_ini_5axisV2 = new IniFile();      //新五轴配置文件
 	m_ini_tool = new IniFile();			//刀具配置文件  包括刀具偏置和刀位信息
 	m_ini_coord = new IniFile();		//工件坐标系配置文件
 	m_ini_ex_coord = new IniFile();		//扩展工件坐标系配置文件
@@ -231,6 +233,11 @@ ParmManager::~ParmManager(){
 	}
 #endif
 
+    if(m_ini_5axisV2 != nullptr){
+        delete m_ini_5axisV2;
+        m_ini_5axisV2 = nullptr;
+    }
+
 #ifdef USES_GRIND_MACHINE
 	//释放磨削配置
 	if(m_grind_config != nullptr){
@@ -306,6 +313,9 @@ void ParmManager::InitParm(){
 
     //初始化手轮通道映射
     this->ReadParm(HANDWHEEL_MAP);
+
+    //初始化新五轴参数配置
+    this->ReadParm(FIVEAXIS_V2_CONFIG);
 }
 
 
@@ -360,6 +370,9 @@ bool ParmManager::ReadParm(ParmType type){
 #endif
     case HANDWHEEL_MAP:
         res = this->ReadHandWheelParam();
+        break;
+    case FIVEAXIS_V2_CONFIG:
+        res = this->Read5AxisV2Config();
         break;
 	default:
 		res = false;
@@ -1784,6 +1797,117 @@ bool ParmManager::ReadAxisConfig(){
 	}
 
 	return true;
+}
+
+
+bool ParmManager::Read5AxisV2Config(){
+    int err_code = ERR_NONE;
+    char sname[20];
+
+    int i = 0;
+    IniSection *ns = nullptr;
+
+    if(m_sc_5axisV2_config == nullptr){
+        m_sc_5axisV2_config = new SCFiveAxisV2Config[m_sc_system_config->max_chn_count];
+    }
+
+    if(m_sc_5axisV2_config == nullptr || m_ini_5axisV2 == nullptr){
+        err_code = ERR_SC_INIT;
+        goto END;
+    }
+
+    if(m_ini_5axisV2->Load(FIVEAXIS_V2_CONFIG_FILE) == 0){//读取配置成功
+        for(i = 0; i < m_sc_system_config->max_chn_count; i++){
+            memset(sname, 0x00, sizeof(sname));
+            sprintf(sname, "channel_%d", i);
+            m_sc_5axisV2_config[i].machine_type = m_ini_5axisV2->GetIntValueOrDefault(sname, "machine_type", 0);
+            m_sc_5axisV2_config[i].pivot_master_axis = m_ini_5axisV2->GetIntValueOrDefault(sname, "pivot_master_axis", 2);
+            m_sc_5axisV2_config[i].pivot_slave_axis = m_ini_5axisV2->GetIntValueOrDefault(sname, "pivot_slave_axis", 0);
+            m_sc_5axisV2_config[i].table_x_position = m_ini_5axisV2->GetDoubleValueOrDefault(sname, "table_x_position", 0);
+            m_sc_5axisV2_config[i].table_y_position = m_ini_5axisV2->GetDoubleValueOrDefault(sname, "table_y_position", 0);
+            m_sc_5axisV2_config[i].table_z_position = m_ini_5axisV2->GetDoubleValueOrDefault(sname, "table_z_position", 0);
+            m_sc_5axisV2_config[i].table_x_offset = m_ini_5axisV2->GetDoubleValueOrDefault(sname, "table_x_offset", 0);
+            m_sc_5axisV2_config[i].table_y_offset = m_ini_5axisV2->GetDoubleValueOrDefault(sname, "table_y_offset", 0);
+            m_sc_5axisV2_config[i].table_z_offset = m_ini_5axisV2->GetDoubleValueOrDefault(sname, "table_z_offset", 0);
+            m_sc_5axisV2_config[i].tool_dir = m_ini_5axisV2->GetIntValueOrDefault(sname, "tool_dir", 2);
+            m_sc_5axisV2_config[i].tool_holder_offset_x = m_ini_5axisV2->GetDoubleValueOrDefault(sname, "tool_holder_offset_x", 0);
+            m_sc_5axisV2_config[i].tool_holder_offset_y = m_ini_5axisV2->GetDoubleValueOrDefault(sname, "tool_holder_offset_y", 0);
+            m_sc_5axisV2_config[i].tool_holder_offset_z = m_ini_5axisV2->GetDoubleValueOrDefault(sname, "tool_holder_offset_z", 0);
+            m_sc_5axisV2_config[i].table_master_dir = m_ini_5axisV2->GetIntValueOrDefault(sname, "table_master_dir", 0);
+            m_sc_5axisV2_config[i].table_slave_dir = m_ini_5axisV2->GetIntValueOrDefault(sname, "table_slave_dir", 0);
+            m_sc_5axisV2_config[i].master_ref_angle_crc = m_ini_5axisV2->GetDoubleValueOrDefault(sname, "master_ref_angle_crc", 0);
+            m_sc_5axisV2_config[i].slave_ref_angle_crc = m_ini_5axisV2->GetDoubleValueOrDefault(sname, "slave_ref_angle_crc", 0);
+            m_sc_5axisV2_config[i].tool_holder_length = m_ini_5axisV2->GetDoubleValueOrDefault(sname, "tool_holder_length", 0);
+        }
+        g_ptr_trace->PrintTrace(TRACE_INFO, PARAM_MANAGER, "读取新五轴配置文件成功！\n");
+    }else{
+        ScPrintf("Load(FIVEAXIS_V2_CONFIG_FILE) fail");
+
+        if(m_ini_5axisV2->CreateFile(FIVEAXIS_V2_CONFIG_FILE)){
+            g_ptr_trace->PrintTrace(TRACE_ERROR, PARAM_MANAGER, "创建默认新五轴配置文件失败！\n");
+            err_code = ERR_SC_INIT;
+            goto END;
+        }
+
+        for(i = 0; i < m_sc_system_config->max_chn_count; i++){
+            m_sc_5axisV2_config[i].machine_type = 0;
+            m_sc_5axisV2_config[i].pivot_master_axis = 2;
+            m_sc_5axisV2_config[i].pivot_slave_axis = 0;
+            m_sc_5axisV2_config[i].table_x_position = 0.0;
+            m_sc_5axisV2_config[i].table_y_position = 0.0;
+            m_sc_5axisV2_config[i].table_z_position = 0.0;
+            m_sc_5axisV2_config[i].table_x_offset = 0.0;
+            m_sc_5axisV2_config[i].table_y_offset = 0.0;
+            m_sc_5axisV2_config[i].table_z_offset = 0.0;
+            m_sc_5axisV2_config[i].tool_dir = 2;
+            m_sc_5axisV2_config[i].tool_holder_offset_x = 0.0;
+            m_sc_5axisV2_config[i].tool_holder_offset_y = 0.0;
+            m_sc_5axisV2_config[i].tool_holder_offset_z = 0.0;
+            m_sc_5axisV2_config[i].table_master_dir = 0;
+            m_sc_5axisV2_config[i].table_slave_dir = 0;
+            m_sc_5axisV2_config[i].master_ref_angle_crc = 0.0;
+            m_sc_5axisV2_config[i].slave_ref_angle_crc = 0.0;
+            m_sc_5axisV2_config[i].tool_holder_length = 0.0;
+
+            //生成默认ini配置
+            memset(sname, 0x00, sizeof(sname));
+            sprintf(sname, "channel_%d", i);
+            ns = m_ini_5axisV2->AddSecttion(sname);
+            if(ns == nullptr){
+                err_code = ERR_SC_INIT;
+                goto END;
+            }
+
+            m_ini_5axisV2->AddKeyValuePair(string("machine_type"),string("0"), ns);
+            m_ini_5axisV2->AddKeyValuePair(string("pivot_master_axis"),string("2"), ns);
+            m_ini_5axisV2->AddKeyValuePair(string("pivot_slave_axis"),string("0"), ns);
+            m_ini_5axisV2->AddKeyValuePair(string("table_x_position"),string("0.0"), ns);
+            m_ini_5axisV2->AddKeyValuePair(string("table_y_position"),string("0.0"), ns);
+            m_ini_5axisV2->AddKeyValuePair(string("table_z_position"),string("0.0"), ns);
+            m_ini_5axisV2->AddKeyValuePair(string("table_x_offset"),string("0.0"), ns);
+            m_ini_5axisV2->AddKeyValuePair(string("table_y_offset"),string("0.0"), ns);
+            m_ini_5axisV2->AddKeyValuePair(string("table_z_offset"),string("0.0"), ns);
+            m_ini_5axisV2->AddKeyValuePair(string("tool_dir"),string("2"), ns);
+            m_ini_5axisV2->AddKeyValuePair(string("tool_holder_offset_x"),string("0.0"), ns);
+            m_ini_5axisV2->AddKeyValuePair(string("tool_holder_offset_y"),string("0.0"), ns);
+            m_ini_5axisV2->AddKeyValuePair(string("tool_holder_offset_z"),string("0.0"), ns);
+            m_ini_5axisV2->AddKeyValuePair(string("table_master_dir"),string("0"), ns);
+            m_ini_5axisV2->AddKeyValuePair(string("table_slave_dir"),string("0"), ns);
+            m_ini_5axisV2->AddKeyValuePair(string("master_ref_angle_crc"),string("0.0"), ns);
+            m_ini_5axisV2->AddKeyValuePair(string("slave_ref_angle_crc"),string("0.0"), ns);
+            m_ini_5axisV2->AddKeyValuePair(string("tool_holder_length"),string("0.0"), ns);
+
+        }
+        m_ini_5axisV2->Save();
+        g_ptr_trace->PrintTrace(TRACE_INFO, PARAM_MANAGER, "创建默认新五轴配置文件成功！\n");
+    }
+
+    END:
+    if(err_code != ERR_NONE){
+        CreateError(err_code, ERROR_LEVEL, CLEAR_BY_RESET_POWER);
+        return false;
+    }
+    return true;
 }
 
 /**
@@ -3779,7 +3903,7 @@ bool ParmManager::UpdateParameter(ParamUpdate *data, uint8_t active_type){
 	bool res = true;
 	if(data == nullptr)
 		return true;
-	printf("update paramter, chn = %hhu, para_type:%hhu, type:%hhu, id:%d\n", data->chn_index, data->param_type, active_type, data->param_no);
+    //ScPrintf("update paramter, chn = %hhu, para_type:%hhu, type:%hhu, id:%d\n", data->chn_index, data->param_type, active_type, data->param_no);
 
 	ChannelEngine *chn_engine = ChannelEngine::GetInstance();
 	uint8_t group_index = 0;
@@ -3806,6 +3930,9 @@ bool ParmManager::UpdateParameter(ParamUpdate *data, uint8_t active_type){
 		res = this->UpdateFiveAxisParam(data->chn_index, data->param_no, data->value);
 		break;
 #endif
+    case FIVEAXIS_V2_CONFIG:
+        res = this->Update5AxisV2Param(data->chn_index, data->param_no, data->value);
+        break;
 
 #ifdef USES_GRIND_MACHINE
 	case GRIND_CONFIG:
@@ -4404,6 +4531,102 @@ bool ParmManager::UpdateChnParam(uint8_t chn_index, uint32_t param_no, ParamValu
 	}
 	m_ini_chn->Save();
 	return res;
+}
+
+bool ParmManager::Update5AxisV2Param(uint8_t chn_index, uint32_t param_no, ParamValue &value){
+    bool res = true;
+    if(chn_index >= this->m_sc_system_config->max_chn_count){  //支持参数修改，一次重启
+        g_ptr_trace->PrintLog(LOG_ALARM, "新五轴参数更新，通道号非法：%hhu", chn_index);
+        return false;
+    }
+    char sname[32];	//section name
+    char kname[64];	//key name
+
+    memset(sname, 0x00, sizeof(sname));
+    memset(kname, 0x00, sizeof(kname));
+
+    sprintf(sname, "channel_%hhu", chn_index);
+    switch(param_no){
+    case 3100:	//
+        sprintf(kname, "machine_type");
+        m_ini_5axisV2->SetIntValue(sname, kname, value.value_uint8);
+        break;
+    case 3101:	//
+        sprintf(kname, "pivot_master_axis");
+        m_ini_5axisV2->SetIntValue(sname, kname, value.value_uint8);
+        break;
+    case 3102:	//
+        sprintf(kname, "pivot_slave_axis");
+        m_ini_5axisV2->SetIntValue(sname, kname, value.value_uint8);
+        break;
+    case 3103:	//
+        sprintf(kname, "table_x_position");
+        m_ini_5axisV2->SetDoubleValue(sname, kname, value.value_double);
+        break;
+    case 3104:	//
+        sprintf(kname, "table_y_position");
+        m_ini_5axisV2->SetDoubleValue(sname, kname, value.value_double);
+        break;
+    case 3105:	//
+        sprintf(kname, "table_z_position");
+        m_ini_5axisV2->SetDoubleValue(sname, kname, value.value_double);
+        break;
+    case 3106:	//
+        sprintf(kname, "table_x_offset");
+        m_ini_5axisV2->SetDoubleValue(sname, kname, value.value_double);
+        break;
+    case 3107:	//
+        sprintf(kname, "table_y_offset");
+        m_ini_5axisV2->SetDoubleValue(sname, kname, value.value_double);
+        break;
+    case 3108:	//
+        sprintf(kname, "table_z_offset");
+        m_ini_5axisV2->SetDoubleValue(sname, kname, value.value_double);
+        break;
+    case 3109:	//
+        sprintf(kname, "tool_dir");
+        m_ini_5axisV2->SetIntValue(sname, kname, value.value_uint8);
+        break;
+    case 3110:	//
+        sprintf(kname, "tool_holder_offset_x");
+        m_ini_5axisV2->SetDoubleValue(sname, kname, value.value_double);
+        break;
+    case 3111:	//
+        sprintf(kname, "tool_holder_offset_y");
+        m_ini_5axisV2->SetDoubleValue(sname, kname, value.value_double);
+        break;
+    case 3112:	//
+        sprintf(kname, "tool_holder_offset_z");
+        m_ini_5axisV2->SetDoubleValue(sname, kname, value.value_double);
+        break;
+    case 3113:	//
+        sprintf(kname, "table_master_dir");
+        m_ini_5axisV2->SetIntValue(sname, kname, value.value_uint8);
+        break;
+    case 3114:	//
+        sprintf(kname, "table_slave_dir");
+        m_ini_5axisV2->SetIntValue(sname, kname, value.value_uint8);
+        break;
+    case 3115:	//
+        sprintf(kname, "master_ref_angle_crc");
+        m_ini_5axisV2->SetDoubleValue(sname, kname, value.value_double);
+        break;
+    case 3116:	//
+        sprintf(kname, "slave_ref_angle_crc");
+        m_ini_5axisV2->SetDoubleValue(sname, kname, value.value_double);
+        break;
+    case 3117:	//
+        sprintf(kname, "tool_holder_length");
+        m_ini_5axisV2->SetDoubleValue(sname, kname, value.value_double);
+        break;
+    default:	//
+        g_ptr_trace->PrintLog(LOG_ALARM, "新五轴参数更新，参数号非法：%d", param_no);
+        res = false;
+        return res;
+    }
+
+    m_ini_5axisV2->Save();
+    return res;
 }
 
 /**
@@ -5250,6 +5473,9 @@ void ParmManager::ActiveParam(ParamUpdate *data){
 		this->ActiveGrindParam(data->param_no, data->value);
 		break;
 #endif
+    case FIVEAXIS_V2_CONFIG:
+        this->Active5AxisV2Param(data->chn_index, data->param_no, data->value);
+        break;
 	default:
 		break;
 	}
@@ -5956,6 +6182,89 @@ void ParmManager::ActiveChnParam(uint8_t chn_index, uint32_t param_no, ParamValu
 		g_ptr_trace->PrintLog(LOG_ALARM, "通道参数激活，参数号非法：%d", param_no);
 		break;
 	}
+}
+
+void ParmManager::Active5AxisV2Param(uint8_t chn_index, uint32_t param_no, ParamValue &value){
+    ChannelControl *p_chn = ChannelEngine::GetInstance()->GetChnControl(chn_index);
+    if(p_chn == nullptr)
+        return;
+    switch(param_no){
+    case 3100:
+        this->m_sc_5axisV2_config[chn_index].machine_type = value.value_uint8;
+        p_chn->UpdateFiveAxisParam(V2_MACHINE_TYPE);
+        break;
+    case 3101:
+        this->m_sc_5axisV2_config[chn_index].pivot_master_axis = value.value_uint8;
+        p_chn->UpdateFiveAxisParam(V2_PIVOT_MASTER_AXIS);
+        break;
+    case 3102:
+        this->m_sc_5axisV2_config[chn_index].pivot_slave_axis = value.value_uint8;
+        p_chn->UpdateFiveAxisParam(V2_PIVOT_SLAVE_AXIS);
+        break;
+    case 3103:
+        this->m_sc_5axisV2_config[chn_index].table_x_position = value.value_double;
+        p_chn->UpdateFiveAxisParam(V2_TABLE_X_POS);
+        break;
+    case 3104:
+        this->m_sc_5axisV2_config[chn_index].table_y_position = value.value_double;
+        p_chn->UpdateFiveAxisParam(V2_TABLE_Y_POS);
+        break;
+    case 3105:
+        this->m_sc_5axisV2_config[chn_index].table_z_position = value.value_double;
+        p_chn->UpdateFiveAxisParam(V2_TABLE_Z_POS);
+        break;
+    case 3106:
+        this->m_sc_5axisV2_config[chn_index].table_x_offset = value.value_double;
+        p_chn->UpdateFiveAxisParam(V2_TABLE_X_OFFSET);
+        break;
+    case 3107:
+        this->m_sc_5axisV2_config[chn_index].table_y_offset = value.value_double;
+        p_chn->UpdateFiveAxisParam(V2_TABLE_Y_OFFSET);
+        break;
+    case 3108:
+        this->m_sc_5axisV2_config[chn_index].table_z_offset = value.value_double;
+        p_chn->UpdateFiveAxisParam(V2_Table_Z_OFFSET);
+        break;
+    case 3109:
+        this->m_sc_5axisV2_config[chn_index].tool_dir = value.value_uint8;
+        p_chn->UpdateFiveAxisParam(V2_TOOR_DIR);
+        break;
+    case 3110:
+        this->m_sc_5axisV2_config[chn_index].tool_holder_offset_x = value.value_double;
+        p_chn->UpdateFiveAxisParam(V2_TOOL_HOLDER_OFFSET_X);
+        break;
+    case 3111:
+        this->m_sc_5axisV2_config[chn_index].tool_holder_offset_y = value.value_double;
+        p_chn->UpdateFiveAxisParam(V2_TOOL_HOLDER_OFFSET_Y);
+        break;
+    case 3112:
+        this->m_sc_5axisV2_config[chn_index].tool_holder_offset_z = value.value_double;
+        p_chn->UpdateFiveAxisParam(V2_TOOL_HOLDER_OFFSET_Z);
+        break;
+    case 3113:
+        this->m_sc_5axisV2_config[chn_index].table_master_dir = value.value_uint8;
+        p_chn->UpdateFiveAxisParam(V2_TABLE_MASTER_DIR);
+        break;
+    case 3114:
+        this->m_sc_5axisV2_config[chn_index].table_slave_dir = value.value_uint8;
+        p_chn->UpdateFiveAxisParam(V2_TABLE_SLAVE_DIR);
+        break;
+    case 3115:
+        this->m_sc_5axisV2_config[chn_index].master_ref_angle_crc = value.value_double;
+        p_chn->UpdateFiveAxisParam(V2_MASTER_REF_ANGLE_CRC);
+        break;
+    case 3116:
+        this->m_sc_5axisV2_config[chn_index].slave_ref_angle_crc = value.value_double;
+        p_chn->UpdateFiveAxisParam(V2_SLAVE_REF_ANGLE_CRC);
+        break;
+    case 3117:
+        this->m_sc_5axisV2_config[chn_index].tool_holder_length = value.value_double;
+        p_chn->UpdateFiveAxisParam(V2_TOOL_HOLDER_LENGTH);
+        break;
+    default:
+        g_ptr_trace->PrintLog(LOG_ALARM, "新五轴参数激活，参数号非法：%d", param_no);
+        break;
+    }
 }
 
 /**

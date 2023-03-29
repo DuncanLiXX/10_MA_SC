@@ -33,6 +33,7 @@ enum ParmType{
 	PITCH_COMP_DATA = 13,    //螺补数据
 	IO_REMAP_DATA = 14,      //IO重映射数据
     HANDWHEEL_MAP = 15,      //手轮通道映射
+    FIVEAXIS_V2_CONFIG = 16, // 新五轴配置
 
 
 	CHN_STATE_SCENE = 100		//通道当前状态
@@ -366,6 +367,31 @@ struct SCToolPotConfig{
     uint8_t tool_life_type[kMaxToolCount];                          //刀具计寿类型，0--关闭,1--换刀次数，2--切削时间，3--切削距离
 };
 
+
+/**
+ * @brief 新五轴配置参数
+ */
+struct SCFiveAxisV2Config
+{
+    uint8_t machine_type;               //五轴结构类型 0:非五轴  1:双摆头  2:摇篮  3:混合
+    uint8_t pivot_master_axis;          //第一旋转轴 0:X  1:Y  2:Z
+    uint8_t pivot_slave_axis;           //第二旋转轴 0:X  1:Y  2:Z
+    double table_x_position;            //旋转台x坐标 单位:mm
+    double table_y_position;            //旋转台y坐标 单位:mm
+    double table_z_position;            //旋转台z坐标 单位:mm
+    double table_x_offset;              //第二旋转轴x偏移 单位:mm
+    double table_y_offset;              //第二旋转轴y偏移 单位:mm
+    double table_z_offset;              //第二旋转轴z偏移 单位:mm
+    uint8_t tool_dir;                   //刀具轴向 0:X  1:Y  2:Z
+    double tool_holder_offset_x;        //刀柄x偏移 单位:mm
+    double tool_holder_offset_y;        //刀柄y偏移 单位:mm
+    double tool_holder_offset_z;        //刀柄z偏移 单位:mm
+    uint8_t table_master_dir;           //第一旋转轴方向  0:正  1:负
+    uint8_t table_slave_dir;            //第二旋转轴  0:正  1:负
+    double master_ref_angle_crc;        //第一旋转轴初始角度 单位:度
+    double slave_ref_angle_crc;         //第二旋转轴初始角度 单位:度
+    double tool_holder_length;          //刀柄长度 单位:mm
+};
 
 /**
  * @brief 工件坐标系配置

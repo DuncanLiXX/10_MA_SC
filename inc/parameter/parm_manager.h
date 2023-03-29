@@ -60,6 +60,7 @@ public:
 #ifdef USES_FIVE_AXIS_FUNC
 	FiveAxisConfig *GetFiveAxisConfig(int chn_index){return &m_five_axis_config[chn_index];}    //返回指定通道的五轴配置
 #endif
+    SCFiveAxisV2Config *GetFiveAxisV2Config(int chn_index=0){return &m_sc_5axisV2_config[chn_index];} //返回指定通道的新五轴配置
 
 #ifdef USES_GRIND_MACHINE
 	GrindConfig *GetGrindConfig(){return m_grind_config;}
@@ -85,7 +86,7 @@ public:
     bool ActiveCoordParam(uint8_t chn_index);   //激活待生效的工件坐标系更改
 	bool ActiveToolOffsetParam(uint8_t chn_index);   //激活待生效的刀具偏置
 
-	bool UpdateAxisParam(uint8_t axis_index, uint32_t param_no, ParamValue &value);	//更新轴参数
+    bool UpdateAxisParam(uint8_t axis_index, uint32_t param_no, ParamValue &value);	//更新轴参数
 
 	bool UpdateParameter(ParamUpdate *data, uint8_t active_type);			//更新参数
 
@@ -131,6 +132,7 @@ private:
 	bool ReadSysConfig();    	//读取系统配置
 	bool ReadChnConfig();		//读取通道配置
 	bool ReadAxisConfig();	//读取轴配置
+    bool Read5AxisV2Config();  //读取新五轴配置
 	bool ReadToolConfig();	//读取刀具配置
 	bool ReadCoordConfig();	//读取工件坐标系配置
 	bool ReadExCoordConfig();	//读取扩展工件坐标系配置
@@ -141,6 +143,7 @@ private:
 	bool ReadChnProcParam();    //读取工艺相关通道参数
 	bool ReadAxisProcParam();   //读取工艺相关轴参数
     bool ReadHandWheelParam();  //读取手轮通道映射参数
+
 
 #ifdef USES_FIVE_AXIS_FUNC
 	bool ReadFiveAxisConfig();	//读取五轴配置
@@ -164,6 +167,8 @@ private:
 	bool UpdateSystemParam(uint32_t param_no, ParamValue &value);	//更新系统参数
 	bool UpdateChnParam(uint8_t chn_index, uint32_t param_no, ParamValue &value);		//更新通道参数
 
+    bool Update5AxisV2Param(uint8_t chn_index, uint32_t param_no, ParamValue &value);     //更新新五轴参数
+
 	bool UpdateChnProcParam(uint8_t chn_index, uint8_t group_index, uint32_t param_no, ParamValue &value);   //更新工艺相关通道参数
 	bool UpdateAxisProcParam(uint8_t axis_index, uint8_t group_index, uint32_t param_no, ParamValue &value);	//更新工艺相关轴参数
 
@@ -171,13 +176,14 @@ private:
 	void ActiveParam(ParamUpdate *data); //修改当前参数
 	void ActiveSystemParam(uint32_t param_no, ParamValue &value);	//激活系统参数
 	void ActiveChnParam(uint8_t chn_index, uint32_t param_no, ParamValue &value, uint8_t proc_index = 0xff);		//激活通道参数
+    void Active5AxisV2Param(uint8_t chn_index, uint32_t param_no, ParamValue &value); //激活新五轴参数
     void ActiveAxisParam(uint8_t axis_index, uint32_t param_no, ParamValue &value, uint8_t proc_index = 0xff);	//激活轴参数
+
 
 	void ActiveProcParam(ProcParamUpdate *data, uint8_t active_type);	//激活工艺相关参数参数
 	void ActiveProcParam(ProcParamUpdate *data); //修改当前工艺相关参数参数
 	void ActiveChnProcParam(uint8_t chn_index, uint32_t param_no, ParamValue &value, uint8_t proc_index);    //单独更新通道工艺参数
 	void ActiveAxisProcParam(uint8_t chn_index, uint32_t param_no, ParamValue &value, uint8_t proc_index);   //单独更新通道轴参数
-
 
 
 
@@ -206,10 +212,12 @@ private:
 	IniFile *m_ini_five_axis;    //五轴参数配置文件
 	FiveAxisConfig *m_five_axis_config;    //五轴配置
 #endif
+    SCFiveAxisV2Config *m_sc_5axisV2_config; //新五轴配置
 
 	IniFile *m_ini_system;			//系统配置文件
 	IniFile *m_ini_chn;				//通道配置文件
 	IniFile *m_ini_axis;			//轴配置文件
+    IniFile *m_ini_5axisV2;         //新五轴配置文件
 	IniFile *m_ini_tool;			//刀具配置文件  包括刀具偏置和刀位信息
 	IniFile *m_ini_coord;			//工件坐标系配置文件
 	IniFile *m_ini_ex_coord;		//扩展工件坐标系配置文件

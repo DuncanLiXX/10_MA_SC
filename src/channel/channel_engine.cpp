@@ -998,6 +998,7 @@ void ChannelEngine::Initialize(HMICommunication *hmi_comm, MICommunication *mi_c
 #ifdef USES_FIVE_AXIS_FUNC
     this->m_p_chn_5axis_config = parm->GetFiveAxisConfig(0);
 #endif
+    this->m_p_chn_5axisV2_config = parm->GetFiveAxisV2Config();
 
     m_n_phy_axis_svo_on = 0;
 
@@ -1592,6 +1593,7 @@ void ChannelEngine::InitMcParam(){
 #ifdef USES_FIVE_AXIS_FUNC
         this->m_p_channel_control[i].SetMcChnFiveAxisParam();  //初始化五轴参数
 #endif
+        this->m_p_channel_control[i].SetMcChnFiveAxisV2Param(); // 初始化新五轴参数
 #ifdef USES_WOOD_MACHINE
         this->m_p_channel_control[i].SetMcFlipCompParam();  //发送挑角补偿
         this->m_p_channel_control[i].SetMcDebugParam(0);
@@ -3717,6 +3719,7 @@ void ChannelEngine::ProcessHmiSetParam(HMICmdFrame &cmd){
     switch(cmd.cmd_extension){
     case SYS_CONFIG:
     case CHN_CONFIG:
+    case FIVEAXIS_V2_CONFIG:
         memcpy(&data.param_no, cmd.data, 4);
         memcpy(&active_type, &cmd.data[4], 1);
         memcpy(&data.value_type, &cmd.data[5], 1);
@@ -3815,6 +3818,7 @@ void ChannelEngine::ProcessHmiSetParam(HMICmdFrame &cmd){
             cmd.data[0] = FAILED;
         break;
 #endif
+
     default:
         break;
     }
@@ -3945,6 +3949,14 @@ void ChannelEngine::ProcessHmiGetParam(HMICmdFrame &cmd){
         }
         break;
 #endif
+    case FIVEAXIS_V2_CONFIG:
+        if(cmd.channel_index >= m_p_general_config->max_chn_count)//通道索引超范围, 支持参数修改后一次重启
+            cmd.data_len = 0;
+        else{
+            cmd.data_len = sizeof(HmiFiveAxisV2Config);
+            memcpy(cmd.data, &m_p_chn_5axisV2_config[cmd.channel_index], cmd.data_len);
+        }
+        break;
     default:
         cmd.data_len = 0;
         g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "收到HMI参数获取指令，参数类型非法[%d]", cmd.cmd_extension);

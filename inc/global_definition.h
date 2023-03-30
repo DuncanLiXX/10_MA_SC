@@ -101,6 +101,7 @@
 #define SYS_CONFIG_FILE "/cnc/config/sys_config.ini"   //系统配置文件
 #define CHN_CONFIG_FILE "/cnc/config/chn_config.ini"   //通道配置文件
 #define AXIS_CONFIG_FILE "/cnc/config/axis_config.ini"  //轴配置文件
+#define FIVEAXIS_V2_CONFIG_FILE "/cnc/config/fiveaxis_v2_config.ini" //新五轴配置
 #define PITCH_COMP_FILE "/cnc/config/pc_data.ini"       //螺补数据文件
 #define TOOL_CONFIG_FILE "/cnc/config/tool_config.ini"  //刀具配置文件
 #define WORK_COORD_FILE  "/cnc/config/work_coord.ini"   //工件坐标系配置文件
@@ -534,7 +535,26 @@ enum FiveAxisParamType{
 	SPEED_PLAN_MODE = 30,   //五轴速度规划方式
 	INTP_ANGLE_STEP = 31,   //五轴联动粗插补角度步距
     INTP_LEN_STEP = 32,      //五轴联动粗插补最小长度
-	PROGRAM_COORD = 33      //五轴编程坐标系方式
+    PROGRAM_COORD = 33,      //五轴编程坐标系方式
+
+    V2_MACHINE_TYPE = 100,          //五轴类型(新)  0:非五轴  1:双摆头  2:摇篮  3:混合
+    V2_PIVOT_MASTER_AXIS = 101,     //第一旋转轴 0:X  1:Y  2:Z
+    V2_PIVOT_SLAVE_AXIS = 102,      //第二旋转轴 0:X  1:Y  2:Z
+    V2_TABLE_X_POS = 103,           //旋转台X坐标
+    V2_TABLE_Y_POS = 104,           //旋转台Y坐标
+    V2_TABLE_Z_POS = 105,           //旋转台Z坐标
+    V2_TABLE_X_OFFSET = 106,        //第二旋转轴X偏移
+    V2_TABLE_Y_OFFSET = 107,        //第二旋转轴Y偏移
+    V2_Table_Z_OFFSET = 108,        //第二旋转轴Z偏移
+    V2_TOOR_DIR = 109,              //刀具轴向 0:X  1:Y  2:Z
+    V2_TOOL_HOLDER_OFFSET_X = 110,  //刀柄x偏移
+    V2_TOOL_HOLDER_OFFSET_Y = 111,  //刀柄y偏移
+    V2_TOOL_HOLDER_OFFSET_Z = 112,  //刀柄z偏移
+    V2_TABLE_MASTER_DIR = 113,      //第一旋转轴方向 0:正  1:负
+    V2_TABLE_SLAVE_DIR = 114,       //第二旋转轴方向 0:正  1:负
+    V2_MASTER_REF_ANGLE_CRC = 115,  //第一旋转轴初始角度
+    V2_SLAVE_REF_ANGLE_CRC = 116,   //第二旋转轴初始角度
+    V2_TOOL_HOLDER_LENGTH = 117,    //刀柄长度
 };
 #endif
 

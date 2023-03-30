@@ -1063,6 +1063,7 @@ void ChannelEngine::Initialize(HMICommunication *hmi_comm, MICommunication *mi_c
 #ifdef USES_FIVE_AXIS_FUNC
     this->m_p_chn_5axis_config = parm->GetFiveAxisConfig(0);
 #endif
+    this->m_p_chn_5axisV2_config = parm->GetFiveAxisV2Config();
 
     m_n_phy_axis_svo_on = 0;
 
@@ -1134,7 +1135,7 @@ void ChannelEngine::Initialize(HMICommunication *hmi_comm, MICommunication *mi_c
             || m_p_axis_config[i].axis_type == AXIS_SPINDLE     //主轴不用建立参数点
             || (m_p_axis_config[i].feedback_mode == ABSOLUTE_ENCODER /*&& m_p_axis_config[i].ref_encoder != kAxisRefNoDef*/ && m_p_axis_config[i].ref_complete == 1))    //已经建立参考点的绝对式编码器，不用再次建立参考点
         {
-            //			m_n_mask_ret_ref_over |= (0x01<<i);
+            //m_n_mask_ret_ref_over |= (0x01<<i);
             this->SetRetRefFlag(i, true);
         }
     }
@@ -1656,6 +1657,7 @@ void ChannelEngine::InitMcParam(){
 #ifdef USES_FIVE_AXIS_FUNC
         this->m_p_channel_control[i].SetMcChnFiveAxisParam();  //初始化五轴参数
 #endif
+        this->m_p_channel_control[i].SetMcChnFiveAxisV2Param(); // 初始化新五轴参数
 #ifdef USES_WOOD_MACHINE
         this->m_p_channel_control[i].SetMcFlipCompParam();  //发送挑角补偿
         this->m_p_channel_control[i].SetMcDebugParam(0);
@@ -3783,6 +3785,7 @@ void ChannelEngine::ProcessHmiSetParam(HMICmdFrame &cmd){
     switch(cmd.cmd_extension){
     case SYS_CONFIG:
     case CHN_CONFIG:
+    case FIVEAXIS_V2_CONFIG:
         memcpy(&data.param_no, cmd.data, 4);
         memcpy(&active_type, &cmd.data[4], 1);
         memcpy(&data.value_type, &cmd.data[5], 1);
@@ -3881,6 +3884,7 @@ void ChannelEngine::ProcessHmiSetParam(HMICmdFrame &cmd){
             cmd.data[0] = FAILED;
         break;
 #endif
+
     default:
         break;
     }
@@ -4011,6 +4015,14 @@ void ChannelEngine::ProcessHmiGetParam(HMICmdFrame &cmd){
         }
         break;
 #endif
+    case FIVEAXIS_V2_CONFIG:
+        if(cmd.channel_index >= m_p_general_config->max_chn_count)//通道索引超范围, 支持参数修改后一次重启
+            cmd.data_len = 0;
+        else{
+            cmd.data_len = sizeof(HmiFiveAxisV2Config);
+            memcpy(cmd.data, &m_p_chn_5axisV2_config[cmd.channel_index], cmd.data_len);
+        }
+        break;
     default:
         cmd.data_len = 0;
         g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "收到HMI参数获取指令，参数类型非法[%d]", cmd.cmd_extension);
@@ -8360,12 +8372,11 @@ bool ChannelEngine::RefreshMiStatusFun(){
 
     while(!g_sys_state.system_quit){
 
-        if((g_sys_state.module_ready_mask & MI_READY) == 0){  //MI未准备好则等待
+    	if((g_sys_state.module_ready_mask & MI_READY) == 0){  //MI未准备好则等待
             printf("wait MI_READY signal!\n");
             usleep(8000);
             continue;
         }
-
         //读取欠压信号
         if(!m_b_power_off && g_sys_state.system_ready && this->m_p_mc_comm->ReadUnderVoltWarn()){
             printf("OFF\n");
@@ -8713,8 +8724,6 @@ void ChannelEngine::ProcessPmcSignal(){
             m_cur_svf = g_reg->SVF;
         }
 
-
-
         // 处理G信号 切换当前通道
         if(g_reg_last->CHNC != g_reg->CHNC)
         {
@@ -8732,7 +8741,8 @@ void ChannelEngine::ProcessPmcSignal(){
 
         // @test zk
         if(g_reg->RRW == 1 && g_reg_last->RRW == 0){
-            this->SystemReset();
+            printf("111111111111111\n");
+        	this->SystemReset();
         }
         // @test
 
@@ -8753,7 +8763,7 @@ void ChannelEngine::ProcessPmcSignal(){
 
         // 攻丝状态()不让复位
         if(g_reg->ERS == 1 && g_reg_last->ERS == 0){
-            this->SystemReset();
+        	this->SystemReset();
         }
 
         // 某个轴机械锁住信号发生了改变

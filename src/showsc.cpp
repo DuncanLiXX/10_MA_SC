@@ -123,6 +123,8 @@ void ShowSc::ProcessPrintThread()
             PrintSyncAxisCtrl();break;
         case TypeMarcoShow:
             PrintMarcoValue();break;
+        case TypeFiveAxisV2Config:
+            PrintFiveAxisV2Config();break;
 
         default:break;
         }
@@ -1028,6 +1030,32 @@ void ShowSc::PrintMarcoValue()
             }
         }
     }
+    SendMsg(s);
+}
+
+void ShowSc::PrintFiveAxisV2Config()
+{
+    if(!fiveaxisV2_config)
+        return;
+    string s = "";
+    AddPair(s,"machine_type",fiveaxisV2_config->machine_type);
+    AddPair(s,"pivot_master_axis",fiveaxisV2_config->pivot_master_axis);
+    AddPair(s,"pivot_slave_axis",fiveaxisV2_config->pivot_slave_axis);
+    AddPair(s,"table_x_position",fiveaxisV2_config->table_x_position);
+    AddPair(s,"table_y_position",fiveaxisV2_config->table_y_position);
+    AddPair(s,"table_z_position",fiveaxisV2_config->table_z_position);
+    AddPair(s,"table_x_offset",fiveaxisV2_config->table_x_offset);
+    AddPair(s,"table_y_offset",fiveaxisV2_config->table_y_offset);
+    AddPair(s,"table_z_offset",fiveaxisV2_config->table_z_offset);
+    AddPair(s,"tool_dir",fiveaxisV2_config->tool_dir);
+    AddPair(s,"tool_holder_offset_x",fiveaxisV2_config->tool_holder_offset_x);
+    AddPair(s,"tool_holder_offset_y",fiveaxisV2_config->tool_holder_offset_y);
+    AddPair(s,"tool_holder_offset_z",fiveaxisV2_config->tool_holder_offset_z);
+    AddPair(s,"table_master_dir",fiveaxisV2_config->table_master_dir);
+    AddPair(s,"table_slave_dir",fiveaxisV2_config->table_slave_dir);
+    AddPair(s,"master_ref_angle_crc",fiveaxisV2_config->master_ref_angle_crc);
+    AddPair(s,"slave_ref_angle_crc",fiveaxisV2_config->slave_ref_angle_crc);
+    AddPair(s,"tool_holder_length",fiveaxisV2_config->tool_holder_length);
     SendMsg(s);
 }
 

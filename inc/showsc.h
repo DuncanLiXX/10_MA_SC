@@ -24,6 +24,7 @@ class SyncAxisCtrl;
 struct ChannelStatusCollect;
 struct ChannelRealtimeStatus;
 struct ChannelMcStatus;
+struct SCFiveAxisV2Config;
 
 void ScPrintf(const char * fmt,...);
 
@@ -67,6 +68,7 @@ public:
     void AddComponent(const GRegBits *p){G = p;}
     void AddComponent(PmcAxisCtrl *p){pmc_axis_ctrl = p;}
     void AddComponent(SyncAxisCtrl *p){sync_axis_ctrl = p;}
+    void AddComponent(SCFiveAxisV2Config *p){fiveaxisV2_config = p;}
 
     // 发送信息
     void SendMsg(string &s);
@@ -113,6 +115,7 @@ private:
     void PrintPmcAxisCtrl();    // 打印PMC轴信息
     void PrintSyncAxisCtrl();   // 打印同步轴信息
     void PrintMarcoValue();     // 打印宏变量
+    void PrintFiveAxisV2Config(); // 打印新五轴参数配置
 
 private:
     PrintType print_type{TypePrintOutput};
@@ -137,6 +140,7 @@ private:
     const GRegBits *G{nullptr}; //G寄存器
     PmcAxisCtrl *pmc_axis_ctrl{nullptr};
     SyncAxisCtrl *sync_axis_ctrl{nullptr};
+    SCFiveAxisV2Config *fiveaxisV2_config{nullptr};
 
     bool exit_flag{false};
     int msg_new_count{0};

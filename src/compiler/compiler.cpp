@@ -3971,6 +3971,7 @@ bool Compiler::RunLoopMsg(RecordMsg *msg) {
     uint8_t chn_axis_data = 0;
 
     // @zk 这一步会将当前坐标值保存到对应的局部变量 (指定 X_ Y_ Z_ ...)
+    /*
     for(uint8_t i = 0; i < chn_axis_count; i++){
         chn_axis_data = this->MapAxisNameToParamIdx(m_p_channel_control->GetChnAxisName(i));
 
@@ -3978,6 +3979,7 @@ bool Compiler::RunLoopMsg(RecordMsg *msg) {
             pv->SetVarValue(kLoopParamToLocalVarIndex[chn_axis_data], m_compiler_status.cur_pos.GetAxisValue(i));
         }
     }
+    */
     // @zk 将固定循环指令指定的参数 保存到局部变量 (覆盖 X_ Y_ Z_ ...)
     while(pm != 0){
         if(pm & 0x01){

@@ -278,6 +278,7 @@ bool ChannelControl::Initialize(uint8_t chn_index, ChannelEngine *engine, HMICom
     this->m_p_chn_5axis_config = parm->GetFiveAxisConfig(chn_index);
     this->UpdateFiveAxisRotParam();
 #endif
+    this->m_p_chn_5axisV2_config = parm->GetFiveAxisV2Config(chn_index);
 
     m_n_cur_tcode = -1;
     //	m_n_cur_scode = -1;
@@ -363,6 +364,7 @@ bool ChannelControl::Initialize(uint8_t chn_index, ChannelEngine *engine, HMICom
     showSc.AddComponent(m_p_g_reg);
     showSc.AddComponent(m_p_channel_engine->GetPmcAxisCtrl());
     showSc.AddComponent(m_p_channel_engine->GetSyncAxisCtrl());
+    showSc.AddComponent(m_p_chn_5axisV2_config);
 
     this->m_macro_variable.SetChnIndex(m_n_channel_index);
 
@@ -2374,7 +2376,7 @@ void ChannelControl::SendMonitorData(bool bAxis, bool btime){
     for(uint8_t i =0; i < this->m_p_channel_config->chn_axis_count; i++){
         phy_axis = this->m_p_channel_config->chn_axis_phy[i]; // phy_axis = this->m_channel_status.cur_chn_axis_phy[i];
         if(phy_axis > 0){
-            pos[i] = this->m_p_channel_engine->GetPhyAxisMachPosFeedback(phy_axis-1);
+        	pos[i] = this->m_p_channel_engine->GetPhyAxisMachPosFeedback(phy_axis-1);
             speed[i] = this->m_p_channel_engine->GetPhyAxisMachSpeedFeedback(phy_axis-1);
             torque[i] = this->m_p_channel_engine->GetPhyAxisMachTorqueFeedback(phy_axis-1);
             angle[i] = this->m_p_channel_engine->GetSpdAngleFeedback(phy_axis-1);
@@ -6906,7 +6908,8 @@ bool ChannelControl::ExecuteAuxMsg(RecordMsg *msg){
                 }else if(mcode == 5 && m_p_f_reg->SST == 1){ // 零速
                     m_p_f_reg->SST = 0;
                 }else if(mcode == 19 && m_p_f_reg->ORAR == 1){ // 定位结束
-                    m_p_f_reg->ORAR = 0;
+                    //printf("=========================ORAR = 0\n");
+                	m_p_f_reg->ORAR = 0;
                 }
             }else if(tmp->GetExecStep(m_index) == 4){
             	//等待FIN信号复位
@@ -7057,12 +7060,6 @@ bool ChannelControl::ExecuteLineMsg(RecordMsg *msg, bool flag_block){
     }else if(!OutputData(msg, flag_block))
         return false;
 
-
-    if(m_channel_status.gmode[9] != G80_CMD){
-    	m_channel_status.gmode[9] = G80_CMD;
-    	this->SendChnStatusChangeCmdToHmi(G_MODE);
-    }
-
     m_n_run_thread_state = RUN;
 
     if(this->m_simulate_mode == SIM_OUTLINE || this->m_simulate_mode == SIM_TOOLPATH){
@@ -7072,6 +7069,11 @@ bool ChannelControl::ExecuteLineMsg(RecordMsg *msg, bool flag_block){
     }
 
     //	printf("execute line msg out, block_flag=%hhu, feed=%lf\n", msg->CheckFlag(FLAG_BLOCK_OVER), linemsg->GetFeed());
+
+    /*if(m_channel_status.gmode[9] != G80_CMD){
+		m_channel_status.gmode[9] = G80_CMD;
+		this->SendChnStatusChangeCmdToHmi(G_MODE);
+	}*/
 
     return true;
 }
@@ -7153,12 +7155,6 @@ bool ChannelControl::ExecuteRapidMsg(RecordMsg *msg, bool flag_block){
         this->SetCurLineNo(msg->GetLineNo());
     }
 
-
-    if(m_channel_status.gmode[9] != G80_CMD){
-		m_channel_status.gmode[9] = G80_CMD;
-		this->SendChnStatusChangeCmdToHmi(G_MODE);
-	}
-
     m_n_run_thread_state = RUN;
 
     return true;
@@ -7206,10 +7202,10 @@ bool ChannelControl::ExecuteArcMsg(RecordMsg *msg, bool flag_block){
         this->m_channel_status.gmode[1] = arc_msg->GetGCode();    //仿真模式下，立即修改当前模式,不通知HMI
     }
 
-    if(m_channel_status.gmode[9] != G80_CMD){
+    /*if(m_channel_status.gmode[9] != G80_CMD){
 		m_channel_status.gmode[9] = G80_CMD;
 		this->SendChnStatusChangeCmdToHmi(G_MODE);
-	}
+	}*/
 
     this->m_n_run_thread_state = RUN;
 
@@ -7294,10 +7290,9 @@ bool ChannelControl::ExecuteCoordMsg(RecordMsg *msg){
 		}
 		G52Active = false;
 		G92Active = true;
-
 	}
-	// @add zk
 
+	// @add zk
 	if(gcode == G52_CMD){//局部坐标系
 
         // @add  zk
@@ -11958,6 +11953,9 @@ void ChannelControl::SetMcCoord(bool flag){
         		// ext offset
         		origin_pos += (int64_t)(m_p_chn_coord_config[0].offset[i] * 1e7);  //基本工件坐标系
 
+				// g92 offset
+				origin_pos += (int64_t)(m_p_chn_g92_offset->offset[i] * 1e7);
+
         		// g54xx offset
         		int coord_index = m_channel_status.gmode[14];
 				if(coord_index <= G59_CMD ){
@@ -11967,9 +11965,6 @@ void ChannelControl::SetMcCoord(bool flag){
 					origin_pos += (int64_t)(m_p_chn_ex_coord_config[coord_index/10-5401].offset[i] * 1e7);    //单位由mm转换为0.1nm
 					printf("===== g5401 offset  axis: %i offset %lld\n", i, (int64_t)(m_p_chn_ex_coord_config[coord_index/10-5401].offset[i] * 1e7));
 				}
-
-				// g92 offset
-				origin_pos += (int64_t)(m_p_chn_g92_offset->offset[i] * 1e7);
         	}
 
         	this->SetMcAxisOrigin(i, origin_pos);
@@ -17501,7 +17496,15 @@ void ChannelControl::ResetRSTSignal(){
  * @param value
  */
 void ChannelControl::SetALSignal(bool value){
-    this->m_p_f_reg->AL = value?1:0;
+
+	if(value){
+		// 刚攻报警 退出刚攻状态反馈 避免刚攻中无法复位
+		printf("+++++++++++++++++++++++++ RGSPP = 0\n");
+		m_p_f_reg->RGSPP = 0;
+		this->m_p_f_reg->AL = 1;
+	}else{
+		this->m_p_f_reg->AL = 0;
+	}
 }
 
 /**
@@ -18297,7 +18300,27 @@ void ChannelControl::SetMcChnFiveAxisParam(){
     UpdateFiveAxisParam(INTP_ANGLE_STEP);
     UpdateFiveAxisParam(INTP_LEN_STEP);
     UpdateFiveAxisParam(PROGRAM_COORD);
+}
 
+void ChannelControl::SetMcChnFiveAxisV2Param(){
+    UpdateFiveAxisParam(V2_MACHINE_TYPE);
+    UpdateFiveAxisParam(V2_PIVOT_MASTER_AXIS);
+    UpdateFiveAxisParam(V2_PIVOT_SLAVE_AXIS);
+    UpdateFiveAxisParam(V2_TABLE_X_POS);
+    UpdateFiveAxisParam(V2_TABLE_Y_POS);
+    UpdateFiveAxisParam(V2_TABLE_Z_POS);
+    UpdateFiveAxisParam(V2_TABLE_X_OFFSET);
+    UpdateFiveAxisParam(V2_TABLE_Y_OFFSET);
+    UpdateFiveAxisParam(V2_Table_Z_OFFSET);
+    UpdateFiveAxisParam(V2_TOOR_DIR);
+    UpdateFiveAxisParam(V2_TOOL_HOLDER_OFFSET_X);
+    UpdateFiveAxisParam(V2_TOOL_HOLDER_OFFSET_Y);
+    UpdateFiveAxisParam(V2_TOOL_HOLDER_OFFSET_Z);
+    UpdateFiveAxisParam(V2_TABLE_MASTER_DIR);
+    UpdateFiveAxisParam(V2_TABLE_SLAVE_DIR);
+    UpdateFiveAxisParam(V2_MASTER_REF_ANGLE_CRC);
+    UpdateFiveAxisParam(V2_SLAVE_REF_ANGLE_CRC);
+    UpdateFiveAxisParam(V2_TOOL_HOLDER_LENGTH);
 }
 
 /**
@@ -18379,6 +18402,61 @@ void ChannelControl::UpdateFiveAxisParam(FiveAxisParamType type){
         break;
     case PROGRAM_COORD:       //五轴编程坐标系
         data = this->m_p_chn_5axis_config->five_axis_coord;       //五轴编程坐标系
+        break;
+
+    case V2_MACHINE_TYPE:
+        data = this->m_p_chn_5axisV2_config->machine_type; // 五轴类型
+        break;
+    case V2_PIVOT_MASTER_AXIS:
+        data = this->m_p_chn_5axisV2_config->pivot_master_axis; // 第一旋转轴 0:X  1:Y  2:Z
+        break;
+    case V2_PIVOT_SLAVE_AXIS:
+        data = this->m_p_chn_5axisV2_config->pivot_slave_axis; // 第二旋转轴 0:X  1:Y  2:Z
+        break;
+    case V2_TABLE_X_POS:
+        data = this->m_p_chn_5axisV2_config->table_x_position*1000; // 旋转台x坐标 单位:mm->um
+        break;
+    case V2_TABLE_Y_POS:
+        data = this->m_p_chn_5axisV2_config->table_y_position*1000; // 旋转台y坐标 单位:mm
+        break;
+    case V2_TABLE_Z_POS:
+        data = this->m_p_chn_5axisV2_config->table_z_position*1000; // 旋转台z坐标 单位:mm->um
+        break;
+    case V2_TABLE_X_OFFSET:
+        data = this->m_p_chn_5axisV2_config->table_x_offset*1000; // 第二旋转轴x偏移 单位:mm->um
+        break;
+    case V2_TABLE_Y_OFFSET:
+        data = this->m_p_chn_5axisV2_config->table_y_offset*1000; // 第二旋转轴y偏移 单位:mm->um
+        break;
+    case V2_Table_Z_OFFSET:
+        data = this->m_p_chn_5axisV2_config->table_z_offset*1000; // 第二旋转轴z偏移 单位:mm->um
+        break;
+    case V2_TOOR_DIR:
+        data = this->m_p_chn_5axisV2_config->tool_dir; // 刀具轴向 0:X  1:Y  2:Z
+        break;
+    case V2_TOOL_HOLDER_OFFSET_X:
+        data = this->m_p_chn_5axisV2_config->tool_holder_offset_x*1000; // 刀柄x偏移 单位:mm->um
+        break;
+    case V2_TOOL_HOLDER_OFFSET_Y:
+        data = this->m_p_chn_5axisV2_config->tool_holder_offset_y*1000; // 刀柄y偏移 单位:mm->um
+        break;
+    case V2_TOOL_HOLDER_OFFSET_Z:
+        data = this->m_p_chn_5axisV2_config->tool_holder_offset_z*1000; // 刀柄z偏移 单位:mm->um
+        break;
+    case V2_TABLE_MASTER_DIR:
+        data = this->m_p_chn_5axisV2_config->table_master_dir; // 第一旋转轴方向 0:正  1:负
+        break;
+    case V2_TABLE_SLAVE_DIR:
+        data = this->m_p_chn_5axisV2_config->table_slave_dir; // 第二旋转轴方向 0:正  1:负
+        break;
+    case V2_MASTER_REF_ANGLE_CRC:
+        data = this->m_p_chn_5axisV2_config->master_ref_angle_crc*1000; // 第一旋转轴初始角度 单位:度->千分之一度
+        break;
+    case V2_SLAVE_REF_ANGLE_CRC:
+        data = this->m_p_chn_5axisV2_config->slave_ref_angle_crc*1000; // 第二旋转轴初始角度 单位:度->千分之一度
+        break;
+    case V2_TOOL_HOLDER_LENGTH:
+        data = this->m_p_chn_5axisV2_config->tool_holder_length*1000; // 刀柄长度 单位:mm->um
         break;
     }
 

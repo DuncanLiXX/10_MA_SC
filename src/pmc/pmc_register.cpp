@@ -21,13 +21,11 @@ PmcRegister::PmcRegister() {
 	this->Initialize();
 }
 
-
 /**
  * @brief Îö¹¹º¯Êý
  */
 PmcRegister::~PmcRegister() {
 	// TODO Auto-generated destructor stub
-
 	if(m_n_fp != -1){
 		fsync(m_n_fp);
 		m_n_fp = -1;

@@ -541,6 +541,8 @@ private:  //私有成员变量
 #ifdef USES_FIVE_AXIS_FUNC
 	FiveAxisConfig *m_p_chn_5axis_config;    //五轴配置
 #endif
+    SCFiveAxisV2Config *m_p_chn_5axisV2_config; //新五轴配置
+
 
 #ifdef USES_GRIND_MACHINE
 	GrindConfig *m_p_grind_config;       //磨床参数

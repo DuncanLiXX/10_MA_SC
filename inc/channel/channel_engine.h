@@ -324,6 +324,8 @@ void SetMcArmComm(MCArmCommunication *comm){this->m_p_mc_arm_comm = comm;}   //É
     int GetCurChannelIndex() { return m_n_cur_channle_index; }
 
     bool SetConsumeTask(TASK_CONSUME_TYPE consumeType); //¼¤»îºóÌ¨Ïß³Ì
+    bool ReadyServerGuide();
+    bool RecordingServerGuide();
 
     ServeGuide  m_serverGuide;
 private:	//Ë½ÓÐ³ÉÔ±º¯Êý

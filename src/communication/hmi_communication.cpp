@@ -776,7 +776,6 @@ void HMICommunication::RecvHmiCmd(){
 	ssize_t res = 0;   //接收数据返回值
 
 	while(1){
-
 		if(m_list_recv->EmptyBufLen() == 0){  //接收缓冲已满
 			break;
 		}
@@ -798,7 +797,6 @@ void HMICommunication::RecvHmiCmd(){
 
 			if(g_sys_state.hmi_comm_ready){
 				if(strcmp(g_sys_state.hmi_host_addr, inet_ntoa(cmd_node.ip_addr.sin_addr)) == 0){
-
 					m_n_hmi_heartbeat = 0;  //心跳计数归零
 
 					gettimeofday(&tv_hmi_heart1, NULL);
@@ -1054,8 +1052,11 @@ int HMICommunication::ProcessHmiCmd(){
             case CMD_HMI_GET_CPU_INFO:
             	ProcessHmiGetCPUInfo(cmd);
             	break;
-            case CMD_HMI_SERVE_DATA_REQUEST:
+            case CMD_HMI_SERVE_DATA_REQUEST:        //HMI向SC请求准备伺服引导
                 ProcessHmiServoDataRequest(cmd);
+                break;
+            case CMD_HMI_SERVE_DATA_RESET:          //HMI向SC请求伺服引导复位（调试用）
+                ProcessHmiServoDataReset(cmd);
                 break;
 			default:
 				g_ptr_trace->PrintLog(LOG_ALARM, "收到不支持的HMI指令cmd=%d", cmd.cmd);
@@ -2722,18 +2723,86 @@ void HMICommunication::ProcessHmiServoDataRequest(HMICmdFrame &cmd)
 {
     cmd.frame_number |= 0x8000;
 
-    memset(cmd.data, 0, sizeof(cmd.data));
+    SG_Type_Ptr type = nullptr;
+    //读取类型
+    SG_Config_Type config_type = (SG_Config_Type)cmd.data[0];
+    std::cout << "data: " << (int)cmd.data[0] << std::endl;
+    std::cout << "config_type: " << (int)config_type << std::endl;
+    switch(config_type)
+    {
+    case SG_Config_Type::Rect:
+    {
+        SG_Rect_Config rect_cfg;
+        memcpy(&rect_cfg, cmd.data+1, sizeof(SG_Rect_Config));
+        type = std::make_shared<SG_Rect_Type>(rect_cfg);
+    }
+        break;
+    case SG_Config_Type::Circle:
+    {
+        SG_Circle_Config circle_cfg;
+        memcpy(&circle_cfg, cmd.data+1, sizeof(SG_Circle_Type));
+        type = std::make_shared<SG_Circle_Type>(circle_cfg);
+    }
+        break;
+    case SG_Config_Type::RecCir:
+    {
+        SG_RecCir_Config reccir_cfg;
+        memcpy(&reccir_cfg, cmd.data+1, sizeof(SG_RecCir_Config));
+        type = std::make_shared<SG_RecCir_Type>(reccir_cfg);
+    }
+        break;
+    case SG_Config_Type::Tapping:
+    {
+        SG_Tapping_Config tapping_cfg;
+        memcpy(&tapping_cfg, cmd.data+1, sizeof(SG_Tapping_Config));
+        type = std::make_shared<SG_Tapping_Type>(tapping_cfg);
+    }
+        break;
+    }
 
-    if (g_ptr_chn_engine->GetChnControl(cmd.channel_index)->IsMachinRunning()
-            || !g_ptr_chn_engine->m_serverGuide.IsIdle())
-    {//不处于空闲状态
+    if (!type)
+    {
+        std::cout << "ProcessHmiServoDataRequest REFUSE, unkown type" << std::endl;
         cmd.cmd_extension = REFUSE;
         SendCmd(cmd);
         return;
     }
 
-    g_ptr_chn_engine->m_serverGuide.StartRecord();
+    if (!type->Verify())
+    {
+        std::cout << "ProcessHmiServoDataRequest REFUSE,type data err" << std::endl;
+        cmd.cmd_extension = REFUSE;
+        SendCmd(cmd);
+        return;
+    }
 
+    if (g_ptr_chn_engine->GetChnControl(cmd.channel_index)->IsMachinRunning()
+            || !g_ptr_chn_engine->m_serverGuide.ReadyRecord())
+    {
+        std::cout << "ProcessHmiServoDataRequest REFUSE, system busy" << std::endl;
+        cmd.cmd_extension = REFUSE;
+        SendCmd(cmd);
+        return;
+    }
+
+    //设置类型
+    g_ptr_chn_engine->m_serverGuide.SetType(type);
+
+    memset(cmd.data, 0, sizeof(cmd.data));
+    std::cout << "ProcessHmiServoDataRequest APPROVE" << std::endl;
+    cmd.cmd_extension = APPROVE;
+    SendCmd(cmd);
+}
+
+void HMICommunication::ProcessHmiServoDataReset(HMICmdFrame &cmd)
+{
+    cmd.frame_number |= 0x8000;
+
+    memset(cmd.data, 0, sizeof(cmd.data));
+
+    g_ptr_chn_engine->m_serverGuide.ResetRecord();
+
+    std::cout << "ProcessHmiServoDataReset APPROVE" << std::endl;
     cmd.cmd_extension = APPROVE;
     SendCmd(cmd);
 }

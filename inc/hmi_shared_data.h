@@ -13,6 +13,7 @@
 #define INC_HMI_SHARED_DATA_H_
 
 #include <stdint.h>
+#include <string>
 #include "global_definition.h"
 
 //HMI命令包相关常量
@@ -203,6 +204,7 @@ enum HMICmdCode {
     CMD_HMI_SET_ALL_TOOL_OFFSET,     //HMI向SC请求设置所有刀偏值 0x42
     CMD_HMI_GET_CPU_INFO,            //HMI向SC获取 CPU 内存 占用信息
     CMD_HMI_SERVE_DATA_REQUEST,      //HMI向SC请求准备伺服引导
+    CMD_HMI_SERVE_DATA_RESET,        //HMI向SC请求伺服引导复位（调试用）
 
 
 	//SC-->HMI
@@ -1749,6 +1751,81 @@ struct SysUpdateStatus {
     Status m_status = Idle;
     Type m_type = Unkown;
 };
+
+struct TraceLogInfo {
+    int             opt;    //日志类型
+    int             type;   //日志消息类型
+    std::string     msg;    //日志内容
+};
+
+enum ScStatusType {
+    Type_ProtectKey = 0,    //程序保护
+};
+
+
+/*****************************************************
+** 伺服引导 *******************************************/
+
+/**
+ * @brief 伺服引导类型
+ */
+enum class SG_Config_Type
+{
+    Rect = 1,
+    Circle,
+    RecCir,
+    Tapping
+};
+
+/**
+ * @brief 方型轨迹
+ */
+struct SG_Rect_Config
+{
+    uint8_t axis_one = -1;
+    uint8_t axis_two = -1;
+    uint8_t interval = 8;       //采样周期
+};
+
+/**
+ * @brief 圆型轨迹
+ */
+struct SG_Circle_Config
+{
+    uint8_t axis_one = -1;
+    uint8_t axis_two = -1;
+    uint8_t interval = 8;       //采样周期
+    uint8_t circle_type = 0;    //0-正圆,1-逆圆
+    double raduis = 5;          //半径
+};
+
+/**
+ * @brief 方圆轨迹
+ */
+struct SG_RecCir_Config
+{
+    uint8_t axis_one = -1;
+    uint8_t axis_two = -1;
+    uint8_t interval = 8;       //采样周期
+    double width = 10;          //宽度(不包括倒角半径)
+    double height = 20;         //高度(不包括倒角半径)
+    double radius = 5;          //倒角半径
+};
+
+/**
+ * @brief 刚性攻丝轨迹
+ */
+struct SG_Tapping_Config
+{
+    //uint8_t axis_one = -1;      //主轴轴号
+    //uint8_t axis_two = -1;      //Z轴轴号
+    uint8_t interval = 8;
+};
+
+/* 伺服引导 *******************************************
+******************************************************/
+
+
 
 
 #endif /* INC_HMI_SHARED_DATA_H_ */

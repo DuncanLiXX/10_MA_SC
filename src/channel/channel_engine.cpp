@@ -38,12 +38,12 @@ const map<int, SDLINK_SPEC> ChannelEngine::m_SDLINK_MAP =
 {
     //id.SA1, 3.SC1, 4.SD1, 5.SE1
     //对于有手轮扩展的板卡，梯图默认分配了手轮空间，需要去掉，要使用手轮时，再由SC分配
-    //id    name    inbytes outBytes withHandWheel
-    {1,     {"SA1",  9-3,    4,      true}},
-    {3,     {"SC1",  16,     16,     false}},
-    {4,     {"SD1",  12-3,   8,      true}},
-    {5,     {"SE1",  7-3,    8,      true}},
-    {6,     {"SE2",  12-3,   11,     true}},
+    //id    name          inbytes outBytes withHandWheel
+    {1,     {"SD-LINK-A1",  9-3,    4,      true}},
+    {3,     {"SD-LINK-C1",  16,     16,     false}},
+    {4,     {"SD-LINK-D1",  12-3,   8,      true}},
+    {5,     {"SD-LINK-E1",  7-3,    8,      true}},
+    {6,     {"SD-LINK-E2",  12-3,   11,     true}},
 };
 
 const uint32_t MC_UPDATE_BLOCK_SIZE = 100;		//MC升级文件帧，每帧包含100字节数据,50个uint16
@@ -707,6 +707,50 @@ bool ChannelEngine::SetConsumeTask(TASK_CONSUME_TYPE consumeType)
         std::cout << "busy consume task " << (int)consumeType << std::endl;
         return false;
     }
+}
+
+bool ChannelEngine::ReadyServerGuide()
+{
+    if (!m_serverGuide.InitSocket())
+    {
+        return false;
+    }
+
+    if (!m_serverGuide.Accept())
+    {
+        return false;
+    }
+
+    return true;
+}
+
+bool ChannelEngine::RecordingServerGuide()
+{
+    //是否处于Ready状态
+
+    //启动另一个线程，处理数据发送，防止采样周期不准确
+    std::thread th(&ServeGuide::ProcessData, &m_serverGuide);
+
+    while(!g_sys_state.system_quit)
+    {
+        if (m_serverGuide.RefreshRecording())
+        {
+            if (m_serverGuide.IsTimeout())//采样周期
+            {
+                this->m_p_mi_comm->ReadPhyAxisCurFedBckPos(m_df_phy_axis_pos_feedback, m_df_phy_axis_pos_intp, m_df_phy_axis_speed_feedback,
+                    m_df_phy_axis_torque_feedback, m_df_spd_angle, m_p_general_config->axis_count);
+
+                m_serverGuide.RecordData(m_df_phy_axis_pos_feedback);
+            }
+        }
+        else if (m_serverGuide.IsEmpty())
+        {//退出循环
+            break;
+        }
+    }
+
+    th.join();
+    return true;
 }
 
 /**
@@ -4398,16 +4442,6 @@ bool ChannelEngine::CheckSoftLimit(ManualMoveDir dir, uint8_t phy_axis, double p
     double negative[3];
     bool enable[3];
 
-    std::cout << "ChannelEngine::CheckSoftLimit" << std::endl;
-    std::cout << "soft_limit_max 1 " << m_p_axis_config[phy_axis].soft_limit_max_1;
-    std::cout << "soft_limit_min 1 " << m_p_axis_config[phy_axis].soft_limit_min_1;
-    std::cout << "soft_limit_max 2 " << m_p_axis_config[phy_axis].soft_limit_max_2;
-    std::cout << "soft_limit_min 2 " << m_p_axis_config[phy_axis].soft_limit_min_2;
-    std::cout << "soft_limit_max 3 " << m_p_axis_config[phy_axis].soft_limit_max_3;
-    std::cout << "soft_limit_min 3 " << m_p_axis_config[phy_axis].soft_limit_min_3;
-    std::cout << "pos " << pos;
-    std::cout << "dir: " << (int)dir << std::endl;
-
     positive[0] = m_p_axis_config[phy_axis].soft_limit_max_1;
     positive[1] = m_p_axis_config[phy_axis].soft_limit_max_2;
     positive[2] = m_p_axis_config[phy_axis].soft_limit_max_3;
@@ -4418,10 +4452,6 @@ bool ChannelEngine::CheckSoftLimit(ManualMoveDir dir, uint8_t phy_axis, double p
     enable[1] = m_p_axis_config[phy_axis].soft_limit_check_2;
     enable[2] = m_p_axis_config[phy_axis].soft_limit_check_3;
 
-    for (int i = 0; i < 3; ++i)
-    {
-        std::cout << " enable[i]: " << enable[i] << std::endl;
-    }
     uint8_t chn_axis = 0, chn = 0;
     chn = this->GetAxisChannel(phy_axis, chn_axis);
     for(int i=0; i<3; i++){
@@ -5753,9 +5783,7 @@ void ChannelEngine::ManualMoveAbs(uint8_t phy_axis, double vel, double pos){
     int64_t cur_pos = this->m_df_phy_axis_pos_feedback[phy_axis]*1e7;  //当前位置
     //设置目标位置
     int64_t tar_pos = pos * 1e7;   //单位转换：mm-->0.1nms
-    std::cout << "pos: " << pos << " tar_pos: " << tar_pos << std::endl;
     ManualMoveDir dir = (tar_pos > cur_pos)?DIR_POSITIVE:DIR_NEGATIVE;  //移动方向
-    std::cout << "dir: " << (int)dir << std::endl;
 
     //检查硬限位
     if(CheckAxisHardLimit(phy_axis, dir)){   //硬限位告警，直接返回
@@ -5767,9 +5795,9 @@ void ChannelEngine::ManualMoveAbs(uint8_t phy_axis, double vel, double pos){
     if(CheckSoftLimit(dir, phy_axis, this->m_df_phy_axis_pos_feedback[phy_axis])){
         printf("soft limit active, manual move abs return \n");
         return;
-    }else if(GetSoftLimt(dir, phy_axis, limit) && dir == DIR_POSITIVE && pos > limit * 1e7){
+    }else if(GetSoftLimt(dir, phy_axis, limit) && dir == DIR_POSITIVE && pos > limit /* * 1e7*/){
         tar_pos = limit * 1e7;
-    }else if(GetSoftLimt(dir, phy_axis, limit) && dir == DIR_NEGATIVE && pos < limit * 1e7){
+    }else if(GetSoftLimt(dir, phy_axis, limit) && dir == DIR_NEGATIVE && pos < limit /* * 1e7*/){
         tar_pos = limit * 1e7;
     }
 
@@ -9224,6 +9252,21 @@ void ChannelEngine::ProcessPmcSignal(){
 //            m_serverGuide.EndRecord();
 //    }
 
+    //for (int i = 0; i < m_p_general_config->chn_count; ++i)
+    //{
+        if (m_p_channel_control[0].IsMachinRunning())
+        {
+            if (m_serverGuide.IsReady())
+                m_serverGuide.StartRecord();
+        }
+        else
+        {
+            if (m_serverGuide.IsRecord())
+            {
+                m_serverGuide.StopRecord();
+            }
+        }
+    //}
 
 #endif
 
@@ -9264,50 +9307,27 @@ void ChannelEngine::ProcessConsumingTask()
             m_task_consume_cond.wait(lck, [this](){ return m_task_consume_type != 0;} );
         }
 
-        std::cout << "start consume_type " << (int)CONSUME_TYPE_WORK_COUNT << std::endl;
+        std::cout << "start consume_type " << (int)m_task_consume_type << std::endl;
         switch(m_task_consume_type){
         case CONSUME_TYPE_WORK_COUNT:
         {
             m_p_channel_control[m_n_cur_channle_index].AddWorkCountPiece(1);
         }
             break;
-        case CONSUME_TYPE_SERVE_GUIDE:
+        case CONSUME_TYPE_SERVE_GUIDE_READY:
         {
-            //TODO 需要增加判断
-            //m_serverGuide.InitSocket();
-            //此处判断是否已经建立连接，建立连接后才能开始采样
-
-            if (!m_serverGuide.Accept())
-                break;
-
-            //启动另一个线程，处理数据发送
-            //std::thread thread(&ServeGuide::ProcessData, &m_serverGuide);
-            //thread.detach();
-
-            while(!g_sys_state.system_quit)
-            {
-                if (m_serverGuide.RefreshRecording())
-                {
-                    if (m_serverGuide.IsTimeout())//采样周期
-                    {
-                        this->m_p_mi_comm->ReadPhyAxisCurFedBckPos(m_df_phy_axis_pos_feedback, m_df_phy_axis_pos_intp,m_df_phy_axis_speed_feedback,
-                            m_df_phy_axis_torque_feedback, m_df_spd_angle, m_p_general_config->axis_count);
-                        //根据不同类型生成不同数据
-                        std::pair<double, double> data = std::make_pair(m_df_phy_axis_pos_feedback[0], m_df_phy_axis_pos_feedback[1]);
-                        m_serverGuide.RecordData(data);
-                    }
-                }
-                else if (m_serverGuide.IsEmpty())
-                {//退出循环
-                    std::cout << "exit consume_type_serve_guide" << std::endl;
-                    break;
-                }
-            }
+            ReadyServerGuide();
+        }
+            break;
+        case CONSUME_TYPE_SERVE_GUIDE_RECORD:
+        {
+            RecordingServerGuide();
         }
             break;
         default:
             break;
         }
+        std::cout << "CONSUME_TYPE_NONE" << std::endl;
         m_task_consume_type = CONSUME_TYPE_NONE;
     }
 }
@@ -12172,7 +12192,7 @@ int ChannelEngine::GetRemainDay()
 
     if (startYear > endYear)
     {
-        std::cout << "startYear > endYear" << std::endl;
+        //std::cout << "startYear > endYear" << std::endl;
         return 0;
     }
 

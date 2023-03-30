@@ -8643,8 +8643,6 @@ void ChannelEngine::ProcessPmcSignal(){
             m_cur_svf = g_reg->SVF;
         }
 
-
-
         // 处理G信号 切换当前通道
         if(g_reg_last->CHNC != g_reg->CHNC)
         {
@@ -8662,7 +8660,8 @@ void ChannelEngine::ProcessPmcSignal(){
 
         // @test zk
         if(g_reg->RRW == 1 && g_reg_last->RRW == 0){
-            this->SystemReset();
+            printf("111111111111111\n");
+        	this->SystemReset();
         }
         // @test
 
@@ -8683,7 +8682,7 @@ void ChannelEngine::ProcessPmcSignal(){
 
         // 攻丝状态()不让复位
         if(g_reg->ERS == 1 && g_reg_last->ERS == 0){
-            this->SystemReset();
+        	this->SystemReset();
         }
 
         // 某个轴机械锁住信号发生了改变

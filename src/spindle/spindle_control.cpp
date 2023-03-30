@@ -165,7 +165,6 @@ void SpindleControl::SetMode(Mode mode)
 
     	while(spindle->axis_interface != 0 && fabs(GetSpindleSpeed()) > 1)
     	{
-    		printf("222222222\n");
     		count ++;
     		usleep(10000);
     		if(count > 200) break;
@@ -270,11 +269,12 @@ void SpindleControl::StartRigidTap(double feed)
     mi->SendTapStateCmd(chn,true);
     tap_enable = true;
     std::this_thread::sleep_for(std::chrono::microseconds(100*1000));
+    printf("********************** RGSPP = 1\n");
     F->RGSPP = 1;
 
     tap_state.tap_flag = true;
     tap_state.F = feed;
-    tap_state.S = cnc_speed;
+    if(cnc_speed > 0) tap_state.S = cnc_speed;
     tap_state.polar = cnc_polar;
     tap_state.phy_axis = phy_axis;
     tap_state.z_axis = z_axis;
@@ -312,8 +312,11 @@ void SpindleControl::CancelRigidTap()
     tap_enable = false;
 
     // 给信号梯图来取消攻丝
-    if(F->RGSPP)
-        F->RGSPP = 0;
+    if(F->RGSPP){
+    	printf("========================= RGSPP = 0\n");
+    	F->RGSPP = 0;
+    }
+
 }
 
 void SpindleControl::ResetTapFlag()
@@ -506,7 +509,7 @@ void SpindleControl::InputRTNT(bool RTNT)
     printf("===== SSIN %d SIND %d _SSTP %d\n", SSIN, SIND, _SSTP);
 
     //if(SSIN == 1 || SIND == 1 || _SSTP == 0 ||
-    if(!LoadTapState(tap_state) || !tap_state.tap_flag)
+    if(SSIN == 1 || SIND == 1 || !LoadTapState(tap_state) || !tap_state.tap_flag)
     {
         CreateError(ERR_SPD_RTNT_INVALID,
                     ERROR_LEVEL,
@@ -527,7 +530,8 @@ void SpindleControl::RspORCMA(bool success)
     ScPrintf("SpindleControl::RspORCMA : success = %d\n",success);
     // 定位成功，将ORAR置为1，通知PMC定位动作完成
     if(success && ORCMA){
-        F->ORAR = 1;
+        //printf("*********************************** ORAR = 1\n");
+    	F->ORAR = 1;
     }
 }
 
@@ -556,6 +560,7 @@ void SpindleControl::RspAxisEnable(uint8_t axis, bool enable)
         if(wait_off && !enable){
             wait_off = false;
             F->SST = 1;
+            F->SAR = 0;   //掉使能 速度到达信号复位
         }
         // 正在等待上使能，上使能后根据当前状态发生转速
         if(wait_on){
@@ -619,7 +624,6 @@ double SpindleControl::GetSpdAngle()
 //    double model = fmod(pos, spindle->move_pr);
 //    if(model < 0)
 //        model += spindle->move_pr;
-
 //    return (model/spindle->move_pr)*360.0;
 }
 
@@ -1108,15 +1112,6 @@ bool SpindleControl::LoadTapState(TapState &state)
 void SpindleControl::ProcessRTNT()
 {
 	// 如果主轴不在使能状态，先上使能
-    if(!motor_enable)
-        mi->SendAxisEnableCmd(phy_axis+1, true);
-    std::this_thread::sleep_for(std::chrono::microseconds(1000 * 1000));
-    if(!motor_enable){
-    	CreateError(ERR_SPD_RTNT_FAIL,
-                    ERROR_LEVEL,
-                    CLEAR_BY_MCP_RESET);
-        return;
-    }
 
     // 恢复攻丝状态
     double R = tap_state.R + spindle->spd_rtnt_distance;
@@ -1143,7 +1138,7 @@ void SpindleControl::ProcessRTNT()
     DPointChn pos_work = control->GetRealtimeStatus().cur_pos_work;
     running_rtnt = true;
     while(fabs(pos_work.GetAxisValue(z_axis) - R) > 0.005){
-        std::this_thread::sleep_for(std::chrono::microseconds(50 * 1000));
+        std::this_thread::sleep_for(std::chrono::microseconds(50000));
         pos_work = control->GetRealtimeStatus().cur_pos_work;
         if(!running_rtnt)
             break;
@@ -1158,7 +1153,12 @@ void SpindleControl::ProcessRTNT()
 }
 
 void SpindleControl::EStop(){
+
 	if(!spindle) return;
+
+	if(RGTAP){CancelRigidTap(); RGTAP = 0;}
+
+	if(RGMD){SetMode(Speed); RGMD = 0;}
 
 	InputPolar(Stop);
 }

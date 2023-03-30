@@ -6903,7 +6903,8 @@ bool ChannelControl::ExecuteAuxMsg(RecordMsg *msg){
                 }else if(mcode == 5 && m_p_f_reg->SST == 1){ // 零速
                     m_p_f_reg->SST = 0;
                 }else if(mcode == 19 && m_p_f_reg->ORAR == 1){ // 定位结束
-                    m_p_f_reg->ORAR = 0;
+                    //printf("=========================ORAR = 0\n");
+                	m_p_f_reg->ORAR = 0;
                 }
             }else if(tmp->GetExecStep(m_index) == 4){
             	//等待FIN信号复位
@@ -7055,12 +7056,6 @@ bool ChannelControl::ExecuteLineMsg(RecordMsg *msg, bool flag_block){
     }else if(!OutputData(msg, flag_block))
         return false;
 
-
-    if(m_channel_status.gmode[9] != G80_CMD){
-    	m_channel_status.gmode[9] = G80_CMD;
-    	this->SendChnStatusChangeCmdToHmi(G_MODE);
-    }
-
     m_n_run_thread_state = RUN;
 
     if(this->m_simulate_mode == SIM_OUTLINE || this->m_simulate_mode == SIM_TOOLPATH){
@@ -7070,6 +7065,11 @@ bool ChannelControl::ExecuteLineMsg(RecordMsg *msg, bool flag_block){
     }
 
     //	printf("execute line msg out, block_flag=%hhu, feed=%lf\n", msg->CheckFlag(FLAG_BLOCK_OVER), linemsg->GetFeed());
+
+    /*if(m_channel_status.gmode[9] != G80_CMD){
+		m_channel_status.gmode[9] = G80_CMD;
+		this->SendChnStatusChangeCmdToHmi(G_MODE);
+	}*/
 
     return true;
 }
@@ -7151,10 +7151,11 @@ bool ChannelControl::ExecuteRapidMsg(RecordMsg *msg, bool flag_block){
         this->SetCurLineNo(msg->GetLineNo());
     }
 
+    /*
     if(m_channel_status.gmode[9] != G80_CMD){
 		m_channel_status.gmode[9] = G80_CMD;
 		this->SendChnStatusChangeCmdToHmi(G_MODE);
-	}
+	}*/
 
     //	printf("*****execute rapid msg out, block_flag=%hhu\n", msg->CheckFlag(FLAG_BLOCK_OVER));
     m_n_run_thread_state = RUN;
@@ -7204,10 +7205,10 @@ bool ChannelControl::ExecuteArcMsg(RecordMsg *msg, bool flag_block){
         this->m_channel_status.gmode[1] = arc_msg->GetGCode();    //仿真模式下，立即修改当前模式,不通知HMI
     }
 
-    if(m_channel_status.gmode[9] != G80_CMD){
+    /*if(m_channel_status.gmode[9] != G80_CMD){
 		m_channel_status.gmode[9] = G80_CMD;
 		this->SendChnStatusChangeCmdToHmi(G_MODE);
-	}
+	}*/
 
     this->m_n_run_thread_state = RUN;
 
@@ -7292,7 +7293,6 @@ bool ChannelControl::ExecuteCoordMsg(RecordMsg *msg){
 		}
 		G52Active = false;
 		G92Active = true;
-
 	}
 
 	// @add zk
@@ -17500,7 +17500,15 @@ void ChannelControl::ResetRSTSignal(){
  * @param value
  */
 void ChannelControl::SetALSignal(bool value){
-    this->m_p_f_reg->AL = value?1:0;
+
+	if(value){
+		// 刚攻报警 退出刚攻状态反馈 避免刚攻中无法复位
+		printf("+++++++++++++++++++++++++ RGSPP = 0\n");
+		m_p_f_reg->RGSPP = 0;
+		this->m_p_f_reg->AL = 1;
+	}else{
+		this->m_p_f_reg->AL = 0;
+	}
 }
 
 /**

@@ -340,6 +340,7 @@ public:
 	 bool isCompOn = false;
 
 	 ErrorType err_code = ERR_NONE;
+	 uint32_t lino = 0;
 };
 
 void ARC_FEED(int line_number,

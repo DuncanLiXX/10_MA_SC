@@ -41,6 +41,7 @@ public:
     void setPlane(int plane){this->plane = plane;}
 
     ErrorType err_code = ERR_NONE;
+    uint32_t err_lino = 0;
 
 private:
 	uint8_t m_n_channel_index;     //ËùÊôÍ¨µÀºÅ

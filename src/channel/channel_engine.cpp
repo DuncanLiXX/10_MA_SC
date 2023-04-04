@@ -301,7 +301,7 @@ void ChannelEngine::ReadIoDev_pmc2(){
 
                 if (!CheckIoDev_pmc2(devInfo))
                 {
-                    m_list_bdio_dev.Clear();
+                	m_list_bdio_dev.Clear();
                     CreateError(ERR_PMC_SDLINK_CONFIG, ERROR_LEVEL, CLEAR_BY_RESET_POWER);
                     ifs.close();
                     return;
@@ -8814,7 +8814,6 @@ void ChannelEngine::ProcessPmcSignal(){
         // 主轴正转，主轴反转信号
         if(g_reg->SRV != g_reg_last->SRV || g_reg->SFR != g_reg_last->SFR){
 
-        	printf("=================================== M345\n");
         	if(g_reg->SRV == 0 && g_reg->SFR == 0){ // 主轴停
             	ctrl->GetSpdCtrl()->InputPolar(Spindle::Stop);
             }else if(g_reg->SFR == 1){  // 主轴正转
@@ -9029,7 +9028,7 @@ void ChannelEngine::ProcessPmcSignal(){
         if(g_reg_last->EMPC == 0 && g_reg->EMPC == 1){  //处理PMC宏调用
             // @test zk
             printf("PMC CALL SUB PROG : %d\n", g_reg->MPCS);
-            this->m_p_channel_control[i].CallMacroProgram(g_reg->MPCS);
+            this->m_p_channel_control[0].CallMacroProgram(g_reg->MPCS);
             f_reg->MPCO = 1;   //调用结束
         }else if(g_reg_last->EMPC == 1 && g_reg->EMPC == 0){
             f_reg->MPCO = 0;   //信号复位

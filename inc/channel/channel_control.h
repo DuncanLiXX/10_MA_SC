@@ -843,6 +843,7 @@ private://私有成员变量
 	bool G52Active = false;
 	bool G92Active = false;
 	bool flag_cancel_g52 = true;
+	bool g43_4_active = false;
 };
 
 #endif /* INC_CHANNEL_CHANNEL_CONTROL_H_ */

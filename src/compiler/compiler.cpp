@@ -1801,7 +1801,7 @@ void Compiler::SetMode(CompilerWorkMode mode) {
         //		}
         //		pthread_mutex_lock(&m_mutex_change_state);
 
-        //缓存状态
+    	//缓存状态
         this->SaveScene();
 
         //复位编译器状态
@@ -1820,7 +1820,7 @@ void Compiler::SetMode(CompilerWorkMode mode) {
         //		if(m_n_thread_state == RUN){//如果编译器在RUN状态，则先停止
         //			this->StopCompile();
         //		}
-        char tmp_file[kMaxPathLen] = {0};	//文件路径
+    	char tmp_file[kMaxPathLen] = {0};	//文件路径
         this->m_p_channel_control->GetMdaFilePath(tmp_file);
         if(strcmp(this->m_p_file_map_info->str_file_name, tmp_file) != 0){  //
             //			printf("Compiler::SetMode, clear file:%s\n", this->m_p_file_map_info->str_file_name);
@@ -2463,8 +2463,9 @@ bool Compiler::RunMessage() {
 
             if(m_p_tool_compensate->err_code != ERR_NONE){
                 m_error_code = m_p_tool_compensate->err_code;
-                CreateError(m_p_tool_compensate->err_code, ERROR_LEVEL, CLEAR_BY_MCP_RESET, 0,
-                            m_n_channel_index);
+
+                CreateError(m_p_tool_compensate->err_code, ERROR_LEVEL, CLEAR_BY_MCP_RESET,
+                		m_p_tool_compensate->err_lino, m_n_channel_index);
                 //m_p_tool_compensate->clearError();
 
                 res = false;
@@ -2816,7 +2817,7 @@ bool Compiler::RunCoordMsg(RecordMsg *msg) {
         m_compiler_status.mode.gmode[0] = gcode;  //更新模态
         break;
     case G53_CMD:		//G53  机床坐标系
-        //处理增量编程指令
+    	//处理增量编程指令
         if(m_compiler_status.mode.gmode[3] == G91_CMD){  //增量编程模式
             double *p_target_pos = tmp->GetTargetPos().m_df_point;
             double *p_source_pos = m_compiler_status.cur_pos.m_df_point;
@@ -2833,8 +2834,11 @@ bool Compiler::RunCoordMsg(RecordMsg *msg) {
             }
 
         }else{
+            //printf("coord index: %d\n", m_compiler_status.mode.gmode[14]);
+            // 解决一键回零中 G53异常问题
+
             //将目标位置换算为工件坐标系
-            this->m_p_channel_control->TransMachCoordToWorkCoord(tmp->GetTargetPos(), m_compiler_status.mode.gmode[14], m_compiler_status.mode.h_mode, tmp->GetAxisMask());
+        	this->m_p_channel_control->TransMachCoordToWorkCoord(tmp->GetTargetPos(), m_compiler_status.mode.gmode[14], m_compiler_status.mode.h_mode, tmp->GetAxisMask());
         }
 #ifdef USES_FIVE_AXIS_FUNC
         this->ProcessFiveAxisRotPos(tmp->GetTargetPos(), m_compiler_status.cur_pos, tmp->GetAxisMask());
@@ -3036,7 +3040,7 @@ bool Compiler::RunArcMsg(RecordMsg *msg) {
     tmp->SetFeed(m_compiler_status.mode.f_mode);
 
     m_compiler_status.mode.gmode[1] = gcode;
-    m_compiler_status.mode.gmode[9] = G80_CMD;  //自动取消循环指令
+    //  m_compiler_status.mode.gmode[9] = G80_CMD;  //自动取消循环指令
     //	m_compiler_status.cur_pos = tmp->GetTargetPos(); //更新编译当前位置
     this->SetCurPos(tmp->GetTargetPos());
     return true;
@@ -3210,7 +3214,7 @@ bool Compiler::RunRefReturnMsg(RecordMsg *msg){
 
         for(int i = 0; i < this->m_p_channel_config->chn_axis_count; i++){
             if(mask & tm){
-                //				printf("RunRefReturnMsg1: i = %d, target=%lf, src=%lf\n", i, *p_target_pos, *p_source_pos);
+                // printf("RunRefReturnMsg1: i = %d, target=%lf, src=%lf\n", i, *p_target_pos, *p_source_pos);
                 *p_target_pos += *p_source_pos;
                 //				printf("RunRefReturnMsg2: i = %d, target=%lf, src=%lf\n", i, *p_target_pos, *p_source_pos);
 

@@ -328,7 +328,6 @@ bool Parser::CheckGCode(LexerGCode *gcode){
 				mode_mask |= (((uint64_t)0x01)<<GCode2Mode[code]);
 				count++;
 			}
-
 		}
 
 		m_mode_code[GCode2Mode[code]] = gcode->g_value[i];
@@ -2107,7 +2106,6 @@ bool Parser::CreateSpeedMsg(){
  */
 bool Parser::CreateToolMsg(int *tcode, uint8_t total){
 
-	//printf("======================================= tcode: %d\n", *tcode);
 	if(*tcode < 0 or *tcode > 60){
 		CreateError(ERR_T_EXP_NULL, ERROR_LEVEL, CLEAR_BY_MCP_RESET);
 		return false;
@@ -2811,16 +2809,19 @@ bool Parser::CreateTimeWaitMsg(){
 	uint32_t time = 0;
 	double data = 0;
 
+	// 更新需求： X指定s  P指定ms  与小数点无关
 	if(GetCodeData(X_DATA, data)){
-		if((g_code->mask_dot & (0x01<<X_DATA)) == 0){  //省略小数点则输入值单位为ms
+		time = data * 1000;
+		/*if((g_code->mask_dot & (0x01<<X_DATA)) == 0){  //省略小数点则输入值单位为ms
 			time = data;
 		}else
-			time = data*1000;   //带小数点，输入值单位为s
+			time = data*1000;   //带小数点，输入值单位为s*/
 	}else if(GetCodeData(P_DATA, data)){
-		if((g_code->mask_dot & (0x01<<P_DATA)) == 0){  //省略小数点则输入值单位为ms
+		time = data;
+		/*if((g_code->mask_dot & (0x01<<P_DATA)) == 0){  //省略小数点则输入值单位为ms
 			time = data;
 		}else
-			time = data*1000;   //带小数点，输入值单位为s
+			time = data*1000;   //带小数点，输入值单位为s*/
 	}
 
 	RecordMsg *new_msg = new TimeWaitMsg(time);   //G04

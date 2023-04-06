@@ -1811,9 +1811,10 @@ void ARC_FEED(int line_number,
 
 	new_msg->SetLineNo(line_number);
 
-	RecordMsgFlag flag; flag.all = g_flags;
+	RecordMsgFlag flag;
+	flag.all = g_flags;
 	new_msg->SetFlags(flag);
-	printf("ARC_FEED line no: %d\n", line_number);
+	printf("****************ARC_FEED line no: %d flags: %d\n", line_number, flag.all);
 	comp_output_list->Append(new_msg);
 }
 
@@ -1852,7 +1853,7 @@ void STRAIGHT_TRAVERSE(int line_number,
 	new_msg->SetFlags(flag);
 
 	new_msg->SetLineNo(line_number);  //设置当前行号
-	printf("STRAIGHT_TRAVERSE line no: %d\n", line_number);
+	printf("****************STRAIGHT_TRAVERSE line no: %d flags: %d\n", line_number, flag.all);
 	comp_output_list->Append(new_msg);
 }
 
@@ -1892,7 +1893,7 @@ void STRAIGHT_FEED(int line_number,
 
 	RecordMsgFlag flag; flag.all = g_flags;
 	new_msg->SetFlags(flag);
-	printf("STRAIGHT_FEED line no: %d\n", line_number);
+	printf("****************STRAIGHT_FEED line no: %d flags: %d\n", line_number, flag.all);
 	comp_output_list->Append(new_msg);
 }
 

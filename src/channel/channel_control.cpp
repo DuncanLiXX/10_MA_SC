@@ -4352,7 +4352,8 @@ int ChannelControl::Run(){
     {
         if(m_n_run_thread_state == RUN)
         {
-            //printf("m_n_run_thread_state = RUN\n");
+
+        	//printf("m_n_run_thread_state = RUN\n");
             pthread_mutex_lock(&m_mutex_change_state);
             //printf("locked 9\n");
             //			if(this->m_channel_status.chn_work_mode == AUTO_MODE &&
@@ -4496,7 +4497,7 @@ int ChannelControl::Run(){
         }
         else if(m_n_run_thread_state == WAIT_EXECUTE)
         {
-            pthread_mutex_lock(&m_mutex_change_state);
+        	pthread_mutex_lock(&m_mutex_change_state);
 
             bf = ExecuteMessage();
             pthread_mutex_unlock(&m_mutex_change_state);
@@ -4513,6 +4514,7 @@ int ChannelControl::Run(){
         }
         else if(m_n_run_thread_state == WAIT_RUN)
         {
+
             pthread_mutex_lock(&m_mutex_change_state);
 
             bf = m_p_compiler->RunMessage();
@@ -8176,7 +8178,6 @@ bool ChannelControl::ExecuteLoopMsg(RecordMsg *msg){
 bool ChannelControl::ExecuteCompensateMsg(RecordMsg *msg){
     CompensateMsg *compmsg = (CompensateMsg *)msg;
     int type = compmsg->GetGCode();
-
     if(this->m_n_restart_mode != NOT_RESTART &&
             compmsg->GetLineNo() < this->m_n_restart_line
         #ifdef USES_ADDITIONAL_PROGRAM
@@ -8204,6 +8205,7 @@ bool ChannelControl::ExecuteCompensateMsg(RecordMsg *msg){
         if(this->IsStepMode())
             limit = 4;	//单步模式需要多次验证，因为状态切换有延时
 
+        //printf("0000000000\n");
         //等待MC分块的插补到位信号，以及MI的运行到位信号
         while(1){
             bool block_over = CheckBlockOverFlag();

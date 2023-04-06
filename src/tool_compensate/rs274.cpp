@@ -96,6 +96,7 @@ int Interp::arc_data_comp_ijk(int move,
 
 		//CreateError(ARC_RADIUS_TOO_SMALL, ERROR_LEVEL, CLEAR_BY_MCP_RESET);
 		err_code = ARC_RADIUS_TOO_SMALL;
+
 		return 0;
 	}
 
@@ -114,6 +115,7 @@ int Interp::arc_data_comp_ijk(int move,
 				   abs_err, rel_err*100);
 		//CreateError(ARC_NOT_VALID, ERROR_LEVEL, CLEAR_BY_MCP_RESET);
 		err_code = ARC_NOT_VALID;
+
 		return 0;
 	}
 
@@ -122,6 +124,7 @@ int Interp::arc_data_comp_ijk(int move,
 		printf("TOOL_RADIUS_NOT_LESS_THAN_ARC_RADIUS_WITH_COMP");
 		//CreateError(TOOL_RADIUS_BIGGER_THAN_ARC, ERROR_LEVEL, CLEAR_BY_MCP_RESET);
 		err_code = TOOL_RADIUS_BIGGER_THAN_ARC;
+
 		return 0;
 	}
 
@@ -157,6 +160,7 @@ int Interp::arc_data_comp_r(int move,
 		printf("tool radius not less than arc radius with comp\n");
 		//CreateError(TOOL_RADIUS_BIGGER_THAN_ARC, ERROR_LEVEL, CLEAR_BY_MCP_RESET);
 		err_code = TOOL_RADIUS_BIGGER_THAN_ARC;
+
 		return 0;
 	}
 
@@ -201,6 +205,7 @@ int Interp::arc_data_ijk(int move,
 		  //CreateError(ARC_RADIUS_TOO_SMALL, ERROR_LEVEL, CLEAR_BY_MCP_RESET);
 		  printf("arc radius too small canot move\n");
 		  err_code = ARC_RADIUS_TOO_SMALL;
+
 		  return 0;
 	  }
 
@@ -219,6 +224,7 @@ int Interp::arc_data_ijk(int move,
 		  	       abs_err, rel_err*100);
 		  //CreateError(ARC_NOT_VALID, ERROR_LEVEL, CLEAR_BY_MCP_RESET);
 		  err_code = ARC_NOT_VALID;
+
 
 	  }
 
@@ -257,6 +263,7 @@ int Interp::arc_data_r(int move,
 		  printf("arc current point same as end point\n");
 		  //CreateError(ARC_NOT_VALID, ERROR_LEVEL, CLEAR_BY_MCP_RESET);
 		  err_code = ARC_NOT_VALID;
+
 		  return 0;
 	  }
 
@@ -269,6 +276,7 @@ int Interp::arc_data_r(int move,
 		  printf("radius too small to reach end point\n");
 		  //CreateError(ARC_RADIUS_TOO_SMALL, ERROR_LEVEL, CLEAR_BY_MCP_RESET);
 		  err_code = ARC_RADIUS_TOO_SMALL;
+
 		  return 0;
 	  }
 
@@ -349,6 +357,7 @@ int Interp::convert_arc(int move, block_pointer block, setup_pointer settings)
 		printf("arc not allowed 退出刀补第一段不能是圆弧移动 \n");
 		//CreateError(ARC_NOT_ALLOWED, ERROR_LEVEL, CLEAR_BY_MCP_RESET);
 		err_code = ARC_NOT_ALLOWED;
+
 		return 0;
 	}
 
@@ -372,8 +381,9 @@ int Interp::convert_arc(int move, block_pointer block, setup_pointer settings)
                      block->i_number, block->j_number);
     } else if (first) {
     	// FANUC 开启刀补后 第一段不能是圆弧
-    	err_code = ARC_NOT_ALLOWED2;
-    	return 0;
+    	// 暂时关闭   因为第一段直线距离小于刀补默认不开刀补 影响后面执行
+    	//err_code = ARC_NOT_ALLOWED2;
+    	//return 0;
     	status = convert_arc_comp1(move, block, settings, end_x, end_y, end_z,
                                  block->i_number, block->j_number,
                                  AA_end, BB_end, CC_end,
@@ -467,6 +477,7 @@ int Interp::convert_arc_comp1(int move,
     	printf("Radius of cutter compensation entry arc is not greater than the tool radius\n");
     	//CreateError(TOOL_RADIUS_BIGGER_THAN_ARC, ERROR_LEVEL, CLEAR_BY_MCP_RESET);
     	err_code = TOOL_RADIUS_BIGGER_THAN_ARC;
+
     	return 0;
     }
 
@@ -514,6 +525,7 @@ int Interp::convert_arc_comp1(int move,
     	printf("tool radius not less than arc radius with comp\n");
     	//CreateError(TOOL_RADIUS_BIGGER_THAN_ARC, ERROR_LEVEL, CLEAR_BY_MCP_RESET);
     	err_code = TOOL_RADIUS_BIGGER_THAN_ARC;
+
     	return 0;
     }
 
@@ -529,6 +541,7 @@ int Interp::convert_arc_comp1(int move,
     	printf("bug in tool radius comp\n");
     	//CreateError(TOOL_RADIUS_COMP_BUG, ERROR_LEVEL, CLEAR_BY_MCP_RESET);
     	err_code = TOOL_RADIUS_COMP_BUG;
+
     	return 0;
     }
 
@@ -610,6 +623,7 @@ int Interp::convert_arc_comp2(int move,
         	printf("TOOL_RADIUS_NOT_LESS_THAN_ARC_RADIUS_WITH_COMP\n");
         	//CreateError(TOOL_RADIUS_BIGGER_THAN_ARC, ERROR_LEVEL, CLEAR_BY_MCP_RESET);
         	err_code = TOOL_RADIUS_BIGGER_THAN_ARC;
+
         	return 0;
         }
 
@@ -645,6 +659,7 @@ int Interp::convert_arc_comp2(int move,
                 if(l > 1.0 || l < -1.0){
                 	printf("Arc move in concave corner cannot be reached by the tool without gouging\n");
                 	err_code = CONCAVE_CORNER_ERROR;
+
                 	// CONCAVE_CORNER_ERROR
                 	return 0;
                 }
@@ -663,6 +678,7 @@ int Interp::convert_arc_comp2(int move,
                 	printf("Arc move in concave corner cannot be reached by the tool without gouging\n");
                 	//CreateError(CONCAVE_CORNER_ERROR, ERROR_LEVEL, CLEAR_BY_MCP_RESET);
                 	err_code = CONCAVE_CORNER_ERROR;
+
                 	// CONCAVE_CORNER_ERROR
                 	return 0;
                 }
@@ -722,6 +738,7 @@ int Interp::convert_arc_comp2(int move,
             	printf("Arc to arc motion is invalid because the arcs have the same center\n");
             	//CreateError(CONCAVE_CORNER_ERROR, ERROR_LEVEL, CLEAR_BY_MCP_RESET);
             	err_code = CONCAVE_CORNER_ERROR;
+
             	return 0;
             }
 
@@ -731,6 +748,7 @@ int Interp::convert_arc_comp2(int move,
             	printf("Arc to arc motion makes a corner the compensated tool can't fit in without gouging\n");
             	//CreateError(ARC_TO_ARC_SAME_CENTER, ERROR_LEVEL, CLEAR_BY_MCP_RESET);
             	err_code = ARC_TO_ARC_SAME_CENTER;
+
             	return 0;
             }
 
@@ -796,7 +814,7 @@ int Interp::convert_cutter_compensation_off(setup_pointer settings)
 	if(settings->cutter_comp_side && settings->cutter_comp_radius > 0.0){
 		settings->cutter_comp_lastmove =  true;
 	}
-
+	settings->cutter_comp_side = 0;
 	return 0;
 }
 
@@ -808,6 +826,7 @@ int Interp::convert_cutter_compensation_on(int side, double radius,
 	// 暂时禁用 G41 G42 直接切换  需要G40 然后重新建立新刀补
 	if(settings->cutter_comp_side != 0){
 		err_code = G41_G42_CHANGE;
+
 		return 0;
 	}
 
@@ -963,6 +982,7 @@ int Interp::convert_straight_comp1(int move,
 		printf("Length of cutter compensation entry move is not greater than the tool radius\n");
 		//CreateError(MOVE_SMALLER_THAN_CMPRADIUS, ERROR_LEVEL, CLEAR_BY_MCP_RESET);
 		err_code = MOVE_SMALLER_THAN_CMPRADIUS;
+
 		return 0;
 	}
 
@@ -992,7 +1012,7 @@ int Interp::convert_straight_comp1(int move,
 	}else{
 		printf("NCE_BUG_CODE_NOT_G0_OR_G1\n");
 	}
-
+	printf("settings->cutter_comp_firstmove = false;\n");
 	settings->cutter_comp_firstmove = false;
 	settings->cutter_comp_fristcalc = true;
 
@@ -1354,7 +1374,6 @@ int Interp::init_block(block_pointer block)
 	block->j_flag = false;
 	block->k_flag = false;
 	block->l_number = -1;
-	block->line_number = -1;
 	block->motion_to_be = -1;
 	block->m_count = 0;
 
@@ -1407,11 +1426,13 @@ int Interp::move_endpoint_and_flush(setup_pointer settings, double x, double y)
             if(fabs(r1-r2) > .01){
                 printf("BUG: cutter compensation has generated an invalid arc with mismatched radii r1 %f r2 %f\n", r1, r2);
                 err_code = TOOL_RADIUS_COMP_BUG;
+
             }
 
             if(l1 != 0.0 && endpoint_valid && fabs(l2) > fabs(l1) + 0.254) {
                 printf("Arc move in concave corner cannot be reached by the tool without gouging\n");
                 err_code = CONCAVE_CORNER_ERROR;
+
             }
             q.data.arc_feed.end1 = x;
             q.data.arc_feed.end2 = y;
@@ -1443,6 +1464,7 @@ int Interp::move_endpoint_and_flush(setup_pointer settings, double x, double y)
                 // than the line is long.  this will gouge.
                 printf("Straight traverse in concave corner cannot be reached by the tool without gouging\n");
                 err_code = CONCAVE_CORNER_ERROR;
+
             }
             switch(settings->plane) {
             case CANON_PLANE_XY:
@@ -1484,6 +1506,7 @@ int Interp::move_endpoint_and_flush(setup_pointer settings, double x, double y)
                 // than the line is long.  this will gouge.
                 printf("Straight feed in concave corner cannot be reached by the tool without gouging\n");
                 err_code = CONCAVE_CORNER_ERROR;
+
             }
             switch(settings->plane) {
             case CANON_PLANE_XY:

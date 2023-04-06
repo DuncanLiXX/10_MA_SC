@@ -91,6 +91,7 @@ void ToolCompensate::ProcessData(ListNode<RecordMsg *> *node){
 
 
 	CodeMsgType msg_type = msg->GetMsgType();
+	uint32_t line_number = msg->GetLineNo();
 
 	switch(msg_type){
 		case RAPID_MSG:{
@@ -294,6 +295,7 @@ void ToolCompensate::ProcessData(ListNode<RecordMsg *> *node){
 
 	if(interp.err_code != 0){
 		err_code = interp.err_code;
+		err_lino = line_number;
 	}
 }
 

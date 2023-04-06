@@ -1902,6 +1902,7 @@ void ChannelControl::StartRunGCode(){
         this->InitMcModeStatus();
 
         this->m_p_compiler->SetCurPos(this->m_channel_rt_status.cur_pos_work);
+
         this->m_p_compiler->SetCurGMode();   //初始化编译器模态
 
         m_channel_rt_status.machining_time = 0;        //重置加工时间
@@ -5218,6 +5219,14 @@ bool ChannelControl::OutputData(RecordMsg *msg, bool flag_block){
         if(m_p_channel_config->rapid_mode == 1){
             data_frame.data.ext_type |= 0x02;	//直线定位
         }
+
+        /*
+        printf("data frame : %lld %lld %lld",
+        		data_frame.data.pos0,
+				data_frame.data.pos1,
+				data_frame.data.pos2);
+		*/
+
         break;
     default:
         break;
@@ -6860,14 +6869,14 @@ bool ChannelControl::ExecuteAuxMsg(RecordMsg *msg){
                 // 如果当前在正转状态下再给M03，那么ProcessPMCSignal就扫描不到变化了
                 // 这里需要做特殊处理
                 if(mcode == 3 && m_p_g_reg->SFR && m_p_spindle->Type() == 2){
-                	printf("======================= spindle M03\n");
+
                 	m_p_spindle->InputPolar(Polar::Positive);
                 }else if(mcode == 4 && m_p_g_reg->SRV && m_p_spindle->Type() == 2){
-                	printf("======================= spindle M04\n");
+
                 	m_p_spindle->InputPolar(Polar::Negative);
                 }else if(mcode == 5 && m_p_g_reg->SFR == 0 && m_p_g_reg->SRV == 0
                          && m_p_spindle->Type() == 2){
-                	printf("======================= spindle M05\n");
+
                 	m_p_spindle->InputPolar(Polar::Stop);
                 }
             }else if(tmp->GetExecStep(m_index) == 2){
@@ -8310,8 +8319,11 @@ bool ChannelControl::ExecuteCompensateMsg(RecordMsg *msg){
             m_b_5axis_clear_rot = false;
 #endif
             if(type == G49_CMD){
+            	g43_4_active = false;
+
                 if(this->m_channel_status.gmode[8] == G43_4_CMD){ //取消RTCP
-                    this->SetMcRtcpMode(G43_4_MODE, CANCEL_MODE, 0);
+                	ActiveMcToolOffset(false);
+                	this->SetMcRtcpMode(G43_4_MODE, CANCEL_MODE, 0);
 #ifdef USES_FIVE_AXIS_FUNC
                     m_b_5axis_clear_rot = true;  //旋转轴需要清整数圈
 #endif
@@ -8473,9 +8485,11 @@ bool ChannelControl::ExecuteCompensateMsg(RecordMsg *msg){
         }
 
     }else if(type == G43_4_CMD){  //激活RTCP
-        switch(compmsg->GetExecStep()){  //新流程：先激活RTCP再走运动指令
-        case 0://第一步：将新偏置发送到MC
+    	g43_4_active = true;
 
+    	switch(compmsg->GetExecStep()){  //新流程：先激活RTCP再走运动指令
+        case 0://第一步：将新偏置发送到MC
+        	ActiveMcToolOffset(true);
             z_axis_offset = m_p_chn_tool_config->geometry_compensation[value-1][2] * 1e3;  //单位由mm转换为um
             //	z_axis_offset += m_p_chn_tool_config->geometry_comp_basic[2] * 1e3;   //基准刀偏
             z_axis_offset += m_p_chn_tool_config->geometry_wear[value-1] * 1e3;   //叠加磨损补偿
@@ -11755,7 +11769,6 @@ void ChannelControl::SetMcAxisToolOffset(uint8_t axis_index){
     cmd.data.cmd = CMD_MC_SET_AXIS_TOOL_OFFSET;
 
 
-
     int64_t offset = 0;
     if(axis_config.axis_linear_type == LINE_AXIS_Z){
         offset = m_p_chn_tool_config->geometry_compensation[m_channel_status.cur_h_code-1][2] * 1e7;  //单位由mm转换为0.1nm
@@ -11792,13 +11805,17 @@ void ChannelControl::SetMcAxisToolOffset(uint8_t axis_index){
  * @param active_flag : 激活标志，true--激活   false--失效
  */
 void ChannelControl::ActiveMcToolOffset(bool active_flag){
-    McCmdFrame cmd;
+
+	ScPrintf("123=========== G43 ACTIVE %d\n", g43_4_active);
+
+	McCmdFrame cmd;
     memset(&cmd, 0x00, sizeof(McCmdFrame));
 
     cmd.data.channel_index = m_n_channel_index;
     cmd.data.axis_index = NO_AXIS;
     cmd.data.cmd = CMD_MC_ACTIVE_CHN_TOOL_OFFSET;
     cmd.data.data[0] = active_flag?m_channel_status.cur_h_code:0;
+    cmd.data.data[1] = g43_4_active;
 
     if(!this->m_b_mc_on_arm)
         m_p_mc_comm->WriteCmd(cmd);
@@ -17515,7 +17532,7 @@ void ChannelControl::SetALSignal(bool value){
 
 	if(value){
 		// 刚攻报警 退出刚攻状态反馈 避免刚攻中无法复位
-		printf("+++++++++++++++++++++++++ RGSPP = 0\n");
+		printf("刚攻报警 退出刚攻状态反馈 避免刚攻中无法复位\n");
 		m_p_f_reg->RGSPP = 0;
 		this->m_p_f_reg->AL = 1;
 	}else{
@@ -17535,7 +17552,6 @@ void ChannelControl::TransMachCoordToWorkCoord(DPointChn &pos, uint16_t coord_id
     uint8_t phy_axis = 0xFF;
 
     //axis_mask &= (~m_mask_pmc_axis);   //去掉PMC轴
-
     for(uint8_t i = 0; i < this->m_p_channel_config->chn_axis_count; i++){
         if(axis_mask & (0x01<<i)){
             origin_pos = m_p_chn_coord_config[0].offset[i];  //基本工件坐标系
@@ -17562,8 +17578,8 @@ void ChannelControl::TransMachCoordToWorkCoord(DPointChn &pos, uint16_t coord_id
             }
 
             *pp -= origin_pos;    //机械坐标 - 工件坐标系偏移 = 工件坐标
-
         }
+
         pp++;
 
     }
@@ -17581,12 +17597,12 @@ void ChannelControl::TransMachCoordToWorkCoord(DPointChn &pos, uint16_t coord_id
     double origin_pos = 0;
     double *pp = pos.m_df_point;
     uint8_t phy_axis = 0xFF;
-
     //axis_mask &= (~m_mask_pmc_axis);   //去掉PMC轴
 
     for(uint8_t i = 0; i < this->m_p_channel_config->chn_axis_count; i++){
         if(axis_mask & (0x01<<i)){
-            origin_pos = m_p_chn_coord_config[0].offset[i];  //基本工件坐标系
+
+        	origin_pos = m_p_chn_coord_config[0].offset[i];  //基本工件坐标系
 
             if(coord_idx >= G54_CMD && coord_idx <= G59_CMD ){
                 origin_pos += m_p_chn_coord_config[coord_idx/10-53].offset[i];
@@ -19461,10 +19477,12 @@ bool ChannelControl::CallMacroProgram(uint16_t macro_index){
 
     }else if(mode == MANUAL_STEP_MODE || mode == MANUAL_MODE || mode == MPG_MODE ||
              mode == REF_MODE || state != MS_RUNNING){  //手动、手轮模式（非运行状态亦可）
-        if(this->m_b_manual_call_macro){  //已经处于手动宏程序调用中
+
+    	if(this->m_b_manual_call_macro){  //已经处于手动宏程序调用中
             g_ptr_trace->PrintTrace(TRACE_WARNING, CHANNEL_CONTROL_SC, "已处于手动宏程序调用中执行过程！[%hu]", macro_index);
             return false;
         }
+
         if(!m_p_compiler->FindSubProgram(macro_index, true)){
             return false;
         }
@@ -19501,13 +19519,14 @@ bool ChannelControl::CallMacroProgram(uint16_t macro_index){
         }
 
         close(fp);
-
         this->m_p_compiler->SetCurPos(this->m_channel_rt_status.cur_pos_work);
 
         if(!m_p_compiler->OpenFile(m_str_mda_path)){		//编译器打开文件失败
             printf("CallMacroProgram:compiler open file failed\n");
             return false;
         }
+        // @add zk 满足回零模式调用MDA程序 模态与auto保持一致
+        this->m_p_compiler->SetCurGMode();
 
         printf("CallMacroProgram() m_n_run_thread_state: %d\n", m_n_run_thread_state);
         if(m_n_run_thread_state == IDLE || m_n_run_thread_state == PAUSE){

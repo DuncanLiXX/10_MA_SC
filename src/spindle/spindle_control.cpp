@@ -156,6 +156,7 @@ void SpindleControl::SetMode(Mode mode)
     if(mode == Speed){
     	mi->SendAxisEnableCmd(phy_axis+1, false);
     	mi->SendAxisCtrlModeSwitchCmd(phy_axis+1, 2);
+    	printf("============= 6666666666\n");
     }else if(mode == Position){
         // 速度降为0
     	SendSpdSpeedToMi(0);
@@ -313,7 +314,7 @@ void SpindleControl::CancelRigidTap()
 
     // 给信号梯图来取消攻丝
     if(F->RGSPP){
-    	printf("========================= RGSPP = 0\n");
+
     	F->RGSPP = 0;
     }
 

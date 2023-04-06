@@ -3910,6 +3910,10 @@ void ChannelControl::SetMachineState(uint8_t mach_state){
     {
         //停止伺服监控
         g_ptr_chn_engine->m_serverGuide.ResetRecord();
+
+        string msg = "结束加工程序(" + string(this->m_channel_status.cur_nc_file_name) + ")";
+        g_ptr_tracelog_processor->SendToHmi(kProcessInfo, kDebug, msg);
+
     }
 
 	g_ptr_trace->PrintTrace(TRACE_INFO, CHANNEL_CONTROL_SC, "Enter SetMachineState, old = %d, new = %d, m_n_run_thread_state = %d\n", m_channel_status.machining_state, mach_state, m_n_run_thread_state);
@@ -6271,9 +6275,6 @@ bool ChannelControl::ExecuteAuxMsg(RecordMsg *msg){
                         this->SendMachOverToHmi();  //发送加工结束消息给HMI
                     }
 #else
-                    string msg = "结束加工程序(" + string(this->m_channel_status.cur_nc_file_name) + ")";
-                    g_ptr_tracelog_processor->SendToHmi(kProcessInfo, kDebug, msg);
-
                     this->SendMachOverToHmi();  //发送加工结束消息给HMI
 #endif
                 }

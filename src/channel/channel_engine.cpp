@@ -3668,9 +3668,9 @@ void ChannelEngine::ProcessHmiAbsoluteRefSet(HMICmdFrame &cmd)
     if (cmd.cmd_extension)
     {
         if (errCode == 0)
-            CreateError(ERR_RET_REF_FAILED, WARNING_LEVEL, CLEAR_BY_MCP_RESET, 0, CHANNEL_ENGINE_INDEX, chn_axis);
+            CreateError(ERR_RET_REF_FAILED, WARNING_LEVEL, CLEAR_BY_MCP_RESET, 0, m_n_cur_channle_index, chn_axis);
         else if(errCode == 1)
-            CreateError(ERR_RET_SYNC_ERR, WARNING_LEVEL, CLEAR_BY_MCP_RESET, 0, CHANNEL_ENGINE_INDEX, chn_axis);
+            CreateError(ERR_RET_SYNC_ERR, WARNING_LEVEL, CLEAR_BY_MCP_RESET, 0, m_n_cur_channle_index, chn_axis);
     }
     this->m_p_hmi_comm->SendCmd(cmd);
 }
@@ -4977,7 +4977,9 @@ void ChannelEngine::ProcessPmcRefRet(uint8_t phy_axis){
         return;
     }
     if(g_ptr_alarm_processor->HasErrorInfo()){ //有告警，拒绝回零
-        CreateError(ERR_RET_REF_FAILED, WARNING_LEVEL, CLEAR_BY_MCP_RESET, 0, CHANNEL_ENGINE_INDEX, 0);
+        uint8_t chan_id = CHANNEL_ENGINE_INDEX, axis_id = NO_AXIS;
+        GetPhyAxistoChanAxis(phy_axis, chan_id, axis_id);
+        CreateError(ERR_RET_REF_FAILED, WARNING_LEVEL, CLEAR_BY_MCP_RESET, 0, chan_id, axis_id);
         return;
     }
 
@@ -5135,6 +5137,31 @@ uint8_t ChannelEngine::GetChnAxistoPhyAixs(uint8_t chn_index, uint8_t chn_axis){
 
     uint8_t axis = this->m_p_channel_control[chn_index].GetPhyAxis(chn_axis);
     return axis;
+}
+
+/**
+ * @brief 根据物理轴号获取通道轴号
+ * @param chn_index,需要查询的通道号
+ * @param phy_axis,物理轴号,0开始
+ * @return 通道轴号，0xFF为异常情况
+ */
+bool ChannelEngine::GetPhyAxistoChanAxis(uint8_t phy_axis, uint8_t &get_chan_id, uint8_t &get_chan_axis)
+{
+    uint8_t chan_id = CHANNEL_ENGINE_INDEX;
+    uint8_t chan_axis = NO_AXIS;
+    for (int i = 0; i < this->m_p_general_config->chn_count; ++i)
+    {
+        chan_axis = this->m_p_channel_control[i].GetChnAxisFromPhyAxis(phy_axis);
+        if (chan_axis != NO_AXIS)
+        {
+            chan_id = i;
+            break;
+        }
+    }
+
+    get_chan_id = chan_id;
+    get_chan_axis = chan_axis;
+    return true;
 }
 
 /**
@@ -8480,7 +8507,11 @@ bool ChannelEngine::RefreshMiStatusFun(){
                         uint64_t flag = 0x01;
                         for(uint8_t i = 0; i < this->m_p_general_config->axis_count; i++){
                             if(value64 & flag)
-                                CreateError(ERR_ENCODER, ERROR_LEVEL, CLEAR_BY_MCP_RESET, 0, CHANNEL_ENGINE_INDEX, i);
+                            {
+                                uint8_t chan_id = CHANNEL_ENGINE_INDEX, axis_id = NO_AXIS;
+                                GetPhyAxistoChanAxis(i, chan_id, axis_id);
+                                CreateError(ERR_ENCODER, ERROR_LEVEL, CLEAR_BY_MCP_RESET, 0, chan_id, axis_id);
+                            }
                             flag = flag << 1;
                         }
                     }
@@ -8494,7 +8525,9 @@ bool ChannelEngine::RefreshMiStatusFun(){
                             if(value64 & flag){
                                 this->m_p_mi_comm->ReadServoWarnCode(i, value32);   //读取告警码
                                 //产生告警
-                                CreateError(ERR_SERVO, ERROR_LEVEL, CLEAR_BY_MCP_RESET, value32, CHANNEL_ENGINE_INDEX, i);
+                                uint8_t chan_id = CHANNEL_ENGINE_INDEX, axis_id = NO_AXIS;
+                                GetPhyAxistoChanAxis(i, chan_id, axis_id);
+                                CreateError(ERR_SERVO, ERROR_LEVEL, CLEAR_BY_MCP_RESET, value32, chan_id, axis_id);
                             }
                             flag = flag << 1;
                         }
@@ -8507,7 +8540,11 @@ bool ChannelEngine::RefreshMiStatusFun(){
                         uint64_t flag = 0x01;
                         for(uint8_t i = 0; i < this->m_p_general_config->axis_count; i++){
                             if(value64 & flag)
-                                CreateError(ERR_TRACK_LIMIT, ERROR_LEVEL, CLEAR_BY_MCP_RESET, 0, CHANNEL_ENGINE_INDEX, i);
+                            {
+                                uint8_t chan_id = CHANNEL_ENGINE_INDEX, axis_id = NO_AXIS;
+                                GetPhyAxistoChanAxis(i, chan_id, axis_id);
+                                CreateError(ERR_TRACK_LIMIT, ERROR_LEVEL, CLEAR_BY_MCP_RESET, 0, chan_id, axis_id);
+                            }
                             flag = flag << 1;
                         }
                     }
@@ -8520,7 +8557,11 @@ bool ChannelEngine::RefreshMiStatusFun(){
                         uint64_t flag = 0x01;
                         for(uint8_t i = 0; i < this->m_p_general_config->axis_count; i++){
                             if(value64 & flag)
-                                CreateError(ERR_SYNC_POS, ERROR_LEVEL, CLEAR_BY_MCP_RESET, 0, CHANNEL_ENGINE_INDEX, i);
+                            {
+                                uint8_t chan_id = CHANNEL_ENGINE_INDEX, axis_id = NO_AXIS;
+                                GetPhyAxistoChanAxis(i, chan_id, axis_id);
+                                CreateError(ERR_SYNC_POS, ERROR_LEVEL, CLEAR_BY_MCP_RESET, 0, chan_id, axis_id);
+                            }
                             flag = flag << 1;
                         }
                     }
@@ -8532,7 +8573,11 @@ bool ChannelEngine::RefreshMiStatusFun(){
                         uint64_t flag = 0x01;
                         for(uint8_t i = 0; i < this->m_p_general_config->axis_count; i++){
                             if(value64 & flag)
-                                CreateError(ERR_INTP_POS, ERROR_LEVEL, CLEAR_BY_MCP_RESET, 0, CHANNEL_ENGINE_INDEX, i);
+                            {
+                                uint8_t chan_id = CHANNEL_ENGINE_INDEX, axis_id = NO_AXIS;
+                                GetPhyAxistoChanAxis(i, chan_id, axis_id);
+                                CreateError(ERR_INTP_POS, ERROR_LEVEL, CLEAR_BY_MCP_RESET, 0, chan_id, axis_id);
+                            }
                             flag = flag << 1;
                         }
                     }
@@ -8543,7 +8588,11 @@ bool ChannelEngine::RefreshMiStatusFun(){
                         uint64_t flag = 0x01;
                         for(uint8_t i = 0; i < this->m_p_general_config->axis_count; i++){
                             if(value64 & flag)
-                                CreateError(ERR_SYNC_TORQUE, FATAL_LEVEL, CLEAR_BY_MCP_RESET, 0, CHANNEL_ENGINE_INDEX, i);
+                            {
+                                uint8_t chan_id = CHANNEL_ENGINE_INDEX, axis_id = NO_AXIS;
+                                GetPhyAxistoChanAxis(i, chan_id, axis_id);
+                                CreateError(ERR_SYNC_TORQUE, FATAL_LEVEL, CLEAR_BY_MCP_RESET, 0, chan_id, axis_id);
+                            }
                             flag = flag << 1;
                         }
                     }
@@ -8554,7 +8603,11 @@ bool ChannelEngine::RefreshMiStatusFun(){
                         uint64_t flag = 0x01;
                         for(uint8_t i = 0; i < this->m_p_general_config->axis_count; i++){
                             if(value64 & flag)
-                                CreateError(ERR_SYNC_MACH, FATAL_LEVEL, CLEAR_BY_MCP_RESET, 0, CHANNEL_ENGINE_INDEX, i);
+                            {
+                                uint8_t chan_id = CHANNEL_ENGINE_INDEX, axis_id = NO_AXIS;
+                                GetPhyAxistoChanAxis(i, chan_id, axis_id);
+                                CreateError(ERR_SYNC_MACH, FATAL_LEVEL, CLEAR_BY_MCP_RESET, 0, chan_id, axis_id);
+                            }
                             flag = flag << 1;
                         }
                     }
@@ -10033,6 +10086,7 @@ void ChannelEngine::AxisFindRefWithZeroSignal(uint8_t phy_axis){
 
         break;
     case 20: //失败处理
+    {
         this->m_n_mask_ret_ref &= ~(0x01<<phy_axis);
         m_n_ret_ref_step[phy_axis] = 0;
 
@@ -10042,8 +10096,11 @@ void ChannelEngine::AxisFindRefWithZeroSignal(uint8_t phy_axis){
             m_n_ret_ref_auto_cur = 0;
         }
         m_error_code = ERR_RET_REF_FAILED;
-        CreateError(ERR_RET_REF_FAILED, WARNING_LEVEL, CLEAR_BY_MCP_RESET, 0, CHANNEL_ENGINE_INDEX, phy_axis);
+        uint8_t chan_id = CHANNEL_ENGINE_INDEX, axis_id = NO_AXIS;
+        GetPhyAxistoChanAxis(phy_axis, chan_id, axis_id);
+        CreateError(ERR_RET_REF_FAILED, WARNING_LEVEL, CLEAR_BY_MCP_RESET, 0, chan_id, axis_id);
         break;
+    }
     default:
         break;
     }
@@ -10116,18 +10173,22 @@ void ChannelEngine::AxisFindRefNoZeroSignal(uint8_t phy_axis){
 
         break;
     case 20: //失败处理
-        this->m_n_mask_ret_ref &= ~(0x01<<phy_axis);
-        m_n_ret_ref_step[phy_axis] = 0;
+        {
+            this->m_n_mask_ret_ref &= ~(0x01<<phy_axis);
+            m_n_ret_ref_step[phy_axis] = 0;
 
-        if(m_n_mask_ret_ref == 0){
-            this->m_b_ret_ref = false;
-            this->m_b_ret_ref_auto = false;
-            m_n_ret_ref_auto_cur = 0;
+            if(m_n_mask_ret_ref == 0){
+                this->m_b_ret_ref = false;
+                this->m_b_ret_ref_auto = false;
+                m_n_ret_ref_auto_cur = 0;
+            }
+            std::cout << "step 20, ref failed\n";
+            m_error_code = ERR_RET_REF_FAILED;
+            uint8_t chan_id = CHANNEL_ENGINE_INDEX, axis_id = NO_AXIS;
+            GetPhyAxistoChanAxis(phy_axis, chan_id, axis_id);
+            CreateError(ERR_RET_REF_FAILED, WARNING_LEVEL, CLEAR_BY_MCP_RESET, 0, chan_id, axis_id);
+            break;
         }
-        std::cout << "step 20, ref failed\n";
-        m_error_code = ERR_RET_REF_FAILED;
-        CreateError(ERR_RET_REF_FAILED, WARNING_LEVEL, CLEAR_BY_MCP_RESET, 0, CHANNEL_ENGINE_INDEX, phy_axis+1);
-        break;
     default:
         break;
     }
@@ -10488,19 +10549,24 @@ void ChannelEngine::EcatIncAxisFindRefWithZeroSignal(uint8_t phy_axis){
         break;
     }
     case 20: //失败处理
-        this->m_n_mask_ret_ref &= ~(0x01<<phy_axis);
-        m_n_ret_ref_step[phy_axis] = 0;
+        {
+            this->m_n_mask_ret_ref &= ~(0x01<<phy_axis);
+            m_n_ret_ref_step[phy_axis] = 0;
 
-        if(m_n_mask_ret_ref == 0){
-            this->m_b_ret_ref = false;
-            this->m_b_ret_ref_auto = false;
-            m_n_ret_ref_auto_cur = 0;
+            if(m_n_mask_ret_ref == 0){
+                this->m_b_ret_ref = false;
+                this->m_b_ret_ref_auto = false;
+                m_n_ret_ref_auto_cur = 0;
+            }
+            std::cout << "step 20, home failed" << std::endl;
+            m_error_code = ERR_RET_REF_FAILED;
+            uint8_t chan_id = CHANNEL_ENGINE_INDEX, axis_id = NO_AXIS;
+            GetPhyAxistoChanAxis(phy_axis, chan_id, axis_id);
+            CreateError(ERR_RET_REF_FAILED, WARNING_LEVEL, CLEAR_BY_MCP_RESET, 0, chan_id, axis_id);
+            break;
         }
-        std::cout << "step 20, home failed" << std::endl;
-        m_error_code = ERR_RET_REF_FAILED;
-        CreateError(ERR_RET_REF_FAILED, WARNING_LEVEL, CLEAR_BY_MCP_RESET, 0, CHANNEL_ENGINE_INDEX, phy_axis+1);
-        break;
     case 21:
+    {
         this->m_n_mask_ret_ref &= ~(0x01<<phy_axis);
         m_n_ret_ref_step[phy_axis] = 0;
 
@@ -10511,8 +10577,11 @@ void ChannelEngine::EcatIncAxisFindRefWithZeroSignal(uint8_t phy_axis){
         }
         std::cout << "step 21, home failed" << std::endl;
         m_error_code = ERR_RET_REF_Z_ERR;
-        CreateError(ERR_RET_REF_Z_ERR, WARNING_LEVEL, CLEAR_BY_MCP_RESET, 0, CHANNEL_ENGINE_INDEX, phy_axis+1);
+        uint8_t chan_id = CHANNEL_ENGINE_INDEX, axis_id = NO_AXIS;
+        GetPhyAxistoChanAxis(phy_axis, chan_id, axis_id);
+        CreateError(ERR_RET_REF_Z_ERR, WARNING_LEVEL, CLEAR_BY_MCP_RESET, 0, chan_id, axis_id);
         break;
+    }
     default:
         break;
     }
@@ -10619,6 +10688,7 @@ void ChannelEngine::EcatIncAxisFindRefNoZeroSignal(uint8_t phy_axis){
         }
         break;
     case 20: //失败处理
+    {
         this->m_n_mask_ret_ref &= ~(0x01<<phy_axis);
         m_n_ret_ref_step[phy_axis] = 0;
 
@@ -10628,8 +10698,11 @@ void ChannelEngine::EcatIncAxisFindRefNoZeroSignal(uint8_t phy_axis){
             m_n_ret_ref_auto_cur = 0;
         }
         m_error_code = ERR_RET_REF_FAILED;
-        CreateError(ERR_RET_REF_FAILED, WARNING_LEVEL, CLEAR_BY_MCP_RESET, 0, CHANNEL_ENGINE_INDEX, phy_axis+1);
+        uint8_t chan_id = CHANNEL_ENGINE_INDEX, axis_id = NO_AXIS;
+        GetPhyAxistoChanAxis(phy_axis, chan_id, axis_id);
+        CreateError(ERR_RET_REF_FAILED, WARNING_LEVEL, CLEAR_BY_MCP_RESET, 0, chan_id, axis_id);
         break;
+    }
     default:
         break;
     }
@@ -11090,16 +11163,20 @@ void ChannelEngine::PulseAxisFindRefWithZeroSignal(uint8_t phy_axis){
         break;
 
     case 20: //失败处理
-        this->m_n_mask_ret_ref &= ~(0x01<<phy_axis);
-        m_n_ret_ref_step[phy_axis] = 0;
+        {
+            this->m_n_mask_ret_ref &= ~(0x01<<phy_axis);
+            m_n_ret_ref_step[phy_axis] = 0;
 
-        if(m_n_mask_ret_ref == 0){
-            this->m_b_ret_ref = false;
-            this->m_b_ret_ref_auto = false;
-            m_n_ret_ref_auto_cur = 0;
+            if(m_n_mask_ret_ref == 0){
+                this->m_b_ret_ref = false;
+                this->m_b_ret_ref_auto = false;
+                m_n_ret_ref_auto_cur = 0;
+            }
+            m_error_code = ERR_RET_REF_FAILED;
+            uint8_t chan_id = CHANNEL_ENGINE_INDEX, axis_id = NO_AXIS;
+            GetPhyAxistoChanAxis(phy_axis, chan_id, axis_id);
+            CreateError(ERR_RET_REF_FAILED, WARNING_LEVEL, CLEAR_BY_MCP_RESET, 0, chan_id, axis_id);
         }
-        m_error_code = ERR_RET_REF_FAILED;
-        CreateError(ERR_RET_REF_FAILED, WARNING_LEVEL, CLEAR_BY_MCP_RESET, 0, CHANNEL_ENGINE_INDEX, phy_axis);
         break;
     default:
         break;
@@ -11267,6 +11344,7 @@ void ChannelEngine::PulseAxisFindRefNoZeroSignal(uint8_t phy_axis){
         break;
 
     case 20: //失败处理
+    {
         this->m_n_mask_ret_ref &= ~(0x01<<phy_axis);
         m_n_ret_ref_step[phy_axis] = 0;
 
@@ -11276,8 +11354,11 @@ void ChannelEngine::PulseAxisFindRefNoZeroSignal(uint8_t phy_axis){
             m_n_ret_ref_auto_cur = 0;
         }
         m_error_code = ERR_RET_REF_FAILED;
-        CreateError(ERR_RET_REF_FAILED, WARNING_LEVEL, CLEAR_BY_MCP_RESET, 0, CHANNEL_ENGINE_INDEX, phy_axis);
+        uint8_t chan_id = CHANNEL_ENGINE_INDEX, axis_id = NO_AXIS;
+        GetPhyAxistoChanAxis(phy_axis, chan_id, axis_id);
+        CreateError(ERR_RET_REF_FAILED, WARNING_LEVEL, CLEAR_BY_MCP_RESET, 0, chan_id, axis_id);
         break;
+    }
     default:
         break;
     }
@@ -11790,6 +11871,7 @@ void ChannelEngine::EcatAxisFindRefWithZeroSignal2(uint8_t phy_axis){
         }
         break;
     case 20: //失败处理
+    {
         this->m_n_mask_ret_ref &= ~(0x01<<phy_axis);
         m_n_ret_ref_step[phy_axis] = 0;
 
@@ -11799,8 +11881,11 @@ void ChannelEngine::EcatAxisFindRefWithZeroSignal2(uint8_t phy_axis){
             m_n_ret_ref_auto_cur = 0;
         }
         m_error_code = ERR_RET_REF_FAILED;
-        CreateError(ERR_RET_REF_FAILED, WARNING_LEVEL, CLEAR_BY_MCP_RESET, 0, CHANNEL_ENGINE_INDEX, phy_axis);
+        uint8_t chan_id = CHANNEL_ENGINE_INDEX, axis_id = NO_AXIS;
+        GetPhyAxistoChanAxis(phy_axis, chan_id, axis_id);
+        CreateError(ERR_RET_REF_FAILED, WARNING_LEVEL, CLEAR_BY_MCP_RESET, 0, chan_id, axis_id);
         break;
+    }
     default:
         break;
     }
@@ -12000,6 +12085,7 @@ void ChannelEngine::EcatAxisFindRefNoZeroSignal(uint8_t phy_axis){
         std::cout << "step 19, ref finish\n";
         break;
     case 20: //失败处理
+    {
         this->m_n_mask_ret_ref &= ~(0x01<<phy_axis);
         m_n_ret_ref_step[phy_axis] = 0;
 
@@ -12010,8 +12096,11 @@ void ChannelEngine::EcatAxisFindRefNoZeroSignal(uint8_t phy_axis){
         }
         std::cout << "step 20, ref failed\n";
         m_error_code = ERR_RET_REF_FAILED;
-        CreateError(ERR_RET_REF_FAILED, WARNING_LEVEL, CLEAR_BY_MCP_RESET, 0, CHANNEL_ENGINE_INDEX, phy_axis);
+        uint8_t chan_id = CHANNEL_ENGINE_INDEX, axis_id = NO_AXIS;
+        GetPhyAxistoChanAxis(phy_axis, chan_id, axis_id);
+        CreateError(ERR_RET_REF_FAILED, WARNING_LEVEL, CLEAR_BY_MCP_RESET, 0, chan_id, axis_id);
         break;
+    }
     default:
         break;
     }
@@ -12032,7 +12121,7 @@ void ChannelEngine::ReturnRefPoint(){
 
         if (GetSyncAxisCtrl()->CheckSyncState(i) == 2)
         {//从动轴不能回零
-            CreateError(ERR_RET_SYNC_ERR, WARNING_LEVEL, CLEAR_BY_MCP_RESET, 0, CHANNEL_ENGINE_INDEX, i); 
+            CreateError(ERR_RET_SYNC_ERR, WARNING_LEVEL, CLEAR_BY_MCP_RESET, 0, m_n_cur_channle_index, i);
             continue;
         }
         if(this->m_b_ret_ref_auto){
@@ -12053,7 +12142,7 @@ void ChannelEngine::ReturnRefPoint(){
 
             if(this->m_p_axis_config[i].feedback_mode == NO_ENCODER)
             {   // 步进电机，无反馈
-                CreateError(ERR_RET_SYNC_ERR, WARNING_LEVEL, CLEAR_BY_MCP_RESET, 0, CHANNEL_ENGINE_INDEX, i);
+                CreateError(ERR_RET_SYNC_ERR, WARNING_LEVEL, CLEAR_BY_MCP_RESET, 0, m_n_cur_channle_index, i);
             }else if(this->m_p_axis_config[i].feedback_mode == INCREMENTAL_ENCODER)
             {   //增量式编码器
                 if (this->m_p_axis_config[i].ret_ref_mode == 1)
@@ -12088,7 +12177,7 @@ void ChannelEngine::ReturnRefPoint(){
             }
         }else if(this->m_p_axis_config[i].axis_interface == ANALOG_AXIS){   // 非总线轴
             //不支持非总线轴
-            CreateError(ERR_RET_SYNC_ERR, WARNING_LEVEL, CLEAR_BY_MCP_RESET, 0, CHANNEL_ENGINE_INDEX, i);
+            CreateError(ERR_RET_SYNC_ERR, WARNING_LEVEL, CLEAR_BY_MCP_RESET, 0, m_n_cur_channle_index, i);
         }
     }
 

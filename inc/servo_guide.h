@@ -86,50 +86,6 @@ struct SG_RecCir_Type : public SG_Type {
     double height_ = 0;
     //倒角半径
     double radius_ = 0;
-
-    //一象限
-    //double area_1_x_min = 0;
-    //double area_1_x_max = 0;
-    //double area_1_y = 0;
-
-    //二象限
-    //double area_2_x_min = 0;
-    //double area_2_x_max = 0;
-    //double area_2_y_min = 0;
-    //double area_2_y_max = 0;
-
-    //三象限
-    //double area_3_x = 0;
-    //double area_3_y_min = 0;
-    //double area_3_y_max = 0;
-
-    //四象限
-    //double area_4_x_min = 0;
-    //double area_4_x_max = 0;
-    //double area_4_y_min = 0;
-    //double area_4_y_max = 0;
-
-    //五象限
-    //double area_5_x_min = 0;
-    //double area_5_x_max = 0;
-    //double area_5_y = 0;
-
-    //六象限
-    //double area_6_x_min = 0;
-    //double area_6_x_max = 0;
-    //double area_6_y_min = 0;
-    //double area_6_y_max = 0;
-
-    //七象限
-    //double area_7_x = 0;
-    //double area_7_y_min = 0;
-    //double area_7_y_max = 0;
-
-    //八象限
-    //double area_8_x_min = 0;
-    //double area_8_x_max = 0;
-    //double area_8_y_min = 0;
-    //double area_8_y_max = 0;
 };
 
 /**

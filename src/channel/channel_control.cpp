@@ -3904,6 +3904,13 @@ void ChannelControl::SetMachineState(uint8_t mach_state){
     // @modify zk 记录之前状态
 	uint8_t old_stat = m_channel_status.machining_state;
 
+    //llx add
+    if (old_stat != MS_READY && mach_state == MS_READY)
+    {
+        //停止伺服监控
+        g_ptr_chn_engine->m_serverGuide.ResetRecord();
+    }
+
 	g_ptr_trace->PrintTrace(TRACE_INFO, CHANNEL_CONTROL_SC, "Enter SetMachineState, old = %d, new = %d, m_n_run_thread_state = %d\n", m_channel_status.machining_state, mach_state, m_n_run_thread_state);
     if(m_channel_status.machining_state == mach_state)
         return;
@@ -4806,11 +4813,20 @@ bool ChannelControl::RefreshStatusFun(){
 				this->m_p_mc_arm_comm->ReadChnNegSoftLimtMask(m_n_channel_index, data);
 				this->m_channel_mc_status.axis_soft_negative_limit = data;
 			}
+
 			if(m_channel_mc_status.mc_error.bits.err_soft_limit_neg){
-				CreateError(ERR_SOFT_LIMIT_NEG, ERROR_LEVEL, CLEAR_BY_MCP_RESET, data, m_n_channel_index);
+                for(int i = 0; i < 16; ++i)
+                {
+                    if(this->m_channel_mc_status.axis_soft_negative_limit & (0x01<<i))
+                        CreateError(ERR_SOFT_LIMIT_NEG, ERROR_LEVEL, CLEAR_BY_MCP_RESET, data, m_n_channel_index, i);
+                }
 			}
 			if(m_channel_mc_status.mc_error.bits.err_soft_limit_pos){
-				CreateError(ERR_SOFT_LIMIT_POS, ERROR_LEVEL, CLEAR_BY_MCP_RESET, data, m_n_channel_index);
+                for(int i = 0; i < 16; ++i)
+                {
+                    if(this->m_channel_mc_status.axis_soft_postive_limit & (0x01<<i))
+                        CreateError(ERR_SOFT_LIMIT_NEG, ERROR_LEVEL, CLEAR_BY_MCP_RESET, data, m_n_channel_index, i);
+                }
 			}
 		}
 
@@ -7018,7 +7034,7 @@ bool ChannelControl::ExecuteLineMsg(RecordMsg *msg, bool flag_block){
             continue;
         if (g_ptr_chn_engine->GetPmcActive(GetPhyAxis(i))) {
             m_error_code = ERR_PMC_IVALID_USED;
-            CreateError(ERR_PMC_IVALID_USED, ERROR_LEVEL, CLEAR_BY_MCP_RESET, 0, m_n_channel_index);
+            CreateError(ERR_PMC_IVALID_USED, ERROR_LEVEL, CLEAR_BY_MCP_RESET, 0, m_n_channel_index, i);
             return false;
         }
     }
@@ -7104,7 +7120,7 @@ bool ChannelControl::ExecuteRapidMsg(RecordMsg *msg, bool flag_block){
             continue;
         if (g_ptr_chn_engine->GetPmcActive(GetPhyAxis(i))) {
             m_error_code = ERR_PMC_IVALID_USED;
-            CreateError(ERR_PMC_IVALID_USED, ERROR_LEVEL, CLEAR_BY_MCP_RESET, 0, m_n_channel_index);
+            CreateError(ERR_PMC_IVALID_USED, ERROR_LEVEL, CLEAR_BY_MCP_RESET, 0, m_n_channel_index, i);
             return false;
         }
     }
@@ -9651,7 +9667,7 @@ bool ChannelControl::ExecuteRefReturnMsg(RecordMsg *msg){
                     // 十次检测都没到位  判断为回参考点失败 发出警告
                     wait_times = 0;
                     m_error_code = ERR_RET_REF_FAILED;
-                    CreateError(ERR_RET_REF_FAILED, ERROR_LEVEL, CLEAR_BY_MCP_RESET, gcode, m_n_channel_index);
+                    CreateError(ERR_RET_REF_FAILED, ERROR_LEVEL, CLEAR_BY_MCP_RESET, gcode, m_n_channel_index, i);
                 }
 
                 return false;
@@ -11218,7 +11234,7 @@ void ChannelControl::ManualMove(int8_t dir){
     if(g_ptr_chn_engine->GetPmcActive(this->GetPhyAxis(m_channel_status.cur_axis))) {
         //this->ManualMovePmc(dir);
         m_error_code = ERR_PMC_IVALID_USED;
-        CreateError(ERR_PMC_IVALID_USED, ERROR_LEVEL, CLEAR_BY_MCP_RESET, 0, m_n_channel_index);
+        CreateError(ERR_PMC_IVALID_USED, ERROR_LEVEL, CLEAR_BY_MCP_RESET, 0, m_n_channel_index, m_channel_status.cur_axis);
         return;
     }
 
@@ -11363,7 +11379,7 @@ void ChannelControl::ManualMove(uint8_t axis, double pos, double vel, bool workc
     if(g_ptr_chn_engine->GetPmcActive(this->GetPhyAxis(axis))) {
         //this->ManualMovePmc(axis, pos, vel);
         m_error_code = ERR_PMC_IVALID_USED;
-        CreateError(ERR_PMC_IVALID_USED, ERROR_LEVEL, CLEAR_BY_MCP_RESET, 0, m_n_channel_index);
+        CreateError(ERR_PMC_IVALID_USED, ERROR_LEVEL, CLEAR_BY_MCP_RESET, 0, m_n_channel_index, axis);
         return;
     }
 

@@ -110,7 +110,7 @@ const int kMaxProcParamCount = 10;    //系统支持的工艺参数最大组数
 #define A_REG_COUNT (25)			//A寄存器个数
 #define R_REG_COUNT (2048)			//R寄存器个数
 #define D_REG_COUNT (2048)			//D寄存器个数
-#define T_REG_COUNT (80)			//T寄存器个数   单个寄存器占2字节，总字节数为160字节
+#define T_REG_COUNT (128)			//T寄存器个数   单个寄存器占2字节，总字节数为256字节
 #define C_REG_COUNT (80)			//C寄存器个数   单个寄存器占4字节，前两字节为预置值，后两字节为当前值，总字节数为320字节
 #define E_REG_COUNT (8000)         //E寄存器个数
 #endif
@@ -237,6 +237,7 @@ enum HMICmdCode {
     CMD_SC_BACKUP_STATUS,           //SC通知HMI当前备份状态     0x7E
     CMD_SC_NOTIFY_TRACELOG,         //SC通知HMI操作记录        0x7F
     CMD_SC_NOTIFY_PROTECT_STATUS,   //SC通知HMI保护状态        0x80
+    CMD_SC_NOTIFY_GATHER_FINISH,    //SC通知HMI采集完成        0x81
 	CMD_HMI_GUARD = 255       //HMI命令字卫兵 0xFF
 };
 
@@ -1820,8 +1821,7 @@ struct SG_Circle_Config
     uint8_t axis_one = -1;
     uint8_t axis_two = -1;
     uint8_t interval = 8;       //采样周期
-    uint8_t circle_type = 0;    //0-正圆,1-逆圆
-    double raduis = 5;          //半径
+    double radius = 5;          //半径
 };
 
 /**
@@ -1842,8 +1842,8 @@ struct SG_RecCir_Config
  */
 struct SG_Tapping_Config
 {
-    //uint8_t axis_one = -1;      //主轴轴号
-    //uint8_t axis_two = -1;      //Z轴轴号
+    uint8_t axis_one = -1;      //主轴轴号
+    uint8_t axis_two = -1;      //Z轴轴号
     uint8_t interval = 8;
 };
 

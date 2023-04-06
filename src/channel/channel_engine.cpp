@@ -369,7 +369,7 @@ bool ChannelEngine::CheckIoDev_pmc2(const BdioDevInfo &info)
     // 设备类型检查
     if (m_SDLINK_MAP.find(info.device_type) == m_SDLINK_MAP.end())
     {
-        std::cout << info.group_index << " config error, device_type: " << static_cast<int>(info.device_type) << std::endl;
+        std::cout << (int)info.group_index << " config error, device_type: " << static_cast<int>(info.device_type) << std::endl;
         return false;
     }
 
@@ -726,24 +726,22 @@ bool ChannelEngine::ReadyServerGuide()
 
 bool ChannelEngine::RecordingServerGuide()
 {
-    //是否处于Ready状态
-
     //启动另一个线程，处理数据发送，防止采样周期不准确
     std::thread th(&ServeGuide::ProcessData, &m_serverGuide);
 
     while(!g_sys_state.system_quit)
     {
-        if (m_serverGuide.RefreshRecording())
+        if (m_serverGuide.RefreshRecording())//判断是否处于Recording状态，并刷新状态
         {
-            if (m_serverGuide.IsTimeout())//采样周期
+            if (m_serverGuide.IsTimeout())
             {
                 this->m_p_mi_comm->ReadPhyAxisCurFedBckPos(m_df_phy_axis_pos_feedback, m_df_phy_axis_pos_intp, m_df_phy_axis_speed_feedback,
                     m_df_phy_axis_torque_feedback, m_df_spd_angle, m_p_general_config->axis_count);
 
-                m_serverGuide.RecordData(m_df_phy_axis_pos_feedback);
+                m_serverGuide.RecordData(m_df_phy_axis_pos_feedback, m_df_phy_axis_pos_intp);
             }
         }
-        else if (m_serverGuide.IsEmpty())
+        else if (m_serverGuide.IsEmpty() && m_serverGuide.IsIdle())
         {//退出循环
             break;
         }
@@ -751,6 +749,23 @@ bool ChannelEngine::RecordingServerGuide()
 
     th.join();
     return true;
+}
+
+/**
+ * @brief 通知HMI数据采集结束
+ */
+void ChannelEngine::NotifyResetGatherToHmi()
+{
+    HMICmdFrame hmi_cmd;
+    hmi_cmd.channel_index = CHANNEL_ENGINE_INDEX;
+    hmi_cmd.cmd = CMD_SC_NOTIFY_GATHER_FINISH;
+    hmi_cmd.cmd_extension = 0;
+    int status = 0;
+    hmi_cmd.data_len = sizeof(status);
+    memcpy(&hmi_cmd.data[0], &status, hmi_cmd.data_len);
+
+    std::cout << "NotifyResetGatherToHmi: " << status << std::endl;
+    m_p_hmi_comm->SendCmd(hmi_cmd);
 }
 
 /**
@@ -3653,9 +3668,9 @@ void ChannelEngine::ProcessHmiAbsoluteRefSet(HMICmdFrame &cmd)
     if (cmd.cmd_extension)
     {
         if (errCode == 0)
-            CreateError(ERR_RET_REF_FAILED, WARNING_LEVEL, CLEAR_BY_MCP_RESET, 0, CHANNEL_ENGINE_INDEX, 0);
+            CreateError(ERR_RET_REF_FAILED, WARNING_LEVEL, CLEAR_BY_MCP_RESET, 0, CHANNEL_ENGINE_INDEX, chn_axis);
         else if(errCode == 1)
-            CreateError(ERR_RET_SYNC_ERR, WARNING_LEVEL, CLEAR_BY_MCP_RESET, 0, CHANNEL_ENGINE_INDEX, 0);
+            CreateError(ERR_RET_SYNC_ERR, WARNING_LEVEL, CLEAR_BY_MCP_RESET, 0, CHANNEL_ENGINE_INDEX, chn_axis);
     }
     this->m_p_hmi_comm->SendCmd(cmd);
 }
@@ -3684,7 +3699,7 @@ void ChannelEngine::ProcessHmiAxisMoveCmd(HMICmdFrame &cmd){
             //else
             //    this->ManualMoveStop(axis);
             m_error_code = ERR_PMC_IVALID_USED;
-            CreateError(ERR_PMC_IVALID_USED, ERROR_LEVEL, CLEAR_BY_MCP_RESET, 0, 0xFF);
+            CreateError(ERR_PMC_IVALID_USED, ERROR_LEVEL, CLEAR_BY_MCP_RESET, 0, 0xFF, axis);
             return;
         }else{
             if(speed > 0)
@@ -3710,7 +3725,7 @@ void ChannelEngine::ProcessHmiAxisMoveCmd(HMICmdFrame &cmd){
         if (GetPmcActive(axis)) {
             //this->ManualMovePmc(axis, tar_pos, vel, false);
             m_error_code = ERR_PMC_IVALID_USED;
-            CreateError(ERR_PMC_IVALID_USED, ERROR_LEVEL, CLEAR_BY_MCP_RESET, 0, 0xFF);
+            CreateError(ERR_PMC_IVALID_USED, ERROR_LEVEL, CLEAR_BY_MCP_RESET, 0, 0xFF, axis);
         }else{
             this->ManualMove(axis, dir, vel, tar_pos-this->GetPhyAxisMachPosFeedback(axis));
         }
@@ -5871,7 +5886,7 @@ void ChannelEngine::ManualMoveAbs(uint8_t phy_axis, double vel, double pos){
 
         //printf("ChannelEngine::ManualMove_pmc: axis = %d, tar_pos = %lld\n", phy_axis, tar_pos);
         m_error_code = ERR_PMC_IVALID_USED;
-        CreateError(ERR_PMC_IVALID_USED, ERROR_LEVEL, CLEAR_BY_MCP_RESET, 0, 0xFF);
+        CreateError(ERR_PMC_IVALID_USED, ERROR_LEVEL, CLEAR_BY_MCP_RESET, 0, 0xFF, phy_axis);
         return;
     }
 }
@@ -5952,7 +5967,7 @@ void ChannelEngine::ManualMove(uint8_t phy_axis, int8_t dir, double vel, double 
 
         //printf("ChannelEngine::ManualMove_pmc: axis = %d, tar_pos = %lld\n", phy_axis, tar_pos);
         m_error_code = ERR_PMC_IVALID_USED;
-        CreateError(ERR_PMC_IVALID_USED, ERROR_LEVEL, CLEAR_BY_MCP_RESET, 0, 0xFF);
+        CreateError(ERR_PMC_IVALID_USED, ERROR_LEVEL, CLEAR_BY_MCP_RESET, 0, 0xFF, phy_axis);
     }
 }
 
@@ -8195,6 +8210,7 @@ void ChannelEngine::SystemReset(){
 
     this->ClearPmcAxisMoveData();   //清空PMC轴运动数据
 
+    m_serverGuide.ResetRecord();
     //	m_n_run_axis_mask = 0x00;  //当前运行的轴的mask
     //	m_n_runover_axis_mask = 0x00;   //当前运行完成的轴的mask   //ClearPmcAxisMoveData()中清空
 
@@ -8527,7 +8543,7 @@ bool ChannelEngine::RefreshMiStatusFun(){
                         uint64_t flag = 0x01;
                         for(uint8_t i = 0; i < this->m_p_general_config->axis_count; i++){
                             if(value64 & flag)
-                                CreateError(ERR_SYNC_TORQUE, ERROR_LEVEL, CLEAR_BY_MCP_RESET, 0, CHANNEL_ENGINE_INDEX, i);
+                                CreateError(ERR_SYNC_TORQUE, FATAL_LEVEL, CLEAR_BY_MCP_RESET, 0, CHANNEL_ENGINE_INDEX, i);
                             flag = flag << 1;
                         }
                     }
@@ -8538,7 +8554,7 @@ bool ChannelEngine::RefreshMiStatusFun(){
                         uint64_t flag = 0x01;
                         for(uint8_t i = 0; i < this->m_p_general_config->axis_count; i++){
                             if(value64 & flag)
-                                CreateError(ERR_SYNC_MACH, ERROR_LEVEL, CLEAR_BY_MCP_RESET, 0, CHANNEL_ENGINE_INDEX, i);
+                                CreateError(ERR_SYNC_MACH, FATAL_LEVEL, CLEAR_BY_MCP_RESET, 0, CHANNEL_ENGINE_INDEX, i);
                             flag = flag << 1;
                         }
                     }
@@ -9273,7 +9289,8 @@ void ChannelEngine::ProcessPmcSignal(){
         {
             if (m_serverGuide.IsRecord())
             {
-                m_serverGuide.StopRecord();
+                m_serverGuide.PauseRecord();
+                //m_serverGuide.ResetRecord();
             }
         }
     //}
@@ -9324,20 +9341,21 @@ void ChannelEngine::ProcessConsumingTask()
             m_p_channel_control[m_n_cur_channle_index].AddWorkCountPiece(1);
         }
             break;
-        case CONSUME_TYPE_SERVE_GUIDE_READY:
+        case CONSUME_TYPE_SERVE_GUIDE:
         {
-            ReadyServerGuide();
-        }
-            break;
-        case CONSUME_TYPE_SERVE_GUIDE_RECORD:
-        {
+            if (!ReadyServerGuide())
+            {
+                //CreateError()
+                break;
+            }
             RecordingServerGuide();
+            NotifyResetGatherToHmi();
         }
             break;
         default:
             break;
         }
-        std::cout << "CONSUME_TYPE_NONE" << std::endl;
+        //std::cout << "CONSUME_TYPE_NONE" << std::endl;
         m_task_consume_type = CONSUME_TYPE_NONE;
     }
 }
@@ -10025,7 +10043,7 @@ void ChannelEngine::AxisFindRefWithZeroSignal(uint8_t phy_axis){
             m_n_ret_ref_auto_cur = 0;
         }
         m_error_code = ERR_RET_REF_FAILED;
-        CreateError(ERR_RET_REF_FAILED, WARNING_LEVEL, CLEAR_BY_MCP_RESET, 0, CHANNEL_ENGINE_INDEX, phy_axis+1);
+        CreateError(ERR_RET_REF_FAILED, WARNING_LEVEL, CLEAR_BY_MCP_RESET, 0, CHANNEL_ENGINE_INDEX, phy_axis);
         break;
     default:
         break;

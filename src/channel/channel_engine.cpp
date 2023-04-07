@@ -8483,21 +8483,36 @@ bool ChannelEngine::RefreshMiStatusFun(){
                 if(warn_flag & (0x01 << 0)){//正限位告警
                     uint64_t hlimtflag = 0;
                     this->m_p_mi_comm->ReadServoHLimitFlag(true, hlimtflag);   //读取正限位数据
-                    if(m_hard_limit_postive == 0){
-                        this->m_hard_limit_postive |= hlimtflag;
+//                    if(m_hard_limit_postive == 0){
+//                        this->m_hard_limit_postive |= hlimtflag;
+//                        this->ProcessAxisHardLimit(0, this->m_hard_limit_postive);
+//                    }else{
+//                        this->m_hard_limit_postive |= hlimtflag;
+//                    }
+                    //修复一轴报警后，其他轴无法报警问题
+                    uint64_t newflag = this->m_hard_limit_postive | hlimtflag;
+                    if (newflag != m_hard_limit_postive)
+                    {
+                        this->m_hard_limit_postive = newflag;
                         this->ProcessAxisHardLimit(0, this->m_hard_limit_postive);
-                    }else{
-                        this->m_hard_limit_postive |= hlimtflag;
                     }
                 }
                 if(warn_flag & (0x01 << 1)){ //负限位告警
                     uint64_t hlimtflag = 0;
                     this->m_p_mi_comm->ReadServoHLimitFlag(false, hlimtflag);   //读取负限位数据
-                    if(m_hard_limit_negative == 0){
-                        this->m_hard_limit_negative |= hlimtflag;
+//                    if(m_hard_limit_negative == 0){
+//                        this->m_hard_limit_negative |= hlimtflag;
+//                        this->ProcessAxisHardLimit(1, this->m_hard_limit_negative);
+//                    }else{
+//                        this->m_hard_limit_negative |= hlimtflag;
+//                    }
+
+                    //修复一轴报警后，其他轴无法报警问题
+                    uint64_t newflag = this->m_hard_limit_negative | hlimtflag;
+                    if (newflag != m_hard_limit_negative)
+                    {
+                        this->m_hard_limit_negative = newflag;
                         this->ProcessAxisHardLimit(1, this->m_hard_limit_negative);
-                    }else{
-                        this->m_hard_limit_negative |= hlimtflag;
                     }
                 }
                 if(warn_flag & (0x01 << 2)){ //编码器告警
@@ -9133,14 +9148,22 @@ void ChannelEngine::ProcessPmcSignal(){
                 flag <<= 8;
                 flag |= g_reg->axis_limit_postive1;
                 flag <<= 16*i;
-                if(m_hard_limit_postive == 0){
+//                if(m_hard_limit_postive == 0){
 
-                    this->m_hard_limit_postive |= flag;
+//                    this->m_hard_limit_postive |= flag;
+//                    this->ProcessAxisHardLimit(0, this->m_hard_limit_postive);
+//                    //printf("positive limit : 0x%llx\n", flag);
+//                }else{
+//                    this->m_hard_limit_postive |= flag;
+//                    //printf("positive limit22 : 0x%llx\n", flag);
+//                }
+
+                //修复一轴报警后，其他轴无法报警问题
+                uint64_t newflag = this->m_hard_limit_postive | flag;
+                if (newflag != m_hard_limit_postive)
+                {
+                    this->m_hard_limit_postive = newflag;
                     this->ProcessAxisHardLimit(0, this->m_hard_limit_postive);
-                    //printf("positive limit : 0x%llx\n", flag);
-                }else{
-                    this->m_hard_limit_postive |= flag;
-                    //printf("positive limit22 : 0x%llx\n", flag);
                 }
 
             }
@@ -9150,14 +9173,22 @@ void ChannelEngine::ProcessPmcSignal(){
                 flag <<= 8;
                 flag |= g_reg->axis_limit_negative1;
                 flag <<= 16*i;
-                if( m_hard_limit_negative == 0){
+//                if( m_hard_limit_negative == 0){
 
-                    this->m_hard_limit_negative |= flag;
+//                    this->m_hard_limit_negative |= flag;
+//                    this->ProcessAxisHardLimit(1, this->m_hard_limit_negative);
+//                    //		printf("negative limit : 0x%llx\n", m_hard_limit_negative);
+//                }else{
+//                    this->m_hard_limit_negative |= flag;
+//                    //		printf("negative limit222 : 0x%llx\n", m_hard_limit_negative);
+//                }
+
+                //修复一轴报警后，其他轴无法报警问题
+                uint64_t newflag = this->m_hard_limit_negative | flag;
+                if (newflag != m_hard_limit_negative)
+                {
+                    this->m_hard_limit_negative = newflag;
                     this->ProcessAxisHardLimit(1, this->m_hard_limit_negative);
-                    //		printf("negative limit : 0x%llx\n", m_hard_limit_negative);
-                }else{
-                    this->m_hard_limit_negative |= flag;
-                    //		printf("negative limit222 : 0x%llx\n", m_hard_limit_negative);
                 }
             }
             if(m_pos_hard_limit_last != m_hard_limit_postive){
@@ -11923,13 +11954,16 @@ void ChannelEngine::EcatAxisFindRefNoZeroSignal(uint8_t phy_axis){
         cmd.data.cmd = CMD_MI_SET_REF_POINT;
 
         cmd.data.data[0] = 0x01;    //当前精基准
+        //uint16_t err = m_p_axis_config[phy_axis].ref_mark_err * 1e3;     //单位转换， mm->um
+        //cmd.data.data[0] = err;    //参考点基准误差
         int64_t pos = m_p_axis_config[phy_axis].axis_home_pos[0]*1e7;   //单位转换,0.1nm
         memcpy(&cmd.data.data[1], &pos, sizeof(int64_t));
         cmd.data.data[5] = this->m_p_axis_config[phy_axis].ref_signal;
-        cmd.data.data[6] = -this->m_p_axis_config[phy_axis].ret_ref_dir;
+        cmd.data.data[6] = this->m_p_axis_config[phy_axis].ret_ref_dir;
 
         this->m_p_mi_comm->WriteCmd(cmd);
 
+        std::cout << "ret_ref_dir: " << (int)this->m_p_axis_config[phy_axis].ret_ref_dir << std::endl;
 
         m_n_ret_ref_step[phy_axis]++;  //跳转下一步
         std::cout << "Step 0, CMD_MI_SET_REF_POINT 0x011A" << std::endl;
@@ -12107,10 +12141,9 @@ void ChannelEngine::EcatAxisFindRefNoZeroSignal(uint8_t phy_axis){
             m_n_ret_ref_auto_cur = 0;
         }
         std::cout << "step 20, ref failed\n";
-        m_error_code = ERR_RET_REF_FAILED;
         uint8_t chan_id = CHANNEL_ENGINE_INDEX, axis_id = NO_AXIS;
         GetPhyAxistoChanAxis(phy_axis, chan_id, axis_id);
-        CreateError(ERR_RET_REF_FAILED, WARNING_LEVEL, CLEAR_BY_MCP_RESET, 0, chan_id, axis_id);
+        CreateError(ERR_RET_REF_Z_ERR, WARNING_LEVEL, CLEAR_BY_MCP_RESET, 0, chan_id, axis_id);
         break;
     }
     default:

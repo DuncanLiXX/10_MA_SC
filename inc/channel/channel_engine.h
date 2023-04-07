@@ -419,7 +419,7 @@ private:	//私有成员函数
 
 	void ProcessPmcAlarm();    //处理PMC告警
 
-	void ProcessAxisHardLimit(uint8_t dir);   //处理轴硬限位告警
+    void ProcessAxisHardLimit(uint8_t dir, uint64_t phy_axis);   //处理轴硬限位告警
 
 	void GetParamValueFromCmd(ParamUpdate *data, char *src);  //从命令保重获取参数数据
 

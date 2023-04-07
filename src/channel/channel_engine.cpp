@@ -8485,7 +8485,7 @@ bool ChannelEngine::RefreshMiStatusFun(){
                     this->m_p_mi_comm->ReadServoHLimitFlag(true, hlimtflag);   //读取正限位数据
                     if(m_hard_limit_postive == 0){
                         this->m_hard_limit_postive |= hlimtflag;
-                        this->ProcessAxisHardLimit(0);
+                        this->ProcessAxisHardLimit(0, this->m_hard_limit_postive);
                     }else{
                         this->m_hard_limit_postive |= hlimtflag;
                     }
@@ -8495,7 +8495,7 @@ bool ChannelEngine::RefreshMiStatusFun(){
                     this->m_p_mi_comm->ReadServoHLimitFlag(false, hlimtflag);   //读取负限位数据
                     if(m_hard_limit_negative == 0){
                         this->m_hard_limit_negative |= hlimtflag;
-                        this->ProcessAxisHardLimit(1);
+                        this->ProcessAxisHardLimit(1, this->m_hard_limit_negative);
                     }else{
                         this->m_hard_limit_negative |= hlimtflag;
                     }
@@ -9136,11 +9136,11 @@ void ChannelEngine::ProcessPmcSignal(){
                 if(m_hard_limit_postive == 0){
 
                     this->m_hard_limit_postive |= flag;
-                    this->ProcessAxisHardLimit(0);
-                    //		printf("positive limit : 0x%llx\n", flag);
+                    this->ProcessAxisHardLimit(0, this->m_hard_limit_postive);
+                    //printf("positive limit : 0x%llx\n", flag);
                 }else{
                     this->m_hard_limit_postive |= flag;
-                    //		printf("positive limit22 : 0x%llx\n", flag);
+                    //printf("positive limit22 : 0x%llx\n", flag);
                 }
 
             }
@@ -9153,7 +9153,7 @@ void ChannelEngine::ProcessPmcSignal(){
                 if( m_hard_limit_negative == 0){
 
                     this->m_hard_limit_negative |= flag;
-                    this->ProcessAxisHardLimit(1);
+                    this->ProcessAxisHardLimit(1, this->m_hard_limit_negative);
                     //		printf("negative limit : 0x%llx\n", m_hard_limit_negative);
                 }else{
                     this->m_hard_limit_negative |= flag;
@@ -9651,7 +9651,7 @@ bool ChannelEngine::CheckAxisRefSignal(uint8_t phy_axis){
  * @brief 处理轴硬限位告警,所有轴减速停
  * @param dir : 硬限位方向，0--正向   1--负向
  */
-void ChannelEngine::ProcessAxisHardLimit(uint8_t dir){
+void ChannelEngine::ProcessAxisHardLimit(uint8_t dir, uint64_t phy_axis){
 
     //减速停处理
     for(int i = 0; i < this->m_p_general_config->chn_count; i++){
@@ -9668,7 +9668,17 @@ void ChannelEngine::ProcessAxisHardLimit(uint8_t dir){
         m_error_code = ERR_HARDLIMIT_NEG;
         info = m_hard_limit_negative;
     }
-    CreateError(m_error_code, ERROR_LEVEL, CLEAR_BY_MCP_RESET, info);
+
+
+    for(int i = 0; i < 64; ++i)
+    {//判断通道号和轴号
+        if (phy_axis & (1 << i))
+        {
+            CreateError(m_error_code, ERROR_LEVEL, CLEAR_BY_MCP_RESET, 0, i / 16, i % 16);
+        }
+    }
+
+    //CreateError(m_error_code, ERROR_LEVEL, CLEAR_BY_MCP_RESET, info);
     //	printf("create axis hard limit error \n");
 }
 
@@ -10801,6 +10811,7 @@ void ChannelEngine::GotoZeroPos(int phy_axis)
         break;
 
     case 3:
+    {
         this->m_n_mask_ret_ref &= ~(0x01<<phy_axis);
         m_n_ret_ref_step[phy_axis] = 0;
 
@@ -10810,6 +10821,7 @@ void ChannelEngine::GotoZeroPos(int phy_axis)
             m_n_ret_ref_auto_cur = 0;
         }
         std::cout << "step 3, home finish" << std::endl;
+    }
         break;
     default:
         break;

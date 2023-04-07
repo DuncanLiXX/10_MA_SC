@@ -1694,12 +1694,15 @@ void ChannelControl::StartRunGCode(){
             //有轴未回参考点，通知HMI
             axis_mask |= (0x01<<i);
             g_ptr_trace->PrintLog(LOG_ALARM, "通道[%hhu]轴%hhu未回参考点，禁止自动运行！\n", m_n_channel_index, this->m_p_channel_config->chn_axis_name[i]);
+            uint8_t chan_id = CHANNEL_ENGINE_INDEX, axis_id = NO_AXIS;
+            g_ptr_chn_engine->GetPhyAxistoChanAxis(i, chan_id, axis_id);
+            this->m_error_code = ERR_AXIS_REF_NONE;
+            CreateError(m_error_code, ERROR_LEVEL, CLEAR_BY_MCP_RESET, 0, chan_id, axis_id);
         }
     }
     if(axis_mask != 0){
-        this->m_error_code = ERR_AXIS_REF_NONE;
-        CreateError(m_error_code, ERROR_LEVEL, CLEAR_BY_MCP_RESET, axis_mask, m_n_channel_index);
-        //	this->SendMessageToHmi(MSG_TIPS, MSG_ID_AXIS_REF);
+        //this->m_error_code = ERR_AXIS_REF_NONE;
+        //CreateError(m_error_code, ERROR_LEVEL, CLEAR_BY_MCP_RESET, axis_mask, m_n_channel_index);
         return;
     }
 

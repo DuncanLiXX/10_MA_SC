@@ -454,7 +454,6 @@ void SpindleControl::InputRGTAP(bool RGTAP)
     		while(!motor_enable){
     			count ++;
     			if(count > 200){
-    				printf("2222222222222222222\n");
     				CreateError(ERR_SPD_TAP_START_FAIL,
     							ERROR_LEVEL,
     							CLEAR_BY_MCP_RESET);

@@ -1694,12 +1694,15 @@ void ChannelControl::StartRunGCode(){
             //有轴未回参考点，通知HMI
             axis_mask |= (0x01<<i);
             g_ptr_trace->PrintLog(LOG_ALARM, "通道[%hhu]轴%hhu未回参考点，禁止自动运行！\n", m_n_channel_index, this->m_p_channel_config->chn_axis_name[i]);
+            uint8_t chan_id = CHANNEL_ENGINE_INDEX, axis_id = NO_AXIS;
+            g_ptr_chn_engine->GetPhyAxistoChanAxis(i, chan_id, axis_id);
+            this->m_error_code = ERR_AXIS_REF_NONE;
+            CreateError(m_error_code, ERROR_LEVEL, CLEAR_BY_MCP_RESET, 0, chan_id, axis_id);
         }
     }
     if(axis_mask != 0){
-        this->m_error_code = ERR_AXIS_REF_NONE;
-        CreateError(m_error_code, ERROR_LEVEL, CLEAR_BY_MCP_RESET, axis_mask, m_n_channel_index);
-        //	this->SendMessageToHmi(MSG_TIPS, MSG_ID_AXIS_REF);
+        //this->m_error_code = ERR_AXIS_REF_NONE;
+        //CreateError(m_error_code, ERROR_LEVEL, CLEAR_BY_MCP_RESET, axis_mask, m_n_channel_index);
         return;
     }
 
@@ -3905,6 +3908,17 @@ void ChannelControl::SetMachineState(uint8_t mach_state){
     // @modify zk 记录之前状态
 	uint8_t old_stat = m_channel_status.machining_state;
 
+    //llx add
+    if (old_stat != MS_READY && mach_state == MS_READY)
+    {
+        //停止伺服监控
+        g_ptr_chn_engine->m_serverGuide.ResetRecord();
+
+        string msg = "结束加工程序(" + string(this->m_channel_status.cur_nc_file_name) + ")";
+        g_ptr_tracelog_processor->SendToHmi(kProcessInfo, kDebug, msg);
+
+    }
+
 	g_ptr_trace->PrintTrace(TRACE_INFO, CHANNEL_CONTROL_SC, "Enter SetMachineState, old = %d, new = %d, m_n_run_thread_state = %d\n", m_channel_status.machining_state, mach_state, m_n_run_thread_state);
     if(m_channel_status.machining_state == mach_state)
         return;
@@ -4809,11 +4823,20 @@ bool ChannelControl::RefreshStatusFun(){
 				this->m_p_mc_arm_comm->ReadChnNegSoftLimtMask(m_n_channel_index, data);
 				this->m_channel_mc_status.axis_soft_negative_limit = data;
 			}
+
 			if(m_channel_mc_status.mc_error.bits.err_soft_limit_neg){
-				CreateError(ERR_SOFT_LIMIT_NEG, ERROR_LEVEL, CLEAR_BY_MCP_RESET, data, m_n_channel_index);
+                for(int i = 0; i < 16; ++i)
+                {
+                    if(this->m_channel_mc_status.axis_soft_negative_limit & (0x01<<i))
+                        CreateError(ERR_SOFT_LIMIT_NEG, ERROR_LEVEL, CLEAR_BY_MCP_RESET, data, m_n_channel_index, i);
+                }
 			}
 			if(m_channel_mc_status.mc_error.bits.err_soft_limit_pos){
-				CreateError(ERR_SOFT_LIMIT_POS, ERROR_LEVEL, CLEAR_BY_MCP_RESET, data, m_n_channel_index);
+                for(int i = 0; i < 16; ++i)
+                {
+                    if(this->m_channel_mc_status.axis_soft_postive_limit & (0x01<<i))
+                        CreateError(ERR_SOFT_LIMIT_NEG, ERROR_LEVEL, CLEAR_BY_MCP_RESET, data, m_n_channel_index, i);
+                }
 			}
 		}
 
@@ -4824,7 +4847,7 @@ bool ChannelControl::RefreshStatusFun(){
 				this->m_p_mc_arm_comm->ReadChnPosErrMask(m_n_channel_index, m_channel_mc_status.pos_error_mask);
 
 			printf("============ ERR_POS_ERR ===============\n");
-			CreateError(ERR_POS_ERR, ERROR_LEVEL, CLEAR_BY_MCP_RESET, m_channel_mc_status.pos_error_mask, m_n_channel_index);
+            CreateError(ERR_POS_ERR, ERROR_LEVEL, CLEAR_BY_MCP_RESET, m_channel_mc_status.pos_error_mask, m_n_channel_index);
 		}
 
 		if(m_channel_mc_status.mc_error.bits.err_arc_data){//圆弧数据错误
@@ -6259,9 +6282,6 @@ bool ChannelControl::ExecuteAuxMsg(RecordMsg *msg){
                         this->SendMachOverToHmi();  //发送加工结束消息给HMI
                     }
 #else
-                    string msg = "结束加工程序(" + string(this->m_channel_status.cur_nc_file_name) + ")";
-                    g_ptr_tracelog_processor->SendToHmi(kProcessInfo, kDebug, msg);
-
                     this->SendMachOverToHmi();  //发送加工结束消息给HMI
 #endif
                 }
@@ -7031,7 +7051,7 @@ bool ChannelControl::ExecuteLineMsg(RecordMsg *msg, bool flag_block){
             continue;
         if (g_ptr_chn_engine->GetPmcActive(GetPhyAxis(i))) {
             m_error_code = ERR_PMC_IVALID_USED;
-            CreateError(ERR_PMC_IVALID_USED, ERROR_LEVEL, CLEAR_BY_MCP_RESET, 0, m_n_channel_index);
+            CreateError(ERR_PMC_IVALID_USED, ERROR_LEVEL, CLEAR_BY_MCP_RESET, 0, m_n_channel_index, i);
             return false;
         }
     }
@@ -7117,7 +7137,7 @@ bool ChannelControl::ExecuteRapidMsg(RecordMsg *msg, bool flag_block){
             continue;
         if (g_ptr_chn_engine->GetPmcActive(GetPhyAxis(i))) {
             m_error_code = ERR_PMC_IVALID_USED;
-            CreateError(ERR_PMC_IVALID_USED, ERROR_LEVEL, CLEAR_BY_MCP_RESET, 0, m_n_channel_index);
+            CreateError(ERR_PMC_IVALID_USED, ERROR_LEVEL, CLEAR_BY_MCP_RESET, 0, m_n_channel_index, i);
             return false;
         }
     }
@@ -9669,7 +9689,7 @@ bool ChannelControl::ExecuteRefReturnMsg(RecordMsg *msg){
                     // 十次检测都没到位  判断为回参考点失败 发出警告
                     wait_times = 0;
                     m_error_code = ERR_RET_REF_FAILED;
-                    CreateError(ERR_RET_REF_FAILED, ERROR_LEVEL, CLEAR_BY_MCP_RESET, gcode, m_n_channel_index);
+                    CreateError(ERR_RET_REF_FAILED, ERROR_LEVEL, CLEAR_BY_MCP_RESET, gcode, m_n_channel_index, i);
                 }
 
                 return false;
@@ -11237,7 +11257,7 @@ void ChannelControl::ManualMove(int8_t dir){
     if(g_ptr_chn_engine->GetPmcActive(this->GetPhyAxis(m_channel_status.cur_axis))) {
         //this->ManualMovePmc(dir);
         m_error_code = ERR_PMC_IVALID_USED;
-        CreateError(ERR_PMC_IVALID_USED, ERROR_LEVEL, CLEAR_BY_MCP_RESET, 0, m_n_channel_index);
+        CreateError(ERR_PMC_IVALID_USED, ERROR_LEVEL, CLEAR_BY_MCP_RESET, 0, m_n_channel_index, m_channel_status.cur_axis);
         return;
     }
 
@@ -11382,7 +11402,7 @@ void ChannelControl::ManualMove(uint8_t axis, double pos, double vel, bool workc
     if(g_ptr_chn_engine->GetPmcActive(this->GetPhyAxis(axis))) {
         //this->ManualMovePmc(axis, pos, vel);
         m_error_code = ERR_PMC_IVALID_USED;
-        CreateError(ERR_PMC_IVALID_USED, ERROR_LEVEL, CLEAR_BY_MCP_RESET, 0, m_n_channel_index);
+        CreateError(ERR_PMC_IVALID_USED, ERROR_LEVEL, CLEAR_BY_MCP_RESET, 0, m_n_channel_index, axis);
         return;
     }
 

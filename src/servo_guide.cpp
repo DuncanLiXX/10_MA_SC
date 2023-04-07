@@ -23,11 +23,12 @@ bool ServeGuide::ReadyRecord()
     if (state_ != E_SG_RunState::IDLE)
         return false;
 
-    if (!g_ptr_chn_engine->SetConsumeTask(CONSUME_TYPE_SERVE_GUIDE_READY))
+    if (!g_ptr_chn_engine->SetConsumeTask(CONSUME_TYPE_SERVE_GUIDE))
     {
         state_ = E_SG_RunState::IDLE;
         return false;
     }
+    scan_cycle_ = steady_clock::now();
     return true;
 }
 
@@ -38,41 +39,42 @@ bool ServeGuide::ReadyRecord()
 bool ServeGuide::StartRecord()
 {
     if (state_ != E_SG_RunState::READY)
-        return false;
-    ScPrintf("-----------ServeGuide::StartRecord()-----------");
-    scan_cycle_ = steady_clock::now();
-    state_ = E_SG_RunState::RECORDING;
-
-    if (!g_ptr_chn_engine->SetConsumeTask(CONSUME_TYPE_SERVE_GUIDE_RECORD))
     {
-        state_ = E_SG_RunState::IDLE;
+        ScPrintf("StartRecord in error state: %d", (int)state_);
         return false;
     }
+    ScPrintf("-----------ServeGuide::StartRecord()-----------");
+    state_ = E_SG_RunState::RECORDING;
     return true;
 }
 
 /**
  * @brief 结束数据采集
  */
-void ServeGuide::StopRecord()
+void ServeGuide::PauseRecord()
 {
     if (state_ == E_SG_RunState::RECORDING)
     {
-        ScPrintf("-----------ServeGuide::StopRecord()-----------");
-        state_ = E_SG_RunState::STOPPING;
+        ScPrintf("-----------ServeGuide::PauseRecord()-----------");
+        state_ = E_SG_RunState::READY;
     }
 }
 
 /**
- * @brief 复位数据采集状态（方便测试用，一般情况下用不到）
+ * @brief 复位数据采集状态
  */
 void ServeGuide::ResetRecord()
 {
+    if (state_ == E_SG_RunState::READY)
     {
-        std::lock_guard<std::mutex> mut(data_mut_);
-        while (!data_.empty()) data_.pop();
+        {
+            std::lock_guard<std::mutex> mut(data_mut_);
+            while (!data_.empty()) data_.pop();
+        }
+        state_ = E_SG_RunState::IDLE;
     }
-    state_ = E_SG_RunState::IDLE;
+    else if (state_ == E_SG_RunState::RECORDING) //需要等待所有数据上传完成后再停止
+        state_ = E_SG_RunState::STOPPING;
 }
 
 /**
@@ -165,10 +167,10 @@ bool ServeGuide::IsDataReady()
  * @brief 记录数据于发送队列中
  * @param 需要记录的数据
  */
-void ServeGuide::RecordData(const double *feedback)
+void ServeGuide::RecordData(const double *feedback, const double *interp)
 {
     //不同类型生成不同DATA
-    SG_DATA data = type_ptr_->GenData(feedback);
+    SG_DATA data = type_ptr_->GenData(feedback, interp);
     std::lock_guard<std::mutex> mut(data_mut_);
     data_.push(std::move(data));
 }
@@ -341,72 +343,281 @@ bool ServeGuide::SetType(SG_Type_Ptr type)
 //--------------------------------- type --------------------------------------
 
 SG_Rect_Type::SG_Rect_Type(SG_Rect_Config cfg)
-    : SG_Type(cfg.interval, cfg.axis_one, cfg.axis_two)
+    : SG_Type(cfg.interval, cfg.axis_one, cfg.axis_two, E_SG_Type::SG_Rect)
 {
 
 }
 
-SG_DATA SG_Rect_Type::GenData(const double *feedback)
+bool SG_Type::Verify() const
+{
+    if (axis_one_ < 0)
+    {
+        return false;
+    }
+    if (axis_two_ < 0)
+    {
+        return false;
+    }
+    if (interval_ <= 0)
+    {
+        return false;
+    }
+    return true;
+}
+
+SG_DATA SG_Rect_Type::GenData(const double *feedback, const double *interp)
 {
     SG_DATA data = std::make_tuple(feedback[axis_one_], feedback[axis_two_], -1, -1);
     return data;
 }
 
 SG_Circle_Type::SG_Circle_Type(SG_Circle_Config cfg)
-    : SG_Type(cfg.interval, cfg.axis_one, cfg.axis_two)
+    : SG_Type(cfg.interval, cfg.axis_one, cfg.axis_two, E_SG_Type::SG_Circle)
 {
-    radius_ = cfg.raduis;
-    cfg.circle_type == 0 ? circle_type_ = E_SG_CType::SG_CW
-            : circle_type_ = E_SG_CType::SG_CCW;
+    radius_ = cfg.radius;
 }
 
 bool SG_Circle_Type::Verify() const
 {
+    if (!SG_Type::Verify())
+        return false;
+
     if (radius_ <= 0)
+    {
         return false;
-    if (circle_type_ == E_SG_CType::SG_None)
-        return false;
+    }
+
+    return true;
 }
 
-SG_DATA SG_Circle_Type::GenData(const double *feedback)
+SG_DATA CircleDletaCalc(DPlane point, DPlane pole, double radius)
 {
-    double radius_1 = circle_type_ == E_SG_CType::SG_CW ? radius_ : - radius_;
-    double radius_2 = 0;
-    //转换极坐标系
-    double pos_1 = feedback[axis_one_] - radius_1;
-    double pos_2 = feedback[axis_two_] - radius_2;
-    //计算实际半径
-    double radius_real = sqrt(pos_1 * pos_1 + pos_2 * pos_2);
-    //求夹角
-    double radian = atan2(pos_2, pos_1);
-    //理论坐标1,2
-    double standard_x = radius_ * cos(radian);
-    double standard_y = radius_ * sin(radian);
-    //计算偏差
-    double delta = radius_real - radius_;
-    //计算对应轴偏差1,2
-    double delta_x = delta*cos(radian);
-    double delta_y = delta*sin(radian);
+    //极坐标转换
+    DPlane pos;
+    pos.x = point.x - pole.x;
+    pos.y = point.y - pole.y;
 
-    SG_DATA data = std::make_tuple(standard_x, standard_y, delta_x, delta_y);
+    //计算实际半径
+    double radius_real = sqrt(pos.x * pos.x + pos.y * pos.y);
+
+    //求夹角
+    double radian = atan2(pos.y, pos.x);
+
+    //理论坐标1,2
+    DPlane standard_pt;
+    standard_pt.x = radius * cos(radian);//!!
+    standard_pt.y = radius * sin(radian);
+
+    //计算偏差
+    double delta = radius_real - radius;
+
+    //计算对应轴偏差1,2
+    DPlane delta_pt;
+    delta_pt.x = delta*cos(radian);
+    delta_pt.y = delta*sin(radian);
+
+    SG_DATA data = std::make_tuple(standard_pt.x, standard_pt.y, delta_pt.x, delta_pt.y);
+    return data;
+}
+
+
+void CoordTransform(SG_DATA &origin, DPlane offset)
+{
+    std::get<0>(origin) = std::get<0>(origin) + offset.x;
+    std::get<1>(origin) = std::get<1>(origin) + offset.y;
+}
+
+SG_DATA SG_Circle_Type::GenData(const double *feedback, const double *interp)
+{
+    //要加入起始点，否则起始点必须要是（0，0）
+    //转换极坐标系
+    DPlane pole_point(-radius_, 0);
+    DPlane point(feedback[axis_one_], feedback[axis_two_]);
+
+    SG_DATA data = CircleDletaCalc(point, pole_point, radius_);
     return data;
 }
 
 SG_RecCir_Type::SG_RecCir_Type(SG_RecCir_Config cfg)
-    : SG_Type(cfg.interval, cfg.axis_one, cfg.axis_two)
+    : SG_Type(cfg.interval, cfg.axis_one, cfg.axis_two, E_SG_Type::SG_Rect_Circle)
 {
     width_ = cfg.width;
     height_ = cfg.height;
     radius_ = cfg.radius;
 }
 
-SG_DATA SG_RecCir_Type::GenData(const double *feedback)
+SG_DATA SG_RecCir_Type::GenData(const double *feedback, const double *interp)
 {
+    //极坐标
+    //是否需要起始点
+    double center_x = width_ / 2;
+    double center_y = -(height_ + 2 * radius_) / 2;
 
+    //极坐标转换
+    double pos_1 = feedback[axis_one_] - center_x;
+    double pos_2 = feedback[axis_two_] - center_y;
+    DPlane pos(pos_1, pos_2);
+
+    //理论坐标，防止坐标跳动，导致象限计算错误
+    double interp_pos_1 = interp[axis_one_] - center_x;
+    double interp_pos_2 = interp[axis_two_] - center_y;
+    DPlane interp_pos(interp_pos_1, interp_pos_2);
+
+    //判断当前坐标处于第几象限
+    int quadrant = 0;
+    //获取象限
+
+    double delta_x = 0;
+    double delta_y = 0;
+
+    quadrant = GetQuadrant(interp_pos);
+    //std::cout << "-->" << "X: " << pos.x << "Y: " << pos.y << " Q:" << (int)quadrant << std::endl;
+    SG_DATA data = std::make_tuple(-1, -1, -1, -1);
+    switch (quadrant) {
+    case 1:
+    {//第一象限，横直线
+        delta_x = 0;
+        delta_y = pos_2 + center_y;
+        data = std::make_tuple(pos.x, (height_ + 2 * radius_) / 2, delta_x, delta_y);
+        //std::cout << "quan: " << quadrant << "   >> 0: " << get<0>(data) << " 1: " << get<1>(data) << " 2: " << get<2>(data) << " 3: " << get<3>(data) << std::endl;
+    }
+        break;
+    case 2:
+    {//第二象限,1/4圆
+        //DPlane pole_point(-width_/2, height_/2);
+        DPlane pole_point(width_/2, height_/2);
+        data = CircleDletaCalc(pos, pole_point, radius_);
+        CoordTransform(data, DPlane(width_/2, height_/2));
+        //std::cout << "quan: " << quadrant << "   >> 0: " << get<0>(data) << " 1: " << get<1>(data) << " 2: " << get<2>(data) << " 3: " << get<3>(data) << std::endl;
+    }
+        break;
+    case 3:
+    {//第三象限，竖直线
+        delta_x = pos_1 - (width_/2 + radius_);
+        delta_y = 0;
+        data = std::make_tuple(width_/2 + radius_, pos.y, delta_x, delta_y);
+        //std::cout << "quan: " << quadrant << "   >> 0: " << get<0>(data) << " 1: " << get<1>(data) << " 2: " << get<2>(data) << " 3: " << get<3>(data) << std::endl;
+    }
+        break;
+    case 4:
+    {//第四象限,1/4圆
+        DPlane pole_point(width_/2, -height_/2);
+        data = CircleDletaCalc(pos, pole_point, radius_);
+        CoordTransform(data, DPlane(width_/2, -height_/2));
+        //std::cout << "quan: " << quadrant << "   >> 0: " << get<0>(data) << " 1: " << get<1>(data) << " 2: " << get<2>(data) << " 3: " << get<3>(data) << std::endl;
+    }
+        break;
+    case 5:
+    {//第五象限，横直线
+        delta_x = 0;
+        delta_y = pos_2 + (height_/2 + radius_);
+        data = std::make_tuple(pos.x, -(height_ + 2 * radius_)/2, delta_x, delta_y);
+        //std::cout << "quan: " << quadrant << "   >> 0: " << get<0>(data) << " 1: " << get<1>(data) << " 2: " << get<2>(data) << " 3: " << get<3>(data) << std::endl;
+    }
+        break;
+    case 6:
+    {//第六象限,1/4圆
+        DPlane pole_point(-width_/2, -height_/2);
+        data = CircleDletaCalc(pos, pole_point, radius_);
+        CoordTransform(data, DPlane(-width_/2, -height_/2));
+        //std::cout << "quan: " << quadrant << "   >> 0: " << get<0>(data) << " 1: " << get<1>(data) << " 2: " << get<2>(data) << " 3: " << get<3>(data) << std::endl;
+    }
+        break;
+    case 7:
+    {//第七象限，竖直线
+        delta_x = pos_1 + (radius_ + width_/2);
+        delta_y = 0;
+        data = std::make_tuple(-(radius_+width_/2), pos.y, delta_x, delta_y);
+        //std::cout << "quan: " << quadrant << "   >> 0: " << get<0>(data) << " 1: " << get<1>(data) << " 2: " << get<2>(data) << " 3: " << get<3>(data) << std::endl;
+    }
+        break;
+    case 8:
+    {//第八象限,1/4圆
+        DPlane pole_point(-width_/2, height_/2);
+        data = CircleDletaCalc(pos, pole_point, radius_);
+        CoordTransform(data, DPlane(-width_/2, height_/2));
+        //std::cout << "quan: " << quadrant << "   >> 0: " << get<0>(data) << " 1: " << get<1>(data) << " 2: " << get<2>(data) << " 3: " << get<3>(data) << std::endl;
+    }
+        break;
+    default:
+        break;
+    }
+    if (std::get<0>(data) == -1)
+    {
+        std::cout << "feedback[axis_one_] " << feedback[axis_one_] << std::endl;
+        std::cout << "feedback[axis_two_] " << feedback[axis_two_] << std::endl;
+    }
+    return data;
+}
+
+//使用中心极坐标
+int SG_RecCir_Type::GetQuadrant(DPlane plane)
+{
+    //判断坐标在第几象限(1-8)
+    //第一象限
+    if (plane.x > -width_/2 && plane.x < width_/2
+            && abs(plane.y - (height_/2 + radius_)) < EPSINON)
+    {
+        return 1;
+    }
+
+    //第二象限
+    if (plane.x >= width_/2 && plane.x <= width_/2 + radius_
+       && plane.y >= height_/2 && plane.y <= height_/2 + radius_)
+    {
+        return 2;
+    }
+
+    //第三象限
+    if (abs(plane.x - (width_/2 + radius_)) < EPSINON
+        && plane.y >= -height_/2 && plane.y <= height_/2)
+    {
+        return 3;
+    }
+
+    //第四象限
+    if (plane.x >= width_ / 2 && plane.x <= width_ / 2 + radius_
+        && plane.y >= -height_/2 - radius_ && plane.y <= -height_/2)
+    {
+        return 4;
+    }
+
+    //第五象限
+    if (plane.x > -width_/2 && plane.x < width_/2
+            && abs(plane.y - (-height_/2 - radius_)) < EPSINON)
+    {
+        return 5;
+    }
+
+    //第六象限
+    if (plane.x >= -width_/2 - radius_ && plane.x <= -width_/2
+        && plane.y >= -height_/2 - radius_ && plane.y <= -height_/2)
+    {
+        return 6;
+    }
+
+    //第七象限
+    if (abs(plane.x - (-width_/2-radius_)) < EPSINON
+            && plane.y > -height_/2 && plane.y < height_/2)
+    {
+        return 7;
+    }
+
+    //第八象限
+    if (plane.x >= -width_/2 - radius_ && plane.x <= -width_/2
+        && plane.y >= height_/2 && plane.y <= height_/2 + radius_)
+    {
+        return 8;
+    }
+
+    return -1;
 }
 
 bool SG_RecCir_Type::Verify() const
 {
+    if (!SG_Type::Verify())
+        return false;
+
     if (width_ > 0 && height_ > 0 && radius_ > 0)
         return true;
     else
@@ -414,12 +625,19 @@ bool SG_RecCir_Type::Verify() const
 }
 
 SG_Tapping_Type::SG_Tapping_Type(SG_Tapping_Config cfg)
-    : SG_Type(cfg.interval, -1, -1)//刚性攻丝需特殊处理
-{
-
+    : SG_Type(cfg.interval, cfg.axis_one, cfg.axis_two, E_SG_Type::SG_Tapping)//刚性攻丝需特殊处理
+{   
 }
 
-SG_DATA SG_Tapping_Type::GenData(const double *feedback)
+bool SG_Tapping_Type::Verify() const
 {
+    if (!SG_Type::Verify())
+        return false;
+}
 
+SG_DATA SG_Tapping_Type::GenData(const double *feedback, const double *interp)
+{
+    double delta = feedback[axis_one_] - feedback[axis_two_];
+    SG_DATA data = std::make_tuple(feedback[axis_one_], feedback[axis_two_], delta, -1);//速度暂时没做
+    return data;
 }

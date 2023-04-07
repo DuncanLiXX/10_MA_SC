@@ -91,6 +91,7 @@ void SetMcArmComm(MCArmCommunication *comm){this->m_p_mc_arm_comm = comm;}   //É
 	ChannelControl *GetChnControl(uint8_t index);		//»ñÈ¡Ö¸¶¨µÄÍ¨µÀ¿ØÖÆ¶ÔÏóÖ¸Õë
 	bool GetChnStatus(uint8_t chn_index, HmiChannelStatus &status);  //»ñÈ¡Í¨µÀ×´Ì¬
 	uint8_t GetChnAxistoPhyAixs(uint8_t chn_index, uint8_t chn_axis);  //»ñÈ¡Í¨µÀÖá¶ÔÓ¦µÄÎïÀíÖáºÅ
+    bool GetPhyAxistoChanAxis(uint8_t phy_axis, uint8_t &get_chan_id, uint8_t &get_chan_axis);  //¸ù¾İÎïÀíÖáºÅ»ñÈ¡Í¨µÀÖáºÅ
 
 //	uint16_t GetMcAutoBufMax(){return m_n_mc_auto_buf_max;}   //»ñÈ¡MCµ¥Í¨µÀ×Ô¶¯Êı¾İ»º³åÊıÁ¿
 
@@ -328,6 +329,7 @@ void SetMcArmComm(MCArmCommunication *comm){this->m_p_mc_arm_comm = comm;}   //É
     bool RecordingServerGuide();
 
     ServeGuide  m_serverGuide;
+    void NotifyResetGatherToHmi();
 private:	//Ë½ÓĞ³ÉÔ±º¯Êı
 	ChannelEngine();   //¹¹Ôìº¯Êı
 
@@ -417,7 +419,7 @@ private:	//Ë½ÓĞ³ÉÔ±º¯Êı
 
 	void ProcessPmcAlarm();    //´¦ÀíPMC¸æ¾¯
 
-	void ProcessAxisHardLimit(uint8_t dir);   //´¦ÀíÖáÓ²ÏŞÎ»¸æ¾¯
+    void ProcessAxisHardLimit(uint8_t dir, uint64_t phy_axis);   //´¦ÀíÖáÓ²ÏŞÎ»¸æ¾¯
 
 	void GetParamValueFromCmd(ParamUpdate *data, char *src);  //´ÓÃüÁî±£ÖØ»ñÈ¡²ÎÊıÊı¾İ
 

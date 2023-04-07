@@ -313,8 +313,7 @@ enum ThreadRunFlag{
 enum TASK_CONSUME_TYPE {
     CONSUME_TYPE_NONE = 0,
     CONSUME_TYPE_WORK_COUNT = 1,        // 工件计数
-    CONSUME_TYPE_SERVE_GUIDE_READY = 2,  // 创建数据传输通道
-    CONSUME_TYPE_SERVE_GUIDE_RECORD = 3,       // 伺服引导
+    CONSUME_TYPE_SERVE_GUIDE = 2,       // 伺服引导
 };
 
 #endif /* INC_COMMUNICATION_COMM_DATA_DEFINITION_H_ */

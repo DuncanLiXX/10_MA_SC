@@ -8,6 +8,7 @@
 #include <memory>
 
 #include "hmi_shared_data.h"
+#include "geometry_data.h"
 
 class SG_Type;
 
@@ -26,16 +27,17 @@ enum class E_SG_Type {
  * @brief 伺服引导类型基类，不直接使用
  */
 struct SG_Type {
-    SG_Type(int8_t interval, int8_t axis_one, int8_t axis_two)
-        : interval_(interval), axis_one_(axis_one), axis_two_(axis_two) { }
+    SG_Type(int8_t interval, int8_t axis_one, int8_t axis_two, E_SG_Type type)
+        : interval_(interval), type_(type),
+          axis_one_(axis_one), axis_two_(axis_two) { }
 
-    E_SG_Type tpye_  = E_SG_Type::SG_None;      //类型
+    E_SG_Type type_  = E_SG_Type::SG_None;      //类型
     int8_t axis_one_ = -1;                      //需要监听的轴号No.1
     int8_t axis_two_ = -1;                      //需要监听的轴号No.2
     int8_t interval_ = 8;                       //采样周期
 
-    virtual bool Verify() const { return true; };
-    virtual SG_DATA GenData(const double *feedback) = 0;
+    virtual bool Verify() const;
+    virtual SG_DATA GenData(const double *feedback, const double *interp) = 0;
 };
 
 /**
@@ -43,25 +45,25 @@ struct SG_Type {
  */
 struct SG_Rect_Type : public SG_Type {
     SG_Rect_Type(SG_Rect_Config cfg);
-    SG_DATA GenData(const double *feedback) override;
+    SG_DATA GenData(const double *feedback, const double *interp) override;
 };
 
 /**
  * @brief 圆型轨迹测量
  */
 struct SG_Circle_Type : public SG_Type {
-    enum class E_SG_CType {
-        SG_None = -1,
-        SG_CW,           //顺时针
-        SG_CCW,          //逆时针
-    };
+//    enum class E_SG_CType {
+//        SG_None = -1,
+//        SG_CW,           //顺时针
+//        SG_CCW,          //逆时针
+//    };
     SG_Circle_Type(SG_Circle_Config cfg);
 
     bool Verify() const override;
-    SG_DATA GenData(const double *feedback) override;
+    SG_DATA GenData(const double *feedback, const double *interp) override;
 
     //顺圆，逆圆
-    E_SG_CType circle_type_ = E_SG_CType::SG_None;
+    //E_SG_CType circle_type_ = E_SG_CType::SG_None;
     //半径
     double radius_ = 0;     //>=0
 };
@@ -74,7 +76,9 @@ struct SG_RecCir_Type : public SG_Type {
     SG_RecCir_Type(SG_RecCir_Config cfg);
 
     bool Verify() const override;
-    SG_DATA GenData(const double *feedback) override;
+    SG_DATA GenData(const double *feedback, const double *interp) override;
+
+    int GetQuadrant(DPlane plane);// 理论坐标
 
     //长方形宽度(不包括倒角半径)
     double width_ = 0;
@@ -90,7 +94,8 @@ struct SG_RecCir_Type : public SG_Type {
 struct SG_Tapping_Type : public SG_Type {
     SG_Tapping_Type(SG_Tapping_Config cfg);
 
-    SG_DATA GenData(const double *feedback) override;
+    bool Verify() const override;
+    SG_DATA GenData(const double *feedback, const double *interp) override;
 };
 
 
@@ -105,7 +110,7 @@ public:
 
     bool ReadyRecord();                                 // 打开数据传输通道
     bool StartRecord();                                 // 开始数据记录
-    void StopRecord();                                  // 结束数据记录
+    void PauseRecord();                                 // 结束数据记录
     void ResetRecord();                                 // 复位
     bool RefreshRecording();
 
@@ -118,7 +123,7 @@ public:
     bool SetInterval(unsigned interval);
     bool IsTimeout();                                   // 周期到达
 
-    virtual void RecordData(const double *feedback);                          // 记录数据 //虚函数或者模板函数
+    virtual void RecordData(const double *feedback, const double *interp);  // 记录数据 //虚函数或者模板函数
 
     bool InitSocket();  // 初始化Socket
     bool Accept();
@@ -134,7 +139,8 @@ private:
         IDLE = 0,           //空闲
         READY = 1,          //准备好
         RECORDING = 2,      //采集中
-        STOPPING = 3,       //停止中
+        //Paused = 3,         //暂停
+        STOPPING = 4,       //停止中
     };
 
     constexpr static int MAX_INTERVAL = 10000;

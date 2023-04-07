@@ -1034,6 +1034,7 @@ int HMICommunication::ProcessHmiCmd(){
             case CMD_SC_BACKUP_STATUS:        //SC通知HMI当前备份状态
             case CMD_SC_NOTIFY_TRACELOG:
             case CMD_SC_NOTIFY_PROTECT_STATUS:  //SC通知HMI保护状态
+            case CMD_SC_NOTIFY_GATHER_FINISH:
 				break;
 			case CMD_HMI_GET_SYS_INFO:
 				m_p_channel_engine->ProcessHmiCmd(cmd);
@@ -2749,6 +2750,14 @@ void HMICommunication::ProcessHmiServoDataRequest(HMICmdFrame &cmd)
         SG_RecCir_Config reccir_cfg;
         memcpy(&reccir_cfg, cmd.data+1, sizeof(SG_RecCir_Config));
         type = std::make_shared<SG_RecCir_Type>(reccir_cfg);
+        std::cout << "type: " << (int)dynamic_pointer_cast<SG_RecCir_Type>(type)->type_ << std::endl;
+        std::cout << "axis_one: " << (int)dynamic_pointer_cast<SG_RecCir_Type>(type)->axis_one_ << std::endl;
+        std::cout << "axis_two: " << (int)dynamic_pointer_cast<SG_RecCir_Type>(type)->axis_two_ << std::endl;
+        std::cout << "interval: " << (int)dynamic_pointer_cast<SG_RecCir_Type>(type)->interval_ << std::endl;
+        std::cout << "width: " << (int)dynamic_pointer_cast<SG_RecCir_Type>(type)->width_ << std::endl;
+        std::cout << "height: " << (int)dynamic_pointer_cast<SG_RecCir_Type>(type)->height_ << std::endl;
+        std::cout << "radius: " << (int)dynamic_pointer_cast<SG_RecCir_Type>(type)->radius_ << std::endl;
+
     }
         break;
     case SG_Config_Type::Tapping:

@@ -814,7 +814,7 @@ int Interp::convert_cutter_compensation_off(setup_pointer settings)
 	if(settings->cutter_comp_side && settings->cutter_comp_radius > 0.0){
 		settings->cutter_comp_lastmove =  true;
 	}
-	settings->cutter_comp_side = 0;
+	//settings->cutter_comp_side = 0;
 	return 0;
 }
 
@@ -824,9 +824,8 @@ int Interp::convert_cutter_compensation_on(int side, double radius,
 	settings->cutter_comp_radius = radius;
 
 	// 暂时禁用 G41 G42 直接切换  需要G40 然后重新建立新刀补
-	if(settings->cutter_comp_side != 0){
+	if(isCompOn && side != settings->cutter_comp_side){
 		err_code = G41_G42_CHANGE;
-
 		return 0;
 	}
 

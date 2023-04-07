@@ -1425,8 +1425,8 @@ void ChannelEngine::PoweroffHandler(int signo, siginfo_t *info, void *context){
  * @brief 掉电时保存数据
  */
 void ChannelEngine::SaveDataPoweroff(){
-	system("date >> save.txt");
-	system("echo \"start\" >> save.txt");
+	//system("date >> save.txt");
+	//system("echo \"start\" >> save.txt");
 	//保存PMC寄存器数据
     if((this->m_mask_import_param & (0x01<<CONFIG_PMC_REG)) == 0)
         this->m_p_pmc_reg->SaveRegData();
@@ -1452,9 +1452,9 @@ void ChannelEngine::SaveDataPoweroff(){
     delete g_ptr_trace;
     g_ptr_trace = nullptr;
 
-    system("date >> save.txt");
-	system("echo \"end\" >> save.txt");
-	system("sync");
+    //system("date >> save.txt");
+	//system("echo \"end\" >> save.txt");
+	//system("sync");
 }
 
 /**

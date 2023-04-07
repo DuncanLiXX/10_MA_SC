@@ -5142,7 +5142,6 @@ bool ChannelControl::OutputData(RecordMsg *msg, bool flag_block){
     if(msg->CheckFlag(FLAG_BLOCK_OVER) || flag_block){
         data_frame.data.ext_type |= 0x0001;
         //printf("line %llu send block over@@@@@@@\n", msg->GetLineNo());
-        //	is_last = true;
     }
     //bit2bit1
     switch(msg->GetMsgType()){
@@ -5195,10 +5194,12 @@ bool ChannelControl::OutputData(RecordMsg *msg, bool flag_block){
             data_frame.data.ext_type |= 0x02;   //所有轴插补
         }
         // @add zk  不指定类型会使 MC 空运行
-        if(msg->GetMsgType() == COMPENSATE_MSG)
-            data_frame.data.cmd = ((CompensateMsg*)msg)->GetMoveType();   // G43根据之前模态确定移动类型
-        else
+        if(msg->GetMsgType() == COMPENSATE_MSG){
+        	data_frame.data.cmd = 0;
+        	//data_frame.data.cmd = ((CompensateMsg*)msg)->GetMoveType();   // G43根据之前模态确定移动类型
+        }else{
             data_frame.data.cmd = 1;   // G31需要强制设为G01
+        }
         break;
     case RAPID_MSG:
     case COORD_MSG:
@@ -5654,10 +5655,10 @@ bool ChannelControl::ExecuteMessage(){
         if(line_no != msg->GetLineNo() || type != msg->GetMsgType()){
             line_no = msg->GetLineNo();
             type = msg->GetMsgType();
-            //printf("---------->excute message line no %llu  msg type: %d flag: %d\n", line_no, msg_type, msg->GetFlags().all);
+            printf("---------->excute message line no %llu  msg type: %d flags: %d\n", line_no, msg_type, msg->GetFlags().all);
         }
         // @test zk
-
+        //printf("---------->excute message line no %llu  msg type: %d flag: %d\n", line_no, msg_type, msg->GetFlags().all);
         switch(msg_type){
         case AUX_MSG:
 #ifdef USES_WOOD_MACHINE
@@ -6041,6 +6042,7 @@ bool ChannelControl::ExecuteAuxMsg(RecordMsg *msg){
         //等待MC分块的插补到位信号，以及MI的运行到位信号
         int count = 0;
         bool block_over = false;
+
         while(1){
             block_over = CheckBlockOverFlag();
             if(this->ReadMcMoveDataCount() > 0 || !block_over ||
@@ -8205,15 +8207,15 @@ bool ChannelControl::ExecuteCompensateMsg(RecordMsg *msg){
         if(this->IsStepMode())
             limit = 4;	//单步模式需要多次验证，因为状态切换有延时
 
-        //printf("0000000000\n");
         //等待MC分块的插补到位信号，以及MI的运行到位信号
+
         while(1){
             bool block_over = CheckBlockOverFlag();
             if(this->ReadMcMoveDataCount() > 0 || !block_over ||
                     m_channel_status.machining_state == MS_PAUSED ||
                     m_channel_status.machining_state == MS_WARNING){ //未达到执行条件
-                //			printf("compensate exec return: %d, %d , %d\n", block_over, ReadMcMoveDataCount(), m_channel_status.machining_state);
-                return false;    //还未运行到位
+            	//printf("compensate exec return: %d, %d , %d\n", block_over, ReadMcMoveDataCount(), m_channel_status.machining_state);
+            	return false;    //还未运行到位
             }
             else if(++count < limit){
                 usleep(5000);   //等待5ms，因为MC状态更新周期为5ms，需要等待状态确认
@@ -10504,7 +10506,7 @@ bool ChannelControl::ExecuteInputMsg(RecordMsg * msg){
 
     bool isAbs = this->m_channel_status.gmode[3] == 900 ? true: false;
 
-    printf("ldata: %lf -- pdata: %lf --- rdata: %lf\n", input_msg->LData, input_msg->PData, input_msg->RData);
+    //printf("ldata: %lf -- pdata: %lf --- rdata: %lf\n", input_msg->LData, input_msg->PData, input_msg->RData);
 
     if(this->m_n_restart_mode != NOT_RESTART &&
             input_msg->GetLineNo() < this->m_n_restart_line
@@ -10570,6 +10572,7 @@ bool ChannelControl::ExecuteInputMsg(RecordMsg * msg){
         	if(plane == 0){
                 this->m_p_chn_tool_config->geometry_compensation[tool_number-1][2] = input_msg->RData;
                 comp_data = this->m_p_chn_tool_config->geometry_compensation[tool_number-1][2];
+                printf("===== tool_number:%d  offset: %lf\n", tool_number-1, input_msg->RData);
         	}else if(plane == 1){
                 this->m_p_chn_tool_config->geometry_compensation[tool_number-1][1] = input_msg->RData;
                 comp_data = this->m_p_chn_tool_config->geometry_compensation[tool_number-1][1];
@@ -10640,7 +10643,7 @@ bool ChannelControl::ExecuteInputMsg(RecordMsg * msg){
         }
         else{
         	//printf("33333 param: %d - value: %lf\n", param, input_msg->RData);
-        	CreateError(ERR_NO_CUR_RUN_DATA, ERROR_LEVEL, CLEAR_BY_MCP_RESET, 0, m_n_channel_index);
+        	CreateError(ERR_NO_CUR_RUN_DATA, ERROR_LEVEL, CLEAR_BY_MCP_RESET, msg->GetLineNo(), m_n_channel_index);
             this->m_error_code = ERR_NO_CUR_RUN_DATA;
             return false;
         }
@@ -10650,7 +10653,7 @@ bool ChannelControl::ExecuteInputMsg(RecordMsg * msg){
     }
     default:{
         // @TODO 不支持的L指定
-        CreateError(ERR_NO_CUR_RUN_DATA, ERROR_LEVEL, CLEAR_BY_MCP_RESET, 0, m_n_channel_index);
+        CreateError(ERR_NO_CUR_RUN_DATA, ERROR_LEVEL, CLEAR_BY_MCP_RESET, msg->GetLineNo(), m_n_channel_index);
         this->m_error_code = ERR_NO_CUR_RUN_DATA;
         return false;
     }
@@ -11791,8 +11794,6 @@ void ChannelControl::SetMcAxisToolOffset(uint8_t axis_index){
  * @param active_flag : 激活标志，true--激活   false--失效
  */
 void ChannelControl::ActiveMcToolOffset(bool active_flag){
-
-	ScPrintf("123=========== G43 ACTIVE %d\n", g43_4_active);
 
 	McCmdFrame cmd;
     memset(&cmd, 0x00, sizeof(McCmdFrame));

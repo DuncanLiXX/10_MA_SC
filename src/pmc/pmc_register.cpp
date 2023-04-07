@@ -61,7 +61,7 @@ void PmcRegister::Initialize(){
 
 
 	if(access(PATH_PMC_REG, F_OK) == -1){  //PMC寄存器文件不存在
-		printf("init to create pmc register file!!!\n");
+        printf("init to create pmc register file!!!\n");
 
 		this->InitRegFile();
 
@@ -69,6 +69,7 @@ void PmcRegister::Initialize(){
 		bool init_reg = false;   //是否重新初始化文件，如果发现有寄存器不匹配则重新初始化
 		m_n_fp = open(PATH_PMC_REG, O_RDWR);
 		if(m_n_fp < 0){
+            std::cout << "open PATH_PMC_REG err" << std::endl;
 			g_ptr_trace->PrintTrace(TRACE_ERROR, PMC_REGISTER, "打开pmc寄存器文件失败！");
 			return;//文件打开失败
 		}
@@ -79,6 +80,7 @@ void PmcRegister::Initialize(){
 		//读取K寄存器
 		ssize_t read_size = read(m_n_fp, &size, 2);
 		if(read_size != 2){ //读取失败
+            std::cout << "read K error" << std::endl;
 			g_ptr_trace->PrintTrace(TRACE_ERROR, PMC_REGISTER, "读取K寄存器字节数失败！");
 			close(m_n_fp);
 			m_n_fp = -1;
@@ -87,6 +89,7 @@ void PmcRegister::Initialize(){
 
 		size_real = size;
 		if(size != K_REG_COUNT){
+            std::cout << "read K error 2" << std::endl;
 			g_ptr_trace->PrintTrace(TRACE_ERROR, PMC_REGISTER, "K寄存器大小数不匹配[%hu,%hu]！", size, K_REG_COUNT);
 //			close(m_n_fp);
 //			m_n_fp = -1;
@@ -389,6 +392,7 @@ void PmcRegister::InitRegFile(){
 	m_n_fp = open(PATH_PMC_REG, O_CREAT|O_TRUNC|O_WRONLY); //打开文件
 
 	if(m_n_fp < 0){
+        std::cout << "-------------------> open InitRegFile error" << std::endl;
 		g_ptr_trace->PrintTrace(TRACE_ERROR, PMC_REGISTER, "打开pmc寄存器保存文件失败！");
 		return;//文件打开失败
 	}

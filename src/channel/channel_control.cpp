@@ -3772,7 +3772,7 @@ bool ChannelControl::SendModeChangToHmi(uint16_t mode_type){
         cmd.data_len = sizeof(m_channel_status.rated_spindle_speed);
         memcpy(cmd.data, &m_channel_status.rated_spindle_speed, cmd.data_len);
         g_ptr_tracelog_processor->SendToHmi(kProcessInfo, kDebug,
-                                            string("[主轴转速S]切换为 " + to_string(m_channel_status.rated_spindle_speed*60/1000)));
+                                            string("[主轴转速S]切换为 " + to_string(m_channel_status.rated_spindle_speed)));
         break;
     default:
         printf("@@@@Invalid value in ChannelControl::SendModeChangToHmi\n");

@@ -204,7 +204,7 @@ void ToolCompensate::ProcessData(ListNode<RecordMsg *> *node){
 		case COMPENSATE_MSG:{
 			CompensateMsg * tmsg = (CompensateMsg *)msg;
 
-			printf("compensate gcode %d\n", tmsg->GetGCode());
+			interp.flush_comp();
 
 			if(tmsg->GetGCode() == G40_CMD){
 				comp_cancel_flag = false;
@@ -232,6 +232,9 @@ void ToolCompensate::ProcessData(ListNode<RecordMsg *> *node){
 					interp.convert_cutter_compensation_on(comp_side,this->comp_radius,&interp._setup);
 				}
 			}
+			//RecordMsgFlag flags;
+			//flags.all = 9;
+			//tmsg->SetFlags(flags);
 
 			this->m_p_output_msg_list->Append(node);
 

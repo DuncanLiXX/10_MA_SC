@@ -814,7 +814,7 @@ int Interp::convert_cutter_compensation_off(setup_pointer settings)
 	if(settings->cutter_comp_side && settings->cutter_comp_radius > 0.0){
 		settings->cutter_comp_lastmove =  true;
 	}
-	settings->cutter_comp_side = 0;
+	//settings->cutter_comp_side = 0;
 	return 0;
 }
 
@@ -824,9 +824,8 @@ int Interp::convert_cutter_compensation_on(int side, double radius,
 	settings->cutter_comp_radius = radius;
 
 	// 暂时禁用 G41 G42 直接切换  需要G40 然后重新建立新刀补
-	if(settings->cutter_comp_side != 0){
+	if(isCompOn && side != settings->cutter_comp_side){
 		err_code = G41_G42_CHANGE;
-
 		return 0;
 	}
 
@@ -1811,9 +1810,10 @@ void ARC_FEED(int line_number,
 
 	new_msg->SetLineNo(line_number);
 
-	RecordMsgFlag flag; flag.all = g_flags;
+	RecordMsgFlag flag;
+	flag.all = g_flags;
 	new_msg->SetFlags(flag);
-	printf("ARC_FEED line no: %d\n", line_number);
+	printf("****************ARC_FEED line no: %d flags: %d\n", line_number, flag.all);
 	comp_output_list->Append(new_msg);
 }
 
@@ -1852,7 +1852,7 @@ void STRAIGHT_TRAVERSE(int line_number,
 	new_msg->SetFlags(flag);
 
 	new_msg->SetLineNo(line_number);  //设置当前行号
-	printf("STRAIGHT_TRAVERSE line no: %d\n", line_number);
+	printf("****************STRAIGHT_TRAVERSE line no: %d flags: %d\n", line_number, flag.all);
 	comp_output_list->Append(new_msg);
 }
 
@@ -1892,7 +1892,7 @@ void STRAIGHT_FEED(int line_number,
 
 	RecordMsgFlag flag; flag.all = g_flags;
 	new_msg->SetFlags(flag);
-	printf("STRAIGHT_FEED line no: %d\n", line_number);
+	printf("****************STRAIGHT_FEED line no: %d flags: %d\n", line_number, flag.all);
 	comp_output_list->Append(new_msg);
 }
 

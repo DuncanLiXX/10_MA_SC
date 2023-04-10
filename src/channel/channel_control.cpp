@@ -8396,7 +8396,6 @@ bool ChannelControl::ExecuteCompensateMsg(RecordMsg *msg){
             //刷新运动指令目标位置
             this->RefreshOuputMovePos(m_channel_rt_status.cur_pos_work);
 
-
             this->SendChnStatusChangeCmdToHmi(G_MODE);
             this->SendModeChangToHmi(H_MODE);
 #ifdef USES_FIVE_AXIS_FUNC
@@ -10590,9 +10589,11 @@ bool ChannelControl::ExecuteInputMsg(RecordMsg * msg){
     	double comp_data;
     	if(isAbs){
         	if(plane == 0){
-                this->m_p_chn_tool_config->geometry_compensation[tool_number-1][2] = input_msg->RData;
+        		this->m_p_chn_tool_config->geometry_compensation[tool_number-1][2] = input_msg->RData;
                 comp_data = this->m_p_chn_tool_config->geometry_compensation[tool_number-1][2];
                 printf("===== tool_number:%d  offset: %lf\n", tool_number-1, input_msg->RData);
+                printf("this->m_p_chn_tool_config->geometry_compensation %lf\n",
+                		this->m_p_chn_tool_config->geometry_compensation[tool_number-1][2]);
         	}else if(plane == 1){
                 this->m_p_chn_tool_config->geometry_compensation[tool_number-1][1] = input_msg->RData;
                 comp_data = this->m_p_chn_tool_config->geometry_compensation[tool_number-1][1];
@@ -10615,6 +10616,8 @@ bool ChannelControl::ExecuteInputMsg(RecordMsg * msg){
 
         g_ptr_parm_manager->UpdateToolMeasure(this->m_n_channel_index, tool_number-1, comp_data);
         this->NotifyHmiToolOffsetChanged(tool_number);   //通知HMI刀偏值更改
+        printf("this->m_p_chn_tool_config->geometry_compensation %lf\n",
+        		this->m_p_chn_tool_config->geometry_compensation[tool_number-1][2]);
         break;
     }
     case 11:{
@@ -11781,6 +11784,10 @@ void ChannelControl::SetMcAxisToolOffset(uint8_t axis_index){
     int64_t offset = 0;
     if(axis_config.axis_linear_type == LINE_AXIS_Z){
         offset = m_p_chn_tool_config->geometry_compensation[m_channel_status.cur_h_code-1][2] * 1e7;  //单位由mm转换为0.1nm
+
+        printf("z axis offset : %lf, tool number: %d\n",
+        		m_p_chn_tool_config->geometry_compensation[m_channel_status.cur_h_code-1][2],
+				m_channel_status.cur_h_code);
         //	offset += m_p_chn_tool_config->geometry_comp_basic[2] * 1e7;   //基准刀偏
         offset += m_p_chn_tool_config->geometry_wear[m_channel_status.cur_h_code-1] * 1e7;   //叠加磨损补偿
     }
@@ -12004,6 +12011,10 @@ void ChannelControl::SetMcCoord(bool flag){
 				}else if(coord_index <= G5499_CMD){
 					origin_pos += (int64_t)(m_p_chn_ex_coord_config[coord_index/10-5401].offset[i] * 1e7);    //单位由mm转换为0.1nm
 					printf("===== g5401 offset  axis: %i offset %lld\n", i, (int64_t)(m_p_chn_ex_coord_config[coord_index/10-5401].offset[i] * 1e7));
+				}
+
+				if(G52Active){
+					origin_pos += (int64_t)(G52offset[i] * 1e7);
 				}
         	}
 

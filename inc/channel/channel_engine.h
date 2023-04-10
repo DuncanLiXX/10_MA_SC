@@ -137,6 +137,7 @@ void SetMcArmComm(MCArmCommunication *comm){this->m_p_mc_arm_comm = comm;}   //É
 	void ManualMoveStop();			//ÊÖ¶¯Í£Ö¹
 	void ManualMove(uint8_t phy_axis, int8_t dir, double vel, double inc_dis);  //ÊÖ¶¯ÒÆ¶¯£¬Ïòdir·½ÏòÒÆ¶¯dis¾àÀë
 	void ManualMoveAbs(uint8_t phy_axis, double vel, double pos);   //ÊÖ¶¯ÒÔÄ¿±êËÙ¶ÈvelÒÆ¶¯ÖÁ¾ø¶ÔÄ¿±êÎ»ÖÃ
+    void ManualMoveAbs(uint8_t phy_axis, double vel, double pos, double &real_pos);   //ÊÖ¶¯ÒÔÄ¿±êËÙ¶ÈvelÒÆ¶¯ÖÁ¾ø¶ÔÄ¿±êÎ»ÖÃ
 
 	void ManualMoveStop(uint8_t phy_axis);			//ÊÖ¶¯Í£Ö¹
 

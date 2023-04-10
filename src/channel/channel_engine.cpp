@@ -122,6 +122,8 @@ ChannelEngine::ChannelEngine() {
 
     this->CheckTmpDir();
 
+    memset(this->m_sync_axis_homing, 0x00, kMaxAxisNum*sizeof(bool));
+
     ShowSc& showSc = Singleton<ShowSc>::instance();
     showSc.SetPrintType(TypePrintOutput);
     showSc.SetInterval(200);
@@ -2159,6 +2161,9 @@ void ChannelEngine::ProcessSetAxisRefRsp(MiCmdFrame &cmd){
            move_length = this->m_p_axis_config[axis].move_pr*2;
        else
            move_length = this->m_p_axis_config[axis].ref_z_distance_max;
+
+       if (GetSyncAxisCtrl()->CheckSyncState(axis) == 1)
+           m_sync_axis_homing[axis] = 1;
 
        if (df_pos <= move_length)
            m_n_ret_ref_step[axis] = 10;
@@ -8263,6 +8268,17 @@ void ChannelEngine::SystemReset(){
     if(m_b_ret_ref){
         for(uint8_t id = 0; id < this->m_p_general_config->axis_count; id++){
             if(this->m_n_mask_ret_ref & (0x01<<id)){
+                //恢复同步轴关系
+                if (GetSyncAxisCtrl()->CheckSyncState(id) == 1 && m_sync_axis_homing[id] == 1)
+                {
+                    auto func = [this](int id){
+                        usleep(200000);//重新建立同步关系
+                        double machPos = this->GetPhyAxisMachPosFeedback(id);
+                        SetSubAxisRefPoint(id, machPos);
+                    };
+                    thread t(func, id);
+                    t.detach();
+                }
                 this->SetInRetRefFlag(id, false);   //复位回零中标志
             }
         }
@@ -8273,7 +8289,7 @@ void ChannelEngine::SystemReset(){
     //	m_n_get_cur_encoder_count = 0;
     memset(this->m_n_ret_ref_step, 0x00, kMaxAxisNum*sizeof(int));
 
-    this->ClearPmcAxisMoveData();   //清空PMC轴运动数据
+    //this->ClearPmcAxisMoveData();   //清空PMC轴运动数据
 
     m_serverGuide.ResetRecord();
     //	m_n_run_axis_mask = 0x00;  //当前运行的轴的mask
@@ -10217,6 +10233,8 @@ void ChannelEngine::AxisFindRefNoZeroSignal(uint8_t phy_axis){
         if (GetSyncAxisCtrl()->CheckSyncState(phy_axis) == 1)
         {//主动轴相应的从动轴也需要清除回零标志
             ClearSubAxisRefFlag(phy_axis);
+            m_sync_axis_homing[phy_axis] = 1;
+
         }
         m_n_ret_ref_step[phy_axis] = 1;  //跳转下一步
     }
@@ -10462,12 +10480,13 @@ void ChannelEngine::EcatIncAxisFindRefWithZeroSignal(uint8_t phy_axis){
             cmd.data.axis_index = phy_axis+1;
             cmd.data.cmd = CMD_MI_SET_REF;
             memcpy(cmd.data.data, &m_p_axis_config[phy_axis].ref_encoder, sizeof(int64_t));
-
             this->m_p_mi_comm->WriteCmd(cmd);
 
             gettimeofday(&this->m_time_ret_ref[phy_axis], NULL);
             m_n_ret_ref_step[phy_axis]++;
             std::cout << "step 10, get z signal, wait for 2500ms, CMD_MI_SET_REF 0x0107" << std::endl;
+            if (GetSyncAxisCtrl()->CheckSyncState(phy_axis) == 1)
+                m_sync_axis_homing[phy_axis] = 1;
         }
         break;
     }
@@ -10541,6 +10560,8 @@ void ChannelEngine::EcatIncAxisFindRefWithZeroSignal(uint8_t phy_axis){
             gettimeofday(&this->m_time_ret_ref[phy_axis], NULL);
             m_n_ret_ref_step[phy_axis]++;
             std::cout << "step 14, wait for 600ms, CMD_MI_SET_AXIS_MACH_POS 0x136" << std::endl;
+            if (GetSyncAxisCtrl()->CheckSyncState(phy_axis) == 1)
+                m_sync_axis_homing[phy_axis] = 1;
         }
     }
         break;
@@ -10824,6 +10845,7 @@ void ChannelEngine::SetSubAxisRefPoint(int axisID, double refPos)
 
             this->SetRetRefFlag(i, true);
             this->m_p_pmc_reg->FReg().bits[0].in_ref_point |= (0x01<<i);   //置位到参考点标志
+            m_sync_axis_homing[axisID] = 0;
         }
     }
 }
@@ -11629,6 +11651,9 @@ void ChannelEngine::EcatAxisFindRefWithZeroSignal(uint8_t phy_axis){
 
         m_n_ret_ref_step[phy_axis] = 9;  //跳转下一步
         std::cout << "step 9, CMD_MI_SET_REF_POINT 0x011A " << std::endl;
+
+        if (GetSyncAxisCtrl()->CheckSyncState(phy_axis) == 1)
+            m_sync_axis_homing[phy_axis] = 1;
     }
         break;
     case 9: //等待设置参考点完成，在Mi指令响应处理函数中处理
@@ -11696,6 +11721,8 @@ void ChannelEngine::EcatAxisFindRefWithZeroSignal(uint8_t phy_axis){
                 mi_cmd.data.data[1] = 0;
                 this->m_p_mi_comm->WriteCmd(mi_cmd);
                 m_n_ret_ref_step[phy_axis]++;
+                if (GetSyncAxisCtrl()->CheckSyncState(phy_axis) == 1)
+                    m_sync_axis_homing[phy_axis] = 1;
             }
             else
             {
@@ -12038,6 +12065,9 @@ void ChannelEngine::EcatAxisFindRefNoZeroSignal(uint8_t phy_axis){
 
         m_n_ret_ref_step[phy_axis]++;  //跳转下一步
         std::cout << "Step 0, CMD_MI_SET_REF_POINT 0x011A" << std::endl;
+
+        if (GetSyncAxisCtrl()->CheckSyncState(phy_axis) == 1)
+            m_sync_axis_homing[phy_axis] = 1;
     }
         break;
     case 1:  //等待设置参考点完成，在Mi指令响应处理函数中处理
@@ -12107,6 +12137,8 @@ void ChannelEngine::EcatAxisFindRefNoZeroSignal(uint8_t phy_axis){
                 this->m_p_mi_comm->WriteCmd(mi_cmd);
                 m_n_ret_ref_step[phy_axis]++;
                 gettimeofday(&this->m_time_ret_ref[phy_axis], NULL);
+                if (GetSyncAxisCtrl()->CheckSyncState(phy_axis) == 1)
+                    m_sync_axis_homing[phy_axis] = 1;
             }
             else
             {

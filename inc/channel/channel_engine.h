@@ -632,6 +632,7 @@ private:  //私有成员变量
 	uint8_t m_n_ret_ref_auto_cur; 				//自动回参考点时的当前顺序号
 	struct timeval m_time_ret_ref[kMaxAxisNum];       //回参考延时计时器
 	double m_df_ret_ref_tar_pos[kMaxAxisNum];  //回参考点中间移动目标位置
+    bool m_sync_axis_homing[kMaxAxisNum];
 //	uint8_t m_n_get_cur_encoder_count;    //获取MI当前编码器计数，保护措施，多次验证
 //	uint64_t m_n_ret_ref_encoder;   //粗基准编码器值
 

@@ -2471,11 +2471,6 @@ bool Parser::CreateArcMsg(const int gcode){
 
 
         DPointChn target_pos = target;
-        if (this->m_p_compiler_status->mode.gmode[3] == G91_CMD)
-        {
-            target_pos += source;
-        }
-
         if(!CalArcCenter(source, target_pos, radius, major_flag*dir_flag, center)){
 			return false; //²úÉú´íÎó£¬·µ»Ø
 		}
@@ -2531,10 +2526,6 @@ bool Parser::CreateArcMsg(const int gcode){
 //		printf("tar[%lf, %lf, %lf]\n", target.x, target.y, target.z);
 
         DPointChn target_pos = target;
-        if (this->m_p_compiler_status->mode.gmode[3] == G91_CMD)
-        {
-            target_pos += source;
-        }
 
         if(source != target_pos){
 			DPlane cen = Point2Plane(center, m_p_compiler_status->mode.gmode[2]);

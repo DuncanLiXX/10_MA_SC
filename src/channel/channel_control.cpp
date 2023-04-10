@@ -17580,12 +17580,7 @@ void ChannelControl::TransMachCoordToWorkCoord(DPointChn &pos, uint16_t coord_id
                 origin_pos += m_p_chn_ex_coord_config[coord_idx/10-5401].offset[i];
             }
 
-            if(G52Active){
-            	origin_pos += G52offset[i];
-            }
-            origin_pos += m_p_chn_g92_offset->offset[i];
-
-            phy_axis = this->GetPhyAxis(i);
+            /*phy_axis = this->GetPhyAxis(i);
             if(phy_axis != 0xFF){
                 if(this->m_p_axis_config[phy_axis].axis_linear_type == LINE_AXIS_Z && m_channel_status.cur_h_code > 0){//Z轴需要加上刀长偏置
                     //	origin_pos += m_p_chn_tool_config->geometry_comp_basic[2];   //基准刀偏
@@ -17593,7 +17588,15 @@ void ChannelControl::TransMachCoordToWorkCoord(DPointChn &pos, uint16_t coord_id
                     origin_pos += m_p_chn_tool_config->geometry_wear[m_channel_status.cur_h_code-1];   //叠加磨损补偿
                 }
 
+            }*/
+
+            origin_pos += m_p_chn_g92_offset->offset[i];
+
+            if(G52Active){
+            	origin_pos += G52offset[i];
             }
+
+            if(G92Active) origin_pos = m_p_chn_g92_offset->offset[i];
 
             *pp -= origin_pos;    //机械坐标 - 工件坐标系偏移 = 工件坐标
         }
@@ -17628,19 +17631,22 @@ void ChannelControl::TransMachCoordToWorkCoord(DPointChn &pos, uint16_t coord_id
                 origin_pos += m_p_chn_ex_coord_config[coord_idx/10-5401].offset[i];
             }
 
-            if(G52Active){
-            	origin_pos += G52offset[i];
-		    }
             origin_pos += m_p_chn_g92_offset->offset[i];
 
-            phy_axis = this->GetPhyAxis(i);
+            if(G52Active){
+              	origin_pos += G52offset[i];
+  		    }
+
+            if(G92Active) origin_pos = m_p_chn_g92_offset->offset[i];
+
+            /*phy_axis = this->GetPhyAxis(i);
             if(phy_axis != 0xFF){
                 if(this->m_p_axis_config[phy_axis].axis_linear_type == LINE_AXIS_Z && h_code > 0){//Z轴需要加上刀长偏置
                     //	origin_pos += m_p_chn_tool_config->geometry_comp_basic[2];   //基准刀偏
                     origin_pos += m_p_chn_tool_config->geometry_compensation[h_code-1][2];  //
                     origin_pos += m_p_chn_tool_config->geometry_wear[h_code-1];   //叠加磨损补偿
                 }
-            }
+            }*/
             *pp -= origin_pos;    //机械坐标 - 工件坐标系偏移 = 工件坐标
         }
         pp++;
@@ -17670,12 +17676,10 @@ void ChannelControl::TransMachCoordToWorkCoord(DPoint &pos, uint16_t coord_idx, 
                 origin_pos += m_p_chn_ex_coord_config[coord_idx/10-5401].offset[i];
             }
 
-            if(G52Active){
-            	origin_pos += G52offset[i];
-		    }
+
             origin_pos += m_p_chn_g92_offset->offset[i];
 
-            phy_axis = this->GetPhyAxis(i);
+            /*phy_axis = this->GetPhyAxis(i);
             if(phy_axis != 0xFF){
                 if(this->m_p_axis_config[phy_axis].axis_linear_type == LINE_AXIS_Z && m_channel_status.cur_h_code > 0){//Z轴需要加上刀长偏置
                     //		origin_pos += m_p_chn_tool_config->geometry_comp_basic[2];   //基准刀偏
@@ -17683,7 +17687,12 @@ void ChannelControl::TransMachCoordToWorkCoord(DPoint &pos, uint16_t coord_idx, 
                     origin_pos += m_p_chn_tool_config->geometry_wear[m_channel_status.cur_h_code-1];   //叠加磨损补偿
                 }
 
-            }
+            }*/
+            if(G52Active){
+            	origin_pos += G52offset[i];
+		    }
+            if(G92Active) origin_pos = m_p_chn_g92_offset->offset[i];
+
 
             *pp -= origin_pos;    //机械坐标 - 工件坐标系偏移 = 工件坐标
 
@@ -17715,7 +17724,15 @@ void ChannelControl::TransWorkCoordToMachCoord(DPointChn &pos, uint16_t coord_id
                 origin_pos += m_p_chn_ex_coord_config[coord_idx/10-5401].offset[i];
             }
 
-            phy_axis = this->GetPhyAxis(i);
+            origin_pos += m_p_chn_g92_offset->offset[i];
+
+            if(G52Active){
+				origin_pos += G52offset[i];
+			}
+
+            if(G92Active) origin_pos = m_p_chn_g92_offset->offset[i];
+
+            /*phy_axis = this->GetPhyAxis(i);
             if(phy_axis != 0xFF){
                 if(this->m_p_axis_config[phy_axis].axis_linear_type == LINE_AXIS_Z && m_channel_status.cur_h_code > 0){//Z轴需要加上刀长偏置
                     //		origin_pos += m_p_chn_tool_config->geometry_comp_basic[2];   //基准刀偏
@@ -17723,7 +17740,7 @@ void ChannelControl::TransWorkCoordToMachCoord(DPointChn &pos, uint16_t coord_id
                     origin_pos += m_p_chn_tool_config->geometry_wear[m_channel_status.cur_h_code-1];   //叠加磨损补偿
                 }
 
-            }
+            }*/
 
             *pp += origin_pos;    //机械坐标 - 工件坐标系偏移 = 工件坐标
 
@@ -17756,7 +17773,15 @@ void ChannelControl::TransWorkCoordToMachCoord(DPoint &pos, uint16_t coord_idx, 
                 origin_pos += m_p_chn_ex_coord_config[coord_idx/10-5401].offset[i];
             }
 
-            phy_axis = this->GetPhyAxis(i);
+            origin_pos += m_p_chn_g92_offset->offset[i];
+
+            if(G52Active){
+				origin_pos += G52offset[i];
+			}
+
+            if(G92Active) origin_pos = m_p_chn_g92_offset->offset[i];
+
+            /*phy_axis = this->GetPhyAxis(i);
             if(phy_axis != 0xFF){
                 if(this->m_p_axis_config[phy_axis].axis_linear_type == LINE_AXIS_Z && m_channel_status.cur_h_code > 0){//Z轴需要加上刀长偏置
                     //		origin_pos += m_p_chn_tool_config->geometry_comp_basic[2];   //基准刀偏
@@ -17764,7 +17789,7 @@ void ChannelControl::TransWorkCoordToMachCoord(DPoint &pos, uint16_t coord_idx, 
                     origin_pos += m_p_chn_tool_config->geometry_wear[m_channel_status.cur_h_code-1];   //叠加磨损补偿
                 }
 
-            }
+            }*/
 
             *pp += origin_pos;    //机械坐标 - 工件坐标系偏移 = 工件坐标
 
@@ -17788,12 +17813,15 @@ void ChannelControl::TransMachCoordToWorkCoord(double &pos, uint16_t coord_idx, 
         origin_pos += m_p_chn_ex_coord_config[coord_idx/10-5401].offset[axis];
     }
 
-    if(G52Active){
-    	origin_pos += G52offset[axis];
-    }
     origin_pos += m_p_chn_g92_offset->offset[axis];
 
-    uint8_t phy_axis = this->GetPhyAxis(axis);
+    if(G52Active){
+		origin_pos += G52offset[axis];
+	}
+
+    if(G92Active) origin_pos = m_p_chn_g92_offset->offset[axis];
+
+    /*uint8_t phy_axis = this->GetPhyAxis(axis);
     if(phy_axis != 0xFF){
         if(this->m_p_axis_config[phy_axis].axis_linear_type == LINE_AXIS_Z && m_channel_status.cur_h_code > 0){//Z轴需要加上刀长偏置
             //	origin_pos += m_p_chn_tool_config->geometry_comp_basic[2];   //基准刀偏
@@ -17801,7 +17829,7 @@ void ChannelControl::TransMachCoordToWorkCoord(double &pos, uint16_t coord_idx, 
             origin_pos += m_p_chn_tool_config->geometry_wear[m_channel_status.cur_h_code-1];   //叠加磨损补偿
         }
 
-    }
+    }*/
 
 
     pos -= origin_pos;    //机械坐标 - 工件坐标系偏移 = 工件坐标
@@ -17822,7 +17850,7 @@ void ChannelControl::TransWorkCoordToMachCoord(double &pos, uint16_t coord_idx, 
         origin_pos += m_p_chn_ex_coord_config[coord_idx/10-5401].offset[axis];
     }
 
-    uint8_t phy_axis = this->GetPhyAxis(axis);
+    /*uint8_t phy_axis = this->GetPhyAxis(axis);
     if(phy_axis != 0xFF){
         if(this->m_p_axis_config[phy_axis].axis_linear_type == LINE_AXIS_Z && m_channel_status.cur_h_code > 0){//Z轴需要加上刀长偏置
             //	origin_pos += m_p_chn_tool_config->geometry_comp_basic[2];   //基准刀偏
@@ -17830,9 +17858,16 @@ void ChannelControl::TransWorkCoordToMachCoord(double &pos, uint16_t coord_idx, 
             origin_pos += m_p_chn_tool_config->geometry_wear[m_channel_status.cur_h_code-1];   //叠加磨损补偿
         }
 
+    }*/
+    origin_pos += m_p_chn_g92_offset->offset[axis];
+
+    if(G52Active){
+    	origin_pos += G52offset[axis];
     }
 
-    pos += origin_pos;    //机械坐标 - 工件坐标系偏移 = 工件坐标
+    if(G92Active) origin_pos = m_p_chn_g92_offset->offset[axis];
+
+    pos += origin_pos;
 }
 
 /**
@@ -17851,7 +17886,7 @@ void ChannelControl::TransWorkCoordToMachCoord(double &pos, uint16_t coord_idx, 
         origin_pos += m_p_chn_ex_coord_config[coord_idx/10-5401].offset[axis];
     }
 
-    uint8_t phy_axis = this->GetPhyAxis(axis);
+    /*uint8_t phy_axis = this->GetPhyAxis(axis);
     if(phy_axis != 0xFF){
         if(this->m_p_axis_config[phy_axis].axis_linear_type == LINE_AXIS_Z && m_channel_status.cur_h_code > 0){//Z轴需要加上刀长偏置
             //	origin_pos += m_p_chn_tool_config->geometry_comp_basic[2];   //基准刀偏
@@ -17859,9 +17894,16 @@ void ChannelControl::TransWorkCoordToMachCoord(double &pos, uint16_t coord_idx, 
             origin_pos += m_p_chn_tool_config->geometry_wear[h_code-1];   //叠加磨损补偿
         }
 
+    }*/
+    origin_pos += m_p_chn_g92_offset->offset[axis];
+
+    if(G52Active){
+    	origin_pos += G52offset[axis];
     }
 
-    pos += origin_pos;    //机械坐标 - 工件坐标系偏移 = 工件坐标
+    if(G92Active) origin_pos = m_p_chn_g92_offset->offset[axis];
+
+    pos += origin_pos;
 }
 
 

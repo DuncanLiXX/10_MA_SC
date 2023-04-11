@@ -3859,13 +3859,13 @@ bool ParmManager::ClearIoRemapInfo()
 {
     vector<string> sections;
     this->m_ini_io_remap->GetSections(&sections);
-
     for(size_t i = 0; i < sections.size(); ++i)
     {
-        this->m_ini_io_remap->DeleteSection(sections.at(i));
+        m_ini_io_remap->DeleteSection(sections.at(i));
     }
 
-    this->m_ini_io_remap->Save();
+    m_ini_io_remap->Save();
+    return true;
 }
 
 /**

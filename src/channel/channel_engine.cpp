@@ -3373,13 +3373,11 @@ void ChannelEngine::ProcessHmiClearIoRemapInfoCmd(HMICmdFrame &cmd)
 
         info_node = info_node->next;
     }
-
     this->m_p_io_remap->Clear();
 
     if(!g_ptr_parm_manager->ClearIoRemapInfo()){
         cmd.cmd_extension = 0x01;  //¸üÐÂÊ§°Ü
     }
-
     this->m_p_hmi_comm->SendCmd(cmd);
 }
 
@@ -7969,6 +7967,7 @@ void ChannelEngine::SendMiPcParam2(uint8_t axis){
  * @param info
  */
 void ChannelEngine::SendMiIoRemapInfo(IoRemapInfo &info){
+
     MiCmdFrame cmd;
     memset(&cmd, 0x00, sizeof(cmd));
     cmd.data.cmd = CMD_MI_SET_IO_REMAP;

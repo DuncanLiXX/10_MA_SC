@@ -3904,13 +3904,10 @@ void ChannelEngine::ProcessHmiSetParam(HMICmdFrame &cmd){
         }
         else{
             HmiCoordConfig cfg;
-
             memcpy(&cfg, cmd.data+1, cmd.data_len-1);
             this->m_p_channel_control[cmd.channel_index].UpdateCoord(cmd.data[0], cfg);
-
-
             cmd.data[0] = SUCCEED;
-            //			printf("update coord succeed! chn = %hhu, coord=%hhu, datalen=%hu\n", cmd.channel_index, (uint8_t)cmd.data[0], cmd.data_len);
+            //printf("update coord succeed! chn = %hhu, coord=%hhu, datalen=%hu\n", cmd.channel_index, (uint8_t)cmd.data[0], cmd.data_len);
 
         }
         break;
@@ -3921,11 +3918,9 @@ void ChannelEngine::ProcessHmiSetParam(HMICmdFrame &cmd){
         }
         else{
             HmiCoordConfig cfg;
-
             memcpy(&cfg, cmd.data+1, cmd.data_len-1);
             this->m_p_channel_control[cmd.channel_index].UpdateExCoord(cmd.data[0], cfg);
             cmd.data[0] = SUCCEED;
-
         }
         break;
     case PITCH_COMP_DATA:   //ÂÝ²¹Êý¾Ý

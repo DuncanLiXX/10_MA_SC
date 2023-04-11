@@ -5227,6 +5227,7 @@ bool ChannelControl::OutputData(RecordMsg *msg, bool flag_block){
     case RAPID_MSG:
     case COORD_MSG:
         if(m_p_channel_config->rapid_mode == 1){
+
             data_frame.data.ext_type |= 0x02;	//直线定位
         }
 

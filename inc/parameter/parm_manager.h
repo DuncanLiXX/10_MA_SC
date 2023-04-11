@@ -99,6 +99,7 @@ public:
 	bool UpdatePcData(uint8_t axis_index, bool dir_flag, uint16_t offset, uint16_t count, double *data);    //更新螺补数据
 
 	bool UpdateIoRemapInfo(IoRemapInfo &info);    //更新IO重映射数据
+    bool ClearIoRemapInfo();                      //清除IO重映射数据
 
     bool SyncHandWheelInfo(const HandWheelMapInfoVec &infoVec, bool bRestart = false);       //更新手轮通道映射
 

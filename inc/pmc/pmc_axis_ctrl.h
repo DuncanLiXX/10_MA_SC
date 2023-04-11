@@ -77,8 +77,6 @@ public:
 	FRegBits *m_p_f_reg;
 	const GRegBits *m_p_g_reg;
 
-    //llx test
-    int cnt_test = 0;
 };
 
 #endif /* INC_PMC_PMC_AXIS_CTRL_H_ */

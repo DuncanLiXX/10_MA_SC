@@ -530,7 +530,6 @@ void SpindleControl::RspORCMA(bool success)
     ScPrintf("SpindleControl::RspORCMA : success = %d\n",success);
     // 定位成功，将ORAR置为1，通知PMC定位动作完成
     if(success && ORCMA){
-        //printf("*********************************** ORAR = 1\n");
     	F->ORAR = 1;
     }
 }

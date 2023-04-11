@@ -6074,8 +6074,10 @@ void ChannelEngine::ManualMovePmc(uint8_t phy_axis, int8_t dir){
     //设置速度
     uint32_t feed = this->m_p_axis_config[phy_axis].manual_speed*1000/60;   //转换单位为um/s
     if(this->m_p_channel_control[0].IsRapidManualMove()){
-        feed *= 2;  //速度翻倍
-        printf("double manual feed\n");
+        //feed *= 2;  //速度翻倍
+
+        // 由原来的手动速度乘2，改为定位速度乘快速倍率
+        feed = (m_p_axis_config[phy_axis].rapid_speed*1000/60)*(m_p_channel_control[0].GetChnStatus().rapid_ratio/100.);
     }
     memcpy(&cmd.data.data[1], &n_inc_dis, sizeof(n_inc_dis));  //设置增量目标位置
     memcpy(&cmd.data.data[5], &feed, sizeof(feed)); //设置速度

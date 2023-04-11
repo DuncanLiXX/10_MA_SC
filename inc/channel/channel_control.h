@@ -281,6 +281,8 @@ public:
 
 	bool IsSkipCaptured(){return m_b_pos_captured;}    //SKIP信号是否捕获
 
+    bool GetRotAxisMask(){return m_mask_rot_axis;} //获取旋转轴mask
+
 #ifdef USES_GRIND_MACHINE
 	void SetMechArmParam(ParamMechArm *para){this->m_p_mech_arm_param = para;}      //设置机械手参数
 	void SetMechArmState(StateMechArm *state){this->m_p_mech_arm_state = state;}    //设置机械手状态
@@ -313,6 +315,8 @@ public:
     void SetMcChnFiveAxisV2Param();         //初始化通道新五轴相关参数
 	void UpdateFiveAxisParam(FiveAxisParamType type);   //设置五轴参数
 #endif
+
+    void UpdateChnnelParam(int param_no); //向MC设置通道参数
 
 
 #ifdef USES_WOOD_MACHINE
@@ -672,6 +676,7 @@ private://私有成员变量
 
 	uint32_t m_mask_intp_axis;      //通道插补轴mask，按通道轴顺序
 	uint8_t m_n_intp_axis_count;    //通道插补轴个数
+    uint32_t m_mask_rot_axis;       //通道旋转轴mask
 
 	ErrorType m_error_code;      	//错误码
 

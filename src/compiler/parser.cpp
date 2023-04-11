@@ -2281,22 +2281,22 @@ bool Parser::CreateRapidMsg(){
     ProcessLastBlockRec(new_msg);
 
     // 如果对旋转轴移动，需要插入清整数圈的msg
-    SCAxisConfig *axis_config = g_ptr_parm_manager->GetAxisConfig();
-    SCChannelConfig *chn_config = g_ptr_parm_manager->GetChannelConfig();
-    for(int i = 0; i < chn_config->chn_axis_count; i++){
-        uint8_t mask = axis_mask & (0x01 << i);
-        if(!mask || (axis_config[i].axis_type != AXIS_ROTATE))
-            continue;
-        double pos = target.GetAxisValue(i);
-        if(pos >= 0 && pos < 360)   // 不超范围，不需要清
-            continue;
-        // 添加一条G200消息,对旋转轴清整数圈
-        RecordMsg *clr_msg = new ClearCirclePosMsg(2000, mask, 360*1000);
-        new_msg->SetLineNo(this->m_p_lexer_result->line_no);
-        m_p_parser_result->Append(clr_msg);
-        ProcessLastBlockRec(clr_msg);
-        ScPrintf("append ClearCirclePosMsg, msk = %u",mask);
-    }
+//    SCAxisConfig *axis_config = g_ptr_parm_manager->GetAxisConfig();
+//    SCChannelConfig *chn_config = g_ptr_parm_manager->GetChannelConfig();
+//    for(int i = 0; i < chn_config->chn_axis_count; i++){
+//        uint8_t mask = axis_mask & (0x01 << i);
+//        if(!mask || (axis_config[i].axis_type != AXIS_ROTATE))
+//            continue;
+//        double pos = target.GetAxisValue(i);
+//        if(pos >= 0 && pos < 360)   // 不超范围，不需要清
+//            continue;
+//        // 添加一条G200消息,对旋转轴清整数圈
+//        RecordMsg *clr_msg = new ClearCirclePosMsg(2000, mask, 360*1000);
+//        new_msg->SetLineNo(this->m_p_lexer_result->line_no);
+//        m_p_parser_result->Append(clr_msg);
+//        ProcessLastBlockRec(clr_msg);
+//        ScPrintf("append ClearCirclePosMsg, msk = %u",mask);
+//    }
 
 //	this->m_p_compiler_status->cur_pos = target; //更新编译当前位置
 
@@ -2390,23 +2390,23 @@ bool Parser::CreateLineMsg(){
 	m_p_parser_result->Append(new_msg);
     ProcessLastBlockRec(new_msg);
 
-    // 如果对旋转轴移动，需要插入清整数圈的msg
-    SCAxisConfig *axis_config = g_ptr_parm_manager->GetAxisConfig();
-    SCChannelConfig *chn_config = g_ptr_parm_manager->GetChannelConfig();
-    for(int i = 0; i < chn_config->chn_axis_count; i++){
-        uint8_t mask = axis_mask & (0x01 << i);
-        if(!mask || (axis_config[i].axis_type != AXIS_ROTATE))
-            continue;
-        double pos = target.GetAxisValue(i);
-        if(pos >= 0 && pos < 360)   // 不超范围，不需要清
-            continue;
-        // 添加一条G200消息,对旋转轴清整数圈
-        RecordMsg *clr_msg = new ClearCirclePosMsg(2000, mask, 360*1000);
-        new_msg->SetLineNo(this->m_p_lexer_result->line_no);
-        m_p_parser_result->Append(clr_msg);
-        ProcessLastBlockRec(clr_msg);
-        ScPrintf("append ClearCirclePosMsg, msk = %u",mask);
-    }
+//    // 如果对旋转轴移动，需要插入清整数圈的msg
+//    SCAxisConfig *axis_config = g_ptr_parm_manager->GetAxisConfig();
+//    SCChannelConfig *chn_config = g_ptr_parm_manager->GetChannelConfig();
+//    for(int i = 0; i < chn_config->chn_axis_count; i++){
+//        uint8_t mask = axis_mask & (0x01 << i);
+//        if(!mask || (axis_config[i].axis_type != AXIS_ROTATE))
+//            continue;
+//        double pos = target.GetAxisValue(i);
+//        if(pos >= 0 && pos < 360)   // 不超范围，不需要清
+//            continue;
+//        // 添加一条G200消息,对旋转轴清整数圈
+//        RecordMsg *clr_msg = new ClearCirclePosMsg(2000, mask, 360*1000);
+//        new_msg->SetLineNo(this->m_p_lexer_result->line_no);
+//        m_p_parser_result->Append(clr_msg);
+//        ProcessLastBlockRec(clr_msg);
+//        ScPrintf("append ClearCirclePosMsg, msk = %u",mask);
+//    }
 
 //	printf("line msg : (%lf, %lf, %lf, %lf, %lf, %lf), %lld\n",target.x, target.y, target.z, target.a4,
 //			target.a5, target.a6, new_msg->GetLineNo());

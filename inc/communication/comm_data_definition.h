@@ -95,6 +95,7 @@ enum McCmdCode{
 	CMD_MC_SET_INIT_PARAM = 0x0005,			//设置插补周期等初始化参数
 	CMD_MC_SET_CHN_AXIS_NAME = 0x0006,		//设置通道轴名称
 	CMD_MC_SYS_RESET = 0x0007,				//系统复位
+    CMD_MC_SET_CHN_PARAM = 0x0008,          //设置通道参数
 
 	CMD_MC_SET_CHN_INTP_MODE = 0x0010,		//设置各通道插补模式（自动，MDA，手动）
 	CMD_MC_INIT_CHN_AUTO_BUF = 0x0011,		//初始化各通道自动加工数据缓冲

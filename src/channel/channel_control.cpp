@@ -315,6 +315,10 @@ bool ChannelControl::Initialize(uint8_t chn_index, ChannelEngine *engine, HMICom
         {
             m_n_real_phy_axis = m_n_real_phy_axis | 0x01<<(phy_axis-1);    //初始化实际物理轴mask
         }
+        if(m_p_axis_config[phy_axis-1].axis_type == AXIS_ROTATE)
+        {
+            m_mask_rot_axis |= 0x01<<(phy_axis-1);
+        }
 
         uint8_t z_axis =  this->GetPhyAxisFromName(AXIS_NAME_Z);
         uint32_t da_prec = m_p_channel_engine->GetDaPrecision();
@@ -11276,8 +11280,9 @@ void ChannelControl::ManualMove(int8_t dir){
     //设置速度
     uint32_t feed = this->m_p_axis_config[phy_axis].manual_speed*1000/60;   //转换单位为um/s
     if(this->m_channel_status.func_state_flags.CheckMask(FS_MANUAL_RAPID)){
-        feed *= 2;  //速度翻倍
-        printf("double manual feed\n");
+        //feed *= 2;  //速度翻倍
+        // 由原来的手动速度乘2，改为定位速度乘快速倍率，快移倍率在MC上切换
+        feed = m_p_axis_config[phy_axis].rapid_speed*1000/60;
     }
     // ScPrintf("axis:%u, feed:%u, n_inc_dis=%lld",m_channel_status.cur_axis,feed, n_inc_dis);
 
@@ -11289,6 +11294,9 @@ void ChannelControl::ManualMove(int8_t dir){
     cmd.data.data[5] = ((n_inc_dis>>48)&0xFFFF);
 
     cmd.data.data[6] = 0x02;   //增量目标位置
+    if(this->m_channel_status.func_state_flags.CheckMask(FS_MANUAL_RAPID)){
+        cmd.data.data[6] |= 0x04; //选择快移倍率
+    }
 
     if(!this->m_b_mc_on_arm)
         m_p_mc_comm->WriteCmd(cmd);
@@ -11322,8 +11330,9 @@ void ChannelControl::ManualMovePmc(int8_t dir){
     //设置速度
     uint32_t feed = this->m_p_axis_config[phy_axis].manual_speed * 1000 / 60;   //转换单位为um/s
     if(this->m_channel_status.func_state_flags.CheckMask(FS_MANUAL_RAPID)){
-        feed *= 2;  //速度翻倍
-        printf("double manual feed\n");
+        // feed *= 2;  //速度翻倍
+        // 由原来的手动速度乘2，改为定位速度乘快速倍率
+        feed = (m_p_axis_config[phy_axis].rapid_speed*1000/60)*(m_channel_status.rapid_ratio/100.);
     }
 
     //设置目标位置

@@ -9316,7 +9316,8 @@ void ChannelEngine::ProcessPmcSignal(){
         byte = i%16;
         bit = byte%8;
         freg = &m_p_pmc_reg->FReg().bits[chn];
-        if((m_n_mask_ret_ref_over & (0x01<<i)) == 0){//未回参考点，都赋零
+        if((m_n_mask_ret_ref_over & (0x01<<i)) == 0 //未回参考点，都赋零
+            || m_b_emergency){
             if(byte < 8){
                 freg->ZP11 &= ~(0x01<<bit);
                 freg->ZP21 &= ~(0x01<<bit);

@@ -10678,10 +10678,10 @@ void ChannelEngine::EcatIncAxisFindRefWithZeroSignal(uint8_t phy_axis){
 
             m_n_ret_ref_step[phy_axis] = 0;
 
-            //if (GetSyncAxisCtrl()->CheckSyncState(phy_axis) == 1)
-            //{//从动轴建立机械坐标
-            //    SetSubAxisRefPoint(phy_axis, m_p_axis_config[phy_axis].axis_home_pos[0]);
-            //}
+            if (GetSyncAxisCtrl()->CheckSyncState(phy_axis) == 1)//处理坐标有差异问题
+            {//从动轴建立机械坐标
+                SetSubAxisRefPoint(phy_axis, m_p_axis_config[phy_axis].axis_home_pos[0]);
+            }
 
             if(m_n_mask_ret_ref == 0){
                 this->m_b_ret_ref = false;
@@ -12346,13 +12346,13 @@ void ChannelEngine::ReturnRefPoint(){
             }
             else
             {  //绝对式编码器
-                if (this->m_p_axis_config[i].ret_ref_mode == 1)//绝对式有挡块回零
+                if (this->m_p_axis_config[i].ref_complete == 0)
                 {
-                    this->EcatAxisFindRefWithZeroSignal(i);
-                }
-                else
-                {
-                    if (this->m_p_axis_config[i].ref_complete == 0)
+                    if (this->m_p_axis_config[i].ret_ref_mode == 1)//绝对式有挡块回零
+                    {
+                        this->EcatAxisFindRefWithZeroSignal(i);
+                    }
+                    else
                     {
                         if (this->m_p_axis_config[i].absolute_ref_mode == 0) //回零标记点设定方式
                         {
@@ -12363,10 +12363,10 @@ void ChannelEngine::ReturnRefPoint(){
                             this->EcatAxisFindRefNoZeroSignal(i);
                         }
                     }
-                    else
-                    {//绝对式编码器建立机械坐标系之后，执行运动零坐标动作
-                        GotoZeroPos(i);
-                    }
+                }
+                else
+                {//绝对式编码器建立机械坐标系之后，执行运动零坐标动作
+                    GotoZeroPos(i);
                 }
             }
         }else if(this->m_p_axis_config[i].axis_interface == ANALOG_AXIS){   // 非总线轴

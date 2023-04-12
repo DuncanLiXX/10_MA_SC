@@ -3388,6 +3388,8 @@ void HMICommunication::DisconnectToHmi(){
     //Í£Ö¹¼Ó¹¤
     ChannelEngine::GetInstance()->Pause();
 
+    g_ptr_chn_engine->m_serverGuide.ResetRecord();
+
 	g_sys_state.hmi_comm_ready = false;
 }
 

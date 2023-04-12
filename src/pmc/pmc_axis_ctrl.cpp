@@ -491,7 +491,6 @@ void PmcAxisCtrl::ExecCmdOver(bool res){
         return;
     this->m_n_cmd_count--;
     printf("PmcAxisCtrl::ExecCmdOver(), cmd_count = %hhu\n", this->m_n_cmd_count);
-    std::cout << "cnt: " << --cnt_test << std::endl;
     if(this->m_n_cmd_count > 0){ //继续执行下一条指令
         this->m_n_buf_exec++;
         if(this->m_n_buf_exec == 3)
@@ -593,7 +592,6 @@ void PmcAxisCtrl::ExecuteCmd(){
         uint8_t cmd = m_pmc_cmd_buffer[this->m_n_buf_exec].cmd;   //指令
 
         std::cout << "PmcAxisCtrl::ExecuteCmd" << (int)cmd << std::endl;
-        std::cout << "cur_cnt" << cnt_test++ << std::endl;
         if(cmd == 0x00 || cmd == 0x01 || cmd == 0x10 || cmd == 0x11){  //快速定位、切削进给
             uint32_t speed = m_pmc_cmd_buffer[this->m_n_buf_exec].speed;        //速度，单位转换
             int64_t dis = m_pmc_cmd_buffer[this->m_n_buf_exec].distance*1e4;       //移动距离，单位转换：um-->0.1nm

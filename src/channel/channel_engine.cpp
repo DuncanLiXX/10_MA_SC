@@ -788,7 +788,7 @@ void ChannelEngine::SetMLKState(uint8_t MLK, uint8_t MLKI)
         //同步轴丛轴不用锁住
         if(GetSyncAxisCtrl()->CheckSyncState(i) == 2)
         {
-            CreateError(ERR_SYNC_INVALID_OPT, WARNING_LEVEL, CLEAR_BY_RESET_POWER, 0, 0, i);
+            CreateError(ERR_SYNC_INVALID_OPT, WARNING_LEVEL, CLEAR_BY_MCP_RESET, 0, 0, i);
             continue;
         }
 
@@ -3134,6 +3134,9 @@ void ChannelEngine::ProcessHmiCmd(HMICmdFrame &cmd){
             }
         }
         break;
+    case CMD_HMI_CLEAR_IO_MAP:
+        ProcessHmiClearIoRemapInfoCmd(cmd);
+        break;
     default:
         g_ptr_trace->PrintTrace(TRACE_WARNING, CHANNEL_ENGINE_SC, "不支持的HMI指令[%d]", cmd.cmd);
         break;
@@ -3341,6 +3344,38 @@ void ChannelEngine::ProcessHmiSetIoRemapInfoCmd(HMICmdFrame &cmd){
 
     this->SendMiIoRemapInfo(info);   //更新MI数据
 
+    this->m_p_hmi_comm->SendCmd(cmd);
+}
+
+/**
+ * @brief 处理HMI清除IO重映射信息命令
+ * @param cmd
+ */
+void ChannelEngine::ProcessHmiClearIoRemapInfoCmd(HMICmdFrame &cmd)
+{
+    cmd.frame_number |= 0x8000;  //设置回复标志
+
+    IoRemapInfo info;
+    ListNode<IoRemapInfo> *info_node = this->m_p_io_remap->HeadNode();
+    while(info_node != nullptr){
+
+        info.iotype = info_node->data.iotype;
+        info.addr = info_node->data.addr;
+        info.bit = info_node->data.bit;
+        info.addrmap = 0;
+        info.newaddr = info_node->data.newaddr;
+        info.newbit = info_node->data.newbit;
+        info.valtype = 0;
+
+        this->SendMiIoRemapInfo(info);   //更新MI数据
+
+        info_node = info_node->next;
+    }
+    this->m_p_io_remap->Clear();
+
+    if(!g_ptr_parm_manager->ClearIoRemapInfo()){
+        cmd.cmd_extension = 0x01;  //更新失败
+    }
     this->m_p_hmi_comm->SendCmd(cmd);
 }
 
@@ -7930,6 +7965,7 @@ void ChannelEngine::SendMiPcParam2(uint8_t axis){
  * @param info
  */
 void ChannelEngine::SendMiIoRemapInfo(IoRemapInfo &info){
+
     MiCmdFrame cmd;
     memset(&cmd, 0x00, sizeof(cmd));
     cmd.data.cmd = CMD_MI_SET_IO_REMAP;

@@ -3852,6 +3852,23 @@ bool ParmManager::UpdateIoRemapInfo(IoRemapInfo &info){
 }
 
 /**
+ * @brief 清除IO重映射数据
+ * @return
+ */
+bool ParmManager::ClearIoRemapInfo()
+{
+    vector<string> sections;
+    this->m_ini_io_remap->GetSections(&sections);
+    for(size_t i = 0; i < sections.size(); ++i)
+    {
+        m_ini_io_remap->DeleteSection(sections.at(i));
+    }
+
+    m_ini_io_remap->Save();
+    return true;
+}
+
+/**
  * @brief 更新手轮通道映射
  * @param HandWheelMapInfoVec : 手轮通道映射关系
  * @param bRestart : 是否重启生效

@@ -2991,9 +2991,11 @@ bool Compiler::RunLineMsg(RecordMsg *msg) {
         }
     }
 
+    ScPrintf("----%x %x",tmp->GetAxisMoveMask(),m_p_channel_control->GetRotAxisMask());
+
     // 旋转轴坐标处理
-//    if(tmp->GetAxisMoveMask() & m_p_channel_control->GetRotAxisMask())
-//        ProcessRotateAxisPos(tmp->GetTargetPos(), m_compiler_status.cur_pos, tmp->GetAxisMoveMask());
+    if(tmp->GetAxisMoveMask() & m_p_channel_control->GetRotAxisMask())
+        ProcessRotateAxisPos(tmp->GetTargetPos(), m_compiler_status.cur_pos, tmp->GetAxisMoveMask());
 
     m_compiler_status.mode.gmode[1] = G01_CMD;
     m_compiler_status.mode.gmode[9] = G80_CMD;  //自动取消循环指令
@@ -5125,7 +5127,6 @@ void Compiler::ProcessFiveAxisRotPos(DPointChn &tar, DPointChn &src, uint32_t ma
  * @param mask : 运动轴的mask
  */
 void Compiler::ProcessRotateAxisPos(DPointChn &tar, DPointChn &src, uint32_t mask){
-    return;
 
     ScPrintf("ProcessRotateAxisPos");
     if(this->m_compiler_status.mode.gmode[3] == G91_CMD)
@@ -5136,26 +5137,54 @@ void Compiler::ProcessRotateAxisPos(DPointChn &tar, DPointChn &src, uint32_t mas
         return;
     double *psrc = src.m_df_point;
     double *pdes = tar.m_df_point;
-    double dd = 0, dd_d = 0;
+    //double dd = 0, dd_d = 0;
+    double mp = 360.;
+    double move_dist = 0.0; // 需要移动的距离
+    double src_base; // 当前位置基点（位于mp的整数倍，当前位置向下取整）
+    double base_offset; // 当前位置的基点偏移
+    int dir = 0; // 绝对位置的符号 0:正  1:负
 
     uint32_t pmc_mask = m_p_parser->GetPmcAxisMask();//PMC轴的掩码
     mask &= (~pmc_mask);    //去掉PMC轴
     for(uint8_t i = 0; i < this->m_p_channel_config->chn_axis_count; i++){
         if(axis_mask & (0x01<<i)){
-            dd = (*pdes - *psrc)/360.;
+            mp = m_p_channel_control->GetAxisConfig()[i].move_pr;
+//            dd = (*pdes - *psrc)/mp;
 
-            if(dd > 0.5){
-                dd_d = floor(dd);   //向下取整
-                if(dd-dd_d > 0.5)
-                    dd_d += 1;
-                *pdes -= 360.0*dd_d;
+//            if(dd > 0.5){
+//                dd_d = floor(dd);   //向下取整
+//                if(dd-dd_d > 0.5)
+//                    dd_d += 1;
+//                *pdes -= mp*dd_d;
+//            }
+//            if(dd < -0.5){
+//                dd_d = ceil(dd);   //向上取整
+//                if(dd-dd_d < -0.5)
+//                    dd_d -= 1;
+//                *pdes += mp*fabs(dd_d);
+//            }
+            move_dist = fmod(*pdes - *psrc, mp);
+            if(move_dist < 0)
+                move_dist += mp;
+            base_offset = fmod(*psrc, mp);
+            if(base_offset < 0)
+                base_offset += mp;
+            src_base = *psrc - base_offset;
+
+            if(*pdes >= 0)
+                dir = 0;
+            else
+                dir = 1;
+
+            // 就近移动
+            if(m_p_channel_control->GetAxisConfig()[i].rot_abs_dir == 0){
+                if(move_dist > mp/2.0)
+                    move_dist -= mp;
+            }else{ // 取决于绝对指令的符号
+                if(dir == 1)
+                    move_dist -= mp;
             }
-            if(dd < -0.5){
-                dd_d = ceil(dd);   //向上取整
-                if(dd-dd_d < -0.5)
-                    dd_d -= 1;
-                *pdes += 360.0*fabs(dd_d);
-            }
+            *pdes = *psrc + move_dist;
 
             //	printf("ProcessFiveAxisRotPos: axis=%hhu, des=%lf, src=%lf\n", i, *pdes, *psrc);
         }

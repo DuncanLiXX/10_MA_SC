@@ -313,7 +313,7 @@ void SetMcArmComm(MCArmCommunication *comm){this->m_p_mc_arm_comm = comm;}   //É
     // ·µ»ØÖµ£º 0£ºÃ»ÓĞ³¬ÏŞ   1£º³¬ÏŞ
     bool CheckSoftLimit(ManualMoveDir dir, uint8_t phy_axis, double pos);
     // »ñÈ¡ÏŞÎ»Î»ÖÃ
-    bool GetSoftLimt(ManualMoveDir dir, uint8_t phy_axis, double &limit);
+    bool GetSoftLimt(ManualMoveDir dir, uint8_t phy_axis, double &limit, double pos);
 
     void ClearAxisRefEncoder(int axisID);                        // Çå³ı¾ø¶ÔÊ½Áãµã±àÂëÆ÷
 

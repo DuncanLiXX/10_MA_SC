@@ -2344,8 +2344,20 @@ void ChannelControl::RefreshAxisIntpPos(){
         }else{
             m_channel_rt_status.tar_pos_work.m_df_point[i] = m_channel_mc_status.intp_tar_pos.GetAxisValue(count);
         }
+
         count++;
     }
+}
+
+void ChannelControl::LimitRotatePos(double &pos, double &move_pr){
+    // 防止move_pr异常
+    if(move_pr <= 0.01)
+        return;
+
+    double res = fmod(pos, move_pr);
+    if(res < 0)
+        res += move_pr;
+    pos = res;
 }
 
 /**
@@ -2468,6 +2480,21 @@ void ChannelControl::SendMonitorData(bool bAxis, bool btime){
     uint8_t chn_index = this->m_n_channel_index;
     uint16_t data_len = sizeof(HmiChannelRealtimeStatus);
     memcpy(&hmi_rt_status, &m_channel_rt_status, data_len);
+    for(int i = 0; i < m_p_channel_config->chn_axis_count; i++){
+        if(m_mask_rot_axis & (0x01 << i) && m_p_axis_config[i].pos_disp_mode == 0){
+            // 限制机械坐标
+            LimitRotatePos(hmi_rt_status.cur_pos_machine[i],
+                           m_p_axis_config[i].move_pr);
+            // 限制工件坐标
+            if(m_p_axis_config[i].pos_work_disp_mode){
+                LimitRotatePos(hmi_rt_status.cur_pos_work[i],
+                               m_p_axis_config[i].move_pr);
+                LimitRotatePos(hmi_rt_status.tar_pos_work[i],
+                               m_p_axis_config[i].move_pr);
+            }
+        }
+    }
+
     if(this->m_channel_status.chn_work_mode != AUTO_MODE && this->m_channel_status.chn_work_mode != MDA_MODE){//手动模式下，余移动流量显示0
         memcpy(hmi_rt_status.tar_pos_work, hmi_rt_status.cur_pos_work, sizeof(double)*kMaxAxisChn);
     }
@@ -2568,7 +2595,7 @@ void ChannelControl::ProcessHmiCmd(HMICmdFrame &cmd){
     case CMD_SC_MDA_DATA_REQ:		//MDA代码请求 115
         this->ProcessMdaData(cmd);
         break;
-    case CMD_HMI_GET_MACRO_VAR:			//HMI向SC请求宏变量的值   30
+    case CMD_HMI_GET_MACRO_VAR:     //HMI向SC请求宏变量的值   30
         this->ProcessHmiGetMacroVarCmd(cmd);
         break;
     case CMD_HMI_SET_MACRO_VAR:        //HMI向SC设置宏变量寄存器的值   31
@@ -4839,7 +4866,7 @@ bool ChannelControl::RefreshStatusFun(){
                 for(int i = 0; i < 16; ++i)
                 {
                     if(this->m_channel_mc_status.axis_soft_postive_limit & (0x01<<i))
-                        CreateError(ERR_SOFT_LIMIT_NEG, ERROR_LEVEL, CLEAR_BY_MCP_RESET, data, m_n_channel_index, i);
+                        CreateError(ERR_SOFT_LIMIT_POS, ERROR_LEVEL, CLEAR_BY_MCP_RESET, data, m_n_channel_index, i);
                 }
 			}
 		}
@@ -11249,9 +11276,9 @@ void ChannelControl::ManualMove(int8_t dir){
                       GetAxisCurMachPos(m_channel_status.cur_axis))){
         // ScPrintf("soft limit active, manual move abs return \n");
         return;
-    }else if(GetSoftLimt((ManualMoveDir)dir, phy_axis, limit) && dir == DIR_POSITIVE && tar_pos > limit*1e7){
+    }else if(GetSoftLimt((ManualMoveDir)dir, phy_axis, limit, cur_pos/(double)1e7) && dir == DIR_POSITIVE && tar_pos > limit*1e7){
         tar_pos = limit * 1e7;
-    }else if(GetSoftLimt((ManualMoveDir)dir, phy_axis, limit) && dir == DIR_NEGATIVE && tar_pos < limit*1e7){
+    }else if(GetSoftLimt((ManualMoveDir)dir, phy_axis, limit, cur_pos/(double)1e7) && dir == DIR_NEGATIVE && tar_pos < limit*1e7){
         tar_pos = limit * 1e7;
     }
     ScPrintf("GetAxisCurIntpTarPos = %llf", GetAxisCurIntpTarPos(m_channel_status.cur_axis, true)*1e7);
@@ -11351,9 +11378,9 @@ void ChannelControl::ManualMovePmc(int8_t dir){
                       GetAxisCurMachPos(m_channel_status.cur_axis))){
         printf("soft limit active, manual move abs return \n");
         return;
-    }else if(GetSoftLimt((ManualMoveDir)dir, phy_axis, limit) && dir == DIR_POSITIVE && tar_pos > limit * 1e7){
+    }else if(GetSoftLimt((ManualMoveDir)dir, phy_axis, limit, cur_pos/(double)1e7) && dir == DIR_POSITIVE && tar_pos > limit * 1e7){
         tar_pos = limit * 1e7;
-    }else if(GetSoftLimt((ManualMoveDir)dir, phy_axis, limit) && dir == DIR_NEGATIVE && tar_pos < limit * 1e7){
+    }else if(GetSoftLimt((ManualMoveDir)dir, phy_axis, limit, cur_pos/(double)1e7) && dir == DIR_NEGATIVE && tar_pos < limit * 1e7){
         tar_pos = limit * 1e7;
     }
     int64_t n_inc_dis = tar_pos - GetAxisCurIntpTarPos(m_channel_status.cur_axis, true)*1e7;
@@ -11433,9 +11460,9 @@ void ChannelControl::ManualMove(uint8_t axis, double pos, double vel, bool workc
     if(CheckSoftLimit(dir, phy_axis, GetAxisCurMachPos(axis))){
         printf("soft limit active, manual move abs return \n");
         return;
-    }else if(GetSoftLimt(dir, phy_axis, limit) && dir == DIR_POSITIVE && pos > limit * 1e7){
+    }else if(GetSoftLimt(dir, phy_axis, limit, cur_pos/(double)1e7) && dir == DIR_POSITIVE && pos > limit * 1e7){
         tar_pos = limit * 1e7;
-    }else if(GetSoftLimt(dir, phy_axis, limit) && dir == DIR_NEGATIVE && pos < limit * 1e7){
+    }else if(GetSoftLimt(dir, phy_axis, limit, cur_pos/(double)1e7) && dir == DIR_NEGATIVE && pos < limit * 1e7){
         tar_pos = limit * 1e7;
     }
 
@@ -11647,9 +11674,9 @@ void ChannelControl::ManualMovePmc(uint8_t axis, double pos, double vel){
     if(CheckSoftLimit(dir, phy_axis, GetAxisCurMachPos(axis))){
         printf("soft limit active, manual move abs return \n");
         return;
-    }else if(GetSoftLimt(dir, phy_axis, limit) && dir == DIR_POSITIVE && pos > limit * 1e7){
+    }else if(GetSoftLimt(dir, phy_axis, limit, cur_pos/(double)1e7) && dir == DIR_POSITIVE && pos > limit * 1e7){
         tar_pos = limit * 1e7;
-    }else if(GetSoftLimt(dir, phy_axis, limit) && dir == DIR_NEGATIVE && pos < limit * 1e7){
+    }else if(GetSoftLimt(dir, phy_axis, limit, cur_pos/(double)1e7) && dir == DIR_NEGATIVE && pos < limit * 1e7){
         tar_pos = limit * 1e7;
     }
 
@@ -11668,8 +11695,8 @@ bool ChannelControl::CheckSoftLimit(ManualMoveDir dir, uint8_t phy_axis, double 
     return m_p_channel_engine->CheckSoftLimit(dir,phy_axis,pos);
 }
 
-bool ChannelControl::GetSoftLimt(ManualMoveDir dir, uint8_t phy_axis, double &limit){
-    return m_p_channel_engine->GetSoftLimt(dir,phy_axis,limit);
+bool ChannelControl::GetSoftLimt(ManualMoveDir dir, uint8_t phy_axis, double &limit, double pos){
+    return m_p_channel_engine->GetSoftLimt(dir,phy_axis,limit,pos);
 }
 
 /**

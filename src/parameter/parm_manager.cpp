@@ -1441,8 +1441,11 @@ bool ParmManager::ReadAxisConfig(){
             m_sc_axis_config[i].spd_locate_ang = m_ini_axis->GetDoubleValueOrDefault(sname, "spd_locate_ang", 0.0);
 
             m_sc_axis_config[i].fast_locate = m_ini_axis->GetIntValueOrDefault(sname, "fast_locate", 1);
-			m_sc_axis_config[i].pos_disp_mode = m_ini_axis->GetIntValueOrDefault(sname, "pos_disp_mode", 0);
-			m_sc_axis_config[i].encoder_max_cycle = m_ini_axis->GetIntValueOrDefault(sname, "encoder_max_cycle", 0);  //最大圈数默认值由256改为0
+            m_sc_axis_config[i].pos_disp_mode = m_ini_axis->GetIntValueOrDefault(sname, "pos_disp_mode", 0);
+            m_sc_axis_config[i].pos_work_disp_mode = m_ini_axis->GetIntValueOrDefault(sname, "pos_work_disp_mode", 0);
+            m_sc_axis_config[i].pos_rel_disp_mode = m_ini_axis->GetIntValueOrDefault(sname, "pos_rel_disp_mode", 0);
+            m_sc_axis_config[i].rot_abs_dir = m_ini_axis->GetIntValueOrDefault(sname, "rot_abs_dir", 0);
+            m_sc_axis_config[i].encoder_max_cycle = m_ini_axis->GetIntValueOrDefault(sname, "encoder_max_cycle", 0);  //最大圈数默认值由256改为0
 
             m_sc_axis_config[i].sync_axis = m_ini_axis->GetIntValueOrDefault(sname, "sync_axis", 0);
             m_sc_axis_config[i].series_ctrl_axis = m_ini_axis->GetIntValueOrDefault(sname, "series_ctrl_axis", 0);
@@ -1604,8 +1607,11 @@ bool ParmManager::ReadAxisConfig(){
             m_sc_axis_config[i].spd_locate_ang = 0.0;
 
 			m_sc_axis_config[i].fast_locate = 1;
-			m_sc_axis_config[i].pos_disp_mode = 0;
-			m_sc_axis_config[i].encoder_max_cycle = 0;   //最大圈数默认值由256改为0
+            m_sc_axis_config[i].pos_disp_mode = 0;
+            m_sc_axis_config[i].pos_work_disp_mode = 0;
+            m_sc_axis_config[i].pos_rel_disp_mode = 0;
+            m_sc_axis_config[i].rot_abs_dir = 0;
+            m_sc_axis_config[i].encoder_max_cycle = 0;   //最大圈数默认值由256改为0
 
             m_sc_axis_config[i].sync_axis = 0;
             m_sc_axis_config[i].series_ctrl_axis = 0;
@@ -1755,8 +1761,11 @@ bool ParmManager::ReadAxisConfig(){
             m_ini_axis->AddKeyValuePair(string("spd_locate_ang"), string("0.0"), ns);
 
 			m_ini_axis->AddKeyValuePair(string("fast_locate"), string("1"), ns);
-			m_ini_axis->AddKeyValuePair(string("pos_disp_mode"), string("0"), ns);
-			m_ini_axis->AddKeyValuePair(string("encoder_max_cycle"), string("0"), ns);  //最大圈数默认值由256改为0
+            m_ini_axis->AddKeyValuePair(string("pos_disp_mode"), string("0"), ns);
+            m_ini_axis->AddKeyValuePair(string("pos_work_disp_mode"), string("0"), ns);
+            m_ini_axis->AddKeyValuePair(string("pos_rel_disp_mode"), string("0"), ns);
+            m_ini_axis->AddKeyValuePair(string("rot_abs_dir"), string("0"), ns);
+            m_ini_axis->AddKeyValuePair(string("encoder_max_cycle"), string("0"), ns);  //最大圈数默认值由256改为0
 
             m_ini_axis->AddKeyValuePair(string("sync_axis"), string("0"), ns);
             m_ini_axis->AddKeyValuePair(string("series_ctrl_axis"), string("0"), ns);
@@ -4978,6 +4987,18 @@ bool ParmManager::UpdateAxisParam(uint8_t axis_index, uint32_t param_no, ParamVa
 		sprintf(kname, "pos_disp_mode");
 		m_ini_axis->SetIntValue(sname, kname, value.value_uint8);
 		break;
+    case 1552:  //工件坐标是否循环显示  0--否  1--是
+        sprintf(kname, "pos_work_disp_mode");
+        m_ini_axis->SetIntValue(sname, kname, value.value_uint8);
+        break;
+    case 1553:  //相对坐标是否循环显示  0--否  1--是
+        sprintf(kname, "pos_rel_disp_mode");
+        m_ini_axis->SetIntValue(sname, kname, value.value_uint8);
+        break;
+    case 1554:  //旋转轴绝对指令的旋转方向  0--快捷方向  1--取决于指令符号
+        sprintf(kname, "rot_abs_dir");
+        m_ini_axis->SetIntValue(sname, kname, value.value_uint8);
+        break;
 	case 1602:	//主轴变速比
 		sprintf(kname, "spd_gear_ratio");
 		m_ini_axis->SetIntValue(sname, kname, value.value_uint8);
@@ -6636,6 +6657,18 @@ void ParmManager::ActiveAxisParam(uint8_t axis_index, uint32_t param_no, ParamVa
 	case 1551:  //位置显示模式   0--循环模式（0~360）    1--非循环模式
 		this->m_sc_axis_config[axis_index].pos_disp_mode = value.value_uint8;
 		break;
+
+    case 1552:  //工件坐标是否循环显示  0--否  1--是
+        this->m_sc_axis_config[axis_index].pos_work_disp_mode = value.value_uint8;
+        break;
+
+    case 1553:  //相对坐标是否循环显示  0--否  1--是
+        this->m_sc_axis_config[axis_index].pos_rel_disp_mode = value.value_uint8;
+        break;
+
+    case 1554:  //旋转轴绝对指令的旋转方向  0--快捷方向  1--取决于指令符号
+        this->m_sc_axis_config[axis_index].pos_rel_disp_mode = value.value_uint8;
+        break;
 
 	case 1602:	//主轴变速比
 		this->m_sc_axis_config[axis_index].spd_gear_ratio = value.value_uint8;

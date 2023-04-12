@@ -62,6 +62,7 @@ public:
 
 	const ChannelStatusCollect &GetChnStatus(){return this->m_channel_status;}  //获取当前通道状态结构体
     const ChannelRealtimeStatus &GetRealtimeStatus(){return m_channel_rt_status;} //获取实时状态结构体
+    SCAxisConfig *GetAxisConfig(){return m_p_axis_config;}
 
 	uint8_t GetChnAxisCount(){return this->m_p_channel_config->chn_axis_count;}   //获取通道轴数量
 	uint8_t GetChnAxisName(uint8_t idx){return this->m_p_channel_config->chn_axis_name[idx];}   //获取通道轴名称
@@ -161,7 +162,7 @@ public:
     // 返回值： 0：没有超限   1：超限
     bool CheckSoftLimit(ManualMoveDir dir, uint8_t phy_axis, double pos);
     // 获取限位位置
-    bool GetSoftLimt(ManualMoveDir dir, uint8_t phy_axis, double &limit);
+    bool GetSoftLimt(ManualMoveDir dir, uint8_t phy_axis, double &limit, double pos);
 
 	void HandwheelMove(int32_t hw_count);   //手轮移动指令
 
@@ -281,7 +282,7 @@ public:
 
 	bool IsSkipCaptured(){return m_b_pos_captured;}    //SKIP信号是否捕获
 
-    bool GetRotAxisMask(){return m_mask_rot_axis;} //获取旋转轴mask
+    uint32_t GetRotAxisMask(){return m_mask_rot_axis;} //获取旋转轴mask
 
 #ifdef USES_GRIND_MACHINE
 	void SetMechArmParam(ParamMechArm *para){this->m_p_mech_arm_param = para;}      //设置机械手参数
@@ -375,6 +376,7 @@ public:
 
     void SyncMcPosition();  // 同步位置
     void AddWorkCountPiece(int addnum);  //增加工件计数
+    void LimitRotatePos(double &pos, double &move_pr); //限制旋转轴坐标
 
     uint32_t m_cur_setfeed = 0;
 private:

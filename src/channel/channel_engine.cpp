@@ -8872,7 +8872,6 @@ void ChannelEngine::ProcessPmcSignal(){
 
         // @test zk
         if(g_reg->RRW == 1 && g_reg_last->RRW == 0){
-            printf("111111111111111\n");
         	this->SystemReset();
         }
         // @test

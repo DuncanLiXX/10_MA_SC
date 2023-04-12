@@ -1018,7 +1018,6 @@ void ChannelEngine::SetMiHandwheelInsert(bool flag, uint8_t chn){
     cmd.data.axis_index = NO_AXIS;
     cmd.data.reserved = chn;   //通道，从0开始
 
-
     this->m_p_mi_comm->WriteCmd(cmd);
 }
 
@@ -1030,7 +1029,6 @@ void ChannelEngine::SetMiCurChannel(){
     memset(&cmd, 0x00, sizeof(cmd));
     cmd.data.cmd = CMD_MI_SET_CUR_CHN;
     cmd.data.axis_index = NO_AXIS;
-
 
     cmd.data.data[0] = this->m_n_cur_channle_index;
 
@@ -8910,7 +8908,6 @@ void ChannelEngine::ProcessPmcSignal(){
 
         // @test zk
         if(g_reg->RRW == 1 && g_reg_last->RRW == 0){
-            printf("111111111111111\n");
         	this->SystemReset();
         }
         // @test
@@ -8982,7 +8979,6 @@ void ChannelEngine::ProcessPmcSignal(){
 
         // 主轴正转，主轴反转信号
         if(g_reg->SRV != g_reg_last->SRV || g_reg->SFR != g_reg_last->SFR){
-
         	if(g_reg->SRV == 0 && g_reg->SFR == 0){ // 主轴停
             	ctrl->GetSpdCtrl()->InputPolar(Spindle::Stop);
             }else if(g_reg->SFR == 1){  // 主轴正转
@@ -9059,7 +9055,8 @@ void ChannelEngine::ProcessPmcSignal(){
 
         //通知类型的信号，只保留一个周期
         {
-            if(f_reg_last->RTPT == 1)   // 攻丝回退结束信号
+            // 一个周期梯图无法识别到
+        	if(f_reg_last->RTPT == 1)   // 攻丝回退结束信号
                 f_reg->RTPT = 0;
 
             if(f_reg_last->MERS == 1)   // MDI复位请求
@@ -9122,10 +9119,9 @@ void ChannelEngine::ProcessPmcSignal(){
             }
         }
 
-
         //手动步长信号  MP
         if(g_reg->MP != g_reg_last->MP){
-            this->SetManualStep(i, g_reg->MP);
+        	this->SetManualStep(i, g_reg->MP);
         }
 
         //手动快速进给选择信号  RT

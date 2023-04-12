@@ -730,7 +730,7 @@ struct GRegBits{
 	uint8_t STLK:1;					//启动锁住信号   G7.1
 	uint8_t ST:1;					//循环启动信号   G7.2
     uint8_t :3;
-    uint8_t EXLM:1;                     //软限位选择信号 G7.6  0:软限位1  1:软限位2
+    uint8_t EXLM:1;                      //软限位选择信号 G7.6  0:软限位1  1:软限位2
     uint8_t RLSOT:1;                     //解除软限位限制信号 G7.7（为1时软限位失效）
 	//G8
 	uint8_t :4;

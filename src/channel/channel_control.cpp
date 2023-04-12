@@ -7318,11 +7318,20 @@ bool ChannelControl::ExecuteCoordMsg(RecordMsg *msg){
 		for(int i=0; i<kMaxAxisChn; i++){
             if(!(coordmsg->GetAxisMask() & (0x01 << i)))
                 continue;
-			double offset = GetAxisCurMachPos(i) - point.GetAxisValue(i);
+			double offset = GetAxisCurMachPos(i) - point.GetAxisValue(i) - m_p_chn_coord_config[0].offset[i];
+
+			// G54XX offset
+			int coord_index = m_channel_status.gmode[14];
+			if(coord_index <= G59_CMD ){
+				offset -= m_p_chn_coord_config[coord_index/10-53].offset[i];    //单位由mm转换为0.1nm
+			}else if(coord_index <= G5499_CMD){
+				offset -= m_p_chn_ex_coord_config[coord_index/10-5401].offset[i];    //单位由mm转换为0.1nm
+			}
+
 			m_p_chn_g92_offset->offset[i] = offset;
 		}
 		G52Active = false;
-		G92Active = true;
+		//G92Active = true;
 	}
 
 	// @add zk
@@ -7347,13 +7356,13 @@ bool ChannelControl::ExecuteCoordMsg(RecordMsg *msg){
 					if(G52offset[i] > 0.0001) flag_cancel_g52 = false;
 
 					int64_t origin_pos = 0;
-					if(G92Active){
+					/*if(G92Active){
 
 						// g92 offset
 						origin_pos += (int64_t)(m_p_chn_g92_offset->offset[i] * 1e7);
 						// g52 offset
 						origin_pos += (int64_t)(G52offset[i]* 1e7);
-					}else{
+					}else{*/
 
 						// ext offset
 						origin_pos += m_p_chn_coord_config[0].offset[i] * 1e7;  //基本工件坐标系
@@ -7369,7 +7378,7 @@ bool ChannelControl::ExecuteCoordMsg(RecordMsg *msg){
 						origin_pos += (int64_t)(m_p_chn_g92_offset->offset[i] * 1e7);
 						// G52 offset
 						origin_pos += (int64_t)(G52offset[i]* 1e7);
-					}
+					//}
 
 					this->SetMcAxisOrigin(i, origin_pos);
         		}
@@ -7426,18 +7435,20 @@ bool ChannelControl::ExecuteCoordMsg(RecordMsg *msg){
 
     	if(G52Active) return true;
 
-    	if(gcode != G92_CMD) G92Active = false;
+    	//if(gcode != G92_CMD) G92Active = false;
 
     	uint16_t coord_mc = 0;
         switch(coordmsg->GetExecStep()){
         case 0:
             //第一步：更新模态，将新工件坐标系发送到MC
-            this->m_channel_status.gmode[14] = gcode;
+            if(gcode != G92_CMD && gcode != G52_CMD)
+            	this->m_channel_status.gmode[14] = gcode;
 
             //更新MC的坐标系数据
             this->SetMcCoord(true);
 
             coordmsg->SetExecStep(1); //跳转下一步
+
             return false;
         case 1:
             //第二步：等待MC设置新工件坐标系完成
@@ -7447,6 +7458,10 @@ bool ChannelControl::ExecuteCoordMsg(RecordMsg *msg){
                 this->m_p_mc_arm_comm->ReadChnCurCoord(m_n_channel_index, coord_mc);
             if(coord_mc*10 == gcode){
                 coordmsg->SetExecStep(2);  //跳转下一步
+            }
+            if(gcode == G92_CMD || gcode == G52_CMD){
+            	// 这两种不用等待mc回复
+            	coordmsg->SetExecStep(2);
             }
             return false;
         case 2:
@@ -7474,7 +7489,7 @@ bool ChannelControl::ExecuteCoordMsg(RecordMsg *msg){
     }else{//轮廓仿真，刀路仿真
         //先把当前位置的工件坐标转换为机械坐标
 
-    	if(gcode != G92_CMD) G92Active = false;
+    	//if(gcode != G92_CMD) G92Active = false;
 
     	this->TransWorkCoordToMachCoord(this->m_pos_simulate_cur_work, m_channel_status.gmode[14], m_mask_intp_axis);
 
@@ -11974,29 +11989,37 @@ void ChannelControl::SetMcCoord(bool flag){
 
         	int64_t origin_pos = 0;
 
-        	if(G92Active){
-        		origin_pos += (int64_t)(m_p_chn_g92_offset->offset[i] * 1e7);
-        	}else{
+        	//if(G92Active){
+        		//origin_pos += (int64_t)(m_p_chn_g92_offset->offset[i] * 1e7);
+        	//}else{
         		// ext offset
+
+        		printf("ext offset: %lf\n", m_p_chn_coord_config[0].offset[i]);
+
         		origin_pos += (int64_t)(m_p_chn_coord_config[0].offset[i] * 1e7);  //基本工件坐标系
 
-				// g92 offset
+				printf("g92 offset: %lf\n", m_p_chn_g92_offset->offset[i]);
+
+        		// g92 offset
 				origin_pos += (int64_t)(m_p_chn_g92_offset->offset[i] * 1e7);
 
         		// g54xx offset
         		int coord_index = m_channel_status.gmode[14];
+
+        		printf("coord_index: %d\n", coord_index);
+
 				if(coord_index <= G59_CMD ){
 					origin_pos += (int64_t)(m_p_chn_coord_config[coord_index/10-53].offset[i] * 1e7);    //单位由mm转换为0.1nm
-					printf("===== g54 offset  axis: %i offset %lld\n", i, (int64_t)(m_p_chn_coord_config[coord_index/10-53].offset[i] * 1e7));
+					printf("===== g54 offset  axis: %i offset %lf\n", i, m_p_chn_coord_config[coord_index/10-53].offset[i]);
 				}else if(coord_index <= G5499_CMD){
 					origin_pos += (int64_t)(m_p_chn_ex_coord_config[coord_index/10-5401].offset[i] * 1e7);    //单位由mm转换为0.1nm
-					printf("===== g5401 offset  axis: %i offset %lld\n", i, (int64_t)(m_p_chn_ex_coord_config[coord_index/10-5401].offset[i] * 1e7));
+					printf("===== g5401 offset  axis: %i offset %lf\n", i, m_p_chn_ex_coord_config[coord_index/10-5401].offset[i]);
 				}
 
 				if(G52Active){
 					origin_pos += (int64_t)(G52offset[i] * 1e7);
 				}
-        	}
+        	//}
 
         	this->SetMcAxisOrigin(i, origin_pos);
 
@@ -17578,7 +17601,7 @@ void ChannelControl::TransMachCoordToWorkCoord(DPointChn &pos, uint16_t coord_id
             	origin_pos += G52offset[i];
             }
 
-            if(G92Active) origin_pos = m_p_chn_g92_offset->offset[i];
+            //if(G92Active) origin_pos = m_p_chn_g92_offset->offset[i];
 
             *pp -= origin_pos;    //机械坐标 - 工件坐标系偏移 = 工件坐标
         }
@@ -17619,7 +17642,7 @@ void ChannelControl::TransMachCoordToWorkCoord(DPointChn &pos, uint16_t coord_id
               	origin_pos += G52offset[i];
   		    }
 
-            if(G92Active) origin_pos = m_p_chn_g92_offset->offset[i];
+            //if(G92Active) origin_pos = m_p_chn_g92_offset->offset[i];
 
             /*phy_axis = this->GetPhyAxis(i);
             if(phy_axis != 0xFF){
@@ -17673,7 +17696,7 @@ void ChannelControl::TransMachCoordToWorkCoord(DPoint &pos, uint16_t coord_idx, 
             if(G52Active){
             	origin_pos += G52offset[i];
 		    }
-            if(G92Active) origin_pos = m_p_chn_g92_offset->offset[i];
+            //if(G92Active) origin_pos = m_p_chn_g92_offset->offset[i];
 
 
             *pp -= origin_pos;    //机械坐标 - 工件坐标系偏移 = 工件坐标
@@ -17712,7 +17735,7 @@ void ChannelControl::TransWorkCoordToMachCoord(DPointChn &pos, uint16_t coord_id
 				origin_pos += G52offset[i];
 			}
 
-            if(G92Active) origin_pos = m_p_chn_g92_offset->offset[i];
+            //if(G92Active) origin_pos = m_p_chn_g92_offset->offset[i];
 
             /*phy_axis = this->GetPhyAxis(i);
             if(phy_axis != 0xFF){
@@ -17761,7 +17784,7 @@ void ChannelControl::TransWorkCoordToMachCoord(DPoint &pos, uint16_t coord_idx, 
 				origin_pos += G52offset[i];
 			}
 
-            if(G92Active) origin_pos = m_p_chn_g92_offset->offset[i];
+            //if(G92Active) origin_pos = m_p_chn_g92_offset->offset[i];
 
             /*phy_axis = this->GetPhyAxis(i);
             if(phy_axis != 0xFF){
@@ -17801,7 +17824,7 @@ void ChannelControl::TransMachCoordToWorkCoord(double &pos, uint16_t coord_idx, 
 		origin_pos += G52offset[axis];
 	}
 
-    if(G92Active) origin_pos = m_p_chn_g92_offset->offset[axis];
+    //if(G92Active) origin_pos = m_p_chn_g92_offset->offset[axis];
 
     /*uint8_t phy_axis = this->GetPhyAxis(axis);
     if(phy_axis != 0xFF){
@@ -17847,7 +17870,7 @@ void ChannelControl::TransWorkCoordToMachCoord(double &pos, uint16_t coord_idx, 
     	origin_pos += G52offset[axis];
     }
 
-    if(G92Active) origin_pos = m_p_chn_g92_offset->offset[axis];
+    //if(G92Active) origin_pos = m_p_chn_g92_offset->offset[axis];
 
     pos += origin_pos;
 }
@@ -17883,7 +17906,7 @@ void ChannelControl::TransWorkCoordToMachCoord(double &pos, uint16_t coord_idx, 
     	origin_pos += G52offset[axis];
     }
 
-    if(G92Active) origin_pos = m_p_chn_g92_offset->offset[axis];
+    //if(G92Active) origin_pos = m_p_chn_g92_offset->offset[axis];
 
     pos += origin_pos;
 }

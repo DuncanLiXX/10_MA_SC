@@ -205,7 +205,8 @@ public:
 	void SendMcSysResetCmd();	//给MC发送系统复位指令
 
 	void SetMcChnPlanMode();			//设置加工速度规划方式
-	void SetMcChnPlanParam();			//设置通道加工速度规划参数
+    void SetMcChnPlanParam();			//设置通道加工速度规划参数
+    void SetMcChnPlanParam2();          //设置通道加工速度规划参数(由于一个命令无法把所有参数下发，定义一个新的命令)
     void SetMcTapPlanParam();           //设置刚性攻丝加工规划参数
 	void SetMcChnPlanFun();			//设置通道加工速度功能开关
 	void SetMcChnCornerStopParam();		//设置拐角准停参数

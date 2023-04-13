@@ -6157,6 +6157,7 @@ void ParmManager::ActiveChnParam(uint8_t chn_index, uint32_t param_no, ParamValu
         break;
     case 514:   //G01最高进给速度
         this->m_sc_channel_config[chn_index].g01_max_speed = value.value_uint32;
+        chn_engine->GetChnControl(chn_index)->SetMcChnPlanParam2();
         break;
     case 515:   //手轮3档的自定义步长
     {

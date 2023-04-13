@@ -3034,6 +3034,7 @@ bool ChannelControl::SetCurProcParamIndex(uint8_t index){
         //将新参数更新到MC
         this->SetMcChnPlanMode();
         this->SetMcChnPlanParam();
+        this->SetMcChnPlanParam2();
         this->SetMcTapPlanParam();
         this->SetMcChnCornerStopParam();
         this->SetMcChnPlanFun();
@@ -12476,6 +12477,21 @@ void ChannelControl::SetMcChnPlanParam(){
     cmd.data.data[6] = tmp;
 
 
+    if(!this->m_b_mc_on_arm)
+        m_p_mc_comm->WriteCmd(cmd);
+    else
+        m_p_mc_arm_comm->WriteCmd(cmd);
+}
+
+void ChannelControl::SetMcChnPlanParam2(){
+    McCmdFrame cmd;
+    memset(&cmd, 0x00, sizeof(McCmdFrame));
+    cmd.data.channel_index = m_n_channel_index;
+
+    cmd.data.cmd = CMD_MC_SET_CHN_PLAN_PARAM2;
+    uint32_t data = m_p_channel_config->g01_max_speed*1000/60;  //单位转换   mm/min-->um/s
+    cmd.data.data[0] = data&0xFFFF;
+    cmd.data.data[1] = (data>>16)&0xFFFF;
     if(!this->m_b_mc_on_arm)
         m_p_mc_comm->WriteCmd(cmd);
     else

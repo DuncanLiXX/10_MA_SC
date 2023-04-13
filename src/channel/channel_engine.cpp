@@ -1661,6 +1661,7 @@ void ChannelEngine::InitMcParam(){
         this->m_p_channel_control[i].SetMcStepMode(false);
         this->m_p_channel_control[i].SetMcChnPlanMode();
         this->m_p_channel_control[i].SetMcChnPlanParam();
+        this->m_p_channel_control[i].SetMcChnPlanParam2();
         this->m_p_channel_control[i].SetMcTapPlanParam();
         this->m_p_channel_control[i].SetMcChnPlanFun();
         this->m_p_channel_control[i].SetMcChnCornerStopParam();

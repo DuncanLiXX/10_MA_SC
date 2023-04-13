@@ -255,7 +255,7 @@ void ChannelEngine::ReadIoDev_pmc2(){
                     ifs.read(reinterpret_cast<char *>(&val), sizeof(val));
                     val = BigLittleSwitch32(val);
                     return val;
-        };
+            };
             HandWheelMapInfoVec infoVec;
             bool selectedHandWheel = false;
 
@@ -736,7 +736,7 @@ bool ChannelEngine::RecordingServerGuide()
             if (m_serverGuide.IsTimeout())
             {
                 this->m_p_mi_comm->ReadPhyAxisCurFedBckPos(m_df_phy_axis_pos_feedback, m_df_phy_axis_pos_intp, m_df_phy_axis_speed_feedback,
-                                                           m_df_phy_axis_torque_feedback, m_df_spd_angle, m_p_general_config->axis_count);
+                    m_df_phy_axis_torque_feedback, m_df_spd_angle, m_p_general_config->axis_count);
 
                 m_serverGuide.RecordData(m_df_phy_axis_pos_feedback, m_df_phy_axis_pos_intp);
             }
@@ -793,31 +793,31 @@ void ChannelEngine::SetMLKState(uint8_t MLK, uint8_t MLKI)
 
         m_p_mi_comm->SendAxisMLK(i+1, en_now);
         if(en_now){
-            m_MLK_mask |= (0x01 << i);
+           m_MLK_mask |= (0x01 << i);
         }else{
             m_MLK_mask &= ~(0x01 << i);
         }
-        //        if(en_now){
-        //            this->m_p_mi_comm->ReadPhyAxisCurFedBckPos(m_df_phy_axis_pos_feedback,
-        //                                                       m_df_phy_axis_pos_intp,
-        //                                                       m_df_phy_axis_speed_feedback,
-        //                                                       m_df_phy_axis_torque_feedback,
-        //                                                       m_p_general_config->axis_count);
-        //           m_MLK_pos[i] = m_df_phy_axis_pos_feedback[i];
-        //           m_p_mi_comm->SendAxisMLK(i+1, en_now);
-        //           m_MLK_mask |= (0x01 << i);
-        //        }else{
-        //            clr_mask |= (0x01 << i);
-        //        }
+//        if(en_now){
+//            this->m_p_mi_comm->ReadPhyAxisCurFedBckPos(m_df_phy_axis_pos_feedback,
+//                                                       m_df_phy_axis_pos_intp,
+//                                                       m_df_phy_axis_speed_feedback,
+//                                                       m_df_phy_axis_torque_feedback,
+//                                                       m_p_general_config->axis_count);
+//           m_MLK_pos[i] = m_df_phy_axis_pos_feedback[i];
+//           m_p_mi_comm->SendAxisMLK(i+1, en_now);
+//           m_MLK_mask |= (0x01 << i);
+//        }else{
+//            clr_mask |= (0x01 << i);
+//        }
 
     }
 
-    //    // 执行机械锁住恢复动作
-    //    if(clr_mask != 0x00){
-    //        auto func = std::bind(&ChannelEngine::ProcessRecoverMLK,
-    //                              this, std::placeholders::_1, std::placeholders::_2);
-    //        ans = std::async(std::launch::async, func, clr_mask,m_MLK_pos);
-    //    }
+//    // 执行机械锁住恢复动作
+//    if(clr_mask != 0x00){
+//        auto func = std::bind(&ChannelEngine::ProcessRecoverMLK,
+//                              this, std::placeholders::_1, std::placeholders::_2);
+//        ans = std::async(std::launch::async, func, clr_mask,m_MLK_pos);
+//    }
     last_MLK = mask;
 }
 
@@ -845,8 +845,8 @@ void ChannelEngine::ProcessRecoverMLK(uint8_t mask, double *mach_pos)
 
         while(fabs(this->GetPhyAxisMachPosFeedback(i) - mach_pos[i]) >= 0.010){
             std::this_thread::sleep_for(std::chrono::microseconds(100 * 1000));
-            //            ScPrintf("RecoverMLK: axis = %u,fabs = %lf", i,
-            //                     fabs(this->GetPhyAxisMachPosFeedback(i) - mach_pos[i]));
+//            ScPrintf("RecoverMLK: axis = %u,fabs = %lf", i,
+//                     fabs(this->GetPhyAxisMachPosFeedback(i) - mach_pos[i]));
 
         }
     }
@@ -968,19 +968,19 @@ void ChannelEngine::UpdateHandwheelState(uint8_t chn){
 
     m_p_mi_comm->SendHandwheelState(chn,trace_enable,trace_reverse,insert_enable);
 
-    //    MiCmdFrame cmd;
-    //    memset(&cmd, 0x00, sizeof(cmd));
-    //    cmd.data.cmd = CMD_MI_SET_HANDWHEEL_TRACE;
+//    MiCmdFrame cmd;
+//    memset(&cmd, 0x00, sizeof(cmd));
+//    cmd.data.cmd = CMD_MI_SET_HANDWHEEL_TRACE;
 
-    //    cmd.data.data[0] = flag?0x10:0x00;
-    //    cmd.data.data[1] = this->m_p_general_config->hw_rev_trace;   //手轮反向引导使能
-    //    cmd.data.data[2] = 0;
+//    cmd.data.data[0] = flag?0x10:0x00;
+//    cmd.data.data[1] = this->m_p_general_config->hw_rev_trace;   //手轮反向引导使能
+//    cmd.data.data[2] = 0;
 
-    //    cmd.data.axis_index = NO_AXIS;
-    //    cmd.data.reserved = chn;   //通道，从0开始
+//    cmd.data.axis_index = NO_AXIS;
+//    cmd.data.reserved = chn;   //通道，从0开始
 
 
-    //    this->m_p_mi_comm->WriteCmd(cmd);
+//    this->m_p_mi_comm->WriteCmd(cmd);
 
     //	uint8_t chn_count = this->m_p_channel_mode_group[this->m_n_cur_chn_group_index].GetChannelCount();
     //	for(uint i = 0; i < chn_count; i++){
@@ -1147,8 +1147,8 @@ void ChannelEngine::Initialize(HMICommunication *hmi_comm, MICommunication *mi_c
     this->m_n_mask_ret_ref_over = 0;
     for(int i = 0; i < this->m_p_general_config->axis_count; i++){
         if(m_p_axis_config[i].axis_interface == VIRTUAL_AXIS    //虚拟轴不用建立参考点
-                || m_p_axis_config[i].axis_type == AXIS_SPINDLE     //主轴不用建立参数点
-                || (m_p_axis_config[i].feedback_mode == ABSOLUTE_ENCODER /*&& m_p_axis_config[i].ref_encoder != kAxisRefNoDef*/ && m_p_axis_config[i].ref_complete == 1))    //已经建立参考点的绝对式编码器，不用再次建立参考点
+            || m_p_axis_config[i].axis_type == AXIS_SPINDLE     //主轴不用建立参数点
+            || (m_p_axis_config[i].feedback_mode == ABSOLUTE_ENCODER /*&& m_p_axis_config[i].ref_encoder != kAxisRefNoDef*/ && m_p_axis_config[i].ref_complete == 1))    //已经建立参考点的绝对式编码器，不用再次建立参考点
         {
             //m_n_mask_ret_ref_over |= (0x01<<i);
             this->SetRetRefFlag(i, true);
@@ -2087,75 +2087,75 @@ void ChannelEngine::ProcessSetAxisRefRsp(MiCmdFrame &cmd){
         this->m_n_ret_ref_step[axis] = 20;   //跳转到失败处理
     }
     else {
-        //        if(this->m_p_axis_config[axis].feedback_mode == NO_ENCODER){  //无反馈轴，直接结束
-        //            m_n_ret_ref_step[axis] = 11;   //跳转到成功结束
-        //        }else{//其它类型都移动到第一参考点位置
-        //            //让轴运动到第一参考点位置
-        //            //	int64_t pos = 0;
-        //            //	int8_t dir = DIR_POSITIVE;
-        //            //	memcpy(&pos, &cmd.data.data[1], 8);
-        //            //		this->m_df_phy_axis_pos_feedback[axis] = (double)pos*1e-7;   //单位转换：0.1nm --> mm
-        //            //		double dis = this->m_p_axis_config[axis].axis_home_pos[0]-(double)pos*1e-7;   //移动距离
-        //            //		if(dis < 0)
-        //            //			dir = DIR_NEGATIVE;
+//        if(this->m_p_axis_config[axis].feedback_mode == NO_ENCODER){  //无反馈轴，直接结束
+//            m_n_ret_ref_step[axis] = 11;   //跳转到成功结束
+//        }else{//其它类型都移动到第一参考点位置
+//            //让轴运动到第一参考点位置
+//            //	int64_t pos = 0;
+//            //	int8_t dir = DIR_POSITIVE;
+//            //	memcpy(&pos, &cmd.data.data[1], 8);
+//            //		this->m_df_phy_axis_pos_feedback[axis] = (double)pos*1e-7;   //单位转换：0.1nm --> mm
+//            //		double dis = this->m_p_axis_config[axis].axis_home_pos[0]-(double)pos*1e-7;   //移动距离
+//            //		if(dis < 0)
+//            //			dir = DIR_NEGATIVE;
 
-        //            //		printf("axis %hhu dir = %hhd, dis = %lf, curpos = %lld\n", axis, dir, dis, pos);
+//            //		printf("axis %hhu dir = %hhd, dis = %lf, curpos = %lld\n", axis, dir, dis, pos);
 
-        //            //计算粗精基准偏差
-        //            if(this->m_p_axis_config[axis].ref_base_diff_check){
-        //                int64_t pos = 0;
-        //                double df_pos = 0;
-        //                memcpy(&pos, &cmd.data.data[1], 8);
-        //                df_pos = pos;
-        //                df_pos *= 1e-7;   //单位转换：0.1nm-->mm
-        //                this->m_p_axis_config[axis].ref_base_diff = df_pos;    //粗精基准误差
-        //                ParamValue value;
-        //                value.value_double = df_pos;
-        //                g_ptr_parm_manager->UpdateAxisParam(axis, 1312, value);
-        //                this->NotifyHmiAxisRefBaseDiffChanged(axis, df_pos);   //通知HMI轴参数改变
-        //                printf("axis %hhu ref base diff:%lf, %llu\n", axis, df_pos, pos);
-        //            }
+//            //计算粗精基准偏差
+//            if(this->m_p_axis_config[axis].ref_base_diff_check){
+//                int64_t pos = 0;
+//                double df_pos = 0;
+//                memcpy(&pos, &cmd.data.data[1], 8);
+//                df_pos = pos;
+//                df_pos *= 1e-7;   //单位转换：0.1nm-->mm
+//                this->m_p_axis_config[axis].ref_base_diff = df_pos;    //粗精基准误差
+//                ParamValue value;
+//                value.value_double = df_pos;
+//                g_ptr_parm_manager->UpdateAxisParam(axis, 1312, value);
+//                this->NotifyHmiAxisRefBaseDiffChanged(axis, df_pos);   //通知HMI轴参数改变
+//                printf("axis %hhu ref base diff:%lf, %llu\n", axis, df_pos, pos);
+//            }
 
-        //            /*llx todo
-        //            if (GetSyncAxisCtrl()->CheckSyncState(axis) == 1)
-        //            {//从动轴建立机械坐标
-        //                SetSubAxisRefPoint(axis);
-        //                usleep(200000);
-        //            }
-        //            */
+//            /*llx todo
+//            if (GetSyncAxisCtrl()->CheckSyncState(axis) == 1)
+//            {//从动轴建立机械坐标
+//                SetSubAxisRefPoint(axis);
+//                usleep(200000);
+//            }
+//            */
 
 
-        //#ifdef USES_RET_REF_TO_MACH_ZERO
-        //            this->ManualMoveAbs(axis, m_p_axis_config[axis].ret_ref_speed, 0);
-        //#else
-        //            this->ManualMoveAbs(axis, m_p_axis_config[axis].ret_ref_speed, m_p_axis_config[axis].axis_home_pos[0]);
-        //#endif
-        //            m_n_ret_ref_step[axis] = 10;   // 跳转下一步
-        //        }
-        int64_t pos = 0;
-        double df_pos = 0;
-        memcpy(&pos, &cmd.data.data[1], 8);
-        df_pos = pos;
-        df_pos *= 1e-7;   //单位转换：0.1nm-->mm
-        this->m_p_axis_config[axis].ref_base_diff = df_pos;    //粗精基准误差
-        ParamValue value;
-        value.value_double = df_pos;
-        g_ptr_parm_manager->UpdateAxisParam(axis, 1312, value);
-        this->NotifyHmiAxisRefBaseDiffChanged(axis, df_pos);   //通知HMI轴参数改变
-        printf("axis %hhu ref base diff:%lf, %llu\n", axis, df_pos, pos);
+//#ifdef USES_RET_REF_TO_MACH_ZERO
+//            this->ManualMoveAbs(axis, m_p_axis_config[axis].ret_ref_speed, 0);
+//#else
+//            this->ManualMoveAbs(axis, m_p_axis_config[axis].ret_ref_speed, m_p_axis_config[axis].axis_home_pos[0]);
+//#endif
+//            m_n_ret_ref_step[axis] = 10;   // 跳转下一步
+//        }
+       int64_t pos = 0;
+       double df_pos = 0;
+       memcpy(&pos, &cmd.data.data[1], 8);
+       df_pos = pos;
+       df_pos *= 1e-7;   //单位转换：0.1nm-->mm
+       this->m_p_axis_config[axis].ref_base_diff = df_pos;    //粗精基准误差
+       ParamValue value;
+       value.value_double = df_pos;
+       g_ptr_parm_manager->UpdateAxisParam(axis, 1312, value);
+       this->NotifyHmiAxisRefBaseDiffChanged(axis, df_pos);   //通知HMI轴参数改变
+       printf("axis %hhu ref base diff:%lf, %llu\n", axis, df_pos, pos);
 
-        gettimeofday(&this->m_time_ret_ref[axis], NULL);
+       gettimeofday(&this->m_time_ret_ref[axis], NULL);
 
-        double move_length = 0;
-        if (this->m_p_axis_config[axis].ref_z_distance_max == 0)
-            move_length = this->m_p_axis_config[axis].move_pr*2;
-        else
-            move_length = this->m_p_axis_config[axis].ref_z_distance_max;
+       double move_length = 0;
+       if (this->m_p_axis_config[axis].ref_z_distance_max == 0)
+           move_length = this->m_p_axis_config[axis].move_pr*2;
+       else
+           move_length = this->m_p_axis_config[axis].ref_z_distance_max;
 
-        if (df_pos <= move_length)
-            m_n_ret_ref_step[axis] = 10;
-        else
-            m_n_ret_ref_step[axis] = 20;
+       if (df_pos <= move_length)
+           m_n_ret_ref_step[axis] = 10;
+       else
+           m_n_ret_ref_step[axis] = 20;
     }
 }
 
@@ -3622,7 +3622,7 @@ void ChannelEngine::ProcessHmiAbsoluteRefSet(HMICmdFrame &cmd)
                 for(int i = 0; i < m_p_general_config->axis_count; ++i)
                 {
                     if ((m_p_axis_config[i].absolute_ref_mode == 0 && m_p_axis_config[i].feedback_mode == 1)
-                            || m_p_axis_config[i].axis_interface == 0)
+                        || m_p_axis_config[i].axis_interface == 0)
                     {
                         if (GetSyncAxisCtrl()->CheckSyncState(i) != 2 && !GetPmcActive(i))
                         {//不为从动轴,Pmc轴未激活
@@ -3645,7 +3645,7 @@ void ChannelEngine::ProcessHmiAbsoluteRefSet(HMICmdFrame &cmd)
             else
             {
                 if ((m_p_axis_config[phy_axis].absolute_ref_mode == 0 && m_p_axis_config[phy_axis].feedback_mode == 1)         //绝对式
-                        || m_p_axis_config[phy_axis].axis_interface == 0)
+                    || m_p_axis_config[phy_axis].axis_interface == 0)
                 {
                     if (GetSyncAxisCtrl()->CheckSyncState(phy_axis) != 2 && !GetPmcActive(phy_axis))
                     {//不为从动轴,Pmc轴未激活
@@ -4497,28 +4497,28 @@ bool ChannelEngine::CheckSoftLimit(ManualMoveDir dir, uint8_t phy_axis, double p
     }
 
 
-    // 旋转轴的限位需要作特殊判断
-    if(m_p_axis_config[phy_axis].axis_type == AXIS_ROTATE){
-        double mp = m_p_axis_config[phy_axis].move_pr;
-        m_p_channel_control->LimitRotatePos(pos, mp);
-        bool err_flag = false;
-        if(limit1 < limit2 && pos > limit1 && pos < limit2){
-            //情况1: 0.0--------limit1=========limit2-------360.0 ("="号表示禁止区域)
-            err_flag = true;
-        }else if(limit1 > limit2 && (pos > limit1 || pos < limit2)){
-            //情况2: 0.0========limit2---------limit1=======360.0 ("="号表示禁止区域)
-            err_flag = true;
-        }
+//    // 旋转轴的限位需要作特殊判断
+//    if(m_p_axis_config[phy_axis].axis_type == AXIS_ROTATE){
+//        double mp = m_p_axis_config[phy_axis].move_pr;
+//        m_p_channel_control->LimitRotatePos(pos, mp);
+//        bool err_flag = false;
+//        if(limit1 < limit2 && pos > limit1 && pos < limit2){
+//            //情况1: 0.0--------limit1=========limit2-------360.0 ("="号表示禁止区域)
+//            err_flag = true;
+//        }else if(limit1 > limit2 && (pos > limit1 || pos < limit2)){
+//            //情况2: 0.0========limit2---------limit1=======360.0 ("="号表示禁止区域)
+//            err_flag = true;
+//        }
 
-        if(err_flag && dir == DIR_POSITIVE){
-            CreateError(ERR_SOFTLIMIT_POS, WARNING_LEVEL, CLEAR_BY_MCP_RESET, 0, chn, chn_axis);
-            return true;
-        }else if(err_flag && dir == DIR_NEGATIVE){
-            CreateError(ERR_SOFTLIMIT_NEG, WARNING_LEVEL, CLEAR_BY_MCP_RESET, 0, chn, chn_axis);
-            return true;
-        }
-        return false;
-    }
+//        if(err_flag && dir == DIR_POSITIVE){
+//            CreateError(ERR_SOFTLIMIT_POS, WARNING_LEVEL, CLEAR_BY_MCP_RESET, 0, chn, chn_axis);
+//            return true;
+//        }else if(err_flag && dir == DIR_NEGATIVE){
+//            CreateError(ERR_SOFTLIMIT_NEG, WARNING_LEVEL, CLEAR_BY_MCP_RESET, 0, chn, chn_axis);
+//            return true;
+//        }
+//        return false;
+//    }
 
     if(dir == DIR_POSITIVE && pos >= limit2){
         CreateError(ERR_SOFTLIMIT_POS, WARNING_LEVEL, CLEAR_BY_MCP_RESET, 0, chn, chn_axis);
@@ -4532,11 +4532,10 @@ bool ChannelEngine::CheckSoftLimit(ManualMoveDir dir, uint8_t phy_axis, double p
     return false;
 }
 
-bool ChannelEngine::GetSoftLimt(ManualMoveDir dir, uint8_t phy_axis, double &limit, double pos){
+bool ChannelEngine::GetSoftLimt(ManualMoveDir dir, uint8_t phy_axis, double &limit){
     // 如果没回零，认为限位不超限
     if(!(this->m_n_mask_ret_ref_over & (0x01<<phy_axis)))
         return false;
-
     double positive[3];
     double negative[3];
     bool enable[3];
@@ -4564,21 +4563,6 @@ bool ChannelEngine::GetSoftLimt(ManualMoveDir dir, uint8_t phy_axis, double &lim
     }else{
         return false;
     }
-
-//    // 旋转轴的限位需要作特殊判断
-//    if(m_p_axis_config[phy_axis].axis_type == AXIS_ROTATE){
-//        double mp = m_p_axis_config[phy_axis].move_pr;
-//        double mod_pos = pos;
-//        m_p_channel_control->LimitRotatePos(mod_pos, mp);
-//        if(dir == DIR_NEGATIVE){
-
-//        }
-//    }else{
-//        if(dir == DIR_NEGATIVE)
-//            limit = limit1;
-//        else if(dir == DIR_POSITIVE)
-//            limit = limit2;
-//    }
 
     if(dir == DIR_NEGATIVE)
         limit = limit1;
@@ -4648,7 +4632,7 @@ bool ChannelEngine::UpdateHmiPitchCompData(HMICmdFrame &cmd){
         }
     }
 
-    printf("UpdateHmiPitchCompData::axis=%hhu, dir=%hhu, offset=%hu, count=%hu\n", axis_index, dir, offset, count);
+     printf("UpdateHmiPitchCompData::axis=%hhu, dir=%hhu, offset=%hu, count=%hu\n", axis_index, dir, offset, count);
 
     //更新数据给MC
     //发送轴螺补数据表
@@ -4936,7 +4920,7 @@ void ChannelEngine::ProcessHmiUpdateReq(HMICmdFrame &cmd){
 void ChannelEngine::ProcessPmcAxisFindRef(uint8_t phy_axis){
     if(m_p_axis_config[phy_axis].axis_interface != VIRTUAL_AXIS       //非虚拟轴
             && m_p_axis_config[phy_axis].axis_type != AXIS_SPINDLE)   //非主轴
-    {	//非禁止回参考点
+        {	//非禁止回参考点
 
 #ifdef USES_PMC_PROCESS
         if(phy_axis == 5)
@@ -4993,7 +4977,7 @@ void ChannelEngine::ProcessHmiFindRefCmd(HMICmdFrame &cmd){
     }else if(cmd.cmd_extension == 0xFF){  //所有轴回零
         for(int i = 0; i < this->m_p_general_config->axis_count; i++){
             if(m_p_axis_config[i].axis_interface != VIRTUAL_AXIS		//非虚拟轴
-                    && m_p_axis_config[i].axis_type != AXIS_SPINDLE)		//非主轴
+                && m_p_axis_config[i].axis_type != AXIS_SPINDLE)		//非主轴
             {	 //回参考点方式非禁止
 
                 this->m_n_mask_ret_ref |= (0x01<<i);
@@ -5069,7 +5053,7 @@ void ChannelEngine::SetRetRefMask(uint8_t phy_axis){
     if(m_p_axis_config[phy_axis].axis_interface != VIRTUAL_AXIS		//非虚拟轴
             && m_p_axis_config[phy_axis].axis_type != AXIS_SPINDLE				//非主轴
             /*	&& (m_p_axis_config[phy_axis].feedback_mode == INCREMENTAL_ENCODER ||
-                                m_p_axis_config[phy_axis].feedback_mode == NO_ENCODER)*/){	//所有反馈类型都支持回参考点
+                        m_p_axis_config[phy_axis].feedback_mode == NO_ENCODER)*/){	//所有反馈类型都支持回参考点
         this->m_n_mask_ret_ref |= (0x01<<phy_axis);
     }
 }
@@ -5880,10 +5864,10 @@ void ChannelEngine::SetJNState(uint8_t chn, uint8_t JN, uint8_t last_JN, ChnWork
 void ChannelEngine::ManualMove(int8_t dir){
     if(this->m_b_emergency)
         return;
-    //    if(this->m_n_cur_pmc_axis != 0xFF){  //移动PMC轴
-    //        this->ManualMovePmc(dir);
-    //    }else
-    m_p_channel_control[m_n_cur_channle_index].ManualMove(dir);
+//    if(this->m_n_cur_pmc_axis != 0xFF){  //移动PMC轴
+//        this->ManualMovePmc(dir);
+//    }else
+     m_p_channel_control[m_n_cur_channle_index].ManualMove(dir);
 }
 
 /**
@@ -5908,9 +5892,9 @@ void ChannelEngine::ManualMoveAbs(uint8_t phy_axis, double vel, double pos){
     if(CheckSoftLimit(dir, phy_axis, this->m_df_phy_axis_pos_feedback[phy_axis])){
         printf("soft limit active, manual move abs return \n");
         return;
-    }else if(GetSoftLimt(dir, phy_axis, limit, cur_pos/(double)1e7) && dir == DIR_POSITIVE && pos > limit /* * 1e7*/){
+    }else if(GetSoftLimt(dir, phy_axis, limit) && dir == DIR_POSITIVE && pos > limit /* * 1e7*/){
         tar_pos = limit * 1e7;
-    }else if(GetSoftLimt(dir, phy_axis, limit, cur_pos/(double)1e7) && dir == DIR_NEGATIVE && pos < limit /* * 1e7*/){
+    }else if(GetSoftLimt(dir, phy_axis, limit) && dir == DIR_NEGATIVE && pos < limit /* * 1e7*/){
         tar_pos = limit * 1e7;
     }
 
@@ -6000,9 +5984,9 @@ void ChannelEngine::ManualMove(uint8_t phy_axis, int8_t dir, double vel, double 
     if(CheckSoftLimit((ManualMoveDir)dir, phy_axis, this->m_df_phy_axis_pos_feedback[phy_axis])){
         printf("soft limit active, manual move abs return \n");
         return;
-    }else if(GetSoftLimt((ManualMoveDir)dir, phy_axis, limit, cur_pos/(double)1e7) && dir == DIR_POSITIVE && tar_pos > limit * 1e7){
+    }else if(GetSoftLimt((ManualMoveDir)dir, phy_axis, limit) && dir == DIR_POSITIVE && tar_pos > limit * 1e7){
         tar_pos = limit * 1e7;
-    }else if(GetSoftLimt((ManualMoveDir)dir, phy_axis, limit, cur_pos/(double)1e7) && dir == DIR_NEGATIVE && tar_pos < limit * 1e7){
+    }else if(GetSoftLimt((ManualMoveDir)dir, phy_axis, limit) && dir == DIR_NEGATIVE && tar_pos < limit * 1e7){
         tar_pos = limit * 1e7;
     }
 
@@ -6111,9 +6095,9 @@ void ChannelEngine::ManualMovePmc(uint8_t phy_axis, int8_t dir){
     if(CheckSoftLimit((ManualMoveDir)dir, phy_axis, this->m_df_phy_axis_pos_feedback[phy_axis])){
         printf("soft limit active, manual move abs return \n");
         return;
-    }else if(GetSoftLimt((ManualMoveDir)dir, phy_axis, limit, cur_pos/(double)1e7) && dir == DIR_POSITIVE && tar_pos > limit * 1e7){
+    }else if(GetSoftLimt((ManualMoveDir)dir, phy_axis, limit) && dir == DIR_POSITIVE && tar_pos > limit * 1e7){
         tar_pos = limit * 1e7;
-    }else if(GetSoftLimt((ManualMoveDir)dir, phy_axis, limit, cur_pos/(double)1e7) && dir == DIR_NEGATIVE && tar_pos < limit * 1e7){
+    }else if(GetSoftLimt((ManualMoveDir)dir, phy_axis, limit) && dir == DIR_NEGATIVE && tar_pos < limit * 1e7){
         tar_pos = limit * 1e7;
     }
     int64_t n_inc_dis = tar_pos - m_p_channel_control[chn].GetAxisCurIntpTarPos(chn_axis, true)*1e7;
@@ -6188,9 +6172,9 @@ void ChannelEngine::ManualMovePmc(uint8_t phy_axis, double pos, double vel, bool
     if(CheckSoftLimit(dir, phy_axis, this->GetPhyAxisMachPosFeedback(phy_axis))){
         printf("soft limit active, manual move abs return \n");
         return;
-    }else if(GetSoftLimt(dir, phy_axis, limit, cur_pos/(double)1e7) && dir == DIR_POSITIVE && tar_pos > limit * 1e7){
+    }else if(GetSoftLimt(dir, phy_axis, limit) && dir == DIR_POSITIVE && tar_pos > limit * 1e7){
         tar_pos = limit * 1e7;
-    }else if(GetSoftLimt(dir, phy_axis, limit, cur_pos/(double)1e7) && dir == DIR_NEGATIVE && tar_pos < limit * 1e7){
+    }else if(GetSoftLimt(dir, phy_axis, limit) && dir == DIR_NEGATIVE && tar_pos < limit * 1e7){
         tar_pos = limit * 1e7;
     }
 
@@ -7677,7 +7661,7 @@ void ChannelEngine::InitMiParam(){
     SetSlaveInfo();
 
     //发送手轮编码格式
-    m_p_mi_comm->SendMiParam<uint8_t>(0xFF, 10, this->m_p_general_config->hw_code_type);   //手轮编码类型
+   m_p_mi_comm->SendMiParam<uint8_t>(0xFF, 10, this->m_p_general_config->hw_code_type);   //手轮编码类型
 
     //发送IO重映射数据
     ListNode<IoRemapInfo> *info_node = this->m_p_io_remap->HeadNode();
@@ -7698,40 +7682,40 @@ void ChannelEngine::InitMiParam(){
         index = i+1;   //MI中的轴号从1开始
 
         //发送插补后加减速相关参数
-        m_p_mi_comm->SendMiParam<uint8_t>(index, 1140, axis_config->post_filter_type);   //滤波器类型
-        m_p_mi_comm->SendMiParam<uint16_t>(index, 1141, axis_config->post_filter_time_1);   //一级滤波器时间常数
-        m_p_mi_comm->SendMiParam<uint16_t>(index, 1142, axis_config->post_filter_time_2);   //二级滤波器时间常数
+       m_p_mi_comm->SendMiParam<uint8_t>(index, 1140, axis_config->post_filter_type);   //滤波器类型
+       m_p_mi_comm->SendMiParam<uint16_t>(index, 1141, axis_config->post_filter_time_1);   //一级滤波器时间常数
+       m_p_mi_comm->SendMiParam<uint16_t>(index, 1142, axis_config->post_filter_time_2);   //二级滤波器时间常数
 
-        m_p_mi_comm->SendMiParam<uint8_t>(index, 1002, axis_config->axis_interface);   //轴接口类型
-        m_p_mi_comm->SendMiParam<uint8_t>(index, 1001, axis_config->axis_type);		//轴类型
-        m_p_mi_comm->SendMiParam<uint8_t>(index, 1003, axis_config->axis_port);		//从站号或者对应轴口号
-        //m_p_mi_comm->SendMiParam<uint8_t>(index, 1006, axis_config->axis_pmc);			//是否PMC轴
-        m_p_mi_comm->SendMiParam<uint8_t>(index, 1006, 0);                               //PMC轴由梯图来激活
-        m_p_mi_comm->SendMiParam<double>(index, 1100, axis_config->kp1);			//kp1
-        m_p_mi_comm->SendMiParam<double>(index, 1101, axis_config->kp2);			//kp2
-        m_p_mi_comm->SendMiParam<double>(index, 1102, axis_config->ki);			//ki
-        m_p_mi_comm->SendMiParam<double>(index, 1103, axis_config->kil);			//kil
-        m_p_mi_comm->SendMiParam<double>(index, 1104, axis_config->kd);			//kd
+       m_p_mi_comm->SendMiParam<uint8_t>(index, 1002, axis_config->axis_interface);   //轴接口类型
+       m_p_mi_comm->SendMiParam<uint8_t>(index, 1001, axis_config->axis_type);		//轴类型
+       m_p_mi_comm->SendMiParam<uint8_t>(index, 1003, axis_config->axis_port);		//从站号或者对应轴口号
+       //m_p_mi_comm->SendMiParam<uint8_t>(index, 1006, axis_config->axis_pmc);			//是否PMC轴
+       m_p_mi_comm->SendMiParam<uint8_t>(index, 1006, 0);                               //PMC轴由梯图来激活
+       m_p_mi_comm->SendMiParam<double>(index, 1100, axis_config->kp1);			//kp1
+       m_p_mi_comm->SendMiParam<double>(index, 1101, axis_config->kp2);			//kp2
+       m_p_mi_comm->SendMiParam<double>(index, 1102, axis_config->ki);			//ki
+       m_p_mi_comm->SendMiParam<double>(index, 1103, axis_config->kil);			//kil
+       m_p_mi_comm->SendMiParam<double>(index, 1104, axis_config->kd);			//kd
         tmp = static_cast<double>(axis_config->kvff);
-        m_p_mi_comm->SendMiParam<double>(index, 1105, tmp);			//kvff
+       m_p_mi_comm->SendMiParam<double>(index, 1105, tmp);			//kvff
         tmp = static_cast<double>(axis_config->kaff);
-        m_p_mi_comm->SendMiParam<double>(index, 1106, tmp);			//kaff
+       m_p_mi_comm->SendMiParam<double>(index, 1106, tmp);			//kaff
         tmp_64 = static_cast<uint64_t>(axis_config->track_err_limit) * 1e4;   //转换单位：um-->0.1nm
-        m_p_mi_comm->SendMiParam<uint64_t>(index, 1107, tmp_64);	//跟踪误差限
+       m_p_mi_comm->SendMiParam<uint64_t>(index, 1107, tmp_64);	//跟踪误差限
         tmp_64 = static_cast<uint64_t>(axis_config->location_err_limit) * 1e4;   //转换单位：um-->0.1nm
-        m_p_mi_comm->SendMiParam<uint64_t>(index, 1108, tmp_64);			//定位误差限
-        m_p_mi_comm->SendMiParam<uint32_t>(index, 1200, axis_config->motor_count_pr);	//电机每转计数
-        m_p_mi_comm->SendMiParam<uint32_t>(index, 1201, axis_config->motor_speed_max);	//电机最大转速
+       m_p_mi_comm->SendMiParam<uint64_t>(index, 1108, tmp_64);			//定位误差限
+       m_p_mi_comm->SendMiParam<uint32_t>(index, 1200, axis_config->motor_count_pr);	//电机每转计数
+       m_p_mi_comm->SendMiParam<uint32_t>(index, 1201, axis_config->motor_speed_max);	//电机最大转速
         tmp_64 = static_cast<uint64_t>(axis_config->move_pr * 1e7);   //转换单位：mm-->0.1nm
         // 		printf("write axis param idx = %d, value = %ld\n", index, tmp_64);
-        m_p_mi_comm->SendMiParam<uint64_t>(index, 1202, tmp_64);	//每转移动量
-        m_p_mi_comm->SendMiParam<uint8_t>(index, 1203, axis_config->motor_dir);	//电机旋转方向
+       m_p_mi_comm->SendMiParam<uint64_t>(index, 1202, tmp_64);	//每转移动量
+       m_p_mi_comm->SendMiParam<uint8_t>(index, 1203, axis_config->motor_dir);	//电机旋转方向
         tmp_8 = axis_config->feedback_mode;
         //		if(axis_config->axis_interface == VIRTUAL_AXIS)
         //			tmp_8 = 0xFF;    //虚拟轴
         //		else if(axis_config->axis_interface == BUS_AXIS)
         //			tmp_8 = 0x10;   //ethercat
-        m_p_mi_comm->SendMiParam<uint8_t>(index, 1204, tmp_8);	//反馈类型
+       m_p_mi_comm->SendMiParam<uint8_t>(index, 1204, tmp_8);	//反馈类型
         //		printf("send axis[%hhu] feedback_mode %hhu #####\n", index, tmp_8);
 
         tmp_8 = axis_config->ctrl_mode;
@@ -7739,11 +7723,11 @@ void ChannelEngine::InitMiParam(){
             tmp_8 = 0xFF;    //虚拟轴
         else if(axis_config->axis_interface == BUS_AXIS)
             tmp_8 = 0x10;   //ethercat
-        m_p_mi_comm->SendMiParam<uint8_t>(index, 1205, tmp_8);	//轴控制方式
-        m_p_mi_comm->SendMiParam<uint32_t>(index, 1206, axis_config->pulse_count_pr);	//控制每转输出脉冲数
-        m_p_mi_comm->SendMiParam<uint8_t>(index, 1207, axis_config->encoder_lines);	//单圈编码器线数
+       m_p_mi_comm->SendMiParam<uint8_t>(index, 1205, tmp_8);	//轴控制方式
+       m_p_mi_comm->SendMiParam<uint32_t>(index, 1206, axis_config->pulse_count_pr);	//控制每转输出脉冲数
+       m_p_mi_comm->SendMiParam<uint8_t>(index, 1207, axis_config->encoder_lines);	//单圈编码器线数
 
-        m_p_mi_comm->SendMiParam<uint16_t>(index, 1208, axis_config->encoder_max_cycle);   //旋转轴编码器整圈最大值
+       m_p_mi_comm->SendMiParam<uint16_t>(index, 1208, axis_config->encoder_max_cycle);   //旋转轴编码器整圈最大值
 
         //		this->SendMiParam<uint8_t>(index, 1209, axis_config->axis_alarm_level);	//轴告警电平
 
@@ -7751,30 +7735,30 @@ void ChannelEngine::InitMiParam(){
                 axis_config->feedback_mode != NO_ENCODER &&
                 axis_config->feedback_mode != INCREMENTAL_ENCODER &&
                 axis_config->ref_encoder != kAxisRefNoDef /*&&
-                        axis_config->ref_complete == 1*/){ //写入参考点数据
+                axis_config->ref_complete == 1*/){ //写入参考点数据
             this->m_p_mi_comm->SetAxisRef(index, axis_config->ref_encoder);
             //printf("send mi ref encoder : %lld\n", axis_config->ref_encoder);
         }
 
         //软限位
-        m_p_mi_comm->SendMiParam<double>(index, 1500, axis_config->soft_limit_max_1);
-        m_p_mi_comm->SendMiParam<double>(index, 1501, axis_config->soft_limit_min_1);
-        //m_p_mi_comm->SendMiParam<uint8_t>(index, 1502, axis_config->soft_limit_check_1);//梯图控制
-        m_p_mi_comm->SendMiParam<uint8_t>(index, 1502, 0);//梯图控制
-        m_p_mi_comm->SendMiParam<double>(index, 1503, axis_config->soft_limit_max_2);
-        //m_p_mi_comm->SendMiParam<double>(index, 1504, axis_config->soft_limit_min_2);
-        m_p_mi_comm->SendMiParam<uint8_t>(index, 1504, 0);//梯图控制
-        m_p_mi_comm->SendMiParam<uint8_t>(index, 1505, axis_config->soft_limit_check_2);
-        m_p_mi_comm->SendMiParam<double>(index, 1506, axis_config->soft_limit_max_3);
-        m_p_mi_comm->SendMiParam<double>(index, 1507, axis_config->soft_limit_min_3);
-        m_p_mi_comm->SendMiParam<uint8_t>(index, 1508, axis_config->soft_limit_check_3);
+       m_p_mi_comm->SendMiParam<double>(index, 1500, axis_config->soft_limit_max_1);
+       m_p_mi_comm->SendMiParam<double>(index, 1501, axis_config->soft_limit_min_1);
+       //m_p_mi_comm->SendMiParam<uint8_t>(index, 1502, axis_config->soft_limit_check_1);//梯图控制
+       m_p_mi_comm->SendMiParam<uint8_t>(index, 1502, 0);//梯图控制
+       m_p_mi_comm->SendMiParam<double>(index, 1503, axis_config->soft_limit_max_2);
+       //m_p_mi_comm->SendMiParam<double>(index, 1504, axis_config->soft_limit_min_2);
+       m_p_mi_comm->SendMiParam<uint8_t>(index, 1504, 0);//梯图控制
+       m_p_mi_comm->SendMiParam<uint8_t>(index, 1505, axis_config->soft_limit_check_2);
+       m_p_mi_comm->SendMiParam<double>(index, 1506, axis_config->soft_limit_max_3);
+       m_p_mi_comm->SendMiParam<double>(index, 1507, axis_config->soft_limit_min_3);
+       m_p_mi_comm->SendMiParam<uint8_t>(index, 1508, axis_config->soft_limit_check_3);
 
         //发送主轴启动时间、制动时间
-        m_p_mi_comm->SendMiParam<uint16_t>(index, 1605, axis_config->spd_start_time);
-        m_p_mi_comm->SendMiParam<uint16_t>(index, 1606, axis_config->spd_stop_time);
+       m_p_mi_comm->SendMiParam<uint16_t>(index, 1605, axis_config->spd_start_time);
+       m_p_mi_comm->SendMiParam<uint16_t>(index, 1606, axis_config->spd_stop_time);
 
-        //反向间隙初始化方向
-        m_p_mi_comm->SendMiParam<uint8_t>(index, 1607, axis_config->init_backlash_dir);
+       //反向间隙初始化方向
+       m_p_mi_comm->SendMiParam<uint8_t>(index, 1607, axis_config->init_backlash_dir);
 
         //发送反向间隙参数
         this->SendMiBacklash(i);
@@ -7978,9 +7962,9 @@ void ChannelEngine::SendMiIoRemapInfo(IoRemapInfo &info){
  * @param phy_axis : 物理轴号，从0开始
  */
 void ChannelEngine::SendMiAxisFilterParam(uint8_t phy_axis){
-    m_p_mi_comm->SendMiParam<uint8_t>(phy_axis+1, 1140, m_p_axis_config[phy_axis].post_filter_type);   //滤波器类型
-    m_p_mi_comm->SendMiParam<uint16_t>(phy_axis+1, 1141, m_p_axis_config[phy_axis].post_filter_time_1);   //一级滤波器时间常数
-    m_p_mi_comm->SendMiParam<uint16_t>(phy_axis+1, 1142, m_p_axis_config[phy_axis].post_filter_time_2);   //二级滤波器时间常数
+   m_p_mi_comm->SendMiParam<uint8_t>(phy_axis+1, 1140, m_p_axis_config[phy_axis].post_filter_type);   //滤波器类型
+   m_p_mi_comm->SendMiParam<uint16_t>(phy_axis+1, 1141, m_p_axis_config[phy_axis].post_filter_time_1);   //一级滤波器时间常数
+   m_p_mi_comm->SendMiParam<uint16_t>(phy_axis+1, 1142, m_p_axis_config[phy_axis].post_filter_time_2);   //二级滤波器时间常数
 }
 
 /**
@@ -8544,12 +8528,12 @@ bool ChannelEngine::RefreshMiStatusFun(){
                 if(warn_flag & (0x01 << 0)){//正限位告警
                     uint64_t hlimtflag = 0;
                     this->m_p_mi_comm->ReadServoHLimitFlag(true, hlimtflag);   //读取正限位数据
-                    //                    if(m_hard_limit_postive == 0){
-                    //                        this->m_hard_limit_postive |= hlimtflag;
-                    //                        this->ProcessAxisHardLimit(0, this->m_hard_limit_postive);
-                    //                    }else{
-                    //                        this->m_hard_limit_postive |= hlimtflag;
-                    //                    }
+//                    if(m_hard_limit_postive == 0){
+//                        this->m_hard_limit_postive |= hlimtflag;
+//                        this->ProcessAxisHardLimit(0, this->m_hard_limit_postive);
+//                    }else{
+//                        this->m_hard_limit_postive |= hlimtflag;
+//                    }
                     //修复一轴报警后，其他轴无法报警问题
                     uint64_t newflag = this->m_hard_limit_postive | hlimtflag;
                     if (newflag != m_hard_limit_postive)
@@ -8561,12 +8545,12 @@ bool ChannelEngine::RefreshMiStatusFun(){
                 if(warn_flag & (0x01 << 1)){ //负限位告警
                     uint64_t hlimtflag = 0;
                     this->m_p_mi_comm->ReadServoHLimitFlag(false, hlimtflag);   //读取负限位数据
-                    //                    if(m_hard_limit_negative == 0){
-                    //                        this->m_hard_limit_negative |= hlimtflag;
-                    //                        this->ProcessAxisHardLimit(1, this->m_hard_limit_negative);
-                    //                    }else{
-                    //                        this->m_hard_limit_negative |= hlimtflag;
-                    //                    }
+//                    if(m_hard_limit_negative == 0){
+//                        this->m_hard_limit_negative |= hlimtflag;
+//                        this->ProcessAxisHardLimit(1, this->m_hard_limit_negative);
+//                    }else{
+//                        this->m_hard_limit_negative |= hlimtflag;
+//                    }
 
                     //修复一轴报警后，其他轴无法报警问题
                     uint64_t newflag = this->m_hard_limit_negative | hlimtflag;
@@ -9019,10 +9003,10 @@ void ChannelEngine::ProcessPmcSignal(){
 
         //程序保护
         if (g_reg_last->KEY4 != g_reg->KEY4
-                || g_reg_last->KEY3 != g_reg->KEY3
-                || g_reg_last->KEY2 != g_reg->KEY2
-                || g_reg_last->KEY1 != g_reg->KEY1
-                || !inited)
+            || g_reg_last->KEY3 != g_reg->KEY3
+            || g_reg_last->KEY2 != g_reg->KEY2
+            || g_reg_last->KEY1 != g_reg->KEY1
+            || !inited)
         {
             ProcessPMCProtect();
         }
@@ -9197,70 +9181,70 @@ void ChannelEngine::ProcessPmcSignal(){
     }
     //处理轴的限位信号，虽然64个轴的限位信号平均分布在四个通道中，但是处理时不分通道
     //if(!this->m_b_ret_ref){  //回参考点过程中屏蔽限位，回零过程也需要开启硬限位
-    chn = m_p_general_config->axis_count/16;
-    if(m_p_general_config->axis_count%16)
-        chn++;
-    for(int i = 0; i < chn; i++){
+        chn = m_p_general_config->axis_count/16;
+        if(m_p_general_config->axis_count%16)
+            chn++;
+        for(int i = 0; i < chn; i++){
 
-        g_reg = &m_p_pmc_reg->GReg().bits[i];
-        if(g_reg->axis_limit_postive1 != 0x00 || g_reg->axis_limit_postive2 != 0x00){  //正向硬限位触发
+            g_reg = &m_p_pmc_reg->GReg().bits[i];
+            if(g_reg->axis_limit_postive1 != 0x00 || g_reg->axis_limit_postive2 != 0x00){  //正向硬限位触发
 
-            flag = g_reg->axis_limit_postive2;
-            flag <<= 8;
-            flag |= g_reg->axis_limit_postive1;
-            flag <<= 16*i;
-            //                if(m_hard_limit_postive == 0){
+                flag = g_reg->axis_limit_postive2;
+                flag <<= 8;
+                flag |= g_reg->axis_limit_postive1;
+                flag <<= 16*i;
+//                if(m_hard_limit_postive == 0){
 
-            //                    this->m_hard_limit_postive |= flag;
-            //                    this->ProcessAxisHardLimit(0, this->m_hard_limit_postive);
-            //                    //printf("positive limit : 0x%llx\n", flag);
-            //                }else{
-            //                    this->m_hard_limit_postive |= flag;
-            //                    //printf("positive limit22 : 0x%llx\n", flag);
-            //                }
+//                    this->m_hard_limit_postive |= flag;
+//                    this->ProcessAxisHardLimit(0, this->m_hard_limit_postive);
+//                    //printf("positive limit : 0x%llx\n", flag);
+//                }else{
+//                    this->m_hard_limit_postive |= flag;
+//                    //printf("positive limit22 : 0x%llx\n", flag);
+//                }
 
-            //修复一轴报警后，其他轴无法报警问题
-            uint64_t newflag = this->m_hard_limit_postive | flag;
-            if (newflag != m_hard_limit_postive)
-            {
-                this->m_hard_limit_postive = newflag;
-                this->ProcessAxisHardLimit(0, this->m_hard_limit_postive);
+                //修复一轴报警后，其他轴无法报警问题
+                uint64_t newflag = this->m_hard_limit_postive | flag;
+                if (newflag != m_hard_limit_postive)
+                {
+                    this->m_hard_limit_postive = newflag;
+                    this->ProcessAxisHardLimit(0, this->m_hard_limit_postive);
+                }
+
             }
 
-        }
+            if(g_reg->axis_limit_negative1 != 0x00 || g_reg->axis_limit_negative2 != 0x00){  //负向硬限位触发
+                flag = g_reg->axis_limit_negative2;
+                flag <<= 8;
+                flag |= g_reg->axis_limit_negative1;
+                flag <<= 16*i;
+//                if( m_hard_limit_negative == 0){
 
-        if(g_reg->axis_limit_negative1 != 0x00 || g_reg->axis_limit_negative2 != 0x00){  //负向硬限位触发
-            flag = g_reg->axis_limit_negative2;
-            flag <<= 8;
-            flag |= g_reg->axis_limit_negative1;
-            flag <<= 16*i;
-            //                if( m_hard_limit_negative == 0){
+//                    this->m_hard_limit_negative |= flag;
+//                    this->ProcessAxisHardLimit(1, this->m_hard_limit_negative);
+//                    //		printf("negative limit : 0x%llx\n", m_hard_limit_negative);
+//                }else{
+//                    this->m_hard_limit_negative |= flag;
+//                    //		printf("negative limit222 : 0x%llx\n", m_hard_limit_negative);
+//                }
 
-            //                    this->m_hard_limit_negative |= flag;
-            //                    this->ProcessAxisHardLimit(1, this->m_hard_limit_negative);
-            //                    //		printf("negative limit : 0x%llx\n", m_hard_limit_negative);
-            //                }else{
-            //                    this->m_hard_limit_negative |= flag;
-            //                    //		printf("negative limit222 : 0x%llx\n", m_hard_limit_negative);
-            //                }
-
-            //修复一轴报警后，其他轴无法报警问题
-            uint64_t newflag = this->m_hard_limit_negative | flag;
-            if (newflag != m_hard_limit_negative)
-            {
-                this->m_hard_limit_negative = newflag;
-                this->ProcessAxisHardLimit(1, this->m_hard_limit_negative);
+                //修复一轴报警后，其他轴无法报警问题
+                uint64_t newflag = this->m_hard_limit_negative | flag;
+                if (newflag != m_hard_limit_negative)
+                {
+                    this->m_hard_limit_negative = newflag;
+                    this->ProcessAxisHardLimit(1, this->m_hard_limit_negative);
+                }
+            }
+            if(m_pos_hard_limit_last != m_hard_limit_postive){
+                m_pos_hard_limit_last = m_hard_limit_postive;
+                m_p_mi_comm->SendHardLimitState(true,m_pos_hard_limit_last);
+            }
+            if(m_neg_hard_limit_last != m_hard_limit_negative){
+                m_neg_hard_limit_last = m_hard_limit_negative;
+                m_p_mi_comm->SendHardLimitState(false,m_neg_hard_limit_last);
             }
         }
-        if(m_pos_hard_limit_last != m_hard_limit_postive){
-            m_pos_hard_limit_last = m_hard_limit_postive;
-            m_p_mi_comm->SendHardLimitState(true,m_pos_hard_limit_last);
-        }
-        if(m_neg_hard_limit_last != m_hard_limit_negative){
-            m_neg_hard_limit_last = m_hard_limit_negative;
-            m_p_mi_comm->SendHardLimitState(false,m_neg_hard_limit_last);
-        }
-    }
     //}
 
 
@@ -9363,80 +9347,80 @@ void ChannelEngine::ProcessPmcSignal(){
     inited = true;
 
 #ifdef TAP_TEST
-    //    static string pathname = string(PATH_LOG_FILE) + "data.txt";
-    //    for (int i = 0; i < m_p_general_config->chn_count; ++i)
-    //    {
-    //        if (m_p_channel_control[i].IsMachinRunning())
-    //        {
-    //            if (!m_fd)
-    //            {
-    //                m_fd = fopen(pathname.c_str(), "a+");
-    //                if (!m_fd)
-    //                    std::cout << ">>>>>> open err" << std::endl;
-    //            }
+//    static string pathname = string(PATH_LOG_FILE) + "data.txt";
+//    for (int i = 0; i < m_p_general_config->chn_count; ++i)
+//    {
+//        if (m_p_channel_control[i].IsMachinRunning())
+//        {
+//            if (!m_fd)
+//            {
+//                m_fd = fopen(pathname.c_str(), "a+");
+//                if (!m_fd)
+//                    std::cout << ">>>>>> open err" << std::endl;
+//            }
 
-    //            if (m_fd /*&& (g_reg->RGTAP == 1 or g_reg->RTNT)*/)
-    //            {
-    //                this->m_p_mi_comm->ReadPhyAxisCurFedBckPos(m_df_phy_axis_pos_feedback, m_df_phy_axis_pos_intp,m_df_phy_axis_speed_feedback,
-    //                                                           m_df_phy_axis_torque_feedback, m_df_spd_angle, m_p_general_config->axis_count);
+//            if (m_fd /*&& (g_reg->RGTAP == 1 or g_reg->RTNT)*/)
+//            {
+//                this->m_p_mi_comm->ReadPhyAxisCurFedBckPos(m_df_phy_axis_pos_feedback, m_df_phy_axis_pos_intp,m_df_phy_axis_speed_feedback,
+//                                                           m_df_phy_axis_torque_feedback, m_df_spd_angle, m_p_general_config->axis_count);
 
-    //                //X轴数据
-    //                string X_real_pos = to_string(m_df_phy_axis_pos_feedback[0]) + '\t';
-    //                string X_tar_pos = to_string(m_df_phy_axis_pos_intp[0]) +'\t';
+//                //X轴数据
+//                string X_real_pos = to_string(m_df_phy_axis_pos_feedback[0]) + '\t';
+//                string X_tar_pos = to_string(m_df_phy_axis_pos_intp[0]) +'\t';
 
-    //                //Y轴数据
-    //                string y_real_pos = to_string(m_df_phy_axis_pos_feedback[1]) + '\t';
-    //                string y_tar_pos = to_string(m_df_phy_axis_pos_intp[1]) +'\t';
+//                //Y轴数据
+//                string y_real_pos = to_string(m_df_phy_axis_pos_feedback[1]) + '\t';
+//                string y_tar_pos = to_string(m_df_phy_axis_pos_intp[1]) +'\t';
 
-    //                //Z轴数据
-    //                //string z_real_pos = to_string(m_df_phy_axis_pos_feedback[2]) + '\t';
-    //                //string z_tar_pos = to_string(m_df_phy_axis_pos_intp[2]) +'\t';
+//                //Z轴数据
+//                //string z_real_pos = to_string(m_df_phy_axis_pos_feedback[2]) + '\t';
+//                //string z_tar_pos = to_string(m_df_phy_axis_pos_intp[2]) +'\t';
 
-    //                //主轴数据
-    //                //string spd_real_pos = to_string(m_df_phy_axis_pos_feedback[m_p_channel_control[i].GetSpdCtrl()->GetPhyAxis()]) + '\t';
-    //                //string spd_tar_pos = to_string(m_df_phy_axis_pos_intp[m_p_channel_control[i].GetSpdCtrl()->GetPhyAxis()]) + '\t';
+//                //主轴数据
+//                //string spd_real_pos = to_string(m_df_phy_axis_pos_feedback[m_p_channel_control[i].GetSpdCtrl()->GetPhyAxis()]) + '\t';
+//                //string spd_tar_pos = to_string(m_df_phy_axis_pos_intp[m_p_channel_control[i].GetSpdCtrl()->GetPhyAxis()]) + '\t';
 
-    //                //string msg = z_tar_pos + z_real_pos + spd_tar_pos + spd_real_pos + '\n';
+//                //string msg = z_tar_pos + z_real_pos + spd_tar_pos + spd_real_pos + '\n';
 
-    //                //string msg = X_tar_pos + X_real_pos + y_tar_pos + y_real_pos + z_tar_pos + z_real_pos + '\n';
-    //                //string msg = X_tar_pos + X_real_pos + '\n';
-    //                string msg = X_real_pos + X_tar_pos + y_real_pos + y_tar_pos + '\n';
-    //                fwrite(msg.c_str(), sizeof(char), msg.size(), m_fd);
-    //            }
-    //        }
-    //        else
-    //        {
-    //            if (m_fd)
-    //            {
-    //                fflush(m_fd);
-    //                fclose(m_fd);
-    //                m_fd = nullptr;
-    //            }
-    //        }
-    //    }
-    //    for (int i = 0; i < m_p_general_config->chn_count; ++i)
-    //    {
-    //        if (m_p_channel_control[i].IsMachinRunning())
-    //            m_serverGuide.StartRecord();
-    //        else
-    //            m_serverGuide.EndRecord();
-    //    }
+//                //string msg = X_tar_pos + X_real_pos + y_tar_pos + y_real_pos + z_tar_pos + z_real_pos + '\n';
+//                //string msg = X_tar_pos + X_real_pos + '\n';
+//                string msg = X_real_pos + X_tar_pos + y_real_pos + y_tar_pos + '\n';
+//                fwrite(msg.c_str(), sizeof(char), msg.size(), m_fd);
+//            }
+//        }
+//        else
+//        {
+//            if (m_fd)
+//            {
+//                fflush(m_fd);
+//                fclose(m_fd);
+//                m_fd = nullptr;
+//            }
+//        }
+//    }
+//    for (int i = 0; i < m_p_general_config->chn_count; ++i)
+//    {
+//        if (m_p_channel_control[i].IsMachinRunning())
+//            m_serverGuide.StartRecord();
+//        else
+//            m_serverGuide.EndRecord();
+//    }
 
     //for (int i = 0; i < m_p_general_config->chn_count; ++i)
     //{
-    if (m_p_channel_control[0].IsMachinRunning())
-    {
-        if (m_serverGuide.IsReady())
-            m_serverGuide.StartRecord();
-    }
-    else
-    {
-        if (m_serverGuide.IsRecord())
+        if (m_p_channel_control[0].IsMachinRunning())
         {
-            m_serverGuide.PauseRecord();
-            //m_serverGuide.ResetRecord();
+            if (m_serverGuide.IsReady())
+                m_serverGuide.StartRecord();
         }
-    }
+        else
+        {
+            if (m_serverGuide.IsRecord())
+            {
+                m_serverGuide.PauseRecord();
+                //m_serverGuide.ResetRecord();
+            }
+        }
     //}
 
 #endif
@@ -9976,7 +9960,7 @@ void ChannelEngine::RemapFile(char *file){
  */
 void ChannelEngine::ResetOPSignal(uint8_t chn_index){
     if(chn_index != CHANNEL_ENGINE_INDEX){
-        this->m_p_channel_control[chn_index].ResetOPSignal();
+            this->m_p_channel_control[chn_index].ResetOPSignal();
     }else{
         for(uint8_t i = 0; i < this->m_p_general_config->chn_count; i++)
             this->m_p_channel_control[i].ResetOPSignal();
@@ -10275,22 +10259,22 @@ void ChannelEngine::AxisFindRefNoZeroSignal(uint8_t phy_axis){
 
         break;
     case 20: //失败处理
-    {
-        this->m_n_mask_ret_ref &= ~(0x01<<phy_axis);
-        m_n_ret_ref_step[phy_axis] = 0;
+        {
+            this->m_n_mask_ret_ref &= ~(0x01<<phy_axis);
+            m_n_ret_ref_step[phy_axis] = 0;
 
-        if(m_n_mask_ret_ref == 0){
-            this->m_b_ret_ref = false;
-            this->m_b_ret_ref_auto = false;
-            m_n_ret_ref_auto_cur = 0;
+            if(m_n_mask_ret_ref == 0){
+                this->m_b_ret_ref = false;
+                this->m_b_ret_ref_auto = false;
+                m_n_ret_ref_auto_cur = 0;
+            }
+            std::cout << "step 20, ref failed\n";
+            m_error_code = ERR_RET_REF_FAILED;
+            uint8_t chan_id = CHANNEL_ENGINE_INDEX, axis_id = NO_AXIS;
+            GetPhyAxistoChanAxis(phy_axis, chan_id, axis_id);
+            CreateError(ERR_RET_REF_FAILED, WARNING_LEVEL, CLEAR_BY_MCP_RESET, 0, chan_id, axis_id);
+            break;
         }
-        std::cout << "step 20, ref failed\n";
-        m_error_code = ERR_RET_REF_FAILED;
-        uint8_t chan_id = CHANNEL_ENGINE_INDEX, axis_id = NO_AXIS;
-        GetPhyAxistoChanAxis(phy_axis, chan_id, axis_id);
-        CreateError(ERR_RET_REF_FAILED, WARNING_LEVEL, CLEAR_BY_MCP_RESET, 0, chan_id, axis_id);
-        break;
-    }
     default:
         break;
     }
@@ -10620,15 +10604,15 @@ void ChannelEngine::EcatIncAxisFindRefWithZeroSignal(uint8_t phy_axis){
         unsigned int time_elpase = (time_now.tv_sec-m_time_ret_ref[phy_axis].tv_sec)*1000000+time_now.tv_usec-m_time_ret_ref[phy_axis].tv_usec;
         if(time_elpase >= 200000){ //延时200ms
             printf("axis %u return ref over\n", phy_axis);
-            //        if(this->m_p_axis_config[phy_axis].feedback_mode == ABSOLUTE_ENCODER ||
-            //            this->m_p_axis_config[phy_axis].feedback_mode == LINEAR_ENCODER){  //绝对值需获取机械零点的编码器值并保存，方便断点后恢复坐标
-            //                MiCmdFrame mi_cmd;
-            //                memset(&mi_cmd, 0x00, sizeof(mi_cmd));
-            //                mi_cmd.data.cmd = CMD_MI_GET_ZERO_ENCODER;
-            //                mi_cmd.data.axis_index = phy_axis+1;
+    //        if(this->m_p_axis_config[phy_axis].feedback_mode == ABSOLUTE_ENCODER ||
+    //            this->m_p_axis_config[phy_axis].feedback_mode == LINEAR_ENCODER){  //绝对值需获取机械零点的编码器值并保存，方便断点后恢复坐标
+    //                MiCmdFrame mi_cmd;
+    //                memset(&mi_cmd, 0x00, sizeof(mi_cmd));
+    //                mi_cmd.data.cmd = CMD_MI_GET_ZERO_ENCODER;
+    //                mi_cmd.data.axis_index = phy_axis+1;
 
-            //                this->m_p_mi_comm->WriteCmd(mi_cmd);
-            //        }
+    //                this->m_p_mi_comm->WriteCmd(mi_cmd);
+    //        }
 
             this->SetRetRefFlag(phy_axis, true);
             this->m_p_pmc_reg->FReg().bits[0].in_ref_point |= (0x01<<phy_axis);   //置位到参考点标志
@@ -10651,22 +10635,22 @@ void ChannelEngine::EcatIncAxisFindRefWithZeroSignal(uint8_t phy_axis){
         break;
     }
     case 20: //失败处理
-    {
-        this->m_n_mask_ret_ref &= ~(0x01<<phy_axis);
-        m_n_ret_ref_step[phy_axis] = 0;
+        {
+            this->m_n_mask_ret_ref &= ~(0x01<<phy_axis);
+            m_n_ret_ref_step[phy_axis] = 0;
 
-        if(m_n_mask_ret_ref == 0){
-            this->m_b_ret_ref = false;
-            this->m_b_ret_ref_auto = false;
-            m_n_ret_ref_auto_cur = 0;
+            if(m_n_mask_ret_ref == 0){
+                this->m_b_ret_ref = false;
+                this->m_b_ret_ref_auto = false;
+                m_n_ret_ref_auto_cur = 0;
+            }
+            std::cout << "step 20, home failed" << std::endl;
+            m_error_code = ERR_RET_REF_FAILED;
+            uint8_t chan_id = CHANNEL_ENGINE_INDEX, axis_id = NO_AXIS;
+            GetPhyAxistoChanAxis(phy_axis, chan_id, axis_id);
+            CreateError(ERR_RET_REF_FAILED, WARNING_LEVEL, CLEAR_BY_MCP_RESET, 0, chan_id, axis_id);
+            break;
         }
-        std::cout << "step 20, home failed" << std::endl;
-        m_error_code = ERR_RET_REF_FAILED;
-        uint8_t chan_id = CHANNEL_ENGINE_INDEX, axis_id = NO_AXIS;
-        GetPhyAxistoChanAxis(phy_axis, chan_id, axis_id);
-        CreateError(ERR_RET_REF_FAILED, WARNING_LEVEL, CLEAR_BY_MCP_RESET, 0, chan_id, axis_id);
-        break;
-    }
     case 21:
     {
         this->m_n_mask_ret_ref &= ~(0x01<<phy_axis);
@@ -11267,20 +11251,20 @@ void ChannelEngine::PulseAxisFindRefWithZeroSignal(uint8_t phy_axis){
         break;
 
     case 20: //失败处理
-    {
-        this->m_n_mask_ret_ref &= ~(0x01<<phy_axis);
-        m_n_ret_ref_step[phy_axis] = 0;
+        {
+            this->m_n_mask_ret_ref &= ~(0x01<<phy_axis);
+            m_n_ret_ref_step[phy_axis] = 0;
 
-        if(m_n_mask_ret_ref == 0){
-            this->m_b_ret_ref = false;
-            this->m_b_ret_ref_auto = false;
-            m_n_ret_ref_auto_cur = 0;
+            if(m_n_mask_ret_ref == 0){
+                this->m_b_ret_ref = false;
+                this->m_b_ret_ref_auto = false;
+                m_n_ret_ref_auto_cur = 0;
+            }
+            m_error_code = ERR_RET_REF_FAILED;
+            uint8_t chan_id = CHANNEL_ENGINE_INDEX, axis_id = NO_AXIS;
+            GetPhyAxistoChanAxis(phy_axis, chan_id, axis_id);
+            CreateError(ERR_RET_REF_FAILED, WARNING_LEVEL, CLEAR_BY_MCP_RESET, 0, chan_id, axis_id);
         }
-        m_error_code = ERR_RET_REF_FAILED;
-        uint8_t chan_id = CHANNEL_ENGINE_INDEX, axis_id = NO_AXIS;
-        GetPhyAxistoChanAxis(phy_axis, chan_id, axis_id);
-        CreateError(ERR_RET_REF_FAILED, WARNING_LEVEL, CLEAR_BY_MCP_RESET, 0, chan_id, axis_id);
-    }
         break;
     default:
         break;
@@ -11734,15 +11718,15 @@ void ChannelEngine::EcatAxisFindRefWithZeroSignal(uint8_t phy_axis){
         gettimeofday(&time_now, NULL);
         unsigned int time_elpase = (time_now.tv_sec-m_time_ret_ref[phy_axis].tv_sec)*1000000+time_now.tv_usec-m_time_ret_ref[phy_axis].tv_usec;
         if(time_elpase >= 200000){ //延时200ms
-            //            if(this->m_p_axis_config[phy_axis].feedback_mode == ABSOLUTE_ENCODER ||
-            //                    this->m_p_axis_config[phy_axis].feedback_mode == LINEAR_ENCODER){  //绝对值需获取机械零点的编码器值并保存，方便断点后恢复坐标
-            //                MiCmdFrame mi_cmd;
-            //                memset(&mi_cmd, 0x00, sizeof(mi_cmd));
-            //                mi_cmd.data.cmd = CMD_MI_GET_ZERO_ENCODER;
-            //                mi_cmd.data.axis_index = phy_axis+1;
+//            if(this->m_p_axis_config[phy_axis].feedback_mode == ABSOLUTE_ENCODER ||
+//                    this->m_p_axis_config[phy_axis].feedback_mode == LINEAR_ENCODER){  //绝对值需获取机械零点的编码器值并保存，方便断点后恢复坐标
+//                MiCmdFrame mi_cmd;
+//                memset(&mi_cmd, 0x00, sizeof(mi_cmd));
+//                mi_cmd.data.cmd = CMD_MI_GET_ZERO_ENCODER;
+//                mi_cmd.data.axis_index = phy_axis+1;
 
-            //                this->m_p_mi_comm->WriteCmd(mi_cmd);
-            //            }
+//                this->m_p_mi_comm->WriteCmd(mi_cmd);
+//            }
             m_n_ret_ref_step[phy_axis]++;
             std::cout << "step 16, get encoder" << std::endl;
         }
@@ -11769,8 +11753,8 @@ void ChannelEngine::EcatAxisFindRefWithZeroSignal(uint8_t phy_axis){
 #endif
         this->SendMonitorData(false, false);  //再次读取实时位置
         if(fabs(this->GetPhyAxisMachPosFeedback(phy_axis)- dis) <= 0.010){  //到位
-            m_n_ret_ref_step[phy_axis]++;  //跳转下一步
-            printf("step 18, return ref[%hhu, %lf, %lf]\n", phy_axis, this->GetPhyAxisMachPosFeedback(phy_axis), dis);
+                m_n_ret_ref_step[phy_axis]++;  //跳转下一步
+                printf("step 18, return ref[%hhu, %lf, %lf]\n", phy_axis, this->GetPhyAxisMachPosFeedback(phy_axis), dis);
         }
         break;
     case 19:
@@ -12126,16 +12110,16 @@ void ChannelEngine::EcatAxisFindRefNoZeroSignal(uint8_t phy_axis){
         gettimeofday(&time_now, NULL);
         unsigned int time_elpase = (time_now.tv_sec-m_time_ret_ref[phy_axis].tv_sec)*1000000+time_now.tv_usec-m_time_ret_ref[phy_axis].tv_usec;
         if(time_elpase >= 200000){ //延时200ms
-            //            if(this->m_p_axis_config[phy_axis].feedback_mode == ABSOLUTE_ENCODER ||
-            //                this->m_p_axis_config[phy_axis].feedback_mode == LINEAR_ENCODER){  //绝对值需要发送设置参考点指令
-            //                MiCmdFrame mi_cmd;
-            //                memset(&mi_cmd, 0x00, sizeof(mi_cmd));
-            //                mi_cmd.data.cmd = CMD_MI_GET_ZERO_ENCODER;
-            //                mi_cmd.data.axis_index = phy_axis+1;
+//            if(this->m_p_axis_config[phy_axis].feedback_mode == ABSOLUTE_ENCODER ||
+//                this->m_p_axis_config[phy_axis].feedback_mode == LINEAR_ENCODER){  //绝对值需要发送设置参考点指令
+//                MiCmdFrame mi_cmd;
+//                memset(&mi_cmd, 0x00, sizeof(mi_cmd));
+//                mi_cmd.data.cmd = CMD_MI_GET_ZERO_ENCODER;
+//                mi_cmd.data.axis_index = phy_axis+1;
 
-            //                this->m_p_mi_comm->WriteCmd(mi_cmd);
-            //                gettimeofday(&this->m_time_ret_ref[phy_axis], NULL);
-            //            }
+//                this->m_p_mi_comm->WriteCmd(mi_cmd);
+//                gettimeofday(&this->m_time_ret_ref[phy_axis], NULL);
+//            }
             m_n_ret_ref_step[phy_axis]++;
             std::cout << "step 16, get encoder" << std::endl;
         }
@@ -12168,15 +12152,15 @@ void ChannelEngine::EcatAxisFindRefNoZeroSignal(uint8_t phy_axis){
         break;
     }
     case 19:  //回参考点完成
-        //        if(this->m_p_axis_config[phy_axis].feedback_mode == ABSOLUTE_ENCODER ||
-        //                this->m_p_axis_config[phy_axis].feedback_mode == LINEAR_ENCODER){  //绝对值需要发送设置参考点指令
-        //            MiCmdFrame mi_cmd;
-        //            memset(&mi_cmd, 0x00, sizeof(mi_cmd));
-        //            mi_cmd.data.cmd = CMD_MI_GET_ZERO_ENCODER;
-        //            mi_cmd.data.axis_index = phy_axis+1;
+//        if(this->m_p_axis_config[phy_axis].feedback_mode == ABSOLUTE_ENCODER ||
+//                this->m_p_axis_config[phy_axis].feedback_mode == LINEAR_ENCODER){  //绝对值需要发送设置参考点指令
+//            MiCmdFrame mi_cmd;
+//            memset(&mi_cmd, 0x00, sizeof(mi_cmd));
+//            mi_cmd.data.cmd = CMD_MI_GET_ZERO_ENCODER;
+//            mi_cmd.data.axis_index = phy_axis+1;
 
-        //            this->m_p_mi_comm->WriteCmd(mi_cmd);
-        //        }
+//            this->m_p_mi_comm->WriteCmd(mi_cmd);
+//        }
         this->SetRetRefFlag(phy_axis, true);
         this->m_p_pmc_reg->FReg().bits[0].in_ref_point |= (0x01<<phy_axis);   //置位到参考点标志
 
@@ -12221,7 +12205,7 @@ void ChannelEngine::ReturnRefPoint(){
     int count = 0;
     for(uint i = 0; i < this->m_p_general_config->axis_count; i++){
         if((m_n_mask_ret_ref & (0x01<<i)) == 0 /*||
-                        (m_p_axis_config[i].ret_ref_mode == 0 && m_p_axis_config[i].feedback_mode == INCREMENTAL_ENCODER) 为什么增量式要禁止回参考点*/){  //禁止回参考点
+                (m_p_axis_config[i].ret_ref_mode == 0 && m_p_axis_config[i].feedback_mode == INCREMENTAL_ENCODER) 为什么增量式要禁止回参考点*/){  //禁止回参考点
             continue;
         }
 
@@ -12326,7 +12310,7 @@ void ChannelEngine::SetRetRefFlag(uint8_t phy_axis, bool flag){
 
     }else{
         if(m_p_axis_config[phy_axis].axis_interface == VIRTUAL_AXIS || m_p_axis_config[phy_axis].axis_type == AXIS_SPINDLE	//主轴和虚拟轴不用回参考点
-                || (m_p_axis_config[phy_axis].feedback_mode == ABSOLUTE_ENCODER && m_p_axis_config[phy_axis].ref_encoder != kAxisRefNoDef))    //绝对值编码器，已设定参考点
+            || (m_p_axis_config[phy_axis].feedback_mode == ABSOLUTE_ENCODER && m_p_axis_config[phy_axis].ref_encoder != kAxisRefNoDef))    //绝对值编码器，已设定参考点
         {
             return;   //不用回参考点的轴禁止将回零标志复位
         }
@@ -12426,9 +12410,9 @@ int ChannelEngine::GetRemainDay()
         else
             h[2] = 28;
         int sum = 0;
-        for (int i = 1; i<=12 ; ++i)
-            sum += h[i];
-        return sum;
+            for (int i = 1; i<=12 ; ++i)
+                sum += h[i];
+            return sum;
     };
 
     //一年过去的天数
@@ -12436,16 +12420,16 @@ int ChannelEngine::GetRemainDay()
         if ((year % 4 == 0 && year % 100 != 0) || year % 400 == 0)
             h[2] = 29;
         else
-            h[2] = 28;
-        int elapseSum = 0;
-        for (int i = 1; i < month; ++i)
-        {
-            elapseSum += h[i];
-        }
-        if (day > 0)
-            day = day - 1;
-        elapseSum += day;
-        return elapseSum;
+                h[2] = 28;
+            int elapseSum = 0;
+            for (int i = 1; i < month; ++i)
+            {
+                elapseSum += h[i];
+            }
+            if (day > 0)
+                day = day - 1;
+            elapseSum += day;
+            return elapseSum;
     };
 
     int remainDay = 0;

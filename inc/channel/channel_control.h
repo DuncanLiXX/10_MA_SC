@@ -162,7 +162,7 @@ public:
     // 返回值： 0：没有超限   1：超限
     bool CheckSoftLimit(ManualMoveDir dir, uint8_t phy_axis, double pos);
     // 获取限位位置
-    bool GetSoftLimt(ManualMoveDir dir, uint8_t phy_axis, double &limit, double pos);
+    bool GetSoftLimt(ManualMoveDir dir, uint8_t phy_axis, double &limit);
 
 	void HandwheelMove(int32_t hw_count);   //手轮移动指令
 

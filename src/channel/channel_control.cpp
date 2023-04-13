@@ -11276,9 +11276,9 @@ void ChannelControl::ManualMove(int8_t dir){
                       GetAxisCurMachPos(m_channel_status.cur_axis))){
         // ScPrintf("soft limit active, manual move abs return \n");
         return;
-    }else if(GetSoftLimt((ManualMoveDir)dir, phy_axis, limit, cur_pos/(double)1e7) && dir == DIR_POSITIVE && tar_pos > limit*1e7){
+    }else if(GetSoftLimt((ManualMoveDir)dir, phy_axis, limit) && dir == DIR_POSITIVE && tar_pos > limit*1e7){
         tar_pos = limit * 1e7;
-    }else if(GetSoftLimt((ManualMoveDir)dir, phy_axis, limit, cur_pos/(double)1e7) && dir == DIR_NEGATIVE && tar_pos < limit*1e7){
+    }else if(GetSoftLimt((ManualMoveDir)dir, phy_axis, limit) && dir == DIR_NEGATIVE && tar_pos < limit*1e7){
         tar_pos = limit * 1e7;
     }
     ScPrintf("GetAxisCurIntpTarPos = %llf", GetAxisCurIntpTarPos(m_channel_status.cur_axis, true)*1e7);
@@ -11378,9 +11378,9 @@ void ChannelControl::ManualMovePmc(int8_t dir){
                       GetAxisCurMachPos(m_channel_status.cur_axis))){
         printf("soft limit active, manual move abs return \n");
         return;
-    }else if(GetSoftLimt((ManualMoveDir)dir, phy_axis, limit, cur_pos/(double)1e7) && dir == DIR_POSITIVE && tar_pos > limit * 1e7){
+    }else if(GetSoftLimt((ManualMoveDir)dir, phy_axis, limit) && dir == DIR_POSITIVE && tar_pos > limit * 1e7){
         tar_pos = limit * 1e7;
-    }else if(GetSoftLimt((ManualMoveDir)dir, phy_axis, limit, cur_pos/(double)1e7) && dir == DIR_NEGATIVE && tar_pos < limit * 1e7){
+    }else if(GetSoftLimt((ManualMoveDir)dir, phy_axis, limit) && dir == DIR_NEGATIVE && tar_pos < limit * 1e7){
         tar_pos = limit * 1e7;
     }
     int64_t n_inc_dis = tar_pos - GetAxisCurIntpTarPos(m_channel_status.cur_axis, true)*1e7;
@@ -11460,9 +11460,9 @@ void ChannelControl::ManualMove(uint8_t axis, double pos, double vel, bool workc
     if(CheckSoftLimit(dir, phy_axis, GetAxisCurMachPos(axis))){
         printf("soft limit active, manual move abs return \n");
         return;
-    }else if(GetSoftLimt(dir, phy_axis, limit, cur_pos/(double)1e7) && dir == DIR_POSITIVE && pos > limit * 1e7){
+    }else if(GetSoftLimt(dir, phy_axis, limit) && dir == DIR_POSITIVE && pos > limit * 1e7){
         tar_pos = limit * 1e7;
-    }else if(GetSoftLimt(dir, phy_axis, limit, cur_pos/(double)1e7) && dir == DIR_NEGATIVE && pos < limit * 1e7){
+    }else if(GetSoftLimt(dir, phy_axis, limit) && dir == DIR_NEGATIVE && pos < limit * 1e7){
         tar_pos = limit * 1e7;
     }
 
@@ -11674,9 +11674,9 @@ void ChannelControl::ManualMovePmc(uint8_t axis, double pos, double vel){
     if(CheckSoftLimit(dir, phy_axis, GetAxisCurMachPos(axis))){
         printf("soft limit active, manual move abs return \n");
         return;
-    }else if(GetSoftLimt(dir, phy_axis, limit, cur_pos/(double)1e7) && dir == DIR_POSITIVE && pos > limit * 1e7){
+    }else if(GetSoftLimt(dir, phy_axis, limit) && dir == DIR_POSITIVE && pos > limit * 1e7){
         tar_pos = limit * 1e7;
-    }else if(GetSoftLimt(dir, phy_axis, limit, cur_pos/(double)1e7) && dir == DIR_NEGATIVE && pos < limit * 1e7){
+    }else if(GetSoftLimt(dir, phy_axis, limit) && dir == DIR_NEGATIVE && pos < limit * 1e7){
         tar_pos = limit * 1e7;
     }
 
@@ -11695,8 +11695,8 @@ bool ChannelControl::CheckSoftLimit(ManualMoveDir dir, uint8_t phy_axis, double 
     return m_p_channel_engine->CheckSoftLimit(dir,phy_axis,pos);
 }
 
-bool ChannelControl::GetSoftLimt(ManualMoveDir dir, uint8_t phy_axis, double &limit, double pos){
-    return m_p_channel_engine->GetSoftLimt(dir,phy_axis,limit,pos);
+bool ChannelControl::GetSoftLimt(ManualMoveDir dir, uint8_t phy_axis, double &limit){
+    return m_p_channel_engine->GetSoftLimt(dir,phy_axis,limit);
 }
 
 /**

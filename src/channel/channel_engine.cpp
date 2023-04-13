@@ -953,6 +953,7 @@ void ChannelEngine::SetMiWorkMode(uint8_t value){
  * @param chn : 通道号，从0开始
  */
 void ChannelEngine::UpdateHandwheelState(uint8_t chn){
+    static bool last_enable = false;
     bool trace_enable = m_p_channel_control[chn].CheckFuncState(FS_HANDWHEEL_CONTOUR);
     bool trace_reverse = this->m_p_general_config->hw_rev_trace;
     bool insert_enable;
@@ -966,10 +967,18 @@ void ChannelEngine::UpdateHandwheelState(uint8_t chn){
     }
     if(axis_no == 0){
         insert_enable = false;
-        g_ptr_tracelog_processor->SendToHmi(kPanelOper, kDebug, "关闭[手轮插入]");
+        if (last_enable != insert_enable)
+        {
+            last_enable = insert_enable;
+            g_ptr_tracelog_processor->SendToHmi(kPanelOper, kDebug, "关闭[手轮插入]");
+        }
     }else{
         insert_enable = true;
-        g_ptr_tracelog_processor->SendToHmi(kPanelOper, kDebug, "开启[手轮插入]");
+        if (last_enable != insert_enable)
+        {
+            last_enable = insert_enable;
+            g_ptr_tracelog_processor->SendToHmi(kPanelOper, kDebug, "开启[手轮插入]");
+        }
     }
     if(trace_enable){
         insert_enable = false;
@@ -10637,7 +10646,6 @@ void ChannelEngine::EcatIncAxisFindRefWithZeroSignal(uint8_t phy_axis){
         dis = real_pos;
 #endif
         //this->SendMonitorData(false, false);  //再次读取实时位置
-
         if(fabs(this->GetPhyAxisMachPosFeedback(phy_axis)- dis) <= 0.010){  //到位
 
             m_n_ret_ref_step[phy_axis]++;  //跳转下一步
@@ -10659,15 +10667,6 @@ void ChannelEngine::EcatIncAxisFindRefWithZeroSignal(uint8_t phy_axis){
         unsigned int time_elpase = (time_now.tv_sec-m_time_ret_ref[phy_axis].tv_sec)*1000000+time_now.tv_usec-m_time_ret_ref[phy_axis].tv_usec;
         if(time_elpase >= 200000){ //延时200ms
             printf("axis %u return ref over\n", phy_axis);
-    //        if(this->m_p_axis_config[phy_axis].feedback_mode == ABSOLUTE_ENCODER ||
-    //            this->m_p_axis_config[phy_axis].feedback_mode == LINEAR_ENCODER){  //绝对值需获取机械零点的编码器值并保存，方便断点后恢复坐标
-    //                MiCmdFrame mi_cmd;
-    //                memset(&mi_cmd, 0x00, sizeof(mi_cmd));
-    //                mi_cmd.data.cmd = CMD_MI_GET_ZERO_ENCODER;
-    //                mi_cmd.data.axis_index = phy_axis+1;
-
-    //                this->m_p_mi_comm->WriteCmd(mi_cmd);
-    //        }
 
             this->SetRetRefFlag(phy_axis, true);
             this->m_p_pmc_reg->FReg().bits[0].in_ref_point |= (0x01<<phy_axis);   //置位到参考点标志

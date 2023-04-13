@@ -3740,38 +3740,70 @@ bool ChannelControl::SendModeChangToHmi(uint16_t mode_type){
     cmd.cmd = CMD_SC_MODE_CHANGE;
     cmd.cmd_extension = mode_type;
 
+    static uint8_t lastTcode = 0;
+    static uint8_t lastDcode = 0;
+    static uint8_t lastHcode = 0;
+    static uint32_t lastFCode = 0;
+    static int32_t lastSMode = 0;
+
     switch(mode_type){
     case T_MODE:		//T
         cmd.data_len = 0x01;
         cmd.data[0] = m_channel_status.cur_tool;
-        g_ptr_tracelog_processor->SendToHmi(kProcessInfo, kDebug,
-                                            string("[刀号T]切换为 " + to_string(m_channel_status.cur_tool)));
+
+        if (lastTcode != m_channel_status.cur_tool)
+        {
+            lastTcode = m_channel_status.cur_tool;
+            g_ptr_tracelog_processor->SendToHmi(kProcessInfo, kDebug,
+                string("[刀号T]切换为 " + to_string(m_channel_status.cur_tool)));
+        }
         //		printf("SendModeChangToHmi, T = %hhu\n", m_channel_status.cur_tool);
         break;
     case D_MODE:		//D
         cmd.data_len = 0x01;
         cmd.data[0] = m_channel_status.cur_d_code;
-        g_ptr_tracelog_processor->SendToHmi(kProcessInfo, kDebug,
-                                            string("[D]切换为 " + to_string(m_channel_status.cur_d_code)));
+
+        if (lastDcode != m_channel_status.cur_d_code)
+        {
+            lastDcode = m_channel_status.cur_d_code;
+            g_ptr_tracelog_processor->SendToHmi(kProcessInfo, kDebug,
+                string("[D]切换为 " + to_string(m_channel_status.cur_d_code)));
+        }
         break;
     case H_MODE:		//H
         cmd.data_len = 0x01;
         cmd.data[0] = m_channel_status.cur_h_code;
-        g_ptr_tracelog_processor->SendToHmi(kProcessInfo, kDebug,
-                                            string("[H]切换为 " + to_string(m_channel_status.cur_h_code)));
+
+        if (lastHcode != m_channel_status.cur_h_code)
+        {
+            lastHcode = m_channel_status.cur_h_code;
+            g_ptr_tracelog_processor->SendToHmi(kProcessInfo, kDebug,
+                string("[H]切换为 " + to_string(m_channel_status.cur_h_code)));
+        }
         break;
     case F_MODE:		//F
+    {
         cmd.data_len = sizeof(m_channel_status.rated_feed);
         memcpy(cmd.data, &m_channel_status.rated_feed, cmd.data_len);
-        g_ptr_tracelog_processor->SendToHmi(kProcessInfo, kDebug,
-                                            string("[进给速度F]切换为 " + to_string(m_channel_status.rated_feed*60/1000)));
+        if (lastFCode != m_channel_status.rated_feed)
+        {
+            lastFCode = m_channel_status.rated_feed;
+            g_ptr_tracelog_processor->SendToHmi(kProcessInfo, kDebug,
+                string("[进给速度F]切换为 " + to_string(m_channel_status.rated_feed*60/1000)));
+        }
+    }
         break;
     case S_MODE:		//S
-
+    {
         cmd.data_len = sizeof(m_channel_status.rated_spindle_speed);
         memcpy(cmd.data, &m_channel_status.rated_spindle_speed, cmd.data_len);
-        g_ptr_tracelog_processor->SendToHmi(kProcessInfo, kDebug,
-                                            string("[主轴转速S]切换为 " + to_string(m_channel_status.rated_spindle_speed)));
+        if (lastSMode != m_channel_status.rated_spindle_speed)
+        {
+            lastSMode = m_channel_status.rated_spindle_speed;
+            g_ptr_tracelog_processor->SendToHmi(kProcessInfo, kDebug,
+                string("[主轴转速S]切换为 " + to_string(m_channel_status.rated_spindle_speed)));
+        }
+    }
         break;
     default:
         printf("@@@@Invalid value in ChannelControl::SendModeChangToHmi\n");
@@ -8713,7 +8745,7 @@ bool ChannelControl::ExecuteErrorMsg(RecordMsg *msg){
         if(err->GetErrorCode() == 0){//清空当前提示信息
             ClearHmiInfoMsg();
         }else{ //发送提示信息
-            //			CreateError(err->GetErrorCode(), INFO_LEVEL, CLEAR_BY_MCP_RESET, 0, m_n_channel_index);
+            CreateError(err->GetErrorCode(), INFO_LEVEL, CLEAR_BY_MCP_RESET, 0, m_n_channel_index);
             this->SendMessageToHmi(MSG_TIPS, err->GetErrorCode());
         }
         this->m_n_run_thread_state = RUN;

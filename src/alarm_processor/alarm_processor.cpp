@@ -14,7 +14,7 @@
 #include "channel_engine.h"
 #include "axis_status_ctrl.h"
 
-const int kMaxAlarmCount = 200;   //告警缓冲区最大值
+const int kMaxAlarmCount = 40;   //告警缓冲区最大值
 
 //m_instance初始化为nullptr
 AlarmProcessor* AlarmProcessor::m_instance = nullptr;

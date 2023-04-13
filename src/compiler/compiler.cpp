@@ -681,7 +681,7 @@ REDO:
  * @brief 代码预扫描，找到子程序和标签行
  */
 void Compiler::PreScan() {
-    //	printf("start compiler PreScan, thread id = %ld\n", syscall(SYS_gettid));
+    //printf("start compiler PreScan, thread id = %ld\n", syscall(SYS_gettid));
 
     uint64_t total_size = 0;		//文件总大小
     uint64_t read_size = 0;    //已读取的总大小

@@ -137,6 +137,7 @@ void SetMcArmComm(MCArmCommunication *comm){this->m_p_mc_arm_comm = comm;}   //É
 	void ManualMoveStop();			//ÊÖ¶¯Í£Ö¹
 	void ManualMove(uint8_t phy_axis, int8_t dir, double vel, double inc_dis);  //ÊÖ¶¯ÒÆ¶¯£¬Ïòdir·½ÏòÒÆ¶¯dis¾àÀë
 	void ManualMoveAbs(uint8_t phy_axis, double vel, double pos);   //ÊÖ¶¯ÒÔÄ¿±êËÙ¶ÈvelÒÆ¶¯ÖÁ¾ø¶ÔÄ¿±êÎ»ÖÃ
+    void ManualMoveAbs(uint8_t phy_axis, double vel, double pos, double &real_pos);   //ÊÖ¶¯ÒÔÄ¿±êËÙ¶ÈvelÒÆ¶¯ÖÁ¾ø¶ÔÄ¿±êÎ»ÖÃ
 
 	void ManualMoveStop(uint8_t phy_axis);			//ÊÖ¶¯Í£Ö¹
 
@@ -392,6 +393,7 @@ private:	//Ë½ÓĞ³ÉÔ±º¯Êı
 
 	void ProcessHmiGetIoRemapInfoCmd(HMICmdFrame &cmd);  //´¦ÀíHMI»ñÈ¡IOÖØÓ³ÉäĞÅÏ¢ÃüÁî
 	void ProcessHmiSetIoRemapInfoCmd(HMICmdFrame &cmd);  //´¦ÀíHMIÉèÖÃIOÖØÓ³ÉäĞÅÏ¢ÃüÁî
+    void ProcessHmiClearIoRemapInfoCmd(HMICmdFrame &cmd);//´¦ÀíHMIÇå³ıIOÖØÓ³ÉäĞÅÏ¢ÃüÁî
 
 	void ProcessHmiSetProcParamCmd(HMICmdFrame &cmd);    //´¦ÀíHMIÉèÖÃ¹¤ÒÕÏà¹Ø²ÎÊıµÄÃüÁî
 	void ProcessHmiGetProcParamCmd(HMICmdFrame &cmd);    //´¦ÀíHMI»ñÈ¡¹¤ÒÕÏà¹Ø²ÎÊıµÄÃüÁî
@@ -631,6 +633,7 @@ private:  //Ë½ÓĞ³ÉÔ±±äÁ¿
 	uint8_t m_n_ret_ref_auto_cur; 				//×Ô¶¯»Ø²Î¿¼µãÊ±µÄµ±Ç°Ë³ĞòºÅ
 	struct timeval m_time_ret_ref[kMaxAxisNum];       //»Ø²Î¿¼ÑÓÊ±¼ÆÊ±Æ÷
 	double m_df_ret_ref_tar_pos[kMaxAxisNum];  //»Ø²Î¿¼µãÖĞ¼äÒÆ¶¯Ä¿±êÎ»ÖÃ
+    bool m_sync_axis_homing[kMaxAxisNum];
 //	uint8_t m_n_get_cur_encoder_count;    //»ñÈ¡MIµ±Ç°±àÂëÆ÷¼ÆÊı£¬±£»¤´ëÊ©£¬¶à´ÎÑéÖ¤
 //	uint64_t m_n_ret_ref_encoder;   //´Ö»ù×¼±àÂëÆ÷Öµ
 

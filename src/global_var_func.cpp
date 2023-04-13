@@ -57,9 +57,9 @@ void CreateError(uint16_t error_code, uint8_t error_level,
 
     if (error_code == 0)
         return g_ptr_alarm_processor->ClearTips();
-    if(axis_index != 0xffff) {
-        axis_index++;	//0,1,2,3,4 --> 1,2,3,4,5
-    }
+    //if(axis_index != 0xffff) {
+    //    axis_index++;	//0,1,2,3,4 --> 1,2,3,4,5
+    //}
     if(g_ptr_alarm_processor->ContainErrorInfo(error_code, error_level, clear_type, error_info, channel_index, axis_index)){
         return;  //ÖØ¸´¸æ¾¯
     }

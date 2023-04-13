@@ -119,8 +119,8 @@ public:
     bool IsReady() const;
     bool IsEmpty() const;
 
-    bool SetType(SG_Type_Ptr type);
-    bool SetInterval(unsigned interval);
+    bool SetType(SG_Type_Ptr type);                     // 设置采集类型
+    bool SetInterval(unsigned interval);                // 设置采样周期
     bool IsTimeout();                                   // 周期到达
 
     virtual void RecordData(const double *feedback, const double *interp);  // 记录数据 //虚函数或者模板函数

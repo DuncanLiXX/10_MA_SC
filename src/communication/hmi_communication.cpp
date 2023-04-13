@@ -997,6 +997,7 @@ int HMICommunication::ProcessHmiCmd(){
             case CMD_HMI_SET_REQUIRE_PIECE:       //HMI向SC请求当前需求件数
             case CMD_HMI_ABSOLUTE_REF_SET:        //HMI向SC请求绝对式编码器设零 0x41
             case CMD_HMI_SET_ALL_TOOL_OFFSET:     //HMI向SC请求设置所有刀偏值 0x42
+            case CMD_HMI_CLEAR_IO_MAP:            //HMI向SC请求清除IO重映射数据
 #ifdef USES_GRIND_MACHINE
 			case CMD_SC_MECH_ARM_ERR:         //HMI响应机械手告警指令
 #endif
@@ -2741,7 +2742,7 @@ void HMICommunication::ProcessHmiServoDataRequest(HMICmdFrame &cmd)
     case SG_Config_Type::Circle:
     {
         SG_Circle_Config circle_cfg;
-        memcpy(&circle_cfg, cmd.data+1, sizeof(SG_Circle_Type));
+        memcpy(&circle_cfg, cmd.data+1, sizeof(SG_Circle_Config));
         type = std::make_shared<SG_Circle_Type>(circle_cfg);
     }
         break;
@@ -2750,14 +2751,6 @@ void HMICommunication::ProcessHmiServoDataRequest(HMICmdFrame &cmd)
         SG_RecCir_Config reccir_cfg;
         memcpy(&reccir_cfg, cmd.data+1, sizeof(SG_RecCir_Config));
         type = std::make_shared<SG_RecCir_Type>(reccir_cfg);
-        std::cout << "type: " << (int)dynamic_pointer_cast<SG_RecCir_Type>(type)->type_ << std::endl;
-        std::cout << "axis_one: " << (int)dynamic_pointer_cast<SG_RecCir_Type>(type)->axis_one_ << std::endl;
-        std::cout << "axis_two: " << (int)dynamic_pointer_cast<SG_RecCir_Type>(type)->axis_two_ << std::endl;
-        std::cout << "interval: " << (int)dynamic_pointer_cast<SG_RecCir_Type>(type)->interval_ << std::endl;
-        std::cout << "width: " << (int)dynamic_pointer_cast<SG_RecCir_Type>(type)->width_ << std::endl;
-        std::cout << "height: " << (int)dynamic_pointer_cast<SG_RecCir_Type>(type)->height_ << std::endl;
-        std::cout << "radius: " << (int)dynamic_pointer_cast<SG_RecCir_Type>(type)->radius_ << std::endl;
-
     }
         break;
     case SG_Config_Type::Tapping:
@@ -3394,6 +3387,8 @@ void HMICommunication::DisconnectToHmi(){
 
     //停止加工
     ChannelEngine::GetInstance()->Pause();
+
+    g_ptr_chn_engine->m_serverGuide.ResetRecord();
 
 	g_sys_state.hmi_comm_ready = false;
 }

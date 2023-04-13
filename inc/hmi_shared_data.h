@@ -204,7 +204,8 @@ enum HMICmdCode {
     CMD_HMI_SET_ALL_TOOL_OFFSET,     //HMI向SC请求设置所有刀偏值 0x42
     CMD_HMI_GET_CPU_INFO,            //HMI向SC获取 CPU 内存 占用信息
     CMD_HMI_SERVE_DATA_REQUEST,      //HMI向SC请求准备伺服引导
-    CMD_HMI_SERVE_DATA_RESET,        //HMI向SC请求伺服引导复位（调试用）
+    CMD_HMI_SERVE_DATA_RESET,        //HMI向SC请求伺服引导复位
+    CMD_HMI_CLEAR_IO_MAP,            //HMI向SC请求清除IO重映射数据
 
 
 	//SC-->HMI

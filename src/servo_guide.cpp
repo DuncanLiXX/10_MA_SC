@@ -240,6 +240,8 @@ bool ServeGuide::InitSocket()
 
     if(listen(data_socket_, 5)!= 0){
         std::cout << "listen error: " << errno << std::endl;
+        close(data_socket_);
+        data_socket_ = -1;
         return false;//TODO 失效的情况下如何关闭SOCKET
     }
 
@@ -252,14 +254,12 @@ bool ServeGuide::InitSocket()
  */
 bool ServeGuide::Accept()
 {
-    std::cout << "ServeGuide::Accept begin" << std::endl;
     sockaddr_in addr;
     bzero(&addr, sizeof(addr));
     addr.sin_family = AF_INET;
     addr.sin_addr.s_addr = INADDR_ANY;
     addr.sin_port = htons(PORT_TCP_DATA);
 
-    //TODO 超时处理
     socklen_t len = sizeof(sockaddr);
     data_send_fd = accept(data_socket_, (struct sockaddr *)&addr, &len);
     if(data_send_fd <= 0){//连接出错
@@ -274,7 +274,7 @@ bool ServeGuide::Accept()
 //        std::cout << "set SO_REUSEPORT error" << std::endl;
 
     state_ = E_SG_RunState::READY;
-    std::cout << "ServeGuide::Accept end" << std::endl;
+    std::cout << "ServeGuide::Accept" << std::endl;
     return true;
 }
 

@@ -156,7 +156,6 @@ void SpindleControl::SetMode(Mode mode)
     if(mode == Speed){
     	mi->SendAxisEnableCmd(phy_axis+1, false);
     	mi->SendAxisCtrlModeSwitchCmd(phy_axis+1, 2);
-    	printf("============= 6666666666\n");
     }else if(mode == Position){
         // 速度降为0
     	SendSpdSpeedToMi(0);
@@ -530,7 +529,6 @@ void SpindleControl::RspORCMA(bool success)
     ScPrintf("SpindleControl::RspORCMA : success = %d\n",success);
     // 定位成功，将ORAR置为1，通知PMC定位动作完成
     if(success && ORCMA){
-        //printf("*********************************** ORAR = 1\n");
     	F->ORAR = 1;
     }
 }
@@ -1137,6 +1135,7 @@ void SpindleControl::ProcessRTNT()
     // 等待回退到位
     DPointChn pos_work = control->GetRealtimeStatus().cur_pos_work;
     running_rtnt = true;
+
     while(fabs(pos_work.GetAxisValue(z_axis) - R) > 0.005){
         std::this_thread::sleep_for(std::chrono::microseconds(50000));
         pos_work = control->GetRealtimeStatus().cur_pos_work;
@@ -1146,8 +1145,9 @@ void SpindleControl::ProcessRTNT()
     running_rtnt = false;
     // 没回退到位
     if(fabs(pos_work.GetAxisValue(z_axis) - R) > 0.005){
-        return;
+    	return;
     }
+
     F->RTPT = 1;
     ResetTapFlag();
 }

@@ -303,7 +303,7 @@ void ChannelEngine::ReadIoDev_pmc2(){
 
                 if (!CheckIoDev_pmc2(devInfo))
                 {
-                	m_list_bdio_dev.Clear();
+                    m_list_bdio_dev.Clear();
                     CreateError(ERR_PMC_SDLINK_CONFIG, ERROR_LEVEL, CLEAR_BY_RESET_POWER);
                     ifs.close();
                     return;
@@ -1456,9 +1456,9 @@ void ChannelEngine::PoweroffHandler(int signo, siginfo_t *info, void *context){
  * @brief 掉电时保存数据
  */
 void ChannelEngine::SaveDataPoweroff(){
-	//system("date >> save.txt");
-	//system("echo \"start\" >> save.txt");
-	//保存PMC寄存器数据
+    //system("date >> save.txt");
+    //system("echo \"start\" >> save.txt");
+    //保存PMC寄存器数据
     if((this->m_mask_import_param & (0x01<<CONFIG_PMC_REG)) == 0)
         this->m_p_pmc_reg->SaveRegData();
 
@@ -1484,8 +1484,8 @@ void ChannelEngine::SaveDataPoweroff(){
     g_ptr_trace = nullptr;
 
     //system("date >> save.txt");
-	//system("echo \"end\" >> save.txt");
-	//system("sync");
+    //system("echo \"end\" >> save.txt");
+    //system("sync");
 }
 
 /**
@@ -1677,6 +1677,7 @@ void ChannelEngine::InitMcParam(){
         this->m_p_channel_control[i].SetMcStepMode(false);
         this->m_p_channel_control[i].SetMcChnPlanMode();
         this->m_p_channel_control[i].SetMcChnPlanParam();
+        this->m_p_channel_control[i].SetMcChnPlanParam2();
         this->m_p_channel_control[i].SetMcTapPlanParam();
         this->m_p_channel_control[i].SetMcChnPlanFun();
         this->m_p_channel_control[i].SetMcChnCornerStopParam();
@@ -2250,7 +2251,7 @@ void ChannelEngine::ProcessMiOperateCmdRsp(MiCmdFrame &cmd)
     uint8_t axis = cmd.data.axis_index;
     //printf("cmd.data.data[1] = %d\n",cmd.data.data[1]);
     bool enable = cmd.data.data[1];
-    if(type == MOTOR_ON_FLAG){      
+    if(type == MOTOR_ON_FLAG){
         m_p_channel_control[0].GetSpdCtrl()->RspAxisEnable(axis,enable);
     }
 }
@@ -3803,7 +3804,7 @@ void ChannelEngine::GetParamValueFromCmd(ParamUpdate *data, char *src){
 
     //	double ff = 66.0;
     //	char *pc = (char *)&ff;
-	switch(data->value_type){
+    switch(data->value_type){
     case 0:
         memcpy(&data->value.value_uint8, src, 1);
         break;
@@ -4531,17 +4532,54 @@ bool ChannelEngine::CheckSoftLimit(ManualMoveDir dir, uint8_t phy_axis, double p
 
     uint8_t chn_axis = 0, chn = 0;
     chn = this->GetAxisChannel(phy_axis, chn_axis);
-    for(int i=0; i<3; i++){
-        if(dir == DIR_POSITIVE && enable[i] && positive[i] <= pos){
-            CreateError(ERR_SOFTLIMIT_POS, WARNING_LEVEL, CLEAR_BY_MCP_RESET, 0, chn, chn_axis);
-            return true;
 
-        }
-        if(dir == DIR_NEGATIVE && enable[i] && negative[i] >= pos){
-            CreateError(ERR_SOFTLIMIT_NEG, WARNING_LEVEL, CLEAR_BY_MCP_RESET, 0, chn, chn_axis);
-            return true;
-        }
+    double limit1,limit2;
+    if(enable[0]){
+        limit1 = negative[0];
+        limit2 = positive[0];
+    }else if(enable[1]){
+        limit1 = negative[1];
+        limit2 = positive[1];
+    }else if(enable[2]){
+        limit1 = negative[2];
+        limit2 = positive[2];
+    }else{
+        return false;
     }
+
+
+//    // 旋转轴的限位需要作特殊判断
+//    if(m_p_axis_config[phy_axis].axis_type == AXIS_ROTATE){
+//        double mp = m_p_axis_config[phy_axis].move_pr;
+//        m_p_channel_control->LimitRotatePos(pos, mp);
+//        bool err_flag = false;
+//        if(limit1 < limit2 && pos > limit1 && pos < limit2){
+//            //情况1: 0.0--------limit1=========limit2-------360.0 ("="号表示禁止区域)
+//            err_flag = true;
+//        }else if(limit1 > limit2 && (pos > limit1 || pos < limit2)){
+//            //情况2: 0.0========limit2---------limit1=======360.0 ("="号表示禁止区域)
+//            err_flag = true;
+//        }
+
+//        if(err_flag && dir == DIR_POSITIVE){
+//            CreateError(ERR_SOFTLIMIT_POS, WARNING_LEVEL, CLEAR_BY_MCP_RESET, 0, chn, chn_axis);
+//            return true;
+//        }else if(err_flag && dir == DIR_NEGATIVE){
+//            CreateError(ERR_SOFTLIMIT_NEG, WARNING_LEVEL, CLEAR_BY_MCP_RESET, 0, chn, chn_axis);
+//            return true;
+//        }
+//        return false;
+//    }
+
+    if(dir == DIR_POSITIVE && pos >= limit2){
+        CreateError(ERR_SOFTLIMIT_POS, WARNING_LEVEL, CLEAR_BY_MCP_RESET, 0, chn, chn_axis);
+        return true;
+    }
+    else if(dir == DIR_NEGATIVE && pos <= limit1){
+        CreateError(ERR_SOFTLIMIT_NEG, WARNING_LEVEL, CLEAR_BY_MCP_RESET, 0, chn, chn_axis);
+        return true;
+    }
+
     return false;
 }
 
@@ -4563,20 +4601,26 @@ bool ChannelEngine::GetSoftLimt(ManualMoveDir dir, uint8_t phy_axis, double &lim
     enable[2] = m_p_axis_config[phy_axis].soft_limit_check_3;
     uint8_t chn_axis = 0, chn = 0;
     chn = this->GetAxisChannel(phy_axis, chn_axis);
-    bool flag = false; // 是否找到了限位位置
-    for(int i=0; i<2; i++){//第三限位去掉
-        if(dir == DIR_POSITIVE && enable[i] &&
-                (!flag || (positive[i] < limit))){
-            flag = true;
-            limit = positive[i];
-        }
-        if(dir == DIR_NEGATIVE && enable[i] &&
-                (!flag || (negative[i] > limit))){
-            flag = true;
-            limit = negative[i];
-        }
+    double limit1,limit2;
+    if(enable[0]){
+        limit1 = negative[0];
+        limit2 = positive[0];
+    }else if(enable[1]){
+        limit1 = negative[1];
+        limit2 = positive[1];
+    }else if(enable[2]){
+        limit1 = negative[2];
+        limit2 = positive[2];
+    }else{
+        return false;
     }
-    return flag;
+
+    if(dir == DIR_NEGATIVE)
+        limit = limit1;
+    else if(dir == DIR_POSITIVE)
+        limit = limit2;
+
+    return true;
 }
 
 /**
@@ -6154,8 +6198,10 @@ void ChannelEngine::ManualMovePmc(uint8_t phy_axis, int8_t dir){
     //设置速度
     uint32_t feed = this->m_p_axis_config[phy_axis].manual_speed*1000/60;   //转换单位为um/s
     if(this->m_p_channel_control[0].IsRapidManualMove()){
-        feed *= 2;  //速度翻倍
-        printf("double manual feed\n");
+        //feed *= 2;  //速度翻倍
+
+        // 由原来的手动速度乘2，改为定位速度乘快速倍率
+        feed = (m_p_axis_config[phy_axis].rapid_speed*1000/60)*(m_p_channel_control[0].GetChnStatus().rapid_ratio/100.);
     }
     memcpy(&cmd.data.data[1], &n_inc_dis, sizeof(n_inc_dis));  //设置增量目标位置
     memcpy(&cmd.data.data[5], &feed, sizeof(feed)); //设置速度
@@ -8250,13 +8296,13 @@ void ChannelEngine::SystemReset(){
     for(int i = 0; i < this->m_p_general_config->chn_count; i++){
         // 攻丝状态禁止复位
         /*  复位流程由梯图控制
-    	if(this->m_p_channel_control[0].GetSpdCtrl()->isTapEnable()){
+        if(this->m_p_channel_control[0].GetSpdCtrl()->isTapEnable()){
         CreateError(ERR_SPD_RESET_IN_TAP,
-					WARNING_LEVEL,
-					CLEAR_BY_MCP_RESET);
-			return;
-		}
-		*/
+                    WARNING_LEVEL,
+                    CLEAR_BY_MCP_RESET);
+            return;
+        }
+        */
 
         this->m_p_pmc_reg->FReg().bits[i].RST = 1;  //复位信号
         this->m_p_channel_control[i].Reset();
@@ -8507,7 +8553,7 @@ bool ChannelEngine::RefreshMiStatusFun(){
 
     while(!g_sys_state.system_quit){
 
-    	if((g_sys_state.module_ready_mask & MI_READY) == 0){  //MI未准备好则等待
+        if((g_sys_state.module_ready_mask & MI_READY) == 0){  //MI未准备好则等待
             printf("wait MI_READY signal!\n");
             usleep(8000);
             continue;
@@ -8888,7 +8934,7 @@ void ChannelEngine::ProcessPmcSignal(){
             this->Emergency();
             m_b_emergency = true;
         }else if(g_reg->_ESP == 1 && m_b_emergency){ // 取消急停
-        	m_b_emergency = false;
+            m_b_emergency = false;
             m_axis_status_ctrl->InputEsp(g_reg->_ESP);
             g_ptr_tracelog_processor->SendToHmi(kProcessInfo, kDebug, "解除急停");
             f_reg->RST = 0;
@@ -8938,7 +8984,7 @@ void ChannelEngine::ProcessPmcSignal(){
 
         // 攻丝状态()不让复位
         if(g_reg->ERS == 1 && g_reg_last->ERS == 0){
-        	this->SystemReset();
+            this->SystemReset();
         }
 
         // 某个轴机械锁住信号发生了改变
@@ -8988,6 +9034,7 @@ void ChannelEngine::ProcessPmcSignal(){
 
         // 主轴正转，主轴反转信号
         if(g_reg->SRV != g_reg_last->SRV || g_reg->SFR != g_reg_last->SFR){
+
         	if(g_reg->SRV == 0 && g_reg->SFR == 0){ // 主轴停
             	ctrl->GetSpdCtrl()->InputPolar(Spindle::Stop);
             }else if(g_reg->SFR == 1){  // 主轴正转

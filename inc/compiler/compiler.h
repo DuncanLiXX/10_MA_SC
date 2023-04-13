@@ -205,6 +205,8 @@ private://私有接口
 	void ProcessFiveAxisRotPos(DPointChn &tar, DPointChn &src, uint32_t mask);    //处理五轴无限旋转轴就近路径功能
 #endif
 
+    void ProcessRotateAxisPos(DPointChn &tar, DPointChn &src, uint32_t mask);
+
 private://私有成员
 	uint8_t m_n_channel_index;              //所属通道号
 	AsFileMapInfo *m_p_file_map_info;       //当前编译文件

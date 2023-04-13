@@ -735,6 +735,9 @@ void ShowSc::PrintAxisConfig(int axis)
 
     AddPair(s,"fast_locate",cfg->fast_locate);
     AddPair(s,"pos_disp_mode",cfg->pos_disp_mode);
+    AddPair(s,"pos_work_disp_mode",cfg->pos_work_disp_mode);
+    AddPair(s,"pos_rel_disp_mode",cfg->pos_rel_disp_mode);
+    AddPair(s,"rot_abs_dir",cfg->rot_abs_dir);
 
     AddPair(s,"sync_axis",cfg->sync_axis);
     AddPair(s,"series_ctrl_axis",cfg->series_ctrl_axis);

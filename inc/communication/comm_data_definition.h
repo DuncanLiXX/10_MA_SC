@@ -95,6 +95,7 @@ enum McCmdCode{
 	CMD_MC_SET_INIT_PARAM = 0x0005,			//设置插补周期等初始化参数
 	CMD_MC_SET_CHN_AXIS_NAME = 0x0006,		//设置通道轴名称
 	CMD_MC_SYS_RESET = 0x0007,				//系统复位
+    CMD_MC_SET_CHN_PARAM = 0x0008,          //设置通道参数
 
 	CMD_MC_SET_CHN_INTP_MODE = 0x0010,		//设置各通道插补模式（自动，MDA，手动）
 	CMD_MC_INIT_CHN_AUTO_BUF = 0x0011,		//初始化各通道自动加工数据缓冲
@@ -119,6 +120,8 @@ enum McCmdCode{
 	CMD_MC_SET_G84_PARAM = 0x002A,			//设置刚攻参数
 	CMD_MC_SET_FLIP_COMP_PARAM = 0x002B,    //设置木工挑角补偿参数   木工机专用
     CMD_MC_SET_TAP_PLAN_PARAM = 0x002C,		//设置刚性攻丝加工规划参数
+    CMD_MC_SET_CHN_PLAN_PARAM2 = 0x002D,		//设置通道加工速度规划参数(由于一个命令无法把所有参数下发，定义一个新的命令)
+
 
 	CMD_MC_SET_MULTI_AXIS_MODE = 0x0030,	//设置多轴联动模式
 	CMD_MC_SET_CHN_FIVE_AXIS_PARAM = 0x0031,	//设置五轴联动加工相关参数

@@ -1075,6 +1075,16 @@ void ChannelEngine::Initialize(HMICommunication *hmi_comm, MICommunication *mi_c
     this->m_p_chn_proc_param = parm->GetChnProcParam();
     this->m_p_axis_proc_param = parm->GetAxisProcParam();
 
+    for(int i = 0; i < this->m_p_general_config->axis_count; ++i)
+    {
+        if (this->m_p_axis_config[i].feedback_mode == 0)
+        {
+            this->m_p_axis_config[i].ref_complete = false;
+            g_ptr_parm_manager->UpdateAxisComplete(i, false);
+            this->NotidyHmiAxisRefComplete(i);
+        }
+    }
+
     //创建PMC寄存器类对象
     this->m_p_pmc_reg = new PmcRegister();
     if(m_p_pmc_reg == nullptr){
@@ -10731,6 +10741,7 @@ void ChannelEngine::EcatIncAxisFindRefWithZeroSignal(uint8_t phy_axis){
                 this->m_b_ret_ref_auto = false;
                 m_n_ret_ref_auto_cur = 0;
             }
+            SetAxisComplete(phy_axis);
             std::cout << "step 18, home finish" << std::endl;
         }
         break;
@@ -11828,16 +11839,6 @@ void ChannelEngine::EcatAxisFindRefWithZeroSignal(uint8_t phy_axis){
         gettimeofday(&time_now, NULL);
         unsigned int time_elpase = (time_now.tv_sec-m_time_ret_ref[phy_axis].tv_sec)*1000000+time_now.tv_usec-m_time_ret_ref[phy_axis].tv_usec;
         if(time_elpase >= 200000){ //延时200ms
-//            if(this->m_p_axis_config[phy_axis].feedback_mode == ABSOLUTE_ENCODER ||
-//                    this->m_p_axis_config[phy_axis].feedback_mode == LINEAR_ENCODER){  //绝对值需获取机械零点的编码器值并保存，方便断点后恢复坐标
-//                MiCmdFrame mi_cmd;
-//                memset(&mi_cmd, 0x00, sizeof(mi_cmd));
-//                mi_cmd.data.cmd = CMD_MI_GET_ZERO_ENCODER;
-//                mi_cmd.data.axis_index = phy_axis+1;
-
-//                this->m_p_mi_comm->WriteCmd(mi_cmd);
-//            }
-
             // 修复第一参考点不受软限位限制问题
             this->m_n_mask_ret_ref_over |= (0x01<<phy_axis);
 
@@ -12375,22 +12376,21 @@ void ChannelEngine::ReturnRefPoint(){
         }
         else if(this->m_p_axis_config[i].axis_interface == BUS_AXIS)
         {// 总线轴
-            this->SetInRetRefFlag(i, true);
-
-            if(this->m_p_axis_config[i].feedback_mode == NO_ENCODER)
-            {   // 步进电机，无反馈
-                CreateError(ERR_RET_SYNC_ERR, WARNING_LEVEL, CLEAR_BY_MCP_RESET, 0, m_n_cur_channle_index, i);
-            }else if(this->m_p_axis_config[i].feedback_mode == INCREMENTAL_ENCODER)
-            {   //增量式编码器
-                if (this->m_p_axis_config[i].ret_ref_mode == 1)
-                    this->EcatIncAxisFindRefWithZeroSignal(i);//增量式编码器只支持有挡块回零
-                else //不支持无挡块回零
-                    CreateError(ERR_RET_NOT_SUPPORT, WARNING_LEVEL, CLEAR_BY_MCP_RESET, 0, CHANNEL_ENGINE_INDEX, i);
-            }
-            else
-            {  //绝对式编码器
-                if (this->m_p_axis_config[i].ref_complete == 0)
-                {
+            if (this->m_p_axis_config[i].ref_complete == 0)
+            {
+                this->SetInRetRefFlag(i, true);
+                if(this->m_p_axis_config[i].feedback_mode == NO_ENCODER)
+                {   // 步进电机，无反馈
+                    CreateError(ERR_RET_NOT_SUPPORT, WARNING_LEVEL, CLEAR_BY_MCP_RESET, 0, m_n_cur_channle_index, i);
+                }else if(this->m_p_axis_config[i].feedback_mode == INCREMENTAL_ENCODER)
+                {   //增量式编码器只支持有挡块回零
+                    if (this->m_p_axis_config[i].ret_ref_mode == 1)
+                        this->EcatIncAxisFindRefWithZeroSignal(i);
+                    else
+                        CreateError(ERR_RET_NOT_SUPPORT, WARNING_LEVEL, CLEAR_BY_MCP_RESET, 0, CHANNEL_ENGINE_INDEX, i);
+                }
+                else
+                {  //绝对式编码器
                     if (this->m_p_axis_config[i].ret_ref_mode == 1)//绝对式有挡块回零
                     {
                         this->EcatAxisFindRefWithZeroSignal(i);
@@ -12407,11 +12407,12 @@ void ChannelEngine::ReturnRefPoint(){
                         }
                     }
                 }
-                else
-                {//绝对式编码器建立机械坐标系之后，执行运动零坐标动作
-                    GotoZeroPos(i);
-                }
             }
+            else
+            {
+                GotoZeroPos(i);
+            }
+
         }else if(this->m_p_axis_config[i].axis_interface == ANALOG_AXIS){   // 非总线轴
             //不支持非总线轴
             CreateError(ERR_RET_SYNC_ERR, WARNING_LEVEL, CLEAR_BY_MCP_RESET, 0, m_n_cur_channle_index, i);

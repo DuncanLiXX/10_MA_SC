@@ -226,7 +226,7 @@ bool MCCommunication::WriteGCodeData(uint8_t chn, GCodeFrame &data){
 		return false;   //FIFO数据满，无法写入
 
 	printf("WriteGCodeData: %lld-%lld-%lld-%d-%d-%d\n", data.data.pos0, data.data.pos1, data.data.pos2, data.data.ext_type, data.data.cmd, data.data.mode);
-
+	//printf("arc radius: %lld\n", data.data.arc_radius);
 	WriteRegister(MC_GCODE_WRITE_OVER(chn), 0);  //写入前置零
 
 	//发送数据

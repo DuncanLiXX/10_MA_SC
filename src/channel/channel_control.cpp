@@ -1863,7 +1863,6 @@ void ChannelControl::StartRunGCode(){
                 this->PausePmcAxis(NO_AXIS, false);  //继续运行PMC轴
             }else if(IsMcNeedStart()){
                 this->StartMcIntepolate();
-                printf("---------1111111--------------\n");
             }
             else{
 #ifdef USES_GRIND_MACHINE
@@ -4909,7 +4908,7 @@ bool ChannelControl::RefreshStatusFun(){
 			else
 				this->m_p_mc_arm_comm->ReadChnPosErrMask(m_n_channel_index, m_channel_mc_status.pos_error_mask);
 
-			printf("============ ERR_POS_ERR ===============\n");
+			//printf("============ ERR_POS_ERR ===============\n");
             CreateError(ERR_POS_ERR, ERROR_LEVEL, CLEAR_BY_MCP_RESET, m_channel_mc_status.pos_error_mask, m_n_channel_index);
 		}
 
@@ -19616,7 +19615,7 @@ bool ChannelControl::CallMacroProgram(uint16_t macro_index){
     uint8_t state = this->m_channel_status.machining_state;
     //自动、MDA模式(必须在MS_RUNNING状态)
     if((mode == AUTO_MODE || mode == MDA_MODE) && state == MS_RUNNING){
-        this->m_p_compiler->CallMarcoProgWithNoPara(macro_index);
+    	this->m_p_compiler->CallMarcoProgWithNoPara(macro_index);
         m_n_subprog_count++;
         m_n_macroprog_count++;
 
@@ -19689,6 +19688,7 @@ bool ChannelControl::CallMacroProgram(uint16_t macro_index){
     }else{
         return false;
     }
+
     return true;
 }
 

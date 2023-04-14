@@ -547,7 +547,7 @@ bool Compiler::ReloadScene(bool bRecPos){
 }
 
 /**
- * @brief G代码与扫描运行线程函数
+ * @brief G代码预扫描运行线程函数
  * @param args
  */
 void *Compiler::PreScanThread(void *args) {
@@ -567,7 +567,6 @@ void *Compiler::PreScanThread(void *args) {
     }
 
     p_compiler->PreScan();
-
     printf("Exit Compiler::PreScanThread!\n");
     pthread_exit(NULL);
 }
@@ -681,8 +680,7 @@ REDO:
  * @brief 代码预扫描，找到子程序和标签行
  */
 void Compiler::PreScan() {
-    //printf("start compiler PreScan, thread id = %ld\n", syscall(SYS_gettid));
-
+    printf("start compiler PreScan, thread id = %ld\n", syscall(SYS_gettid));
     uint64_t total_size = 0;		//文件总大小
     uint64_t read_size = 0;    //已读取的总大小
     //	uint64_t read_size_bak = 0;
@@ -707,7 +705,6 @@ void Compiler::PreScan() {
 #ifdef USES_WOOD_MACHINE
     this->m_n_s_code_in_prescan = 0;
 #endif
-
     //打开预扫描文件
     FILE *file = nullptr;
     CompilerScene *ptr_scene = nullptr;
@@ -726,6 +723,7 @@ void Compiler::PreScan() {
     }else{
         file = fopen(m_p_file_map_info->str_file_name, "r+");
     }
+
     if (nullptr == file) {
         g_ptr_trace->PrintLog(LOG_ALARM, "预扫描线程打开文件失败[%s]！errno = %d",
                               m_p_file_map_info->str_file_name, errno);
@@ -751,9 +749,9 @@ void Compiler::PreScan() {
 
     //第一遍扫描，识别出子程序号（O****）,以及GOTO指令
     while ((read_block = getline(&line, &len, file)) != -1) {
-        //	read_size_bak = read_size;
+    	//	read_size_bak = read_size;
         //	while(this->GetPreScanLine(line, read_size, map) > 0){
-        if (m_b_breakout_prescan) //中断退出
+    	if (m_b_breakout_prescan) //中断退出
             goto END;
         line_no++;
         this->PreScanLine1(line, read_size, line_no, comment_flag, loop_stack, ptr_scene);
@@ -836,10 +834,12 @@ void Compiler::PreScan() {
     printf("prescan time : first = %u us | second = %u us\n", nTime1,
            nTimeDelay);
 
-END: if (line != nullptr)
+END:
+	if (line != nullptr)
         free(line);   //释放getline函数分配的缓冲
     fclose(file);
-    //	m_thread_prescan = 0;
+    // @add zk 试试  可能有其他问题
+    m_thread_prescan = 0;
     m_b_breakout_prescan = false;
     this->m_b_prescan_in_stack = false;
     this->compiler_lock = false;
@@ -1489,6 +1489,7 @@ bool Compiler::OpenFile(const char *file, bool sub_flag) {
 
         while (m_b_breakout_prescan && wait_count++ < 200)
             usleep(1000);  //等待线程退出
+
         if (m_b_breakout_prescan) {//等待退出失败，则主动cancel线程
 
             //退出预扫描运行线程

@@ -40,9 +40,9 @@ const map<int, SDLINK_SPEC> ChannelEngine::m_SDLINK_MAP =
     //对于有手轮扩展的板卡，梯图默认分配了手轮空间，需要去掉，要使用手轮时，再由SC分配
     //id    name          inbytes outBytes withHandWheel
     {1,     {"SD-LINK-A1",  9-3,    4,      true}},
-    {3,     {"SD-LINK-C1",  16,     16,     false}},
-    {4,     {"SD-LINK-D1",  12-3,   8,      true}},
-    {5,     {"SD-LINK-E1",  7-3,    8,      true}},
+    //{3,     {"SD-LINK-C1",  16,     16,     false}},
+    //{4,     {"SD-LINK-D1",  12-3,   8,      true}},
+    {5,     {"SD-LINK-B2",  7-3,    8,      true}},
     {6,     {"SD-LINK-E2",  12-3,   11,     true}},
 };
 

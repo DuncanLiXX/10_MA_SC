@@ -130,9 +130,9 @@ void SpindleControl::InputPolar(Spindle::Polar polar)
 		while(spindle->axis_interface != 0 && fabs(GetSpindleSpeed()) > 1)
 		{
 			count ++;
-			printf("11111111\n");
 			usleep(10000);
-			if(count > 200) break;
+			if(count > 200)
+				break;
 		}
 
     	// 收到主轴停信号
@@ -930,7 +930,6 @@ void SpindleControl::ProcessORCMA(bool ORCMA)
 
 		// 如果主轴不在使能状态，先上使能
     	if(!motor_enable){
-    		printf("============= send spindle enable true\n");
     		mi->SendAxisEnableCmd(phy_axis+1, true);
     		//std::this_thread::sleep_for(std::chrono::microseconds(1000 * 1000));
 
@@ -1110,7 +1109,6 @@ bool SpindleControl::LoadTapState(TapState &state)
 void SpindleControl::ProcessRTNT()
 {
 	// 如果主轴不在使能状态，先上使能
-
     // 恢复攻丝状态
     double R = tap_state.R + spindle->spd_rtnt_distance;
     variable->SetVarValue(188, R);
@@ -1142,6 +1140,7 @@ void SpindleControl::ProcessRTNT()
         if(!running_rtnt)
             break;
     }
+
     running_rtnt = false;
     // 没回退到位
     if(fabs(pos_work.GetAxisValue(z_axis) - R) > 0.005){

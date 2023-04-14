@@ -8444,10 +8444,12 @@ void ChannelEngine::RefreshPmcNotReady()
         f_reg_last = &m_f_reg_last.bits[i];
         //FRegBits *f_reg_last = nullptr;
         if(g_reg->RRW == 1 && g_reg_last->RRW == 0){
-            this->SystemReset();
+            //printf("kkk11111111111111111111\n");
+        	this->SystemReset();
         }
         if(g_reg->ERS == 1 && g_reg_last->ERS == 0){
-            this->SystemReset();
+            //printf("kkk22222222222222222222\n");
+        	this->SystemReset();
         }
         if(g_reg->_ESP == 0 && !m_b_emergency){ //½øÈë¼±Í£
             f_reg->RST = 1;
@@ -8908,6 +8910,7 @@ void ChannelEngine::ProcessPmcSignal(){
 
         // @test zk
         if(g_reg->RRW == 1 && g_reg_last->RRW == 0){
+        	//printf("kkk333333333333333333333\n");
         	this->SystemReset();
         }
         // @test
@@ -8929,6 +8932,7 @@ void ChannelEngine::ProcessPmcSignal(){
 
         // ¹¥Ë¿×´Ì¬()²»ÈÃ¸´Î»
         if(g_reg->ERS == 1 && g_reg_last->ERS == 0){
+        	//printf("kkk4444444444444\n");
         	this->SystemReset();
         }
 

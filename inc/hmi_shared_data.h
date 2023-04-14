@@ -1372,9 +1372,11 @@ struct HmiAxisConfig{
     double spd_locate_ang;                     //主轴定向角度 单位：度
 
     //旋转轴相关参数
-    uint8_t fast_locate;							//快速定位    0--关闭   1--打开
+    uint8_t fast_locate;						//快速定位    0--关闭   1--打开
     uint8_t pos_disp_mode;						//位置显示模式   0--循环模式（0~360）    1--非循环模式
-
+    uint8_t pos_work_disp_mode;                 //工件坐标是否循环显示  0--否  1--是
+    uint8_t pos_rel_disp_mode;                  //相对坐标是否循环显示  0--否  1--是
+    uint8_t rot_abs_dir;                        //旋转轴绝对指令的旋转方向  0--快捷方向  1--取决于指令符号
 
     //同步轴相关参数
     uint8_t sync_axis;							//是否同步轴  0--否   1--是

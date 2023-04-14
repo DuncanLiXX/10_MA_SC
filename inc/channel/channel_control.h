@@ -62,6 +62,7 @@ public:
 
 	const ChannelStatusCollect &GetChnStatus(){return this->m_channel_status;}  //获取当前通道状态结构体
     const ChannelRealtimeStatus &GetRealtimeStatus(){return m_channel_rt_status;} //获取实时状态结构体
+    SCAxisConfig *GetAxisConfig(){return m_p_axis_config;}
 
 	uint8_t GetChnAxisCount(){return this->m_p_channel_config->chn_axis_count;}   //获取通道轴数量
 	uint8_t GetChnAxisName(uint8_t idx){return this->m_p_channel_config->chn_axis_name[idx];}   //获取通道轴名称
@@ -204,7 +205,8 @@ public:
 	void SendMcSysResetCmd();	//给MC发送系统复位指令
 
 	void SetMcChnPlanMode();			//设置加工速度规划方式
-	void SetMcChnPlanParam();			//设置通道加工速度规划参数
+    void SetMcChnPlanParam();			//设置通道加工速度规划参数
+    void SetMcChnPlanParam2();          //设置通道加工速度规划参数(由于一个命令无法把所有参数下发，定义一个新的命令)
     void SetMcTapPlanParam();           //设置刚性攻丝加工规划参数
 	void SetMcChnPlanFun();			//设置通道加工速度功能开关
 	void SetMcChnCornerStopParam();		//设置拐角准停参数
@@ -281,6 +283,8 @@ public:
 
 	bool IsSkipCaptured(){return m_b_pos_captured;}    //SKIP信号是否捕获
 
+    uint32_t GetRotAxisMask(){return m_mask_rot_axis;} //获取旋转轴mask
+
 #ifdef USES_GRIND_MACHINE
 	void SetMechArmParam(ParamMechArm *para){this->m_p_mech_arm_param = para;}      //设置机械手参数
 	void SetMechArmState(StateMechArm *state){this->m_p_mech_arm_state = state;}    //设置机械手状态
@@ -313,6 +317,8 @@ public:
     void SetMcChnFiveAxisV2Param();         //初始化通道新五轴相关参数
 	void UpdateFiveAxisParam(FiveAxisParamType type);   //设置五轴参数
 #endif
+
+    void UpdateChnnelParam(int param_no); //向MC设置通道参数
 
 
 #ifdef USES_WOOD_MACHINE
@@ -371,6 +377,7 @@ public:
 
     void SyncMcPosition();  // 同步位置
     void AddWorkCountPiece(int addnum);  //增加工件计数
+    void LimitRotatePos(double &pos, double &move_pr); //限制旋转轴坐标
 
     uint32_t m_cur_setfeed = 0;
 private:
@@ -672,6 +679,7 @@ private://私有成员变量
 
 	uint32_t m_mask_intp_axis;      //通道插补轴mask，按通道轴顺序
 	uint8_t m_n_intp_axis_count;    //通道插补轴个数
+    uint32_t m_mask_rot_axis;       //通道旋转轴mask
 
 	ErrorType m_error_code;      	//错误码
 

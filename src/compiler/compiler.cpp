@@ -2841,9 +2841,13 @@ bool Compiler::RunCoordMsg(RecordMsg *msg) {
             //将目标位置换算为工件坐标系
         	this->m_p_channel_control->TransMachCoordToWorkCoord(tmp->GetTargetPos(), m_compiler_status.mode.gmode[14], m_compiler_status.mode.h_mode, tmp->GetAxisMask());
         }
-#ifdef USES_FIVE_AXIS_FUNC
-        this->ProcessFiveAxisRotPos(tmp->GetTargetPos(), m_compiler_status.cur_pos, tmp->GetAxisMask());
-#endif
+
+        // 旋转轴坐标处理
+        if(tmp->GetAxisMask() & m_p_channel_control->GetRotAxisMask())
+            ProcessRotateAxisPos(tmp->GetTargetPos(), m_compiler_status.cur_pos, tmp->GetAxisMask());
+//#ifdef USES_FIVE_AXIS_FUNC
+//        this->ProcessFiveAxisRotPos(tmp->GetTargetPos(), m_compiler_status.cur_pos, tmp->GetAxisMask());
+//#endif
         //		m_compiler_status.cur_pos = tmp->GetTargetPos(); //更新编译当前位置
         this->SetCurPos(tmp->GetTargetPos());
 
@@ -2934,9 +2938,9 @@ bool Compiler::RunRapidMsg(RecordMsg *msg) {
                 m_compiler_status.mode.h_mode, tmp->GetAxisMoveMask());
     }
 
-#ifdef USES_FIVE_AXIS_FUNC
-    this->ProcessFiveAxisRotPos(tmp->GetTargetPos(), tmp->GetSourcePos(), tmp->GetAxisMoveMask());
-#endif
+    // 旋转轴坐标处理
+    if(tmp->GetAxisMoveMask() & m_p_channel_control->GetRotAxisMask())
+        ProcessRotateAxisPos(tmp->GetTargetPos(), m_compiler_status.cur_pos, tmp->GetAxisMoveMask());
     m_compiler_status.mode.gmode[1] = G00_CMD;
     m_compiler_status.mode.gmode[9] = G80_CMD;  //自动取消循环指令
     //	m_compiler_status.cur_pos = tmp->GetTargetPos(); //更新编译当前位置
@@ -2956,8 +2960,6 @@ bool Compiler::RunLineMsg(RecordMsg *msg) {
     LineMsg *tmp = (LineMsg *) msg;
 
     double feed = m_compiler_status.mode.f_mode;
-    if(feed > m_p_channel_config->g01_max_speed)
-        feed = m_p_channel_config->g01_max_speed;
     tmp->SetFeed(feed);  //设置进给速度
 
     //处理增量编程指令
@@ -2988,9 +2990,11 @@ bool Compiler::RunLineMsg(RecordMsg *msg) {
         }
     }
 
-#ifdef USES_FIVE_AXIS_FUNC
-    this->ProcessFiveAxisRotPos(tmp->GetTargetPos(), tmp->GetSourcePos(), tmp->GetAxisMoveMask());
-#endif
+    ScPrintf("----%x %x",tmp->GetAxisMoveMask(),m_p_channel_control->GetRotAxisMask());
+
+    // 旋转轴坐标处理
+    if(tmp->GetAxisMoveMask() & m_p_channel_control->GetRotAxisMask())
+        ProcessRotateAxisPos(tmp->GetTargetPos(), m_compiler_status.cur_pos, tmp->GetAxisMoveMask());
 
     m_compiler_status.mode.gmode[1] = G01_CMD;
     m_compiler_status.mode.gmode[9] = G80_CMD;  //自动取消循环指令
@@ -3034,9 +3038,9 @@ bool Compiler::RunArcMsg(RecordMsg *msg) {
                 m_compiler_status.mode.h_mode, tmp->GetAxisMoveMask());
     }
 
-#ifdef USES_FIVE_AXIS_FUNC
-    this->ProcessFiveAxisRotPos(tmp->GetTargetPos(), tmp->GetSourcePos(), tmp->GetAxisMoveMask());
-#endif
+    // 旋转轴坐标处理
+    if(tmp->GetAxisMoveMask() & m_p_channel_control->GetRotAxisMask())
+        ProcessRotateAxisPos(tmp->GetTargetPos(), m_compiler_status.cur_pos, tmp->GetAxisMoveMask());
 
     tmp->SetFeed(m_compiler_status.mode.f_mode);
 
@@ -3113,9 +3117,9 @@ bool Compiler::RunCompensateMsg(RecordMsg *msg) {
                 m_compiler_status.mode.h_mode, tmp->GetAxisMoveMask());
     }
 
-#ifdef USES_FIVE_AXIS_FUNC
-    this->ProcessFiveAxisRotPos(tmp->GetTargetPos(), tmp->GetSourcePos(), tmp->GetAxisMoveMask());
-#endif
+    // 旋转轴坐标处理
+    if(tmp->GetAxisMoveMask() & m_p_channel_control->GetRotAxisMask())
+        ProcessRotateAxisPos(tmp->GetTargetPos(), m_compiler_status.cur_pos, tmp->GetAxisMoveMask());
 
     if (gcode == G41_CMD || gcode == G42_CMD) {
 
@@ -5115,3 +5119,77 @@ void Compiler::ProcessFiveAxisRotPos(DPointChn &tar, DPointChn &src, uint32_t ma
 }
 #endif
 
+/**
+ * @brief 处理旋转轴就近路径功能
+ * @param tar : 终点位置
+ * @param src : 起点位置
+ * @param mask : 运动轴的mask
+ */
+void Compiler::ProcessRotateAxisPos(DPointChn &tar, DPointChn &src, uint32_t mask){
+
+    ScPrintf("ProcessRotateAxisPos");
+    if(this->m_compiler_status.mode.gmode[3] == G91_CMD)
+        return;   //增量式编程不做就近路径
+
+    uint8_t axis_mask = mask & m_p_channel_control->GetRotAxisMask();
+    if(axis_mask == 0)
+        return;
+    double *psrc = src.m_df_point;
+    double *pdes = tar.m_df_point;
+    //double dd = 0, dd_d = 0;
+    double mp = 360.;
+    double move_dist = 0.0; // 需要移动的距离
+    double src_base; // 当前位置基点（位于mp的整数倍，当前位置向下取整）
+    double base_offset; // 当前位置的基点偏移
+    int dir = 0; // 绝对位置的符号 0:正  1:负
+
+    uint32_t pmc_mask = m_p_parser->GetPmcAxisMask();//PMC轴的掩码
+    mask &= (~pmc_mask);    //去掉PMC轴
+    for(uint8_t i = 0; i < this->m_p_channel_config->chn_axis_count; i++){
+        if(axis_mask & (0x01<<i)){
+            mp = m_p_channel_control->GetAxisConfig()[i].move_pr;
+//            dd = (*pdes - *psrc)/mp;
+
+//            if(dd > 0.5){
+//                dd_d = floor(dd);   //向下取整
+//                if(dd-dd_d > 0.5)
+//                    dd_d += 1;
+//                *pdes -= mp*dd_d;
+//            }
+//            if(dd < -0.5){
+//                dd_d = ceil(dd);   //向上取整
+//                if(dd-dd_d < -0.5)
+//                    dd_d -= 1;
+//                *pdes += mp*fabs(dd_d);
+//            }
+            move_dist = fmod(*pdes - *psrc, mp);
+            if(move_dist < 0)
+                move_dist += mp;
+            base_offset = fmod(*psrc, mp);
+            if(base_offset < 0)
+                base_offset += mp;
+            src_base = *psrc - base_offset;
+
+            if(*pdes >= 0)
+                dir = 0;
+            else
+                dir = 1;
+
+            // 就近移动
+            if(m_p_channel_control->GetAxisConfig()[i].rot_abs_dir == 0){
+                if(move_dist > mp/2.0)
+                    move_dist -= mp;
+            }else{ // 取决于绝对指令的符号
+                if(dir == 1)
+                    move_dist -= mp;
+            }
+            *pdes = *psrc + move_dist;
+
+            //	printf("ProcessFiveAxisRotPos: axis=%hhu, des=%lf, src=%lf\n", i, *pdes, *psrc);
+        }
+        psrc++;
+        pdes++;
+
+    }
+
+}

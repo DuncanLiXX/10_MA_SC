@@ -314,6 +314,10 @@ bool ChannelControl::Initialize(uint8_t chn_index, ChannelEngine *engine, HMICom
         {
             m_n_real_phy_axis = m_n_real_phy_axis | 0x01<<(phy_axis-1);    //初始化实际物理轴mask
         }
+        if(m_p_axis_config[phy_axis-1].axis_type == AXIS_ROTATE)
+        {
+            m_mask_rot_axis |= 0x01<<(phy_axis-1);
+        }
 
         uint8_t z_axis =  this->GetPhyAxisFromName(AXIS_NAME_Z);
         uint32_t da_prec = m_p_channel_engine->GetDaPrecision();
@@ -2338,8 +2342,20 @@ void ChannelControl::RefreshAxisIntpPos(){
         }else{
             m_channel_rt_status.tar_pos_work.m_df_point[i] = m_channel_mc_status.intp_tar_pos.GetAxisValue(count);
         }
+
         count++;
     }
+}
+
+void ChannelControl::LimitRotatePos(double &pos, double &move_pr){
+    // 防止move_pr异常
+    if(move_pr <= 0.01)
+        return;
+
+    double res = fmod(pos, move_pr);
+    if(res < 0)
+        res += move_pr;
+    pos = res;
 }
 
 /**
@@ -2462,6 +2478,21 @@ void ChannelControl::SendMonitorData(bool bAxis, bool btime){
     uint8_t chn_index = this->m_n_channel_index;
     uint16_t data_len = sizeof(HmiChannelRealtimeStatus);
     memcpy(&hmi_rt_status, &m_channel_rt_status, data_len);
+    for(int i = 0; i < m_p_channel_config->chn_axis_count; i++){
+        if(m_mask_rot_axis & (0x01 << i) && m_p_axis_config[i].pos_disp_mode == 0){
+            // 限制机械坐标
+            LimitRotatePos(hmi_rt_status.cur_pos_machine[i],
+                           m_p_axis_config[i].move_pr);
+            // 限制工件坐标
+            if(m_p_axis_config[i].pos_work_disp_mode){
+                LimitRotatePos(hmi_rt_status.cur_pos_work[i],
+                               m_p_axis_config[i].move_pr);
+                LimitRotatePos(hmi_rt_status.tar_pos_work[i],
+                               m_p_axis_config[i].move_pr);
+            }
+        }
+    }
+
     if(this->m_channel_status.chn_work_mode != AUTO_MODE && this->m_channel_status.chn_work_mode != MDA_MODE){//手动模式下，余移动流量显示0
         memcpy(hmi_rt_status.tar_pos_work, hmi_rt_status.cur_pos_work, sizeof(double)*kMaxAxisChn);
     }
@@ -2562,7 +2593,7 @@ void ChannelControl::ProcessHmiCmd(HMICmdFrame &cmd){
     case CMD_SC_MDA_DATA_REQ:		//MDA代码请求 115
         this->ProcessMdaData(cmd);
         break;
-    case CMD_HMI_GET_MACRO_VAR:			//HMI向SC请求宏变量的值   30
+    case CMD_HMI_GET_MACRO_VAR:     //HMI向SC请求宏变量的值   30
         this->ProcessHmiGetMacroVarCmd(cmd);
         break;
     case CMD_HMI_SET_MACRO_VAR:        //HMI向SC设置宏变量寄存器的值   31
@@ -3001,6 +3032,7 @@ bool ChannelControl::SetCurProcParamIndex(uint8_t index){
         //将新参数更新到MC
         this->SetMcChnPlanMode();
         this->SetMcChnPlanParam();
+        this->SetMcChnPlanParam2();
         this->SetMcTapPlanParam();
         this->SetMcChnCornerStopParam();
         this->SetMcChnPlanFun();
@@ -3739,38 +3771,70 @@ bool ChannelControl::SendModeChangToHmi(uint16_t mode_type){
     cmd.cmd = CMD_SC_MODE_CHANGE;
     cmd.cmd_extension = mode_type;
 
+    static uint8_t lastTcode = 0;
+    static uint8_t lastDcode = 0;
+    static uint8_t lastHcode = 0;
+    static uint32_t lastFCode = 0;
+    static int32_t lastSMode = 0;
+
     switch(mode_type){
     case T_MODE:		//T
         cmd.data_len = 0x01;
         cmd.data[0] = m_channel_status.cur_tool;
-        g_ptr_tracelog_processor->SendToHmi(kProcessInfo, kDebug,
-                                            string("[刀号T]切换为 " + to_string(m_channel_status.cur_tool)));
+
+        if (lastTcode != m_channel_status.cur_tool)
+        {
+            lastTcode = m_channel_status.cur_tool;
+            g_ptr_tracelog_processor->SendToHmi(kProcessInfo, kDebug,
+                string("[刀号T]切换为 " + to_string(m_channel_status.cur_tool)));
+        }
         //		printf("SendModeChangToHmi, T = %hhu\n", m_channel_status.cur_tool);
         break;
     case D_MODE:		//D
         cmd.data_len = 0x01;
         cmd.data[0] = m_channel_status.cur_d_code;
-        g_ptr_tracelog_processor->SendToHmi(kProcessInfo, kDebug,
-                                            string("[D]切换为 " + to_string(m_channel_status.cur_d_code)));
+
+        if (lastDcode != m_channel_status.cur_d_code)
+        {
+            lastDcode = m_channel_status.cur_d_code;
+            g_ptr_tracelog_processor->SendToHmi(kProcessInfo, kDebug,
+                string("[D]切换为 " + to_string(m_channel_status.cur_d_code)));
+        }
         break;
     case H_MODE:		//H
         cmd.data_len = 0x01;
         cmd.data[0] = m_channel_status.cur_h_code;
-        g_ptr_tracelog_processor->SendToHmi(kProcessInfo, kDebug,
-                                            string("[H]切换为 " + to_string(m_channel_status.cur_h_code)));
+
+        if (lastHcode != m_channel_status.cur_h_code)
+        {
+            lastHcode = m_channel_status.cur_h_code;
+            g_ptr_tracelog_processor->SendToHmi(kProcessInfo, kDebug,
+                string("[H]切换为 " + to_string(m_channel_status.cur_h_code)));
+        }
         break;
     case F_MODE:		//F
+    {
         cmd.data_len = sizeof(m_channel_status.rated_feed);
         memcpy(cmd.data, &m_channel_status.rated_feed, cmd.data_len);
-        g_ptr_tracelog_processor->SendToHmi(kProcessInfo, kDebug,
-                                            string("[进给速度F]切换为 " + to_string(m_channel_status.rated_feed*60/1000)));
+        if (lastFCode != m_channel_status.rated_feed)
+        {
+            lastFCode = m_channel_status.rated_feed;
+            g_ptr_tracelog_processor->SendToHmi(kProcessInfo, kDebug,
+                string("[进给速度F]切换为 " + to_string(m_channel_status.rated_feed*60/1000)));
+        }
+    }
         break;
     case S_MODE:		//S
-
+    {
         cmd.data_len = sizeof(m_channel_status.rated_spindle_speed);
         memcpy(cmd.data, &m_channel_status.rated_spindle_speed, cmd.data_len);
-        g_ptr_tracelog_processor->SendToHmi(kProcessInfo, kDebug,
-                                            string("[主轴转速S]切换为 " + to_string(m_channel_status.rated_spindle_speed)));
+        if (lastSMode != m_channel_status.rated_spindle_speed)
+        {
+            lastSMode = m_channel_status.rated_spindle_speed;
+            g_ptr_tracelog_processor->SendToHmi(kProcessInfo, kDebug,
+                string("[主轴转速S]切换为 " + to_string(m_channel_status.rated_spindle_speed)));
+        }
+    }
         break;
     default:
         printf("@@@@Invalid value in ChannelControl::SendModeChangToHmi\n");
@@ -4833,7 +4897,7 @@ bool ChannelControl::RefreshStatusFun(){
                 for(int i = 0; i < 16; ++i)
                 {
                     if(this->m_channel_mc_status.axis_soft_postive_limit & (0x01<<i))
-                        CreateError(ERR_SOFT_LIMIT_NEG, ERROR_LEVEL, CLEAR_BY_MCP_RESET, data, m_n_channel_index, i);
+                        CreateError(ERR_SOFT_LIMIT_POS, ERROR_LEVEL, CLEAR_BY_MCP_RESET, data, m_n_channel_index, i);
                 }
 			}
 		}
@@ -8712,7 +8776,7 @@ bool ChannelControl::ExecuteErrorMsg(RecordMsg *msg){
         if(err->GetErrorCode() == 0){//清空当前提示信息
             ClearHmiInfoMsg();
         }else{ //发送提示信息
-            //			CreateError(err->GetErrorCode(), INFO_LEVEL, CLEAR_BY_MCP_RESET, 0, m_n_channel_index);
+            CreateError(err->GetErrorCode(), INFO_LEVEL, CLEAR_BY_MCP_RESET, 0, m_n_channel_index);
             this->SendMessageToHmi(MSG_TIPS, err->GetErrorCode());
         }
         this->m_n_run_thread_state = RUN;
@@ -11274,8 +11338,9 @@ void ChannelControl::ManualMove(int8_t dir){
     //设置速度
     uint32_t feed = this->m_p_axis_config[phy_axis].manual_speed*1000/60;   //转换单位为um/s
     if(this->m_channel_status.func_state_flags.CheckMask(FS_MANUAL_RAPID)){
-        feed *= 2;  //速度翻倍
-        printf("double manual feed\n");
+        //feed *= 2;  //速度翻倍
+        // 由原来的手动速度乘2，改为定位速度乘快速倍率，快移倍率在MC上切换
+        feed = m_p_axis_config[phy_axis].rapid_speed*1000/60;
     }
     // ScPrintf("axis:%u, feed:%u, n_inc_dis=%lld",m_channel_status.cur_axis,feed, n_inc_dis);
 
@@ -11287,6 +11352,9 @@ void ChannelControl::ManualMove(int8_t dir){
     cmd.data.data[5] = ((n_inc_dis>>48)&0xFFFF);
 
     cmd.data.data[6] = 0x02;   //增量目标位置
+    if(this->m_channel_status.func_state_flags.CheckMask(FS_MANUAL_RAPID)){
+        cmd.data.data[6] |= 0x04; //选择快移倍率
+    }
 
     if(!this->m_b_mc_on_arm)
         m_p_mc_comm->WriteCmd(cmd);
@@ -11320,8 +11388,9 @@ void ChannelControl::ManualMovePmc(int8_t dir){
     //设置速度
     uint32_t feed = this->m_p_axis_config[phy_axis].manual_speed * 1000 / 60;   //转换单位为um/s
     if(this->m_channel_status.func_state_flags.CheckMask(FS_MANUAL_RAPID)){
-        feed *= 2;  //速度翻倍
-        printf("double manual feed\n");
+        // feed *= 2;  //速度翻倍
+        // 由原来的手动速度乘2，改为定位速度乘快速倍率
+        feed = (m_p_axis_config[phy_axis].rapid_speed*1000/60)*(m_channel_status.rapid_ratio/100.);
     }
 
     //设置目标位置
@@ -12442,6 +12511,21 @@ void ChannelControl::SetMcChnPlanParam(){
     cmd.data.data[6] = tmp;
 
 
+    if(!this->m_b_mc_on_arm)
+        m_p_mc_comm->WriteCmd(cmd);
+    else
+        m_p_mc_arm_comm->WriteCmd(cmd);
+}
+
+void ChannelControl::SetMcChnPlanParam2(){
+    McCmdFrame cmd;
+    memset(&cmd, 0x00, sizeof(McCmdFrame));
+    cmd.data.channel_index = m_n_channel_index;
+
+    cmd.data.cmd = CMD_MC_SET_CHN_PLAN_PARAM2;
+    uint32_t data = m_p_channel_config->g01_max_speed*1000/60;  //单位转换   mm/min-->um/s
+    cmd.data.data[0] = data&0xFFFF;
+    cmd.data.data[1] = (data>>16)&0xFFFF;
     if(!this->m_b_mc_on_arm)
         m_p_mc_comm->WriteCmd(cmd);
     else

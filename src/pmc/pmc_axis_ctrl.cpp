@@ -18,6 +18,7 @@
 #include <future>
 #include "channel_control.h"
 #include "spindle_control.h"
+#include "sync_axis_ctrl.h"
 
 /**
  * @brief 构造函数
@@ -169,14 +170,6 @@ bool PmcAxisCtrl::Active(bool flag){
 
 bool PmcAxisCtrl::CanActive()
 {
-    for (auto itr = axis_list.begin(); itr != axis_list.end(); ++itr)//未建立参考点
-    {
-        if (!m_p_channel_engine->GetAxisRetRefFlag((*itr)->axis_index))
-        {
-            return false;
-        }
-    }
-
     for (int i = 0; i < m_p_channel_engine->GetChnCount(); ++i)
     {
         if (m_p_channel_engine->GetChnControl()[i].IsMachinRunning())//运行状态不能激活
@@ -184,11 +177,16 @@ bool PmcAxisCtrl::CanActive()
             return false;
         }
 
-        for (auto itr = axis_list.begin(); itr != axis_list.end(); ++itr)//主轴不能激活
+        for (auto itr = axis_list.begin(); itr != axis_list.end(); ++itr)
         {
-            if (m_p_channel_engine->GetChnControl()[i].GetSpdCtrl()->GetPhyAxis()
+            if (m_p_channel_engine->GetChnControl()[i].GetSpdCtrl()->GetPhyAxis()//主轴不能激活
                     == (*itr)->axis_index)
             {
+                return false;
+            }
+
+            if (m_p_channel_engine->GetSyncAxisCtrl()->CheckSyncState((*itr)->axis_index) == 2)
+            {//从动轴不能为PMC轴
                 return false;
             }
         }
@@ -218,10 +216,10 @@ uint8_t PmcAxisCtrl::GetRecvBufIndex(){
 void PmcAxisCtrl::SetBuffState(bool flag){
     if(flag == m_b_buffer)
         return;
-    if(this->m_n_cmd_count > 1){//TODO 告警
+    if(this->m_n_cmd_count > 1){//TODO 告警，缓冲区关闭或打开时，必须保证缓冲区为空
         return;
     }
-    printf("PmcAxisCtrl::SetBuffState[%hhu]:%hhu\n", m_n_group_index, flag);
+    //printf("PmcAxisCtrl::SetBuffState[%hhu]:%hhu\n", m_n_group_index, flag);
 
     this->m_b_buffer = flag;
     if(flag && m_n_cmd_count==1){//当前有数据，缓冲切换至有效，则翻转EBSYg信号
@@ -592,13 +590,19 @@ void PmcAxisCtrl::ExecuteCmd(){
         uint8_t cmd = m_pmc_cmd_buffer[this->m_n_buf_exec].cmd;   //指令
 
         std::cout << "PmcAxisCtrl::ExecuteCmd " << (int)cmd << std::endl;
+        if (!g_ptr_chn_engine->GetAxisRetRefFlag(axis->axis_index) && cmd != 0x05)
+        {//判断轴是否建立参考点
+            CreateError(ERR_AXIS_REF_NONE,
+                ERROR_LEVEL, CLEAR_BY_MCP_RESET, 0, CHANNEL_ENGINE_INDEX, axis->axis_index);
+            break;
+        }
+
         if(cmd == 0x00 || cmd == 0x01 || cmd == 0x10 || cmd == 0x11){  //快速定位、切削进给
             uint32_t speed = m_pmc_cmd_buffer[this->m_n_buf_exec].speed;        //速度，单位转换
             int64_t dis = m_pmc_cmd_buffer[this->m_n_buf_exec].distance*1e4;       //移动距离，单位转换：um-->0.1nm
             if(cmd == 0x00 && !axis->pmc_g00_by_EIFg){ // 使用定位速度作为快移速度
                 speed = axis->rapid_speed;
             }
-            std::cout << "---------->distance: " << m_pmc_cmd_buffer[this->m_n_buf_exec].distance << std::endl;
             if(cmd == 0x00 || cmd == 0x01){
                 if(speed < axis->pmc_min_speed || speed > axis->pmc_max_speed){
                     CreateError(ERR_PMC_SPEED_ERROR,
@@ -623,7 +627,7 @@ void PmcAxisCtrl::ExecuteCmd(){
                 pmc_cmd.data.cmd = 0x00;    //绝对坐标模式
             }
 
-            //printf("pmc axis execute cmd: speed = %u, dis = %lld\n", speed, dis);
+            printf("pmc axis execute cmd: speed = %u, dis = %lld\n", speed, dis);
 
             this->m_p_channel_engine->SendPmcAxisCmd(pmc_cmd);
 
@@ -675,20 +679,16 @@ void PmcAxisCtrl::ExecuteCmd(){
                 break;
             }
             uint32_t ms = m_pmc_cmd_buffer[this->m_n_buf_exec].distance;
-            //auto func = std::bind(&PmcAxisCtrl::Process04Cmd,
-            //                      this, std::placeholders::_1);
-            //std::async(std::launch::async, func, ms);
             std::thread wait(&PmcAxisCtrl::Process04Cmd, this, ms);
-
             wait.detach();
             break; // 暂停指令只需执行一次即可
         }else if(cmd == 0x05){   //回参考点动作
-            //this->m_p_channel_engine->ProcessPmcAxisFindRef(axis->axis_index);
-            uint32_t speed = axis->rapid_speed;        //速度，单位转换
-            double cur_pos = m_p_channel_engine->GetPhyAxisMachPosFeedback(axis->axis_index);
-            int64_t dis = (axis->axis_home_pos[0] - cur_pos)*1e7;       //移动距离，单位转换：mm-->0.1nm
+            if (!g_ptr_chn_engine->SetPmcRetRef(axis->axis_index))
+            {
+                uint32_t speed = axis->rapid_speed;        //速度，单位转换
+                double cur_pos = m_p_channel_engine->GetPhyAxisMachPosFeedback(axis->axis_index);
+                int64_t dis = (axis->axis_home_pos[0] - cur_pos)*1e7;       //移动距离，单位转换：mm-->0.1nm
 
-            if(cmd == 0x00 || cmd == 0x01){
                 if(speed < axis->pmc_min_speed || speed > axis->pmc_max_speed){
                     CreateError(ERR_PMC_SPEED_ERROR,
                                 ERROR_LEVEL,
@@ -696,10 +696,59 @@ void PmcAxisCtrl::ExecuteCmd(){
                                 0,CHANNEL_ENGINE_INDEX,axis->axis_index);
                     break;
                 }
+
+                speed = speed * 1000/60; // 单位转换：mm/min-->um/s
+                ScPrintf("Pmc cmd5, go home: speed = %u, dis=%lld",speed, dis);
+
+                PmcCmdFrame pmc_cmd;
+                pmc_cmd.data.cmd = 0x0100;   //增量坐标模式
+                pmc_cmd.data.axis_index = axis->axis_index+1;
+                pmc_cmd.data.axis_index |= 0xFF00;      //标志通道引擎
+                pmc_cmd.data.data[0] = 0;
+                memcpy(&pmc_cmd.data.data[1], &dis, sizeof(dis));
+                memcpy(&pmc_cmd.data.data[5], &speed, sizeof(speed));
+                this->m_p_channel_engine->SendPmcAxisCmd(pmc_cmd);
+            }
+
+            //设置状态
+            switch(this->m_n_group_index%4){
+            case 0:
+                this->m_p_f_reg->EADEN1 = 0;   //分配完成信号
+                this->m_p_f_reg->EGENA = 1;    //轴移动信号
+                this->m_p_f_reg->EINPA = 0;    //轴到位信号
+                break;
+            case 1:
+                this->m_p_f_reg->EADEN2 = 0;
+                this->m_p_f_reg->EGENB = 1;
+                this->m_p_f_reg->EINPB = 0;
+                break;
+            case 2:
+                this->m_p_f_reg->EADEN3 = 0;
+                this->m_p_f_reg->EGENC = 1;
+                this->m_p_f_reg->EINPC = 0;
+                break;
+            case 3:
+                this->m_p_f_reg->EADEN4 = 0;
+                this->m_p_f_reg->EGEND = 1;
+                this->m_p_f_reg->EINPD = 0;
+                break;
+            }
+        }else if(cmd == 0x07){
+            uint32_t speed = axis->rapid_speed;        //速度，单位转换
+            double cur_pos = m_p_channel_engine->GetPhyAxisMachPosFeedback(axis->axis_index);
+            int64_t dis = (axis->axis_home_pos[0] - cur_pos)*1e7;       //移动距离，单位转换：mm-->0.1nm
+
+            ScPrintf("Pmc cmd7, go home: speed = %u, dis=%lld",speed, dis);
+            if(speed < axis->pmc_min_speed || speed > axis->pmc_max_speed)
+            {
+                CreateError(ERR_PMC_SPEED_ERROR,
+                            ERROR_LEVEL,
+                            CLEAR_BY_MCP_RESET,
+                            0,CHANNEL_ENGINE_INDEX,axis->axis_index);
+                break;
             }
 
             speed = speed * 1000/60; // 单位转换：mm/min-->um/s
-            ScPrintf("Pmc cmd5:speed = %u, dis=%lld",speed,dis);
 
             PmcCmdFrame pmc_cmd;
             pmc_cmd.data.cmd = 0x0100;   //增量坐标模式
@@ -710,7 +759,6 @@ void PmcAxisCtrl::ExecuteCmd(){
             memcpy(&pmc_cmd.data.data[5], &speed, sizeof(speed));
             this->m_p_channel_engine->SendPmcAxisCmd(pmc_cmd);
 
-            //设置状态
             switch(this->m_n_group_index%4){
             case 0:
                 this->m_p_f_reg->EADEN1 = 0;   //分配完成信号

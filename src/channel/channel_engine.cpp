@@ -28,9 +28,6 @@
 #include <functional>
 
 
-//#include <unistd.h>
-//#include <stropts.h>
-
 using namespace Spindle;
 
 ChannelEngine* ChannelEngine::m_p_instance = nullptr;  //初始化单例对象指正为空
@@ -8518,8 +8515,9 @@ void ChannelEngine::RefreshPmcNotReady()
             g_ptr_tracelog_processor->SendToHmi(kProcessInfo, kDebug, "解除急停");
             f_reg->RST = 0;
         }
-        if(f_reg_last->MERS == 1)   // MDI复位请求
+        if(f_reg_last->MERS == 1){   // MDI复位请求
             f_reg->MERS = 0;
+        }
     }
     usleep(8000);  //8ms周期，比PMC周期相同
 }
@@ -8876,6 +8874,7 @@ void ChannelEngine::CheckBattery(){
 /**
  * @brief 处理PMC的信号
  */
+static int reset_delay_count = 0;
 void ChannelEngine::ProcessPmcSignal(){
 
     static bool inited = false;
@@ -9118,8 +9117,16 @@ void ChannelEngine::ProcessPmcSignal(){
         	if(f_reg_last->RTPT == 1)   // 攻丝回退结束信号
                 f_reg->RTPT = 0;
 
-            if(f_reg_last->MERS == 1)   // MDI复位请求
-                f_reg->MERS = 0;
+        	// @zk  满足复位RESET按键信号被梯图扫描到
+        	if(f_reg_last->MERS == 1){   // MDI复位请求
+                reset_delay_count ++;
+            }
+
+            if(reset_delay_count >= 10){
+            	f_reg->MERS = 0;
+            	reset_delay_count = 0;
+            }
+
         }
 
         //选停信号 SBS
@@ -9353,7 +9360,6 @@ void ChannelEngine::ProcessPmcSignal(){
                 //延时时间到，复位RST信号
                 this->m_p_pmc_reg->FReg().bits[i].RST = 0;
                 //	this->m_p_channel_control[i].ResetRSTSignal();
-
             }
             this->m_b_reset_rst_signal = false;
         }

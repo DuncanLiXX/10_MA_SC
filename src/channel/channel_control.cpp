@@ -6797,9 +6797,11 @@ bool ChannelControl::ExecuteAuxMsg(RecordMsg *msg){
 #endif
                 }
 
-
                 //TODO 将代码发送给PMC
                 this->m_p_f_reg->DM99 = 1;  //置位DM99, 维持20ms
+
+                //@add zk
+                usleep(80000);
 
                 tmp->IncreaseExecStep(m_index);
             }else if(tmp->GetExecStep(m_index) == 1){

@@ -145,7 +145,8 @@ void SetMcArmComm(MCArmCommunication *comm){this->m_p_mc_arm_comm = comm;}   //É
 	void ManualMovePmc(uint8_t phy_axis, int8_t dir);   //Ö¸¶¨ÖáÊÖ¶¯ÒÆ¶¯
 	void ManualMovePmc(uint8_t phy_axis, double tar_pos, double vel, bool inc);  //Ö¸¶¨ÖáÒÔÖ¸¶¨ËÙ¶ÈÒÆ¶¯µ½Ö¸¶¨Î»ÖÃ
 	void ManualMovePmcStop();			//ÊÖ¶¯Í£Ö¹
-    bool SetPmcRetRef(uint8_t phy_axis);     //ÉèÖÃPMCÖá½øÈë½¨Á¢»úĞµ×ø±êÏµÁ÷³Ì
+    bool SetPmcRetRef(uint8_t phy_axis, uint32_t feed_rate);     //ÉèÖÃPMCÖá½øÈë½¨Á¢»úĞµ×ø±êÏµÁ÷³Ì
+    int32_t GetPmcReturnSpeed(int8_t axisid);//ÁÙÊ±ÓÃ£¬»ñÈ¡PMCÖá»ØÁãËÙ¶È
 
 
 	void PausePmcAxis(uint8_t phy_axis, bool flag);          //ÔİÍ£PMCÖáÒÆ¶¯
@@ -576,6 +577,7 @@ private:  //Ë½ÓĞ³ÉÔ±±äÁ¿
 	double *m_df_phy_axis_pos_intp;        //ÎïÀíÖáµ±Ç°²å²¹»úĞµ×ø±ê
 	double *m_df_phy_axis_pos_intp_after;   //ÎïÀíÖáµ±Ç°²å²¹ºó¼Ó¼õËÙÊä³öµÄ»úĞµ×ø±ê,»¹¼ÓÉÏÁËÂİ²¹£¬·´Ïò¼äÏ¶µÈ²¹³¥Öµ
 	double *m_df_pmc_axis_remain;    //PMCÖáÓàÒÆ¶¯Á¿
+    map<int32_t, uint32_t> m_pmc_axis_return_speed;//ÁÙÊ±ÓÃ£¬´¦ÀípmcÖá±¶ÂÊÎÊÌâ
 
 //#ifdef USES_SPEED_TORQUE_CTRL	
 	double *m_df_phy_axis_speed_feedback;        //ÎïÀíÖáµ±Ç°·´À¡ËÙ¶È

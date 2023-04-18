@@ -5849,9 +5849,7 @@ void ChannelEngine::SetAxisAccParam(uint8_t index){
  */
 void ChannelEngine::SendPmcAxisCmd(PmcCmdFrame &cmd){
     uint8_t phy_axis = cmd.data.axis_index-1;
-
     this->m_n_run_axis_mask |= 0x01L<<phy_axis;  //设置当前运行轴
-
     this->m_p_mi_comm->SendPmcCmd(cmd);
 }
 
@@ -6008,6 +6006,16 @@ void ChannelEngine::ManualMoveAbs(uint8_t phy_axis, double vel, double pos){
             cmd.data.cmd = 0;   //绝对位置
 
             //设置速度
+            vel = vel * double(GetPmcReturnSpeed(phy_axis))/100;   //转换单位为um/s
+            if(vel < m_p_axis_config[phy_axis].pmc_min_speed || vel > m_p_axis_config[phy_axis].pmc_max_speed){
+                CreateError(ERR_PMC_SPEED_ERROR,
+                            ERROR_LEVEL,
+                            CLEAR_BY_MCP_RESET,
+                            0,CHANNEL_ENGINE_INDEX, phy_axis);
+                return;
+            }
+
+            //设置速度
             uint32_t feed = vel*1000/60;   //转换单位为um/s
 
             memcpy(&cmd.data.data[1], &tar_pos, sizeof(tar_pos));  //设置目标位置
@@ -6117,21 +6125,28 @@ void ChannelEngine::ManualMove(uint8_t phy_axis, int8_t dir, double vel, double 
         {//处于建立参考点过程中
             PmcCmdFrame cmd;
             memset(&cmd, 0x00, sizeof(PmcCmdFrame));
-
-            cmd.data.axis_index = phy_axis+1;   //轴号从1开始
+            cmd.data.cmd = 0x0100;   //增量坐标模式
+            cmd.data.axis_index = phy_axis+1;
             cmd.data.axis_index |= 0xFF00;      //标志通道引擎
             cmd.data.cmd = 0x100;   //增量位置
 
             //设置速度
-            uint32_t feed = vel*1000/60;   //转换单位为um/s
+            vel = vel * double(GetPmcReturnSpeed(phy_axis)) / 100;
+            if(vel < m_p_axis_config[phy_axis].pmc_min_speed || vel > m_p_axis_config[phy_axis].pmc_max_speed){
+                CreateError(ERR_PMC_SPEED_ERROR,
+                            ERROR_LEVEL,
+                            CLEAR_BY_MCP_RESET,
+                            0,CHANNEL_ENGINE_INDEX, phy_axis);
+                return;
+            }
+            uint32_t feed = feed*1000/60;   //转换单位为um/s
+
             memcpy(&cmd.data.data[1], &n_inc_dis, sizeof(n_inc_dis));  //设置目标位置
             memcpy(&cmd.data.data[5], &feed, sizeof(feed)); //设置速度
 
-            this->m_n_run_axis_mask |= 0x01L<<phy_axis;  //设置当前运行轴
+            printf("pmc axis execute cmd: speed = %u, dis = %lld\n", feed, n_inc_dis);
 
-            this->m_p_mi_comm->SendPmcCmd(cmd);
-
-            printf("ChannelEngine::ManualMove_pmc: axis = %d, tar_pos = %lld\n", phy_axis, tar_pos);
+            SendPmcAxisCmd(cmd);
         }
         else
         {
@@ -6448,7 +6463,7 @@ void ChannelEngine::PmcAxisRunOver(MiCmdFrame &cmd){
  * @brief 设置PMC轴进入建立机械坐标系流程
  * @param phy_axis: 物理轴号，0开始
  */
-bool ChannelEngine::SetPmcRetRef(uint8_t phy_axis)
+bool ChannelEngine::SetPmcRetRef(uint8_t phy_axis, uint32_t feed_rate)
 {
     if (this->m_p_axis_config[phy_axis].ref_complete)
     {
@@ -6459,9 +6474,15 @@ bool ChannelEngine::SetPmcRetRef(uint8_t phy_axis)
         ScPrintf("Pmc cmd5, set home");
         m_n_mask_ret_ref |= (0x01<<phy_axis);
         ClearAxisRefEncoder(phy_axis);//设置需要回零的轴
+        m_pmc_axis_return_speed[phy_axis] = feed_rate;
         m_b_ret_ref = true;
         return true;
     }
+}
+
+int32_t ChannelEngine::GetPmcReturnSpeed(int8_t axisid)
+{
+    return m_pmc_axis_return_speed[axisid];
 }
 
 /**
@@ -9217,7 +9238,7 @@ void ChannelEngine::ProcessPmcSignal(){
         }
 
         //手动步长信号  MP
-        if(g_reg->MP != g_reg_last->MP){
+        if(g_reg->MP != g_reg_last->MP || !inited){
         	this->SetManualStep(i, g_reg->MP);
         }
 
@@ -9699,11 +9720,12 @@ void ChannelEngine::ProcessPmcAlarm(){
  * @brief 处理PMC轴控制信号
  */
 void ChannelEngine::ProcessPmcAxisCtrl(){
-    //	FRegBits *freg0 = GetChnFRegBits(0);
+    static map<int, int> SPEED_RATE_MAP = {
+        {0, 100}, {1, 50}, {2, 25}, {4, 50}
+    };
 
     FRegBits *freg = nullptr;
     const GRegBits *greg = nullptr;
-    //	uint8_t phy_axis = 0xFF;
     PmcAxisCtrlCmd pmc_cmd;
 
     for(uint8_t i = 0; i < kMaxChnCount; i++){
@@ -9721,6 +9743,14 @@ void ChannelEngine::ProcessPmcAxisCtrl(){
         uint8_t cmd[4] = {greg->ECA, greg->ECB, greg->ECC, greg->ECD};
         int32_t dis[4] = {greg->EIDA, greg->EIDB, greg->EIDC, greg->EIDD};
         uint16_t spd[4] = {greg->EIFA, greg->EIFB, greg->EIFC, greg->EIFD};
+        uint8_t esbk[4] = {greg->ESBKA, greg->ESBKB, greg->ESBKC, greg->ESBKD};
+        uint8_t mesbk[4] = {greg->EMSBKA, greg->EMSBKB, greg->EMSBKC, greg->EMSBKD};
+
+        uint8_t efov[4] = {greg->EFOVA, greg->EFOVB, greg->EFOVC, greg->EFOVD};//进给速度倍率
+        uint8_t eovc[4] = {greg->EOVCA, greg->EOVCB, greg->EOVCC, greg->EOVCD};//倍率取消信号
+        //uint8_t erov[4] = {};//快移倍率信号
+        //手动快速移动选择信号
+
         for(uint8_t j = 0; j < 4; j++){
 
             if(m_pmc_axis_ctrl[i*4+j].axis_list.size() == 0)
@@ -9771,6 +9801,23 @@ void ChannelEngine::ProcessPmcAxisCtrl(){
             this->m_pmc_axis_ctrl[4*i+j].SetBuffState(!embuf[j]);
 
             //ESBKg/EMSBKg  程序段停止信号/程序段停止无效信号
+            this->m_pmc_axis_ctrl[4*i+j].InputSBK(esbk[j], mesbk[j]);
+
+            //倍率切换
+            if (m_p_axis_config[i].pmc_g00_by_EIFg)
+            {//pmc轴倍率使用梯图控制
+                int feed_rate = (eovc[j] ? 100 : efov[j]);
+                this->m_pmc_axis_ctrl[4*i+j].SetFeedValue(feed_rate);
+                this->m_pmc_axis_ctrl[4*i+j].SetSpeedValue(SPEED_RATE_MAP[greg->EROV]);
+                this->m_pmc_axis_ctrl[4*i+j].SetRapidValue(greg->ERT);
+            }
+            else
+            {//pmc轴倍率使用cnc系统控制
+                this->m_pmc_axis_ctrl[4*i+j].SetFeedValue(greg->_FV);
+                this->m_pmc_axis_ctrl[4*i+j].SetSpeedValue(greg->ROV);
+                this->m_pmc_axis_ctrl[4*i+j].SetRapidValue(greg->RT);
+            }
+
 
             //数据读取
             if(ebuf[j] != ebsy[j]){
@@ -9783,7 +9830,6 @@ void ChannelEngine::ProcessPmcAxisCtrl(){
             //ECLRg复位信号
             if(eclr[j])
                 this->m_pmc_axis_ctrl[4*i+j].Reset();
-
 
             //ESTPg轴控制暂停信号
             this->m_pmc_axis_ctrl[4*i+j].Pause(estp[j]);

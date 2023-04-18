@@ -333,12 +333,11 @@ struct SCAxisConfig{
 	double ref_mark_err;                   //参考点基准误差   单位：mm    有效范围：0~10.0
 	uint32_t spd_min_speed;                 //主轴最低转速   单位：rpm   0~100000
 
-    uint8_t pmc_g00_by_EIFg;                //PMC轴快移速度来源 0：定位速度 1：EIFg信号
+    uint8_t pmc_g00_by_EIFg;                //PMC轴倍率控制
     uint16_t pmc_min_speed;                 //最小PMC移动速度
     uint16_t pmc_max_speed;                 //最大PMC移动速度
 
     int ref_complete;                       //参考点是否建立
-
     bool init_backlash_dir;                 //反向间隙初始化方向
 };
 

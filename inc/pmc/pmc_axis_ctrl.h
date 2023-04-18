@@ -52,11 +52,24 @@ public:
     void Reset();                   //执行复位动作
 	void Pause(bool flag);			//轴暂停
     std::vector<uint64_t> GetActivePmcAxis();
+    void InputSBK(uint8_t esbk, uint8_t mesbk);                //更新程序段停止信号
 
+    void SetFeedValue(int value);
+    int GetFeedValue() const;
+    void SetSpeedValue(int value);
+    int GetSpeedValue() const;
+    void SetRapidValue(bool value);
+    bool GetRapid() const;
 private:
 	uint8_t GetRecvBufIndex();   //获得当前接收缓冲的索引号
 	void ExecuteCmd();           //执行当前执行缓冲中的指令
     void Process04Cmd(uint32_t ms);   //异步执行延时流程
+
+    size_t axis_over_cnt = 0;
+
+    int feed_rate;//进给倍率
+    int speed_rate;//快进倍率
+    bool rapid_enable;//快速移动
 
 public:
 	uint8_t m_n_group_index;    //PMC轴控制组号，0-15

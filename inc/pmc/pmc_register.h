@@ -1067,12 +1067,13 @@ struct GRegBits{
 	//G146~G149
 	int32_t EIDA:32;  				//EID0A~EID31A  轴控制数据信号（第一组）    G146~G149
 	//G150
-	uint8_t :6;
-	uint8_t ERT:1;					//手动快速进给选择信号（PMC轴控制）    G150.6
-	uint8_t :1;
+    uint8_t EROV:2;                //快速移动倍率信号（PMC轴控制）
+    uint8_t :2;
+    uint8_t EOVCA:1;                //倍率取消信号（PMC轴控制）    G150.5
+    uint8_t ERT:1;                  //手动快速移动选择信号(PMC轴控制) G150.6
+    uint8_t :2;
 	//G151
-	uint8_t :8;
-
+    uint8_t EFOVA:8;               //进给速度倍率信号(PMC轴控制)
 	//G152
 	uint8_t :8;
 	//G153
@@ -1103,9 +1104,11 @@ struct GRegBits{
 	//G158~G161
 	int32_t EIDB:32;  				//EID0B~EID31B  轴控制数据信号（第二组）       G158~G161
 	//G162
-	uint8_t :8;
+    uint8_t :5;
+    uint8_t EOVCB:1;                //倍率取消信号（PMC轴控制）    G162.5
+    uint8_t :2;
 	//G163
-	uint8_t :8;
+    uint8_t EFOVB:8;               //进给速度倍率信号（PMC轴控制）
 	//G164
 	uint8_t :8;
 	//G165
@@ -1135,16 +1138,11 @@ struct GRegBits{
 	//G170~G173
 	int32_t EIDC:32;  				//EID0C~EID31C  轴控制数据信号（第三组）    G170~G173
 	//G174
-	uint8_t :8;
+    uint8_t :5;
+    uint8_t EOVCC:1;                //倍率取消信号（PMC轴控制）    G174.5
+    uint8_t :2;
 	//G175
-#ifdef USES_WOOD_MACHINE
-	uint8_t BDM:1;                 //门板模式，木工专用   G175.0
-	uint8_t BOXM:1;                //柜体模式，木工专用   G175.1
-	uint8_t :6;
-#else
-	uint8_t :8;
-#endif
-
+    uint8_t EFOVC:8;               //进给速度倍率信号（PMC轴控制）
 	//G176
 	uint8_t :8;
 	//G177
@@ -1174,9 +1172,11 @@ struct GRegBits{
 	//G182~G185
 	int32_t EIDD:32;  				//EID0D~EID31D  轴控制数据信号（第四组）    G182~G185
 	//G186
-	uint8_t :8;
+    uint8_t :5;
+    uint8_t EOVCD:1;                //倍率取消信号（PMC轴控制）    G186.5
+    uint8_t :2;
 	//G187
-	uint8_t :8;
+    uint8_t EFOVD:8;               //进给速度倍率信号（PMC轴控制）
 	//G188
 	uint8_t :8;
 	//G189

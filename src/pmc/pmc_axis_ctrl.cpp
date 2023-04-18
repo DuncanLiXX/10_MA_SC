@@ -37,6 +37,10 @@ PmcAxisCtrl::PmcAxisCtrl() {
 
     this->m_p_channel_engine = nullptr;
     this->m_p_mi_comm = nullptr;
+
+    feed_rate = 100;//初始化进给倍率为100%
+    speed_rate = 100;//初始化快速倍率为100%
+    rapid_enable = false;//默认不开启快速移动
 }
 
 /**
@@ -390,6 +394,79 @@ std::vector<uint64_t> PmcAxisCtrl::GetActivePmcAxis()
 }
 
 /**
+ * @brief 更新程序段停止信号
+ * @esbk 程序停止信号
+ * @mesbk 程序停止屏蔽信号
+ */
+void PmcAxisCtrl::InputSBK(uint8_t esbk, uint8_t mesbk)
+{
+    if (mesbk || !esbk)
+        SetStepStop(false);
+    if (esbk)
+        SetStepStop(true);
+}
+
+/**
+ * @brief 设置PMC轴进给倍率
+ * @param value 倍率，百分比
+ */
+void PmcAxisCtrl::SetFeedValue(int value)
+{
+    if (feed_rate == value)
+        return;
+    feed_rate = value;
+}
+
+/**
+ * @brief 获取PMC轴进给倍率
+ * @return 倍率，百分比
+ */
+int PmcAxisCtrl::GetFeedValue() const
+{
+    return feed_rate;
+}
+
+/**
+ * @brief 设置PMC轴快速移动倍率
+ * @param value 倍率，百分比
+ */
+void PmcAxisCtrl::SetSpeedValue(int value)
+{
+    if (speed_rate == value)
+        return;
+    speed_rate = value;
+}
+
+/**
+ * @brief 获取PMC轴快速移动倍率
+ * @return 倍率，百分比
+ */
+int PmcAxisCtrl::GetSpeedValue() const
+{
+    return speed_rate;
+}
+
+/**
+ * @brief 设置是否开启快速移动
+ * @param true:开启，false:关闭
+ */
+void PmcAxisCtrl::SetRapidValue(bool value)
+{
+    if (rapid_enable == value)
+        return;
+    rapid_enable = value;
+}
+
+/**
+ * @brief 获取是否开启快速移动
+ * @return true:开启，false:关闭
+ */
+bool PmcAxisCtrl::GetRapid() const
+{
+    return rapid_enable;
+}
+
+/**
  * @brief 写入PMC指令
  * @param cmd
  * @return   true--成功    false--失败
@@ -487,6 +564,15 @@ bool PmcAxisCtrl::WriteCmd(PmcAxisCtrlCmd &cmd){
 void PmcAxisCtrl::ExecCmdOver(bool res){
     if(this->m_n_cmd_count == 0)
         return;
+
+    printf("PmcAxisCtrl::ExecCmdOver(), cmd_count = %hhu\n", this->m_n_cmd_count);
+    if (++axis_over_cnt < axis_list.size())
+    {
+        std::cout << "over_cnt: " << (int)axis_over_cnt << " size: " << axis_list.size() << std::endl;
+        return;
+    }
+
+
     this->m_n_cmd_count--;
     printf("PmcAxisCtrl::ExecCmdOver(), cmd_count = %hhu\n", this->m_n_cmd_count);
     if(this->m_n_cmd_count > 0){ //继续执行下一条指令
@@ -585,6 +671,8 @@ void PmcAxisCtrl::SetErrState(int id)
 void PmcAxisCtrl::ExecuteCmd(){
     if(this->m_n_cmd_count == 0)
         return;
+
+    axis_over_cnt = 0;
     for(unsigned int i = 0; i < axis_list.size(); i++){
         SCAxisConfig *axis = axis_list.at(i);
         uint8_t cmd = m_pmc_cmd_buffer[this->m_n_buf_exec].cmd;   //指令
@@ -600,17 +688,21 @@ void PmcAxisCtrl::ExecuteCmd(){
         if(cmd == 0x00 || cmd == 0x01 || cmd == 0x10 || cmd == 0x11){  //快速定位、切削进给
             uint32_t speed = m_pmc_cmd_buffer[this->m_n_buf_exec].speed;        //速度，单位转换
             int64_t dis = m_pmc_cmd_buffer[this->m_n_buf_exec].distance*1e4;       //移动距离，单位转换：um-->0.1nm
-            if(cmd == 0x00 && !axis->pmc_g00_by_EIFg){ // 使用定位速度作为快移速度
-                speed = axis->rapid_speed;
+
+            if (cmd == 0x00 || cmd == 0x10)
+            {
+                feed_rate ? speed = axis->rapid_speed : speed = axis->manual_speed;
+                speed = speed * double(feed_rate) / 100;
             }
-            if(cmd == 0x00 || cmd == 0x01){
-                if(speed < axis->pmc_min_speed || speed > axis->pmc_max_speed){
-                    CreateError(ERR_PMC_SPEED_ERROR,
-                                ERROR_LEVEL,
-                                CLEAR_BY_MCP_RESET,
-                                0,CHANNEL_ENGINE_INDEX,axis->axis_index);
-                    break;
-                }
+            else
+                speed = speed * double(feed_rate) / 100;
+
+            if(speed < axis->pmc_min_speed || speed > axis->pmc_max_speed){
+                CreateError(ERR_PMC_SPEED_ERROR,
+                            ERROR_LEVEL,
+                            CLEAR_BY_MCP_RESET,
+                            0,CHANNEL_ENGINE_INDEX,axis->axis_index);
+                break;
             }
 
             speed = speed * 1000/60; // 单位转换：mm/min-->um/s
@@ -628,7 +720,6 @@ void PmcAxisCtrl::ExecuteCmd(){
             }
 
             printf("pmc axis execute cmd: speed = %u, dis = %lld\n", speed, dis);
-
             this->m_p_channel_engine->SendPmcAxisCmd(pmc_cmd);
 
             //设置状态
@@ -681,11 +772,12 @@ void PmcAxisCtrl::ExecuteCmd(){
             uint32_t ms = m_pmc_cmd_buffer[this->m_n_buf_exec].distance;
             std::thread wait(&PmcAxisCtrl::Process04Cmd, this, ms);
             wait.detach();
-            break; // 暂停指令只需执行一次即可
         }else if(cmd == 0x05){   //回参考点动作
-            if (!g_ptr_chn_engine->SetPmcRetRef(axis->axis_index))
+            if (!g_ptr_chn_engine->SetPmcRetRef(axis->axis_index, feed_rate))
             {
                 uint32_t speed = axis->rapid_speed;        //速度，单位转换
+                speed = speed * double(speed_rate) / 100;
+
                 double cur_pos = m_p_channel_engine->GetPhyAxisMachPosFeedback(axis->axis_index);
                 int64_t dis = (axis->axis_home_pos[0] - cur_pos)*1e7;       //移动距离，单位转换：mm-->0.1nm
 
@@ -735,6 +827,7 @@ void PmcAxisCtrl::ExecuteCmd(){
             }
         }else if(cmd == 0x07){
             uint32_t speed = axis->rapid_speed;        //速度，单位转换
+            speed = speed * double(speed_rate) / 100;
             double cur_pos = m_p_channel_engine->GetPhyAxisMachPosFeedback(axis->axis_index);
             int64_t dis = (axis->axis_home_pos[0] - cur_pos)*1e7;       //移动距离，单位转换：mm-->0.1nm
 
@@ -783,6 +876,7 @@ void PmcAxisCtrl::ExecuteCmd(){
             }
         }else if(cmd == 0x06){    //JOG进给，连续进给JOG
             uint32_t speed = m_pmc_cmd_buffer[this->m_n_buf_exec].speed*1000/60;   //速度，单位转换：mm/min-->um/s
+            speed = speed * double(feed_rate / 100);
             int64_t dir = (m_pmc_cmd_buffer[this->m_n_buf_exec].distance == 0) ? -1 : 1;
             int64_t dis = dir * 9999 * 1e7;
 

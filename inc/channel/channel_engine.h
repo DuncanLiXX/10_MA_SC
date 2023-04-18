@@ -145,6 +145,7 @@ void SetMcArmComm(MCArmCommunication *comm){this->m_p_mc_arm_comm = comm;}   //É
 	void ManualMovePmc(uint8_t phy_axis, int8_t dir);   //Ö¸¶¨ÖáÊÖ¶¯ÒÆ¶¯
 	void ManualMovePmc(uint8_t phy_axis, double tar_pos, double vel, bool inc);  //Ö¸¶¨ÖáÒÔÖ¸¶¨ËÙ¶ÈÒÆ¶¯µ½Ö¸¶¨Î»ÖÃ
 	void ManualMovePmcStop();			//ÊÖ¶¯Í£Ö¹
+    bool SetPmcRetRef(uint8_t phy_axis);     //ÉèÖÃPMCÖá½øÈë½¨Á¢»úĞµ×ø±êÏµÁ÷³Ì
 
 
 	void PausePmcAxis(uint8_t phy_axis, bool flag);          //ÔİÍ£PMCÖáÒÆ¶¯

@@ -6417,7 +6417,6 @@ bool ChannelControl::ExecuteAuxMsg(RecordMsg *msg){
                 //复位辅助指令信号和DEN信号
                 this->SendMCodeToPmc(0, m_index);
 
-
                 this->PauseRunGCode();
                 m_n_run_thread_state = PAUSE;
 
@@ -6799,9 +6798,8 @@ bool ChannelControl::ExecuteAuxMsg(RecordMsg *msg){
 
                 //TODO 将代码发送给PMC
                 this->m_p_f_reg->DM99 = 1;  //置位DM99, 维持20ms
-
                 //@add zk
-                usleep(80000);
+				usleep(160000);
 
                 tmp->IncreaseExecStep(m_index);
             }else if(tmp->GetExecStep(m_index) == 1){
@@ -6914,7 +6912,8 @@ bool ChannelControl::ExecuteAuxMsg(RecordMsg *msg){
                     || mcode == 19 || mcode == 20 || mcode == 26
                     || mcode == 27 || mcode == 28 || mcode == 29)
                         && m_p_spindle->Type() != 2){
-                    gettimeofday(&time_now, NULL);
+
+                	gettimeofday(&time_now, NULL);
                     time_elpase = (time_now.tv_sec-m_time_m_start[m_index].tv_sec)*1000000+time_now.tv_usec-m_time_m_start[m_index].tv_usec;
                     if(time_elpase < 100000){
                         this->SetMFSig(m_index, true);    //置位选通信号
@@ -7006,8 +7005,8 @@ bool ChannelControl::ExecuteAuxMsg(RecordMsg *msg){
                 }else if(mcode == 5 && m_p_f_reg->SST == 1){ // 零速
                     m_p_f_reg->SST = 0;
                 }else if(mcode == 19 && m_p_f_reg->ORAR == 1){ // 定位结束
-                    //printf("=========================ORAR = 0\n");
-                	m_p_f_reg->ORAR = 0;
+                	//@modify zk  连续两次M19 第二次定位不清零
+                	//m_p_f_reg->ORAR = 0;
                 }
             }else if(tmp->GetExecStep(m_index) == 4){
             	//等待FIN信号复位

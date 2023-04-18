@@ -972,7 +972,8 @@ void SpindleControl::ProcessORCMA(bool ORCMA)
         	usleep(10000);
         }
         count = 0;*/
-
+    	// @add zk 取消定向时 定向完成置零
+    	F->ORAR = 0;
     	mi->SendAxisEnableCmd(phy_axis+1, false);
     	mi->SendSpdLocateCmd(chn, phy_axis+1,false);
     }

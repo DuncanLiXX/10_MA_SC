@@ -54,8 +54,8 @@ public:
     std::vector<uint64_t> GetActivePmcAxis();
     void InputSBK(uint8_t esbk, uint8_t mesbk);                //更新程序段停止信号
 
-    void SetFeedValue(int value);
-    int GetFeedValue() const;
+    void SetFeedValue(uint8_t value);
+    uint8_t GetFeedValue() const;
     void SetSpeedValue(int value);
     int GetSpeedValue() const;
     void SetRapidValue(bool value);
@@ -67,7 +67,7 @@ private:
 
     size_t axis_over_cnt = 0;
 
-    int feed_rate;//进给倍率
+    uint8_t feed_rate;//进给倍率
     int speed_rate;//快进倍率
     bool rapid_enable;//快速移动
 

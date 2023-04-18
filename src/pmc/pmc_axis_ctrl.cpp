@@ -410,7 +410,7 @@ void PmcAxisCtrl::InputSBK(uint8_t esbk, uint8_t mesbk)
  * @brief 设置PMC轴进给倍率
  * @param value 倍率，百分比
  */
-void PmcAxisCtrl::SetFeedValue(int value)
+void PmcAxisCtrl::SetFeedValue(uint8_t value)
 {
     if (feed_rate == value)
         return;
@@ -421,7 +421,7 @@ void PmcAxisCtrl::SetFeedValue(int value)
  * @brief 获取PMC轴进给倍率
  * @return 倍率，百分比
  */
-int PmcAxisCtrl::GetFeedValue() const
+uint8_t PmcAxisCtrl::GetFeedValue() const
 {
     return feed_rate;
 }
@@ -692,12 +692,15 @@ void PmcAxisCtrl::ExecuteCmd(){
             if (cmd == 0x00 || cmd == 0x10)
             {
                 feed_rate ? speed = axis->rapid_speed : speed = axis->manual_speed;
-                speed = speed * double(feed_rate) / 100;
+                speed = speed * double(feed_rate / 100.) ;
             }
             else
-                speed = speed * double(feed_rate) / 100;
+            {
+                speed = speed * double(feed_rate / 100.) ;
+            }
 
             if(speed < axis->pmc_min_speed || speed > axis->pmc_max_speed){
+                std::cout << "-----> " << speed << std::endl;
                 CreateError(ERR_PMC_SPEED_ERROR,
                             ERROR_LEVEL,
                             CLEAR_BY_MCP_RESET,
@@ -776,12 +779,13 @@ void PmcAxisCtrl::ExecuteCmd(){
             if (!g_ptr_chn_engine->SetPmcRetRef(axis->axis_index, feed_rate))
             {
                 uint32_t speed = axis->rapid_speed;        //速度，单位转换
-                speed = speed * double(speed_rate) / 100;
+                speed = speed * double(speed_rate) / 100.;
 
                 double cur_pos = m_p_channel_engine->GetPhyAxisMachPosFeedback(axis->axis_index);
                 int64_t dis = (axis->axis_home_pos[0] - cur_pos)*1e7;       //移动距离，单位转换：mm-->0.1nm
 
                 if(speed < axis->pmc_min_speed || speed > axis->pmc_max_speed){
+                    std::cout << "-----> " << speed << std::endl;
                     CreateError(ERR_PMC_SPEED_ERROR,
                                 ERROR_LEVEL,
                                 CLEAR_BY_MCP_RESET,
@@ -827,13 +831,14 @@ void PmcAxisCtrl::ExecuteCmd(){
             }
         }else if(cmd == 0x07){
             uint32_t speed = axis->rapid_speed;        //速度，单位转换
-            speed = speed * double(speed_rate) / 100;
+            speed = speed * double(speed_rate) / 100.;
             double cur_pos = m_p_channel_engine->GetPhyAxisMachPosFeedback(axis->axis_index);
             int64_t dis = (axis->axis_home_pos[0] - cur_pos)*1e7;       //移动距离，单位转换：mm-->0.1nm
 
             ScPrintf("Pmc cmd7, go home: speed = %u, dis=%lld",speed, dis);
             if(speed < axis->pmc_min_speed || speed > axis->pmc_max_speed)
             {
+                std::cout << "-----> " << speed << std::endl;
                 CreateError(ERR_PMC_SPEED_ERROR,
                             ERROR_LEVEL,
                             CLEAR_BY_MCP_RESET,
@@ -876,7 +881,7 @@ void PmcAxisCtrl::ExecuteCmd(){
             }
         }else if(cmd == 0x06){    //JOG进给，连续进给JOG
             uint32_t speed = m_pmc_cmd_buffer[this->m_n_buf_exec].speed*1000/60;   //速度，单位转换：mm/min-->um/s
-            speed = speed * double(feed_rate / 100);
+            speed = speed * double(feed_rate / 100.);
             int64_t dir = (m_pmc_cmd_buffer[this->m_n_buf_exec].distance == 0) ? -1 : 1;
             int64_t dis = dir * 9999 * 1e7;
 

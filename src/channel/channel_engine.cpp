@@ -6131,7 +6131,7 @@ void ChannelEngine::ManualMove(uint8_t phy_axis, int8_t dir, double vel, double 
             cmd.data.cmd = 0x100;   //增量位置
 
             //设置速度
-            vel = vel * double(GetPmcReturnSpeed(phy_axis)) / 100;
+            vel = vel * double(GetPmcReturnSpeed(phy_axis)) / 100.;
             if(vel < m_p_axis_config[phy_axis].pmc_min_speed || vel > m_p_axis_config[phy_axis].pmc_max_speed){
                 CreateError(ERR_PMC_SPEED_ERROR,
                             ERROR_LEVEL,
@@ -9813,7 +9813,7 @@ void ChannelEngine::ProcessPmcAxisCtrl(){
             }
             else
             {//pmc轴倍率使用cnc系统控制
-                this->m_pmc_axis_ctrl[4*i+j].SetFeedValue(greg->_FV);
+                this->m_pmc_axis_ctrl[4*i+j].SetFeedValue(~greg->_FV);
                 this->m_pmc_axis_ctrl[4*i+j].SetSpeedValue(greg->ROV);
                 this->m_pmc_axis_ctrl[4*i+j].SetRapidValue(greg->RT);
             }

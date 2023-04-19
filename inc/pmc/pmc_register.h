@@ -213,9 +213,9 @@ struct FRegBits{
 	//F69
 	uint8_t :8;
 	//F70
-	uint8_t :8;
+    uint8_t PSW1:8;
 	//F71
-	uint8_t :8;
+    uint8_t PSW2:8;
 	//F72
 	uint8_t OUT0:1;
 	uint8_t OUT1:1;
@@ -1354,6 +1354,7 @@ enum PmcRegSection{
 	PMC_REG_D,			//D¼Ä´æÆ÷
 	PMC_REG_C,			//C¼Ä´æÆ÷
 	PMC_REG_T,			//T¼Ä´æÆ÷
+    PMC_REG_E,          //E¼Ä´æÆ÷
     PMC_REG_T_M,        //T¼Ä´æÆ÷Mask
     PMC_REG_T_C,        //T¼Ä´æÆ÷³ÖÐøÊ±¼ä
 
@@ -1361,7 +1362,6 @@ enum PmcRegSection{
 	PMC_REG_DC,			//DC¼Ä´æÆ÷
 	PMC_REG_DT			//DT¼Ä´æÆ÷
 #else
-    PMC_REG_E,          //E¼Ä´æÆ÷
 #endif
 };
 

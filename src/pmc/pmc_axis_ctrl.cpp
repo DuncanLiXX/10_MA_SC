@@ -691,7 +691,7 @@ void PmcAxisCtrl::ExecuteCmd(){
 
             if (cmd == 0x00 || cmd == 0x10)
             {
-                feed_rate ? speed = axis->rapid_speed : speed = axis->manual_speed;
+                rapid_enable ? speed = axis->rapid_speed : speed = axis->manual_speed;
                 speed = speed * double(feed_rate / 100.) ;
             }
             else

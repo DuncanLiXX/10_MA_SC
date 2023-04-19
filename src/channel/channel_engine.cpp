@@ -4527,6 +4527,81 @@ END:
 
 }
 
+/**
+ * @brief 刷新位置开关信号
+ */
+void ChannelEngine::UpdatePSW()
+{
+    FRegBits *freg = &m_p_pmc_reg->FReg().bits[0];
+    uint8_t PSW1 = 0;
+    if (m_p_general_config->pos_check_id_1)
+    {
+        double pos = m_df_phy_axis_pos_feedback[m_p_general_config->pos_check_id_1-1];
+        if (pos >= m_p_general_config->pos_check_min_1 && pos <= m_p_general_config->pos_check_max_1)
+        {
+            PSW1 = PSW1 | 0x1;
+        }
+    }
+    if (m_p_general_config->pos_check_id_2)
+    {
+        double pos = m_df_phy_axis_pos_feedback[m_p_general_config->pos_check_id_2-1];
+        if (pos >= m_p_general_config->pos_check_min_2 && pos <= m_p_general_config->pos_check_max_2)
+        {
+            PSW1 = PSW1 | (0x1 << 1);
+        }
+    }
+    if (m_p_general_config->pos_check_id_3)
+    {
+        double pos = m_df_phy_axis_pos_feedback[m_p_general_config->pos_check_id_3-1];
+        if (pos >= m_p_general_config->pos_check_min_3 && pos <= m_p_general_config->pos_check_max_3)
+        {
+            PSW1 = PSW1 | (0x1 << 2);
+        }
+    }
+    if (m_p_general_config->pos_check_id_4)
+    {
+        double pos = m_df_phy_axis_pos_feedback[m_p_general_config->pos_check_id_4-1];
+        if (pos >= m_p_general_config->pos_check_min_4 && pos <= m_p_general_config->pos_check_max_4)
+        {
+            PSW1 = PSW1 | (0x1 << 3);
+        }
+    }
+    if (m_p_general_config->pos_check_id_5)
+    {
+        double pos = m_df_phy_axis_pos_feedback[m_p_general_config->pos_check_id_5-1];
+        if (pos >= m_p_general_config->pos_check_min_5 && pos <= m_p_general_config->pos_check_max_5)
+        {
+            PSW1 = PSW1 | (0x1 << 4);
+        }
+    }
+    if (m_p_general_config->pos_check_id_6)
+    {
+        double pos = m_df_phy_axis_pos_feedback[m_p_general_config->pos_check_id_6-1];
+        if (pos >= m_p_general_config->pos_check_min_6 && pos <= m_p_general_config->pos_check_max_6)
+        {
+            PSW1 = PSW1 | (0x1 << 5);
+        }
+    }
+    if (m_p_general_config->pos_check_id_7)
+    {
+        double pos = m_df_phy_axis_pos_feedback[m_p_general_config->pos_check_id_7-1];
+        if (pos >= m_p_general_config->pos_check_min_7 && pos <= m_p_general_config->pos_check_max_7)
+        {
+            PSW1 = PSW1 | (0x1 << 6);
+        }
+    }
+    if (m_p_general_config->pos_check_id_8)
+    {
+        double pos = m_df_phy_axis_pos_feedback[m_p_general_config->pos_check_id_8-1];
+        if (pos >= m_p_general_config->pos_check_min_8 && pos <= m_p_general_config->pos_check_max_8)
+        {
+            PSW1 = PSW1 | (0x1 << 7);
+        }
+    }
+
+    freg->PSW1 = PSW1;
+}
+
 bool ChannelEngine::CheckSoftLimit(ManualMoveDir dir, uint8_t phy_axis, double pos){
     // 如果没回零，认为限位不超限
     if(!(this->m_n_mask_ret_ref_over & (0x01<<phy_axis)))
@@ -9448,6 +9523,9 @@ void ChannelEngine::ProcessPmcSignal(){
 
     //处理PMC数据窗口
     this->ProcessPmcDataWnd();
+
+    //处理位置开关
+    this->UpdatePSW();
 
 
     //给出轴在参考点信号

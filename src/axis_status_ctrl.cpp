@@ -156,7 +156,7 @@ void AxisStatusCtrl::UpdateSA(uint64_t srvon_mask){
             srvon_mask &= ~(0x01 << i);
         }
     }
-
+    std::cout << "----------> srvon mask:" << srvon_mask << " line_axis: " << line_axis << std::endl;
     if((line_axis & srvon_mask) == line_axis){
         F->SA = 1;
     }else{

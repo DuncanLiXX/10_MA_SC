@@ -309,6 +309,8 @@ void SetMcArmComm(MCArmCommunication *comm){this->m_p_mc_arm_comm = comm;}   //É
     void SetProgProtect(int level);     // ÉèÖÃ³ÌĞò±£»¤×´Ì¬
     bool UpdateMcModel(const string &mcPath);
 
+    void UpdatePSW();   //Ë¢ĞÂÎ»ÖÃ¿ª¹ØĞÅºÅ
+
     // ¼ì²âÊÇ·ñÈíÏŞÎ»³¬ÏŞ
     // dir: ·½Ïò
     // phy_axis: ÎïÀíÖáºÅ ´Ó0¿ªÊ¼

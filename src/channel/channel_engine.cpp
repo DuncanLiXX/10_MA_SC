@@ -2619,7 +2619,11 @@ void ChannelEngine::ProcessMiAlarm(MiCmdFrame &cmd){
 
     g_ptr_trace->PrintTrace(TRACE_WARNING, CHANNEL_ENGINE_SC, "ChannelEngine::ProcessMiAlarm, alarm_id=%u, level=%hu", alarm_id, alarm_level);
 
-    CreateError(alarm_id, alarm_level, clear_type, 0, CHANNEL_ENGINE_INDEX, cmd.data.axis_index);
+    uint8_t axis_id = 0xFF;
+    if (cmd.data.axis_index)
+        axis_id = cmd.data.axis_index - 1;
+
+    CreateError(alarm_id, alarm_level, clear_type, 0, CHANNEL_ENGINE_INDEX, axis_id);
 }
 
 /**
@@ -2709,10 +2713,14 @@ void ChannelEngine::ProcessMiBusError(MiCmdFrame &cmd){
     err_info <<= 8;
     err_info |= slave_no;
 
+    uint8_t axis_id = 0xFF;
+    if (cmd.data.axis_index)
+        axis_id = cmd.data.axis_index - 1;
+
     g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "receive Mi Bus err: no=%hhu, sub_idx=%hhu, idx=%hu, code=%hu\n",
                             slave_no, err_sub_index, err_index, err_code);
     this->m_error_code = static_cast<ErrorType>(err_code);
-    CreateError(err_code, ERROR_LEVEL, CLEAR_BY_MCP_RESET, err_info, CHANNEL_ENGINE_INDEX, slave_no);
+    CreateError(err_code, ERROR_LEVEL, CLEAR_BY_MCP_RESET, slave_no, CHANNEL_ENGINE_INDEX, axis_id);
 }
 
 /**
@@ -7779,6 +7787,15 @@ void ChannelEngine::InitPmcReg(){
         }
     }
 
+    //·¢ËÍTC¼Ä´æÆ÷
+    pn8 = this->m_p_pmc_reg->GetRegPtr8(PMC_REG_T_C);
+    count = TC_REG_COUNT;
+    for(i = 0; i < count; i++){
+        if(pn8[i] != 0){
+            this->SendPmcRegValue(PMC_REG_T_C, i, pn8[i]);
+            //	printf("Init T reg c%hu = %hu\n", i, pn8[i]);
+        }
+    }
 
 #endif
 }
@@ -8657,6 +8674,8 @@ bool ChannelEngine::RefreshMiStatusFun(){
             this->m_p_mi_comm->ReadPmcReg(PMC_REG_Y, m_p_pmc_reg->GetRegPtr8(PMC_REG_Y));
             this->m_p_mi_comm->ReadPmcReg(PMC_REG_R, m_p_pmc_reg->GetRegPtr8(PMC_REG_R));
             this->m_p_mi_comm->ReadPmcReg(PMC_REG_A, m_p_pmc_reg->GetRegPtr8(PMC_REG_A));
+            this->m_p_mi_comm->ReadPmcReg(PMC_REG_T_M, m_p_pmc_reg->GetRegPtr8(PMC_REG_T_M));
+            this->m_p_mi_comm->ReadPmcReg(PMC_REG_T_C, m_p_pmc_reg->GetRegPtr8(PMC_REG_T_C));
             this->m_p_mi_comm->ReadPmcPeriod();
 
 

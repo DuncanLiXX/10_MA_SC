@@ -700,7 +700,6 @@ void PmcAxisCtrl::ExecuteCmd(){
             }
 
             if(speed < axis->pmc_min_speed || speed > axis->pmc_max_speed){
-                std::cout << "-----> " << speed << std::endl;
                 CreateError(ERR_PMC_SPEED_ERROR,
                             ERROR_LEVEL,
                             CLEAR_BY_MCP_RESET,
@@ -785,7 +784,6 @@ void PmcAxisCtrl::ExecuteCmd(){
                 int64_t dis = (axis->axis_home_pos[0] - cur_pos)*1e7;       //移动距离，单位转换：mm-->0.1nm
 
                 if(speed < axis->pmc_min_speed || speed > axis->pmc_max_speed){
-                    std::cout << "-----> " << speed << std::endl;
                     CreateError(ERR_PMC_SPEED_ERROR,
                                 ERROR_LEVEL,
                                 CLEAR_BY_MCP_RESET,
@@ -838,7 +836,6 @@ void PmcAxisCtrl::ExecuteCmd(){
             ScPrintf("Pmc cmd7, go home: speed = %u, dis=%lld",speed, dis);
             if(speed < axis->pmc_min_speed || speed > axis->pmc_max_speed)
             {
-                std::cout << "-----> " << speed << std::endl;
                 CreateError(ERR_PMC_SPEED_ERROR,
                             ERROR_LEVEL,
                             CLEAR_BY_MCP_RESET,

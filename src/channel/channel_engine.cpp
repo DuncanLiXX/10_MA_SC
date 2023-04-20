@@ -7863,14 +7863,14 @@ void ChannelEngine::InitPmcReg(){
     }
 
     //·¢ËÍTC¼Ä´æÆ÷
-    pn8 = this->m_p_pmc_reg->GetRegPtr8(PMC_REG_T_C);
-    count = TC_REG_COUNT;
-    for(i = 0; i < count; i++){
-        if(pn8[i] != 0){
-            this->SendPmcRegValue(PMC_REG_T_C, i, pn8[i]);
-            //	printf("Init T reg c%hu = %hu\n", i, pn8[i]);
-        }
-    }
+//    pn8 = this->m_p_pmc_reg->GetRegPtr8(PMC_REG_T_C);
+//    count = TC_REG_COUNT;
+//    for(i = 0; i < count; i++){
+//        if(pn8[i] != 0){
+//            this->SendPmcRegValue(PMC_REG_T_C, i, pn8[i]);
+//            //	printf("Init T reg c%hu = %hu\n", i, pn8[i]);
+//        }
+//    }
 
 #endif
 }
@@ -8749,8 +8749,8 @@ bool ChannelEngine::RefreshMiStatusFun(){
             this->m_p_mi_comm->ReadPmcReg(PMC_REG_Y, m_p_pmc_reg->GetRegPtr8(PMC_REG_Y));
             this->m_p_mi_comm->ReadPmcReg(PMC_REG_R, m_p_pmc_reg->GetRegPtr8(PMC_REG_R));
             this->m_p_mi_comm->ReadPmcReg(PMC_REG_A, m_p_pmc_reg->GetRegPtr8(PMC_REG_A));
-            this->m_p_mi_comm->ReadPmcReg(PMC_REG_T_M, m_p_pmc_reg->GetRegPtr8(PMC_REG_T_M));
-            this->m_p_mi_comm->ReadPmcReg(PMC_REG_T_C, m_p_pmc_reg->GetRegPtr8(PMC_REG_T_C));
+            //this->m_p_mi_comm->ReadPmcReg(PMC_REG_T_M, m_p_pmc_reg->GetRegPtr8(PMC_REG_T_M));
+            //this->m_p_mi_comm->ReadPmcReg(PMC_REG_T_C, m_p_pmc_reg->GetRegPtr8(PMC_REG_T_C));
             this->m_p_mi_comm->ReadPmcPeriod();
 
 

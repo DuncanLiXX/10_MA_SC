@@ -1369,14 +1369,14 @@ bool MICommunication::ReadPmcReg(int sec, uint8_t *reg){
 		size = T_REG_COUNT * 2;
 		break;
 #else
-    case PMC_REG_T_C:
-        addr = SHARED_MEM_REG_TO_NC_TC;
-        size = TC_REG_COUNT;
-        break;
-    case PMC_REG_T_M:
-        addr = SHARED_MEM_REG_TO_NC_TM;
-        size = TM_REG_COUNT;
-        break;
+//    case PMC_REG_T_C:
+//        addr = SHARED_MEM_REG_TO_NC_TC;
+//        size = TC_REG_COUNT;
+//        break;
+//    case PMC_REG_T_M:
+//        addr = SHARED_MEM_REG_TO_NC_TM;
+//        size = TM_REG_COUNT;
+//        break;
 	case PMC_REG_E:
 		addr = SHARED_MEM_REG_TO_NC_E;
 		size = E_REG_COUNT;

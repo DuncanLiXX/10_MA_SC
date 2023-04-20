@@ -1354,15 +1354,16 @@ enum PmcRegSection{
 	PMC_REG_D,			//D寄存器
 	PMC_REG_C,			//C寄存器
 	PMC_REG_T,			//T寄存器
-    PMC_REG_E,          //E寄存器
-    PMC_REG_T_M,        //T寄存器Mask
-    PMC_REG_T_C,        //T寄存器持续时间
+    //PMC_REG_E,          //E寄存器
+    //PMC_REG_T_M,        //T寄存器Mask
+    //PMC_REG_T_C,        //T寄存器持续时间
 
 #ifndef USES_PMC_2_0
 	PMC_REG_DC,			//DC寄存器
 	PMC_REG_DT			//DT寄存器
 #else
 #endif
+    PMC_REG_E,          //E寄存器
 };
 
 enum PmcKeepMaskBit{
@@ -1440,8 +1441,8 @@ private:
 #else
 	uint8_t m_d_reg[D_REG_COUNT];		//数据寄存器，非易失
 	uint8_t m_t_reg[T_REG_COUNT*2];		//计时器
-    uint8_t m_tm_reg[TM_REG_COUNT];     //T寄存器Mask
-    uint8_t m_tc_reg[TC_REG_COUNT];     //T寄存器当前值
+    //uint8_t m_tm_reg[TM_REG_COUNT];     //T寄存器Mask
+    //uint8_t m_tc_reg[TC_REG_COUNT];     //T寄存器当前值
 	uint8_t m_c_reg[C_REG_COUNT*4];		//计数器
 	uint8_t m_e_reg[E_REG_COUNT];       //扩展寄存器
 #endif

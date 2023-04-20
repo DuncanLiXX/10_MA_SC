@@ -56,8 +56,8 @@ void PmcRegister::Initialize(){
 	memset(m_d_reg, 0x00, D_REG_COUNT);
 	memset(m_c_reg, 0x00, C_REG_COUNT*4);
 	memset(m_t_reg, 0x00, T_REG_COUNT*2);
-    memset(m_tm_reg, 0x00, TM_REG_COUNT);
-    memset(m_tc_reg, 0x00, TC_REG_COUNT);
+    //memset(m_tm_reg, 0x00, TM_REG_COUNT);
+    //memset(m_tc_reg, 0x00, TC_REG_COUNT);
 	memset(m_e_reg, 0x00, E_REG_COUNT);
 #endif
 
@@ -374,46 +374,46 @@ void PmcRegister::Initialize(){
 		}
 
         //读取TM寄存器
-        read_size = read(m_n_fp, &size, 2);
-        if(read_size != 2){//读取失败
-            g_ptr_trace->PrintTrace(TRACE_ERROR, PMC_REGISTER, "读取TM寄存器字节数失败！");
-            close(m_n_fp);
-            m_n_fp = -1;
-            return;
-        }
-        size_real = size;
-        if(size != TM_REG_COUNT){
-            g_ptr_trace->PrintTrace(TRACE_ERROR, PMC_REGISTER, "TM寄存器大小数不匹配[%hu,%hu]！", size, TC_REG_COUNT);
-            init_reg = true;
-            goto INIT_LABEL;
-        }
+//        read_size = read(m_n_fp, &size, 2);
+//        if(read_size != 2){//读取失败
+//            g_ptr_trace->PrintTrace(TRACE_ERROR, PMC_REGISTER, "读取TM寄存器字节数失败！");
+//            close(m_n_fp);
+//            m_n_fp = -1;
+//            return;
+//        }
+//        size_real = size;
+//        if(size != TM_REG_COUNT){
+//            g_ptr_trace->PrintTrace(TRACE_ERROR, PMC_REGISTER, "TM寄存器大小数不匹配[%hu,%hu]！", size, TC_REG_COUNT);
+//            init_reg = true;
+//            goto INIT_LABEL;
+//        }
 
-        read_size = read(m_n_fp, this->m_tm_reg, size_real);
-        if(read_size != size_real){
-            g_ptr_trace->PrintTrace(TRACE_ERROR, PMC_REGISTER, "读取TM寄存器数据失败[%hu,%hu]！", read_size, size_real);
-            close(m_n_fp);
-            m_n_fp = -1;
-            return;
-        }
+//        read_size = read(m_n_fp, this->m_tm_reg, size_real);
+//        if(read_size != size_real){
+//            g_ptr_trace->PrintTrace(TRACE_ERROR, PMC_REGISTER, "读取TM寄存器数据失败[%hu,%hu]！", read_size, size_real);
+//            close(m_n_fp);
+//            m_n_fp = -1;
+//            return;
+//        }
 
-        //根据TC寄存器，更新TM寄存器
-        size_real = 2;
-        for (int i = 0 ; i < TM_REG_COUNT; ++i)
-        {
-            for (int j = 0; j < 8; ++j)
-            if (this->m_tm_reg[i] & (0x01 << j))
-            {
-                uint16_t time;
-                read_size = read(m_n_fp, &time, size_real);
-                if(read_size != size_real){
-                    g_ptr_trace->PrintTrace(TRACE_ERROR, PMC_REGISTER, "读取TC寄存器数据失败[%hu,%hu]！", read_size, size_real);
-                    close(m_n_fp);
-                    m_n_fp = -1;
-                    return;
-                }
-                memcpy(this->m_tm_reg + (i*8+j)*2, &time, size_real);
-            }
-        }
+//        //根据TC寄存器，更新TM寄存器
+//        size_real = 2;
+//        for (int i = 0 ; i < TM_REG_COUNT; ++i)
+//        {
+//            for (int j = 0; j < 8; ++j)
+//            if (this->m_tm_reg[i] & (0x01 << j))
+//            {
+//                uint16_t time;
+//                read_size = read(m_n_fp, &time, size_real);
+//                if(read_size != size_real){
+//                    g_ptr_trace->PrintTrace(TRACE_ERROR, PMC_REGISTER, "读取TC寄存器数据失败[%hu,%hu]！", read_size, size_real);
+//                    close(m_n_fp);
+//                    m_n_fp = -1;
+//                    return;
+//                }
+//                memcpy(this->m_tm_reg + (i*8+j)*2, &time, size_real);
+//            }
+//        }
 #endif
 		INIT_LABEL:
 		if(init_reg){
@@ -574,12 +574,12 @@ uint8_t *PmcRegister::GetRegPtr8(PmcRegSection sec){
 	case PMC_REG_T:
 		p = this->m_t_reg;
 		break;
-    case PMC_REG_T_M:
-        p = this->m_tm_reg;
-        break;
-    case PMC_REG_T_C:
-        p = this->m_tc_reg;
-        break;
+//    case PMC_REG_T_M:
+//        p = this->m_tm_reg;
+//        break;
+//    case PMC_REG_T_C:
+//        p = this->m_tc_reg;
+//        break;
 	case PMC_REG_E:
 		p = this->m_e_reg;
 		break;
@@ -1011,16 +1011,16 @@ bool PmcRegister::GetRegValue(PmcRegSection sec, uint16_t index, uint16_t &value
 			return false;
 		memcpy(&value, &m_t_reg[index], 2);
 		break;
-    case PMC_REG_T_M:
-        if (index >= TM_REG_COUNT-1)
-            return false;
-        memcpy(&value, &m_tm_reg[index], 1);
-        break;
-    case PMC_REG_T_C:
-        if (index >= TC_REG_COUNT-1)
-            return false;
-        memcpy(&value, &m_tc_reg[index], 1);
-        break;
+//    case PMC_REG_T_M:
+//        if (index >= TM_REG_COUNT-1)
+//            return false;
+//        memcpy(&value, &m_tm_reg[index], 1);
+//        break;
+//    case PMC_REG_T_C:
+//        if (index >= TC_REG_COUNT-1)
+//            return false;
+//        memcpy(&value, &m_tc_reg[index], 1);
+//        break;
 #endif
 	default:
 		g_ptr_trace->PrintTrace(TRACE_WARNING, PMC_REGISTER, "寄存器段[%d]不是双字节寄存器！", sec);
@@ -1217,16 +1217,16 @@ bool PmcRegister::GetRegValueMulti(PmcRegSection sec, uint16_t index, uint16_t c
 		memcpy(value, &m_t_reg[index], count*2);
 	//	value = this->m_t_reg[index];
 		break;
-    case PMC_REG_T_M:
-        if (index+count > TM_REG_COUNT)
-            return false;
-        memcpy(value, &m_tm_reg[index], count);
-        break;
-    case PMC_REG_T_C:
-        if (index+count > TC_REG_COUNT)
-            return false;
-        memcpy(value, &m_tc_reg[index], count);
-        break;
+//    case PMC_REG_T_M:
+//        if (index+count > TM_REG_COUNT)
+//            return false;
+//        memcpy(value, &m_tm_reg[index], count);
+//        break;
+//    case PMC_REG_T_C:
+//        if (index+count > TC_REG_COUNT)
+//            return false;
+//        memcpy(value, &m_tc_reg[index], count);
+//        break;
 #endif
 	default:
 		g_ptr_trace->PrintTrace(TRACE_WARNING, PMC_REGISTER, "寄存器段[%d]不是双字节寄存器！", sec);
@@ -1381,32 +1381,32 @@ void PmcRegister::SaveRegData(){
 			return;
 		}
 
-        //获取TM寄存器
-        uint8_t tm_reg[TM_REG_COUNT];
-        memcpy(tm_reg, m_tm_reg, TM_REG_COUNT);
+//        //获取TM寄存器
+//        uint8_t tm_reg[TM_REG_COUNT];
+//        memcpy(tm_reg, m_tm_reg, TM_REG_COUNT);
 
-        //保存TM寄存器
-        size = TM_REG_COUNT;
-        write(m_n_fp, &size, 2);
+//        //保存TM寄存器
+//        size = TM_REG_COUNT;
+//        write(m_n_fp, &size, 2);
 
-        res = write(m_n_fp, tm_reg, size);
-        if(res == -1){//写入失败
-            close(m_n_fp);
-            g_ptr_trace->PrintTrace(TRACE_ERROR, PMC_REGISTER, "写入T寄存器失败！");
-            return;
-        }
+//        res = write(m_n_fp, tm_reg, size);
+//        if(res == -1){//写入失败
+//            close(m_n_fp);
+//            g_ptr_trace->PrintTrace(TRACE_ERROR, PMC_REGISTER, "写入T寄存器失败！");
+//            return;
+//        }
 
-        //保存TC寄存器
-        for (int i = 0 ; i < TM_REG_COUNT; ++i)
-        {
-            for (int j = 0; j < 8; ++j)
-            {
-                if (tm_reg[i] & (0x01 << j))
-                {
-                    res = write(m_n_fp, this->m_tc_reg + (i*8+j)*2, sizeof(uint16_t));
-                }
-            }
-        }
+//        //保存TC寄存器
+//        for (int i = 0 ; i < TM_REG_COUNT; ++i)
+//        {
+//            for (int j = 0; j < 8; ++j)
+//            {
+//                if (tm_reg[i] & (0x01 << j))
+//                {
+//                    res = write(m_n_fp, this->m_tc_reg + (i*8+j)*2, sizeof(uint16_t));
+//                }
+//            }
+//        }
 
 #endif
 

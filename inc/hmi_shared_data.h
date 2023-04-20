@@ -112,8 +112,8 @@ const int kMaxProcParamCount = 10;    //系统支持的工艺参数最大组数
 #define D_REG_COUNT (2048)			//D寄存器个数
 #define T_REG_COUNT (128)			//T寄存器个数   单个寄存器占2字节，总字节数为256字节
 #define C_REG_COUNT (80)			//C寄存器个数   单个寄存器占4字节，前两字节为预置值，后两字节为当前值，总字节数为320字节
-#define TC_REG_COUNT (256)          //TC寄存器个数
-#define TM_REG_COUNT (16)           //TM寄存器，16个字节
+//#define TC_REG_COUNT (256)          //TC寄存器个数
+//#define TM_REG_COUNT (16)           //TM寄存器，16个字节
 #define E_REG_COUNT (8000)         //E寄存器个数
 #endif
 

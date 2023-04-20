@@ -710,12 +710,12 @@ bool ChannelEngine::SetConsumeTask(TASK_CONSUME_TYPE consumeType)
 
 bool ChannelEngine::ReadyServerGuide()
 {
-    if (!m_serverGuide.InitSocket())
+    if (!m_serverGuide.InitSocket())//初始化连接
     {
         return false;
     }
 
-    if (!m_serverGuide.Accept())
+    if (!m_serverGuide.Accept())//创建数据传输通道
     {
         return false;
     }
@@ -730,7 +730,7 @@ bool ChannelEngine::RecordingServerGuide()
 
     while(!g_sys_state.system_quit)
     {
-        if (m_serverGuide.RefreshRecording())//判断是否处于Recording状态，并刷新状态
+        if (m_serverGuide.RefreshRecording())//判断系统是否处于Recording状态，并刷新状态
         {
             if (m_serverGuide.IsTimeout())
             {

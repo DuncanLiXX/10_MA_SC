@@ -10,7 +10,7 @@
 #include "hmi_shared_data.h"
 #include "geometry_data.h"
 
-class SG_Type;
+struct SG_Type;
 
 using SG_DATA = std::tuple<double, double, double, double>; //最终发送的数据类型，现阶段写死4个double类型，方便通讯库用固定类型存储
 using SG_Type_Ptr = std::shared_ptr<SG_Type>;               //伺服引导类型，具体类型参见 E_SG_Type
@@ -28,8 +28,8 @@ enum class E_SG_Type {
  */
 struct SG_Type {
     SG_Type(int8_t interval, int8_t axis_one, int8_t axis_two, E_SG_Type type)
-        : interval_(interval), type_(type),
-          axis_one_(axis_one), axis_two_(axis_two) { }
+        : type_(type), axis_one_(axis_one), axis_two_(axis_two), interval_(interval)
+            { }
 
     E_SG_Type type_  = E_SG_Type::SG_None;      //类型
     int8_t axis_one_ = -1;                      //需要监听的轴号No.1
@@ -112,7 +112,7 @@ public:
     bool StartRecord();                                 // 开始数据记录
     void PauseRecord();                                 // 结束数据记录
     void ResetRecord();                                 // 复位
-    bool RefreshRecording();
+    bool RefreshRecording();                            // 更新数据采集状态
 
     bool IsIdle() const;                                // 是否处于空闲状态
     bool IsRecord() const;
@@ -153,10 +153,8 @@ private:
     std::queue<SG_DATA> data_;
     mutable std::mutex data_mut_;
 
-    // 数据传输 socket
-    int data_socket_ = -1;              //tcp socket
-    //bool connect_ = false;              //是否连接
-    int  data_send_fd = -1;
+    int data_socket_ = -1;              //连接socket
+    int data_send_fd = -1;              //数据传输socket
 
     SG_Type_Ptr type_ptr_;
 };

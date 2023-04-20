@@ -157,8 +157,7 @@ bool ServeGuide::IsTimeout()
  */
 bool ServeGuide::IsDataReady()
 {
-    //std::lock_guard<std::mutex> mut(data_mut_);
-    //if (data_.size() > 10)
+    //当数据量大，cpu处理不过来时，可以等发送队列中的数据到达某一量级时，一并发送
     return true;
 }
 
@@ -169,10 +168,9 @@ bool ServeGuide::IsDataReady()
  */
 void ServeGuide::RecordData(const double *feedback, const double *interp)
 {
-    //不同类型生成不同DATA
     SG_DATA data = type_ptr_->GenData(feedback, interp);
     std::lock_guard<std::mutex> mut(data_mut_);
-    data_.push(std::move(data));
+    data_.push(std::move(data));//数据压入发送队列中
 }
 
 /**
@@ -193,7 +191,7 @@ void ServeGuide::SendData()
     }
 
     if( -1 == send(data_send_fd, &data, sizeof(data), MSG_NOSIGNAL)){
-        std::cout << "Data send error" << std::endl;
+        ScPrintf("ServeGuide: data send error");
     }
 }
 
@@ -284,8 +282,8 @@ bool ServeGuide::Accept()
  */
 bool ServeGuide::Close()
 {
-    if(data_send_fd > 0){
-
+    if(data_send_fd > 0)
+    {
         auto time = steady_clock::now();
         if (close(data_send_fd) == -1)
         {
@@ -295,7 +293,7 @@ bool ServeGuide::Close()
         data_send_fd = -1;
         sync();
         auto t = duration_cast<milliseconds>(steady_clock::now() - time).count();
-        printf("close data trans socket! %ld\n", t);
+        printf("close data trans socket! %lld\n", t);
     }
     return true;
 }
@@ -307,12 +305,12 @@ void ServeGuide::ProcessData()
 {
     while(state_ != E_SG_RunState::IDLE)
     {
-        if (IsDataReady())//发送数据
+        if (IsDataReady())
         {
             SendData();
         }
     }
-    std::cout << "process data finish" << std::endl;
+    ScPrintf("ServeGuide: process data finish");
     return;
 }
 
@@ -365,7 +363,7 @@ bool SG_Type::Verify() const
     return true;
 }
 
-SG_DATA SG_Rect_Type::GenData(const double *feedback, const double *interp)
+SG_DATA SG_Rect_Type::GenData(const double *feedback, const double *)
 {
     SG_DATA data = std::make_tuple(feedback[axis_one_], feedback[axis_two_], -1, -1);
     return data;
@@ -427,7 +425,7 @@ void CoordTransform(SG_DATA &origin, DPlane offset)
     std::get<1>(origin) = std::get<1>(origin) + offset.y;
 }
 
-SG_DATA SG_Circle_Type::GenData(const double *feedback, const double *interp)
+SG_DATA SG_Circle_Type::GenData(const double *feedback, const double *)
 {
     //要加入起始点，否则起始点必须要是（0，0）
     //转换极坐标系
@@ -633,9 +631,10 @@ bool SG_Tapping_Type::Verify() const
 {
     if (!SG_Type::Verify())
         return false;
+    return true;
 }
 
-SG_DATA SG_Tapping_Type::GenData(const double *feedback, const double *interp)
+SG_DATA SG_Tapping_Type::GenData(const double *feedback, const double *)
 {
     double delta = feedback[axis_one_] - feedback[axis_two_];
     SG_DATA data = std::make_tuple(feedback[axis_one_], feedback[axis_two_], delta, -1);//速度暂时没做

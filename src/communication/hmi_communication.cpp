@@ -2728,9 +2728,8 @@ void HMICommunication::ProcessHmiServoDataRequest(HMICmdFrame &cmd)
     SG_Type_Ptr type = nullptr;
     //读取类型
     SG_Config_Type config_type = (SG_Config_Type)cmd.data[0];
-    std::cout << "data: " << (int)cmd.data[0] << std::endl;
-    std::cout << "config_type: " << (int)config_type << std::endl;
-    switch(config_type)
+    ScPrintf("config_type: %d", (int)config_type);
+    switch(config_type)// TODO 此段代码可用模板函数优化
     {
     case SG_Config_Type::Rect:
     {
@@ -2764,7 +2763,7 @@ void HMICommunication::ProcessHmiServoDataRequest(HMICmdFrame &cmd)
 
     if (!type)
     {
-        std::cout << "ProcessHmiServoDataRequest REFUSE, unkown type" << std::endl;
+        ScPrintf("ProcessHmiServoDataRequest refuse, unkown type");
         cmd.cmd_extension = REFUSE;
         SendCmd(cmd);
         return;
@@ -2772,26 +2771,31 @@ void HMICommunication::ProcessHmiServoDataRequest(HMICmdFrame &cmd)
 
     if (!type->Verify())
     {
-        std::cout << "ProcessHmiServoDataRequest REFUSE,type data err" << std::endl;
+        ScPrintf("ProcessHmiServoDataRequest refuse,type data illegal");
         cmd.cmd_extension = REFUSE;
         SendCmd(cmd);
         return;
     }
 
-    if (g_ptr_chn_engine->GetChnControl(cmd.channel_index)->IsMachinRunning()
-            || !g_ptr_chn_engine->m_serverGuide.ReadyRecord())
+    if (g_ptr_chn_engine->GetChnControl(cmd.channel_index)->IsMachinRunning())
     {
-        std::cout << "ProcessHmiServoDataRequest REFUSE, system busy" << std::endl;
+        ScPrintf("ProcessHmiServoDataRequest refuse, system running");
         cmd.cmd_extension = REFUSE;
         SendCmd(cmd);
         return;
     }
 
-    //设置类型
     g_ptr_chn_engine->m_serverGuide.SetType(type);
+    if (!g_ptr_chn_engine->m_serverGuide.ReadyRecord())
+    {
+        ScPrintf("ProcessHmiServoDataRequest refuse, ready failure");
+        cmd.cmd_extension = REFUSE;
+        SendCmd(cmd);
+        return;
+    }
 
+    ScPrintf("ProcessHmiServoDataRequest approve");
     memset(cmd.data, 0, sizeof(cmd.data));
-    std::cout << "ProcessHmiServoDataRequest APPROVE" << std::endl;
     cmd.cmd_extension = APPROVE;
     SendCmd(cmd);
 }

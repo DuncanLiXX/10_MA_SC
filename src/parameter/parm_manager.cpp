@@ -4201,101 +4201,101 @@ bool ParmManager::UpdateSystemParam(uint32_t param_no, ParamValue &value){
 		sprintf(kname, "debug_mode");
 		m_ini_system->SetIntValue(sname, kname, value.value_uint8);
 		break;
-    case 200:  //位置开关
+    case 65:  //位置开关
         sprintf(kname, "pos_check_id_1");
         m_ini_system->SetIntValue(sname, kname, value.value_uint8);
         break;
-    case 201:
+    case 66:
         sprintf(kname, "pos_check_id_2");
         m_ini_system->SetIntValue(sname, kname, value.value_uint8);
         break;
-    case 202:
+    case 67:
         sprintf(kname, "pos_check_id_3");
         m_ini_system->SetIntValue(sname, kname, value.value_uint8);
         break;
-    case 203:
+    case 68:
         sprintf(kname, "pos_check_id_4");
         m_ini_system->SetIntValue(sname, kname, value.value_uint8);
         break;
-    case 204:
+    case 69:
         sprintf(kname, "pos_check_id_5");
         m_ini_system->SetIntValue(sname, kname, value.value_uint8);
         break;
-    case 205:
+    case 70:
         sprintf(kname, "pos_check_id_6");
         m_ini_system->SetIntValue(sname, kname, value.value_uint8);
         break;
-    case 206:
+    case 71:
         sprintf(kname, "pos_check_id_7");
         m_ini_system->SetIntValue(sname, kname, value.value_uint8);
         break;
-    case 207:
+    case 72:
         sprintf(kname, "pos_check_id_8");
         m_ini_system->SetIntValue(sname, kname, value.value_uint8);
         break;
 
-    case 220:
+    case 73:
         sprintf(kname, "pos_check_min_1");
         m_ini_system->SetDoubleValue(sname, kname, value.value_double);
         break;
-    case 221:
+    case 74:
         sprintf(kname, "pos_check_min_2");
         m_ini_system->SetDoubleValue(sname, kname, value.value_double);
         break;
-    case 222:
+    case 75:
         sprintf(kname, "pos_check_min_3");
         m_ini_system->SetDoubleValue(sname, kname, value.value_double);
         break;
-    case 223:
+    case 76:
         sprintf(kname, "pos_check_min_4");
         m_ini_system->SetDoubleValue(sname, kname, value.value_double);
         break;
-    case 224:
+    case 77:
         sprintf(kname, "pos_check_min_5");
         m_ini_system->SetDoubleValue(sname, kname, value.value_double);
         break;
-    case 225:
+    case 78:
         sprintf(kname, "pos_check_min_6");
         m_ini_system->SetDoubleValue(sname, kname, value.value_double);
         break;
-    case 226:
+    case 79:
         sprintf(kname, "pos_check_min_7");
         m_ini_system->SetDoubleValue(sname, kname, value.value_double);
         break;
-    case 227:
+    case 80:
         sprintf(kname, "pos_check_min_8");
         m_ini_system->SetDoubleValue(sname, kname, value.value_double);
         break;
 
-    case 240:
+    case 81:
         sprintf(kname, "pos_check_max_1");
         m_ini_system->SetDoubleValue(sname, kname, value.value_double);
         break;
-    case 241:
+    case 82:
         sprintf(kname, "pos_check_max_2");
         m_ini_system->SetDoubleValue(sname, kname, value.value_double);
         break;
-    case 242:
+    case 83:
         sprintf(kname, "pos_check_max_3");
         m_ini_system->SetDoubleValue(sname, kname, value.value_double);
         break;
-    case 243:
+    case 84:
         sprintf(kname, "pos_check_max_4");
         m_ini_system->SetDoubleValue(sname, kname, value.value_double);
         break;
-    case 244:
+    case 85:
         sprintf(kname, "pos_check_max_5");
         m_ini_system->SetDoubleValue(sname, kname, value.value_double);
         break;
-    case 245:
+    case 86:
         sprintf(kname, "pos_check_max_6");
         m_ini_system->SetDoubleValue(sname, kname, value.value_double);
         break;
-    case 246:
+    case 87:
         sprintf(kname, "pos_check_max_7");
         m_ini_system->SetDoubleValue(sname, kname, value.value_double);
         break;
-    case 247:
+    case 88:
         sprintf(kname, "pos_check_max_8");
         m_ini_system->SetDoubleValue(sname, kname, value.value_double);
         break;
@@ -6076,78 +6076,78 @@ void ParmManager::ActiveSystemParam(uint32_t param_no, ParamValue &value){
 		this->m_sc_system_config->debug_mode = value.value_uint8;
 		break;
 
-    case 200:   //位置开关
+    case 65:   //位置开关
         this->m_sc_system_config->pos_check_id_1 = value.value_uint8;
         break;
-    case 201:
+    case 66:
         this->m_sc_system_config->pos_check_id_2 = value.value_uint8;
         break;
-    case 202:
+    case 67:
         this->m_sc_system_config->pos_check_id_3 = value.value_uint8;
         break;
-    case 203:
+    case 68:
         this->m_sc_system_config->pos_check_id_4 = value.value_uint8;
         break;
-    case 204:
+    case 69:
         this->m_sc_system_config->pos_check_id_5 = value.value_uint8;
         break;
-    case 205:
+    case 70:
         this->m_sc_system_config->pos_check_id_6 = value.value_uint8;
         break;
-    case 206:
+    case 71:
         this->m_sc_system_config->pos_check_id_7 = value.value_uint8;
         break;
-    case 207:
+    case 72:
         this->m_sc_system_config->pos_check_id_8 = value.value_uint8;
         break;
 
-    case 220:   //位置开关最小值
+    case 73:   //位置开关最小值
         this->m_sc_system_config->pos_check_min_1 = value.value_double;
         break;
-    case 221:
+    case 74:
         this->m_sc_system_config->pos_check_min_2 = value.value_double;
         break;
-    case 222:
+    case 75:
         this->m_sc_system_config->pos_check_min_3 = value.value_double;
         break;
-    case 223:
+    case 76:
         this->m_sc_system_config->pos_check_min_4 = value.value_double;
         break;
-    case 224:
+    case 77:
         this->m_sc_system_config->pos_check_min_5 = value.value_double;
         break;
-    case 225:
+    case 78:
         this->m_sc_system_config->pos_check_min_6 = value.value_double;
         break;
-    case 226:
+    case 79:
         this->m_sc_system_config->pos_check_min_7 = value.value_double;
         break;
-    case 227:
+    case 80:
         this->m_sc_system_config->pos_check_min_8 = value.value_double;
         break;
 
-    case 240:   //位置开关最大值
+    case 81:   //位置开关最大值
         this->m_sc_system_config->pos_check_max_1 = value.value_double;
         break;
-    case 241:
+    case 82:
         this->m_sc_system_config->pos_check_max_2 = value.value_double;
         break;
-    case 242:
+    case 83:
         this->m_sc_system_config->pos_check_max_3 = value.value_double;
         break;
-    case 243:
+    case 84:
         this->m_sc_system_config->pos_check_max_4 = value.value_double;
         break;
-    case 244:
+    case 85:
         this->m_sc_system_config->pos_check_max_5 = value.value_double;
         break;
-    case 245:
+    case 86:
         this->m_sc_system_config->pos_check_max_6 = value.value_double;
         break;
-    case 246:
+    case 87:
         this->m_sc_system_config->pos_check_max_7 = value.value_double;
         break;
-    case 247:
+    case 88:
         this->m_sc_system_config->pos_check_max_8 = value.value_double;
         break;
 

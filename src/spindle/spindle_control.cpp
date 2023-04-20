@@ -160,7 +160,6 @@ void SpindleControl::SetMode(Mode mode)
         // 速度降为0
     	SendSpdSpeedToMi(0);
     	// 检测速度将为0
-
     	int count = 0;
 
     	while(spindle->axis_interface != 0 && fabs(GetSpindleSpeed()) > 1)
@@ -222,7 +221,7 @@ void SpindleControl::SetTapFeed(double feed)
 // 开始刚性攻丝
 void SpindleControl::StartRigidTap(double feed)
 {
-    if(!spindle || spindle->axis_interface == 0)
+	if(!spindle || spindle->axis_interface == 0)
         return;
     // 如果不在位置模式，报警：速度模式下不能刚性攻丝
 
@@ -245,13 +244,13 @@ void SpindleControl::StartRigidTap(double feed)
 
     // 攻丝回退要特殊处理
     if(running_rtnt && tap_state.tap_flag){
-        tap_ratio = -10000.0*tap_state.S*spindle->move_pr/tap_state.F;
+    	tap_ratio = -10000.0*tap_state.S*spindle->move_pr/tap_state.F;
     }
-    if(CalPolar() == Negative)
-        tap_ratio *= -1;
-    ScPrintf("running_rtnt=%u S=%u  F=%llf",running_rtnt,tap_state.S,tap_state.F);
 
 
+    ScPrintf("=====================================\n");
+    ScPrintf("running_rtnt=%u S=%u  F=%lf ratio=%lf\n",
+    		running_rtnt,tap_state.S,tap_state.F, tap_ratio);
     //if(TSO)
     //    ratio *= SOV/100.0;
 
@@ -266,7 +265,7 @@ void SpindleControl::StartRigidTap(double feed)
     mi->SendTapRatioCmd(chn, tap_ratio);
     //打开攻丝状态
     SendMcRigidTapFlag(true);
-    mi->SendTapStateCmd(chn,true);
+    mi->SendTapStateCmd(chn,true, running_rtnt);
     tap_enable = true;
     std::this_thread::sleep_for(std::chrono::microseconds(100*1000));
     printf("********************** RGSPP = 1\n");
@@ -278,6 +277,7 @@ void SpindleControl::StartRigidTap(double feed)
     tap_state.polar = cnc_polar;
     tap_state.phy_axis = phy_axis;
     tap_state.z_axis = z_axis;
+    tap_state.dir = TapDir;
     double R = 0.0;
     bool inited = false;
     if(variable->GetVarValue(188,R,inited)){
@@ -1010,7 +1010,6 @@ void SpindleControl::ProcessSwitchLevel()
 
     //延时TM us后发送SF信号
     std::this_thread::sleep_for(std::chrono::microseconds(TM));
-    //usleep(TM); @zk 为什么不用 usleep???
     F->SF = 1;
 
     // 记录档位
@@ -1112,6 +1111,10 @@ void SpindleControl::ProcessRTNT()
 	// 如果主轴不在使能状态，先上使能
     // 恢复攻丝状态
     double R = tap_state.R + spindle->spd_rtnt_distance;
+
+    printf("tap_state.R %lf spindle->spd_rtnt_distance %lf R %lf\n",
+    		tap_state.R, spindle->spd_rtnt_distance, R);
+
     variable->SetVarValue(188, R);
     variable->SetVarValue(179, tap_state.F);
     SetTapFeed(tap_state.F);

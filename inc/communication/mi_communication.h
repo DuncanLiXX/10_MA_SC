@@ -227,7 +227,7 @@ public:
     // 发送同步误差增益，轴速度前馈增益，轴位置比例增益
     void SendTapParams(uint8_t chn,uint32_t error_gain,
                        uint32_t feed_gain,uint32_t ratio_gain);
-    void SendTapStateCmd(uint8_t chn,bool enable); // 发送攻丝状态给MI
+    void SendTapStateCmd(uint8_t chn,bool enable, bool rtnt = false); // 发送攻丝状态给MI
     // axis: 主轴轴号，从1开始
     void SendSpdLocateCmd(uint8_t chn, uint8_t axis, bool enable); // 发送主轴定位命令
     // axis: 轴号，从1开始

@@ -8612,7 +8612,9 @@ bool ChannelEngine::RefreshMiStatusFun(){
 
     while(!g_sys_state.system_quit){
 
-        if((g_sys_state.module_ready_mask & MI_READY) == 0){  //MI未准备好则等待
+        printf("11111111111111\n");
+
+    	if((g_sys_state.module_ready_mask & MI_READY) == 0){  //MI未准备好则等待
             printf("wait MI_READY signal!\n");
             usleep(8000);
             continue;
@@ -8629,6 +8631,7 @@ bool ChannelEngine::RefreshMiStatusFun(){
             printf("OUT\n");
             return true;
         }
+        printf("222222222222\n");
 
         //更新写入F寄存器， 更新周期8ms
         this->m_p_mi_comm->WritePmcReg(PMC_REG_F, p_f_reg);
@@ -8650,7 +8653,7 @@ bool ChannelEngine::RefreshMiStatusFun(){
         this->m_p_mi_comm->ReadPmcReg(PMC_REG_E, p_e_reg);
 #endif
 
-
+        printf("3333333333333333\n");
         //读取最新的PMC寄存器值
         if(count % 10 == 0){	//更新周期80ms
             this->m_p_mi_comm->ReadPmcReg(PMC_REG_X, m_p_pmc_reg->GetRegPtr8(PMC_REG_X));
@@ -8667,7 +8670,7 @@ bool ChannelEngine::RefreshMiStatusFun(){
 
         }
 
-
+        printf("4444444444444444444\n");
         this->m_p_mi_comm->ReadServoOnState(m_n_phy_axis_svo_on);
         Singleton<AxisStatusCtrl>::instance().UpdateSA(m_n_phy_axis_svo_on);
 
@@ -8838,7 +8841,7 @@ bool ChannelEngine::RefreshMiStatusFun(){
                 this->ReturnRefPoint();
             }
         }
-
+        printf("5555555555555555555555\n");
         //更新轴限位数据给MI
         this->m_p_mi_comm->WriteAxisHLimitFlag(true, m_hard_limit_postive);
         this->m_p_mi_comm->WriteAxisHLimitFlag(false, m_hard_limit_negative);
@@ -8849,7 +8852,7 @@ bool ChannelEngine::RefreshMiStatusFun(){
                 this->SendMonitorData(false, false);
             }
         }
-
+/*
 #ifdef USES_LICENSE_FUNC
         //时间校验以及授权校验
         if(count % 450000 == 0){
@@ -8878,9 +8881,10 @@ bool ChannelEngine::RefreshMiStatusFun(){
 
         }
 #endif
-
+*/
         usleep(8000);  //8ms周期，比PMC周期相同
         count++;
+        printf("66666666666666666666\n");
     }
 
     //	printf("exit ChannelEngine::RefreshMiStatusFun()\n");

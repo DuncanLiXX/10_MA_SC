@@ -1763,6 +1763,8 @@ void ChannelControl::StartRunGCode(){
         this->m_b_init_compiler_pos = true;
     }
 
+    //@add zk 设置刀补模块位置
+    this->m_p_compiler->setCompensationPos(this->m_channel_rt_status.cur_pos_work);
     if(this->m_channel_status.chn_work_mode == AUTO_MODE){
 
         string msg = "开始加工程序(" + string(this->m_channel_status.cur_nc_file_name) + ")";
@@ -4426,7 +4428,16 @@ int ChannelControl::Run(){
     //执行循环
     while(!g_sys_state.system_quit)
     {
-        if(m_n_run_thread_state == RUN)
+    	/*printf("cur pos x: %lf y: %lf z: %lf\n",
+    			m_channel_mc_status.intp_pos.x,
+				m_channel_mc_status.intp_pos.x,
+				m_channel_mc_status.intp_pos.z);
+    	printf("tar pos x: %lf y: %lf z: %lf\n",
+    			m_channel_mc_status.intp_tar_pos.x,
+				m_channel_mc_status.intp_tar_pos.y,
+				m_channel_mc_status.intp_tar_pos.z);*/
+
+    	if(m_n_run_thread_state == RUN)
         {
 
         	//printf("m_n_run_thread_state = RUN\n");
@@ -7488,7 +7499,6 @@ bool ChannelControl::ExecuteCoordMsg(RecordMsg *msg){
         }
 
     }else if(gcode == G53_CMD){ //机械坐标系
-
         if(!OutputData(msg, true))
             return false;
 
@@ -7567,8 +7577,6 @@ bool ChannelControl::ExecuteCoordMsg(RecordMsg *msg){
         }else
             this->RefreshOuputMovePos(m_pos_simulate_cur_work);    //同步已编译的轴移动指令的位置
     }
-
-    printf("execute coord message : %d\n", m_channel_status.gmode[14]);
 
     this->SendChnStatusChangeCmdToHmi(G_MODE);
 
@@ -8256,9 +8264,11 @@ bool ChannelControl::ExecuteLoopMsg(RecordMsg *msg){
         }
 
         if(loopmsg->GetGCode() == G74_CMD){
-            m_p_spindle->SetTapFeed(-feed);
+            m_p_spindle->TapDir = -1;
+        	m_p_spindle->SetTapFeed(-feed);
         }else{
-            m_p_spindle->SetTapFeed(feed);
+        	m_p_spindle->TapDir = 1;
+        	m_p_spindle->SetTapFeed(feed);
         }
 
 

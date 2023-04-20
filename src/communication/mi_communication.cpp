@@ -320,7 +320,7 @@ void MICommunication::SendTapParams(uint8_t chn, uint32_t error_gain, uint32_t f
     WriteCmd(cmd);
 }
 
-void MICommunication::SendTapStateCmd(uint8_t chn, bool enable)
+void MICommunication::SendTapStateCmd(uint8_t chn, bool enable, bool rtnt)
 {
     MiCmdFrame cmd;
     memset(&cmd, 0x00, sizeof(cmd));
@@ -328,6 +328,7 @@ void MICommunication::SendTapStateCmd(uint8_t chn, bool enable)
     cmd.data.axis_index = 0xFF;
     cmd.data.reserved = chn;
     cmd.data.data[0] = enable?1:0;
+    cmd.data.data[1] = rtnt;      //是否刚性攻丝回退中启动
     WriteCmd(cmd);
 }
 

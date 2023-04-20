@@ -39,6 +39,7 @@ public:
     void clearError();
 
     void setPlane(int plane){this->plane = plane;}
+    void setCurAxisPos(int axis, double pos);
 
     ErrorType err_code = ERR_NONE;
     uint32_t err_lino = 0;
@@ -49,7 +50,6 @@ private:
 	OutputMsgList *m_p_output_msg_list;   //待输出至MC的指令消息队列
 	
 	ToolRec m_cur_tool;
-    DPointChn cur_point;
     RecordMsg * msg;
     double comp_radius;
     int comp_side;     //补偿方向

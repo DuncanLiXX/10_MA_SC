@@ -335,6 +335,8 @@ public:
 	 // (x1, y1) 起点  (x2, y2) 终点  (mid_x, mid_y) 计算刀补点  dir 刀补方向 1 RIGHT  2 LEFT
 	 void calc_mid_first_comp(double x1, double y1, double x2, double y2, double &midx, double &midy, int dir, double radius);
 
+	 void setCurAxisPos(int axis, double pos);
+
 	 setup _setup;
 
 	 bool isCompOn = false;

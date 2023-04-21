@@ -1822,7 +1822,8 @@ void ChannelEngine::SendMonitorData(bool bAxis, bool btime){
         this->m_p_channel_control[i].SendMonitorData(bAxis, btime);
     }
 
-    this->SendPmcAxisToHmi();   //发送PMC轴数据
+    if (bAxis)
+        this->SendPmcAxisToHmi();   //发送PMC轴数据
     //	printf("send monitor data\n");
 }
 
@@ -3703,6 +3704,10 @@ void ChannelEngine::ProcessHmiAbsoluteRefSet(HMICmdFrame &cmd)
                             g_ptr_parm_manager->UpdateAxisComplete(i, 0);
                             ClearAxisRefEncoder(i);
                         }
+                        else
+                        {
+                            CreateError(ERR_RET_NOT_SUPPORT, WARNING_LEVEL, CLEAR_BY_MCP_RESET, 0, m_n_cur_channle_index, i);
+                        }
                     }
                 }
                 if (m_n_mask_ret_ref != 0)
@@ -3728,9 +3733,7 @@ void ChannelEngine::ProcessHmiAbsoluteRefSet(HMICmdFrame &cmd)
                         m_n_mask_ret_ref = (0x01<<phy_axis);
                     }
                     else
-                    {
                         errCode = 1;
-                    }
                 }
             }
         }
@@ -3741,7 +3744,7 @@ void ChannelEngine::ProcessHmiAbsoluteRefSet(HMICmdFrame &cmd)
         if (errCode == 0)
             CreateError(ERR_RET_REF_FAILED, WARNING_LEVEL, CLEAR_BY_MCP_RESET, 0, m_n_cur_channle_index, chn_axis);
         else if(errCode == 1)
-            CreateError(ERR_RET_SYNC_ERR, WARNING_LEVEL, CLEAR_BY_MCP_RESET, 0, m_n_cur_channle_index, chn_axis);
+            CreateError(ERR_RET_NOT_SUPPORT, WARNING_LEVEL, CLEAR_BY_MCP_RESET, 0, m_n_cur_channle_index, chn_axis);
     }
     this->m_p_hmi_comm->SendCmd(cmd);
 }
@@ -6122,21 +6125,19 @@ void ChannelEngine::ManualMoveAbs(uint8_t phy_axis, double vel, double pos){
  */
 void ChannelEngine::ManualMoveAbs(uint8_t phy_axis, double vel, double pos, double &real_pos)
 {
-    int64_t cur_pos = this->m_df_phy_axis_pos_feedback[phy_axis]*1e7;  //当前位置
-    //设置目标位置
-    int64_t tar_pos = pos * 1e7;   //单位转换：mm-->0.1nms
-    ManualMoveDir dir = (tar_pos > cur_pos)?DIR_POSITIVE:DIR_NEGATIVE;  //移动方向
+    double pos_cur = this->m_df_phy_axis_pos_feedback[phy_axis];        //当前位置
+    double pos_tar = pos_cur + pos;                                     //目标位置
+    ManualMoveDir dir = (pos_tar > pos_cur)?DIR_POSITIVE:DIR_NEGATIVE;  //移动方向
 
     //检查软限位
     double limit = 0;
     if(CheckSoftLimit(dir, phy_axis, this->m_df_phy_axis_pos_feedback[phy_axis])){
         printf("soft limit active, manual move abs return \n");
+        real_pos = pos_cur;
         return;
-    }else if(GetSoftLimt(dir, phy_axis, limit) && dir == DIR_POSITIVE && pos > limit /* * 1e7*/){
-        tar_pos = limit * 1e7;
+    }else if(GetSoftLimt(dir, phy_axis, limit) && dir == DIR_POSITIVE && pos_tar > limit){
         real_pos = limit;
-    }else if(GetSoftLimt(dir, phy_axis, limit) && dir == DIR_NEGATIVE && pos < limit /* * 1e7*/){
-        tar_pos = limit * 1e7;
+    }else if(GetSoftLimt(dir, phy_axis, limit) && dir == DIR_NEGATIVE && pos_tar < limit){
         real_pos = limit;
     }
 
@@ -10538,6 +10539,10 @@ void ChannelEngine::AxisFindRefNoZeroSignal(uint8_t phy_axis){
             m_n_ret_ref_auto_cur = 0;
         }
         SetAxisComplete(phy_axis);
+        if (GetPmcActive(phy_axis))
+        {
+            m_pmc_axis_ctrl[m_p_axis_config[phy_axis].axis_pmc-1].ExecCmdOver(true);
+        }
         std::cout << "step 2, ref finish\n";
 
         break;
@@ -10880,11 +10885,11 @@ void ChannelEngine::EcatIncAxisFindRefWithZeroSignal(uint8_t phy_axis){
         //dis = this->m_p_axis_config[phy_axis].axis_home_pos[0];   // 原点坐标
         dis = real_pos;
 #endif
-        //this->SendMonitorData(false, false);  //再次读取实时位置
-        if(fabs(this->GetPhyAxisMachPosFeedback(phy_axis)- dis) <= 0.010){  //到位
+        this->SendMonitorData(false, false);  //再次读取实时位置
+        if(fabs(this->GetPhyAxisMachPosFeedback(phy_axis) - dis) <= 0.010){  //到位
 
             m_n_ret_ref_step[phy_axis]++;  //跳转下一步
-            std::cout << "step 17" << std::endl;
+            std::cout << "step 17" << this->GetPhyAxisMachPosFeedback(phy_axis) << " " << dis << std::endl;
             gettimeofday(&this->m_time_ret_ref[phy_axis], NULL);
             if (real_pos != m_p_axis_config[phy_axis].axis_home_pos[0])
             {
@@ -10911,7 +10916,7 @@ void ChannelEngine::EcatIncAxisFindRefWithZeroSignal(uint8_t phy_axis){
 
             if (GetSyncAxisCtrl()->CheckSyncState(phy_axis) == 1)//处理坐标有差异问题
             {//从动轴建立机械坐标
-                SetSubAxisRefPoint(phy_axis, m_p_axis_config[phy_axis].axis_home_pos[0]);
+                SetSubAxisRefPoint(phy_axis, this->GetPhyAxisMachPosFeedback(phy_axis));
             }
 
             if(m_n_mask_ret_ref == 0){
@@ -10920,6 +10925,10 @@ void ChannelEngine::EcatIncAxisFindRefWithZeroSignal(uint8_t phy_axis){
                 m_n_ret_ref_auto_cur = 0;
             }
             SetAxisComplete(phy_axis);
+            if (GetPmcActive(phy_axis))
+            {
+                m_pmc_axis_ctrl[m_p_axis_config[phy_axis].axis_pmc-1].ExecCmdOver(true);
+            }
             std::cout << "step 18, home finish" << std::endl;
         }
         break;
@@ -10938,6 +10947,10 @@ void ChannelEngine::EcatIncAxisFindRefWithZeroSignal(uint8_t phy_axis){
             m_error_code = ERR_RET_REF_FAILED;
             uint8_t chan_id = CHANNEL_ENGINE_INDEX, axis_id = NO_AXIS;
             GetPhyAxistoChanAxis(phy_axis, chan_id, axis_id);
+            if (GetPmcActive(phy_axis))
+            {
+                m_pmc_axis_ctrl[m_p_axis_config[phy_axis].axis_pmc-1].ExecCmdOver(true);
+            }
             CreateError(ERR_RET_REF_FAILED, WARNING_LEVEL, CLEAR_BY_MCP_RESET, 0, chan_id, axis_id);
             break;
         }
@@ -11147,11 +11160,6 @@ void ChannelEngine::SetAxisComplete(int axisID)
             g_ptr_parm_manager->UpdateAxisComplete(i, true);
             this->NotidyHmiAxisRefComplete(i);
         }
-    }
-
-    if (GetPmcActive(axisID))
-    {
-        m_pmc_axis_ctrl[m_p_axis_config[axisID].axis_pmc-1].ExecCmdOver(true);
     }
 }
 
@@ -11760,7 +11768,7 @@ void ChannelEngine::EcatAxisFindRefWithZeroSignal(uint8_t phy_axis){
     uint8_t chn = 0, chn_axis = 0;
     double dis = 0;      //移动距离
     //static int outlimit = 0;  //是否超过软限位行程
-    double real_pos = 0;
+    static double real_pos = 0;
 
     dir = this->m_p_axis_config[phy_axis].ret_ref_dir?DIR_POSITIVE:DIR_NEGATIVE;  // 回参考点找粗基准方向
     dir_opt = (m_p_axis_config[phy_axis].ret_ref_change_dir==0)?dir*-1:dir;       //回参考点找精基准方向
@@ -12025,7 +12033,7 @@ void ChannelEngine::EcatAxisFindRefWithZeroSignal(uint8_t phy_axis){
         if(time_elpase >= 200000){ //延时200ms
             // 修复第一参考点不受软限位限制问题
             this->m_n_mask_ret_ref_over |= (0x01<<phy_axis);
-
+            //SetAxisComplete(phy_axis);
             m_n_ret_ref_step[phy_axis]++;
             gettimeofday(&this->m_time_ret_ref[phy_axis], NULL);
             std::cout << "step 16, get encoder" << std::endl;
@@ -12053,7 +12061,7 @@ void ChannelEngine::EcatAxisFindRefWithZeroSignal(uint8_t phy_axis){
         //dis = this->m_p_axis_config[phy_axis].axis_home_pos[0];   // 原点坐标
         dis = real_pos;
 #endif
-        //this->SendMonitorData(false, false);  //再次读取实时位置
+        this->SendMonitorData(false, false);  //再次读取实时位置
         if(fabs(this->GetPhyAxisMachPosFeedback(phy_axis)- dis) <= 0.010){  //到位
             m_n_ret_ref_step[phy_axis]++;  //跳转下一步
             printf("step 18, return ref[%hhu, %lf, %lf]\n", phy_axis, this->GetPhyAxisMachPosFeedback(phy_axis), dis);
@@ -12079,6 +12087,10 @@ void ChannelEngine::EcatAxisFindRefWithZeroSignal(uint8_t phy_axis){
             m_n_ret_ref_auto_cur = 0;
         }
         SetAxisComplete(phy_axis);
+        if (GetPmcActive(phy_axis))
+        {
+            m_pmc_axis_ctrl[m_p_axis_config[phy_axis].axis_pmc-1].ExecCmdOver(true);
+        }
         std::cout << "step 19, ref finish" << std::endl;
         break;
     case 20: //失败处理
@@ -12089,6 +12101,10 @@ void ChannelEngine::EcatAxisFindRefWithZeroSignal(uint8_t phy_axis){
             this->m_b_ret_ref = false;
             this->m_b_ret_ref_auto = false;
             m_n_ret_ref_auto_cur = 0;
+        }
+        if (GetPmcActive(phy_axis))
+        {
+            m_pmc_axis_ctrl[m_p_axis_config[phy_axis].axis_pmc-1].ExecCmdOver(true);
         }
         CreateError(m_error_code, WARNING_LEVEL, CLEAR_BY_MCP_RESET, 0, CHANNEL_ENGINE_INDEX, phy_axis);
         break;
@@ -12505,6 +12521,10 @@ void ChannelEngine::EcatAxisFindRefNoZeroSignal(uint8_t phy_axis){
             m_n_ret_ref_auto_cur = 0;
         }
         SetAxisComplete(phy_axis);
+        if (GetPmcActive(phy_axis))
+        {
+            m_pmc_axis_ctrl[m_p_axis_config[phy_axis].axis_pmc-1].ExecCmdOver(true);
+        }
         std::cout << "step 19, ref finish\n";
         break;
     case 20: //失败处理
@@ -12521,6 +12541,10 @@ void ChannelEngine::EcatAxisFindRefNoZeroSignal(uint8_t phy_axis){
         uint8_t chan_id = CHANNEL_ENGINE_INDEX, axis_id = NO_AXIS;
         GetPhyAxistoChanAxis(phy_axis, chan_id, axis_id);
         CreateError(ERR_RET_REF_Z_ERR, WARNING_LEVEL, CLEAR_BY_MCP_RESET, 0, chan_id, axis_id);
+        if (GetPmcActive(phy_axis))
+        {
+            m_pmc_axis_ctrl[m_p_axis_config[phy_axis].axis_pmc-1].ExecCmdOver(true);
+        }
         break;
     }
     default:
@@ -12599,7 +12623,7 @@ void ChannelEngine::ReturnRefPoint(){
 
         }else if(this->m_p_axis_config[i].axis_interface == ANALOG_AXIS){   // 非总线轴
             //不支持非总线轴
-            CreateError(ERR_RET_SYNC_ERR, WARNING_LEVEL, CLEAR_BY_MCP_RESET, 0, m_n_cur_channle_index, i);
+            CreateError(ERR_RET_NOT_SUPPORT, WARNING_LEVEL, CLEAR_BY_MCP_RESET, 0, m_n_cur_channle_index, i);
         }
     }
 

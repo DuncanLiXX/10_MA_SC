@@ -106,6 +106,8 @@ public://公共接口
     int getSubCallTimes(){ return m_n_sub_call_times;}
     bool needJumpUpper(){return isJumpUpper;}
 
+    void setCompensationPos(const DPointChn &pos);
+
 #ifdef USES_WOOD_MACHINE
 	bool FindPreStartSpdCmd(uint64_t line_min , uint64_t line_max, SpindleStartOffset &spd_cmd);   //查找是否存在可预启动的主轴指令
 #endif

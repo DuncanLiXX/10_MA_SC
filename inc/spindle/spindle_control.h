@@ -44,6 +44,7 @@ typedef struct
     uint8_t phy_axis{0};        // 主轴轴号
     uint8_t z_axis{0};          // z轴轴号
     double R{0.0};              // R平面
+    int dir{1};					// G84  G74
 }TapState;
 }
 
@@ -209,6 +210,7 @@ public:
     Spindle::TapState tap_state;    // 攻丝数据记录
     bool running_rtnt{false};       // 是否正在攻丝回退
     double pos_zero_ang{0.0};            // 0度机械坐标
+    int TapDir = 1;        // 攻丝方向
 };
 
 #endif

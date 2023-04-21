@@ -64,14 +64,16 @@ void ToolCompensate::Reset(){
 	clearError();
 }
 
+void ToolCompensate::setCurAxisPos(int axis, double pos){
+	interp.setCurAxisPos(axis, pos);
+}
+
 /**
  * @brief 数据处理入口函数
  * @param node : 编译数据节点指针
  * 在 compile.runmsg 中已经处理了 G90 G91 不用考虑增量情况 所有计算都是绝对坐标值
  */
 void ToolCompensate::ProcessData(ListNode<RecordMsg *> *node){
-
-
 
 	msg = node->data;
 
@@ -81,14 +83,16 @@ void ToolCompensate::ProcessData(ListNode<RecordMsg *> *node){
 		if(interp.isCompOn) interp.reset();
 
 		if(msg->GetMsgType() == COMPENSATE_MSG){
-			this->err_code = INVALID_COMPENSATE_PLANE;
-			return;
+			CompensateMsg * tmsg = (CompensateMsg *)msg;
+			if(tmsg->GetGCode() == G41_CMD || tmsg->GetGCode() == G42_CMD){
+				this->err_code = INVALID_COMPENSATE_PLANE;
+				return;
+			}
 		}
 		// 非 G17 平面不进行刀补处理
 		this->m_p_output_msg_list->Append(node);
 		return;
 	}
-
 
 	CodeMsgType msg_type = msg->GetMsgType();
 	uint32_t line_number = msg->GetLineNo();
@@ -240,6 +244,26 @@ void ToolCompensate::ProcessData(ListNode<RecordMsg *> *node){
 
 			break;
 		}
+		case COORD_MSG:{
+			CoordMsg *coord_msg = (CoordMsg *)msg;
+			int gcode = coord_msg->GetGCode();
+			printf("gcode %d\n", gcode);
+			// @add zk 更新刀补起始位置
+			if(gcode == G53_CMD){
+				DPointChn point = coord_msg->GetTargetPos();
+				for(int i=0; i<8; i++){
+					interp.setCurAxisPos(i, point.m_df_point[i]);
+				}
+			}
+
+			if(interp.isCompOn){
+				interp.convert_close_compensation(&interp._setup);
+				comp_cancel_flag = true;
+			}
+
+			this->m_p_output_msg_list->Append(node);
+			break;
+		}
 		default:{
 
 			uint16_t flags = msg->GetFlags().all;
@@ -263,10 +287,9 @@ void ToolCompensate::ProcessData(ListNode<RecordMsg *> *node){
 					comp_cancel_flag = false;
 				}
 
-				if(msg_type == COORD_MSG || msg_type == REF_RETURN_MSG){
-
+				if(msg_type == REF_RETURN_MSG){
 					interp.convert_close_compensation(&interp._setup);
-				};
+				}
 
 				if(msg_type == LOOP_MSG){
 					LoopMsg *tmsg = (LoopMsg *)msg;

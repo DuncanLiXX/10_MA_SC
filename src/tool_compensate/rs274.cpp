@@ -1556,6 +1556,23 @@ void Interp::calc_mid_first_comp(double x1, double y1,
 	printf("=========== mid x: %lf mid y: %lf \n", midx, midy);
 }
 
+void Interp::setCurAxisPos(int axis, double pos){
+	printf("axis %d pos %lf\n", axis, pos);
+	switch(axis){
+	case 0:
+		_setup.current_x = pos;
+		temp_point[0] = pos;
+		break;
+	case 1:
+		_setup.current_y = pos;
+		temp_point[1] = pos;
+		break;
+	case 2:
+		temp_point[2] = pos;
+		break;
+	}
+}
+
 void dequeue_canons(setup_pointer settings)
 {
 	if(qc().empty()) return;
@@ -1900,3 +1917,5 @@ void set_endpoint(double x, double y) {
     endpoint[0] = x; endpoint[1] = y;
     endpoint_valid = 1;
 }
+
+

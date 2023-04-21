@@ -334,7 +334,6 @@ bool Compiler::SetCurPos(const DPoint &cur_pos) {
     //			m_compiler_status.cur_pos.x, m_compiler_status.cur_pos.y, m_compiler_status.cur_pos.z, m_compiler_status.cur_pos.a4,
     //			m_compiler_status.cur_pos.a5, m_compiler_status.cur_pos.a6, cur_pos.x, cur_pos.y, cur_pos.z, cur_pos.a4, cur_pos.a5, cur_pos.a6);
     //	this->m_compiler_status.cur_pos = cur_pos;
-
     int count = 0; 
     uint32_t mask = m_p_parser->GetPmcAxisMask();//PMCÖáµÄÑÚÂë
     for(int i = 0; i < this->m_p_channel_config->chn_axis_count && count < 8; i++){
@@ -342,8 +341,10 @@ bool Compiler::SetCurPos(const DPoint &cur_pos) {
             continue;   //Ìø¹ýPMCÖá
 
         this->m_compiler_status.cur_pos.m_df_point[i] = cur_pos.GetAxisValue(count);
+        //m_p_tool_compensate->setCurAxisPos(i, cur_pos.GetAxisValue(count));
         count++;
     }
+
     return true;
 }
 
@@ -361,6 +362,12 @@ bool Compiler::SetCurPos(const DPointChn &cur_pos) {
     //			m_compiler_status.cur_pos.m_df_point[4], m_compiler_status.cur_pos.m_df_point[5], cur_pos.m_df_point[0], cur_pos.m_df_point[1], cur_pos.m_df_point[2],
     //			cur_pos.m_df_point[3], cur_pos.m_df_point[4], cur_pos.m_df_point[5]);
 	this->m_compiler_status.cur_pos = cur_pos;
+
+	/*for(int i=0; i<kMaxAxisChn; i++){
+		m_p_tool_compensate->setCurAxisPos(i,
+				this->m_compiler_status.cur_pos.m_df_point[i]);
+	}*/
+
     return true;
 }
 
@@ -5191,5 +5198,13 @@ void Compiler::ProcessRotateAxisPos(DPointChn &tar, DPointChn &src, uint32_t mas
         pdes++;
 
     }
-
 }
+
+void Compiler::setCompensationPos(const DPointChn &pos){
+
+	for(int i=0; i<kMaxAxisChn; i++){
+		m_p_tool_compensate->setCurAxisPos(i,
+				pos.m_df_point[i]);
+	}
+}
+

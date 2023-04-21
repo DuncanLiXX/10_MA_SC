@@ -157,6 +157,9 @@ class ChannelEngine;   //通道引擎
 #define SHARED_MEM_REG_TO_NC_C			(SHARED_MEM_REG_TO_NC_BASE + 0x2700)	//C寄存器地址
 #define SHARED_MEM_REG_TO_NC_T			(SHARED_MEM_REG_TO_NC_BASE + 0x2800)	//T寄存器地址
 #define SHARED_MEM_REG_TO_NC_E		    (SHARED_MEM_REG_TO_NC_BASE + 0x2900)	//E寄存器地址
+//#define SHARED_MEM_REG_TO_NC_TC         (SHARED_MEM_REG_TO_NC_BASE + 0x2900)    //T寄存器当前值
+//#define SHARED_MEM_REG_TO_NC_TM         (SHARED_MEM_REG_TO_NC_BASE + 0x2A00)    //T寄存器Mask
+//#define SHARED_MEM_REG_TO_NC_E		    (SHARED_MEM_REG_TO_NC_BASE + 0x2B00)	//E寄存器地址
 
 #endif
 

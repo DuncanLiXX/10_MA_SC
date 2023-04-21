@@ -213,9 +213,9 @@ struct FRegBits{
 	//F69
 	uint8_t :8;
 	//F70
-	uint8_t :8;
+    uint8_t PSW1:8;
 	//F71
-	uint8_t :8;
+    uint8_t PSW2:8;
 	//F72
 	uint8_t OUT0:1;
 	uint8_t OUT1:1;
@@ -1354,12 +1354,16 @@ enum PmcRegSection{
 	PMC_REG_D,			//D¼Ä´æÆ÷
 	PMC_REG_C,			//C¼Ä´æÆ÷
 	PMC_REG_T,			//T¼Ä´æÆ÷
+    //PMC_REG_E,          //E¼Ä´æÆ÷
+    //PMC_REG_T_M,        //T¼Ä´æÆ÷Mask
+    //PMC_REG_T_C,        //T¼Ä´æÆ÷³ÖÐøÊ±¼ä
+
 #ifndef USES_PMC_2_0
 	PMC_REG_DC,			//DC¼Ä´æÆ÷
 	PMC_REG_DT			//DT¼Ä´æÆ÷
 #else
-	PMC_REG_E           //E¼Ä´æÆ÷
 #endif
+    PMC_REG_E,          //E¼Ä´æÆ÷
 };
 
 enum PmcKeepMaskBit{
@@ -1437,6 +1441,8 @@ private:
 #else
 	uint8_t m_d_reg[D_REG_COUNT];		//Êý¾Ý¼Ä´æÆ÷£¬·ÇÒ×Ê§
 	uint8_t m_t_reg[T_REG_COUNT*2];		//¼ÆÊ±Æ÷
+    //uint8_t m_tm_reg[TM_REG_COUNT];     //T¼Ä´æÆ÷Mask
+    //uint8_t m_tc_reg[TC_REG_COUNT];     //T¼Ä´æÆ÷µ±Ç°Öµ
 	uint8_t m_c_reg[C_REG_COUNT*4];		//¼ÆÊýÆ÷
 	uint8_t m_e_reg[E_REG_COUNT];       //À©Õ¹¼Ä´æÆ÷
 #endif

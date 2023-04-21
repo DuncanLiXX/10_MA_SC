@@ -543,6 +543,33 @@ void ShowSc::PrintSysConfig()
     AddPair(s,"debug_mode",cfg->debug_mode);
     AddPair(s,"hw_rev_trace",cfg->hw_rev_trace);
 
+//    AddPair(s,"pos_check_id_1",cfg->pos_check_id_1);
+//    AddPair(s,"pos_check_id_2",cfg->pos_check_id_2);
+//    AddPair(s,"pos_check_id_3",cfg->pos_check_id_3);
+//    AddPair(s,"pos_check_id_4",cfg->pos_check_id_4);
+//    AddPair(s,"pos_check_id_5",cfg->pos_check_id_5);
+//    AddPair(s,"pos_check_id_6",cfg->pos_check_id_6);
+//    AddPair(s,"pos_check_id_7",cfg->pos_check_id_7);
+//    AddPair(s,"pos_check_id_8",cfg->pos_check_id_8);
+
+//    AddPair(s,"pos_check_min_1", cfg->pos_check_min_1);
+//    AddPair(s,"pos_check_min_2", cfg->pos_check_min_2);
+//    AddPair(s,"pos_check_min_3", cfg->pos_check_min_3);
+//    AddPair(s,"pos_check_min_4", cfg->pos_check_min_4);
+//    AddPair(s,"pos_check_min_5", cfg->pos_check_min_5);
+//    AddPair(s,"pos_check_min_6", cfg->pos_check_min_6);
+//    AddPair(s,"pos_check_min_7", cfg->pos_check_min_7);
+//    AddPair(s,"pos_check_min_8", cfg->pos_check_min_8);
+
+//    AddPair(s,"pos_check_max_1", cfg->pos_check_max_1);
+//    AddPair(s,"pos_check_max_2", cfg->pos_check_max_2);
+//    AddPair(s,"pos_check_max_3", cfg->pos_check_max_3);
+//    AddPair(s,"pos_check_max_4", cfg->pos_check_max_4);
+//    AddPair(s,"pos_check_max_5", cfg->pos_check_max_5);
+//    AddPair(s,"pos_check_max_6", cfg->pos_check_max_6);
+//    AddPair(s,"pos_check_max_7", cfg->pos_check_max_7);
+//    AddPair(s,"pos_check_max_8", cfg->pos_check_max_8);
+
     SendMsg(s);
 }
 

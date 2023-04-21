@@ -112,6 +112,8 @@ const int kMaxProcParamCount = 10;    //系统支持的工艺参数最大组数
 #define D_REG_COUNT (2048)			//D寄存器个数
 #define T_REG_COUNT (128)			//T寄存器个数   单个寄存器占2字节，总字节数为256字节
 #define C_REG_COUNT (80)			//C寄存器个数   单个寄存器占4字节，前两字节为预置值，后两字节为当前值，总字节数为320字节
+//#define TC_REG_COUNT (256)          //TC寄存器个数
+//#define TM_REG_COUNT (16)           //TM寄存器，16个字节
 #define E_REG_COUNT (8000)         //E寄存器个数
 #endif
 
@@ -1143,6 +1145,35 @@ struct HmiSystemConfig{
 	uint8_t debug_mode;					//调试模式		0--关闭    1--模式1    2--模式2    3--模式3
 
 	uint8_t hw_rev_trace;               //手轮反向引导功能   0--关闭   1--打开
+
+    /**********************位置开关***************************/
+    uint8_t pos_check_id_1;             //位置开关1
+    uint8_t pos_check_id_2;             //位置开关2
+    uint8_t pos_check_id_3;             //位置开关3
+    uint8_t pos_check_id_4;             //位置开关4
+    uint8_t pos_check_id_5;             //位置开关5
+    uint8_t pos_check_id_6;             //位置开关6
+    uint8_t pos_check_id_7;             //位置开关7
+    uint8_t pos_check_id_8;             //位置开关8
+
+    double pos_check_min_1;             //位置开关最小值1
+    double pos_check_min_2;             //位置开关最小值2
+    double pos_check_min_3;             //位置开关最小值3
+    double pos_check_min_4;             //位置开关最小值4
+    double pos_check_min_5;             //位置开关最小值5
+    double pos_check_min_6;             //位置开关最小值6
+    double pos_check_min_7;             //位置开关最小值7
+    double pos_check_min_8;             //位置开关最小值8
+
+    double pos_check_max_1;             //位置开关最大值1
+    double pos_check_max_2;             //位置开关最大值2
+    double pos_check_max_3;             //位置开关最大值3
+    double pos_check_max_4;             //位置开关最大值4
+    double pos_check_max_5;             //位置开关最大值5
+    double pos_check_max_6;             //位置开关最大值6
+    double pos_check_max_7;             //位置开关最大值7
+    double pos_check_max_8;             //位置开关最大值8
+    /**********************位置开关***************************/
 };
 
 /**

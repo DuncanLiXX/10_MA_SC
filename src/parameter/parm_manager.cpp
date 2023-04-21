@@ -430,6 +430,33 @@ bool ParmManager::ReadSysConfig(){
 
         m_sc_system_config->hw_rev_trace = m_ini_system->GetIntValueOrDefault("system", "hw_rev_trace", 0);
 
+        m_sc_system_config->pos_check_id_1 = m_ini_system->GetIntValueOrDefault("system", "pos_check_id_1", 0);
+        m_sc_system_config->pos_check_id_2 = m_ini_system->GetIntValueOrDefault("system", "pos_check_id_2", 0);
+        m_sc_system_config->pos_check_id_3 = m_ini_system->GetIntValueOrDefault("system", "pos_check_id_3", 0);
+        m_sc_system_config->pos_check_id_4 = m_ini_system->GetIntValueOrDefault("system", "pos_check_id_4", 0);
+        m_sc_system_config->pos_check_id_5 = m_ini_system->GetIntValueOrDefault("system", "pos_check_id_5", 0);
+        m_sc_system_config->pos_check_id_6 = m_ini_system->GetIntValueOrDefault("system", "pos_check_id_6", 0);
+        m_sc_system_config->pos_check_id_7 = m_ini_system->GetIntValueOrDefault("system", "pos_check_id_7", 0);
+        m_sc_system_config->pos_check_id_8 = m_ini_system->GetIntValueOrDefault("system", "pos_check_id_8", 0);
+
+        m_sc_system_config->pos_check_min_1 = m_ini_system->GetDoubleValueOrDefault("system", "pos_check_min_1", 0);
+        m_sc_system_config->pos_check_min_2 = m_ini_system->GetDoubleValueOrDefault("system", "pos_check_min_2", 0);
+        m_sc_system_config->pos_check_min_3 = m_ini_system->GetDoubleValueOrDefault("system", "pos_check_min_3", 0);
+        m_sc_system_config->pos_check_min_4 = m_ini_system->GetDoubleValueOrDefault("system", "pos_check_min_4", 0);
+        m_sc_system_config->pos_check_min_5 = m_ini_system->GetDoubleValueOrDefault("system", "pos_check_min_5", 0);
+        m_sc_system_config->pos_check_min_6 = m_ini_system->GetDoubleValueOrDefault("system", "pos_check_min_6", 0);
+        m_sc_system_config->pos_check_min_7 = m_ini_system->GetDoubleValueOrDefault("system", "pos_check_min_7", 0);
+        m_sc_system_config->pos_check_min_8 = m_ini_system->GetDoubleValueOrDefault("system", "pos_check_min_8", 0);
+
+        m_sc_system_config->pos_check_max_1 = m_ini_system->GetDoubleValueOrDefault("system", "pos_check_max_1", 100);
+        m_sc_system_config->pos_check_max_2 = m_ini_system->GetDoubleValueOrDefault("system", "pos_check_max_2", 100);
+        m_sc_system_config->pos_check_max_3 = m_ini_system->GetDoubleValueOrDefault("system", "pos_check_max_3", 100);
+        m_sc_system_config->pos_check_max_4 = m_ini_system->GetDoubleValueOrDefault("system", "pos_check_max_4", 100);
+        m_sc_system_config->pos_check_max_5 = m_ini_system->GetDoubleValueOrDefault("system", "pos_check_max_5", 100);
+        m_sc_system_config->pos_check_max_6 = m_ini_system->GetDoubleValueOrDefault("system", "pos_check_max_6", 100);
+        m_sc_system_config->pos_check_max_7 = m_ini_system->GetDoubleValueOrDefault("system", "pos_check_max_7", 100);
+        m_sc_system_config->pos_check_max_8 = m_ini_system->GetDoubleValueOrDefault("system", "pos_check_max_8", 100);
+
 		g_ptr_trace->PrintTrace(TRACE_INFO, PARAM_MANAGER, "读取系统配置文件成功！\n");
 
 	}else{
@@ -469,6 +496,33 @@ bool ParmManager::ReadSysConfig(){
 		m_sc_system_config->debug_mode = 0;
 		m_sc_system_config->hw_rev_trace = 0;
 
+        m_sc_system_config->pos_check_id_1 = 0;
+        m_sc_system_config->pos_check_id_2 = 0;
+        m_sc_system_config->pos_check_id_3 = 0;
+        m_sc_system_config->pos_check_id_4 = 0;
+        m_sc_system_config->pos_check_id_5 = 0;
+        m_sc_system_config->pos_check_id_6 = 0;
+        m_sc_system_config->pos_check_id_7 = 0;
+        m_sc_system_config->pos_check_id_8 = 0;
+
+        m_sc_system_config->pos_check_min_1 = 0;
+        m_sc_system_config->pos_check_min_2 = 0;
+        m_sc_system_config->pos_check_min_3 = 0;
+        m_sc_system_config->pos_check_min_4 = 0;
+        m_sc_system_config->pos_check_min_5 = 0;
+        m_sc_system_config->pos_check_min_6 = 0;
+        m_sc_system_config->pos_check_min_7 = 0;
+        m_sc_system_config->pos_check_min_8 = 0;
+
+        m_sc_system_config->pos_check_max_1 = 100;
+        m_sc_system_config->pos_check_max_2 = 100;
+        m_sc_system_config->pos_check_max_3 = 100;
+        m_sc_system_config->pos_check_max_4 = 100;
+        m_sc_system_config->pos_check_max_5 = 100;
+        m_sc_system_config->pos_check_max_6 = 100;
+        m_sc_system_config->pos_check_max_7 = 100;
+        m_sc_system_config->pos_check_max_8 = 100;
+
 		//生成默认ini配置
 		IniSection *ns = m_ini_system->AddSecttion("system");
 		if(ns == nullptr){
@@ -497,6 +551,33 @@ bool ParmManager::ReadSysConfig(){
 		m_ini_system->AddKeyValuePair(string("trace_level"), string("0"), ns);
 		m_ini_system->AddKeyValuePair(string("debug_mode"), string("0"), ns);
 		m_ini_system->AddKeyValuePair(string("hw_rev_trace"), string("0"), ns);
+
+        m_ini_system->AddKeyValuePair(string("pos_check_id_1"), string("0"), ns);
+        m_ini_system->AddKeyValuePair(string("pos_check_id_2"), string("0"), ns);
+        m_ini_system->AddKeyValuePair(string("pos_check_id_3"), string("0"), ns);
+        m_ini_system->AddKeyValuePair(string("pos_check_id_4"), string("0"), ns);
+        m_ini_system->AddKeyValuePair(string("pos_check_id_5"), string("0"), ns);
+        m_ini_system->AddKeyValuePair(string("pos_check_id_6"), string("0"), ns);
+        m_ini_system->AddKeyValuePair(string("pos_check_id_7"), string("0"), ns);
+        m_ini_system->AddKeyValuePair(string("pos_check_id_8"), string("0"), ns);
+
+        m_ini_system->AddKeyValuePair(string("pos_check_min_1"), string("0"), ns);
+        m_ini_system->AddKeyValuePair(string("pos_check_min_2"), string("0"), ns);
+        m_ini_system->AddKeyValuePair(string("pos_check_min_3"), string("0"), ns);
+        m_ini_system->AddKeyValuePair(string("pos_check_min_4"), string("0"), ns);
+        m_ini_system->AddKeyValuePair(string("pos_check_min_5"), string("0"), ns);
+        m_ini_system->AddKeyValuePair(string("pos_check_min_6"), string("0"), ns);
+        m_ini_system->AddKeyValuePair(string("pos_check_min_7"), string("0"), ns);
+        m_ini_system->AddKeyValuePair(string("pos_check_min_8"), string("0"), ns);
+
+        m_ini_system->AddKeyValuePair(string("pos_check_max_1"), string("100"), ns);
+        m_ini_system->AddKeyValuePair(string("pos_check_max_2"), string("100"), ns);
+        m_ini_system->AddKeyValuePair(string("pos_check_max_3"), string("100"), ns);
+        m_ini_system->AddKeyValuePair(string("pos_check_max_4"), string("100"), ns);
+        m_ini_system->AddKeyValuePair(string("pos_check_max_5"), string("100"), ns);
+        m_ini_system->AddKeyValuePair(string("pos_check_max_6"), string("100"), ns);
+        m_ini_system->AddKeyValuePair(string("pos_check_max_7"), string("100"), ns);
+        m_ini_system->AddKeyValuePair(string("pos_check_max_8"), string("100"), ns);
 
 		m_ini_system->Save();
 
@@ -4120,6 +4201,105 @@ bool ParmManager::UpdateSystemParam(uint32_t param_no, ParamValue &value){
 		sprintf(kname, "debug_mode");
 		m_ini_system->SetIntValue(sname, kname, value.value_uint8);
 		break;
+    case 65:  //位置开关
+        sprintf(kname, "pos_check_id_1");
+        m_ini_system->SetIntValue(sname, kname, value.value_uint8);
+        break;
+    case 66:
+        sprintf(kname, "pos_check_id_2");
+        m_ini_system->SetIntValue(sname, kname, value.value_uint8);
+        break;
+    case 67:
+        sprintf(kname, "pos_check_id_3");
+        m_ini_system->SetIntValue(sname, kname, value.value_uint8);
+        break;
+    case 68:
+        sprintf(kname, "pos_check_id_4");
+        m_ini_system->SetIntValue(sname, kname, value.value_uint8);
+        break;
+    case 69:
+        sprintf(kname, "pos_check_id_5");
+        m_ini_system->SetIntValue(sname, kname, value.value_uint8);
+        break;
+    case 70:
+        sprintf(kname, "pos_check_id_6");
+        m_ini_system->SetIntValue(sname, kname, value.value_uint8);
+        break;
+    case 71:
+        sprintf(kname, "pos_check_id_7");
+        m_ini_system->SetIntValue(sname, kname, value.value_uint8);
+        break;
+    case 72:
+        sprintf(kname, "pos_check_id_8");
+        m_ini_system->SetIntValue(sname, kname, value.value_uint8);
+        break;
+
+    case 73:
+        sprintf(kname, "pos_check_min_1");
+        m_ini_system->SetDoubleValue(sname, kname, value.value_double);
+        break;
+    case 74:
+        sprintf(kname, "pos_check_min_2");
+        m_ini_system->SetDoubleValue(sname, kname, value.value_double);
+        break;
+    case 75:
+        sprintf(kname, "pos_check_min_3");
+        m_ini_system->SetDoubleValue(sname, kname, value.value_double);
+        break;
+    case 76:
+        sprintf(kname, "pos_check_min_4");
+        m_ini_system->SetDoubleValue(sname, kname, value.value_double);
+        break;
+    case 77:
+        sprintf(kname, "pos_check_min_5");
+        m_ini_system->SetDoubleValue(sname, kname, value.value_double);
+        break;
+    case 78:
+        sprintf(kname, "pos_check_min_6");
+        m_ini_system->SetDoubleValue(sname, kname, value.value_double);
+        break;
+    case 79:
+        sprintf(kname, "pos_check_min_7");
+        m_ini_system->SetDoubleValue(sname, kname, value.value_double);
+        break;
+    case 80:
+        sprintf(kname, "pos_check_min_8");
+        m_ini_system->SetDoubleValue(sname, kname, value.value_double);
+        break;
+
+    case 81:
+        sprintf(kname, "pos_check_max_1");
+        m_ini_system->SetDoubleValue(sname, kname, value.value_double);
+        break;
+    case 82:
+        sprintf(kname, "pos_check_max_2");
+        m_ini_system->SetDoubleValue(sname, kname, value.value_double);
+        break;
+    case 83:
+        sprintf(kname, "pos_check_max_3");
+        m_ini_system->SetDoubleValue(sname, kname, value.value_double);
+        break;
+    case 84:
+        sprintf(kname, "pos_check_max_4");
+        m_ini_system->SetDoubleValue(sname, kname, value.value_double);
+        break;
+    case 85:
+        sprintf(kname, "pos_check_max_5");
+        m_ini_system->SetDoubleValue(sname, kname, value.value_double);
+        break;
+    case 86:
+        sprintf(kname, "pos_check_max_6");
+        m_ini_system->SetDoubleValue(sname, kname, value.value_double);
+        break;
+    case 87:
+        sprintf(kname, "pos_check_max_7");
+        m_ini_system->SetDoubleValue(sname, kname, value.value_double);
+        break;
+    case 88:
+        sprintf(kname, "pos_check_max_8");
+        m_ini_system->SetDoubleValue(sname, kname, value.value_double);
+        break;
+
 	default:	//默认
 		g_ptr_trace->PrintLog(LOG_ALARM, "系统参数更新，参数号非法：%d", param_no);
 		res = false;
@@ -5895,6 +6075,82 @@ void ParmManager::ActiveSystemParam(uint32_t param_no, ParamValue &value){
 	case 100:	//调试模式
 		this->m_sc_system_config->debug_mode = value.value_uint8;
 		break;
+
+    case 65:   //位置开关
+        this->m_sc_system_config->pos_check_id_1 = value.value_uint8;
+        break;
+    case 66:
+        this->m_sc_system_config->pos_check_id_2 = value.value_uint8;
+        break;
+    case 67:
+        this->m_sc_system_config->pos_check_id_3 = value.value_uint8;
+        break;
+    case 68:
+        this->m_sc_system_config->pos_check_id_4 = value.value_uint8;
+        break;
+    case 69:
+        this->m_sc_system_config->pos_check_id_5 = value.value_uint8;
+        break;
+    case 70:
+        this->m_sc_system_config->pos_check_id_6 = value.value_uint8;
+        break;
+    case 71:
+        this->m_sc_system_config->pos_check_id_7 = value.value_uint8;
+        break;
+    case 72:
+        this->m_sc_system_config->pos_check_id_8 = value.value_uint8;
+        break;
+
+    case 73:   //位置开关最小值
+        this->m_sc_system_config->pos_check_min_1 = value.value_double;
+        break;
+    case 74:
+        this->m_sc_system_config->pos_check_min_2 = value.value_double;
+        break;
+    case 75:
+        this->m_sc_system_config->pos_check_min_3 = value.value_double;
+        break;
+    case 76:
+        this->m_sc_system_config->pos_check_min_4 = value.value_double;
+        break;
+    case 77:
+        this->m_sc_system_config->pos_check_min_5 = value.value_double;
+        break;
+    case 78:
+        this->m_sc_system_config->pos_check_min_6 = value.value_double;
+        break;
+    case 79:
+        this->m_sc_system_config->pos_check_min_7 = value.value_double;
+        break;
+    case 80:
+        this->m_sc_system_config->pos_check_min_8 = value.value_double;
+        break;
+
+    case 81:   //位置开关最大值
+        this->m_sc_system_config->pos_check_max_1 = value.value_double;
+        break;
+    case 82:
+        this->m_sc_system_config->pos_check_max_2 = value.value_double;
+        break;
+    case 83:
+        this->m_sc_system_config->pos_check_max_3 = value.value_double;
+        break;
+    case 84:
+        this->m_sc_system_config->pos_check_max_4 = value.value_double;
+        break;
+    case 85:
+        this->m_sc_system_config->pos_check_max_5 = value.value_double;
+        break;
+    case 86:
+        this->m_sc_system_config->pos_check_max_6 = value.value_double;
+        break;
+    case 87:
+        this->m_sc_system_config->pos_check_max_7 = value.value_double;
+        break;
+    case 88:
+        this->m_sc_system_config->pos_check_max_8 = value.value_double;
+        break;
+
 	default:	//默认
 		break;
 	}

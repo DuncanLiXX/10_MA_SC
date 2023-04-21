@@ -516,9 +516,11 @@ void SpindleControl::InputRTNT(bool RTNT)
         return;
     }
 
+    printf("1111111111111\n");
     auto func = std::bind(&SpindleControl::ProcessRTNT,
                           this);
     ans = std::async(std::launch::async, func);
+    printf("2222222222222\n");
 }
 
 // Ö÷Öá¶¨Î»
@@ -1141,6 +1143,7 @@ void SpindleControl::ProcessRTNT()
     while(fabs(pos_work.GetAxisValue(z_axis) - R) > 0.005){
         std::this_thread::sleep_for(std::chrono::microseconds(50000));
         pos_work = control->GetRealtimeStatus().cur_pos_work;
+        printf("cccc\n");
         if(!running_rtnt)
             break;
     }
@@ -1162,6 +1165,8 @@ void SpindleControl::EStop(){
 	if(RGTAP){CancelRigidTap(); RGTAP = 0;}
 
 	if(RGMD){SetMode(Speed); RGMD = 0;}
+
+	running_rtnt = false;
 
 	InputPolar(Stop);
 }

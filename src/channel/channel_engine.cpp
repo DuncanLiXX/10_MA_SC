@@ -30,6 +30,8 @@
 
 using namespace Spindle;
 
+static int debug_flag = 0;
+
 ChannelEngine* ChannelEngine::m_p_instance = nullptr;  //初始化单例对象指正为空
 const map<int, SDLINK_SPEC> ChannelEngine::m_SDLINK_MAP =
 {
@@ -8612,7 +8614,7 @@ bool ChannelEngine::RefreshMiStatusFun(){
 
     while(!g_sys_state.system_quit){
 
-        printf("11111111111111\n");
+
 
     	if((g_sys_state.module_ready_mask & MI_READY) == 0){  //MI未准备好则等待
             printf("wait MI_READY signal!\n");
@@ -8631,7 +8633,7 @@ bool ChannelEngine::RefreshMiStatusFun(){
             printf("OUT\n");
             return true;
         }
-        printf("222222222222\n");
+
 
         //更新写入F寄存器， 更新周期8ms
         this->m_p_mi_comm->WritePmcReg(PMC_REG_F, p_f_reg);
@@ -8653,7 +8655,6 @@ bool ChannelEngine::RefreshMiStatusFun(){
         this->m_p_mi_comm->ReadPmcReg(PMC_REG_E, p_e_reg);
 #endif
 
-        printf("3333333333333333\n");
         //读取最新的PMC寄存器值
         if(count % 10 == 0){	//更新周期80ms
             this->m_p_mi_comm->ReadPmcReg(PMC_REG_X, m_p_pmc_reg->GetRegPtr8(PMC_REG_X));
@@ -8670,12 +8671,12 @@ bool ChannelEngine::RefreshMiStatusFun(){
 
         }
 
-        printf("4444444444444444444\n");
         this->m_p_mi_comm->ReadServoOnState(m_n_phy_axis_svo_on);
         Singleton<AxisStatusCtrl>::instance().UpdateSA(m_n_phy_axis_svo_on);
 
         if(!this->m_b_power_off){  //掉电后不处理
-            this->ProcessPmcSignal();
+        	debug_flag = 1;
+        	this->ProcessPmcSignal();
 
             //首先读取轴告警标志
             this->m_p_mi_comm->ReadAxisWarnFlag(warn_flag);
@@ -8829,7 +8830,6 @@ bool ChannelEngine::RefreshMiStatusFun(){
                 }
             }
 
-
             //进行过压，欠压、RTC电压低告警扫描
 #ifndef USES_MAIN_BOARD_10MA_OLD    //老板没有此功能
             if(count%1000 == 0){
@@ -8841,7 +8841,7 @@ bool ChannelEngine::RefreshMiStatusFun(){
                 this->ReturnRefPoint();
             }
         }
-        printf("5555555555555555555555\n");
+
         //更新轴限位数据给MI
         this->m_p_mi_comm->WriteAxisHLimitFlag(true, m_hard_limit_postive);
         this->m_p_mi_comm->WriteAxisHLimitFlag(false, m_hard_limit_negative);
@@ -8884,7 +8884,6 @@ bool ChannelEngine::RefreshMiStatusFun(){
 */
         usleep(8000);  //8ms周期，比PMC周期相同
         count++;
-        printf("66666666666666666666\n");
     }
 
     //	printf("exit ChannelEngine::RefreshMiStatusFun()\n");
@@ -8948,6 +8947,7 @@ void ChannelEngine::ProcessPmcSignal(){
     ChannelControl *ctrl = nullptr;
     uint64_t flag = 0;
     uint8_t chn = 0;
+
     for(int i = 0; i < this->m_p_general_config->chn_count; i++){
         g_reg = &m_p_pmc_reg->GReg().bits[i];
         g_reg_last = &m_g_reg_last.bits[i];
@@ -9151,7 +9151,8 @@ void ChannelEngine::ProcessPmcSignal(){
         }
         // 攻丝回退
         if(g_reg->RTNT != g_reg_last->RTNT){
-            ctrl->GetSpdCtrl()->InputRTNT(g_reg->RTNT);
+        	//规避二次攻丝回退线程卡死
+        	ctrl->GetSpdCtrl()->InputRTNT(g_reg->RTNT);
         }
         // 换刀信号
         if(g_reg->GTC != g_reg_last->GTC) {
@@ -9344,6 +9345,7 @@ void ChannelEngine::ProcessPmcSignal(){
         }
 #endif
     }
+
     //处理轴的限位信号，虽然64个轴的限位信号平均分布在四个通道中，但是处理时不分通道
     //if(!this->m_b_ret_ref){  //回参考点过程中屏蔽限位，回零过程也需要开启硬限位
         chn = m_p_general_config->axis_count/16;
@@ -9428,6 +9430,7 @@ void ChannelEngine::ProcessPmcSignal(){
         }
     }
 
+    debug_flag = 0;
     //PMC轴控制处理
     this->ProcessPmcAxisCtrl();
 

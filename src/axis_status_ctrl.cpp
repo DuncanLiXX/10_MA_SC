@@ -146,19 +146,27 @@ void AxisStatusCtrl::InitRealPhyAxisMask(){
 }
 
 void AxisStatusCtrl::UpdateSA(uint64_t srvon_mask){
-    if(is_waiting_enable)
-        return;
-    uint64_t line_axis = real_phy_axis;
-    for(int i=0; i<channel->chn_axis_count; i++){
-        // 主轴或者伺服关断的轴不影响伺服就绪状态
-        if(axis[i].axis_type == AXIS_SPINDLE || (SVF & (0x01<<i))){
-            line_axis &= ~(0x01 << i);
-            srvon_mask &= ~(0x01 << i);
-        }
-    }
-    if(line_axis && (line_axis & srvon_mask) == line_axis){
+    if (!_ESP)
+    {//急停状态单独处理
+        //需要减速给SA信号
         F->SA = 1;
-    }else{
-        F->SA = 0;
+    }
+    else
+    {
+        if(is_waiting_enable)
+            return;
+        uint64_t line_axis = real_phy_axis;
+        for(int i=0; i<channel->chn_axis_count; i++){
+            // 主轴或者伺服关断的轴不影响伺服就绪状态
+            if(axis[i].axis_type == AXIS_SPINDLE || (SVF & (0x01<<i))){
+                line_axis &= ~(0x01 << i);
+                srvon_mask &= ~(0x01 << i);
+            }
+        }
+        if((line_axis & srvon_mask) == line_axis){
+            F->SA = 1;
+        }else{
+            F->SA = 0;
+        }
     }
 }

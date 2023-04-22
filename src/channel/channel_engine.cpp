@@ -4625,7 +4625,7 @@ bool ChannelEngine::CheckSoftLimit(ManualMoveDir dir, uint8_t phy_axis, double p
     enable[1] = m_p_axis_config[phy_axis].soft_limit_check_2;
     enable[2] = m_p_axis_config[phy_axis].soft_limit_check_3;
 
-    uint8_t chn_axis = 0, chn = 0;
+    uint8_t chn_axis = 0xFF, chn = 0;
     chn = this->GetAxisChannel(phy_axis, chn_axis);
 
     double limit1,limit2;
@@ -6524,8 +6524,7 @@ void ChannelEngine::PmcAxisRunOver(MiCmdFrame &cmd){
             return;
 
         if (GetPmcActive(phy_axis) && !IsRefReturnning(phy_axis)/*在非回零状态时，才发送cmd over*/) {
-            if(m_pmc_axis_ctrl[m_p_axis_config[phy_axis].axis_pmc-1].GetCmdCount() > 0 &&
-                    !m_pmc_axis_ctrl[m_p_axis_config[phy_axis].axis_pmc-1].IsPaused()){   //有数据，非暂停状态
+            if(!m_pmc_axis_ctrl[m_p_axis_config[phy_axis].axis_pmc-1].IsPaused()){   //有数据，非暂停状态，为什么暂停状态不能接收Over信号？
                 m_pmc_axis_ctrl[m_p_axis_config[phy_axis].axis_pmc-1].ExecCmdOver(true);
             }
         }
@@ -9859,34 +9858,15 @@ void ChannelEngine::ProcessPmcAxisCtrl(){
 
         uint8_t efov[4] = {greg->EFOVA, greg->EFOVB, greg->EFOVC, greg->EFOVD};//进给速度倍率
         uint8_t eovc[4] = {greg->EOVCA, greg->EOVCB, greg->EOVCC, greg->EOVCD};//倍率取消信号
-        //uint8_t erov[4] = {};//快移倍率信号
-        //手动快速移动选择信号
 
         for(uint8_t j = 0; j < 4; j++){
-
-            if(m_pmc_axis_ctrl[i*4+j].axis_list.size() == 0)
-            {//通道没有选通时，梯图写入PMC数据时报警
-                if (ebuf[j] != ebsy[j])
-                {
-                    m_pmc_axis_ctrl[4*i+j].SetErrState(i*4+j+1);
-                }
-                continue;
-            }
-
-            // 避免选通信号一打开就直接执行命令，至少要等一个周期
-            if(ebuf[j] != ebsy[j] && !m_pmc_axis_ctrl[4*i+j].IsActive()
-                    && eax[j]){
-                this->m_error_code = ERR_PMC_AXIS_CTRL_CHANGE;
-                CreateError(ERR_PMC_AXIS_CTRL_CHANGE, ERROR_LEVEL, CLEAR_BY_MCP_RESET, i*4+j+1, CHANNEL_ENGINE_INDEX);
-                memcpy(last_eax[i], eax, sizeof(eax));
-                return;
-            }
 
             bool ret = true;
             //0->1 选通PMC通道
             if (last_eax[i][j] == 0 && eax[j] == 1)
             {
                 ret = m_pmc_axis_ctrl[i*4+j].Active(true);
+                if (ret) continue;//下一周期，再执行相关指令
             }
             //1->0 关闭PMC通道
             else if (last_eax[i][j] == 1 && eax[j] == 0)
@@ -9894,25 +9874,19 @@ void ChannelEngine::ProcessPmcAxisCtrl(){
                 ret = m_pmc_axis_ctrl[i*4+j].Active(false);
             }
 
-            if(!ret){
+            if(ret == 0){
                 this->m_error_code = ERR_PMC_AXIS_CTRL_CHANGE;
                 CreateError(ERR_PMC_AXIS_CTRL_CHANGE, ERROR_LEVEL, CLEAR_BY_MCP_RESET, i*4+j+1, CHANNEL_ENGINE_INDEX);
-                memcpy(last_eax[i], eax, sizeof(eax));
-                return;
+                continue;
             }
 
             if(!m_pmc_axis_ctrl[4*i+j].IsActive())
-            {//通道没有激活时，梯图写入PMC轴数据时报警
-                if (ebuf[j] != ebsy[j])
-                    m_pmc_axis_ctrl[4*i+j].SetErrState(i*4+j+1);
-                continue;  //未激活
+            {//未激活
+                continue;
             }
 
             //EMBUFg缓冲无效信号
             this->m_pmc_axis_ctrl[4*i+j].SetBuffState(!embuf[j]);
-
-            //ESBKg/EMSBKg  程序段停止信号/程序段停止无效信号
-            this->m_pmc_axis_ctrl[4*i+j].InputSBK(esbk[j], mesbk[j]);
 
             //倍率切换
             if (m_p_axis_config[i].pmc_g00_by_EIFg)
@@ -9929,21 +9903,26 @@ void ChannelEngine::ProcessPmcAxisCtrl(){
                 this->m_pmc_axis_ctrl[4*i+j].SetRapidValue(greg->RT);
             }
 
-
             //数据读取
             if(ebuf[j] != ebsy[j]){
                 pmc_cmd.cmd = cmd[j];
                 pmc_cmd.distance = dis[j];
                 pmc_cmd.speed = spd[j];
-                this->m_pmc_axis_ctrl[4*i+j].WriteCmd(pmc_cmd);
+                this->m_pmc_axis_ctrl[4*i+j].ReadCmd(pmc_cmd);
             }
+
+            //执行buffer中的指令
+            this->m_pmc_axis_ctrl[4*i+j].WriteCmd();
+
+            //ESTPg轴控制暂停信号
+            this->m_pmc_axis_ctrl[4*i+j].Pause(estp[j]);
+
+            //ESBKg/EMSBKg  程序段停止信号/程序段停止无效信号
+            this->m_pmc_axis_ctrl[4*i+j].InputSBK(esbk[j], mesbk[j]);
 
             //ECLRg复位信号
             if(eclr[j])
                 this->m_pmc_axis_ctrl[4*i+j].Reset();
-
-            //ESTPg轴控制暂停信号
-            this->m_pmc_axis_ctrl[4*i+j].Pause(estp[j]);
 
         }
         memcpy(last_eax[i], eax, sizeof(eax));

@@ -2623,9 +2623,10 @@ void ChannelEngine::ProcessMiAlarm(MiCmdFrame &cmd){
     g_ptr_trace->PrintTrace(TRACE_WARNING, CHANNEL_ENGINE_SC, "ChannelEngine::ProcessMiAlarm, alarm_id=%u, level=%hu", alarm_id, alarm_level);
 
     uint8_t axis_id = 0xFF;
-    if (cmd.data.axis_index)
+    if (cmd.data.axis_index && cmd.data.axis_index != 0xFF)
         axis_id = cmd.data.axis_index - 1;
 
+    std::cout << "ChannelEngine::ProcessMiAlarm " << (int)axis_id << std::endl;
     CreateError(alarm_id, alarm_level, clear_type, 0, CHANNEL_ENGINE_INDEX, axis_id);
 }
 
@@ -2717,7 +2718,7 @@ void ChannelEngine::ProcessMiBusError(MiCmdFrame &cmd){
     err_info |= slave_no;
 
     uint8_t axis_id = 0xFF;
-    if (cmd.data.axis_index)
+    if (cmd.data.axis_index && cmd.data.axis_index != 0xFF)
         axis_id = cmd.data.axis_index - 1;
 
     g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "receive Mi Bus err: no=%hhu, sub_idx=%hhu, idx=%hu, code=%hu\n",
@@ -5451,6 +5452,7 @@ bool ChannelEngine::Stop(bool reset){
     for(int i = 0; i < this->m_p_general_config->chn_count; i++){
         m_p_channel_control[i].StopRunGCode(reset);
     }
+    ClearPmcAxisMoveData();   //清空PMC轴运动数据
     return true;
 }
 

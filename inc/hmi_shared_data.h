@@ -1436,6 +1436,9 @@ struct HmiAxisConfig{
 
     int    ref_complete;                    //参考点是否建立
     bool init_backlash_dir;                 //螺补初始化方向
+
+    uint8_t decelerate_numerator;           //减速比例分子
+    uint8_t decelerate_denominator;         //减速比例分母
 };
 
 /**

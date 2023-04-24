@@ -6774,6 +6774,19 @@ bool ChannelControl::ExecuteAuxMsg(RecordMsg *msg){
             //		this->ProcessGrindM68(tmp);
             //		break;
 #endif
+        case 60://开始数据采集
+        {
+
+            g_ptr_chn_engine->m_serverGuide.StartRecord();
+            tmp->SetExecStep(m_index, 0xFF);    //置位结束状态
+        }
+        break;
+        case 61://结束数据采集
+        {
+            g_ptr_chn_engine->m_serverGuide.PauseRecord();
+            tmp->SetExecStep(m_index, 0xFF);    //置位结束状态
+        }
+        break;
         case 98:	//M98子程序调用
             printf("execute M98\n");
             tmp->SetExecStep(m_index, 0xFF);    //置位结束状态

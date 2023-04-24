@@ -44,6 +44,9 @@ bool ServeGuide::StartRecord()
         return false;
     }
     ScPrintf("-----------ServeGuide::StartRecord()-----------");
+
+    RstOriginPoint();
+
     state_ = E_SG_RunState::RECORDING;
     return true;
 }
@@ -56,6 +59,7 @@ void ServeGuide::PauseRecord()
     if (state_ == E_SG_RunState::RECORDING)
     {
         ScPrintf("-----------ServeGuide::PauseRecord()-----------");
+        RstOriginPoint();
         state_ = E_SG_RunState::READY;
     }
 }
@@ -65,17 +69,10 @@ void ServeGuide::PauseRecord()
  */
 void ServeGuide::ResetRecord()
 {
-//    if (state_ == E_SG_RunState::READY)
-//    {
-//        {
-//            std::lock_guard<std::mutex> mut(data_mut_);
-//            while (!data_.empty()) data_.pop();
-//        }
-//        state_ = E_SG_RunState::IDLE;
-//    }
-//    else if (state_ == E_SG_RunState::RECORDING) //需要等待所有数据上传完成后再停止
-//        state_ = E_SG_RunState::STOPPING;
-    state_ = E_SG_RunState::STOPPING;
+    ScPrintf("ServeGuide::ResetRecord");
+
+    if (state_ != E_SG_RunState::IDLE)
+        state_ = E_SG_RunState::STOPPING;
 }
 
 /**
@@ -96,6 +93,26 @@ bool ServeGuide::RefreshRecording()
         }
     }
     return false;
+}
+
+/**
+ * @brief 重置起始点
+ */
+void ServeGuide::RstOriginPoint()
+{
+    DPoint origin_point;//恢复值为00
+    type_ptr_->SetOriginPoint(origin_point);
+    origin_inited = false;
+}
+
+/**
+ * @brief 设置起始点
+ * @param origin_point 起始点坐标
+ */
+void ServeGuide::SetOringPoint(DPoint origin_point)
+{
+    type_ptr_->SetOriginPoint(origin_point);
+    origin_inited = true;
 }
 
 /**
@@ -169,6 +186,13 @@ bool ServeGuide::IsDataReady()
  */
 void ServeGuide::RecordData(const double *feedback, const double *interp)
 {
+    if (!origin_inited)
+    {
+        DPoint origin;
+        origin.x = feedback[type_ptr_->axis_one_];
+        origin.y = feedback[type_ptr_->axis_two_];
+        SetOringPoint(origin);
+    }
     SG_DATA data = type_ptr_->GenData(feedback, interp);
     std::lock_guard<std::mutex> mut(data_mut_);
     data_.push(std::move(data));//数据压入发送队列中
@@ -325,6 +349,11 @@ bool ServeGuide::IsEmpty() const
     return data_.empty();
 }
 
+int ServeGuide::CurState() const
+{
+    return (int)state_;
+}
+
 /**
  * @brief 设置伺服引导类型,必须在空闲状态下设置
  * @param type:参见E_SG_Type
@@ -347,6 +376,16 @@ SG_Rect_Type::SG_Rect_Type(SG_Rect_Config cfg)
 
 }
 
+/**
+ * @brief 设置相对起点坐标
+ * @param origin_point，起点坐标值
+ */
+void SG_Type::SetOriginPoint(DPoint origin_point)
+{
+    origin_point_.x = origin_point.x;
+    origin_point_.y = origin_point.y;
+}
+
 bool SG_Type::Verify() const
 {
     if (axis_one_ < 0)
@@ -366,7 +405,7 @@ bool SG_Type::Verify() const
 
 SG_DATA SG_Rect_Type::GenData(const double *feedback, const double *)
 {
-    SG_DATA data = std::make_tuple(feedback[axis_one_], feedback[axis_two_], -1, -1);
+    SG_DATA data = std::make_tuple(feedback[axis_one_] - origin_point_.x, feedback[axis_two_] - origin_point_.y, -1, -1);
     return data;
 }
 
@@ -428,10 +467,9 @@ void CoordTransform(SG_DATA &origin, DPlane offset)
 
 SG_DATA SG_Circle_Type::GenData(const double *feedback, const double *)
 {
-    //要加入起始点，否则起始点必须要是（0，0）
     //转换极坐标系
     DPlane pole_point(-radius_, 0);
-    DPlane point(feedback[axis_one_], feedback[axis_two_]);
+    DPlane point(feedback[axis_one_] - origin_point_.x, feedback[axis_two_] - origin_point_.y);
 
     SG_DATA data = CircleDletaCalc(point, pole_point, radius_);
     return data;
@@ -541,7 +579,7 @@ SG_DATA SG_RecCir_Type::GenData(const double *feedback, const double *interp)
     default:
         break;
     }
-    if (std::get<0>(data) == -1)
+    if (std::get<0>(data) == -1)//test
     {
         std::cout << "feedback[axis_one_] " << feedback[axis_one_] << std::endl;
         std::cout << "feedback[axis_two_] " << feedback[axis_two_] << std::endl;

@@ -1772,7 +1772,7 @@ void ARC_FEED(int line_number,
 	}
 
 	DPointChn source(temp_point[0], temp_point[1], temp_point[2]);
-	DPointChn target(first_end, second_end, temp_point[2]);
+	DPointChn target(first_end, second_end, axis_end_point);
 	DPointChn center(first_axis, second_axis, temp_point[2]);
 
 	target.SetAxisValue(3, a_position);

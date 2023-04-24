@@ -6942,7 +6942,7 @@ void ParmManager::ActiveAxisParam(uint8_t axis_index, uint32_t param_no, ParamVa
         break;
 
     case 1554:  //旋转轴绝对指令的旋转方向  0--快捷方向  1--取决于指令符号
-        this->m_sc_axis_config[axis_index].pos_rel_disp_mode = value.value_uint8;
+        this->m_sc_axis_config[axis_index].rot_abs_dir = value.value_uint8;
         break;
 
 	case 1602:	//主轴变速比

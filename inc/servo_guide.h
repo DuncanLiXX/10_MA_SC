@@ -36,6 +36,9 @@ struct SG_Type {
     int8_t axis_two_ = -1;                      //需要监听的轴号No.2
     int8_t interval_ = 8;                       //采样周期
 
+    DPoint origin_point_;                       //相对坐标起始点
+
+    void SetOriginPoint(DPoint);                //设置相对起点坐标
     virtual bool Verify() const;
     virtual SG_DATA GenData(const double *feedback, const double *interp) = 0;
 };
@@ -114,10 +117,14 @@ public:
     void ResetRecord();                                 // 复位
     bool RefreshRecording();                            // 更新数据采集状态
 
+    void RstOriginPoint();                              //重置起始点
+    void SetOringPoint(DPoint origin_point);            //设置起始点
+
     bool IsIdle() const;                                // 是否处于空闲状态
     bool IsRecord() const;
     bool IsReady() const;
     bool IsEmpty() const;
+    int  CurState() const;
 
     bool SetType(SG_Type_Ptr type);                     // 设置采集类型
     bool SetInterval(unsigned interval);                // 设置采样周期
@@ -157,6 +164,8 @@ private:
     int data_send_fd = -1;              //数据传输socket
 
     SG_Type_Ptr type_ptr_;
+
+    bool   origin_inited = false;
 };
 
 #endif

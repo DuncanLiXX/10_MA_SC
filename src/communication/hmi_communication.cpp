@@ -2788,7 +2788,7 @@ void HMICommunication::ProcessHmiServoDataRequest(HMICmdFrame &cmd)
     g_ptr_chn_engine->m_serverGuide.SetType(type);
     if (!g_ptr_chn_engine->m_serverGuide.ReadyRecord())
     {
-        ScPrintf("ProcessHmiServoDataRequest refuse, ready failure");
+        ScPrintf("ProcessHmiServoDataRequest refuse, ready failure %d", g_ptr_chn_engine->m_serverGuide.CurState());
         cmd.cmd_extension = REFUSE;
         SendCmd(cmd);
         return;

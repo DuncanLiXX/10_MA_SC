@@ -101,6 +101,8 @@ bool ServeGuide::RefreshRecording()
 void ServeGuide::RstOriginPoint()
 {
     DPoint origin_point;//恢复值为00
+    origin_point.x = 0;
+    origin_point.y = 0;
     type_ptr_->SetOriginPoint(origin_point);
     origin_inited = false;
 }
@@ -109,10 +111,10 @@ void ServeGuide::RstOriginPoint()
  * @brief 设置起始点
  * @param origin_point 起始点坐标
  */
-void ServeGuide::SetOringPoint(DPoint origin_point)
+void ServeGuide::SetOriginPoint(DPoint origin_point)
 {
-    type_ptr_->SetOriginPoint(origin_point);
     origin_inited = true;
+    type_ptr_->SetOriginPoint(origin_point);
 }
 
 /**
@@ -189,9 +191,9 @@ void ServeGuide::RecordData(const double *feedback, const double *interp)
     if (!origin_inited)
     {
         DPoint origin;
-        origin.x = feedback[type_ptr_->axis_one_];
-        origin.y = feedback[type_ptr_->axis_two_];
-        SetOringPoint(origin);
+        origin.x = interp[type_ptr_->axis_one_];
+        origin.y = interp[type_ptr_->axis_two_];
+        SetOriginPoint(origin);
     }
     SG_DATA data = type_ptr_->GenData(feedback, interp);
     std::lock_guard<std::mutex> mut(data_mut_);
@@ -215,7 +217,7 @@ void ServeGuide::SendData()
             return;
     }
 
-    if( -1 == send(data_send_fd, &data, sizeof(data), MSG_NOSIGNAL)){
+    if(-1 == send(data_send_fd, &data, sizeof(data), MSG_NOSIGNAL)){
         ScPrintf("ServeGuide: data send error");
     }
 }
@@ -384,6 +386,8 @@ void SG_Type::SetOriginPoint(DPoint origin_point)
 {
     origin_point_.x = origin_point.x;
     origin_point_.y = origin_point.y;
+
+    std::cout << "origin --->   x: " << origin_point.x << " y: " << origin_point.y << std::endl;
 }
 
 bool SG_Type::Verify() const
@@ -435,6 +439,7 @@ SG_DATA CircleDletaCalc(DPlane point, DPlane pole, double radius)
     pos.x = point.x - pole.x;
     pos.y = point.y - pole.y;
 
+    std::cout << "point: x" << pos.x << " pos.y:" << pos.y << std::endl;
     //计算实际半径
     double radius_real = sqrt(pos.x * pos.x + pos.y * pos.y);
 

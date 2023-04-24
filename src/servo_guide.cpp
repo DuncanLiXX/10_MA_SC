@@ -65,16 +65,17 @@ void ServeGuide::PauseRecord()
  */
 void ServeGuide::ResetRecord()
 {
-    if (state_ == E_SG_RunState::READY)
-    {
-        {
-            std::lock_guard<std::mutex> mut(data_mut_);
-            while (!data_.empty()) data_.pop();
-        }
-        state_ = E_SG_RunState::IDLE;
-    }
-    else if (state_ == E_SG_RunState::RECORDING) //需要等待所有数据上传完成后再停止
-        state_ = E_SG_RunState::STOPPING;
+//    if (state_ == E_SG_RunState::READY)
+//    {
+//        {
+//            std::lock_guard<std::mutex> mut(data_mut_);
+//            while (!data_.empty()) data_.pop();
+//        }
+//        state_ = E_SG_RunState::IDLE;
+//    }
+//    else if (state_ == E_SG_RunState::RECORDING) //需要等待所有数据上传完成后再停止
+//        state_ = E_SG_RunState::STOPPING;
+    state_ = E_SG_RunState::STOPPING;
 }
 
 /**

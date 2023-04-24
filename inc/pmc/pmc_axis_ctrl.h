@@ -16,6 +16,7 @@
 #include "global_include.h"
 #include "pmc_register.h"
 #include <vector>
+#include <queue>
 
 class ChannelEngine;
 class MICommunication;
@@ -39,11 +40,12 @@ public:
 	bool IsActive(){return m_b_active;}     //是否已经激活
     bool CanActive();                       //是否能够激活
 	bool SetGroupIndex(uint8_t index);      //设置轴控制寄存器组号
-	bool WriteCmd(PmcAxisCtrlCmd &cmd);     //写入PMC指令
+    bool ReadCmd(PmcAxisCtrlCmd &cmd);      //读取PMC指令
+    bool WriteCmd();                        //写入缓存中的PMC指令
     void ExecCmdOver(bool res);        //指令执行完毕
     void SetErrState(int id);                //设置为错误状态
 
-	uint8_t GetCmdCount(){return this->m_n_cmd_count;}    //返回当前缓冲命令数
+    uint8_t GetCmdCount(){return m_pmc_cmd_buffer.size(); }    //返回当前缓冲命令数
 	bool IsPaused(){return m_b_pause;}    //是否暂停状态
 
 	void SetBuffState(bool flag);    //设置缓冲状态   flag：true--缓冲有效   false--缓冲无效
@@ -61,7 +63,6 @@ public:
     void SetRapidValue(bool value);
     bool GetRapid() const;
 private:
-	uint8_t GetRecvBufIndex();   //获得当前接收缓冲的索引号
 	void ExecuteCmd();           //执行当前执行缓冲中的指令
     void Process04Cmd(uint32_t ms);   //异步执行延时流程
 
@@ -77,11 +78,7 @@ public:
 	bool m_b_buffer;           //缓冲是否有效    true--有效   false--无效
 	bool m_b_step_stop;        //程序段停止有效   true--停止有效    false--停止无效
     bool m_b_pause;				//暂停状态   true--暂停中     false--不在暂停状态
-	uint8_t m_n_cmd_count;      //缓冲中指令数量
-//	uint8_t m_n_buf_recv;       //输入缓冲区索引号
-//	uint8_t m_n_buf_wait;       //等待缓冲区索引号
-	uint8_t m_n_buf_exec;       //执行缓冲区索引号
-	PmcAxisCtrlCmd m_pmc_cmd_buffer[3];    //PMC轴指令缓冲，3级缓冲，接收、等待、执行
+    std::queue<PmcAxisCtrlCmd> m_pmc_cmd_buffer;
 
 	ChannelEngine *m_p_channel_engine;    //通道引擎指针
     MICommunication *m_p_mi_comm;         //MI通讯对象指针

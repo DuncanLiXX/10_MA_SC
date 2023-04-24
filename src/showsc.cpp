@@ -961,17 +961,18 @@ void ShowSc::PrintPmcAxisCtrl()
         AddPair(s,"m_b_buffer",cfg->m_b_buffer);
         AddPair(s,"m_b_step_stop",cfg->m_b_step_stop);
         AddPair(s,"m_b_pause",cfg->m_b_pause);
-        AddPair(s,"m_n_cmd_count",cfg->m_n_cmd_count);
-        AddPair(s,"m_n_buf_exec",cfg->m_n_buf_exec);
-        AddPair(s,"cmd[0].cmd",cfg->m_pmc_cmd_buffer[0].cmd);
-        AddPair(s,"cmd[0].speed",cfg->m_pmc_cmd_buffer[0].speed);
-        AddPair(s,"cmd[0].distance",cfg->m_pmc_cmd_buffer[0].distance);
-        AddPair(s,"cmd[1].cmd",cfg->m_pmc_cmd_buffer[1].cmd);
-        AddPair(s,"cmd[1].speed",cfg->m_pmc_cmd_buffer[1].speed);
-        AddPair(s,"cmd[1].distance",cfg->m_pmc_cmd_buffer[1].distance);
-        AddPair(s,"cmd[2].cmd",cfg->m_pmc_cmd_buffer[2].cmd);
-        AddPair(s,"cmd[2].speed",cfg->m_pmc_cmd_buffer[2].speed);
-        AddPair(s,"cmd[2].distance",cfg->m_pmc_cmd_buffer[2].distance);
+        AddPair(s,"cmd size", cfg->m_pmc_cmd_buffer.size());
+        //AddPair(s,"m_n_cmd_count",cfg->m_n_cmd_count);
+        //AddPair(s,"m_n_buf_exec",cfg->m_n_buf_exec);
+        //AddPair(s,"cmd[0].cmd",cfg->m_pmc_cmd_buffer[0].cmd);
+        //AddPair(s,"cmd[0].speed",cfg->m_pmc_cmd_buffer[0].speed);
+        //AddPair(s,"cmd[0].distance",cfg->m_pmc_cmd_buffer[0].distance);
+        //AddPair(s,"cmd[1].cmd",cfg->m_pmc_cmd_buffer[1].cmd);
+        //AddPair(s,"cmd[1].speed",cfg->m_pmc_cmd_buffer[1].speed);
+        //AddPair(s,"cmd[1].distance",cfg->m_pmc_cmd_buffer[1].distance);
+        //AddPair(s,"cmd[2].cmd",cfg->m_pmc_cmd_buffer[2].cmd);
+        //AddPair(s,"cmd[2].speed",cfg->m_pmc_cmd_buffer[2].speed);
+        //AddPair(s,"cmd[2].distance",cfg->m_pmc_cmd_buffer[2].distance);
         s.append("\n");
     }
 

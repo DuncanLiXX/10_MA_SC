@@ -386,8 +386,7 @@ void SG_Type::SetOriginPoint(DPoint origin_point)
 {
     origin_point_.x = origin_point.x;
     origin_point_.y = origin_point.y;
-
-    std::cout << "origin --->   x: " << origin_point.x << " y: " << origin_point.y << std::endl;
+    std::cout << "x------> " << origin_point.x << " y------> " << origin_point.y << std::endl;
 }
 
 bool SG_Type::Verify() const
@@ -439,7 +438,6 @@ SG_DATA CircleDletaCalc(DPlane point, DPlane pole, double radius)
     pos.x = point.x - pole.x;
     pos.y = point.y - pole.y;
 
-    std::cout << "point: x" << pos.x << " pos.y:" << pos.y << std::endl;
     //计算实际半径
     double radius_real = sqrt(pos.x * pos.x + pos.y * pos.y);
 
@@ -491,18 +489,21 @@ SG_RecCir_Type::SG_RecCir_Type(SG_RecCir_Config cfg)
 SG_DATA SG_RecCir_Type::GenData(const double *feedback, const double *interp)
 {
     //极坐标
-    //是否需要起始点
     double center_x = width_ / 2;
     double center_y = -(height_ + 2 * radius_) / 2;
 
+    double relative_feed_pos_1 = feedback[axis_one_] - origin_point_.x;
+    double relative_feed_pos_2 = feedback[axis_two_] - origin_point_.y;
     //极坐标转换
-    double pos_1 = feedback[axis_one_] - center_x;
-    double pos_2 = feedback[axis_two_] - center_y;
+    double pos_1 = relative_feed_pos_1 - center_x;
+    double pos_2 = relative_feed_pos_2 - center_y;
     DPlane pos(pos_1, pos_2);
 
     //理论坐标，防止坐标跳动，导致象限计算错误
-    double interp_pos_1 = interp[axis_one_] - center_x;
-    double interp_pos_2 = interp[axis_two_] - center_y;
+    double relative_interp_pos_1 = interp[axis_one_] - origin_point_.x;
+    double relative_interp_pos_2 = interp[axis_two_] - origin_point_.y;
+    double interp_pos_1 = relative_interp_pos_1 - center_x;
+    double interp_pos_2 = relative_interp_pos_2 - center_y;
     DPlane interp_pos(interp_pos_1, interp_pos_2);
 
     //判断当前坐标处于第几象限
@@ -513,7 +514,7 @@ SG_DATA SG_RecCir_Type::GenData(const double *feedback, const double *interp)
     double delta_y = 0;
 
     quadrant = GetQuadrant(interp_pos);
-    //std::cout << "-->" << "X: " << pos.x << "Y: " << pos.y << " Q:" << (int)quadrant << std::endl;
+    //std::cout << "-->" << "X: " << interp_pos.x << " Y: " << interp_pos.y << " Q:" << (int)quadrant << std::endl;
     SG_DATA data = std::make_tuple(-1, -1, -1, -1);
     switch (quadrant) {
     case 1:
@@ -584,11 +585,11 @@ SG_DATA SG_RecCir_Type::GenData(const double *feedback, const double *interp)
     default:
         break;
     }
-    if (std::get<0>(data) == -1)//test
-    {
-        std::cout << "feedback[axis_one_] " << feedback[axis_one_] << std::endl;
-        std::cout << "feedback[axis_two_] " << feedback[axis_two_] << std::endl;
-    }
+    //if (std::get<0>(data) == -1)//test
+    //{
+    //    std::cout << "feedback[axis_one_] " << relative_pos_1 << std::endl;
+    //    std::cout << "feedback[axis_two_] " << relative_pos_2 << std::endl;
+    //}
     return data;
 }
 
@@ -646,8 +647,8 @@ int SG_RecCir_Type::GetQuadrant(DPlane plane)
     }
 
     //第八象限
-    if (plane.x >= -width_/2 - radius_ && plane.x <= -width_/2
-        && plane.y >= height_/2 && plane.y <= height_/2 + radius_)
+    if ((plane.x >= -width_/2 - radius_) && (plane.x <= -width_/2)
+        && (plane.y >= height_/2) && (plane.y <= height_/2 + radius_))
     {
         return 8;
     }

@@ -12,7 +12,7 @@
 
 struct SG_Type;
 
-using SG_DATA = std::tuple<double, double, double, double>; //最终发送的数据类型，现阶段写死4个double类型，方便通讯库用固定类型存储
+using SG_DATA = std::tuple<double, double, double, double>; //最终发送的数据类型，现阶段固定为4个double类型，方便通讯库用固定类型存储
 using SG_Type_Ptr = std::shared_ptr<SG_Type>;               //伺服引导类型，具体类型参见 E_SG_Type
 
 enum class E_SG_Type {
@@ -118,7 +118,7 @@ public:
     bool RefreshRecording();                            // 更新数据采集状态
 
     void RstOriginPoint();                              //重置起始点
-    void SetOringPoint(DPoint origin_point);            //设置起始点
+    void SetOriginPoint(DPoint origin_point);            //设置起始点
 
     bool IsIdle() const;                                // 是否处于空闲状态
     bool IsRecord() const;

@@ -7970,6 +7970,9 @@ void ChannelEngine::InitMiParam(){
 
         //		this->SendMiParam<uint8_t>(index, 1209, axis_config->axis_alarm_level);	//轴告警电平
 
+       m_p_mi_comm->SendMiParam<uint8_t>(index, 1210, axis_config->decelerate_numerator);   //减速比例分子
+       m_p_mi_comm->SendMiParam<uint8_t>(index, 1211, axis_config->decelerate_denominator);   //减速比例分母
+
         if(axis_config->axis_interface != VIRTUAL_AXIS &&
                 axis_config->feedback_mode != NO_ENCODER &&
                 axis_config->feedback_mode != INCREMENTAL_ENCODER &&

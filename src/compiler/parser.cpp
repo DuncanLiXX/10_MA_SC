@@ -2466,11 +2466,15 @@ bool Parser::CreateArcMsg(const int gcode){
         radius = fabs(radius);
 
 		//计算圆心坐标
-		//printf("===== ARC SOURCE %lf %lf %lf\n",
-		//		source.GetAxisValue(0), source.GetAxisValue(1), source.GetAxisValue(2));
+        //printf("===== ARC SOURCE %lf %lf %lf\n",
+        //        source.GetAxisValue(0), source.GetAxisValue(1), source.GetAxisValue(2));
 
 
         DPointChn target_pos = target;
+        if (this->m_p_compiler_status->mode.gmode[3] == G91_CMD)
+        {// llx add 解决增量模式跑圆弧报警无法自洽问题
+            target_pos += source;
+        }
         if(!CalArcCenter(source, target_pos, radius, major_flag*dir_flag, center)){
 			return false; //产生错误，返回
 		}

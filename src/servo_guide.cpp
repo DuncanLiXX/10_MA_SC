@@ -173,6 +173,19 @@ bool ServeGuide::IsTimeout()
 }
 
 /**
+ * @brief 刚性攻丝需要记录速度
+ * @param speed
+ */
+void ServeGuide::RecordSpeed(const double *speed)
+{
+    auto tap_config = dynamic_pointer_cast<SG_Tapping_Type>(type_ptr_);
+    if (tap_config)
+    {
+        tap_config->RecordSpeed(speed);
+    }
+}
+
+/**
  * @brief 发送数据是否准备好，准备好才可以进行数据传送
  * @return true:准备好,false:未准备好
  */
@@ -387,7 +400,7 @@ void SG_Type::SetOriginPoint(DPoint origin_point)
 {
     origin_point_.x = origin_point.x;
     origin_point_.y = origin_point.y;
-    std::cout << "x------> " << origin_point.x << " y------> " << origin_point.y << std::endl;
+    std::cout << "OriginPoint: x------> " << origin_point.x << " y------> " << origin_point.y << std::endl;
 }
 
 bool SG_Type::Verify() const
@@ -680,9 +693,16 @@ bool SG_Tapping_Type::Verify() const
     return true;
 }
 
+void SG_Tapping_Type::RecordSpeed(const double *speed)
+{
+    curSpeed_ = speed[axis_two_];//记录Z轴速度
+}
+
 SG_DATA SG_Tapping_Type::GenData(const double *feedback, const double *)
 {
-    double delta = feedback[axis_one_] - feedback[axis_two_];
-    SG_DATA data = std::make_tuple(feedback[axis_one_], feedback[axis_two_], delta, -1);//速度暂时没做
+    double spd_pos = feedback[axis_one_] - origin_point_.x;
+    double z_axis_pos = feedback[axis_two_] - origin_point_.y;
+    double delta = spd_pos - z_axis_pos;
+    SG_DATA data = std::make_tuple(feedback[axis_one_], feedback[axis_two_], delta, curSpeed_);
     return data;
 }

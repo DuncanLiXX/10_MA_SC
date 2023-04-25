@@ -878,7 +878,8 @@ void ChannelEngine::SetSoftLimitSignal(uint8_t EXLM, uint8_t RLSOT){
     for(int i=0; i<m_p_channel_config->chn_axis_count; i++){
         check1 = (!EXLM && !RLSOT);
         check2 = (EXLM && !RLSOT);
-        if(m_p_axis_config[i].axis_type == AXIS_SPINDLE){ // 主轴不需软限位
+        if(m_p_axis_config[i].axis_type == AXIS_SPINDLE ||
+                m_p_axis_config[i].axis_type ==  AXIS_ROTATE){ // 主轴/旋转轴不需软限位
             m_p_axis_config[i].soft_limit_check_1 = 0;
             m_p_axis_config[i].soft_limit_check_2 = 0;
         }else{
@@ -1431,6 +1432,11 @@ void ChannelEngine::UpdateMiLimitValue(uint8_t EXLM, uint8_t RLSOT)
 {
     std::cout << "ChannelEngine::UpdateMiLimitValue" << std::endl;
     for(int i=0; i<m_p_channel_config->chn_axis_count; i++){
+        if(m_p_axis_config[i].axis_type == AXIS_SPINDLE ||
+                m_p_axis_config[i].axis_type ==  AXIS_ROTATE){ // 主轴/旋转轴不需软限位
+            g_ptr_parm_manager->UpdateMiLimit(i, 0, 1);
+            continue;
+        }
         g_ptr_parm_manager->UpdateMiLimit(i, EXLM, RLSOT);
     }
 }

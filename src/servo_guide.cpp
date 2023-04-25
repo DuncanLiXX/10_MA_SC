@@ -44,6 +44,9 @@ bool ServeGuide::StartRecord()
         return false;
     }
     ScPrintf("-----------ServeGuide::StartRecord()-----------");
+
+    RstOriginPoint();
+
     state_ = E_SG_RunState::RECORDING;
     return true;
 }
@@ -56,6 +59,7 @@ void ServeGuide::PauseRecord()
     if (state_ == E_SG_RunState::RECORDING)
     {
         ScPrintf("-----------ServeGuide::PauseRecord()-----------");
+        RstOriginPoint();
         state_ = E_SG_RunState::READY;
     }
 }
@@ -65,17 +69,10 @@ void ServeGuide::PauseRecord()
  */
 void ServeGuide::ResetRecord()
 {
-//    if (state_ == E_SG_RunState::READY)
-//    {
-//        {
-//            std::lock_guard<std::mutex> mut(data_mut_);
-//            while (!data_.empty()) data_.pop();
-//        }
-//        state_ = E_SG_RunState::IDLE;
-//    }
-//    else if (state_ == E_SG_RunState::RECORDING) //需要等待所有数据上传完成后再停止
-//        state_ = E_SG_RunState::STOPPING;
-    state_ = E_SG_RunState::STOPPING;
+    ScPrintf("ServeGuide::ResetRecord");
+
+    if (state_ != E_SG_RunState::IDLE)
+        state_ = E_SG_RunState::STOPPING;
 }
 
 /**
@@ -96,6 +93,28 @@ bool ServeGuide::RefreshRecording()
         }
     }
     return false;
+}
+
+/**
+ * @brief 重置起始点
+ */
+void ServeGuide::RstOriginPoint()
+{
+    DPoint origin_point;//恢复值为00
+    origin_point.x = 0;
+    origin_point.y = 0;
+    type_ptr_->SetOriginPoint(origin_point);
+    origin_inited = false;
+}
+
+/**
+ * @brief 设置起始点
+ * @param origin_point 起始点坐标
+ */
+void ServeGuide::SetOriginPoint(DPoint origin_point)
+{
+    origin_inited = true;
+    type_ptr_->SetOriginPoint(origin_point);
 }
 
 /**
@@ -144,12 +163,26 @@ bool ServeGuide::SetInterval(unsigned interval)
  */
 bool ServeGuide::IsTimeout()
 {
-    if (duration_cast<milliseconds>(steady_clock::now() - scan_cycle_).count() > scan_interval_)
+    if (duration_cast<milliseconds>(steady_clock::now() - scan_cycle_).count() >= scan_interval_)
     {
+        //std::cout << "Time interval: " << duration_cast<milliseconds>(steady_clock::now() - scan_cycle_).count() << std::endl;
         scan_cycle_ = steady_clock::now();//TODO 计时点应该放在哪里比较合适
         return true;
     }
     return false;
+}
+
+/**
+ * @brief 刚性攻丝需要记录速度
+ * @param speed
+ */
+void ServeGuide::RecordSpeed(const double *speed)
+{
+    auto tap_config = dynamic_pointer_cast<SG_Tapping_Type>(type_ptr_);
+    if (tap_config)
+    {
+        tap_config->RecordSpeed(speed);
+    }
 }
 
 /**
@@ -158,7 +191,7 @@ bool ServeGuide::IsTimeout()
  */
 bool ServeGuide::IsDataReady()
 {
-    //当数据量大，cpu处理不过来时，可以等发送队列中的数据到达某一量级时，一并发送
+    //当数据量大，cpu处理不过来时，可以等发送队列中的数据积累到某一量级时，一并发送
     return true;
 }
 
@@ -169,6 +202,13 @@ bool ServeGuide::IsDataReady()
  */
 void ServeGuide::RecordData(const double *feedback, const double *interp)
 {
+    if (!origin_inited)
+    {
+        DPoint origin;
+        origin.x = interp[type_ptr_->axis_one_];
+        origin.y = interp[type_ptr_->axis_two_];
+        SetOriginPoint(origin);
+    }
     SG_DATA data = type_ptr_->GenData(feedback, interp);
     std::lock_guard<std::mutex> mut(data_mut_);
     data_.push(std::move(data));//数据压入发送队列中
@@ -191,7 +231,7 @@ void ServeGuide::SendData()
             return;
     }
 
-    if( -1 == send(data_send_fd, &data, sizeof(data), MSG_NOSIGNAL)){
+    if(-1 == send(data_send_fd, &data, sizeof(data), MSG_NOSIGNAL)){
         ScPrintf("ServeGuide: data send error");
     }
 }
@@ -325,6 +365,11 @@ bool ServeGuide::IsEmpty() const
     return data_.empty();
 }
 
+int ServeGuide::CurState() const
+{
+    return (int)state_;
+}
+
 /**
  * @brief 设置伺服引导类型,必须在空闲状态下设置
  * @param type:参见E_SG_Type
@@ -347,6 +392,17 @@ SG_Rect_Type::SG_Rect_Type(SG_Rect_Config cfg)
 
 }
 
+/**
+ * @brief 设置相对起点坐标
+ * @param origin_point，起点坐标值
+ */
+void SG_Type::SetOriginPoint(DPoint origin_point)
+{
+    origin_point_.x = origin_point.x;
+    origin_point_.y = origin_point.y;
+    std::cout << "OriginPoint: x------> " << origin_point.x << " y------> " << origin_point.y << std::endl;
+}
+
 bool SG_Type::Verify() const
 {
     if (axis_one_ < 0)
@@ -366,7 +422,7 @@ bool SG_Type::Verify() const
 
 SG_DATA SG_Rect_Type::GenData(const double *feedback, const double *)
 {
-    SG_DATA data = std::make_tuple(feedback[axis_one_], feedback[axis_two_], -1, -1);
+    SG_DATA data = std::make_tuple(feedback[axis_one_] - origin_point_.x, feedback[axis_two_] - origin_point_.y, -1, -1);
     return data;
 }
 
@@ -428,10 +484,9 @@ void CoordTransform(SG_DATA &origin, DPlane offset)
 
 SG_DATA SG_Circle_Type::GenData(const double *feedback, const double *)
 {
-    //要加入起始点，否则起始点必须要是（0，0）
     //转换极坐标系
     DPlane pole_point(-radius_, 0);
-    DPlane point(feedback[axis_one_], feedback[axis_two_]);
+    DPlane point(feedback[axis_one_] - origin_point_.x, feedback[axis_two_] - origin_point_.y);
 
     SG_DATA data = CircleDletaCalc(point, pole_point, radius_);
     return data;
@@ -448,18 +503,21 @@ SG_RecCir_Type::SG_RecCir_Type(SG_RecCir_Config cfg)
 SG_DATA SG_RecCir_Type::GenData(const double *feedback, const double *interp)
 {
     //极坐标
-    //是否需要起始点
     double center_x = width_ / 2;
     double center_y = -(height_ + 2 * radius_) / 2;
 
+    double relative_feed_pos_1 = feedback[axis_one_] - origin_point_.x;
+    double relative_feed_pos_2 = feedback[axis_two_] - origin_point_.y;
     //极坐标转换
-    double pos_1 = feedback[axis_one_] - center_x;
-    double pos_2 = feedback[axis_two_] - center_y;
+    double pos_1 = relative_feed_pos_1 - center_x;
+    double pos_2 = relative_feed_pos_2 - center_y;
     DPlane pos(pos_1, pos_2);
 
     //理论坐标，防止坐标跳动，导致象限计算错误
-    double interp_pos_1 = interp[axis_one_] - center_x;
-    double interp_pos_2 = interp[axis_two_] - center_y;
+    double relative_interp_pos_1 = interp[axis_one_] - origin_point_.x;
+    double relative_interp_pos_2 = interp[axis_two_] - origin_point_.y;
+    double interp_pos_1 = relative_interp_pos_1 - center_x;
+    double interp_pos_2 = relative_interp_pos_2 - center_y;
     DPlane interp_pos(interp_pos_1, interp_pos_2);
 
     //判断当前坐标处于第几象限
@@ -470,7 +528,7 @@ SG_DATA SG_RecCir_Type::GenData(const double *feedback, const double *interp)
     double delta_y = 0;
 
     quadrant = GetQuadrant(interp_pos);
-    //std::cout << "-->" << "X: " << pos.x << "Y: " << pos.y << " Q:" << (int)quadrant << std::endl;
+    //std::cout << "-->" << "X: " << interp_pos.x << " Y: " << interp_pos.y << " Q:" << (int)quadrant << std::endl;
     SG_DATA data = std::make_tuple(-1, -1, -1, -1);
     switch (quadrant) {
     case 1:
@@ -541,11 +599,11 @@ SG_DATA SG_RecCir_Type::GenData(const double *feedback, const double *interp)
     default:
         break;
     }
-    if (std::get<0>(data) == -1)
-    {
-        std::cout << "feedback[axis_one_] " << feedback[axis_one_] << std::endl;
-        std::cout << "feedback[axis_two_] " << feedback[axis_two_] << std::endl;
-    }
+    //if (std::get<0>(data) == -1)//test
+    //{
+    //    std::cout << "feedback[axis_one_] " << relative_pos_1 << std::endl;
+    //    std::cout << "feedback[axis_two_] " << relative_pos_2 << std::endl;
+    //}
     return data;
 }
 
@@ -603,8 +661,8 @@ int SG_RecCir_Type::GetQuadrant(DPlane plane)
     }
 
     //第八象限
-    if (plane.x >= -width_/2 - radius_ && plane.x <= -width_/2
-        && plane.y >= height_/2 && plane.y <= height_/2 + radius_)
+    if ((plane.x >= -width_/2 - radius_) && (plane.x <= -width_/2)
+        && (plane.y >= height_/2) && (plane.y <= height_/2 + radius_))
     {
         return 8;
     }
@@ -635,9 +693,16 @@ bool SG_Tapping_Type::Verify() const
     return true;
 }
 
+void SG_Tapping_Type::RecordSpeed(const double *speed)
+{
+    curSpeed_ = speed[axis_two_];//记录Z轴速度
+}
+
 SG_DATA SG_Tapping_Type::GenData(const double *feedback, const double *)
 {
-    double delta = feedback[axis_one_] - feedback[axis_two_];
-    SG_DATA data = std::make_tuple(feedback[axis_one_], feedback[axis_two_], delta, -1);//速度暂时没做
+    double spd_pos = feedback[axis_one_] - origin_point_.x;
+    double z_axis_pos = feedback[axis_two_] - origin_point_.y;
+    double delta = spd_pos - z_axis_pos;
+    SG_DATA data = std::make_tuple(feedback[axis_one_], feedback[axis_two_], delta, curSpeed_);
     return data;
 }

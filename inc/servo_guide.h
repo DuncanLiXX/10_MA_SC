@@ -12,7 +12,7 @@
 
 struct SG_Type;
 
-using SG_DATA = std::tuple<double, double, double, double>; //最终发送的数据类型，现阶段写死4个double类型，方便通讯库用固定类型存储
+using SG_DATA = std::tuple<double, double, double, double>; //最终发送的数据类型，现阶段固定为4个double类型，方便通讯库用固定类型存储
 using SG_Type_Ptr = std::shared_ptr<SG_Type>;               //伺服引导类型，具体类型参见 E_SG_Type
 
 enum class E_SG_Type {
@@ -36,6 +36,9 @@ struct SG_Type {
     int8_t axis_two_ = -1;                      //需要监听的轴号No.2
     int8_t interval_ = 8;                       //采样周期
 
+    DPoint origin_point_;                       //相对坐标起始点
+
+    void SetOriginPoint(DPoint);                //设置相对起点坐标
     virtual bool Verify() const;
     virtual SG_DATA GenData(const double *feedback, const double *interp) = 0;
 };
@@ -95,7 +98,10 @@ struct SG_Tapping_Type : public SG_Type {
     SG_Tapping_Type(SG_Tapping_Config cfg);
 
     bool Verify() const override;
+    void RecordSpeed(const double *speed);
     SG_DATA GenData(const double *feedback, const double *interp) override;
+
+    double curSpeed_ = 0;
 };
 
 
@@ -114,15 +120,20 @@ public:
     void ResetRecord();                                 // 复位
     bool RefreshRecording();                            // 更新数据采集状态
 
+    void RstOriginPoint();                              //重置起始点
+    void SetOriginPoint(DPoint origin_point);            //设置起始点
+
     bool IsIdle() const;                                // 是否处于空闲状态
     bool IsRecord() const;
     bool IsReady() const;
     bool IsEmpty() const;
+    int  CurState() const;
 
     bool SetType(SG_Type_Ptr type);                     // 设置采集类型
     bool SetInterval(unsigned interval);                // 设置采样周期
     bool IsTimeout();                                   // 周期到达
 
+    void RecordSpeed(const double *speed);                                 // 刚性攻丝需要记录速度
     virtual void RecordData(const double *feedback, const double *interp);  // 记录数据 //虚函数或者模板函数
 
     bool InitSocket();  // 初始化Socket
@@ -139,8 +150,7 @@ private:
         IDLE = 0,           //空闲
         READY = 1,          //准备好
         RECORDING = 2,      //采集中
-        //Paused = 3,         //暂停
-        STOPPING = 4,       //停止中
+        STOPPING = 3,       //停止中
     };
 
     constexpr static int MAX_INTERVAL = 10000;
@@ -150,13 +160,14 @@ private:
     E_SG_RunState state_ = E_SG_RunState::IDLE;
 
     // 数据存放(可能需要继承)
+    bool origin_inited = false;         //是否已经记录起始点（用于增量计算）
     std::queue<SG_DATA> data_;
     mutable std::mutex data_mut_;
 
     int data_socket_ = -1;              //连接socket
     int data_send_fd = -1;              //数据传输socket
 
-    SG_Type_Ptr type_ptr_;
+    SG_Type_Ptr type_ptr_;              //采集数据类型
 };
 
 #endif

@@ -6356,7 +6356,7 @@ bool ChannelControl::ExecuteAuxMsg(RecordMsg *msg){
                         this->SendMachOverToHmi();  //发送加工结束消息给HMI
                     }
 #else
-                    this->SendMachOverToHmi();  //发送加工结束消息给HMI
+                    //this->SendMachOverToHmi();  //发送加工结束消息给HMI
 #endif
                 }
                 tmp->SetExecStep(m_index, 0xFF);    //置位结束状态
@@ -6774,6 +6774,29 @@ bool ChannelControl::ExecuteAuxMsg(RecordMsg *msg){
             //		this->ProcessGrindM68(tmp);
             //		break;
 #endif
+        case 60://开始数据采集
+        {
+            if(tmp->GetExecStep(m_index) == 0){
+                gettimeofday(&m_time_m_start[m_index], NULL);
+                tmp->IncreaseExecStep(m_index);
+            }else if(tmp->GetExecStep(m_index) == 1){
+                gettimeofday(&time_now, NULL);
+                time_elpase = (time_now.tv_sec-m_time_m_start[m_index].tv_sec)*1000000+time_now.tv_usec-m_time_m_start[m_index].tv_usec;
+                if(time_elpase < 100000)
+                    break;
+                tmp->IncreaseExecStep(m_index);
+            }else if(tmp->GetExecStep(m_index) == 2){
+                g_ptr_chn_engine->m_serverGuide.StartRecord();
+                tmp->SetExecStep(m_index, 0xFF);    //置位结束状态
+            }
+        }
+        break;
+        case 61://结束数据采集
+        {
+            g_ptr_chn_engine->m_serverGuide.PauseRecord();
+            tmp->SetExecStep(m_index, 0xFF);    //置位结束状态
+        }
+        break;
         case 98:	//M98子程序调用
             printf("execute M98\n");
             tmp->SetExecStep(m_index, 0xFF);    //置位结束状态
@@ -6966,13 +6989,6 @@ bool ChannelControl::ExecuteAuxMsg(RecordMsg *msg){
             	//等待FIN信号
                 if(this->m_p_g_reg->FIN == 1 || this->GetMFINSig(m_index)) {
                     //gettimeofday(&m_time_m_start[m_index], NULL);   //开始计时
-
-                    //llx test
-                    //gettimeofday(&time_now_test, NULL);
-                    //time_elpase_test = (time_now_test.tv_sec-m_time_test.tv_sec)*1000000+time_now_test.tv_usec-m_time_test.tv_usec;
-                    //std::cout << "+++++++++++++++++++++++++++++timeval: " << (int)time_elpase_test << std::endl;
-                    //std::cout << "mcode: " << (int)mcode << " ME: " << (int)this->GetMExcSig(m_index) << " FIN: " << (int)this->m_p_g_reg->FIN << std::endl;
-                    //std::cout << "mfin: " << (int)this->GetMFINSig(m_index) << std::endl;
                 }
                 else
                 {
@@ -6981,13 +6997,8 @@ bool ChannelControl::ExecuteAuxMsg(RecordMsg *msg){
                     if(time_elpase > kMCodeTimeout && !this->GetMExcSig(m_index)
                         && this->m_p_g_reg->FIN == 0 && !this->GetMFINSig(m_index)/*再次判断FIN，此时的内存数据可能已经刷新*/){//超过200ms任未进入执行状态，则告警“不支持的M代码”
 
-                        //llx test
                         gettimeofday(&time_now_test, NULL);
                         time_elpase_test = (time_now_test.tv_sec-m_time_test.tv_sec)*1000000+time_now_test.tv_usec-m_time_test.tv_usec;
-                        //std::cout << "+++++++++++++++++++++++++++++timeval: " << (int)time_elpase_test << std::endl;
-                        //std::cout << "mcode: " << (int)mcode << " ME: " << (int)this->GetMExcSig(m_index) << " FIN: " << (int)this->m_p_g_reg->FIN << std::endl;
-                        //std::cout << "mfin: " << (int)this->GetMFINSig(m_index) << std::endl;
-
                         CreateError(ERR_M_CODE, ERROR_LEVEL, CLEAR_BY_MCP_RESET, mcode, m_n_channel_index);
                         this->m_error_code = ERR_M_CODE;
                     }else
@@ -8265,7 +8276,7 @@ bool ChannelControl::ExecuteLoopMsg(RecordMsg *msg){
 
         if(loopmsg->GetGCode() == G74_CMD){
             m_p_spindle->TapDir = -1;
-        	m_p_spindle->SetTapFeed(-feed);
+            m_p_spindle->SetTapFeed(feed);
         }else{
         	m_p_spindle->TapDir = 1;
         	m_p_spindle->SetTapFeed(feed);

@@ -1458,6 +1458,8 @@ bool ParmManager::ReadAxisConfig(){
 			m_sc_axis_config[i].pc_count = m_ini_axis->GetIntValueOrDefault(sname, "pc_count", 0);
 			m_sc_axis_config[i].pc_ref_index = m_ini_axis->GetIntValueOrDefault(sname, "pc_ref_index", 1);
 			m_sc_axis_config[i].pc_inter_dist = m_ini_axis->GetDoubleValueOrDefault(sname, "pc_inter_dist", 1.0);
+            m_sc_axis_config[i].decelerate_numerator = m_ini_axis->GetIntValueOrDefault(sname, "decelerate_numerator", 1);
+            m_sc_axis_config[i].decelerate_denominator = m_ini_axis->GetIntValueOrDefault(sname, "decelerate_denominator", 1);
 
             if(m_sc_axis_config[i].axis_type == AXIS_SPINDLE)// 主轴不需软限位
                 m_sc_axis_config[i].soft_limit_check_1 = 0;
@@ -1586,6 +1588,8 @@ bool ParmManager::ReadAxisConfig(){
 			m_sc_axis_config[i].motor_count_pr = 10000;
 			m_sc_axis_config[i].motor_speed_max = 3000;
 			m_sc_axis_config[i].move_pr = 10.0; //5.0;
+            m_sc_axis_config[i].decelerate_numerator = 1;
+            m_sc_axis_config[i].decelerate_denominator = 1;
 
 			m_sc_axis_config[i].motor_dir = 1;
 			m_sc_axis_config[i].feedback_mode = 0;
@@ -1867,6 +1871,11 @@ bool ParmManager::ReadAxisConfig(){
             m_ini_axis->AddKeyValuePair(string("pmc_g00_by_EIFg"), string("0"), ns);
             m_ini_axis->AddKeyValuePair(string("pmc_min_speed"), string("5"), ns);
             m_ini_axis->AddKeyValuePair(string("pmc_max_speed"), string("15000"), ns);
+
+            m_ini_axis->AddKeyValuePair(string("ref_complete"), string("0"), ns);
+            m_ini_axis->AddKeyValuePair(string("init_backlash_dir"), string("1"), ns);
+            m_ini_axis->AddKeyValuePair(string("decelerate_numerator"), string("1"), ns);
+            m_ini_axis->AddKeyValuePair(string("decelerate_denominator"), string("1"), ns);
 
 			for(j = 0; j < 10; j++){
 				memset(kname, 0x00, sizeof(kname));
@@ -4998,6 +5007,14 @@ bool ParmManager::UpdateAxisParam(uint8_t axis_index, uint32_t param_no, ParamVa
 		sprintf(kname, "axis_alarm_level");
 		m_ini_axis->SetIntValue(sname, kname, value.value_uint8);
 		break;
+    case 1210:  //减速比例分子
+        sprintf(kname, "decelerate_numerator");
+        m_ini_axis->SetIntValue(sname, kname, value.value_uint8);
+        break;
+    case 1211:  //减速比例分母
+        sprintf(kname, "decelerate_denominator");
+        m_ini_axis->SetIntValue(sname, kname, value.value_uint8);
+        break;
 	case 1302:  //参考点基准误差
 		sprintf(kname, "ref_mark_err");
 		m_ini_axis->SetDoubleValue(sname, kname, value.value_double);
@@ -6759,6 +6776,12 @@ void ParmManager::ActiveAxisParam(uint8_t axis_index, uint32_t param_no, ParamVa
 //		this->m_sc_axis_config[axis_index].axis_alarm_level = value.value_uint8;
 		UpdateMiParam<uint8_t>(axis_index+1, param_no, value.value_uint8);
 		break;
+    case 1210:  //减速比例分子
+        this->m_sc_axis_config[axis_index].decelerate_numerator = value.value_uint8;
+        break;
+    case 1211:  //减速比例分母
+        this->m_sc_axis_config[axis_index].decelerate_denominator = value.value_uint8;
+        break;
 	case 1302:  //参考点基准误差
 		this->m_sc_axis_config[axis_index].ref_mark_err = value.value_double;
 		break;
@@ -6942,7 +6965,7 @@ void ParmManager::ActiveAxisParam(uint8_t axis_index, uint32_t param_no, ParamVa
         break;
 
     case 1554:  //旋转轴绝对指令的旋转方向  0--快捷方向  1--取决于指令符号
-        this->m_sc_axis_config[axis_index].pos_rel_disp_mode = value.value_uint8;
+        this->m_sc_axis_config[axis_index].rot_abs_dir = value.value_uint8;
         break;
 
 	case 1602:	//主轴变速比

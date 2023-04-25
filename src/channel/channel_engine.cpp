@@ -739,6 +739,7 @@ bool ChannelEngine::RecordingServerGuide()
                 this->m_p_mi_comm->ReadPhyAxisCurFedBckPos(m_df_phy_axis_pos_feedback, m_df_phy_axis_pos_intp, m_df_phy_axis_speed_feedback,
                     m_df_phy_axis_torque_feedback, m_df_spd_angle, m_p_general_config->axis_count);
 
+                m_serverGuide.RecordSpeed(m_df_phy_axis_speed_feedback);//刚性攻丝使用
                 m_serverGuide.RecordData(m_df_phy_axis_pos_feedback, m_df_phy_axis_pos_intp);
             }
         }
@@ -878,7 +879,8 @@ void ChannelEngine::SetSoftLimitSignal(uint8_t EXLM, uint8_t RLSOT){
     for(int i=0; i<m_p_channel_config->chn_axis_count; i++){
         check1 = (!EXLM && !RLSOT);
         check2 = (EXLM && !RLSOT);
-        if(m_p_axis_config[i].axis_type == AXIS_SPINDLE){ // 主轴不需软限位
+        if(m_p_axis_config[i].axis_type == AXIS_SPINDLE ||
+                m_p_axis_config[i].axis_type ==  AXIS_ROTATE){ // 主轴/旋转轴不需软限位
             m_p_axis_config[i].soft_limit_check_1 = 0;
             m_p_axis_config[i].soft_limit_check_2 = 0;
         }else{
@@ -1431,6 +1433,11 @@ void ChannelEngine::UpdateMiLimitValue(uint8_t EXLM, uint8_t RLSOT)
 {
     std::cout << "ChannelEngine::UpdateMiLimitValue" << std::endl;
     for(int i=0; i<m_p_channel_config->chn_axis_count; i++){
+        if(m_p_axis_config[i].axis_type == AXIS_SPINDLE ||
+                m_p_axis_config[i].axis_type ==  AXIS_ROTATE){ // 主轴/旋转轴不需软限位
+            g_ptr_parm_manager->UpdateMiLimit(i, 0, 1);
+            continue;
+        }
         g_ptr_parm_manager->UpdateMiLimit(i, EXLM, RLSOT);
     }
 }
@@ -7964,6 +7971,9 @@ void ChannelEngine::InitMiParam(){
 
         //		this->SendMiParam<uint8_t>(index, 1209, axis_config->axis_alarm_level);	//轴告警电平
 
+       m_p_mi_comm->SendMiParam<uint8_t>(index, 1210, axis_config->decelerate_numerator);   //减速比例分子
+       m_p_mi_comm->SendMiParam<uint8_t>(index, 1211, axis_config->decelerate_denominator);   //减速比例分母
+
         if(axis_config->axis_interface != VIRTUAL_AXIS &&
                 axis_config->feedback_mode != NO_ENCODER &&
                 axis_config->feedback_mode != INCREMENTAL_ENCODER &&
@@ -9611,85 +9621,6 @@ void ChannelEngine::ProcessPmcSignal(){
         }
     }
     inited = true;
-
-#ifdef TAP_TEST
-//    static string pathname = string(PATH_LOG_FILE) + "data.txt";
-//    for (int i = 0; i < m_p_general_config->chn_count; ++i)
-//    {
-//        if (m_p_channel_control[i].IsMachinRunning())
-//        {
-//            if (!m_fd)
-//            {
-//                m_fd = fopen(pathname.c_str(), "a+");
-//                if (!m_fd)
-//                    std::cout << ">>>>>> open err" << std::endl;
-//            }
-
-//            if (m_fd /*&& (g_reg->RGTAP == 1 or g_reg->RTNT)*/)
-//            {
-//                this->m_p_mi_comm->ReadPhyAxisCurFedBckPos(m_df_phy_axis_pos_feedback, m_df_phy_axis_pos_intp,m_df_phy_axis_speed_feedback,
-//                                                           m_df_phy_axis_torque_feedback, m_df_spd_angle, m_p_general_config->axis_count);
-
-//                //X轴数据
-//                string X_real_pos = to_string(m_df_phy_axis_pos_feedback[0]) + '\t';
-//                string X_tar_pos = to_string(m_df_phy_axis_pos_intp[0]) +'\t';
-
-//                //Y轴数据
-//                string y_real_pos = to_string(m_df_phy_axis_pos_feedback[1]) + '\t';
-//                string y_tar_pos = to_string(m_df_phy_axis_pos_intp[1]) +'\t';
-
-//                //Z轴数据
-//                //string z_real_pos = to_string(m_df_phy_axis_pos_feedback[2]) + '\t';
-//                //string z_tar_pos = to_string(m_df_phy_axis_pos_intp[2]) +'\t';
-
-//                //主轴数据
-//                //string spd_real_pos = to_string(m_df_phy_axis_pos_feedback[m_p_channel_control[i].GetSpdCtrl()->GetPhyAxis()]) + '\t';
-//                //string spd_tar_pos = to_string(m_df_phy_axis_pos_intp[m_p_channel_control[i].GetSpdCtrl()->GetPhyAxis()]) + '\t';
-
-//                //string msg = z_tar_pos + z_real_pos + spd_tar_pos + spd_real_pos + '\n';
-
-//                //string msg = X_tar_pos + X_real_pos + y_tar_pos + y_real_pos + z_tar_pos + z_real_pos + '\n';
-//                //string msg = X_tar_pos + X_real_pos + '\n';
-//                string msg = X_real_pos + X_tar_pos + y_real_pos + y_tar_pos + '\n';
-//                fwrite(msg.c_str(), sizeof(char), msg.size(), m_fd);
-//            }
-//        }
-//        else
-//        {
-//            if (m_fd)
-//            {
-//                fflush(m_fd);
-//                fclose(m_fd);
-//                m_fd = nullptr;
-//            }
-//        }
-//    }
-//    for (int i = 0; i < m_p_general_config->chn_count; ++i)
-//    {
-//        if (m_p_channel_control[i].IsMachinRunning())
-//            m_serverGuide.StartRecord();
-//        else
-//            m_serverGuide.EndRecord();
-//    }
-
-    //for (int i = 0; i < m_p_general_config->chn_count; ++i)
-    //{
-        if (m_p_channel_control[0].IsMachinRunning())
-        {
-            if (m_serverGuide.IsReady())
-                m_serverGuide.StartRecord();
-        }
-        else
-        {
-            if (m_serverGuide.IsRecord())
-            {
-                m_serverGuide.PauseRecord();
-                //m_serverGuide.ResetRecord();
-            }
-        }
-    //}
-
-#endif
 
     //处理PMC的告警，即A地址寄存器
     this->ProcessPmcAlarm();

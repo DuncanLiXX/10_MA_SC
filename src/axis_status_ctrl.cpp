@@ -149,7 +149,7 @@ void AxisStatusCtrl::UpdateSA(uint64_t srvon_mask){
     if (!_ESP)
     {//急停状态单独处理
         //需要减速给SA信号
-        F->SA = 1;
+        F->SA = 0;
     }
     else
     {

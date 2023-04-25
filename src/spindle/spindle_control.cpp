@@ -244,7 +244,7 @@ void SpindleControl::StartRigidTap(double feed)
 
     // 攻丝回退要特殊处理
     if(running_rtnt && tap_state.tap_flag){
-    	tap_ratio = -10000.0*tap_state.S*spindle->move_pr/tap_state.F;
+        tap_ratio = -10000.0*tap_state.S*spindle->move_pr/(tap_state.F*tap_state.dir);
     }
 
 
@@ -1120,6 +1120,7 @@ void SpindleControl::ProcessRTNT()
     variable->SetVarValue(188, R);
     variable->SetVarValue(179, tap_state.F);
     SetTapFeed(tap_state.F);
+    TapDir = tap_state.dir;
 
     ChannelEngine *engine = ChannelEngine::GetInstance();
     ChannelControl *control = engine->GetChnControl(0);

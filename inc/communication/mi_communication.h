@@ -283,7 +283,6 @@ public:
         cmd.data.axis_index = axis;
         memcpy(cmd.data.data, &para_no, 4);
         memcpy(&cmd.data.data[2], &data, sizeof(T));
-
         WriteCmd(cmd);
     }
 

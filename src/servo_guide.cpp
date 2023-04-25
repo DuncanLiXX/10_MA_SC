@@ -163,8 +163,9 @@ bool ServeGuide::SetInterval(unsigned interval)
  */
 bool ServeGuide::IsTimeout()
 {
-    if (duration_cast<milliseconds>(steady_clock::now() - scan_cycle_).count() > scan_interval_)
+    if (duration_cast<milliseconds>(steady_clock::now() - scan_cycle_).count() >= scan_interval_)
     {
+        //std::cout << "Time interval: " << duration_cast<milliseconds>(steady_clock::now() - scan_cycle_).count() << std::endl;
         scan_cycle_ = steady_clock::now();//TODO 计时点应该放在哪里比较合适
         return true;
     }
@@ -177,7 +178,7 @@ bool ServeGuide::IsTimeout()
  */
 bool ServeGuide::IsDataReady()
 {
-    //当数据量大，cpu处理不过来时，可以等发送队列中的数据到达某一量级时，一并发送
+    //当数据量大，cpu处理不过来时，可以等发送队列中的数据积累到某一量级时，一并发送
     return true;
 }
 

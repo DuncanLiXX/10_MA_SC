@@ -8278,7 +8278,7 @@ bool ChannelControl::ExecuteLoopMsg(RecordMsg *msg){
 
         if(loopmsg->GetGCode() == G74_CMD){
             m_p_spindle->TapDir = -1;
-        	m_p_spindle->SetTapFeed(-feed);
+            m_p_spindle->SetTapFeed(feed);
         }else{
         	m_p_spindle->TapDir = 1;
         	m_p_spindle->SetTapFeed(feed);

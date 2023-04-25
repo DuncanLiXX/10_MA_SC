@@ -1557,7 +1557,6 @@ void Interp::calc_mid_first_comp(double x1, double y1,
 }
 
 void Interp::setCurAxisPos(int axis, double pos){
-	printf("axis %d pos %lf\n", axis, pos);
 	switch(axis){
 	case 0:
 		_setup.current_x = pos;

@@ -721,6 +721,7 @@ void Compiler::PreScan() {
         if(scene_node != nullptr){
             ptr_scene = &scene_node->rec;
             file = fopen(ptr_scene->file_map_info.str_file_name, "r+");
+
         }else{
             //TODO 报错
             printf("error in Compiler::PreScan()\n");
@@ -729,6 +730,7 @@ void Compiler::PreScan() {
 
     }else{
         file = fopen(m_p_file_map_info->str_file_name, "r+");
+
     }
 
     if (nullptr == file) {
@@ -753,7 +755,6 @@ void Compiler::PreScan() {
     //
     //	}
     //	total_size = map.ln_file_size;
-
     //第一遍扫描，识别出子程序号（O****）,以及GOTO指令
     while ((read_block = getline(&line, &len, file)) != -1) {
     	//	read_size_bak = read_size;
@@ -3925,6 +3926,7 @@ bool Compiler::RunToolMsg(RecordMsg *msg) {
 #endif
 
     m_compiler_status.mode.t_mode = tmp->GetTool(0);
+
 
     return true;
 }

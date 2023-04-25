@@ -588,7 +588,7 @@ void ChannelControl::InitialChannelStatus(){
  */
 void ChannelControl::Reset(){
 
-    this->m_error_code = ERR_NONE;
+	this->m_error_code = ERR_NONE;
 
     if(this->m_thread_breakcontinue > 0){//处于断点继续线程执行过程中，则退出断点继续线程
         this->CancelBreakContinueThread();
@@ -17649,7 +17649,7 @@ void ChannelControl::SetALSignal(bool value){
 
 	if(value){
 		// 刚攻报警 退出刚攻状态反馈 避免刚攻中无法复位
-		printf("刚攻报警 退出刚攻状态反馈 避免刚攻中无法复位\n");
+		//printf("刚攻报警 退出刚攻状态反馈 避免刚攻中无法复位\n");
 		m_p_f_reg->RGSPP = 0;
 		this->m_p_f_reg->AL = 1;
 	}else{

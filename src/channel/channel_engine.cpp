@@ -8665,7 +8665,6 @@ void ChannelEngine::RefreshPmcNotReady()
         	this->SystemReset();
         }
         if(g_reg->ERS == 1 && g_reg_last->ERS == 0){
-            //printf("kkk22222222222222222222\n");
         	this->SystemReset();
         }
         if(g_reg->_ESP == 0 && !m_b_emergency){ //进入急停
@@ -9119,7 +9118,6 @@ void ChannelEngine::ProcessPmcSignal(){
         // 处理G信号 切换当前通道
         if(g_reg_last->CHNC != g_reg->CHNC)
         {
-            printf("pmc siganl change chn : %d\n", g_reg->CHNC);
             this->SetCurWorkChanl(g_reg->CHNC);
         }
 
@@ -9133,7 +9131,6 @@ void ChannelEngine::ProcessPmcSignal(){
 
         // @test zk
         if(g_reg->RRW == 1 && g_reg_last->RRW == 0){
-        	//printf("kkk333333333333333333333\n");
         	this->SystemReset();
         }
         // @test
@@ -9427,10 +9424,12 @@ void ChannelEngine::ProcessPmcSignal(){
 
         //处理PMC宏调用功能
         if(g_reg_last->EMPC == 0 && g_reg->EMPC == 1){  //处理PMC宏调用
-            // @test zk
-            printf("PMC CALL SUB PROG : %d\n", g_reg->MPCS);
-            this->m_p_channel_control[0].CallMacroProgram(g_reg->MPCS);
-            f_reg->MPCO = 1;   //调用结束
+            // @test zk 复位信号发生后 pmc有可能调用子程序 要禁止这种情况
+        	if(m_p_pmc_reg->FReg().bits[i].RST != 1)
+        	{
+        		this->m_p_channel_control[0].CallMacroProgram(g_reg->MPCS);
+        		f_reg->MPCO = 1;   //调用结束
+        	}
         }else if(g_reg_last->EMPC == 1 && g_reg->EMPC == 0){
             f_reg->MPCO = 0;   //信号复位
         }

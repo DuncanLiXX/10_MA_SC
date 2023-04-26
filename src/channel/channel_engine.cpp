@@ -8958,7 +8958,7 @@ bool ChannelEngine::RefreshMiStatusFun(){
                 this->SendMonitorData(false, false);
             }
         }
-/*
+
 #ifdef USES_LICENSE_FUNC
         //时间校验以及授权校验
         if(count % 450000 == 0){
@@ -8987,7 +8987,7 @@ bool ChannelEngine::RefreshMiStatusFun(){
 
         }
 #endif
-*/
+
         usleep(8000);  //8ms周期，比PMC周期相同
         count++;
     }

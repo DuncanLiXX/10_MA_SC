@@ -6774,11 +6774,18 @@ bool ChannelControl::ExecuteAuxMsg(RecordMsg *msg){
             //		this->ProcessGrindM68(tmp);
             //		break;
 #endif
-        case 60://开始数据采集
+        case 62://开始数据采集
         {
             if(tmp->GetExecStep(m_index) == 0){
-                gettimeofday(&m_time_m_start[m_index], NULL);
-                tmp->IncreaseExecStep(m_index);
+                if (g_ptr_chn_engine->m_serverGuide.IsIdle())
+                {
+                    tmp->SetExecStep(m_index, 0xFF);    //置位结束状态
+                }
+                else
+                {
+                    gettimeofday(&m_time_m_start[m_index], NULL);
+                    tmp->IncreaseExecStep(m_index);
+                }
             }else if(tmp->GetExecStep(m_index) == 1){
                 gettimeofday(&time_now, NULL);
                 time_elpase = (time_now.tv_sec-m_time_m_start[m_index].tv_sec)*1000000+time_now.tv_usec-m_time_m_start[m_index].tv_usec;
@@ -6791,7 +6798,7 @@ bool ChannelControl::ExecuteAuxMsg(RecordMsg *msg){
             }
         }
         break;
-        case 61://结束数据采集
+        case 63://结束数据采集
         {
             g_ptr_chn_engine->m_serverGuide.PauseRecord();
             tmp->SetExecStep(m_index, 0xFF);    //置位结束状态

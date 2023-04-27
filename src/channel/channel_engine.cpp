@@ -9098,10 +9098,12 @@ void ChannelEngine::ProcessPmcSignal(){
 #ifdef USES_PHYSICAL_MOP
         if(g_reg->_ESP == 0 && !m_b_emergency){ //进入急停
             f_reg->RST = 1;
-            m_axis_status_ctrl->InputEsp(g_reg->_ESP);
-            g_ptr_tracelog_processor->SendToHmi(kProcessInfo, kDebug, "进入急停");
-            this->Emergency();
             m_b_emergency = true;
+            m_axis_status_ctrl->InputEsp(g_reg->_ESP);
+            thread th(&ChannelEngine::ProcessESPsingal, this);
+            this->Emergency();
+            th.detach();
+            g_ptr_tracelog_processor->SendToHmi(kProcessInfo, kDebug, "进入急停");
         }else if(g_reg->_ESP == 1 && m_b_emergency){ // 取消急停
             m_b_emergency = false;
             m_axis_status_ctrl->InputEsp(g_reg->_ESP);
@@ -12726,6 +12728,37 @@ int ChannelEngine::GetRemainDay()
     if (remainDay < 0)
         remainDay = 0;
     return remainDay;
+}
+
+void ChannelEngine::ProcessESPsingal()
+{
+    std::lock_guard<std::mutex> lock(m_esp_mtx);
+
+    while (m_b_emergency)
+    {
+        this->m_p_mi_comm->ReadPhyAxisCurFedBckPos(m_df_phy_axis_pos_feedback, m_df_phy_axis_pos_intp, m_df_phy_axis_speed_feedback,
+            m_df_phy_axis_torque_feedback, m_df_spd_angle, m_p_general_config->axis_count);
+        bool bReady = true;
+        //所有轴的速度小于某个值
+        for(uint8_t i = 0; i < this->m_p_general_config->axis_count; i++){
+            if (m_df_phy_axis_speed_feedback[i] > 10000)
+            {
+                bReady = false;
+                break;
+            }
+        }
+
+        if (bReady)
+            break;
+    }
+
+    if (m_b_emergency)
+    {
+        m_p_pmc_reg->FReg().bits->SA = 0;
+        m_axis_status_ctrl->UpdateServoState();
+    }
+
+    return;
 }
 
 /**

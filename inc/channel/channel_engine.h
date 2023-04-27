@@ -523,6 +523,8 @@ private:	//私有成员函数
 
     int GetRemainDay();     //获取注册剩余时间
 
+    void ProcessESPsingal();    //急停信号信号相关处理
+
 
 
 
@@ -668,6 +670,7 @@ private:  //私有成员变量
 #ifdef TAP_TEST
     FILE *m_fd = nullptr;
 #endif
+    std::mutex  m_esp_mtx;
 
     //后台处理耗时操作
     std::future<void>           m_task_consume_ft;

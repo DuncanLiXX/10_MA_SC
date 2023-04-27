@@ -2146,7 +2146,7 @@ void ChannelEngine::ProcessSetAxisRefRsp(MiCmdFrame &cmd){
 //                this->m_p_axis_config[axis].ref_base_diff = df_pos;    //粗精基准误差
 //                ParamValue value;
 //                value.value_double = df_pos;
-//                g_ptr_parm_manager->UpdateAxisParam(axis, 1312, value);
+//                g_ptr_parm_manager->UpdateAxisParam(axis, 1331, value);
 //                this->NotifyHmiAxisRefBaseDiffChanged(axis, df_pos);   //通知HMI轴参数改变
 //                printf("axis %hhu ref base diff:%lf, %llu\n", axis, df_pos, pos);
 //            }
@@ -2175,7 +2175,7 @@ void ChannelEngine::ProcessSetAxisRefRsp(MiCmdFrame &cmd){
        this->m_p_axis_config[axis].ref_base_diff = df_pos;    //粗精基准误差
        ParamValue value;
        value.value_double = df_pos;
-       g_ptr_parm_manager->UpdateAxisParam(axis, 1312, value);
+       g_ptr_parm_manager->UpdateAxisParam(axis, 1331, value);
        this->NotifyHmiAxisRefBaseDiffChanged(axis, df_pos);   //通知HMI轴参数改变
        printf("axis %hhu ref base diff:%lf, %llu\n", axis, df_pos, pos);
 
@@ -2358,7 +2358,7 @@ bool ChannelEngine::NotifyHmiAxisRefBaseDiffChanged(uint8_t axis, double diff){
     cmd.cmd_extension = AXIS_CONFIG;
     cmd.data_len = 14;
     cmd.data[0] = axis;
-    uint32_t param_no = 1312;
+    uint32_t param_no = 1331;
     memcpy(&cmd.data[1], &param_no, sizeof(uint32_t));
     cmd.data[5] = 8;    //值类型，double
     memcpy(&cmd.data[6], &diff, sizeof(double));
@@ -2379,7 +2379,7 @@ bool ChannelEngine::NotifyHmiAxisRefChanged(uint8_t phy_axis){
     cmd.cmd_extension = AXIS_CONFIG;
     cmd.data_len = 14;
     cmd.data[0] = phy_axis;
-    uint32_t param_no = 1314;
+    uint32_t param_no = 1332;
     memcpy(&cmd.data[1], &param_no, sizeof(uint32_t));
     cmd.data[5] = 7;    //值类型，int64
     memcpy(&cmd.data[6], &this->m_p_axis_config[phy_axis].ref_encoder, sizeof(int64_t));
@@ -8001,7 +8001,7 @@ void ChannelEngine::InitMiParam(){
        m_p_mi_comm->SendMiParam<uint16_t>(index, 1606, axis_config->spd_stop_time);
 
        //反向间隙初始化方向
-       m_p_mi_comm->SendMiParam<uint8_t>(index, 1607, axis_config->init_backlash_dir);
+       m_p_mi_comm->SendMiParam<uint8_t>(index, 1410, axis_config->init_backlash_dir);
 
         //发送反向间隙参数
         this->SendMiBacklash(i);
@@ -8957,7 +8957,7 @@ bool ChannelEngine::RefreshMiStatusFun(){
                 this->SendMonitorData(false, false);
             }
         }
-/*
+
 #ifdef USES_LICENSE_FUNC
         //时间校验以及授权校验
         if(count % 450000 == 0){
@@ -8986,7 +8986,7 @@ bool ChannelEngine::RefreshMiStatusFun(){
 
         }
 #endif
-*/
+
         usleep(8000);  //8ms周期，比PMC周期相同
         count++;
     }

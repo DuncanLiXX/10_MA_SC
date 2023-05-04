@@ -2326,9 +2326,11 @@ bool Compiler::RunMessage() {
     }
 
     //	int count = m_p_parser_result->GetLength();
-
+    //printf("1111111111111111\n");
     ListNode<RecordMsg *> *node = m_p_parser_result->HeadNode();
     CodeMsgType msg_type = NORMAL_MSG;
+
+    //printf("222222222222222\n");
 
     while (node != nullptr) {
         msg = static_cast<RecordMsg *>(node->data);
@@ -2528,6 +2530,26 @@ bool Compiler::RunAuxMsg(RecordMsg *msg) {
             break;
         case 06:   //换刀
             printf("run m06 msg\n");
+
+            //保存当前编译器状态
+			this->SaveScene();
+
+			this->m_n_sub_call_times = 1;//调用次数
+
+			//打开子程序文件
+			this->m_n_sub_program = MACRO_PROG;
+
+			//独立子文件打开
+			if (!this->OpenFile("/cnc/nc_files/O9006.NC", (bool)m_n_sub_program)){ //尝试打开nc文件失败
+				return false;
+			}
+
+
+			if (m_work_mode == AUTO_COMPILER)
+				this->m_n_compile_state = FILE_HEAD;
+			else
+				this->m_n_compile_state = FILE_MAIN;
+			this->m_n_head_state = HEAD_INFO;
 
             break;
 

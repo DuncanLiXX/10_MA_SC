@@ -3912,7 +3912,6 @@ bool ChannelControl::ClearHmiInfoMsg(){
     cmd.cmd_extension = 0xEE;   //清除所有提示信息
     cmd.data_len = 0;
 
-
     return this->m_p_hmi_comm->SendCmd(cmd);
 }
 
@@ -6073,6 +6072,9 @@ bool ChannelControl::ExecuteAuxMsg(RecordMsg *msg){
         return true;
     }
 
+
+
+
     if(this->m_simulate_mode != SIM_NONE){  //仿真模式
         //设置当前行号
         SetCurLineNo(msg->GetLineNo());
@@ -6184,6 +6186,15 @@ bool ChannelControl::ExecuteAuxMsg(RecordMsg *msg){
             continue;       //已执行完成则直接跳过
 
         mcode = tmp->GetMCode(m_index);
+
+        if(mcode == 6){
+        	printf("666666666666666666666\n");
+        	//CallMacroProgram(9006);
+        	SetCurLineNo(msg->GetLineNo());
+			m_n_subprog_count++;
+			m_n_macroprog_count++;
+        	continue;
+	    }
 
         if(mcode != 300) // M300不需要显示
             NotifyHmiMCode(mcode);
@@ -6511,6 +6522,9 @@ bool ChannelControl::ExecuteAuxMsg(RecordMsg *msg){
             if(tmp->GetExecStep(m_index) == 0){
                 //TODO 将代码发送给PMC
                 printf("start to execute M06\n");
+
+                printf("M06 0000000000000000000\n");
+
                 this->SendMCodeToPmc(mcode, m_index);
 
                 gettimeofday(&m_time_m_start[m_index], NULL);   //
@@ -6524,6 +6538,8 @@ bool ChannelControl::ExecuteAuxMsg(RecordMsg *msg){
                     break;		//未到延时时间
 
                 gettimeofday(&m_time_m_start[m_index], NULL);
+
+                printf("M06 11111111111111111111\n");
                 this->SetMFSig(m_index, true);    //置位选通信号
                 tmp->IncreaseExecStep(m_index);
             }else if(tmp->GetExecStep(m_index) == 2){
@@ -8793,12 +8809,12 @@ bool ChannelControl::ExecuteErrorMsg(RecordMsg *msg){
         if (!m_b_lineno_from_mc)    //llx add,处理加工文件名和行号对应不上问题
             SetCurLineNo(err->GetLineNo());
         this->m_n_run_thread_state = ERROR;
-        CreateError(err->GetErrorCode(), ERROR_LEVEL, CLEAR_BY_MCP_RESET, 0, m_n_channel_index);
+        CreateError(err->GetErrorCode(), ERROR_LEVEL, CLEAR_BY_MCP_RESET, msg->GetLineNo(), m_n_channel_index);
     }else if(err->GetInfoType() == 0){  //提示
         if(err->GetErrorCode() == 0){//清空当前提示信息
             ClearHmiInfoMsg();
         }else{ //发送提示信息
-            CreateError(err->GetErrorCode(), INFO_LEVEL, CLEAR_BY_MCP_RESET, 0, m_n_channel_index);
+            CreateError(err->GetErrorCode(), INFO_LEVEL, CLEAR_BY_MCP_RESET, msg->GetLineNo(), m_n_channel_index);
             this->SendMessageToHmi(MSG_TIPS, err->GetErrorCode());
         }
         this->m_n_run_thread_state = RUN;

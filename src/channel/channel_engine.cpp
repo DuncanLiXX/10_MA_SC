@@ -9254,7 +9254,6 @@ void ChannelEngine::ProcessPmcSignal(){
         }
         // 攻丝回退
         if(g_reg->RTNT != g_reg_last->RTNT){
-        	//规避二次攻丝回退线程卡死
         	ctrl->GetSpdCtrl()->InputRTNT(g_reg->RTNT);
         }
         // 换刀信号
@@ -9428,6 +9427,7 @@ void ChannelEngine::ProcessPmcSignal(){
         	if(m_p_pmc_reg->FReg().bits[i].RST != 1)
         	{
         		this->m_p_channel_control[0].CallMacroProgram(g_reg->MPCS);
+        		printf("=========== CallMacroProgram %d\n", g_reg->MPCS);
         		f_reg->MPCO = 1;   //调用结束
         	}
         }else if(g_reg_last->EMPC == 1 && g_reg->EMPC == 0){

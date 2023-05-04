@@ -562,6 +562,7 @@ enum ErrorType {
     ARC_TO_ARC_SAME_CENTER  = 2057, //圆弧接圆弧刀补不能计算同心圆弧
     MOVE_SMALLER_THAN_CMPRADIUS     = 2058, //移动距离小于刀补半径 无法计算刀补
     ERR_CAL_SPD_TAP_POS     = 2059,   // 无法计算刚性攻丝时的主轴位置
+    F_VALUE_ERROR           = 2060,   // F不能指定为负数
 
 
 	//刀补告警	5000~6999

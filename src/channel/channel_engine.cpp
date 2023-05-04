@@ -2146,7 +2146,7 @@ void ChannelEngine::ProcessSetAxisRefRsp(MiCmdFrame &cmd){
 //                this->m_p_axis_config[axis].ref_base_diff = df_pos;    //粗精基准误差
 //                ParamValue value;
 //                value.value_double = df_pos;
-//                g_ptr_parm_manager->UpdateAxisParam(axis, 1312, value);
+//                g_ptr_parm_manager->UpdateAxisParam(axis, 1331, value);
 //                this->NotifyHmiAxisRefBaseDiffChanged(axis, df_pos);   //通知HMI轴参数改变
 //                printf("axis %hhu ref base diff:%lf, %llu\n", axis, df_pos, pos);
 //            }
@@ -2175,7 +2175,7 @@ void ChannelEngine::ProcessSetAxisRefRsp(MiCmdFrame &cmd){
        this->m_p_axis_config[axis].ref_base_diff = df_pos;    //粗精基准误差
        ParamValue value;
        value.value_double = df_pos;
-       g_ptr_parm_manager->UpdateAxisParam(axis, 1312, value);
+       g_ptr_parm_manager->UpdateAxisParam(axis, 1331, value);
        this->NotifyHmiAxisRefBaseDiffChanged(axis, df_pos);   //通知HMI轴参数改变
        printf("axis %hhu ref base diff:%lf, %llu\n", axis, df_pos, pos);
 
@@ -2358,7 +2358,7 @@ bool ChannelEngine::NotifyHmiAxisRefBaseDiffChanged(uint8_t axis, double diff){
     cmd.cmd_extension = AXIS_CONFIG;
     cmd.data_len = 14;
     cmd.data[0] = axis;
-    uint32_t param_no = 1312;
+    uint32_t param_no = 1331;
     memcpy(&cmd.data[1], &param_no, sizeof(uint32_t));
     cmd.data[5] = 8;    //值类型，double
     memcpy(&cmd.data[6], &diff, sizeof(double));
@@ -2379,7 +2379,7 @@ bool ChannelEngine::NotifyHmiAxisRefChanged(uint8_t phy_axis){
     cmd.cmd_extension = AXIS_CONFIG;
     cmd.data_len = 14;
     cmd.data[0] = phy_axis;
-    uint32_t param_no = 1314;
+    uint32_t param_no = 1332;
     memcpy(&cmd.data[1], &param_no, sizeof(uint32_t));
     cmd.data[5] = 7;    //值类型，int64
     memcpy(&cmd.data[6], &this->m_p_axis_config[phy_axis].ref_encoder, sizeof(int64_t));
@@ -8001,7 +8001,7 @@ void ChannelEngine::InitMiParam(){
        m_p_mi_comm->SendMiParam<uint16_t>(index, 1606, axis_config->spd_stop_time);
 
        //反向间隙初始化方向
-       m_p_mi_comm->SendMiParam<uint8_t>(index, 1607, axis_config->init_backlash_dir);
+       m_p_mi_comm->SendMiParam<uint8_t>(index, 1410, axis_config->init_backlash_dir);
 
         //发送反向间隙参数
         this->SendMiBacklash(i);
@@ -8957,7 +8957,7 @@ bool ChannelEngine::RefreshMiStatusFun(){
                 this->SendMonitorData(false, false);
             }
         }
-/*
+
 #ifdef USES_LICENSE_FUNC
         //时间校验以及授权校验
         if(count % 450000 == 0){
@@ -8986,7 +8986,7 @@ bool ChannelEngine::RefreshMiStatusFun(){
 
         }
 #endif
-*/
+
         usleep(8000);  //8ms周期，比PMC周期相同
         count++;
     }
@@ -9098,10 +9098,12 @@ void ChannelEngine::ProcessPmcSignal(){
 #ifdef USES_PHYSICAL_MOP
         if(g_reg->_ESP == 0 && !m_b_emergency){ //进入急停
             f_reg->RST = 1;
-            m_axis_status_ctrl->InputEsp(g_reg->_ESP);
-            g_ptr_tracelog_processor->SendToHmi(kProcessInfo, kDebug, "进入急停");
-            this->Emergency();
             m_b_emergency = true;
+            m_axis_status_ctrl->InputEsp(g_reg->_ESP);
+            thread th(&ChannelEngine::ProcessESPsingal, this);
+            this->Emergency();
+            th.detach();
+            g_ptr_tracelog_processor->SendToHmi(kProcessInfo, kDebug, "进入急停");
         }else if(g_reg->_ESP == 1 && m_b_emergency){ // 取消急停
             m_b_emergency = false;
             m_axis_status_ctrl->InputEsp(g_reg->_ESP);
@@ -12726,6 +12728,37 @@ int ChannelEngine::GetRemainDay()
     if (remainDay < 0)
         remainDay = 0;
     return remainDay;
+}
+
+void ChannelEngine::ProcessESPsingal()
+{
+    std::lock_guard<std::mutex> lock(m_esp_mtx);
+
+    while (m_b_emergency)
+    {
+        this->m_p_mi_comm->ReadPhyAxisCurFedBckPos(m_df_phy_axis_pos_feedback, m_df_phy_axis_pos_intp, m_df_phy_axis_speed_feedback,
+            m_df_phy_axis_torque_feedback, m_df_spd_angle, m_p_general_config->axis_count);
+        bool bReady = true;
+        //所有轴的速度小于某个值
+        for(uint8_t i = 0; i < this->m_p_general_config->axis_count; i++){
+            if (m_df_phy_axis_speed_feedback[i] > 10000)
+            {
+                bReady = false;
+                break;
+            }
+        }
+
+        if (bReady)
+            break;
+    }
+
+    if (m_b_emergency)
+    {
+        m_p_pmc_reg->FReg().bits->SA = 0;
+        m_axis_status_ctrl->UpdateServoState();
+    }
+
+    return;
 }
 
 /**

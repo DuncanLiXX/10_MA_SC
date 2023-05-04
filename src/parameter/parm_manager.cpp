@@ -4556,12 +4556,27 @@ bool ParmManager::UpdateChnParam(uint8_t chn_index, uint32_t param_no, ParamValu
 	case 216:	//切削进给S型规划时间常数
 		sprintf(kname, "chn_s_cut_filter_time");
 		m_ini_chn->SetIntValue(sname, kname, value.value_uint16);
-		break;
+        break;
+    case 217:	//刚性攻丝最大加速度
+        sprintf(kname, "tap_max_acc");
+        m_ini_chn->SetDoubleValue(sname, kname, value.value_double);
+        break;
+    case 218:	//刚性攻丝最大减速度
+        sprintf(kname, "tap_max_dec");
+        m_ini_chn->SetDoubleValue(sname, kname, value.value_double);
+        break;
+    case 219:	//刚性攻丝规划模式
+        sprintf(kname, "tap_plan_mode");
+        m_ini_chn->SetIntValue(sname, kname, value.value_int8);
+        break;
+    case 220:	//刚性攻丝S型规划时间常数
+        sprintf(kname, "tap_s_cut_filter_time");
+        m_ini_chn->SetIntValue(sname, kname, value.value_uint16);
+        break;
 
-	case 220:	//加工精度
-		sprintf(kname, "chn_precision");
-		m_ini_chn->SetIntValue(sname, kname, value.value_uint16);
-		break;
+
+
+
 	case 221:	//前瞻功能
 		sprintf(kname, "chn_look_ahead");
 		m_ini_chn->SetIntValue(sname, kname, value.value_uint8);
@@ -4590,6 +4605,10 @@ bool ParmManager::UpdateChnParam(uint8_t chn_index, uint32_t param_no, ParamValu
 		sprintf(kname, "long_line_acc");
 		m_ini_chn->SetIntValue(sname, kname, value.value_uint8);
 		break;
+    case 227:	//加工精度
+        sprintf(kname, "chn_precision");
+        m_ini_chn->SetIntValue(sname, kname, value.value_uint16);
+        break;
 	case 228:  //拐角准停使能
 		sprintf(kname, "corner_stop_enable");
 		m_ini_chn->SetIntValue(sname, kname, value.value_uint8);
@@ -4636,22 +4655,6 @@ bool ParmManager::UpdateChnParam(uint8_t chn_index, uint32_t param_no, ParamValu
 		sprintf(kname, "auto_tool_measure");
 		m_ini_chn->SetIntValue(sname, kname, value.value_uint8);
 		break;
-    case 353:	//刚性攻丝最大加速度
-        sprintf(kname, "tap_max_acc");
-        m_ini_chn->SetDoubleValue(sname, kname, value.value_double);
-        break;
-    case 354:	//刚性攻丝最大减速度
-        sprintf(kname, "tap_max_dec");
-        m_ini_chn->SetDoubleValue(sname, kname, value.value_double);
-        break;
-    case 355:	//刚性攻丝规划模式
-        sprintf(kname, "tap_plan_mode");
-        m_ini_chn->SetIntValue(sname, kname, value.value_int8);
-        break;
-    case 356:	//刚性攻丝S型规划时间常数
-        sprintf(kname, "tap_s_cut_filter_time");
-        m_ini_chn->SetIntValue(sname, kname, value.value_uint16);
-        break;
 
 	case 400:	//加工代码跟踪
 		sprintf(kname, "gcode_trace");
@@ -5043,18 +5046,6 @@ bool ParmManager::UpdateAxisParam(uint8_t axis_index, uint32_t param_no, ParamVa
 		sprintf(kname, "ret_ref_index");
 		m_ini_axis->SetIntValue(sname, kname, value.value_uint8);
 		break;
-	case 1310:  //粗精基准位置偏差检测
-		sprintf(kname, "ref_base_diff_check");
-		m_ini_axis->SetIntValue(sname, kname, value.value_uint8);
-		break;
-	case 1312:   //粗精基准位置偏差
-		sprintf(kname, "ref_base_diff");
-		m_ini_axis->SetIntValue(sname, kname, value.value_double);
-		break;
-	case 1314: 	//参考点编码器值
-		sprintf(kname, "ref_encoder");
-		m_ini_axis->SetInt64Value(sname, kname, value.value_int64);  //64位整型
-		break;
     case 1315:  //回参考点低速
         sprintf(kname, "ret_ref_speed_second");
         m_ini_axis->SetDoubleValue(sname, kname, value.value_double);
@@ -5076,9 +5067,21 @@ bool ParmManager::UpdateAxisParam(uint8_t axis_index, uint32_t param_no, ParamVa
         if (!value.value_int32)//只接收0值
             m_ini_axis->SetIntValue(sname, kname, value.value_int32);
         break;
-    case 1320:
-        sprintf(kname, "init_backlash_dir");
-        m_ini_axis->SetBoolValue(sname, kname, value.value_int8);
+    //case 1320:
+    //    sprintf(kname, "init_backlash_dir");
+    //    m_ini_axis->SetBoolValue(sname, kname, value.value_int8);
+    //    break;
+    case 1330:  //粗精基准位置偏差检测
+        sprintf(kname, "ref_base_diff_check");
+        m_ini_axis->SetIntValue(sname, kname, value.value_uint8);
+        break;
+    case 1331:   //粗精基准位置偏差
+        sprintf(kname, "ref_base_diff");
+        m_ini_axis->SetIntValue(sname, kname, value.value_double);
+        break;
+    case 1332: 	//参考点编码器值
+        sprintf(kname, "ref_encoder");
+        m_ini_axis->SetInt64Value(sname, kname, value.value_int64);  //64位整型
         break;
 	case 1350:	//手动速度
 		sprintf(kname, "manual_speed");
@@ -5108,11 +5111,6 @@ bool ParmManager::UpdateAxisParam(uint8_t axis_index, uint32_t param_no, ParamVa
 		m_ini_axis->SetIntValue(sname, kname, value.value_uint8);
 		this->m_sc_axis_config[axis_index].backlash_enable = value.value_uint8;
 		break;
-    case 1409:  //反向间隙步长
-        sprintf(kname, "backlash_step");
-        m_ini_axis->SetIntValue(sname, kname, value.value_int16);
-        this->m_sc_axis_config[axis_index].backlash_step = value.value_int16;
-        break;
 	case 1403: //螺距补偿点数
 		sprintf(kname, "pc_count");
 		m_ini_axis->SetIntValue(sname, kname, value.value_uint16);
@@ -5144,7 +5142,16 @@ bool ParmManager::UpdateAxisParam(uint8_t axis_index, uint32_t param_no, ParamVa
 		sprintf(kname, "pc_enable");
 		m_ini_axis->SetIntValue(sname, kname, value.value_uint8);
 		this->m_sc_axis_config[axis_index].pc_enable = value.value_uint8;
-		break;
+        break;
+    case 1409:  //反向间隙步长
+        sprintf(kname, "backlash_step");
+        m_ini_axis->SetIntValue(sname, kname, value.value_int16);
+        this->m_sc_axis_config[axis_index].backlash_step = value.value_int16;
+        break;
+    case 1410:  //反向间隙，初始方向
+        sprintf(kname, "init_backlash_dir");
+        m_ini_axis->SetBoolValue(sname, kname, value.value_int8);
+        break;
 	case 1500: 	//软限位1
 		sprintf(kname, "soft_limit_max_1");
 		m_ini_axis->SetDoubleValue(sname, kname, value.value_double);
@@ -6298,7 +6305,24 @@ void ParmManager::ActiveChnParam(uint8_t chn_index, uint32_t param_no, ParamValu
 			this->m_p_chn_process_param[chn_index].chn_param[proc_index].chn_s_cut_filter_time = value.value_uint16;
 		}
 		break;
-	case 220:	//加工精度
+    case 217:	//刚性攻丝最大加速度
+        this->m_sc_channel_config[chn_index].tap_max_acc = value.value_double;
+        chn_engine->GetChnControl(chn_index)->SetMcTapPlanParam();
+        break;
+    case 218:	//刚性攻丝最大减速度
+        this->m_sc_channel_config[chn_index].tap_max_dec = value.value_double;
+        chn_engine->GetChnControl(chn_index)->SetMcTapPlanParam();
+        break;
+    case 219:	//刚性攻丝规划模式
+        this->m_sc_channel_config[chn_index].tap_plan_mode = value.value_int8;
+        chn_engine->GetChnControl(chn_index)->SetMcTapPlanParam();
+        break;
+    case 220:	//刚性攻丝S型规划时间常数
+        this->m_sc_channel_config[chn_index].tap_s_cut_filter_time = value.value_uint16;
+        chn_engine->GetChnControl(chn_index)->SetMcTapPlanParam();
+        break;
+
+    case 227:	//加工精度
 		this->m_sc_channel_config[chn_index].chn_precision = value.value_uint16;
 		break;
 	case 221:	//前瞻功能
@@ -6397,22 +6421,6 @@ void ParmManager::ActiveChnParam(uint8_t chn_index, uint32_t param_no, ParamValu
 	case 352:	//对刀仪自动对刀功能
 		this->m_sc_channel_config[chn_index].auto_tool_measure = value.value_uint8;
 		break;
-    case 353:	//刚性攻丝最大加速度
-        this->m_sc_channel_config[chn_index].tap_max_acc = value.value_double;
-        chn_engine->GetChnControl(chn_index)->SetMcTapPlanParam();
-        break;
-    case 354:	//刚性攻丝最大减速度
-        this->m_sc_channel_config[chn_index].tap_max_dec = value.value_double;
-        chn_engine->GetChnControl(chn_index)->SetMcTapPlanParam();
-        break;
-    case 355:	//刚性攻丝规划模式
-        this->m_sc_channel_config[chn_index].tap_plan_mode = value.value_int8;
-        chn_engine->GetChnControl(chn_index)->SetMcTapPlanParam();
-        break;
-    case 356:	//刚性攻丝S型规划时间常数
-        this->m_sc_channel_config[chn_index].tap_s_cut_filter_time = value.value_uint16;
-        chn_engine->GetChnControl(chn_index)->SetMcTapPlanParam();
-        break;
 	case 400:	//加工代码跟踪
 		this->m_sc_channel_config[chn_index].gcode_trace = value.value_uint8;
 		break;
@@ -6809,12 +6817,6 @@ void ParmManager::ActiveAxisParam(uint8_t axis_index, uint32_t param_no, ParamVa
 	case 1309:  //回参考点顺序
 		this->m_sc_axis_config[axis_index].ret_ref_index = value.value_uint8;
 		break;
-	case 1310:  //粗精基准位置偏差检测
-		this->m_sc_axis_config[axis_index].ref_base_diff_check = value.value_uint8;
-		break;
-	case 1312:   //粗精基准位置偏差
-		this->m_sc_axis_config[axis_index].ref_base_diff = value.value_double;
-		break;
     case 1315:   //回参考点低速
         this->m_sc_axis_config[axis_index].ret_ref_speed_second = value.value_double;
         break;
@@ -6834,8 +6836,14 @@ void ParmManager::ActiveAxisParam(uint8_t axis_index, uint32_t param_no, ParamVa
             g_ptr_chn_engine->ClearAxisRefEncoder(axis_index);
         }
         break;
-    case 1320:  //反向间隙，初始方向
-        this->m_sc_axis_config[axis_index].init_backlash_dir = value.value_int8;
+    //case 1320:  //反向间隙，初始方向
+    //    this->m_sc_axis_config[axis_index].init_backlash_dir = value.value_int8;
+    //    break;
+    case 1330:  //粗精基准位置偏差检测
+        this->m_sc_axis_config[axis_index].ref_base_diff_check = value.value_uint8;
+        break;
+    case 1331:   //粗精基准位置偏差
+        this->m_sc_axis_config[axis_index].ref_base_diff = value.value_double;
         break;
 	case 1350:	//手动速度
 		this->m_sc_axis_config[axis_index].manual_speed = value.value_double;
@@ -6861,12 +6869,15 @@ void ParmManager::ActiveAxisParam(uint8_t axis_index, uint32_t param_no, ParamVa
 		this->m_sc_axis_config[axis_index].backlash_enable = value.value_uint8;
 		chn_engine->SendMiBacklash(axis_index);
 		break;
+	case 1405:  //参考点补偿位置
+		break;
     case 1409:  //反向间隙步长
         this->m_sc_axis_config[axis_index].backlash_step = value.value_int16;
         chn_engine->SendMiBacklash(axis_index);
         break;
-	case 1405:  //参考点补偿位置
-		break;
+    case 1410:  //反向间隙，初始方向
+        this->m_sc_axis_config[axis_index].init_backlash_dir = value.value_int8;
+        break;
 	case 1500: 	//软限位1
 		this->m_sc_axis_config[axis_index].soft_limit_max_1 = value.value_double;
 		UpdateMiParam<double>(axis_index+1, param_no, value.value_double);

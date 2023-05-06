@@ -9109,6 +9109,8 @@ void ChannelEngine::ProcessPmcSignal(){
             m_axis_status_ctrl->InputEsp(g_reg->_ESP);
             g_ptr_tracelog_processor->SendToHmi(kProcessInfo, kDebug, "解除急停");
             f_reg->RST = 0;
+            // @test zk 解除急停也要进行一次复位？
+            this->SystemReset();
         }
 
         // 伺服关断信号

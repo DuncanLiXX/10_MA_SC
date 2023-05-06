@@ -677,10 +677,6 @@ void ChannelControl::Reset(){
     }
 #endif
 
-    this->ManualMoveStop();
-    this->m_mask_run_pmc = 0;
-    this->m_mask_runover_pmc = 0;
-
 //    //同步PMC轴的目标位置和当前位置
 //    for(int i = 0; i < this->m_p_channel_config->chn_axis_count; i++){
 //        if(this->m_mask_pmc_axis & (0x01<<i)){
@@ -713,6 +709,10 @@ void ChannelControl::Reset(){
     }else if(m_channel_status.chn_work_mode == MDA_MODE){
         this->InitMcIntpMdaBuf();
     }
+
+    this->ManualMoveStop(0xffff);
+    this->m_mask_run_pmc = 0;
+    this->m_mask_runover_pmc = 0;
 
     if(this->IsStepMode()){
         this->SetMcStepMode(true);
@@ -6186,15 +6186,6 @@ bool ChannelControl::ExecuteAuxMsg(RecordMsg *msg){
             continue;       //已执行完成则直接跳过
 
         mcode = tmp->GetMCode(m_index);
-
-        if(mcode == 6){
-        	printf("666666666666666666666\n");
-        	//CallMacroProgram(9006);
-        	SetCurLineNo(msg->GetLineNo());
-			m_n_subprog_count++;
-			m_n_macroprog_count++;
-        	continue;
-	    }
 
         if(mcode != 300) // M300不需要显示
             NotifyHmiMCode(mcode);

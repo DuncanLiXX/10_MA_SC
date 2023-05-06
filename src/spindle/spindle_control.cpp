@@ -240,7 +240,7 @@ void SpindleControl::StartRigidTap(double feed)
         return;
     }
 
-    tap_ratio = -10000.0*cnc_speed*spindle->move_pr/feed;
+    tap_ratio = -10000.0*cnc_speed*spindle->move_pr/(feed*TapDir);
 
     // 攻丝回退要特殊处理
     if(running_rtnt && tap_state.tap_flag){

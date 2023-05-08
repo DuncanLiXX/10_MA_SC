@@ -289,12 +289,12 @@ bool Parser::CheckGCode(LexerGCode *gcode){
 		if(gcode->g_value[i] == 541){
 			double value = 0.0;
 			if(!GetCodeData(P_DATA, value)){
-				CreateError(ERR_NO_P_DATA, ERROR_LEVEL, CLEAR_BY_MCP_RESET);
+				CreateError(ERR_NO_P_DATA, ERROR_LEVEL, CLEAR_BY_MCP_RESET, m_p_lexer_result->line_no);
 				return false;
 			}
 
 			if(value < 1 or value > 99){
-				CreateError(ERR_NO_P_DATA, ERROR_LEVEL, CLEAR_BY_MCP_RESET);
+				CreateError(ERR_NO_P_DATA, ERROR_LEVEL, CLEAR_BY_MCP_RESET, m_p_lexer_result->line_no);
 				return false;
 			}
 			code = 5400 + value;
@@ -1956,7 +1956,7 @@ bool Parser::CreateCoordMsg(const int gcode){
 		int coord = gcode/10 - 5400;
 		SCChannelConfig * pChnConfig = g_ptr_parm_manager->GetChannelConfig(m_n_channel_index);
 		if(coord > pChnConfig->ex_coord_count){
-			CreateError(ERR_NC_FORMAT, ERROR_LEVEL, CLEAR_BY_MCP_RESET);
+			CreateError(ERR_NC_FORMAT, ERROR_LEVEL, CLEAR_BY_MCP_RESET,this->m_p_lexer_result->line_no);
 			return false;
 		}
 
@@ -2107,7 +2107,7 @@ bool Parser::CreateSpeedMsg(){
 bool Parser::CreateToolMsg(int *tcode, uint8_t total){
 
 	if(*tcode < 0 or *tcode > 60){
-		CreateError(ERR_T_EXP_NULL, ERROR_LEVEL, CLEAR_BY_MCP_RESET);
+		CreateError(ERR_T_EXP_NULL, ERROR_LEVEL, CLEAR_BY_MCP_RESET, m_p_lexer_result->line_no);
 		return false;
 	}
 

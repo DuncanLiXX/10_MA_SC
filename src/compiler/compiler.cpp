@@ -2326,9 +2326,11 @@ bool Compiler::RunMessage() {
     }
 
     //	int count = m_p_parser_result->GetLength();
-
+    //printf("1111111111111111\n");
     ListNode<RecordMsg *> *node = m_p_parser_result->HeadNode();
     CodeMsgType msg_type = NORMAL_MSG;
+
+    //printf("222222222222222\n");
 
     while (node != nullptr) {
         msg = static_cast<RecordMsg *>(node->data);
@@ -2528,7 +2530,6 @@ bool Compiler::RunAuxMsg(RecordMsg *msg) {
             break;
         case 06:   //换刀
             printf("run m06 msg\n");
-
             break;
 
             //	case 98:   //M98   子程序调用  使用独立的SubProgCallMsg处理

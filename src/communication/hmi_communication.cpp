@@ -2769,6 +2769,8 @@ void HMICommunication::ProcessHmiServoDataRequest(HMICmdFrame &cmd)
         return;
     }
 
+    g_ptr_chn_engine->SetServeGuideType(type);
+
     if (!type->Verify())
     {
         ScPrintf("ProcessHmiServoDataRequest refuse,type data illegal");
@@ -2785,7 +2787,6 @@ void HMICommunication::ProcessHmiServoDataRequest(HMICmdFrame &cmd)
         return;
     }
 
-    g_ptr_chn_engine->m_serverGuide.SetType(type);
     if (!g_ptr_chn_engine->m_serverGuide.ReadyRecord())
     {
         ScPrintf("ProcessHmiServoDataRequest refuse, ready failure %d", g_ptr_chn_engine->m_serverGuide.CurState());

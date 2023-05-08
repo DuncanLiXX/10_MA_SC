@@ -38,9 +38,15 @@ struct SG_Type {
 
     DPoint origin_point_;                       //相对坐标起始点
 
-    void SetOriginPoint(DPoint);                //设置相对起点坐标
+    double *feedback_pos_   = nullptr;
+    double *intp_pos_       = nullptr;
+    double *feedback_speed_ = nullptr;
+
+    void SetInstance(double *intp, double *feedback, double *speed);    //数据实例化
+
+    void SetOriginPoint(DPoint);    //设置相对起点坐标
     virtual bool Verify() const;
-    virtual SG_DATA GenData(const double *feedback, const double *interp) = 0;
+    virtual SG_DATA GenData() = 0;
 };
 
 /**
@@ -48,7 +54,7 @@ struct SG_Type {
  */
 struct SG_Rect_Type : public SG_Type {
     SG_Rect_Type(SG_Rect_Config cfg);
-    SG_DATA GenData(const double *feedback, const double *interp) override;
+    SG_DATA GenData() override;
 };
 
 /**
@@ -63,7 +69,7 @@ struct SG_Circle_Type : public SG_Type {
     SG_Circle_Type(SG_Circle_Config cfg);
 
     bool Verify() const override;
-    SG_DATA GenData(const double *feedback, const double *interp) override;
+    SG_DATA GenData() override;
 
     //顺圆，逆圆
     //E_SG_CType circle_type_ = E_SG_CType::SG_None;
@@ -79,7 +85,7 @@ struct SG_RecCir_Type : public SG_Type {
     SG_RecCir_Type(SG_RecCir_Config cfg);
 
     bool Verify() const override;
-    SG_DATA GenData(const double *feedback, const double *interp) override;
+    SG_DATA GenData() override;
 
     int GetQuadrant(DPlane plane);// 理论坐标
 
@@ -98,10 +104,7 @@ struct SG_Tapping_Type : public SG_Type {
     SG_Tapping_Type(SG_Tapping_Config cfg);
 
     bool Verify() const override;
-    void RecordSpeed(const double *speed);
-    SG_DATA GenData(const double *feedback, const double *interp) override;
-
-    double curSpeed_ = 0;
+    SG_DATA GenData() override;
 };
 
 
@@ -121,7 +124,7 @@ public:
     bool RefreshRecording();                            // 更新数据采集状态
 
     void RstOriginPoint();                              //重置起始点
-    void SetOriginPoint(DPoint origin_point);            //设置起始点
+    void SetOriginPoint(DPoint origin_point);           //设置起始点
 
     bool IsIdle() const;                                // 是否处于空闲状态
     bool IsRecord() const;
@@ -133,7 +136,6 @@ public:
     bool SetInterval(unsigned interval);                // 设置采样周期
     bool IsTimeout();                                   // 周期到达
 
-    void RecordSpeed(const double *speed);                                 // 刚性攻丝需要记录速度
     virtual void RecordData(const double *feedback, const double *interp);  // 记录数据 //虚函数或者模板函数
 
     bool InitSocket();  // 初始化Socket

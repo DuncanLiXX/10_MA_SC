@@ -332,6 +332,7 @@ void SetMcArmComm(MCArmCommunication *comm){this->m_p_mc_arm_comm = comm;}   //É
     bool SetConsumeTask(TASK_CONSUME_TYPE consumeType); //¼¤»îºóÌ¨Ïß³Ì
     bool ReadyServerGuide();
     bool RecordingServerGuide();
+    void SetServeGuideType(SG_Type_Ptr type);
 
     ServeGuide  m_serverGuide;
     void NotifyResetGatherToHmi();

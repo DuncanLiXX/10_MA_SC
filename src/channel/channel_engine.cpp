@@ -8683,6 +8683,7 @@ void ChannelEngine::RefreshPmcNotReady()
             m_axis_status_ctrl->InputEsp(g_reg->_ESP);
             g_ptr_tracelog_processor->SendToHmi(kProcessInfo, kDebug, "解除急停");
             f_reg->RST = 0;
+            f_reg->SPL = 0;//llx add，急停取消后复位循环暂停灯
         }
         if(f_reg_last->MERS == 1){   // MDI复位请求
             f_reg->MERS = 0;

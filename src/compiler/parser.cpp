@@ -2804,13 +2804,13 @@ bool Parser::CreateTimeWaitMsg(){
 	uint32_t time = 0;
 	double data = 0;
 
-	// 更新需求： X指定s  P指定ms  与小数点无关
+	// 更新需求:  P指定ms  与小数点无关  X 支持小数点编程
 	if(GetCodeData(X_DATA, data)){
-		time = data * 1000;
-		/*if((g_code->mask_dot & (0x01<<X_DATA)) == 0){  //省略小数点则输入值单位为ms
+		//time = data * 1000;
+		if((g_code->mask_dot & (0x01<<X_DATA)) == 0){  //省略小数点则输入值单位为ms
 			time = data;
 		}else
-			time = data*1000;   //带小数点，输入值单位为s*/
+			time = data*1000;   //带小数点，输入值单位为s
 	}else if(GetCodeData(P_DATA, data)){
 		time = data;
 		/*if((g_code->mask_dot & (0x01<<P_DATA)) == 0){  //省略小数点则输入值单位为ms

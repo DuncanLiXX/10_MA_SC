@@ -1735,6 +1735,8 @@ bool ParmManager::ReadAxisConfig(){
 			m_ini_axis->AddKeyValuePair(string("axis_port"), string("0"), ns);
 			m_ini_axis->AddKeyValuePair(string("axis_linear_type"), string("0"), ns);
 			m_ini_axis->AddKeyValuePair(string("axis_pmc"), string("0"), ns);
+            m_ini_axis->AddKeyValuePair(string("pmc_min_speed"), string("5"), ns);
+            m_ini_axis->AddKeyValuePair(string("pmc_max_speed"), string("15000"), ns);
 			m_ini_axis->AddKeyValuePair(string("kp1"), string("50.0"), ns);
 			m_ini_axis->AddKeyValuePair(string("kp2"), string("50.0"), ns);
 			m_ini_axis->AddKeyValuePair(string("ki"), string("0.3"), ns);
@@ -1747,6 +1749,7 @@ bool ParmManager::ReadAxisConfig(){
 //			m_ini_axis->AddKeyValuePair(string("soft_limit_check"), string("1"), ns);
 			m_ini_axis->AddKeyValuePair(string("motor_count_pr"), string("10000"), ns);
 			m_ini_axis->AddKeyValuePair(string("motor_max_rpm"), string("3000"), ns);
+
 
 			m_ini_axis->AddKeyValuePair(string("move_pr"), string("10.0"), ns);
 			m_ini_axis->AddKeyValuePair(string("motor_dir"), string("1"), ns);

@@ -176,14 +176,14 @@ bool ServeGuide::IsTimeout()
  * @brief 刚性攻丝需要记录速度
  * @param speed
  */
-void ServeGuide::RecordSpeed(const double *speed)
-{
-    auto tap_config = dynamic_pointer_cast<SG_Tapping_Type>(type_ptr_);
-    if (tap_config)
-    {
-        tap_config->RecordSpeed(speed);
-    }
-}
+//void ServeGuide::RecordSpeed(const double *speed)
+//{
+//    auto tap_config = dynamic_pointer_cast<SG_Tapping_Type>(type_ptr_);
+//    if (tap_config)
+//    {
+//        tap_config->RecordSpeed(speed);
+//    }
+//}
 
 /**
  * @brief 发送数据是否准备好，准备好才可以进行数据传送
@@ -200,7 +200,7 @@ bool ServeGuide::IsDataReady()
  * @brief 记录数据于发送队列中
  * @param 需要记录的数据
  */
-void ServeGuide::RecordData(const double *feedback, const double *interp)
+void ServeGuide::RecordData(const double *, const double *interp)
 {
     if (!origin_inited)
     {
@@ -209,7 +209,7 @@ void ServeGuide::RecordData(const double *feedback, const double *interp)
         origin.y = interp[type_ptr_->axis_two_];
         SetOriginPoint(origin);
     }
-    SG_DATA data = type_ptr_->GenData(feedback, interp);
+    SG_DATA data = type_ptr_->GenData();
     std::lock_guard<std::mutex> mut(data_mut_);
     data_.push(std::move(data));//数据压入发送队列中
 }
@@ -392,6 +392,13 @@ SG_Rect_Type::SG_Rect_Type(SG_Rect_Config cfg)
 
 }
 
+void SG_Type::SetInstance(double *intp, double *feedback, double *speed)
+{
+    intp_pos_ = intp;
+    feedback_pos_ = feedback;
+    feedback_speed_ = speed;
+}
+
 /**
  * @brief 设置相对起点坐标
  * @param origin_point，起点坐标值
@@ -417,12 +424,16 @@ bool SG_Type::Verify() const
     {
         return false;
     }
+    if (feedback_pos_ == nullptr || intp_pos_ == nullptr)
+    {
+        return false;
+    }
     return true;
 }
 
-SG_DATA SG_Rect_Type::GenData(const double *feedback, const double *)
+SG_DATA SG_Rect_Type::GenData()
 {
-    SG_DATA data = std::make_tuple(feedback[axis_one_] - origin_point_.x, feedback[axis_two_] - origin_point_.y, -1, -1);
+    SG_DATA data = std::make_tuple(feedback_pos_[axis_one_] - origin_point_.x, feedback_pos_[axis_two_] - origin_point_.y, -1, -1);
     return data;
 }
 
@@ -482,11 +493,11 @@ void CoordTransform(SG_DATA &origin, DPlane offset)
     std::get<1>(origin) = std::get<1>(origin) + offset.y;
 }
 
-SG_DATA SG_Circle_Type::GenData(const double *feedback, const double *)
+SG_DATA SG_Circle_Type::GenData()
 {
     //转换极坐标系
     DPlane pole_point(-radius_, 0);
-    DPlane point(feedback[axis_one_] - origin_point_.x, feedback[axis_two_] - origin_point_.y);
+    DPlane point(feedback_pos_[axis_one_] - origin_point_.x, feedback_pos_[axis_two_] - origin_point_.y);
 
     SG_DATA data = CircleDletaCalc(point, pole_point, radius_);
     return data;
@@ -500,22 +511,22 @@ SG_RecCir_Type::SG_RecCir_Type(SG_RecCir_Config cfg)
     radius_ = cfg.radius;
 }
 
-SG_DATA SG_RecCir_Type::GenData(const double *feedback, const double *interp)
+SG_DATA SG_RecCir_Type::GenData()
 {
     //极坐标
     double center_x = width_ / 2;
     double center_y = -(height_ + 2 * radius_) / 2;
 
-    double relative_feed_pos_1 = feedback[axis_one_] - origin_point_.x;
-    double relative_feed_pos_2 = feedback[axis_two_] - origin_point_.y;
+    double relative_feed_pos_1 = feedback_pos_[axis_one_] - origin_point_.x;
+    double relative_feed_pos_2 = feedback_pos_[axis_two_] - origin_point_.y;
     //极坐标转换
     double pos_1 = relative_feed_pos_1 - center_x;
     double pos_2 = relative_feed_pos_2 - center_y;
     DPlane pos(pos_1, pos_2);
 
     //理论坐标，防止坐标跳动，导致象限计算错误
-    double relative_interp_pos_1 = interp[axis_one_] - origin_point_.x;
-    double relative_interp_pos_2 = interp[axis_two_] - origin_point_.y;
+    double relative_interp_pos_1 = intp_pos_[axis_one_] - origin_point_.x;
+    double relative_interp_pos_2 = intp_pos_[axis_two_] - origin_point_.y;
     double interp_pos_1 = relative_interp_pos_1 - center_x;
     double interp_pos_2 = relative_interp_pos_2 - center_y;
     DPlane interp_pos(interp_pos_1, interp_pos_2);
@@ -599,11 +610,6 @@ SG_DATA SG_RecCir_Type::GenData(const double *feedback, const double *interp)
     default:
         break;
     }
-    //if (std::get<0>(data) == -1)//test
-    //{
-    //    std::cout << "feedback[axis_one_] " << relative_pos_1 << std::endl;
-    //    std::cout << "feedback[axis_two_] " << relative_pos_2 << std::endl;
-    //}
     return data;
 }
 
@@ -690,19 +696,16 @@ bool SG_Tapping_Type::Verify() const
 {
     if (!SG_Type::Verify())
         return false;
+    if (feedback_speed_ == nullptr)
+        return false;
     return true;
 }
 
-void SG_Tapping_Type::RecordSpeed(const double *speed)
+SG_DATA SG_Tapping_Type::GenData()
 {
-    curSpeed_ = speed[axis_two_];//记录Z轴速度
-}
-
-SG_DATA SG_Tapping_Type::GenData(const double *feedback, const double *)
-{
-    double spd_pos = feedback[axis_one_] - origin_point_.x;
-    double z_axis_pos = feedback[axis_two_] - origin_point_.y;
+    double spd_pos = feedback_pos_[axis_one_] - origin_point_.x;
+    double z_axis_pos = feedback_pos_[axis_two_] - origin_point_.y;
     double delta = spd_pos - z_axis_pos;
-    SG_DATA data = std::make_tuple(feedback[axis_one_], feedback[axis_two_], delta, curSpeed_);
+    SG_DATA data = std::make_tuple(feedback_pos_[axis_one_], feedback_pos_[axis_two_], delta, feedback_speed_[axis_two_]);
     return data;
 }

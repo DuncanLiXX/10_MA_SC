@@ -739,7 +739,6 @@ bool ChannelEngine::RecordingServerGuide()
                 this->m_p_mi_comm->ReadPhyAxisCurFedBckPos(m_df_phy_axis_pos_feedback, m_df_phy_axis_pos_intp, m_df_phy_axis_speed_feedback,
                     m_df_phy_axis_torque_feedback, m_df_spd_angle, m_p_general_config->axis_count);
 
-                m_serverGuide.RecordSpeed(m_df_phy_axis_speed_feedback);//¸ÕÐÔ¹¥Ë¿Ê¹ÓÃ
                 m_serverGuide.RecordData(m_df_phy_axis_pos_feedback, m_df_phy_axis_pos_intp);
             }
         }
@@ -751,6 +750,12 @@ bool ChannelEngine::RecordingServerGuide()
 
     th.join();
     return true;
+}
+
+void ChannelEngine::SetServeGuideType(SG_Type_Ptr type)
+{
+    type->SetInstance(m_df_phy_axis_pos_intp, m_df_phy_axis_pos_feedback, m_df_phy_axis_speed_feedback);
+    m_serverGuide.SetType(type);
 }
 
 /**

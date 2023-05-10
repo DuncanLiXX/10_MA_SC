@@ -10660,7 +10660,7 @@ bool ChannelControl::ExecuteInputMsg(RecordMsg * msg){
         if(this->ReadMcMoveDataCount() > 0 || !this->CheckBlockOverFlag() ||
                 m_channel_status.machining_state == MS_PAUSED ||
                 m_channel_status.machining_state == MS_WARNING){
-            return false;    //还未运行到位
+        	return false;    //还未运行到位
         }
         else{
             count++;
@@ -10671,7 +10671,7 @@ bool ChannelControl::ExecuteInputMsg(RecordMsg * msg){
 
     //单段模式
     if(this->IsStepMode()){
-        if(this->m_b_need_change_to_pause){//单段，切换暂停状态
+    	if(this->m_b_need_change_to_pause){//单段，切换暂停状态
             this->m_b_need_change_to_pause = false;
             m_n_run_thread_state = PAUSE;
             SetMachineState(MS_PAUSED);
@@ -10682,9 +10682,10 @@ bool ChannelControl::ExecuteInputMsg(RecordMsg * msg){
         SetCurLineNo(msg->GetLineNo());
 
     }else{//非单段模式
-        if(m_channel_status.machining_state == MS_PAUSED ||
-                m_channel_status.machining_state == MS_WARNING)
-            return false;
+    	if(m_channel_status.machining_state == MS_PAUSED ||
+                m_channel_status.machining_state == MS_WARNING){
+        	return false;
+    	}
     }
 
     int input_type = input_msg->LData;
@@ -10779,7 +10780,7 @@ bool ChannelControl::ExecuteInputMsg(RecordMsg * msg){
         return false;
     }
     }
-
+    printf("G10 finished!!!\n");
     return true;
 }
 

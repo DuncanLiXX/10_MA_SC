@@ -2069,7 +2069,7 @@ void ChannelEngine::ProcessGetCurAxisEncodeRsp(MiCmdFrame &cmd){
     uint8_t phy_axis = cmd.data.axis_index-1;
     uint64_t encoder = 0;
     memcpy(&encoder, cmd.data.data, sizeof(encoder));
-    uint16_t ref_flag = 0x01;    //当前精基准信号位置
+    uint16_t ref_flag = this->m_p_axis_config[phy_axis].move_pr * 1/3 * 1e3;    //当前精基准信号位置
     uint16_t ret_dir = this->m_p_axis_config[phy_axis].ret_ref_dir;
 
     printf("get cur encoder : %llu\n", encoder);
@@ -5738,12 +5738,28 @@ void ChannelEngine::SetManualStep(uint8_t chn, uint8_t step){
         m_p_mi_comm->SendMpgStep(chn,true,m_p_channel_config[chn].mpg_level3_step);
         break;
     case 3:
-        step = MANUAL_STEP_1000;
+        step = MANUAL_STEP_500;
         m_p_mi_comm->SendMpgStep(chn,true,m_p_channel_config[chn].mpg_level4_step);
+    case 4:
+        step = MANUAL_STEP_1000;
+        //m_p_mi_comm->SendMpgStep(chn,true,m_p_channel_config[chn].mpg_level4_step);//1000从4档变为5档
+        m_p_mi_comm->SendMpgStep(chn,true,1000);
+        break;
+    case 5:
+        step = MANUAL_STEP_5000;
+        m_p_mi_comm->SendMpgStep(chn,true,5000);
+        break;
+    case 6:
+        step = MANUAL_STEP_10000;
+        m_p_mi_comm->SendMpgStep(chn,true,10000);
+        break;
+    case 7:
+        step = MANUAL_STEP_50000;
+        m_p_mi_comm->SendMpgStep(chn,true,50000);
         break;
     }
 
-    const vector<string> table = {"0", "1", "10", "100"};
+    const vector<string> table = {"0", "1", "10", "100", "500", "1000", "5000", "10000", "50000"};
     if (step > 0 && step < table.size())
         g_ptr_tracelog_processor->SendToHmi(kPanelOper, kDebug, "[模式选择] 增量 * " + table[step]);
     this->m_p_channel_control[chn].SetManualStep(step);
@@ -11842,7 +11858,7 @@ void ChannelEngine::EcatAxisFindRefWithZeroSignal(uint8_t phy_axis){
         cmd.data.axis_index = phy_axis+1;
         cmd.data.cmd = CMD_MI_SET_REF_POINT;
 
-        uint16_t err = m_p_axis_config[phy_axis].ref_mark_err * 1e3;     //单位转换， mm->um
+        uint16_t err = this->m_p_axis_config[phy_axis].move_pr * 1/3 * 1e3;     //单位转换， mm->um
         cmd.data.data[0] = err;    //参考点基准误差
         //int64_t pos = m_p_axis_config[phy_axis].axis_home_pos[0]*1e7;   //单位转换,0.1nm
         int64_t pos = 0;
@@ -12253,7 +12269,7 @@ void ChannelEngine::EcatAxisFindRefNoZeroSignal(uint8_t phy_axis){
         cmd.data.axis_index = phy_axis+1;
         cmd.data.cmd = CMD_MI_SET_REF_POINT;
 
-        cmd.data.data[0] = 0x01;    //当前精基准
+        cmd.data.data[0] = this->m_p_axis_config[phy_axis].move_pr * 1/3 * 1e3;    //当前精基准
         //uint16_t err = m_p_axis_config[phy_axis].ref_mark_err * 1e3;     //单位转换， mm->um
         //cmd.data.data[0] = err;    //参考点基准误差
         //int64_t pos = m_p_axis_config[phy_axis].axis_home_pos[0]*1e7;   //单位转换,0.1nm

@@ -1727,10 +1727,14 @@ enum ModuleReadyFlag{
 //手动步长定义
 enum ManualStep{
 	MANUAL_STEP_INVALID = 0,	//非法值
-	MANUAL_STEP_1,				//1um
-	MANUAL_STEP_10,				//10um
-	MANUAL_STEP_100,			//100um
-	MANUAL_STEP_1000			//1000um
+    MANUAL_STEP_1,				//1um       //0.001mm
+    MANUAL_STEP_10,				//10um      //0.01mm
+    MANUAL_STEP_100,			//100um     //0.1mm
+    MANUAL_STEP_500,            //500um     //0.5mm
+    MANUAL_STEP_1000,			//1000um    //1mm
+    MANUAL_STEP_5000,           //5000um    //5mm
+    MANUAL_STEP_10000,          //10000um   //10mm
+    MANUAL_STEP_50000,          //50000um   //50mm
 };
 
 //参数激活类型定义

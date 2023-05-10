@@ -114,6 +114,7 @@
 
 #ifdef USES_FIVE_AXIS_FUNC
 #define FIVE_AXIS_CONFIG_FILE "/cnc/config/five_axis_config.ini"    //ŒÂ÷·≈‰÷√Œƒº˛
+#define FIVE_AXIS_CONFIG_FILE_V2 "/cnc/config/fiveaxis_v2_config.ini"
 #endif
 
 #ifdef USES_GRIND_MACHINE

@@ -1785,7 +1785,7 @@ enum SysUpdateType {
     Backup_Pmc_Data      = 0x08,        //梯形图
     Backup_Macro_Param   = 0x10,        //宏变量
     Backup_Esb_Data      = 0x20,        //Esb文件
-    Backup_Gcode_Data    = 0x40,        //G代码
+    //Backup_Gcode_Data    = 0x40,        //G代码
     Backup_IO_Remap      = 0x80,        //IO重映射
     Backup_All           = 0xFFFF,      //全盘备份
 };

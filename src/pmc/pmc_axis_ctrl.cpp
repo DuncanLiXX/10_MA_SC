@@ -428,24 +428,34 @@ bool PmcAxisCtrl::ReadCmd(PmcAxisCtrlCmd &cmd)
         return false;
     }
 
+    if (m_pmc_cmd_buffer.size() != 0 && cmd.cmd == 5)
+    {
+        return false;
+    }
+
     m_pmc_cmd_buffer.push(cmd);
     std::cout << "PmcAxisCtrl::ReadCmd: " << (int)cmd.cmd << " cur_size: " << m_pmc_cmd_buffer.size() << std::endl;
 
     bool eabuf = (m_pmc_cmd_buffer.size() >= 3);
     switch(this->m_n_group_index%4){
     case 0:
+        //提前至零，防止流程错乱
+        //this->m_p_f_reg->EINPA = 0;
         this->m_p_f_reg->EBSYA = m_p_f_reg->EBSYA?0:1;
         this->m_p_f_reg->EABUFA = eabuf;
         break;
     case 1:
+        //this->m_p_f_reg->EINPB = 0;
         this->m_p_f_reg->EBSYB = m_p_f_reg->EBSYB?0:1;
         this->m_p_f_reg->EABUFB = eabuf;
         break;
     case 2:
+        //this->m_p_f_reg->EINPC = 0;
         this->m_p_f_reg->EBSYC = m_p_f_reg->EBSYC?0:1;
         this->m_p_f_reg->EABUFC = eabuf;
         break;
     case 3:
+        //this->m_p_f_reg->EINPD = 0;
         this->m_p_f_reg->EBSYD = m_p_f_reg->EBSYD?0:1;
         this->m_p_f_reg->EABUFD = eabuf;
         break;
@@ -463,7 +473,9 @@ bool PmcAxisCtrl::ReadCmd(PmcAxisCtrlCmd &cmd)
 bool PmcAxisCtrl::WriteCmd(){
 
     if (m_pmc_cmd_buffer.empty() || m_b_step_stop)//没有可写入的命令
+    {
         return false;
+    }
 
     //当前轴是否激活状态
     if (!IsActive())
@@ -490,7 +502,9 @@ bool PmcAxisCtrl::WriteCmd(){
 
     //上一条指令还没有执行完成
     if (cmd_executing)
+    {
         return false;
+    }
 
     FRegBits *chn0_freg = m_p_channel_engine->GetChnFRegBits(0);
     switch(this->m_n_group_index%4){

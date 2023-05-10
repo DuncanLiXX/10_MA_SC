@@ -6535,7 +6535,9 @@ void ChannelEngine::PmcAxisRunOver(MiCmdFrame &cmd){
             }
             return;
         }else if(this->m_n_run_axis_mask == 0)
+        {
             return;
+        }
 
         if (GetPmcActive(phy_axis) && !IsRefReturnning(phy_axis)/*在非回零状态时，才发送cmd over*/) {
             if(!m_pmc_axis_ctrl[m_p_axis_config[phy_axis].axis_pmc-1].IsPaused()){   //有数据，非暂停状态，为什么暂停状态不能接收Over信号？
@@ -8722,8 +8724,6 @@ bool ChannelEngine::RefreshMiStatusFun(){
 #endif
 
     while(!g_sys_state.system_quit){
-
-
 
     	if((g_sys_state.module_ready_mask & MI_READY) == 0){  //MI未准备好则等待
             printf("wait MI_READY signal!\n");

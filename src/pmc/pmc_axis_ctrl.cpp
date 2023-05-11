@@ -711,8 +711,7 @@ void PmcAxisCtrl::ExecuteCmd(){
                 uint32_t speed = axis->rapid_speed;        //速度，单位转换
                 speed = speed * double(speed_rate) / 100.;
 
-                double cur_pos = m_p_channel_engine->GetPhyAxisMachPosFeedback(axis->axis_index);
-                int64_t dis = (axis->axis_home_pos[0] - cur_pos)*1e7;       //移动距离，单位转换：mm-->0.1nm
+                int64_t dis = axis->axis_home_pos[0]*1e7;       //移动距离，单位转换：mm-->0.1nm
 
                 if(speed < axis->pmc_min_speed || speed > axis->pmc_max_speed){
                     CreateError(ERR_PMC_SPEED_ERROR,
@@ -726,7 +725,7 @@ void PmcAxisCtrl::ExecuteCmd(){
                 ScPrintf("Pmc cmd5, go home: speed = %u, dis=%lld",speed, dis);
 
                 PmcCmdFrame pmc_cmd;
-                pmc_cmd.data.cmd = 0x0100;   //增量坐标模式
+                pmc_cmd.data.cmd = 0x00;   //绝对坐标模式
                 pmc_cmd.data.axis_index = axis->axis_index+1;
                 pmc_cmd.data.axis_index |= 0xFF00;      //标志通道引擎
                 pmc_cmd.data.data[0] = 0;
@@ -759,10 +758,11 @@ void PmcAxisCtrl::ExecuteCmd(){
                 break;
             }
         }else if(cmd == 0x07){
+            //使用绝对式
             uint32_t speed = axis->rapid_speed;        //速度，单位转换
             speed = speed * double(speed_rate) / 100.;
-            double cur_pos = m_p_channel_engine->GetPhyAxisMachPosFeedback(axis->axis_index);
-            int64_t dis = (axis->axis_home_pos[0] - cur_pos)*1e7;       //移动距离，单位转换：mm-->0.1nm
+            //double cur_pos = m_p_channel_engine->GetPhyAxisMachPosFeedback(axis->axis_index);
+            int64_t dis = axis->axis_home_pos[0]*1e7;       //移动距离，单位转换：mm-->0.1nm
 
             ScPrintf("Pmc cmd7, go home: speed = %u, dis=%lld",speed, dis);
             if(speed < axis->pmc_min_speed || speed > axis->pmc_max_speed)
@@ -777,13 +777,14 @@ void PmcAxisCtrl::ExecuteCmd(){
             speed = speed * 1000/60; // 单位转换：mm/min-->um/s
 
             PmcCmdFrame pmc_cmd;
-            pmc_cmd.data.cmd = 0x0100;   //增量坐标模式
+            pmc_cmd.data.cmd = 0x00;   //绝对坐标模式
             pmc_cmd.data.axis_index = axis->axis_index+1;
             pmc_cmd.data.axis_index |= 0xFF00;      //标志通道引擎
             pmc_cmd.data.data[0] = 0;
             memcpy(&pmc_cmd.data.data[1], &dis, sizeof(dis));
             memcpy(&pmc_cmd.data.data[5], &speed, sizeof(speed));
             this->m_p_channel_engine->SendPmcAxisCmd(pmc_cmd);
+
 
             switch(this->m_n_group_index%4){
             case 0:

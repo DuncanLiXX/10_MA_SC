@@ -188,6 +188,7 @@ void BackUp_Manager::Init_Pack_Info(int mask)
         m_backupInfoVec.push_back(new Backup_Info(type, CHN_CONFIG_FILE));
         m_backupInfoVec.push_back(new Backup_Info(type, AXIS_CONFIG_FILE));
         m_backupInfoVec.push_back(new Backup_Info(type, FIVE_AXIS_CONFIG_FILE));
+        m_backupInfoVec.push_back(new Backup_Info(type, FIVE_AXIS_CONFIG_FILE_V2));
         m_backupInfoVec.push_back(new Backup_Info(type, CHN_PROC_PARAM_FILE));
         m_backupInfoVec.push_back(new Backup_Info(type, AXIS_PROC_PARAM_FILE));
     }
@@ -231,18 +232,18 @@ void BackUp_Manager::Init_Pack_Info(int mask)
             m_backupInfoVec.push_back(new Backup_Info(type, *itr));
     }
 
-    if (mask & Backup_Gcode_Data)
-    {
-        int type = Backup_Gcode_Data;
-        vector<string> files;
-        GetFileName("/cnc/nc_files", files);
-        for(auto itr = files.begin(); itr != files.end(); ++itr)
-            m_backupInfoVec.push_back(new Backup_Info(type, *itr));
-    }
+    //if (mask & Backup_Gcode_Data)
+    //{
+    //    int type = Backup_Gcode_Data;
+    //    vector<string> files;
+    //    GetFileName("/cnc/nc_files", files);
+    //    for(auto itr = files.begin(); itr != files.end(); ++itr)
+    //        m_backupInfoVec.push_back(new Backup_Info(type, *itr));
+    //}
 
     if (mask & Backup_IO_Remap)
     {
-        int type = Backup_Gcode_Data;
+        int type = Backup_IO_Remap;
         m_backupInfoVec.push_back(new Backup_Info(type, IO_REMAP_FILE));
     }
     if (mask == Backup_All)
@@ -308,6 +309,7 @@ void BackUp_Manager::Init_UnPack_Info(int mask, zip_t *zip)
         m_backupInfoVec.push_back(new Backup_Info(type, CHN_CONFIG_FILE));
         m_backupInfoVec.push_back(new AxisConfig_Backup_Info(type, AXIS_CONFIG_FILE));
         m_backupInfoVec.push_back(new Backup_Info(type, FIVE_AXIS_CONFIG_FILE));
+        m_backupInfoVec.push_back(new Backup_Info(type, FIVE_AXIS_CONFIG_FILE_V2));
         m_backupInfoVec.push_back(new Backup_Info(type, CHN_PROC_PARAM_FILE));
         m_backupInfoVec.push_back(new Backup_Info(type, AXIS_PROC_PARAM_FILE));
     }
@@ -335,7 +337,7 @@ void BackUp_Manager::Init_UnPack_Info(int mask, zip_t *zip)
 
     if (mask & Backup_IO_Remap)
     {
-        int type = Backup_Gcode_Data;
+        int type = Backup_IO_Remap;
         m_backupInfoVec.push_back(new Backup_Info(type, IO_REMAP_FILE));
     }
 
@@ -361,13 +363,13 @@ void BackUp_Manager::Init_UnPack_Info(int mask, zip_t *zip)
                 m_backupInfoVec.push_back(new Backup_Info(Backup_Esb_Data, name));
             }
         }
-        if (mask & Backup_Gcode_Data)
-        {
-            if (GetBackupType(name) == NcFile_Type)
-            {
-                m_backupInfoVec.push_back(new Backup_Info(Backup_Gcode_Data, name));
-            }
-        }
+        //if (mask & Backup_Gcode_Data)
+        //{
+        //    if (GetBackupType(name) == NcFile_Type)
+        //    {
+        //        m_backupInfoVec.push_back(new Backup_Info(Backup_Gcode_Data, name));
+        //    }
+        //}
     }
 }
 

@@ -1404,7 +1404,7 @@ bool ParmManager::ReadAxisConfig(){
 			m_sc_axis_config[i].kd = m_ini_axis->GetDoubleValueOrDefault(sname, "kd", 0.0);
 			m_sc_axis_config[i].kvff = m_ini_axis->GetIntValueOrDefault(sname, "kvff", 0);
 			m_sc_axis_config[i].kaff = m_ini_axis->GetIntValueOrDefault(sname, "kaff", 0);
-			m_sc_axis_config[i].track_err_limit = m_ini_axis->GetIntValueOrDefault(sname, "track_err_limit", 30000);
+            m_sc_axis_config[i].track_err_limit = m_ini_axis->GetIntValueOrDefault(sname, "track_err_limit", 3);
 			m_sc_axis_config[i].location_err_limit = m_ini_axis->GetIntValueOrDefault(sname, "location_err_limit", 5);
 //			m_sc_axis_config[i].soft_limit_check = m_ini_axis->GetIntValueOrDefault(sname, "soft_limit_check", 1);
 			m_sc_axis_config[i].motor_count_pr = m_ini_axis->GetIntValueOrDefault(sname, "motor_count_pr", 10000);
@@ -1479,7 +1479,7 @@ bool ParmManager::ReadAxisConfig(){
 //			m_sc_axis_config[i].axis_alarm_level = m_ini_axis->GetIntValueOrDefault(sname, "axis_alarm_level", 0);
 			m_sc_axis_config[i].off_line_check = m_ini_axis->GetIntValueOrDefault(sname, "off_line_check", 0);
 			m_sc_axis_config[i].ctrl_mode = m_ini_axis->GetIntValueOrDefault(sname, "ctrl_mode", 1);
-			m_sc_axis_config[i].pulse_count_pr = m_ini_axis->GetIntValueOrDefault(sname, "pulse_count_pr", 2048);
+            m_sc_axis_config[i].pulse_count_pr = m_ini_axis->GetIntValueOrDefault(sname, "pulse_count_pr", 10000);
 
 			m_sc_axis_config[i].encoder_lines = m_ini_axis->GetIntValueOrDefault(sname, "encoder_lines", 17);
 			m_sc_axis_config[i].zero_compensation = m_ini_axis->GetIntValueOrDefault(sname, "zero_compensation", 0);
@@ -1582,8 +1582,8 @@ bool ParmManager::ReadAxisConfig(){
 			m_sc_axis_config[i].kd = 0.0;
 			m_sc_axis_config[i].kvff = 0;
 			m_sc_axis_config[i].kaff = 0;
-			m_sc_axis_config[i].track_err_limit = 300; //30000;
-			m_sc_axis_config[i].location_err_limit = 100; //5;
+            m_sc_axis_config[i].track_err_limit = 3; //30000;
+            m_sc_axis_config[i].location_err_limit = 5; //5;
 //			m_sc_axis_config[i].soft_limit_check = 1;
 			m_sc_axis_config[i].motor_count_pr = 10000;
 			m_sc_axis_config[i].motor_speed_max = 3000;
@@ -1744,8 +1744,8 @@ bool ParmManager::ReadAxisConfig(){
 			m_ini_axis->AddKeyValuePair(string("kd"), string("0.0"), ns);
 			m_ini_axis->AddKeyValuePair(string("kvff"), string("0"), ns);
 			m_ini_axis->AddKeyValuePair(string("kaff"), string("0"), ns);
-			m_ini_axis->AddKeyValuePair(string("track_err_limit"), string("300"), ns);
-			m_ini_axis->AddKeyValuePair(string("location_err_limit"), string("100"), ns);
+            m_ini_axis->AddKeyValuePair(string("track_err_limit"), string("3"), ns);
+            m_ini_axis->AddKeyValuePair(string("location_err_limit"), string("5"), ns);
 //			m_ini_axis->AddKeyValuePair(string("soft_limit_check"), string("1"), ns);
 			m_ini_axis->AddKeyValuePair(string("motor_count_pr"), string("10000"), ns);
 			m_ini_axis->AddKeyValuePair(string("motor_max_rpm"), string("3000"), ns);

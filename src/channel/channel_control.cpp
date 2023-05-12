@@ -11046,7 +11046,7 @@ void ChannelControl::SetSpindleRatio(uint8_t ratio){
 
 /**
  * @brief 设置手动步长
- * @param step : 步长， 1--1um  2--10um  3--100um   4--1000um
+ * @param step : 步长， 1--1um  2--10um  3--100um   4--500um  5--1000um  6--5000um  7--10000um  8--50000um
  */
 void ChannelControl::SetManualStep(uint8_t step){
 
@@ -11487,8 +11487,20 @@ int ChannelControl::GetCurManualStep(){
     case MANUAL_STEP_100:
         step = 100;
         break;
+    case MANUAL_STEP_500:
+        step = 500;
+        break;
     case MANUAL_STEP_1000:
         step = 1000;
+        break;
+    case MANUAL_STEP_5000:
+        step = 5000;
+        break;
+    case MANUAL_STEP_10000:
+        step = 10000;
+        break;
+    case MANUAL_STEP_50000:
+        step = 50000;
         break;
     case MANUAL_STEP_INVALID:
 

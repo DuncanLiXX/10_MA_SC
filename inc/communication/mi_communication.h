@@ -205,8 +205,9 @@ public:
 	bool SetPmcRegWord(const int reg_type, const uint16_t value);	//设置PMC双字节寄存器的值
 
 	bool ReadPmcReg(int sec, uint8_t *reg);		//读取PMC寄存器，按地址段读取
-	bool WritePmcReg(int sec, uint8_t *reg);		//写入PMC寄存器，按地址段写入
+    bool WritePmcReg(int sec, uint8_t *reg);    //写入PMC寄存器，按地址段写入
 	bool ReadPmcPeriod();
+    //bool ReadESPSignal();                       //读取X急停信号
 
     bool SetAxisRef(uint8_t axis, int64_t encoder);		//设置轴参考点
     void SetAxisRefCur(uint8_t axis, double mach_pos);		//设置指定轴的参考点

@@ -225,7 +225,6 @@ void PmcAxisCtrl::SetStepStop(bool flag){
  * @brief 执行复位动作
  */
 void PmcAxisCtrl::Reset(){
-    std::cout << "PmcAxisCtrl Reset" << std::endl;
     for(unsigned int i = 0; i < axis_list.size(); i++){
         this->m_p_channel_engine->ManualMoveStop(axis_list.at(i)->axis_index);
     }

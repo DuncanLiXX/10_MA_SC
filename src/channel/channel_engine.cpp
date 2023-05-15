@@ -8509,11 +8509,11 @@ void ChannelEngine::SystemReset(){
     this->m_p_hmi_comm->SendCmd(cmd);
 
     //复位告警码
-    this->m_error_code = ERR_NONE;
+    //this->m_error_code = ERR_NONE;
 
 
     //清空告警队列
-    ClearAlarm();
+    //ClearAlarm();
 
 
     //TODO 激活参数
@@ -8568,6 +8568,12 @@ void ChannelEngine::SystemReset(){
     //记录复位操作结束时间，供RST信号延时后复位
     gettimeofday(&this->m_time_rst_over, NULL);
     m_b_reset_rst_signal = true;
+
+    //复位告警码
+    this->m_error_code = ERR_NONE;
+
+    //清空告警队列
+    ClearAlarm();
 
     printf("channel engine reset finished !!!\n");
 }
@@ -8687,22 +8693,22 @@ void ChannelEngine::RefreshPmcNotReady()
             //printf("kkk11111111111111111111\n");
         	this->SystemReset();
         }
-        if(g_reg->ERS == 1 && g_reg_last->ERS == 0){
+        if(g_reg->ERS == 1 && g_reg_last->ERS == 0){//响应复位操作，让MI未正常初始化时，能响应复位按钮
         	this->SystemReset();
         }
-        if(g_reg->_ESP == 0 && !m_b_emergency){ //进入急停
-            f_reg->RST = 1;
-            m_axis_status_ctrl->InputEsp(g_reg->_ESP);
-            g_ptr_tracelog_processor->SendToHmi(kProcessInfo, kDebug, "进入急停");
-            this->Emergency();
-            m_b_emergency = 1;
-        }else if(g_reg->_ESP == 1 && m_b_emergency){ // 取消急停
-            m_b_emergency = false;
-            m_axis_status_ctrl->InputEsp(g_reg->_ESP);
-            g_ptr_tracelog_processor->SendToHmi(kProcessInfo, kDebug, "解除急停");
-            f_reg->RST = 0;
-            f_reg->SPL = 0;//llx add，急停取消后复位循环暂停灯
-        }
+        //此时伺服还未就绪，MI未正常初始化，不需要处理急停操作
+//        if(g_reg->_ESP == 0 && !m_b_emergency){ //进入急停
+//            f_reg->RST = 1;
+//            m_axis_status_ctrl->InputEsp(g_reg->_ESP);
+//            g_ptr_tracelog_processor->SendToHmi(kProcessInfo, kDebug, "进入急停");
+//            this->Emergency();
+//            m_b_emergency = 1;
+//        }else if(g_reg->_ESP == 1 && m_b_emergency){ // 取消急停， //此时伺服还未就绪，不需要处理伺服相关操作（SA信号）
+//            m_b_emergency = false;
+//            m_axis_status_ctrl->InputEsp(g_reg->_ESP);
+//            g_ptr_tracelog_processor->SendToHmi(kProcessInfo, kDebug, "解除急停");
+//            f_reg->RST = 0;
+//        }
         if(f_reg_last->MERS == 1){   // MDI复位请求
             f_reg->MERS = 0;
         }
@@ -9119,20 +9125,17 @@ void ChannelEngine::ProcessPmcSignal(){
 
 #ifdef USES_PHYSICAL_MOP
         if(g_reg->_ESP == 0 && !m_b_emergency){ //进入急停
-            f_reg->RST = 1;
             m_b_emergency = true;
-            m_axis_status_ctrl->InputEsp(g_reg->_ESP);
             thread th(&ChannelEngine::ProcessESPsingal, this);
-            this->Emergency();
             th.detach();
+            this->Emergency();
             g_ptr_tracelog_processor->SendToHmi(kProcessInfo, kDebug, "进入急停");
         }else if(g_reg->_ESP == 1 && m_b_emergency){ // 取消急停
             m_b_emergency = false;
-            m_axis_status_ctrl->InputEsp(g_reg->_ESP);
             g_ptr_tracelog_processor->SendToHmi(kProcessInfo, kDebug, "解除急停");
             f_reg->RST = 0;
-            // @test zk 解除急停也要进行一次复位？
-            this->SystemReset();
+            m_axis_status_ctrl->InputEsp(g_reg->_ESP);//更新axis_status的急停状态
+            this->SystemReset();// @test zk 解除急停也要进行一次复位？
         }
 
         // 伺服关断信号
@@ -12756,21 +12759,21 @@ int ChannelEngine::GetRemainDay()
 
 void ChannelEngine::ProcessESPsingal()
 {
-    std::lock_guard<std::mutex> lock(m_esp_mtx);
-
     while (m_b_emergency)
     {
         this->m_p_mi_comm->ReadPhyAxisCurFedBckPos(m_df_phy_axis_pos_feedback, m_df_phy_axis_pos_intp, m_df_phy_axis_speed_feedback,
             m_df_phy_axis_torque_feedback, m_df_spd_angle, m_p_general_config->axis_count);
         bool bReady = true;
-        //所有轴的速度小于某个值
+        //所有轴的速度小于某个值 100rpm
         for(uint8_t i = 0; i < this->m_p_general_config->axis_count; i++){
-            if (m_df_phy_axis_speed_feedback[i] > 10000)
+
+            if (m_df_phy_axis_speed_feedback[i] > this->m_p_axis_config[i].move_pr * 1000 * 100 / 60)
             {
                 bReady = false;
                 break;
             }
         }
+        usleep(1000);
 
         if (bReady)
             break;
@@ -12778,7 +12781,12 @@ void ChannelEngine::ProcessESPsingal()
 
     if (m_b_emergency)
     {
-        m_p_pmc_reg->FReg().bits->SA = 0;
+        FRegBits *f_reg = &m_p_pmc_reg->FReg().bits[0];
+        f_reg->SA = 0;
+        f_reg->RST = 1;
+        this->m_p_mi_comm->WritePmcReg(PMC_REG_F, m_p_pmc_reg->FReg().all);
+        m_axis_status_ctrl->InputEsp(0);
+        usleep(5000);
         m_axis_status_ctrl->UpdateServoState();
     }
 

@@ -8815,8 +8815,9 @@ bool ChannelEngine::RefreshMiStatusFun(){
             this->m_p_mi_comm->ReadAxisWarnFlag(warn_flag);
             if(warn_flag != 0x00){//有告警，再看具体告警位
                 if(warn_flag & (0x01 << 0)){//正限位告警
-                    uint64_t hlimtflag = 0;
-                    this->m_p_mi_comm->ReadServoHLimitFlag(true, hlimtflag);   //读取正限位数据
+                    //llx modify 梯图已经处理了硬限位信号
+//                    uint64_t hlimtflag = 0;
+//                    this->m_p_mi_comm->ReadServoHLimitFlag(true, hlimtflag);   //读取正限位数据
 //                    if(m_hard_limit_postive == 0){
 //                        this->m_hard_limit_postive |= hlimtflag;
 //                        this->ProcessAxisHardLimit(0, this->m_hard_limit_postive);
@@ -8824,16 +8825,17 @@ bool ChannelEngine::RefreshMiStatusFun(){
 //                        this->m_hard_limit_postive |= hlimtflag;
 //                    }
                     //修复一轴报警后，其他轴无法报警问题
-                    uint64_t newflag = this->m_hard_limit_postive | hlimtflag;
-                    if (newflag != m_hard_limit_postive)
-                    {
-                        this->m_hard_limit_postive = newflag;
-                        this->ProcessAxisHardLimit(0, this->m_hard_limit_postive);
-                    }
+//                    uint64_t newflag = this->m_hard_limit_postive | hlimtflag;
+//                    if (newflag != m_hard_limit_postive)
+//                    {
+//                        this->m_hard_limit_postive = newflag;
+//                        this->ProcessAxisHardLimit(0, this->m_hard_limit_postive);
+//                    }
                 }
                 if(warn_flag & (0x01 << 1)){ //负限位告警
-                    uint64_t hlimtflag = 0;
-                    this->m_p_mi_comm->ReadServoHLimitFlag(false, hlimtflag);   //读取负限位数据
+                    //llx modify 梯图已经处理了负限位信号
+//                    uint64_t hlimtflag = 0;
+//                    this->m_p_mi_comm->ReadServoHLimitFlag(false, hlimtflag);   //读取负限位数据
 //                    if(m_hard_limit_negative == 0){
 //                        this->m_hard_limit_negative |= hlimtflag;
 //                        this->ProcessAxisHardLimit(1, this->m_hard_limit_negative);
@@ -8842,12 +8844,12 @@ bool ChannelEngine::RefreshMiStatusFun(){
 //                    }
 
                     //修复一轴报警后，其他轴无法报警问题
-                    uint64_t newflag = this->m_hard_limit_negative | hlimtflag;
-                    if (newflag != m_hard_limit_negative)
-                    {
-                        this->m_hard_limit_negative = newflag;
-                        this->ProcessAxisHardLimit(1, this->m_hard_limit_negative);
-                    }
+//                    uint64_t newflag = this->m_hard_limit_negative | hlimtflag;
+//                    if (newflag != m_hard_limit_negative)
+//                    {
+//                        this->m_hard_limit_negative = newflag;
+//                        this->ProcessAxisHardLimit(1, this->m_hard_limit_negative);
+//                    }
                 }
                 if(warn_flag & (0x01 << 2)){ //编码器告警
                     this->m_p_mi_comm->ReadEncoderWarn(value64);  //读取编码器告警数据

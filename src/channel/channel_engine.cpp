@@ -12786,7 +12786,7 @@ void ChannelEngine::ProcessESPsingal()
         f_reg->RST = 1;
         this->m_p_mi_comm->WritePmcReg(PMC_REG_F, m_p_pmc_reg->FReg().all);
         m_axis_status_ctrl->InputEsp(0);
-        usleep(5000);
+        usleep(8000);
         m_axis_status_ctrl->UpdateServoState();
     }
 

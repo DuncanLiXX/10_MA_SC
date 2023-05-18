@@ -352,7 +352,7 @@ uint64_t GetFreeDisk(){
 	statfs("/cnc/nc_files/", &diskInfo);
 	uint64_t blocksize = diskInfo.f_bsize;     //每个block包含的字节数
 
-	free = diskInfo.f_bavail * blocksize;     //可用空间大小
+    free = diskInfo.f_bfree  * blocksize;
 
 	return free;
 }

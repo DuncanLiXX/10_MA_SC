@@ -79,6 +79,8 @@ bool Backup_Info::Package(struct zip_t *zip)
             std::cout << "Package : delete" << *entries << std::endl;
             zip_entries_delete(zip, entries, 1);
             std::cout << "Package : Warning(zip_entry_fwrite) "<< m_path << " errCode:" << ret << std::endl;
+            if (ret <= -8)
+                return false;
         }
         else
         {
@@ -99,7 +101,8 @@ bool Backup_Info::UnPackage(struct zip_t *zip, string prefix)
     if (ret)
     {
         std::cout << "UnPackage : Warning(zip_entry_open) " << m_pack_name.c_str() << " errCode: " << ret << std::endl;
-        //return false;
+        if (ret <= -8)//´ÅÅÌ¿Õ¼ä²»×ãµ¼ÖÂµÄ½âÑ¹Ê§°Ü
+            return false;
     }
 
     string fullPath = prefix + m_path;
@@ -107,7 +110,11 @@ bool Backup_Info::UnPackage(struct zip_t *zip, string prefix)
     {
         ret = zip_entry_fread(zip, string(prefix + m_path).c_str());
         if (ret)
+        {
             std::cout << "UnPackage : Warning(zip_entry_fread) " << string(prefix + m_path).c_str() << " errCode: " << ret << std::endl;
+            if (ret <= -8)
+                return false;
+        }
         else
         {
             std::cout << "UnPackage : " << m_pack_name.c_str() << std::endl;
@@ -232,14 +239,14 @@ void BackUp_Manager::Init_Pack_Info(int mask)
             m_backupInfoVec.push_back(new Backup_Info(type, *itr));
     }
 
-    //if (mask & Backup_Gcode_Data)
-    //{
-    //    int type = Backup_Gcode_Data;
-    //    vector<string> files;
-    //    GetFileName("/cnc/nc_files", files);
-    //    for(auto itr = files.begin(); itr != files.end(); ++itr)
-    //        m_backupInfoVec.push_back(new Backup_Info(type, *itr));
-    //}
+    if (mask & Backup_Gcode_Data)
+    {
+        int type = Backup_Gcode_Data;
+        vector<string> files;
+        GetFileName("/cnc/nc_files", files);
+        for(auto itr = files.begin(); itr != files.end(); ++itr)
+            m_backupInfoVec.push_back(new Backup_Info(type, *itr));
+    }
 
     if (mask & Backup_IO_Remap)
     {
@@ -363,13 +370,13 @@ void BackUp_Manager::Init_UnPack_Info(int mask, zip_t *zip)
                 m_backupInfoVec.push_back(new Backup_Info(Backup_Esb_Data, name));
             }
         }
-        //if (mask & Backup_Gcode_Data)
-        //{
-        //    if (GetBackupType(name) == NcFile_Type)
-        //    {
-        //        m_backupInfoVec.push_back(new Backup_Info(Backup_Gcode_Data, name));
-        //    }
-        //}
+        if (mask & Backup_Gcode_Data)
+        {
+            if (GetBackupType(name) == NcFile_Type)
+            {
+                m_backupInfoVec.push_back(new Backup_Info(Backup_Gcode_Data, name));
+            }
+        }
     }
 }
 
@@ -443,7 +450,8 @@ bool Script_Backup_Info::Package(zip_t *zip)
     std::cout << command << std::endl;
     system(command.c_str());
     system("sync");
-    Backup_Info::Package(zip);
+    if (!Backup_Info::Package(zip))
+        return false;
 
     return true;
 }

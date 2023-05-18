@@ -1414,7 +1414,7 @@ bool MICommunication::ReadPmcPeriod(){
 
 	*RWFlag = 1;
 
-	return true;
+    return true;
 }
 
 /**

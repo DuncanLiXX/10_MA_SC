@@ -50,8 +50,8 @@ void AxisStatusCtrl::InputEsp(uint8_t _ESP){
     if(!axis)
         return;
     this->_ESP = _ESP;
-    if (this->_ESP)
-        UpdateServoState();//和SA信号同步断使能
+    //if (this->_ESP)
+    //    UpdateServoState();//和SA信号同步断使能
 }
 
 void AxisStatusCtrl::InputSyncWarn(uint64_t flag){

@@ -2002,7 +2002,7 @@ void HMICommunication::ProcessHmiGetFileCmd(HMICmdFrame &cmd){
  */
 void HMICommunication::ProcessHmiSendFileCmd(HMICmdFrame &cmd){
 
-	uint64_t free = GetFreeDisk() - g_ptr_parm_manager->GetSystemConfig()->free_space_limit*1024;
+    uint64_t free = GetFreeDisk();
 	uint64_t filesize = 0;
 
 	m_file_type = (FileTransType)cmd.cmd_extension;
@@ -2016,7 +2016,8 @@ void HMICommunication::ProcessHmiSendFileCmd(HMICmdFrame &cmd){
 			printf("no file size: data_len=%d, filename=%d\n", cmd.data_len, strlen(m_str_file_name));
 		}
 	}
-	if(this->m_b_trans_file|| filesize > free){
+    uint64_t limit = max(5u, g_ptr_parm_manager->GetSystemConfig()->free_space_limit);
+    if(this->m_b_trans_file|| filesize > free + limit*1024){
 		//当前已经处于文件传输中，拒绝
 		cmd.frame_number |= 0x8000;
 
@@ -3826,6 +3827,9 @@ void HMICommunication::PackageSysBackupFile()
 
     if (!ret)
     {
+        string command = "rm -rf " + BACKUP_DIR;
+        system(command.c_str());
+        system("sync");
         m_sysbackup_status.m_err_code = -2;
         SendHMIBackupStatus(m_sysbackup_status);
         return;
@@ -3860,6 +3864,7 @@ void HMICommunication::UnPackageBackupFile()
     }
     command = "mkdir " + RECOVER_TEMP;
     system(command.c_str());
+    system("sync");
 
     struct zip_t *zip = zip_open(RECOVER_FILE.c_str(), 0, 'r');
     m_sysbackup_status.m_cur_step = 0;
@@ -3885,18 +3890,20 @@ void HMICommunication::UnPackageBackupFile()
     }
     zip_close(zip);
 
-    system("sync");
+
 
     //提取出现错误，删除恢复文件
     if (!ret)
     {
         command = "rm -rf " + RECOVER_TEMP;
         system(command.c_str());
+        system("sync");
         m_sysbackup_status.m_err_code = -2;
         SendHMIBackupStatus(m_sysbackup_status);
         return;
     }
 
+    system("sync");
     std::cout << "UnPack Finished" << std::endl;
 
     m_sysbackup_status.m_status = SysUpdateStatus::Idle;

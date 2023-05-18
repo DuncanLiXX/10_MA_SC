@@ -671,7 +671,6 @@ private:  //私有成员变量
 #ifdef TAP_TEST
     FILE *m_fd = nullptr;
 #endif
-    std::mutex  m_esp_mtx;
 
     //后台处理耗时操作
     std::future<void>           m_task_consume_ft;

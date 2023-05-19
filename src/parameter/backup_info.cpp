@@ -65,34 +65,36 @@ Backup_Info::Backup_Info(int type, string path)
 
 bool Backup_Info::Package(struct zip_t *zip)
 {
-   if(access(m_path.c_str(), F_OK) == 0)
-   {//文件存在
-        int ret = zip_entry_open(zip, m_pack_name.c_str());
-        ret = zip_entry_fwrite(zip, m_path.c_str());
-        zip_entry_close(zip);
+//   if(access(m_path.c_str(), F_OK) == 0)
+//   {//文件存在
+//        int ret = zip_entry_open(zip, m_pack_name.c_str());
+//        ret = zip_entry_fwrite(zip, m_path.c_str());
+//        zip_entry_close(zip);
 
-        if (ret)
-        {
-            std::cout << "Package : (zip_entry_fwrite) "<< ret << " path: " << m_path << std::endl;
-            char *const x = const_cast<char *const>(m_path.c_str());
-            char *entries[] = {x};
-            std::cout << "Package : delete" << *entries << std::endl;
-            zip_entries_delete(zip, entries, 1);
-            std::cout << "Package : Warning(zip_entry_fwrite) "<< m_path << " errCode:" << ret << std::endl;
-            if (ret <= -8)
-                return false;
-        }
-        else
-        {
-            std::cout << "Package : " << m_path << std::endl;
-        }
-   }
-   else
-   {
-        std::cout << "Package : not find -- " << m_path << std::endl;
-   }
-   std::cout << std::endl;
-   return true;
+//        if (ret)
+//        {
+//            std::cout << "Package : (zip_entry_fwrite) "<< ret << " path: " << m_path << std::endl;
+//            char *const x = const_cast<char *const>(m_path.c_str());
+//            char *entries[] = {x};
+//            std::cout << "Package : delete" << *entries << std::endl;
+//            zip_entries_delete(zip, entries, 1);
+//            std::cout << "Package : Warning(zip_entry_fwrite) "<< m_path << " errCode:" << ret << std::endl;
+//            if (ret <= -8)
+//                return false;
+//        }
+//        else
+//        {
+//            std::cout << "Package : " << m_path << std::endl;
+//        }
+//   }
+//   else
+//   {
+//        std::cout << "Package : not find -- " << m_path << std::endl;
+//   }
+//   std::cout << std::endl;
+//   return true;
+
+    return true;
 }
 
 bool Backup_Info::UnPackage(struct zip_t *zip, string prefix)
@@ -112,7 +114,7 @@ bool Backup_Info::UnPackage(struct zip_t *zip, string prefix)
         if (ret)
         {
             std::cout << "UnPackage : Warning(zip_entry_fread) " << string(prefix + m_path).c_str() << " errCode: " << ret << std::endl;
-            if (ret <= -8)
+            if (ret == -8 && ret != 17)
                 return false;
         }
         else
@@ -450,6 +452,7 @@ bool Script_Backup_Info::Package(zip_t *zip)
     std::cout << command << std::endl;
     system(command.c_str());
     system("sync");
+
     if (!Backup_Info::Package(zip))
         return false;
 

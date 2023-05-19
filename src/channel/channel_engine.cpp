@@ -8585,10 +8585,12 @@ void ChannelEngine::SystemReset(){
 void ChannelEngine::Emergency(uint8_t chn){
     m_b_emergency = true;
 
+    std::cout << "Emergency --->" << std::endl;
     //急停处理
     for(int i = 0; i < this->m_p_general_config->chn_count; i++){
         this->m_p_channel_control[i].EmergencyStop();
     }
+    std::cout << "EmergencyStop" << std::endl;
 
     //初始化回参考点变量
     if(m_b_ret_ref){
@@ -8603,8 +8605,11 @@ void ChannelEngine::Emergency(uint8_t chn){
     this->m_n_mask_ret_ref = 0;
     //	m_n_get_cur_encoder_count = 0;
     memset(this->m_n_ret_ref_step, 0x00, kMaxAxisNum*sizeof(int));
+    std::cout << "SetInRetRefFlag" << std::endl;
 
     this->ClearPmcAxisMoveData();   //清空PMC轴运动数据
+
+    std::cout << "ClearPmcAxisMoveData" << std::endl;
 
     //记录复位操作结束时间，供RST信号延时后复位
     gettimeofday(&this->m_time_rst_over, NULL);
@@ -8624,6 +8629,7 @@ void ChannelEngine::Emergency(uint8_t chn){
         }
     }
 #endif
+    std::cout << "SetRetRefFlag" << std::endl;
 
     //生成急停错误信息
     m_error_code = ERR_EMERGENCY;
@@ -9130,9 +9136,11 @@ void ChannelEngine::ProcessPmcSignal(){
             m_b_emergency = true;
             thread th(&ChannelEngine::ProcessESPsingal, this);
             th.detach();
+            std::cout << "in esp --------" << std::endl;
             this->Emergency();
             g_ptr_tracelog_processor->SendToHmi(kProcessInfo, kDebug, "进入急停");
         }else if(g_reg->_ESP == 1 && m_b_emergency){ // 取消急停
+            std::cout << "out esp --------" << std::endl;
             m_b_emergency = false;
             g_ptr_tracelog_processor->SendToHmi(kProcessInfo, kDebug, "解除急停");
             f_reg->RST = 0;

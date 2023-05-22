@@ -106,7 +106,7 @@ int Interp::arc_data_comp_ijk(int move,
 
 	if((abs_err > spiral_abs_tolerance * 100.0) ||
 			  (rel_err > spiral_rel_tolerance && abs_err > spiral_abs_tolerance)){
-		printf("Radius to end of arc differs from radius to start: "
+		printf("Radius to end of arc differs from radius to start 111: "
 				   "start=(%c%.4f,%c%.4f) center=(%c%.4f,%c%.4f) end=(%c%.4f,%c%.4f) "
 				   "r1=%.4f r2=%.4f abs_err=%.4g rel_err=%.4f%%",
 				   a, current_x, b, current_y,
@@ -215,7 +215,7 @@ int Interp::arc_data_ijk(int move,
 	  if((abs_err > spiral_abs_tolerance * 100.0) ||
 	     (rel_err > spiral_rel_tolerance && abs_err > spiral_abs_tolerance)){
 
-		  printf("Radius to end of arc differs from radius to start: "
+		  printf("Radius to end of arc differs from radius to start 222: "
 		  	       "start=(%c%.4f,%c%.4f) center=(%c%.4f,%c%.4f) end=(%c%.4f,%c%.4f) "
 		  	       "r1=%.4f r2=%.4f abs_err=%.4g rel_err=%.4f%%\n",
 		  	       a, current_x, b, current_y,
@@ -910,6 +910,7 @@ int Interp::convert_straight(int move,
 	}else if (move == 0) {
 
 		g_flags = block->flags;
+
 		STRAIGHT_TRAVERSE(block->line_number, end_x, end_y, end_z,
 						  AA_end, BB_end, CC_end,
 						  u_end, v_end, w_end);
@@ -1382,7 +1383,7 @@ int Interp::init_block(block_pointer block)
 	block->x_flag = false;
 	block->y_flag = false;
 	block->z_flag = false;
-
+	block->flags = 0;
 	return 0;
 }
 
@@ -1829,6 +1830,7 @@ void ARC_FEED(int line_number,
 	RecordMsgFlag flag;
 	flag.all = g_flags;
 	new_msg->SetFlags(flag);
+
 	printf("****************ARC_FEED line no: %d flags: %d\n", line_number, flag.all);
 	comp_output_list->Append(new_msg);
 }

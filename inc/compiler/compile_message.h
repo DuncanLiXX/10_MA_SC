@@ -217,11 +217,14 @@ public:
 	DPointChn &GetSourcePos(){return m_point_source;}  //返回起点坐标
 	void SetTargetPos(DPointChn pos){ m_point_target = pos;}  //
 	void SetSourcePos(DPointChn pos){ m_point_source = pos;}  //
+	void setCancelG80(bool flag){cancel_g80 = flag;}
+	bool NeedCancelG80(){return cancel_g80;};
 
 protected:
 	bool m_b_mach_coord;    //当前是否机械坐标系
 	DPointChn m_point_target;   //目标点
 	DPointChn m_point_source;   //起始点
+	bool cancel_g80 = false;
 };
 
 

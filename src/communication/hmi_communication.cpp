@@ -3799,33 +3799,56 @@ void HMICommunication::PackageSysBackupFile()
     m_sysbackup_status.m_total_step = manager.Info_Cnt();
     m_sysbackup_status.m_status = SysUpdateStatus::Backupping;
     SendHMIBackupStatus(m_sysbackup_status);
-    struct zip_t *zip = zip_open(BACKUP_DIR.c_str(), 1, 'w');
-    if (!zip)
-    {
-        m_sysbackup_status.m_err_code = -1;
-        SendHMIBackupStatus(m_sysbackup_status);
-        return;
+    //struct zip_t *zip = zip_open(BACKUP_DIR.c_str(), 1, 'w');
+
+    //if (!zip)
+    //{
+    //    m_sysbackup_status.m_err_code = -1;
+    //    SendHMIBackupStatus(m_sysbackup_status);
+    //    return;
+    //}
+
+//    bool ret = true;
+//    auto now = chrono::steady_clock::now();
+//    for (auto itr = manager.begin(); itr != manager.end(); ++itr)
+//    {
+//        //if (!(*itr)->Package(zip))
+//        std::cout << "package: " << std::endl;
+//       if (!(*itr)->Package(nullptr))
+//        {
+//            ret = false;
+//            break;
+//        }
+//        m_sysbackup_status.m_cur_step++;
+//        if (chrono::duration_cast<chrono::milliseconds>(chrono::steady_clock::now() - now).count() > 300)
+//        {//300ms向HMI更新压缩状态
+//            SendHMIBackupStatus(m_sysbackup_status);
+//            now = chrono::steady_clock::now();
+//        }
+//    }
+
+    if(access(BACKUP_DIR.c_str(), F_OK) == 0)
+    {//文件存在
+        string command = "rm " + BACKUP_DIR;
+        system(command.c_str());
     }
 
-    bool ret = true;
-    auto now = chrono::steady_clock::now();
+    string pack_arg;
     for (auto itr = manager.begin(); itr != manager.end(); ++itr)
     {
-        if (!(*itr)->Package(zip))
-        {
-            ret = false;
-            break;
-        }
-        m_sysbackup_status.m_cur_step++;
-        if (chrono::duration_cast<chrono::milliseconds>(chrono::steady_clock::now() - now).count() > 300)
-        {//300ms向HMI更新压缩状态
-            SendHMIBackupStatus(m_sysbackup_status);
-            now = chrono::steady_clock::now();
+        (*itr)->Package(nullptr);
+        if(access((*itr)->GetPath().c_str(), F_OK) == 0)
+        {//文件存在
+            string arg = "\"" + (*itr)->GetPath() + "\" ";
+            pack_arg += arg;
         }
     }
-    zip_close(zip);
 
-    if (!ret)
+    string zipCommand = "zip -1 " + BACKUP_DIR + " -r " + pack_arg;
+    int ret = system(zipCommand.c_str());
+    std::cout << "ret: " << 0 << std::endl;
+
+    if (ret != 0)
     {
         string command = "rm -rf " + BACKUP_DIR;
         system(command.c_str());
@@ -3833,6 +3856,12 @@ void HMICommunication::PackageSysBackupFile()
         m_sysbackup_status.m_err_code = -2;
         SendHMIBackupStatus(m_sysbackup_status);
         return;
+    }
+    else
+    {
+        m_sysbackup_status.m_total_step = 1;
+        m_sysbackup_status.m_cur_step = 1;
+        SendHMIBackupStatus(m_sysbackup_status);
     }
 
     m_sysbackup_status.m_status = SysUpdateStatus::FileTransing;//通知hmi准备开始文件传输
@@ -3870,9 +3899,12 @@ void HMICommunication::UnPackageBackupFile()
     m_sysbackup_status.m_cur_step = 0;
     m_sysbackup_status.m_total_step = zip_entries_total(zip);
 
+
     bool ret = true;
     BackUp_Manager manager;
     manager.Init_UnPack_Info(m_maks_sys_backup, zip);
+
+
     auto now = chrono::steady_clock::now();
     for (auto itr = manager.begin(); itr != manager.end(); ++itr)
     {
@@ -4807,12 +4839,11 @@ int HMICommunication::GetNcFileCount(const char *path){
 			continue;
 		}
 		else if(dir_obj->d_type == DT_REG){   //普通文件
-//			printf("file[%s], size[%d], %d\n", dir_name, dir_obj->d_reclen, (int)dir_obj->d_off);
+            //printf("file[%s], size[%d], %d\n", dir_name, dir_obj->d_reclen, (int)dir_obj->d_off);
 			count++;
 		}
 		else if(dir_obj->d_type == DT_DIR){
-//			printf("dir[%s]\n", dir_name);
-
+            //printf("dir[%s]\n", dir_name);
 			count++;
 		}
 	}

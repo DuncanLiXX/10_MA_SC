@@ -837,7 +837,7 @@ struct zip_t *zip_open(const char *zipname, int level, char mode) {
   case 'w':
     // Create a new archive.
     if (!mz_zip_writer_init_file_v2(&(zip->archive), zipname, 0,
-                                    MZ_ZIP_FLAG_WRITE_ZIP64)) {
+                                    /*MZ_ZIP_FLAG_WRITE_ZIP64*/0)) {
       // Cannot initialize zip_archive writer
       goto cleanup;
     }

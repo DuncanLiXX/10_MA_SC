@@ -205,7 +205,6 @@ bool Parser::CompileGCode(){
 		return false;
 	}
 
-
 	if(!AnalyzeGCode(g_code)){//将G代码转换为对应的Message
 		printf("Failed to analyzed G Code:%lld\n", this->m_p_lexer_result->line_no);
 		return false;
@@ -270,11 +269,13 @@ bool Parser::CheckGCode(LexerGCode *gcode){
 	for(int i = 0; i < gcode->gcode_count; i++){
 		if(gcode->g_value[i] < 0){//为负值，说明此G代码含有宏表达式
 			exp_index = abs(gcode->g_value[i] + 1);
+
 			while(!this->GetExpressionResult(gcode->macro_expression[exp_index], res)){
 				if(this->m_error_code != ERR_NONE)
 					return false;
 				usleep(10000);  //休眠10ms，等待MC运行到位
 			}
+
 			if(res.init){
 				gcode->g_value[i] = res.value*10;  //放大十倍
 			}else{
@@ -703,9 +704,6 @@ bool Parser::AnalyzeGCode(LexerGCode *gcode){
 			m_error_code = ERR_INVALID_CODE;
 			return false;
 		}
-
-		MoveMsg * node = (MoveMsg *)m_p_parser_result->TailNode();
-		node->setCancelG80(true);
 
 	}
 
@@ -1504,7 +1502,6 @@ bool Parser::GetExpressionResult(MacroExpression &express, MacroVarValue &res){
 
 			res_tmp.value = value2.value + value1.value;
 			res_tmp.init = true;
-
 			stack_value.push(res_tmp);
 		}
 		else if(rec.opt == MACRO_OPT_SUB){ //减法
@@ -3693,7 +3690,7 @@ bool Parser::CreateMacroMsg(LexerMacroCmd *macro){
 		return false;
 	}
 
-//	printf("create macro message   %llu\n", this->m_p_lexer_result->line_no);
+	printf("create macro message   %llu\n", this->m_p_lexer_result->line_no);
 	new_msg->SetLineNo(this->m_p_lexer_result->line_no);  //设置当前行号
 	(static_cast<MacroCmdMsg *>(new_msg))->SetOffset(this->m_p_lexer_result->offset);
 

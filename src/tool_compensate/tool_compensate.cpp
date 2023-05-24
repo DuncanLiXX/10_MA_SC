@@ -267,6 +267,7 @@ void ToolCompensate::ProcessData(ListNode<RecordMsg *> *node){
 		default:{
 
 			uint16_t flags = msg->GetFlags().all;
+
 			if(flags & FLAG_EOF){
 				interp.reset();
 				comp_cancel_flag = false;

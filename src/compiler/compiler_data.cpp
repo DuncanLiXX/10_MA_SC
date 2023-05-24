@@ -284,8 +284,10 @@ bool AsFileMapInfo::Swapup(){
  */
 bool AsFileMapInfo::ResetFile(){
 	printf("AsFileMapInfo::ResetFile, [%s]\n", this->str_file_name);
+
 	if(ln_map_start == 0 || ptr_map_file == (char *)MAP_FAILED)
 		return true;
+
 	if(-1 == munmap(ptr_map_file, ln_map_blocksize)){   //取消映射
 		g_ptr_trace->PrintLog(LOG_ALARM, "取消映射文件[%s]失败！size=%hld, errno=%d", str_file_name, ln_map_blocksize, errno);
 		return false;
@@ -300,13 +302,13 @@ bool AsFileMapInfo::ResetFile(){
 		ln_map_blocksize = kMaxFileMapSize;
 
 	this->ptr_map_file = (char *)mmap(nullptr, ln_map_blocksize, PROT_READ,MAP_SHARED, fp_cur, ln_map_start);
+
 	if(ptr_map_file == (char *)MAP_FAILED && errno != 0){
 		g_ptr_trace->PrintLog(LOG_ALARM, "复位映射文件[%s]失败！size=%hld, errno=%d", str_file_name, ln_map_blocksize, errno);
 		printf("复位映射文件  失败!\n");
 		return false;  //映射失败
 	}
 
-//	DropCaches(1);
 	printf("AsFileMapInfo::ResetFile finished!!!\n");
 	return true;
 }

@@ -2450,6 +2450,7 @@ bool Compiler::RunMessage() {
             //TODO 增加刀补处理
 
             this->m_p_parser_result->RemoveHead();
+
             this->m_p_block_msg_list->Append(node);   //压入分段队列
 
         }

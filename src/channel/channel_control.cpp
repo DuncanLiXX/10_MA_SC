@@ -4629,7 +4629,6 @@ int ChannelControl::Run(){
             else if(m_n_run_thread_state != ERROR){
                 m_n_run_thread_state = RUN; //等待执行完成， 状态切回RUN
             }
-
         }
         else
         {
@@ -5877,8 +5876,9 @@ bool ChannelControl::ExecuteMessage(){
             res = this->ExecuteExactStopMsg(msg);
             break;
         default:
-            break;
+        	break;
         }
+
 
         //		if(this->m_n_add_prog_type == CONTINUE_START_ADD)
         //			printf("execute msg %d, line = %llu,  res = %d, fifo=%u\n", msg->GetMsgType(), msg->GetLineNo(), res, m_p_mc_comm->ReadGCodeFifoCount(m_n_channel_index));
@@ -5886,7 +5886,7 @@ bool ChannelControl::ExecuteMessage(){
         if(!res){
             if(m_n_run_thread_state != WAIT_RUN  && m_n_run_thread_state != WAIT_EXECUTE){ //当前非WAIT_RUN状态，将线程置为WAIT_EXECUTE状态
                 this->m_n_run_thread_state = WAIT_EXECUTE;
-                //		printf("set WAIT_EXECUTE, line = %llu\n", msg->GetLineNo());
+                // printf("set WAIT_EXECUTE, line = %llu\n", msg->GetLineNo());
             }
 
             break;
@@ -5898,7 +5898,8 @@ bool ChannelControl::ExecuteMessage(){
                     ){
 
                 if(this->m_n_restart_step == 1){  //扫描阶段的数据执行完后直接删除
-                    this->m_p_output_msg_list->Delete(node);   //删除此节点命令
+
+                	this->m_p_output_msg_list->Delete(node);   //删除此节点命令
                     node = m_p_output_msg_list->HeadNode();  //取下一个消息
                     return res;
                 }
@@ -7201,11 +7202,6 @@ bool ChannelControl::ExecuteLineMsg(RecordMsg *msg, bool flag_block){
     }else if(!OutputData(msg, flag_block))
         return false;
 
-    if(linemsg->NeedCancelG80()){
-    	m_channel_status.gmode[9] = G80_CMD;
-    	this->SendChnStatusChangeCmdToHmi(G_MODE);
-    }
-
     m_n_run_thread_state = RUN;
 
     if(this->m_simulate_mode == SIM_OUTLINE || this->m_simulate_mode == SIM_TOOLPATH){
@@ -7294,10 +7290,6 @@ bool ChannelControl::ExecuteRapidMsg(RecordMsg *msg, bool flag_block){
         this->SetCurLineNo(msg->GetLineNo());
     }
 
-    if(rapidmsg->NeedCancelG80()){
-    	m_channel_status.gmode[9] = G80_CMD;
-    	this->SendChnStatusChangeCmdToHmi(G_MODE);
-    }
 
     m_n_run_thread_state = RUN;
 
@@ -7350,11 +7342,6 @@ bool ChannelControl::ExecuteArcMsg(RecordMsg *msg, bool flag_block){
 		m_channel_status.gmode[9] = G80_CMD;
 		this->SendChnStatusChangeCmdToHmi(G_MODE);
 	}*/
-
-    if(arc_msg->NeedCancelG80()){
-    	m_channel_status.gmode[9] = G80_CMD;
-		this->SendChnStatusChangeCmdToHmi(G_MODE);
-    }
 
     this->m_n_run_thread_state = RUN;
 

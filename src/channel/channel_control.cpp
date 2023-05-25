@@ -6156,7 +6156,7 @@ bool ChannelControl::ExecuteAuxMsg(RecordMsg *msg){
             if(this->ReadMcMoveDataCount() > 0 || !block_over ||
                     m_channel_status.machining_state == MS_PAUSED ||
                     m_channel_status.machining_state == MS_WARNING){ //未达到执行条件
-                //printf("aux exec return: 0x%x\n", m_p_mc_comm->ReadRunOverValue());
+                printf("aux exec return: 0x%x\n", m_p_mc_comm->ReadRunOverValue());
                 return false;    //还未运行到位
             }
             else if(++count < limit){
@@ -6523,8 +6523,6 @@ bool ChannelControl::ExecuteAuxMsg(RecordMsg *msg){
                 //TODO 将代码发送给PMC
                 printf("start to execute M06\n");
 
-                printf("M06 0000000000000000000\n");
-
                 this->SendMCodeToPmc(mcode, m_index);
 
                 gettimeofday(&m_time_m_start[m_index], NULL);   //
@@ -6539,7 +6537,6 @@ bool ChannelControl::ExecuteAuxMsg(RecordMsg *msg){
 
                 gettimeofday(&m_time_m_start[m_index], NULL);
 
-                printf("M06 11111111111111111111\n");
                 this->SetMFSig(m_index, true);    //置位选通信号
                 tmp->IncreaseExecStep(m_index);
             }else if(tmp->GetExecStep(m_index) == 2){

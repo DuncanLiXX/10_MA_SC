@@ -1488,6 +1488,7 @@ bool Compiler::OpenFile(const char *file, bool sub_flag) {
     this->m_ln_cur_line_no = 1;
     this->m_b_eof = false;
 
+    /*
     void* thread_result;
     //创建预扫描线程
     if (!m_b_prescan_over && m_thread_prescan != 0){
@@ -1534,7 +1535,7 @@ bool Compiler::OpenFile(const char *file, bool sub_flag) {
                         0, m_n_channel_index);
         }
         m_thread_prescan = 0;
-    }
+    }*/
     m_b_breakout_prescan = false;
     m_b_prescan_over = false;
     m_b_prescan_in_stack = false;
@@ -1550,11 +1551,14 @@ bool Compiler::OpenFile(const char *file, bool sub_flag) {
     m_stack_vector_index_prescan.clear();
     m_stack_else_count_prescan.clear();
 
+    PreScan();
+
 
 #ifdef USES_WOOD_MACHINE
     m_p_list_spd_start->Clear();
 #endif
 
+    /*
     pthread_attr_t attr;
     struct sched_param param;
     pthread_attr_init(&attr);
@@ -1566,11 +1570,7 @@ bool Compiler::OpenFile(const char *file, bool sub_flag) {
         param.__sched_priority = 35; //95; //主程序，预扫描线程比编译线程优先级一，因为主程序可能比较大
     pthread_attr_setschedparam(&attr, &param);
 
-    /* Use scheduling parameters of attr */
-    //	res = pthread_attr_setinheritsched(&attr, PTHREAD_EXPLICIT_SCHED); //不继承父线程调度方式，否则以上的设置不生效
-    //	if (res) {
-    //		printf("pthread setinheritsched failed\n");
-    //	}
+
     res = pthread_create(&m_thread_prescan, &attr, Compiler::PreScanThread, this);    //开启G代码预编译线程
     if (res != 0) {
         g_ptr_trace->PrintLog(LOG_ALARM, "CHN[%d]编译器预扫描线程创建失败! res = %d, errno = %d, errstr=%s",
@@ -1583,7 +1583,7 @@ bool Compiler::OpenFile(const char *file, bool sub_flag) {
     pthread_attr_destroy(&attr);
 
     printf("exit openfile priority %d\n", param.__sched_priority);
-
+    */
     return true;
 }
 

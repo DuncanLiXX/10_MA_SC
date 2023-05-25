@@ -539,7 +539,7 @@ bool Lexer::Compile(){
 				m_macro_exp.PushOpt(MACRO_OPT_SUB);
 				break;
 			case '=':
-		//		printf("=====%hhu, name_ex=%hhu\n", m_in_macro_exp, m_b_axis_name_ex);
+				//printf("=====%hhu, name_ex=%hhu\n", m_in_macro_exp, m_b_axis_name_ex);
 				if(!m_in_macro_exp){//'='不能出现在非表达式中
 					//允许轴下标，解析轴目标位置， 例如X1=206.567
 					if(m_b_axis_name_ex){
@@ -648,8 +648,6 @@ bool Lexer::Compile(){
 				}
 				break;
 			default:
-				printf("===== %s\n", comp_buf);
-
 				printf("lexer: unsupported code: %c\n", *comp_buf);
 				m_p_lexer_result->error_code = ERR_INVALID_CODE;
 				break;

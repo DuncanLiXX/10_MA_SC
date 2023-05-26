@@ -6156,12 +6156,12 @@ bool ChannelControl::ExecuteAuxMsg(RecordMsg *msg){
             if(this->ReadMcMoveDataCount() > 0 || !block_over ||
                     m_channel_status.machining_state == MS_PAUSED ||
                     m_channel_status.machining_state == MS_WARNING){ //未达到执行条件
-                printf("aux exec return: 0x%x\n", m_p_mc_comm->ReadRunOverValue());
+                //printf("aux exec return: 0x%x\n", m_p_mc_comm->ReadRunOverValue());
                 return false;    //还未运行到位
             }
             else if(++count < limit){
                 usleep(5000);   //等待5ms，因为MC状态更新周期为5ms，需要等待状态确认
-                //printf("execute aus msg: blockflag=%d, count = %d\n",  block_over, count);
+                printf("execute aus msg: blockflag=%d, count = %d\n",  block_over, count);
 
             }else
                 break;
@@ -8064,7 +8064,6 @@ bool ChannelControl::ExecuteSpeedMsg(RecordMsg *msg){
     //			return false;
     //		}
     //	}
-
     SpeedMsg *speed = (SpeedMsg *)msg;
 
     //TODO 当前先用第一个主轴来判断

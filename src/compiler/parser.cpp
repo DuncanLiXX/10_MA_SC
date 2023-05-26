@@ -681,6 +681,7 @@ bool Parser::AnalyzeGCode(LexerGCode *gcode){
 
 	//处理01组模态指令：G00/G01/G02/G03/G6.2/G33~G36 切削类指令
 	if(m_mode_mask & GMODE_01 && !has_move_code){
+
 		has_move_code = true;
 		switch(m_mode_code[1]){
 		case G00_CMD:
@@ -702,6 +703,10 @@ bool Parser::AnalyzeGCode(LexerGCode *gcode){
 			m_error_code = ERR_INVALID_CODE;
 			return false;
 		}
+
+		MoveMsg * node = (MoveMsg *)m_p_parser_result->TailNode();
+		node->setCancelG80(true);
+
 	}
 
 
@@ -825,10 +830,6 @@ bool Parser::ProcessMCode(LexerGCode *gcode){
 		if(!this->CreateAuxMsg(gcode->m_value, gcode->mcode_count))
 			return false;
 	}
-
-
-
-
 
 	return true;
 }
@@ -1464,12 +1465,13 @@ bool Parser::GetExpressionResult(MacroExpression &express, MacroVarValue &res){
 				if(!ChannelEngine::GetInstance()->GetChnControl(m_n_channel_index)->IsBlockRunOver())
 					goto REC;  //终止计算，恢复数据
 			}
+
 			if(!SetMacroVar(static_cast<int>(value2.value), value1.value, value1.init)){
 				printf("MACRO_OPT_WR error\n");
 				m_error_code = ERR_INVALID_MACRO_EXP;
 				return false;
 			}else{
-			//	printf("MACRO_OPT_WR succeed\n");
+				printf("MACRO_OPT_WR succeed\n");
 			}
 		}
 		else if(rec.opt == MACRO_OPT_ADD){//加法

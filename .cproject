@@ -214,7 +214,7 @@
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/Algorithm_base/Release/src}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/lib/release}&quot;"/>
 								</option>
-								<option id="xilinx.gnu.linker.inferred.swplatform.flags.1569551119" name="Software Platform Inferred Flags" superClass="xilinx.gnu.linker.inferred.swplatform.flags" valueType="libs"/>
+								<option id="xilinx.gnu.linker.inferred.swplatform.flags.1569551119" name="Software Platform Inferred Flags" superClass="xilinx.gnu.linker.inferred.swplatform.flags"/>
 								<inputType id="xilinx.gnu.linker.input.782147393" superClass="xilinx.gnu.linker.input">
 									<additionalInput kind="additionalinputdependency" paths="$(USER_OBJS)"/>
 									<additionalInput kind="additionalinput" paths="$(LIBS)"/>
@@ -222,6 +222,35 @@
 								<inputType id="xilinx.gnu.linker.input.lscript.1912185892" name="Linker Script" superClass="xilinx.gnu.linker.input.lscript"/>
 							</tool>
 							<tool command="arm-linux-gnueabihf-size" commandLinePattern="${COMMAND} ${FLAGS} ${INPUTS} |tee ${OUTPUT}" errorParsers="" id="xilinx.gnu.armv7.linux.size.release.2033757513" name="ARM v7 Linux Print Size" superClass="xilinx.gnu.armv7.linux.size.release"/>
+						</toolChain>
+					</folderInfo>
+					<folderInfo id="xilinx.gnu.armv7.linux.exe.release.956080055.572890447" name="/" resourcePath="src">
+						<toolChain id="xilinx.gnu.armv7.linux.exe.release.toolchain.1934107587" name="Xilinx ARM v7 GNU/Linux Toolchain" superClass="xilinx.gnu.armv7.linux.exe.release.toolchain" unusedChildren="">
+							<targetPlatform binaryParser="com.xilinx.sdk.managedbuilder.XELF.arm.a53.x32.linux" id="xilinx.armv7.linux.target.gnu.base.release" isAbstract="false" name="Release Platform" superClass="xilinx.armv7.linux.target.gnu.base.release"/>
+							<tool id="xilinx.gnu.armv7.linux.c.toolchain.assembler.release.981343398" name="ARM v7 Linux gcc assembler" superClass="xilinx.gnu.armv7.linux.c.toolchain.assembler.release.122223232">
+								<inputType id="xilinx.gnu.assembler.input.1177786511" superClass="xilinx.gnu.assembler.input"/>
+							</tool>
+							<tool id="xilinx.gnu.armv7.linux.c.toolchain.compiler.release.2100917655" name="ARM v7 Linux gcc compiler" superClass="xilinx.gnu.armv7.linux.c.toolchain.compiler.release.1032175806"/>
+							<tool id="xilinx.gnu.armv7.linux.cxx.toolchain.compiler.release.1567987493" name="ARM v7 Linux g++ compiler" superClass="xilinx.gnu.armv7.linux.cxx.toolchain.compiler.release.1283547875">
+								<option id="xilinx.gnu.compiler.dircategory.includes.353149593" name="Include Paths" superClass="xilinx.gnu.compiler.dircategory.includes" valueType="includePath">
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/inc}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/inc/tool_compensate}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/lib/inc}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/inc/pmc}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/inc/Algorithm}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/inc/alarm_processor}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/inc/parameter}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/inc/communication}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/inc/channel}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/inc/compiler}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/inc/spindle}&quot;"/>
+								</option>
+								<inputType id="xilinx.gnu.armv7.linux.cxx.compiler.input.1426429832" name="C++ source files" superClass="xilinx.gnu.armv7.linux.cxx.compiler.input"/>
+							</tool>
+							<tool id="xilinx.gnu.armv7.linux.toolchain.archiver.2035084212" name="ARM v7 Linux archiver" superClass="xilinx.gnu.armv7.linux.toolchain.archiver.1782408388"/>
+							<tool id="xilinx.gnu.armv7.linux.c.toolchain.linker.release.846490265" name="ARM v7 Linux gcc linker" superClass="xilinx.gnu.armv7.linux.c.toolchain.linker.release.1349377167"/>
+							<tool id="xilinx.gnu.armv7.linux.cxx.toolchain.linker.release.388338549" name="ARM v7 Linux g++ linker" superClass="xilinx.gnu.armv7.linux.cxx.toolchain.linker.release.952224979"/>
+							<tool id="xilinx.gnu.armv7.linux.size.release.1459545058" name="ARM v7 Linux Print Size" superClass="xilinx.gnu.armv7.linux.size.release.2033757513"/>
 						</toolChain>
 					</folderInfo>
 					<fileInfo id="xilinx.gnu.armv7.linux.exe.release.956080055.1959435435" name="channel_engine.cpp" rcbsApplicability="disable" resourcePath="src/channel/channel_engine.cpp" toolsToInvoke="xilinx.gnu.armv7.linux.cxx.toolchain.compiler.release.1283547875.200046302">

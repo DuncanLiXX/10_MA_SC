@@ -26,6 +26,8 @@ using namespace Spindle;
 
 int ctrlmode_switch_wait = 0;   //用于轴模式切换等待延时
 
+bool Flag_SyncCrcPos = true;
+
 /**
  * @brief 构造函数
  */
@@ -589,6 +591,8 @@ void ChannelControl::InitialChannelStatus(){
 void ChannelControl::Reset(){
 
 	this->m_error_code = ERR_NONE;
+
+	Flag_SyncCrcPos = true;
 
     if(this->m_thread_breakcontinue > 0){//处于断点继续线程执行过程中，则退出断点继续线程
         this->CancelBreakContinueThread();
@@ -1764,7 +1768,10 @@ void ChannelControl::StartRunGCode(){
     }
 
     //@add zk 设置刀补模块位置
-    this->m_p_compiler->setCompensationPos(this->m_channel_rt_status.cur_pos_work);
+    if(Flag_SyncCrcPos){
+    	this->m_p_compiler->setCompensationPos(this->m_channel_rt_status.cur_pos_work);
+    	Flag_SyncCrcPos = false;
+    }
     if(this->m_channel_status.chn_work_mode == AUTO_MODE){
 
         string msg = "开始加工程序(" + string(this->m_channel_status.cur_nc_file_name) + ")";
@@ -3544,6 +3551,7 @@ void ChannelControl::ProcessHmiSimulateCmd(HMICmdFrame &cmd){
 void ChannelControl::ProcessHmiSetNcFileCmd(HMICmdFrame &cmd){
 
     cmd.frame_number |= 0x8000;   //设置回复标志
+    Flag_SyncCrcPos = true;
     // @add zk 防止打开过长文件名文件
     if(strlen(cmd.data) > 127) return;
     if (strcmp(m_channel_status.cur_nc_file_name, cmd.data))
@@ -7193,6 +7201,11 @@ bool ChannelControl::ExecuteLineMsg(RecordMsg *msg, bool flag_block){
     }else if(!OutputData(msg, flag_block))
         return false;
 
+    if(linemsg->NeedCancelG80()){
+    	m_channel_status.gmode[9] = G80_CMD;
+    	this->SendChnStatusChangeCmdToHmi(G_MODE);
+    }
+
     m_n_run_thread_state = RUN;
 
     if(this->m_simulate_mode == SIM_OUTLINE || this->m_simulate_mode == SIM_TOOLPATH){
@@ -7200,13 +7213,6 @@ bool ChannelControl::ExecuteLineMsg(RecordMsg *msg, bool flag_block){
         this->m_pos_simulate_cur_work = linemsg->GetTargetPos();
         this->SetCurLineNo(msg->GetLineNo());
     }
-
-    //	printf("execute line msg out, block_flag=%hhu, feed=%lf\n", msg->CheckFlag(FLAG_BLOCK_OVER), linemsg->GetFeed());
-
-    /*if(m_channel_status.gmode[9] != G80_CMD){
-		m_channel_status.gmode[9] = G80_CMD;
-		this->SendChnStatusChangeCmdToHmi(G_MODE);
-	}*/
 
     return true;
 }
@@ -7288,6 +7294,11 @@ bool ChannelControl::ExecuteRapidMsg(RecordMsg *msg, bool flag_block){
         this->SetCurLineNo(msg->GetLineNo());
     }
 
+    if(rapidmsg->NeedCancelG80()){
+    	m_channel_status.gmode[9] = G80_CMD;
+    	this->SendChnStatusChangeCmdToHmi(G_MODE);
+    }
+
     m_n_run_thread_state = RUN;
 
     return true;
@@ -7339,6 +7350,11 @@ bool ChannelControl::ExecuteArcMsg(RecordMsg *msg, bool flag_block){
 		m_channel_status.gmode[9] = G80_CMD;
 		this->SendChnStatusChangeCmdToHmi(G_MODE);
 	}*/
+
+    if(arc_msg->NeedCancelG80()){
+    	m_channel_status.gmode[9] = G80_CMD;
+		this->SendChnStatusChangeCmdToHmi(G_MODE);
+    }
 
     this->m_n_run_thread_state = RUN;
 

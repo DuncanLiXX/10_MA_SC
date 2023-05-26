@@ -272,6 +272,7 @@ void BackUp_Manager::Init_Pack_Info(int mask)
         m_backupInfoVec.push_back(new Backup_Info(type, CHN_SCENE_FILE));
         m_backupInfoVec.push_back(new Backup_Info(type, PATH_PHY_AXIS_ENCODER));
         m_backupInfoVec.push_back(new Script_Backup_Info(type, SCRIPT_DIR));
+        m_backupInfoVec.push_back(new Backup_Info(type, MDA_DIR));
 #ifdef USES_GRIND_MACHINE
         m_backupInfoVec.push_back(new Backup_Info(type, GRIND_CONFIG_FILE));
 #endif

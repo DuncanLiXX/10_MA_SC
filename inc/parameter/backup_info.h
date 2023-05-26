@@ -19,6 +19,7 @@ const std::string MC_DIR = "/cnc/bin/module_mc.ldr";
 const std::string FPGA_DIR = "/cnc/bin/SPARTAN6.bin";
 const std::string SCRIPT_DIR = "/cnc/script/S99rmnologin.sh";
 const std::string ScriptPath = "/etc/rc5.d/S99rmnologin.sh";
+const std::string MDA_DIR = "/cnc/mda/";
 
 class Backup_Info {
 public:

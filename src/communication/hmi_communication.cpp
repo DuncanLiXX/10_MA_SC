@@ -596,7 +596,7 @@ int HMICommunication::SendMonitorData(char *buf, int size){
 	if(res == -1){
 		if(errno == 32 || errno == 104){
 			g_ptr_trace->PrintLog(LOG_ALARM, "HMI监控连接中断！errno=%d", errno);
-		//	CreateError(ERR_HMI_MONITOR_DISCON, WARNING_LEVEL, CLEAR_BY_CLEAR_BUTTON);  //生成HMI监控断链告警
+            //CreateError(ERR_HMI_MONITOR_DISCON, WARNING_LEVEL, CLEAR_BY_CLEAR_BUTTON);  //生成HMI监控断链告警
 		}
 	}else if(res != size){
 //		printf("warnning: send = %d, res = %d\n", size, res);
@@ -3846,7 +3846,7 @@ void HMICommunication::PackageSysBackupFile()
 
     string zipCommand = "zip -1 " + BACKUP_DIR + " -r " + pack_arg;
     int ret = system(zipCommand.c_str());
-    std::cout << "ret: " << 0 << std::endl;
+    std::cout << "ret: " << ret << std::endl;
 
     if (ret != 0)
     {

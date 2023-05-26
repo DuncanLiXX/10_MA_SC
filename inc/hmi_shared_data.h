@@ -1884,8 +1884,8 @@ struct SG_RecCir_Config
  */
 struct SG_Tapping_Config
 {
-    uint8_t axis_one = -1;      //Ö÷ÖáÖáºÅ
-    uint8_t axis_two = -1;      //ZÖáÖáºÅ
+    //uint8_t axis_one = -1;      //Ö÷ÖáÖáºÅ
+    //uint8_t axis_two = -1;      //ZÖáÖáºÅ
     uint8_t interval = 8;
 };
 

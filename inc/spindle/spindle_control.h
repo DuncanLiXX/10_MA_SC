@@ -117,6 +117,8 @@ public:
 
     void EStop();
 
+    double Get_TapRatio() const { return tap_ratio; }   //获取攻丝比例
+
 private:
     void UpdateParams();        // 更新常用主轴参数到成员变量中
     void UpdateSpindleState();  // 根据当前状态更新转速

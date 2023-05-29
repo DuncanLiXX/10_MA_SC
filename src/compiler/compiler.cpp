@@ -1762,6 +1762,9 @@ bool Compiler::CompileOver() {
     m_node_stack_run.clear();
     m_else_jump_stack_run.clear();
 
+    // @add zk
+    m_p_parser->Reset();
+
     printf("exit compiler::compileover\n");
     return true;
 }

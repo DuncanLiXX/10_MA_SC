@@ -6878,7 +6878,9 @@ bool ChannelControl::ExecuteAuxMsg(RecordMsg *msg){
             this->m_p_f_reg->STL = 0;
             this->m_p_f_reg->SPL = 0;
             this->m_p_f_reg->OP = 0;
-
+            // @add zk
+            this->ResetMode();   //模态恢复默认值
+            ////
             CompileOver();
             this->SetMiSimMode(false);  //复位MI仿真状态
             tmp->SetExecStep(m_index, 0xFF);    //置位结束状态
@@ -9604,7 +9606,7 @@ bool ChannelControl::ExecuteRefReturnMsg(RecordMsg *msg){
                 if(axis_mask & (0x01<<i)){
                     phy_axis = this->GetPhyAxis(i);
                     if(phy_axis != 0xff){
-                        this->ManualMove(i, pos[i], m_p_axis_config[phy_axis].rapid_speed, true);  //工件坐标系
+                        this->ManualMove(i, pos[i], m_p_axis_config[phy_axis].ret_ref_speed, true);  //工件坐标系
                         printf("manual move axis=%hhu, target=%lf, speed=%lf\n", i, pos[i], m_p_axis_config[phy_axis].rapid_speed);
                         gettimeofday(&m_time_ret, NULL);
                     }
@@ -9656,7 +9658,7 @@ bool ChannelControl::ExecuteRefReturnMsg(RecordMsg *msg){
                             this->ManualMove(i, 0, m_p_axis_config[phy_axis].rapid_speed);  //机械坐标系
                             printf("manual move machpos axis=%hhu, target=0, speed=%lf\n", i,	m_p_axis_config[phy_axis].rapid_speed);
 #else
-                            this->ManualMove(i, m_p_axis_config[phy_axis].axis_home_pos[0], m_p_axis_config[phy_axis].rapid_speed);  //机械坐标系
+                            this->ManualMove(i, m_p_axis_config[phy_axis].axis_home_pos[0], m_p_axis_config[phy_axis].ret_ref_speed);  //机械坐标系
                             printf("manual move machpos axis=%hhu, target=%lf, speed=%lf\n", i, m_p_axis_config[phy_axis].axis_home_pos[0],
                                     m_p_axis_config[phy_axis].rapid_speed);
 #endif
@@ -9673,7 +9675,7 @@ bool ChannelControl::ExecuteRefReturnMsg(RecordMsg *msg){
                     if(axis_mask & (0x01<<i)){
                         phy_axis = this->GetPhyAxis(i);
                         if(phy_axis != 0xff){
-                            this->ManualMove(i, m_p_axis_config[phy_axis].axis_home_pos[ref_id-1], m_p_axis_config[phy_axis].rapid_speed);  //机械坐标系
+                            this->ManualMove(i, m_p_axis_config[phy_axis].axis_home_pos[ref_id-1], m_p_axis_config[phy_axis].ret_ref_speed);  //机械坐标系
                         }
                     }
                 }
@@ -9750,7 +9752,7 @@ bool ChannelControl::ExecuteRefReturnMsg(RecordMsg *msg){
                 if(axis_mask & (0x01<<i)){
                     phy_axis = this->GetPhyAxis(i);
                     if(phy_axis != 0xff){
-                        this->ManualMove(i, pos[i], m_p_axis_config[phy_axis].rapid_speed, true);  //工件坐标系
+                        this->ManualMove(i, pos[i], m_p_axis_config[phy_axis].ret_ref_speed, true);  //工件坐标系
                     }
                 }
             }
@@ -9767,7 +9769,7 @@ bool ChannelControl::ExecuteRefReturnMsg(RecordMsg *msg){
                         flag = false;
                         phy_axis = this->GetPhyAxis(i);
                         if(phy_axis != 0xff){
-                            this->ManualMove(i, pos[i], m_p_axis_config[phy_axis].rapid_speed, true);  //工件坐标系
+                            this->ManualMove(i, pos[i], m_p_axis_config[phy_axis].ret_ref_speed, true);  //工件坐标系
                         }
                         //	printf("cur work pos = %lf, tar pos = %lf\n", m_channel_rt_status.cur_pos_work.GetAxisPos(i), pos[i]);
                     }

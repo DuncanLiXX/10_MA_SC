@@ -11128,6 +11128,7 @@ void ChannelEngine::SetAxisComplete(int axisID)
  */
 void ChannelEngine::GotoZeroPos(int phy_axis)
 {
+    static double real_pos = 0;
     switch(this->m_n_ret_ref_step[phy_axis]){
     case 0: {// 设置原点
         std::cout << "step 0: GotoZeroPos " << (int)phy_axis << std::endl;
@@ -11137,17 +11138,27 @@ void ChannelEngine::GotoZeroPos(int phy_axis)
     }
         break;
     case 1: {                            //运动到第一参考点
-        this->ManualMoveAbs(phy_axis, m_p_axis_config[phy_axis].rapid_speed, m_p_axis_config[phy_axis].axis_home_pos[0]);
+        this->ManualMoveAbs(phy_axis, m_p_axis_config[phy_axis].rapid_speed, m_p_axis_config[phy_axis].axis_home_pos[0], real_pos);
         m_n_ret_ref_step[phy_axis] = 2;  //跳转下一步
     }
         break;
     case 2:                            //运动完成
-        if(fabs(this->GetPhyAxisMachPosFeedback(phy_axis) - m_p_axis_config[phy_axis].axis_home_pos[0]) <= 0.010){  //到位
+    {
+        double dis = real_pos;
+        if(fabs(this->GetPhyAxisMachPosFeedback(phy_axis) - dis) <= 0.010){  //到位
             m_n_ret_ref_step[phy_axis] = 3;
             SetAxisComplete(phy_axis);
             std::cout << "step 2, move over" << std::endl;
-        }
 
+            if (real_pos != m_p_axis_config[phy_axis].axis_home_pos[0])
+            {
+                int errcode = (real_pos < m_p_axis_config[phy_axis].axis_home_pos[0] ? ERR_SOFTLIMIT_POS : ERR_SOFTLIMIT_NEG);
+                uint8_t chan_id = CHANNEL_ENGINE_INDEX, axis_id = NO_AXIS;
+                GetPhyAxistoChanAxis(phy_axis, chan_id, axis_id);
+                CreateError(errcode, WARNING_LEVEL, CLEAR_BY_MCP_RESET, 0, chan_id, axis_id);
+            }
+        }
+    }
         break;
 
     case 3:

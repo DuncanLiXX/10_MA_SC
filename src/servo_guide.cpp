@@ -4,6 +4,8 @@
 #include "servo_guide.h"
 #include "global_include.h"
 #include "channel_engine.h"
+#include "channel_control.h"
+#include "spindle_control.h"
 
 using namespace std::chrono;
 
@@ -688,8 +690,18 @@ bool SG_RecCir_Type::Verify() const
 }
 
 SG_Tapping_Type::SG_Tapping_Type(SG_Tapping_Config cfg)
-    : SG_Type(cfg.interval, cfg.axis_one, cfg.axis_two, E_SG_Type::SG_Tapping)//刚性攻丝需特殊处理
+    : SG_Type(cfg.interval, -1, -1, E_SG_Type::SG_Tapping)//刚性攻丝需特殊处理
 {   
+    for (int i = 0; i < g_ptr_parm_manager->GetSystemConfig()->axis_count; ++i)
+    {
+        if (g_ptr_parm_manager->GetAxisConfig()[i].axis_type == AXIS_SPINDLE)
+        {
+            axis_one_ = i;
+            break;
+        }
+    }
+    axis_two_ = 2;
+    std::cout << "one " << (int)axis_one_ << " two " << (int)axis_two_ << std::endl;
 }
 
 bool SG_Tapping_Type::Verify() const
@@ -703,9 +715,13 @@ bool SG_Tapping_Type::Verify() const
 
 SG_DATA SG_Tapping_Type::GenData()
 {
-    double spd_pos = feedback_pos_[axis_one_] - origin_point_.x;
-    double z_axis_pos = feedback_pos_[axis_two_] - origin_point_.y;
-    double delta = spd_pos - z_axis_pos;
-    SG_DATA data = std::make_tuple(feedback_pos_[axis_one_], feedback_pos_[axis_two_], delta, feedback_speed_[axis_two_]);
+    ChannelControl *control = g_ptr_chn_engine->GetChnControl(g_ptr_chn_engine->GetCurChannelIndex());
+    double radio = control->GetSpdCtrl()->Get_TapRatio();
+    if (radio != 1) radio = radio / 10000;//radio 是传给MI的参数，需要10000转换
+
+    double spd_feedback = feedback_pos_[axis_one_] - origin_point_.x;
+    double z_axis_feedback = feedback_pos_[axis_two_] - origin_point_.y;
+    double z_axis_inp = intp_pos_[axis_two_] - origin_point_.y;
+    SG_DATA data = std::make_tuple(spd_feedback/radio, z_axis_feedback, z_axis_inp, feedback_speed_[axis_two_]);
     return data;
 }

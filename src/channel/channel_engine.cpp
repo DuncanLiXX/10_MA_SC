@@ -11136,6 +11136,7 @@ void ChannelEngine::GotoZeroPos(int phy_axis)
     }
         break;
     case 1: {                            //运动到第一参考点
+        real_pos = m_p_axis_config[phy_axis].axis_home_pos[0];
         this->ManualMoveAbs(phy_axis, m_p_axis_config[phy_axis].rapid_speed, m_p_axis_config[phy_axis].axis_home_pos[0], real_pos);
         m_n_ret_ref_step[phy_axis] = 2;  //跳转下一步
     }

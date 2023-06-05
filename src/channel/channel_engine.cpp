@@ -9147,7 +9147,6 @@ void ChannelEngine::ProcessPmcSignal(){
             f_reg->RST = 0;
             m_axis_status_ctrl->InputEsp(g_reg->_ESP);//更新axis_status的急停状态
             this->SystemReset();// @test zk 解除急停也要进行一次复位？
-
         }
 
         // 伺服关断信号
@@ -9167,7 +9166,8 @@ void ChannelEngine::ProcessPmcSignal(){
         }
 
         if(g_reg->_SP == 0 && g_reg_last->_SP == 1 && f_reg->SPL == 0 && f_reg->STL == 1){ //循环保持
-            this->Pause();
+
+        	this->Pause();
         }
 
         // @test zk
@@ -9449,8 +9449,6 @@ void ChannelEngine::ProcessPmcSignal(){
                 }
             }
         }
-
-
         //#endif
 
         //处理工艺模式切换

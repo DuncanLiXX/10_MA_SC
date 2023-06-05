@@ -2325,7 +2325,7 @@ bool Parser::CreateLineMsg(){
 
 	if(!GetTargetPos(target, axis_mask, &pmc_count))
 		return false;
-   ScPrintf("Parser::CreateLineMsg pmc_count = %u", pmc_count);
+   //ScPrintf("Parser::CreateLineMsg pmc_count = %u", pmc_count);
 
 
 //	uint8_t count = this->GetTargetPosEx(pmc_data, pmc_mask, inc_flag, m_n_pmc_axis_count);   //获取PMC轴运动数据
@@ -3167,8 +3167,7 @@ bool Parser::CreateInputMsg(){
 	GetCodeData(Z_DATA, new_msg->ZData);
 	GetCodeData(Q_DATA, new_msg->QData);
 
-	printf("create input msg: l: %d -- p: %d -- r: %d\n", new_msg->LData,new_msg->PData,new_msg->RData);
-
+	new_msg->SetFlag(FLAG_WAIT_MOVE_OVER, true);
 	new_msg->SetLineNo(this->m_p_lexer_result->line_no);
 	m_p_parser_result->Append(new_msg);
 	ProcessLastBlockRec(new_msg);

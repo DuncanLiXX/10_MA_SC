@@ -4990,10 +4990,10 @@ void ChannelEngine::ProcessHmiSetPmcReg(HMICmdFrame &cmd){
             printf("set pmc reg bit: sec = %hu, index = %hu, bit = %hhu, count = %hhu, value = %u\n", reg_sec, reg_index, bit_index, bit_count, bit_value32);
 
             // @test zk
-            if(reg_sec == 2 and reg_index == 82 and bit_index == 1 and bit_value32 == 1){
-                printf("冷却！！！\n");
-                this->m_p_channel_control[0].test();
-            }
+            //if(reg_sec == 2 and reg_index == 82 and bit_index == 1 and bit_value32 == 1){
+            //    printf("冷却！！！\n");
+            //    this->m_p_channel_control[0].test();
+            //}
             // @test zk
         }
         break;
@@ -5740,6 +5740,7 @@ void ChannelEngine::SetManualStep(uint8_t chn, uint8_t step){
     case 3:
         step = MANUAL_STEP_500;
         m_p_mi_comm->SendMpgStep(chn,true,m_p_channel_config[chn].mpg_level4_step);
+        break;
     case 4:
         step = MANUAL_STEP_1000;
         //m_p_mi_comm->SendMpgStep(chn,true,m_p_channel_config[chn].mpg_level4_step);//1000从4档变为5档
@@ -9452,13 +9453,13 @@ void ChannelEngine::ProcessPmcSignal(){
         //#endif
 
         //处理工艺模式切换
-#ifdef USES_WOOD_MACHINE
+//#ifdef USES_WOOD_MACHINE
         if(g_reg_last->BDM == 0 && g_reg->BDM == 1){
             this->m_p_channel_control[i].SetCurProcParamIndex(0);
         }else if(g_reg_last->BOXM == 0 && g_reg->BOXM == 1){
             this->m_p_channel_control[i].SetCurProcParamIndex(1);
         }
-#endif
+//#endif
 
         //处理PMC宏调用功能
         if(g_reg_last->EMPC == 0 && g_reg->EMPC == 1){  //处理PMC宏调用

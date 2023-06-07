@@ -14,6 +14,7 @@
 
 #include <stdint.h>
 #include <string>
+#include <list>
 #include "global_definition.h"
 
 //HMI命令包相关常量
@@ -72,6 +73,7 @@ const int kMaxProcParamCount = 10;    //系统支持的工艺参数最大组数
 #define FAILED    (0x01)    //执行失败
 
 //文件类型
+#define FILE_UNKOWN (-1)
 #define FILE_REG  (0x00)   //普通文件
 #define FILE_DIR  (0x01)   //文件目录
 
@@ -208,6 +210,8 @@ enum HMICmdCode {
     CMD_HMI_SERVE_DATA_REQUEST,      //HMI向SC请求准备伺服引导
     CMD_HMI_SERVE_DATA_RESET,        //HMI向SC请求伺服引导复位
     CMD_HMI_CLEAR_IO_MAP,            //HMI向SC请求清除IO重映射数据
+    CMD_HMI_GET_FILE_SYSTEM,         //HMI向SC请求文件系统
+    CMD_HMI_GET_MKDIR,               //HMI向SC请求创建目录
 
 
 	//SC-->HMI
@@ -1893,6 +1897,37 @@ struct SG_Tapping_Config
 ******************************************************/
 
 
+
+struct FS_Entity
+{
+    int type_ = FILE_UNKOWN;
+    //std::string name_;
+    int size_ = 0;
+    time_t time_;
+    char name_[128] ;
+    //std::string current_dir;
+};
+
+class FS_File : public FS_Entity
+{
+public:
+    std::string GetFileName();      //获取文件名称
+private:
+};
+
+class FS_Dir : public FS_Entity
+{
+public:
+    std::string GetDirName();       //获取目录名称
+private:
+};
+
+class FS_FileSystem {
+private:
+    std::list<FS_File> file_entities_;  // 文件列表
+    std::list<FS_Dir>  dir_entities_;   // 目录列表
+    std::string root_path_;
+};
 
 
 #endif /* INC_HMI_SHARED_DATA_H_ */

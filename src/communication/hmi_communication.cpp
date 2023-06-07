@@ -13,7 +13,6 @@
 #include <netinet/in.h>
 #include <netinet/tcp.h>
 #include <arpa/inet.h>
-#include <dirent.h>
 #include <sys/socket.h>
 #include <sys/types.h>
 #include "global_include.h"
@@ -917,6 +916,12 @@ int HMICommunication::ProcessHmiCmd(){
 			case CMD_HMI_NC_FILE_INFO:  //HMI获取NC文件名称列表
 				this->ProcessHmiNcFileInfoCmd(cmd_node);
 				break;
+            case CMD_HMI_GET_FILE_SYSTEM: //HMI获取SC文件系统
+                this->ProcessHmiNcFileSystemCmd(cmd_node);
+                break;
+            case CMD_HMI_GET_MKDIR: //HMI向SC请求创建目录
+                this->ProcessHmiMkdirCmd(cmd_node);
+                break;
 			case CMD_HMI_FILE_OPERATE:   //处理HMI发来的文件操作命令
 				this->ProcessHmiFileOperateCmd(cmd_node);
 				break;
@@ -2347,6 +2352,75 @@ void HMICommunication::ProcessHmiNcFileInfoCmd(HMICmdRecvNode &cmd_node){
 
 }
 
+void HMICommunication::ProcessHmiNcFileSystemCmd(HMICmdRecvNode &cmd_node)
+{
+    HMICmdFrame &cmd = cmd_node.cmd;
+    char root[kMaxPathLen] = {0};
+    char file_system_id = -1;
+    if(cmd.data_len > 0){
+        file_system_id = cmd.data[0];
+        strcat(root, cmd.data+1);
+    }
+    if (file_system_id < 0)
+        return ;
+    std::cout << "type id: " << (int)file_system_id << std::endl;
+
+    if (fileSystem.find(file_system_id) == fileSystem.end())
+    {
+        fileSystem[file_system_id] = std::make_shared<FileSystemManager>(this);
+    }
+
+    auto manager = fileSystem.at(file_system_id);
+    manager->SetRoot(root);
+    manager->UpdateInfo();
+    std::list<FS_Entity> entities = manager->GetEntity();
+
+    cmd.frame_number |= 0x8000;
+    for (auto itr = entities.begin(); itr != entities.end(); ++itr)
+    {
+        cmd.cmd_extension = 0;
+        char time[20] = {0};
+        struct tm *ptm = localtime(&itr->time_);
+        sprintf(time, "%04d/%02d/%02d %02d:%02d:%02d", ptm->tm_year+1900, ptm->tm_mon+1, ptm->tm_mday,
+                ptm->tm_hour, ptm->tm_min, ptm->tm_sec);
+
+        //std::cout << "type: " << (int)itr->type_ << " name: " << itr->name_ << " size: " << itr->size_ << " time:" << time  << std::endl;
+        memcpy(cmd.data, &(*itr), sizeof(FS_Entity));
+        cmd.data_len = sizeof(*itr);
+        this->SendCmd(cmd);
+    }
+
+    cmd.cmd_extension = 1;
+    this->SendCmd(cmd);
+    std::cout << "ProcessHmiNcFileSystemCmd Over" << std::endl;
+    //manager->SendInfo(HMICmdRecvNode);
+}
+
+void HMICommunication::ProcessHmiMkdirCmd(HMICmdRecvNode &cmd_node)
+{
+    HMICmdFrame &cmd = cmd_node.cmd;
+    cmd.frame_number |= 0x8000;
+    string dir_name = cmd.data;
+    dir_name = PATH_NC_FILE + dir_name;
+    cmd.cmd_extension = 0;
+    std::cout << "dir_name: " << dir_name << std::endl;
+    if(access(dir_name.c_str(), F_OK) == -1)
+    {//文件夹不存在才可以创建
+        int ret;
+        ret = mkdir(dir_name.c_str(), S_IRWXU | S_IRWXG);
+        std::cout << "ret:----------> " << ret << std::endl;
+        if (ret == 0)
+            cmd.cmd_extension = 1;
+    }
+    this->SendCmd(cmd);
+    //if(g_sys_state.system_boot_stage > STEP_INIT_PARM_MANAGER)
+    //	cmd.cmd_extension = g_ptr_parm_manager->GetSystemConfig()->chn_count;
+    //else
+    //	cmd.cmd_extension = 0;  //初始化未完成
+
+    //this->SendCmd(cmd);
+}
+
 
 /**
  * @brief 处理HMI获取NC文件签名的命令
@@ -2404,8 +2478,12 @@ void HMICommunication::ProcessHmiFileOperateCmd(HMICmdRecvNode &cmd_node){
 	bool res = true;
 	switch(cmd.cmd_extension){
 	case FILE_OPT_DELETE:
-		res = this->DeleteNcFile(cmd.data);
+    {
+        // 删除目录或者文件
+        string name = cmd.data;
+        res = this->DeleteNc(name);
 //		this->m_p_channel_engine->StartUpdateProcess();
+    }
 		break;
 	case FILE_OPT_RENAME:
 		strcpy(name_old, cmd.data);
@@ -3215,6 +3293,28 @@ void HMICommunication::ProcessHmiVirtualMOPCmd(HMICmdFrame &cmd){
 	}
 }
 
+bool HMICommunication::DeleteNc(const string &name)
+{
+    char path[kMaxPathLen] = {0};
+    strcpy(path, PATH_NC_FILE);
+    strcat(path, name.c_str());
+
+    struct stat st;
+    if (stat(path, &st) == -1)
+        return false;
+
+    if(S_ISDIR(st.st_mode))
+    {
+        return DeleteNcDir(name);
+    }
+    else if(S_ISREG(st.st_mode))
+    {
+        return DeleteNcFile(name.c_str());
+    }
+    return false;
+}
+
+
 /**
  * @brief 删除文件
  * @param name
@@ -3225,10 +3325,67 @@ bool HMICommunication::DeleteNcFile(const char *name){
 	strcpy(path, PATH_NC_FILE);
 	strcat(path, name);
 
-	int res = remove(path);
-	if(res == 0)
-		return true;
-	return false;
+    struct stat st;
+    if (stat(path, &st) == -1)
+        return false;
+
+    int res = remove(path);
+    if(res == 0)
+    {
+        //std::cout << "DeleteFile: " << name << std::endl;
+        return true;
+    }
+    std::cout << "DeleteFile error: " << name << std::endl;
+    return false;
+}
+
+bool HMICommunication::DeleteNcDir(string name)
+{
+    name.at(name.length()-1) != '/' ? name += '/' : name;
+    string path = PATH_NC_FILE + name;
+    DIR* dirp = opendir(path.c_str());
+    if(!dirp)
+    {
+        std::cout << "open dir error: " << path << std::endl;
+        return -1;
+    }
+
+    struct dirent *dir;
+    struct stat st;
+    while((dir = readdir(dirp)) != NULL)
+    {
+        string d_name = dir->d_name;
+        if(d_name == "." || d_name == "..")
+        {
+            continue;
+        }
+        std::string sub_path = path + d_name;
+        if(stat(sub_path.c_str(),&st) == -1)
+        {
+            continue;
+        }
+        if(S_ISDIR(st.st_mode))
+        {
+            DeleteNcDir(name + d_name);
+        }
+        else if(S_ISREG(st.st_mode))
+        {
+            string temp = name + d_name;
+            DeleteNcFile(temp.c_str());
+        }
+        else
+        {
+            continue;
+        }
+    }
+    if(rmdir(path.c_str()) == -1)
+    {
+        std::cout << "delete dir error: " << path << std::endl;
+        closedir(dirp);
+        return -1;
+    }
+    closedir(dirp);
+    return true;
 }
 
 /**
@@ -3245,6 +3402,7 @@ bool HMICommunication::RenameNcFile(const char *old_name, const char *new_name){
 	strcpy(path_new, PATH_NC_FILE);
 	strcat(path_new, new_name);
 
+    std::cout << path_old << "      " << path_new << std::endl;
 	int res = rename(path_old, path_new);
 	if(res == 0)
 		return true;
@@ -4933,7 +5091,7 @@ bool HMICommunication::GetNcFileInfo(const char *path, uint64_t &size, char *tim
 		}
 	}
 
-	return true;
+    return true;
 }
 
 /**
@@ -5008,3 +5166,107 @@ double cal_cpuoccupy(CPU_OCCUPY *o, CPU_OCCUPY *n)
     return cpu_use;
 }
 //@test zk
+
+FileSystemManager::FileSystemManager(HMICommunication *hmiCommmunication)
+    : pCommunication(hmiCommmunication)
+{
+
+}
+
+void FileSystemManager::SetRoot(string root)
+{
+    if (root.at(root.length() - 1) != '/')
+        root += '/';
+    root_path = root;
+}
+
+bool FileSystemManager::SendInfo()
+{
+    ScanDir();
+    return true;
+}
+
+bool FileSystemManager::UpdateInfo()
+{
+    file_tree.clear();
+    bool ret = ScanDir();
+    return ret;
+}
+
+std::list<FS_Entity> FileSystemManager::GetEntity() const
+{
+    return file_tree;
+}
+
+FS_Entity FileSystemManager::GetInfo(const string &path)
+{
+    FS_Entity entity;
+
+    string fullpath = root_path + path;
+    struct stat statbuf;
+    if(stat(fullpath.c_str(), &statbuf) == -1){
+        g_ptr_trace->PrintLog(LOG_ALARM, "打开失败！[%s]", fullpath.c_str());
+        CreateError(ERR_OPEN_FILE, WARNING_LEVEL, CLEAR_BY_MCP_RESET, errno);
+        return entity;
+    }
+
+    memset(entity.name_, 0, 128);
+    int len = path.length() > 127 ? 127 : path.length();
+    memcpy(entity.name_, path.c_str(), len);
+    //entity.name_ = path.c_str();
+
+    if(S_ISDIR(statbuf.st_mode))
+        entity.type_ = FILE_DIR;
+    else if(S_ISREG(statbuf.st_mode))
+        entity.type_ = FILE_REG;
+
+    entity.size_ = statbuf.st_size;
+    entity.time_ = statbuf.st_mtime;
+
+    return entity;
+}
+
+bool FileSystemManager::ScanDir(string dirPath)
+{
+    if (dirPath.length())
+        dirPath.at(dirPath.length()-1) != '/' ? dirPath += '/' : dirPath;
+
+    string full_path = root_path + dirPath;
+    DIR *dir = opendir(full_path.c_str());
+    if(dir == nullptr){
+        g_ptr_trace->PrintLog(LOG_ALARM, "打开文件目录失败！[%s]", full_path.c_str());
+        CreateError(ERR_OPEN_DIR, WARNING_LEVEL, CLEAR_BY_MCP_RESET, errno);
+        return false;
+    }
+
+    string path, name;
+    struct dirent *dir_obj = nullptr;
+
+    while(nullptr != (dir_obj = readdir(dir))) {
+        name = dir_obj->d_name;
+        if(name == "." || name == ".." || name == "md5"){
+            continue;
+        }
+        else if(dir_obj->d_type == DT_REG){   //普通文件
+            path = dirPath + name;
+            if (path.length() > 0 && path.length() <= 127)
+            {
+                file_tree.push_back(GetInfo(path));
+                //std::cout << "file: " << path << std::endl;
+            }
+        }
+        else if(dir_obj->d_type == DT_DIR){ 	//文件夹
+            path = dirPath + name + '/';
+            if (path.length() > 0 && path.length() <= 127)
+            {
+                file_tree.push_back(GetInfo(path));
+                //std::cout << "dir: " << path << std::endl;
+                ScanDir(path);
+            }
+        }
+
+    }
+    closedir(dir);
+
+    return true;
+}

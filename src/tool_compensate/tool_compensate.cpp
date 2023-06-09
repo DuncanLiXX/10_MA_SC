@@ -153,7 +153,7 @@ void ToolCompensate::ProcessData(ListNode<RecordMsg *> *node){
 			pblock->flags = tmsg->GetFlags().all;
 			pblock->f_number = tmsg->GetFeed();
 			pblock->line_number = tmsg->GetLineNo();
-			printf("convert line lino:%llu... \n", tmsg->GetLineNo());
+            ///printf("convert line lino:%llu... \n", tmsg->GetLineNo());
 			interp.convert_straight(10, &interp._setup._block, &interp._setup);
             delete msg;
             delete node;

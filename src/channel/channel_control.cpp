@@ -5348,7 +5348,7 @@ bool ChannelControl::OutputData(RecordMsg *msg, bool flag_block){
     bool res = false;
     if(!this->m_b_mc_on_arm){
         // 查看 msg的 ext type mc会因ext的值对不上而空执行
-    	printf("ext_type: %d\n", data_frame.data.ext_type);
+        ///printf("ext_type: %d\n", data_frame.data.ext_type);
     	res = m_p_mc_comm->WriteGCodeData(m_n_channel_index, data_frame);
     }else{
 
@@ -5758,7 +5758,7 @@ bool ChannelControl::ExecuteMessage(){
         if(line_no != msg->GetLineNo() || type != msg->GetMsgType()){
             line_no = msg->GetLineNo();
             type = msg->GetMsgType();
-            printf("---------->excute message line no %llu  msg type: %d flags: %d\n", line_no, msg_type, msg->GetFlags().all);
+            ///printf("---------->excute message line no %llu  msg type: %d flags: %d\n", line_no, msg_type, msg->GetFlags().all);
         }
         // @test zk
         //printf("---------->excute message line no %llu  msg type: %d flag: %d\n", line_no, msg_type, msg->GetFlags().all);
@@ -11328,7 +11328,8 @@ void ChannelControl::ManualMove(int8_t dir){
     //设置目标位置
 
     //int64_t cur_pos = GetAxisCurMachPos(m_channel_status.cur_axis)*1e7;  //当前位置
-    int64_t cur_pos = GetAxisCurIntpTarPos(m_channel_status.cur_axis, true)*1e7;
+    //int64_t cur_pos = GetAxisCurIntpTarPos(m_channel_status.cur_axis, true)*1e7;
+    int64_t cur_pos = GetAxisCurInptTarPosWithCompensation(m_channel_status.cur_axis, true)*1e7;
     int64_t tar_pos = 0;
     if(GetChnWorkMode() == MANUAL_STEP_MODE){ //手动单步
         tar_pos = cur_pos + GetCurManualStep()*1e4*dir;		//转换单位为0.1nm
@@ -11336,7 +11337,6 @@ void ChannelControl::ManualMove(int8_t dir){
     }else{
         tar_pos = cur_pos + 99999*1e7*dir;    //手动连续模式，将目标位置设置的很远
     }
-    //ScPrintf("mode == %d tar_pos = %lld",GetChnWorkMode(), tar_pos);
     //检查软限位
     double limit = 0;
     if(CheckSoftLimit((ManualMoveDir)dir, phy_axis,
@@ -11348,8 +11348,12 @@ void ChannelControl::ManualMove(int8_t dir){
     }else if(GetSoftLimt((ManualMoveDir)dir, phy_axis, limit) && dir == DIR_NEGATIVE && tar_pos < limit*1e7){
         tar_pos = limit * 1e7;
     }
-    ScPrintf("GetAxisCurIntpTarPos = %llf", GetAxisCurIntpTarPos(m_channel_status.cur_axis, true)*1e7);
-    int64_t n_inc_dis = tar_pos - GetAxisCurIntpTarPos(m_channel_status.cur_axis, true)*1e7;
+    int64_t n_inc_dis = tar_pos - cur_pos;
+    std::cout << std::endl;
+    std::cout << "Inpt: " << (double)GetAxisCurInptTarPosWithCompensation(m_channel_status.cur_axis, false) << std::endl;
+    std::cout << "cur_pos: " << (double)cur_pos/1e7 << " Step: " << GetCurManualStep()*1e4/1e7 << std::endl;
+    std::cout << "tar_pos: " << (double)tar_pos/1e7 << " n_inc_dis: " << n_inc_dis/1e7 << std::endl;
+
     if((m_p_channel_engine->GetMlkMask() & (0x01<<m_channel_status.cur_axis))
             && GetChnWorkMode() == MANUAL_STEP_MODE){
         n_inc_dis = GetCurManualStep()*1e4*dir;
@@ -18038,6 +18042,72 @@ void ChannelControl::TransWorkCoordToMachCoord(double &pos, uint16_t coord_idx, 
     //if(G92Active) origin_pos = m_p_chn_g92_offset->offset[axis];
 
     pos += origin_pos;
+}
+
+double ChannelControl::GetAxisCurInptTarPosWithCompensation(uint8_t axis_index, bool bMachCoord)
+{
+    double pos = 0.0;
+    if(axis_index >= this->m_p_channel_config->chn_axis_count)
+        return pos;
+
+    DPointChn  target = m_channel_rt_status.tar_pos_work;
+    if(bMachCoord)
+    {
+        uint32_t axis_mask = 0x01<<axis_index;
+        uint16_t coord_idx = this->m_channel_status.gmode[14];
+
+        double origin_pos = 0;
+        double *pp = target.m_df_point;
+        uint8_t phy_axis = 0xFF;
+
+        //axis_mask &= (~m_mask_pmc_axis);   //去掉PMC轴
+
+        for(uint8_t i = 0; i < this->m_p_channel_config->chn_axis_count; i++){
+            if(axis_mask & (0x01<<i)){
+                origin_pos = m_p_chn_coord_config[0].offset[i];  //基本工件坐标系
+
+                if(coord_idx >= G54_CMD && coord_idx <= G59_CMD ){
+                    origin_pos += m_p_chn_coord_config[coord_idx/10-53].offset[i];
+                }else if(coord_idx >= G5401_CMD && coord_idx <= G5499_CMD){
+                    origin_pos += m_p_chn_ex_coord_config[coord_idx/10-5401].offset[i];
+                }
+
+                origin_pos += m_p_chn_g92_offset->offset[i];
+
+                if(G52Active){
+                    origin_pos += G52offset[i];
+                }
+
+                //if(G92Active) origin_pos = m_p_chn_g92_offset->offset[i];
+
+                phy_axis = this->GetPhyAxis(i);
+                if(phy_axis != 0xFF){
+                    if(this->m_p_axis_config[phy_axis].axis_linear_type == LINE_AXIS_Z && m_channel_status.cur_h_code > 0){//Z轴需要加上刀长偏置
+                        uint16_t g_compensation = this->m_channel_status.gmode[8];
+                        if (g_compensation == G44_CMD)
+                        {
+                            origin_pos -= m_p_chn_tool_config->geometry_compensation[m_channel_status.cur_h_code-1][2];  //
+                            origin_pos -= m_p_chn_tool_config->geometry_wear[m_channel_status.cur_h_code-1];   //叠加磨损补偿
+                        }
+                        else
+                        {//G43_CMD G49_CMD
+                            origin_pos += m_p_chn_tool_config->geometry_compensation[m_channel_status.cur_h_code-1][2];  //
+                            origin_pos += m_p_chn_tool_config->geometry_wear[m_channel_status.cur_h_code-1];   //叠加磨损补偿
+                        }
+                    }
+
+                }
+
+                *pp += origin_pos;    //机械坐标 - 工件坐标系偏移 = 工件坐标
+
+            }
+            pp++;
+        }
+
+    }
+
+    pos = target.GetAxisValue(axis_index);
+    return pos;
 }
 
 

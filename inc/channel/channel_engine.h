@@ -526,6 +526,8 @@ private:	//私有成员函数
 
     void ProcessESPsingal();    //急停信号信号相关处理
 
+    void RefErrorProcess(uint8_t phy_axis);
+
 
 
 

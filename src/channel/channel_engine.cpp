@@ -2195,7 +2195,7 @@ void ChannelEngine::ProcessSetAxisRefRsp(MiCmdFrame &cmd){
        if (GetSyncAxisCtrl()->CheckSyncState(axis) == 1)
            m_sync_axis_homing[axis] = 1;
 
-       if (df_pos <= move_length)
+       if (abs(df_pos) <= move_length)
            m_n_ret_ref_step[axis] = 10;
        else
            m_n_ret_ref_step[axis] = 20;
@@ -10518,6 +10518,8 @@ void ChannelEngine::AxisFindRefNoZeroSignal(uint8_t phy_axis){
             m_error_code = ERR_RET_REF_FAILED;
             uint8_t chan_id = CHANNEL_ENGINE_INDEX, axis_id = NO_AXIS;
             GetPhyAxistoChanAxis(phy_axis, chan_id, axis_id);
+            RefErrorProcess(phy_axis);
+
             CreateError(ERR_RET_REF_FAILED, WARNING_LEVEL, CLEAR_BY_MCP_RESET, 0, chan_id, axis_id);
             break;
         }
@@ -10905,10 +10907,7 @@ void ChannelEngine::EcatIncAxisFindRefWithZeroSignal(uint8_t phy_axis){
             m_error_code = ERR_RET_REF_FAILED;
             uint8_t chan_id = CHANNEL_ENGINE_INDEX, axis_id = NO_AXIS;
             GetPhyAxistoChanAxis(phy_axis, chan_id, axis_id);
-            if (GetPmcActive(phy_axis))
-            {
-                m_pmc_axis_ctrl[m_p_axis_config[phy_axis].axis_pmc-1].ExecCmdOver(true);
-            }
+            RefErrorProcess(phy_axis);
             CreateError(ERR_RET_REF_FAILED, WARNING_LEVEL, CLEAR_BY_MCP_RESET, 0, chan_id, axis_id);
             break;
         }
@@ -12072,10 +12071,8 @@ void ChannelEngine::EcatAxisFindRefWithZeroSignal(uint8_t phy_axis){
             this->m_b_ret_ref_auto = false;
             m_n_ret_ref_auto_cur = 0;
         }
-        if (GetPmcActive(phy_axis))
-        {
-            m_pmc_axis_ctrl[m_p_axis_config[phy_axis].axis_pmc-1].ExecCmdOver(true);
-        }
+        RefErrorProcess(phy_axis);
+
         CreateError(m_error_code, WARNING_LEVEL, CLEAR_BY_MCP_RESET, 0, CHANNEL_ENGINE_INDEX, phy_axis);
         break;
     default:
@@ -12511,10 +12508,7 @@ void ChannelEngine::EcatAxisFindRefNoZeroSignal(uint8_t phy_axis){
         uint8_t chan_id = CHANNEL_ENGINE_INDEX, axis_id = NO_AXIS;
         GetPhyAxistoChanAxis(phy_axis, chan_id, axis_id);
         CreateError(ERR_RET_REF_Z_ERR, WARNING_LEVEL, CLEAR_BY_MCP_RESET, 0, chan_id, axis_id);
-        if (GetPmcActive(phy_axis))
-        {
-            m_pmc_axis_ctrl[m_p_axis_config[phy_axis].axis_pmc-1].ExecCmdOver(true);
-        }
+        RefErrorProcess(phy_axis);
         break;
     }
     default:
@@ -12814,6 +12808,20 @@ void ChannelEngine::ProcessESPsingal()
     }
 
     return;
+}
+
+void ChannelEngine::RefErrorProcess(uint8_t phy_axis)
+{
+    if (GetPmcActive(phy_axis))
+    {
+        m_pmc_axis_ctrl[m_p_axis_config[phy_axis].axis_pmc-1].ExecCmdOver(true);
+    }
+    if (GetSyncAxisCtrl()->CheckSyncState(phy_axis) == 1 && m_sync_axis_homing[phy_axis] == 1)
+    {
+        double machPos = this->GetPhyAxisMachPosFeedback(phy_axis);
+        SetSubAxisRefPoint(phy_axis, machPos);
+    }
+    this->SetInRetRefFlag(phy_axis, false);
 }
 
 /**

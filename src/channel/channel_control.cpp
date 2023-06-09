@@ -18044,6 +18044,12 @@ void ChannelControl::TransWorkCoordToMachCoord(double &pos, uint16_t coord_idx, 
     pos += origin_pos;
 }
 
+/**
+ * @brief 获取轴的坐标
+ * @param axis_index :  待转换的轴号
+ * @param bMachCoord : true,获取机械坐标;false,获取工件坐标
+ * @return 坐标值
+ */
 double ChannelControl::GetAxisCurInptTarPosWithCompensation(uint8_t axis_index, bool bMachCoord)
 {
     double pos = 0.0;

@@ -722,6 +722,9 @@ SG_DATA SG_Tapping_Type::GenData()
     double spd_feedback = feedback_pos_[axis_one_] - origin_point_.x;
     double z_axis_feedback = feedback_pos_[axis_two_] - origin_point_.y;
     double z_axis_inp = intp_pos_[axis_two_] - origin_point_.y;
-    SG_DATA data = std::make_tuple(spd_feedback/radio, z_axis_feedback, z_axis_inp, feedback_speed_[axis_two_]);
+    double pr = g_ptr_parm_manager->GetAxisConfig()[axis_two_].move_pr;
+
+    //转化为转每分钟
+    SG_DATA data = std::make_tuple(spd_feedback/radio, z_axis_feedback, z_axis_inp, feedback_speed_[axis_two_]/pr/1000*60);
     return data;
 }

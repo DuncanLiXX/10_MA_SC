@@ -18,13 +18,72 @@
 #include <netinet/in.h>
 #include <pthread.h>
 #include <semaphore.h>
+#include <dirent.h>
+#include <map>
+#include <memory>
+#include <list>
 
 
 //#include "hmi_shared_data.h"
 #include "comm_data_definition.h"
 
 class ChannelEngine;
+class HMICommunication;
 
+/**
+ * @brief 简易的文件系统管理类
+ * @details 获取指定目录下‘文件系统信息’
+ *
+ * ‘文件系统信息’以一个列表的方式保存，内容为指定根目录下的所有文件和目录信息
+ *
+ * 信息包括如下项：
+ *  - 类型 (文件: 0 或 目录: 1)
+ *  - 大小 (单位: byte)
+ *  - 时间 (最后一次修改时间)
+ *  - 名称 (包括路径)
+ */
+class FileSystemManager
+{
+public:
+    FileSystemManager(HMICommunication *hmiCommmunication);
+
+    /**
+     * @brief SetRoot 设置根目录路径
+     * @param root 根目录路径
+     * @return void
+     */
+    void SetRoot(string root);
+
+    /**
+     * @brief 发送文件列表信息
+     * @return
+     * @retval true    成功
+     * @retval false   失败
+     */
+    bool SendInfo();
+
+    /**
+     * @brief 更新文件列表
+     * @return
+     * @retval true    成功
+     * @retval false   失败
+     */
+    bool UpdateInfo();
+
+    /**
+     * @brief 返回文件列表
+     * @return list<FS_Entity> 文件列表
+     */
+    std::list<FS_Entity> GetEntity() const;
+
+private:
+    FS_Entity GetInfo(const string &path);  // 获取文件属性相关信息
+    bool ScanDir(string path = "");         // 扫描目录，获取目录下的文件列表
+
+    HMICommunication *pCommunication;
+    string root_path;                       // 根目录
+    std::list<FS_Entity> file_tree;         // 文件列表
+};
 
 // @test zk
 typedef struct MEMPACKED         //定义一个mem occupy的结构体
@@ -159,6 +218,10 @@ private:
 	void ProcessHmiGetChnStateCmd(HMICmdFrame &cmd);   	  //处理HMI获取通道状态指令
 	void ProcessHmiNcFileCountCmd(HMICmdRecvNode &cmd_node);   	  //处理HMI获取NC文件个数指令
 	void ProcessHmiNcFileInfoCmd(HMICmdRecvNode &cmd_node);    	  //处理HMI获取nc文件详细信息命令
+
+    void ProcessHmiNcFileSystemCmd(HMICmdRecvNode &cmd_node);     //处理HMI获取nc文件系统
+    void ProcessHmiMkdirCmd(HMICmdRecvNode &cmd_node);            //处理HMI获取创建目录命令
+
 	void ProcessHmiFileOperateCmd(HMICmdRecvNode &cmd_node);      //处理HMI发来的文件操作命令
 	void ProcessHmiFileSignatureCmd(HMICmdRecvNode &cmd_node);		//处理HMI获取NC文件签名的命令
 	void ProcessHmiVirtualMOPCmd(HMICmdFrame &cmd);			//处理HMI虚拟MOP按键命令
@@ -174,7 +237,9 @@ private:
 
 	int GetNcFileCount(const char *path);    //获取NC加工文件个数
 	bool GetNcFileInfo(const char *path, uint64_t &size, char *time=nullptr, mode_t *mode=nullptr);    //遍历获取path目录下文件的详细信息
-	bool DeleteNcFile(const char *name);		//删除文件
+    bool DeleteNc(const string &name);
+    bool DeleteNcFile(const char *name);		//删除文件
+    bool DeleteNcDir(string name);
 	bool RenameNcFile(const char *old_name, const char *new_name);		//重命名文件
 	bool SaveasNcFile(const char *old_name, const char *new_name);		//另存为文件
 
@@ -251,6 +316,8 @@ private:
 	CPU_OCCUPY cpu_stat;
 	double cpu_percent;  //cpu占用率
 	double mem_percent;  //内存占用率
+
+    std::map<int, std::shared_ptr<FileSystemManager>> fileSystem;
 };
 
 //用于文件另存为线程传递参数
@@ -259,5 +326,6 @@ struct SaveAsParam{
 	char path_old[kMaxPathLen];   //原文件绝对路径
 	char path_new[kMaxPathLen];   //新文件绝对路径
 };
+
 
 #endif /* HMICOMMUNICATION_H_ */

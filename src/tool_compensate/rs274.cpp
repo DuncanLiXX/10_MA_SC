@@ -938,7 +938,7 @@ int Interp::convert_straight_comp1(int move,
 								   double AA_end, double BB_end, double CC_end,
 								   double u_end, double v_end, double w_end)
 {
-	printf("convert line comp1 ...\n");
+    ///printf("convert line comp1 ...\n");
 	double alpha;
 	double distance;
 	double radius = settings->cutter_comp_radius; /* always will be positive */
@@ -1910,7 +1910,7 @@ void STRAIGHT_FEED(int line_number,
 
 	RecordMsgFlag flag; flag.all = g_flags;
 	new_msg->SetFlags(flag);
-	printf("****************STRAIGHT_FEED line no: %d flags: %d\n", line_number, flag.all);
+    ///printf("****************STRAIGHT_FEED line no: %d flags: %d\n", line_number, flag.all);
 	comp_output_list->Append(new_msg);
 }
 

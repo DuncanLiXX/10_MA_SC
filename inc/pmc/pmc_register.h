@@ -759,8 +759,7 @@ struct GRegBits{
 	uint8_t :8;
 	//G19
 	uint8_t :4;
-	uint8_t MP:2;				//手动步长信号 MP1~MP2  G19.4~G19.5
-	uint8_t :1;
+    uint8_t MP:3;				//手动步长信号 MP1~MP2  G19.4~G19.6
 	uint8_t RT:1;				//手动快速进给选择信号  G19.7
 	//G20
 #ifdef USES_WUXI_BLOOD_CHECK
@@ -1247,7 +1246,9 @@ struct GRegBits{
 	uint8_t :6;
 	uint8_t QDE:1;             //快钻功能(Quick Drill)使能信号   G216.7
 #else
-	uint8_t :7;
+    uint8_t BDM:1;        //门板模式
+    uint8_t BOXM:1;       //柜体模式
+    uint8_t :5;
 #endif
 	//G217~G218
 	uint16_t MPCS:16;       //PMC调用宏程序编号     G217~G218

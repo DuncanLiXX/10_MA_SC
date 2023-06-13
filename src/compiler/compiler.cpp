@@ -2354,7 +2354,7 @@ bool Compiler::RunMessage() {
             if(cur_line != msg->GetLineNo() || type != msg->GetMsgType()){
                 cur_line = msg->GetLineNo();
                 type = msg->GetMsgType();
-                printf("compiler run message  line no: %llu,  type: %d flag: %d\n ", cur_line, msg_type, msg->GetFlags().all);
+                ///printf("compiler run message  line no: %llu,  type: %d flag: %d\n ", cur_line, msg_type, msg->GetFlags().all);
             }
             // @test zk
 
@@ -3003,7 +3003,7 @@ bool Compiler::RunLineMsg(RecordMsg *msg) {
         }
     }
 
-    ScPrintf("----%x %x",tmp->GetAxisMoveMask(),m_p_channel_control->GetRotAxisMask());
+    ///ScPrintf("----%x %x",tmp->GetAxisMoveMask(),m_p_channel_control->GetRotAxisMask());
 
     // 旋转轴坐标处理
     if(tmp->GetAxisMoveMask() & m_p_channel_control->GetRotAxisMask())

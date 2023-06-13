@@ -2195,7 +2195,7 @@ void ChannelEngine::ProcessSetAxisRefRsp(MiCmdFrame &cmd){
        if (GetSyncAxisCtrl()->CheckSyncState(axis) == 1)
            m_sync_axis_homing[axis] = 1;
 
-       if (df_pos <= move_length)
+       if (abs(df_pos) <= move_length)
            m_n_ret_ref_step[axis] = 10;
        else
            m_n_ret_ref_step[axis] = 20;
@@ -4990,10 +4990,10 @@ void ChannelEngine::ProcessHmiSetPmcReg(HMICmdFrame &cmd){
             printf("set pmc reg bit: sec = %hu, index = %hu, bit = %hhu, count = %hhu, value = %u\n", reg_sec, reg_index, bit_index, bit_count, bit_value32);
 
             // @test zk
-            if(reg_sec == 2 and reg_index == 82 and bit_index == 1 and bit_value32 == 1){
-                printf("冷却！！！\n");
-                this->m_p_channel_control[0].test();
-            }
+            //if(reg_sec == 2 and reg_index == 82 and bit_index == 1 and bit_value32 == 1){
+            //    printf("冷却！！！\n");
+            //    this->m_p_channel_control[0].test();
+            //}
             // @test zk
         }
         break;
@@ -5740,6 +5740,7 @@ void ChannelEngine::SetManualStep(uint8_t chn, uint8_t step){
     case 3:
         step = MANUAL_STEP_500;
         m_p_mi_comm->SendMpgStep(chn,true,m_p_channel_config[chn].mpg_level4_step);
+        break;
     case 4:
         step = MANUAL_STEP_1000;
         //m_p_mi_comm->SendMpgStep(chn,true,m_p_channel_config[chn].mpg_level4_step);//1000从4档变为5档
@@ -9451,7 +9452,7 @@ void ChannelEngine::ProcessPmcSignal(){
         }
         //#endif
 
-        //处理工艺模式切换
+//处理工艺模式切换
 #ifdef USES_WOOD_MACHINE
         /*if(g_reg_last->BDM == 0 && g_reg->BDM == 1){
             this->m_p_channel_control[i].SetCurProcParamIndex(0);
@@ -9459,7 +9460,6 @@ void ChannelEngine::ProcessPmcSignal(){
             this->m_p_channel_control[i].SetCurProcParamIndex(1);
         }*/
 #endif
-
         //处理PMC宏调用功能
         if(g_reg_last->EMPC == 0 && g_reg->EMPC == 1){  //处理PMC宏调用
             // @test zk 复位信号发生后 pmc有可能调用子程序 要禁止这种情况
@@ -10517,6 +10517,8 @@ void ChannelEngine::AxisFindRefNoZeroSignal(uint8_t phy_axis){
             m_error_code = ERR_RET_REF_FAILED;
             uint8_t chan_id = CHANNEL_ENGINE_INDEX, axis_id = NO_AXIS;
             GetPhyAxistoChanAxis(phy_axis, chan_id, axis_id);
+            RefErrorProcess(phy_axis);
+
             CreateError(ERR_RET_REF_FAILED, WARNING_LEVEL, CLEAR_BY_MCP_RESET, 0, chan_id, axis_id);
             break;
         }
@@ -10904,10 +10906,7 @@ void ChannelEngine::EcatIncAxisFindRefWithZeroSignal(uint8_t phy_axis){
             m_error_code = ERR_RET_REF_FAILED;
             uint8_t chan_id = CHANNEL_ENGINE_INDEX, axis_id = NO_AXIS;
             GetPhyAxistoChanAxis(phy_axis, chan_id, axis_id);
-            if (GetPmcActive(phy_axis))
-            {
-                m_pmc_axis_ctrl[m_p_axis_config[phy_axis].axis_pmc-1].ExecCmdOver(true);
-            }
+            RefErrorProcess(phy_axis);
             CreateError(ERR_RET_REF_FAILED, WARNING_LEVEL, CLEAR_BY_MCP_RESET, 0, chan_id, axis_id);
             break;
         }
@@ -12071,10 +12070,8 @@ void ChannelEngine::EcatAxisFindRefWithZeroSignal(uint8_t phy_axis){
             this->m_b_ret_ref_auto = false;
             m_n_ret_ref_auto_cur = 0;
         }
-        if (GetPmcActive(phy_axis))
-        {
-            m_pmc_axis_ctrl[m_p_axis_config[phy_axis].axis_pmc-1].ExecCmdOver(true);
-        }
+        RefErrorProcess(phy_axis);
+
         CreateError(m_error_code, WARNING_LEVEL, CLEAR_BY_MCP_RESET, 0, CHANNEL_ENGINE_INDEX, phy_axis);
         break;
     default:
@@ -12510,10 +12507,7 @@ void ChannelEngine::EcatAxisFindRefNoZeroSignal(uint8_t phy_axis){
         uint8_t chan_id = CHANNEL_ENGINE_INDEX, axis_id = NO_AXIS;
         GetPhyAxistoChanAxis(phy_axis, chan_id, axis_id);
         CreateError(ERR_RET_REF_Z_ERR, WARNING_LEVEL, CLEAR_BY_MCP_RESET, 0, chan_id, axis_id);
-        if (GetPmcActive(phy_axis))
-        {
-            m_pmc_axis_ctrl[m_p_axis_config[phy_axis].axis_pmc-1].ExecCmdOver(true);
-        }
+        RefErrorProcess(phy_axis);
         break;
     }
     default:
@@ -12813,6 +12807,20 @@ void ChannelEngine::ProcessESPsingal()
     }
 
     return;
+}
+
+void ChannelEngine::RefErrorProcess(uint8_t phy_axis)
+{
+    if (GetPmcActive(phy_axis))
+    {
+        m_pmc_axis_ctrl[m_p_axis_config[phy_axis].axis_pmc-1].ExecCmdOver(true);
+    }
+    if (GetSyncAxisCtrl()->CheckSyncState(phy_axis) == 1 && m_sync_axis_homing[phy_axis] == 1)
+    {
+        double machPos = this->GetPhyAxisMachPosFeedback(phy_axis);
+        SetSubAxisRefPoint(phy_axis, machPos);
+    }
+    this->SetInRetRefFlag(phy_axis, false);
 }
 
 /**

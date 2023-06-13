@@ -266,6 +266,8 @@ public:
     void TransWorkCoordToMachCoord(double &pos, uint16_t coord_idx, uint8_t axis);    //将单轴坐标由工件坐标系转换为机械坐标系
 	void TransWorkCoordToMachCoord(double &pos, uint16_t coord_idx, uint16_t h_code, uint8_t axis);  //将单轴坐标由工件坐标系转换为机械坐标系
 
+    double GetAxisCurInptTarPosWithCompensation(uint8_t axis_index, bool bMachCoord); //获取坐标
+
 	void ProcessHmiReturnRefCmd(bool flag);                   //回参考点执行函数
 	void SetRefPointFlag(uint8_t chn_axis, bool flag);    //设置通道轴回参考点标志
 

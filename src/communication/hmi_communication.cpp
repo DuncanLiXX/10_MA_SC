@@ -4644,13 +4644,36 @@ int HMICommunication::RecvFile(){
 		strcpy(filepath, PATH_NC_FILE);
 		strcat(filepath, buffer);  //组合出文件绝对路径
 
+
+        //零时修改 -- MD5
+        string file_path = buffer;
+        auto pos = file_path.find_last_of('/');
+        if (pos != string::npos)
+        {
+            file_path = file_path.substr(pos+1);
+            std::cout << "file_path: " << file_path << std::endl;
+        }
+
+        pos = file_path.find('.');
+        if(pos != string::npos)
+        {
+            file_path.replace(pos, string::npos, "_md5");
+        }
+        else
+        {
+            file_path += "_md5";
+        }
+        std::cout << "md5: " << file_path << std::endl;
+
 		//组合签名文件绝对路径
-		strcpy(sign_path, PATH_NC_SIGN_FILE);
-		pSplit = strchr(buffer, '.');
-		if(pSplit != nullptr)
-			*pSplit = '\0';
-		strcat(buffer, "_md5");
-		strcat(sign_path, buffer);
+
+        strcpy(sign_path, PATH_NC_SIGN_FILE);
+        //pSplit = strchr(buffer, '.');
+        //if(pSplit != nullptr)
+        //	*pSplit = '\0';
+        //strcat(buffer, "_md5");
+        //strcat(sign_path, buffer);
+        strcat(sign_path, file_path.c_str());
 
 
 		printf("file path = %s, signpath = %s\n", filepath, sign_path);

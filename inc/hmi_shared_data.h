@@ -208,6 +208,9 @@ enum HMICmdCode {
     CMD_HMI_SERVE_DATA_REQUEST,      //HMI向SC请求准备伺服引导
     CMD_HMI_SERVE_DATA_RESET,        //HMI向SC请求伺服引导复位
     CMD_HMI_CLEAR_IO_MAP,            //HMI向SC请求清除IO重映射数据
+	// 木工专用
+	CMD_HMI_APPEND_ORDER_LIST,	     //HMI添加排程加工文件
+	CMD_HMI_CLEAR_ORDER_LIST,		 //HMI清空排程文件列表
 
 
 	//SC-->HMI

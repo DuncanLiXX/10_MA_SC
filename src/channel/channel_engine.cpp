@@ -9453,11 +9453,11 @@ void ChannelEngine::ProcessPmcSignal(){
 
         //处理工艺模式切换
 #ifdef USES_WOOD_MACHINE
-        if(g_reg_last->BDM == 0 && g_reg->BDM == 1){
+        /*if(g_reg_last->BDM == 0 && g_reg->BDM == 1){
             this->m_p_channel_control[i].SetCurProcParamIndex(0);
         }else if(g_reg_last->BOXM == 0 && g_reg->BOXM == 1){
             this->m_p_channel_control[i].SetCurProcParamIndex(1);
-        }
+        }*/
 #endif
 
         //处理PMC宏调用功能
@@ -9588,7 +9588,7 @@ void ChannelEngine::ProcessPmcSignal(){
     //给出轴在参考点信号
     int byte = 0, bit = 0;
     FRegBits *freg = nullptr;
-    double prec = 0.1;  //在位精度
+    double prec = 0.01;  //在位精度
     for(int i = 0; i < this->m_p_general_config->axis_count; i++){
         chn = i/16;
         byte = i%16;
@@ -9612,7 +9612,7 @@ void ChannelEngine::ProcessPmcSignal(){
         }
         //第一参考点
         if(fabs(m_df_phy_axis_pos_feedback[i]-m_p_axis_config[i].axis_home_pos[0]) < prec){
-            if(byte < 8)
+        	if(byte < 8)
                 freg->ZP11 |= (0x01<<bit);
             else
                 freg->ZP12 |= (0x01<<bit);

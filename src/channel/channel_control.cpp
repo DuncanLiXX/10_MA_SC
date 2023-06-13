@@ -6878,8 +6878,8 @@ bool ChannelControl::ExecuteAuxMsg(RecordMsg *msg){
             this->m_p_f_reg->STL = 0;
             this->m_p_f_reg->SPL = 0;
             this->m_p_f_reg->OP = 0;
-            // @add zk
-            this->ResetMode();   //模态恢复默认值
+            // @add zk   解决MDI 没有F值 不报错卡死问题  导致 MDI切换平面后又恢复G17
+            //this->ResetMode();   //模态恢复默认值
             ////
             CompileOver();
             this->SetMiSimMode(false);  //复位MI仿真状态
@@ -9598,7 +9598,7 @@ bool ChannelControl::ExecuteRefReturnMsg(RecordMsg *msg){
     }
 
     if(gcode == G28_CMD or gcode == G30_CMD){
-        switch(refmsg->GetExecStep()){
+    	switch(refmsg->GetExecStep()){
         case 0:
         	//第一步：控制对应的轴走到中间点位置
             for(i = 0; i < m_p_channel_config->chn_axis_count; i++){
@@ -9779,6 +9779,7 @@ bool ChannelControl::ExecuteRefReturnMsg(RecordMsg *msg){
             return false;
         case 2:
         {
+        	printf("G27 step 2 ...\n");
             //第三步：判断是否为参考点
             // 这里有个局部变量  得加括号 不然编译报错 error: jump to case label
             bool in_pos = false;
@@ -9793,7 +9794,12 @@ bool ChannelControl::ExecuteRefReturnMsg(RecordMsg *msg){
                         }else{
                             in_pos = CheckFRegState(95, i-8);
                         }
-                        if(!in_pos) break;
+                        printf("F94 %0x\n", m_p_f_reg->ZP11);
+
+                        if(!in_pos){
+                        	printf("axis %d not in pos\n", i);
+                        	break;
+                        }
                     }
                 }
             }
@@ -9804,7 +9810,7 @@ bool ChannelControl::ExecuteRefReturnMsg(RecordMsg *msg){
 
                 if(wait_times > 10){
                     // 十次检测都没到位  判断为回参考点失败 发出警告
-                    wait_times = 0;
+                	wait_times = 0;
                     m_error_code = ERR_RET_REF_FAILED;
                     CreateError(ERR_RET_REF_FAILED, ERROR_LEVEL, CLEAR_BY_MCP_RESET, gcode, m_n_channel_index, i);
                 }
@@ -9816,8 +9822,9 @@ bool ChannelControl::ExecuteRefReturnMsg(RecordMsg *msg){
             refmsg->SetExecStep(3);
             return false;}
         case 3:
-            //第四步：同步位置
-            if(!this->m_b_mc_on_arm)
+        	printf("G27 step 3 ...\n");
+        	//第四步：同步位置
+        	if(!this->m_b_mc_on_arm)
                 this->m_p_mc_comm->ReadAxisIntpPos(m_n_channel_index, m_channel_mc_status.intp_pos, m_channel_mc_status.intp_tar_pos);
             else
                 this->m_p_mc_arm_comm->ReadAxisIntpPos(m_n_channel_index, m_channel_mc_status.intp_pos, m_channel_mc_status.intp_tar_pos);
@@ -12721,7 +12728,7 @@ void ChannelControl::SetMcDebugParam(uint16_t index){
     else
         m_p_mc_arm_comm->WriteCmd(cmd);
 
-    //	printf("ChannelControl::SetMcDebugParam, chn_idx=%hhu, index=%hu, data=%d\n", m_n_channel_index, index, data);
+    printf("ChannelControl::SetMcDebugParam, chn_idx=%hhu, index=%hu, data=%d\n", m_n_channel_index, index, data);
 }
 #endif
 
@@ -13304,7 +13311,7 @@ bool ChannelControl::ExecuteAuxMsg_wood(RecordMsg *msg){
                         g_ptr_parm_manager->SetCurWorkPiece(m_n_channel_index, m_channel_status.workpiece_count);
                         this->m_channel_status.workpiece_count_total++;
                         g_ptr_parm_manager->SetTotalWorkPiece(m_n_channel_index, m_channel_status.workpiece_count_total);
-                        this->SendWorkCountToHmi(m_channel_status.workpiece_count);  //通知HMI更新加工计数
+                        this->SendWorkCountToHmi(m_channel_status.workpiece_count, m_channel_status.workpiece_count_total);  //通知HMI更新加工计数
 
                         g_ptr_trace->PrintTrace(TRACE_INFO, CHANNEL_CONTROL_SC,"@#@#加工计数加一：%d", m_channel_status.workpiece_count);
                         this->ResetMode();   //模态恢复默认值
@@ -13848,7 +13855,7 @@ bool ChannelControl::ExecuteAuxMsg_wood(RecordMsg *msg){
                     g_ptr_parm_manager->SetCurWorkPiece(m_n_channel_index, m_channel_status.workpiece_count);
                     this->m_channel_status.workpiece_count_total++;
                     g_ptr_parm_manager->SetTotalWorkPiece(m_n_channel_index, m_channel_status.workpiece_count_total);
-                    this->SendWorkCountToHmi(m_channel_status.workpiece_count);  //通知HMI更新加工计数
+                    this->SendWorkCountToHmi(m_channel_status.workpiece_count,  m_channel_status.workpiece_count_total);  //通知HMI更新加工计数
                 }
 
                 //TODO 将代码发送给PMC
@@ -16438,7 +16445,9 @@ void *ChannelControl::BreakContinueThread(void *args){
 }
 
 int ChannelControl::BreakContinueProcess(){
-    int res = ERR_NONE;
+    printf("bbbbbbbbbbbbbbbbbbbbbbbb\n");
+
+	int res = ERR_NONE;
     int i = 0;
     uint8_t phy_axis = 0;  //物理轴号
     uint8_t chn_axis_z = 0;    //Z轴通道轴号
@@ -19919,9 +19928,17 @@ void ChannelControl::PrintDebugInfo1(){
 
 // @test zk
 void ChannelControl::test(){
-	CreateError(33002, INFO_LEVEL, CLEAR_BY_MCP_RESET, 0, m_n_channel_index);
-	//StartMcIntepolate();
-    //StraightTraverse(0,100,100,100);
+	//CreateError(33002, INFO_LEVEL, CLEAR_BY_MCP_RESET, 0, m_n_channel_index);
+	if(this->m_channel_status.machining_state != MS_READY){
+		this->StopRunGCode();  //停止当前运行
+	}
+
+	//设置加工复位的状态量
+	this->m_n_restart_line = 10;
+	this->m_n_restart_step = 1;
+	this->m_n_restart_mode = NORMAL_RESTART;
+	m_channel_rt_status.line_no = m_n_restart_line;
+
 }
 
 

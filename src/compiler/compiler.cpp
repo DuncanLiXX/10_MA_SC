@@ -1099,7 +1099,7 @@ void Compiler::PreScanLine1(char *buf, uint64_t offset, uint64_t line_no,
         sub_offset.offset = offset;
         sub_offset.line_no = line_no;
         sub_offset.sub_index = atoi(digit_buf);
-        //		printf("find sub program %d, line=%llu\n", sub_offset.sub_index, line_no);
+        //printf("find sub program %d, line=%llu\n", sub_offset.sub_index, line_no);
 
         if(this->m_b_prescan_in_stack){   //堆栈文件预扫描
             if (scene->list_subprog.HasData(sub_offset)) {
@@ -1762,7 +1762,7 @@ bool Compiler::CompileOver() {
     m_node_stack_run.clear();
     m_else_jump_stack_run.clear();
 
-    // @add zk
+    // @add zk  解决MDI 没有F值不报错卡死问题   导致 MDI切换平面后又恢复G17
     m_p_parser->Reset();
 
     printf("exit compiler::compileover\n");

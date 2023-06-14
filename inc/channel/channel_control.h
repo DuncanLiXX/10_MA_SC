@@ -68,6 +68,7 @@ public:
 	uint8_t GetChnAxisName(uint8_t idx){return this->m_p_channel_config->chn_axis_name[idx];}   //获取通道轴名称
 
 	void Pause(); 			//停止G代码
+    void HardLimitPause();  //触发硬限位时，停止各轴运行
 
 	void StartRunGCode();  //开始G代码运行
 	void StopRunGCode(bool reset = true);	//停止G代码运行

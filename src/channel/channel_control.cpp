@@ -16425,6 +16425,25 @@ void ChannelControl::Pause(){
 }
 
 /**
+ * @brief 触发硬限位时，停止各轴运行
+ */
+void ChannelControl::HardLimitPause()
+{
+    if(m_channel_status.chn_work_mode == AUTO_MODE || m_channel_status.chn_work_mode == MDA_MODE){
+        Pause();
+    }
+    else if (m_b_manual_call_macro)
+    {
+        m_b_cancel_manual_call_macro = true;
+        this->m_b_delay_to_reset = true;
+        StopRunGCode(false);
+    }
+    else{
+        this->ManualMoveStop();
+    }
+}
+
+/**
  * @brief 保存自动模式加工暂停时的状态
  * flag : 是否需要置位need_reload_flag， true需要置位，false不需要置位
  */

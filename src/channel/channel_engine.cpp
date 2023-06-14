@@ -9981,7 +9981,8 @@ void ChannelEngine::ProcessAxisHardLimit(uint8_t dir, uint64_t phy_axis){
 
     //减速停处理
     for(int i = 0; i < this->m_p_general_config->chn_count; i++){
-        this->m_p_channel_control[i].Pause();
+        //this->m_p_channel_control[i].Pause();
+        this->m_p_channel_control[i].HardLimitPause();
     }
 
     //生成硬限位错误信息

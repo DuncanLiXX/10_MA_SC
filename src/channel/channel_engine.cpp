@@ -3011,7 +3011,12 @@ void ChannelEngine::ProcessHmiCmd(HMICmdFrame &cmd){
     case CMD_HMI_CLEAR_WORKPIECE:      //HMI请求SC将加工计数清零,临时计数(区分白夜班)
     case CMD_HMI_CLEAR_TOTAL_PIECE:    //总共计数清零
     case CMD_HMI_SET_REQUIRE_PIECE:    //设置需求件数
-        if(cmd.channel_index < this->m_p_general_config->chn_count)
+    case CMD_HMI_APPEND_ORDER_LIST:
+	case CMD_HMI_CLEAR_ORDER_LIST:
+	case CMD_HMI_SET_ORDER_INDEX:
+		this->m_p_channel_control[0].ProcessHmiCmd(cmd);
+		// 暂时不考虑多通道
+		/*if(cmd.channel_index < this->m_p_general_config->chn_count)
             m_p_channel_control[cmd.channel_index].ProcessHmiCmd(cmd);
         else if(cmd.channel_index == CHANNEL_ENGINE_INDEX){
             for(int i = 0; i < this->m_p_general_config->chn_count; i++){
@@ -3019,6 +3024,7 @@ void ChannelEngine::ProcessHmiCmd(HMICmdFrame &cmd){
             }
         }else
             g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "命令[%d]通道号非法！%d", cmd.cmd, cmd.channel_index);
+         */
         break;
     case CMD_HMI_SET_PARA:		//设置参数
         this->ProcessHmiSetParam(cmd);
@@ -5420,6 +5426,11 @@ bool ChannelEngine::Start(){
         for(uint8_t i = 0; i < m_p_channel_mode_group[m_n_cur_chn_group_index].GetChannelCount(); i++){
             chn = m_p_channel_mode_group[m_n_cur_chn_group_index].GetChannel(i);
             UpdateHandwheelState(chn);
+
+#ifdef NEW_WOOD_MACHINE
+            m_p_channel_control[chn].m_b_need_pre_prog = true;
+            m_p_channel_control[chn].m_b_in_next_prog = false;
+#endif
 
             m_p_channel_control[chn].StartRunGCode();
         }
@@ -9467,15 +9478,14 @@ void ChannelEngine::ProcessPmcSignal(){
         }
         //#endif
 
-        //处理工艺模式切换
-//#ifdef USES_WOOD_MACHINE
-        if(g_reg_last->BDM == 0 && g_reg->BDM == 1){
+//处理工艺模式切换
+#ifdef USES_WOOD_MACHINE
+        /*if(g_reg_last->BDM == 0 && g_reg->BDM == 1){
             this->m_p_channel_control[i].SetCurProcParamIndex(0);
         }else if(g_reg_last->BOXM == 0 && g_reg->BOXM == 1){
             this->m_p_channel_control[i].SetCurProcParamIndex(1);
-        }
-//#endif
-
+        }*/
+#endif
         //处理PMC宏调用功能
         if(g_reg_last->EMPC == 0 && g_reg->EMPC == 1){  //处理PMC宏调用
             // @test zk 复位信号发生后 pmc有可能调用子程序 要禁止这种情况
@@ -9604,7 +9614,7 @@ void ChannelEngine::ProcessPmcSignal(){
     //给出轴在参考点信号
     int byte = 0, bit = 0;
     FRegBits *freg = nullptr;
-    double prec = 0.1;  //在位精度
+    double prec = 0.01;  //在位精度
     for(int i = 0; i < this->m_p_general_config->axis_count; i++){
         chn = i/16;
         byte = i%16;
@@ -9628,7 +9638,7 @@ void ChannelEngine::ProcessPmcSignal(){
         }
         //第一参考点
         if(fabs(m_df_phy_axis_pos_feedback[i]-m_p_axis_config[i].axis_home_pos[0]) < prec){
-            if(byte < 8)
+        	if(byte < 8)
                 freg->ZP11 |= (0x01<<bit);
             else
                 freg->ZP12 |= (0x01<<bit);

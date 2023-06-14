@@ -3834,6 +3834,36 @@ ExactStopMsg& ExactStopMsg::operator=( const ExactStopMsg& msg){
 
 	return *this;
 }
+
+OpenFileMsg::OpenFileMsg():RecordMsg(){
+	SetMsgType(OPEN_FILE_MSG);
+}
+
+OpenFileMsg::~OpenFileMsg(){
+
+}
+
+void OpenFileMsg::Execute(){}
+void OpenFileMsg::GetData(void* rec ){}
+void OpenFileMsg::SetData(void* rec){}
+//生成待输出给MC的运动控制数据包
+int OpenFileMsg::GetOutputData(GCodeFrame *data, uint32_t mask, bool flag)
+{
+	return 0;
+}
+void OpenFileMsg::PrintString(){}
+
+OpenFileMsg& OpenFileMsg::operator=( const OpenFileMsg& msg){
+	if(&msg == this)
+		return *this;
+	this->m_n_type = msg.m_n_type;
+	this->m_n_line_no = msg.m_n_line_no;
+	this->m_n_flags.all = msg.m_n_flags.all;
+	this->OData = msg.OData;
+
+	return *this;
+}
+
 // @add zk
 
 

@@ -212,7 +212,10 @@ enum HMICmdCode {
     CMD_HMI_CLEAR_IO_MAP,            //HMI向SC请求清除IO重映射数据
     CMD_HMI_GET_FILE_SYSTEM,         //HMI向SC请求文件系统
     CMD_HMI_GET_MKDIR,               //HMI向SC请求创建目录
-
+	 // 木工专用
+	CMD_HMI_APPEND_ORDER_LIST,	     //HMI添加排程加工文件
+	CMD_HMI_CLEAR_ORDER_LIST,		 //HMI清空排程文件列表
+	CMD_HMI_SET_ORDER_INDEX,		 //设置当前排程序号
 
 	//SC-->HMI
 	CMD_SC_NEW_ALARM = 100,			//SC向HMI发送新的告警信息 100
@@ -568,6 +571,8 @@ enum ErrorType {
     ERR_CAL_SPD_TAP_POS     = 2059,   // 无法计算刚性攻丝时的主轴位置
     F_VALUE_ERROR           = 2060,   // F不能指定为负数
 
+	ORDER_INDEX_ERROR       = 2061,   // G110 指定程序号不存在
+
 
 	//刀补告警	5000~6999
     ERR_CANCEL_R_COMP_WITHOUT_MOVE      = 5000, //取消刀具半径补偿时没有轴移动
@@ -702,6 +707,7 @@ enum GCode{
 	G95_CMD = 950,
 	G98_CMD = 980,
 	G99_CMD = 990,
+	G110_CMD = 1100,      // 打开排程列表序号对应文件
 	G112_CMD = 1120,
 	G113_CMD = 1130,
 	G120_CMD = 1200,     //G120  告警、提示信息命令

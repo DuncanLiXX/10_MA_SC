@@ -629,6 +629,9 @@ bool Parser::AnalyzeGCode(LexerGCode *gcode){
 			if(!CreateExactStopMsg()){
 				return false;
 			}
+		}else if(m_mode_code[0] == G110_CMD){
+			if(!CreateOpenFileMsg())
+				return false;
 		}
 		else{
 			if(!CreateModeMsg(m_mode_code[0]))
@@ -3154,6 +3157,10 @@ bool Parser::CreateSpindleCheckMsg(){
 	return true;
 }
 
+/**
+ * @brief 可编程输入指令消息
+ * @return true--成功  false--失败
+ */
 bool Parser::CreateInputMsg(){
 	InputMsg * new_msg = new InputMsg();
 
@@ -3197,6 +3204,21 @@ bool Parser::CreateExactStopMsg(){
 
 	new_msg->SetLineNo(this->m_p_lexer_result->line_no);  //设置当前行号
 
+	m_p_parser_result->Append(new_msg);
+	ProcessLastBlockRec(new_msg);
+	return true;
+}
+
+/**
+ * @brief 扩展指令 G110 根据序号打开排程列表文件进行加工
+ * @param
+ * @return
+ */
+bool Parser::CreateOpenFileMsg(){
+	OpenFileMsg * new_msg = new OpenFileMsg();
+	GetCodeData(O_DATA, new_msg->OData);
+	new_msg->SetFlag(FLAG_WAIT_MOVE_OVER, true);
+	new_msg->SetLineNo(this->m_p_lexer_result->line_no);
 	m_p_parser_result->Append(new_msg);
 	ProcessLastBlockRec(new_msg);
 	return true;

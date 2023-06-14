@@ -1003,6 +1003,9 @@ int HMICommunication::ProcessHmiCmd(){
             case CMD_HMI_ABSOLUTE_REF_SET:        //HMI向SC请求绝对式编码器设零 0x41
             case CMD_HMI_SET_ALL_TOOL_OFFSET:     //HMI向SC请求设置所有刀偏值 0x42
             case CMD_HMI_CLEAR_IO_MAP:            //HMI向SC请求清除IO重映射数据
+            case CMD_HMI_APPEND_ORDER_LIST:
+            case CMD_HMI_CLEAR_ORDER_LIST:
+            case CMD_HMI_SET_ORDER_INDEX:
 #ifdef USES_GRIND_MACHINE
 			case CMD_SC_MECH_ARM_ERR:         //HMI响应机械手告警指令
 #endif

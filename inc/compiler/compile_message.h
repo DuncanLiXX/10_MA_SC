@@ -1125,6 +1125,21 @@ public:
 	uint32_t  m_axis_mask;
 };
 
+class OpenFileMsg :public RecordMsg{
+public:
+	OpenFileMsg();    //构造函数
+	virtual ~OpenFileMsg();  //析构函数
+
+	virtual void Execute();		//执行函数
+	virtual void GetData(void* rec );	//获取数据
+	virtual void SetData(void* rec);		//设置数据
+	//生成待输出给MC的运动控制数据包
+	virtual int GetOutputData(GCodeFrame *data, uint32_t mask, bool flag);
+	virtual void PrintString();   //用于程序调试
+	OpenFileMsg& operator=( const OpenFileMsg& msg);  //赋值运算符
+	double OData;
+};
+
 
 
 //class FiveAxisMsg:public ModeMsg{

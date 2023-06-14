@@ -81,6 +81,7 @@ private:
     bool CreateAutoToolMeasureMsg();   //构造自动对刀指令消息，并插入消息队列
 	bool CreateInputMsg();			   // @add zk G10 L_ P_ R_
 	bool CreateExactStopMsg();         // @add zk G09 X_ Y_ Z_
+	bool CreateOpenFileMsg();		   // @add zk G110 打开另一个文件开始加工
 
 #ifdef USES_SPEED_TORQUE_CTRL	
     bool CreateSpeedCtrlMsg(const int gcode);     //构造速度控制消息

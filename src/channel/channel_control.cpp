@@ -73,6 +73,14 @@ ChannelControl::ChannelControl() {
     this->m_b_manual_call_macro = false;
     this->m_b_cancel_manual_call_macro = false;
 
+#ifdef NEW_WOOD_MACHINE
+    this->m_b_need_pre_prog = false;
+    this->m_b_need_next_prog = false;
+    this->m_b_in_next_prog = false;
+    this->m_b_g110_call = false;
+    current_order_index = -1;
+#endif
+
     this->m_b_delay_to_reset = false;
 
     m_b_pos_captured = false;
@@ -1940,6 +1948,13 @@ END:
     }
 #endif
 
+#ifdef NEW_WOOD_MACHINE
+    if(m_b_need_pre_prog){
+    	this->m_p_compiler->CallMarcoProgWithNoPara(9701, false);
+    	m_b_need_pre_prog = false;
+    }
+#endif
+
     printf("exit ChannelControl::StartRunGCode()\n");
 
 }
@@ -1973,7 +1988,6 @@ void ChannelControl::StartMcIntepolate(){
     else if(this->m_channel_status.chn_work_mode != AUTO_MODE)
         return;
 
-    printf("----------> mc_work_mode %d\n", mc_work_mode);
     this->SendIntpModeCmdToMc(mc_work_mode);
 
     SetCurLineNoFromMc();	//当前行号从MC获取
@@ -2635,11 +2649,23 @@ void ChannelControl::ProcessHmiCmd(HMICmdFrame &cmd){
         this->ProcessHmiSetCurMachPosCmd(cmd);
         break;
     case CMD_HMI_CLEAR_MSG:               //HMI通知SC清除消息  0x33
-        //		printf("channelcontrol process CMD_HMI_CLEAR_MSG, cmd_ex=%hhu\n", cmd.cmd_extension);
+        //printf("channelcontrol process CMD_HMI_CLEAR_MSG, cmd_ex=%hhu\n", cmd.cmd_extension);
         this->ProcessHmiClearMsgCmd(cmd);
         break;
-    default:
 
+#ifdef NEW_WOOD_MACHINE
+    case CMD_HMI_APPEND_ORDER_LIST:
+    	this->ProcessHmiAppendOrderListFile(cmd);
+    	break;
+	case CMD_HMI_CLEAR_ORDER_LIST:
+		this->ProcessClearOrderList(cmd);
+		break;
+	case CMD_HMI_SET_ORDER_INDEX:
+		this->ProcessHmiSetOrderListIndex(cmd);
+		break;
+#endif
+
+    default:
         break;
 
     }
@@ -3589,7 +3615,6 @@ void ChannelControl::ProcessHmiSetNcFileCmd(HMICmdFrame &cmd){
 
         if(m_channel_status.machining_state == MS_PAUSED){//通道复位
             this->Reset();
-
         }
         g_ptr_parm_manager->SetCurNcFile(m_n_channel_index, m_channel_status.cur_nc_file_name);    //修改当前NC文件
 
@@ -3667,6 +3692,37 @@ void ChannelControl::ProcessMdaData(HMICmdFrame &cmd){
 
 }
 
+
+#ifdef NEW_WOOD_MACHINE
+
+void ChannelControl::ProcessHmiAppendOrderListFile(HMICmdFrame &cmd){
+
+	if(cmd.data_len < 1){
+		printf("order file name too short\n");
+	}
+
+	string file_name = cmd.data;
+	std::cout << "append order list file: " << file_name << std::endl;
+	order_file_vector.push_back(file_name);
+}
+
+void ChannelControl::ProcessHmiSetOrderListIndex(HMICmdFrame &cmd){
+
+	if(cmd.cmd_extension >= 0 && cmd.cmd_extension < order_file_vector.size()){
+		current_order_index = cmd.cmd_extension;
+		// @todo  加载对应文件
+
+	}else{
+		printf("order index invalid\n");
+	}
+}
+
+void ChannelControl::ProcessClearOrderList(HMICmdFrame &cmd){
+	current_order_index = -1;
+	order_file_vector.clear();
+}
+#endif
+
 /**
  * @brief 向HMI发送工作状态改变命令
  * @param mach_state ：通道加工状态
@@ -3679,10 +3735,7 @@ bool ChannelControl::SendMachineStateCmdToHmi(uint8_t mach_state){
     cmd.cmd = CMD_SC_WORK_STATE;
     cmd.cmd_extension = mach_state;
     cmd.data_len = 0x00;
-
     printf("send machine state[%hhu] to HMI\n", mach_state);
-
-
     return this->m_p_hmi_comm->SendCmd(cmd);
 }
 
@@ -4002,7 +4055,7 @@ void ChannelControl::SetMachineState(uint8_t mach_state){
 
     if(mach_state == MS_PAUSED || mach_state == MS_READY){
         m_b_mc_need_start = true;
-        //		printf("set mc need start true~~~~~\n");
+        //printf("set mc need start true~~~~~\n");
     }
 
     //注释说明：不应在此处保存现场，因为插补完成和运动到位存在时间差，此处保存现场会造成位置误差
@@ -4632,7 +4685,31 @@ int ChannelControl::Run(){
         }
         else
         {
-            usleep(10000);   //非运行状态，线程挂起10ms
+        	usleep(10000);   //非运行状态，线程挂起10ms
+#ifdef NEW_WOOD_MACHINE
+        	if(m_b_need_next_prog){
+        		char  filename[] = "O9703.NC";
+        		strcpy(m_channel_status.cur_nc_file_name, filename);
+        		g_ptr_parm_manager->SetCurNcFile(m_n_channel_index, m_channel_status.cur_nc_file_name);    //修改当前NC文件
+        		this->m_p_compiler->OpenFile("/cnc/nc_files/O9703.NC");
+        		this->StartRunGCode();
+        		m_b_in_next_prog = true;
+        		m_b_need_next_prog = false;
+        		m_b_g110_call =false;   //非后置程序不允许G110调用
+        	}
+
+        	if(m_b_g110_call){
+        		char path[kMaxPathLen];
+        		strcpy(path, PATH_NC_FILE);
+        		strcat(path, g110_file_name);
+        		strcpy(m_channel_status.cur_nc_file_name, g110_file_name);
+        		g_ptr_parm_manager->SetCurNcFile(m_n_channel_index, m_channel_status.cur_nc_file_name);    //修改当前NC文件
+        		this->m_p_compiler->OpenFile(path);
+        		this->SendOpenFileCmdToHmi(m_channel_status.cur_nc_file_name);
+        		this->StartRunGCode();
+        		m_b_g110_call = false;
+        	}
+#endif
         }
     }
 
@@ -5257,7 +5334,7 @@ bool ChannelControl::OutputData(RecordMsg *msg, bool flag_block){
         break;
     }
     case LINE_MSG:{
-#ifdef USES_WOOD_MACHINE
+#ifdef NEW_WOOD_MACHINE
         if(this->m_p_g_reg->QDE == 1){  //快钻功能激活
             LineMsg *linemsg = static_cast<LineMsg *>(msg);
             uint8_t z_chn_axis = this->GetChnAxisFromName(AXIS_NAME_Z);
@@ -5875,6 +5952,9 @@ bool ChannelControl::ExecuteMessage(){
         case EXACT_STOP_MSG:
             res = this->ExecuteExactStopMsg(msg);
             break;
+        case OPEN_FILE_MSG:
+        	res = this->ExecuteOpenFileMsg(msg);
+        	break;
         default:
         	break;
         }
@@ -5910,7 +5990,7 @@ bool ChannelControl::ExecuteMessage(){
 
             if(msg->IsNeedWaitMsg() && (this->m_simulate_mode == SIM_NONE || this->m_simulate_mode == SIM_MACHINING)){  //非仿真、加工仿真才需要给MC发送启动指令
                 m_b_mc_need_start = true;
-                //				printf("set mc need start true in exec~~~~~\n");
+                //printf("set mc need start true in exec~~~~~\n");
             }
 
 
@@ -5921,13 +6001,9 @@ bool ChannelControl::ExecuteMessage(){
     #endif
                 ) &&    //运行状态或者手动对刀状态
                     msg->IsMoveMsg() && this->m_b_mc_need_start){
-                //				printf("move data send start, msg type = %d\n", msg->GetMsgType());
-                this->StartMcIntepolate();
+                //printf("move data send start, msg type = %d lino: %llu\n", msg->GetMsgType(), msg->GetLineNo());
+            	this->StartMcIntepolate();
             }
-            //			else {
-            //				printf("ismovemsg:%hhu, m_b_mc_need_start=%hhu\n", msg->IsMoveMsg(), m_b_mc_need_start);
-            //			}
-
 
             if(IsStepMode()){//单段模式, 非宏程序调用或者打开了调试模式
                 if(msg->CheckFlag(FLAG_LAST_REC)){
@@ -5946,6 +6022,9 @@ bool ChannelControl::ExecuteMessage(){
 
             if(msg->IsEndMsg()){	//处理M02/M30消息
                 this->m_n_run_thread_state = STOP;
+#ifdef NEW_WOOD_MACHINE
+                if(!m_b_in_next_prog) m_b_need_next_prog = true;
+#endif
             }else if(m_n_run_thread_state != WAIT_RUN && this->m_error_code == ERR_NONE && this->IsMachinRunning() && !pause_flag){
                 this->m_n_run_thread_state = RUN;
                 //	printf("execute message change state to RUN!!!!!\n");
@@ -6076,6 +6155,7 @@ bool ChannelControl::ExecuteAuxMsg(RecordMsg *msg){
                     this->ClearHmiInfoMsg();   //清除HMI的提示信息
                 }
             }
+
         }
 
         return true;
@@ -6878,8 +6958,8 @@ bool ChannelControl::ExecuteAuxMsg(RecordMsg *msg){
             this->m_p_f_reg->STL = 0;
             this->m_p_f_reg->SPL = 0;
             this->m_p_f_reg->OP = 0;
-            // @add zk
-            this->ResetMode();   //模态恢复默认值
+            // @add zk   解决MDI 没有F值 不报错卡死问题  导致 MDI切换平面后又恢复G17
+            //this->ResetMode();   //模态恢复默认值
             ////
             CompileOver();
             this->SetMiSimMode(false);  //复位MI仿真状态
@@ -9209,6 +9289,7 @@ bool ChannelControl::ExecuteMacroCmdMsg(RecordMsg *msg){
 
     //设置当前行号
     SetCurLineNo(msg->GetLineNo());
+    printf("execute macro msg  %llu...\n", msg->GetLineNo());
 
     return true;
 }
@@ -9598,7 +9679,7 @@ bool ChannelControl::ExecuteRefReturnMsg(RecordMsg *msg){
     }
 
     if(gcode == G28_CMD or gcode == G30_CMD){
-        switch(refmsg->GetExecStep()){
+    	switch(refmsg->GetExecStep()){
         case 0:
         	//第一步：控制对应的轴走到中间点位置
             for(i = 0; i < m_p_channel_config->chn_axis_count; i++){
@@ -9779,6 +9860,7 @@ bool ChannelControl::ExecuteRefReturnMsg(RecordMsg *msg){
             return false;
         case 2:
         {
+        	printf("G27 step 2 ...\n");
             //第三步：判断是否为参考点
             // 这里有个局部变量  得加括号 不然编译报错 error: jump to case label
             bool in_pos = false;
@@ -9793,7 +9875,12 @@ bool ChannelControl::ExecuteRefReturnMsg(RecordMsg *msg){
                         }else{
                             in_pos = CheckFRegState(95, i-8);
                         }
-                        if(!in_pos) break;
+                        printf("F94 %0x\n", m_p_f_reg->ZP11);
+
+                        if(!in_pos){
+                        	printf("axis %d not in pos\n", i);
+                        	break;
+                        }
                     }
                 }
             }
@@ -9804,7 +9891,7 @@ bool ChannelControl::ExecuteRefReturnMsg(RecordMsg *msg){
 
                 if(wait_times > 10){
                     // 十次检测都没到位  判断为回参考点失败 发出警告
-                    wait_times = 0;
+                	wait_times = 0;
                     m_error_code = ERR_RET_REF_FAILED;
                     CreateError(ERR_RET_REF_FAILED, ERROR_LEVEL, CLEAR_BY_MCP_RESET, gcode, m_n_channel_index, i);
                 }
@@ -9816,8 +9903,9 @@ bool ChannelControl::ExecuteRefReturnMsg(RecordMsg *msg){
             refmsg->SetExecStep(3);
             return false;}
         case 3:
-            //第四步：同步位置
-            if(!this->m_b_mc_on_arm)
+        	printf("G27 step 3 ...\n");
+        	//第四步：同步位置
+        	if(!this->m_b_mc_on_arm)
                 this->m_p_mc_comm->ReadAxisIntpPos(m_n_channel_index, m_channel_mc_status.intp_pos, m_channel_mc_status.intp_tar_pos);
             else
                 this->m_p_mc_arm_comm->ReadAxisIntpPos(m_n_channel_index, m_channel_mc_status.intp_pos, m_channel_mc_status.intp_tar_pos);
@@ -10886,6 +10974,31 @@ bool ChannelControl::ExecuteExactStopMsg(RecordMsg *msg){
     // @test zk 不知道为何  必须重新启动插补才能继续下面的运动指令
     StartMcIntepolate();
     return true;
+}
+
+bool ChannelControl::ExecuteOpenFileMsg(RecordMsg *msg){
+
+	OpenFileMsg *openfile_msg = (OpenFileMsg *)msg;
+
+	printf("================ execute g110 msg %lf\n", ((OpenFileMsg *)msg)->OData);
+	int index = int(openfile_msg->OData);
+
+	// G110 打开的序号不存在
+	if(index < 0 || index >= order_file_vector.size()){
+		m_error_code = ORDER_INDEX_ERROR;
+		CreateError(ORDER_INDEX_ERROR, ERROR_LEVEL, CLEAR_BY_MCP_RESET, openfile_msg->GetLineNo(), m_n_channel_index, 0);
+		return false;
+	}
+
+	memset(g110_file_name, 0, sizeof(g110_file_name));
+
+	current_order_index = index;
+	strcpy(g110_file_name, order_file_vector.at(index).c_str());
+
+	// 打开G110 程序调用标志
+	this->m_b_g110_call = true;
+
+	return true;
 }
 
 
@@ -12725,7 +12838,7 @@ void ChannelControl::SetMcDebugParam(uint16_t index){
     else
         m_p_mc_arm_comm->WriteCmd(cmd);
 
-    //	printf("ChannelControl::SetMcDebugParam, chn_idx=%hhu, index=%hu, data=%d\n", m_n_channel_index, index, data);
+    printf("ChannelControl::SetMcDebugParam, chn_idx=%hhu, index=%hu, data=%d\n", m_n_channel_index, index, data);
 }
 #endif
 
@@ -13308,7 +13421,7 @@ bool ChannelControl::ExecuteAuxMsg_wood(RecordMsg *msg){
                         g_ptr_parm_manager->SetCurWorkPiece(m_n_channel_index, m_channel_status.workpiece_count);
                         this->m_channel_status.workpiece_count_total++;
                         g_ptr_parm_manager->SetTotalWorkPiece(m_n_channel_index, m_channel_status.workpiece_count_total);
-                        this->SendWorkCountToHmi(m_channel_status.workpiece_count);  //通知HMI更新加工计数
+                        this->SendWorkCountToHmi(m_channel_status.workpiece_count, m_channel_status.workpiece_count_total);  //通知HMI更新加工计数
 
                         g_ptr_trace->PrintTrace(TRACE_INFO, CHANNEL_CONTROL_SC,"@#@#加工计数加一：%d", m_channel_status.workpiece_count);
                         this->ResetMode();   //模态恢复默认值
@@ -13852,7 +13965,7 @@ bool ChannelControl::ExecuteAuxMsg_wood(RecordMsg *msg){
                     g_ptr_parm_manager->SetCurWorkPiece(m_n_channel_index, m_channel_status.workpiece_count);
                     this->m_channel_status.workpiece_count_total++;
                     g_ptr_parm_manager->SetTotalWorkPiece(m_n_channel_index, m_channel_status.workpiece_count_total);
-                    this->SendWorkCountToHmi(m_channel_status.workpiece_count);  //通知HMI更新加工计数
+                    this->SendWorkCountToHmi(m_channel_status.workpiece_count,  m_channel_status.workpiece_count_total);  //通知HMI更新加工计数
                 }
 
                 //TODO 将代码发送给PMC
@@ -16461,7 +16574,7 @@ void *ChannelControl::BreakContinueThread(void *args){
 }
 
 int ChannelControl::BreakContinueProcess(){
-    int res = ERR_NONE;
+	int res = ERR_NONE;
     int i = 0;
     uint8_t phy_axis = 0;  //物理轴号
     uint8_t chn_axis_z = 0;    //Z轴通道轴号
@@ -20014,9 +20127,17 @@ void ChannelControl::PrintDebugInfo1(){
 
 // @test zk
 void ChannelControl::test(){
-	CreateError(33002, INFO_LEVEL, CLEAR_BY_MCP_RESET, 0, m_n_channel_index);
-	//StartMcIntepolate();
-    //StraightTraverse(0,100,100,100);
+	//CreateError(33002, INFO_LEVEL, CLEAR_BY_MCP_RESET, 0, m_n_channel_index);
+	if(this->m_channel_status.machining_state != MS_READY){
+		this->StopRunGCode();  //停止当前运行
+	}
+
+	//设置加工复位的状态量
+	this->m_n_restart_line = 10;
+	this->m_n_restart_step = 1;
+	this->m_n_restart_mode = NORMAL_RESTART;
+	m_channel_rt_status.line_no = m_n_restart_line;
+
 }
 
 

@@ -139,6 +139,7 @@ enum CodeMsgType{
 	MOVE_MSG,             //34   移动指令基类消息
 	INPUT_MSG,			  //35 输入消息 G10
 	EXACT_STOP_MSG,		  //36 准停消息 G09
+	OPEN_FILE_MSG,		  //37 打开文件消息
 	GUARD_MSG           //消息类型卫兵
 };
 

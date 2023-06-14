@@ -382,6 +382,17 @@ public:
     void LimitRotatePos(double &pos, double &move_pr); //限制旋转轴坐标
 
     uint32_t m_cur_setfeed = 0;
+
+#ifdef NEW_WOOD_MACHINE
+    bool m_b_need_pre_prog;    // 前置程序待执行
+    bool m_b_need_next_prog;   // 后置程序待执行
+    bool m_b_in_next_prog;	   // 后置程序执行中
+    bool m_b_g110_call;		   // G110 调用程序标志
+    int current_order_index;   // 当前加载排程列表序号
+    char g110_file_name[kMaxPathLen];
+    std::vector<string> order_file_vector;  // 排程文件列表
+#endif
+
 private:
 	void InitialChannelStatus();		//初始化通道状态
     static void *CompileThread(void *args);  //G代码运行线程函数
@@ -427,7 +438,7 @@ private:
 	bool ExecuteRestartOverMsg(RecordMsg *msg);   //实际执行加工复位完成指令消息
 	bool ExecuteInputMsg(RecordMsg *msg);		//执行G10 输入指令消息
 	bool ExecuteExactStopMsg(RecordMsg *msg);   // G09
-
+	bool ExecuteOpenFileMsg(RecordMsg *msg);
 #ifdef USES_SPEED_TORQUE_CTRL	
 	bool ExecuteSpeedCtrlMsg(RecordMsg *msg);   //执行速度控制消息
 	bool ExecuteTorqueCtrlMsg(RecordMsg *msg);   //执行力矩控制消息
@@ -455,10 +466,14 @@ private:
     void ProcessHmiClearTotalPieceCmd(HMICmdFrame &cmd); //处理总共件数清零命令
 	void ProcessHmiRestartCmd(HMICmdFrame &cmd);    //处理加工复位命令
     void ProcessHmiSetRequirePieceCmd(HMICmdFrame &cmd);    //处理
-
 	void ProcessHmiSetCurMachPosCmd(HMICmdFrame &cmd);      //处理HMI设置轴当前位置的机械坐标命令
-
 	void ProcessHmiClearMsgCmd(HMICmdFrame &cmd);     //处理HMI清除消息命令
+
+#ifdef NEW_WOOD_MACHINE
+	void ProcessHmiAppendOrderListFile(HMICmdFrame &cmd);
+	void ProcessHmiSetOrderListIndex(HMICmdFrame &cmd);
+	void ProcessClearOrderList(HMICmdFrame &cmd);
+#endif
 
 
 #ifdef USES_LASER_MACHINE
@@ -674,21 +689,14 @@ private://私有成员变量
 
 	uint8_t m_n_spindle_count;				//主轴个数
 	uint8_t m_spd_axis_phy[kMaxChnSpdCount];	//主轴对应的物理轴号,从1开始
-
 	uint16_t m_n_mc_auto_buf_max;     //MC中自动模式运动数据缓冲大小
-
     uint64_t m_n_real_phy_axis;          //通道内实际物理轴Mask
-
 	uint32_t m_mask_intp_axis;      //通道插补轴mask，按通道轴顺序
 	uint8_t m_n_intp_axis_count;    //通道插补轴个数
     uint32_t m_mask_rot_axis;       //通道旋转轴mask
-
 	ErrorType m_error_code;      	//错误码
-
 	uint8_t m_n_cur_proc_group;     //当前工艺参数组号
-
 //	char m_str_cur_nc_file[kMaxPathLen];  //当前NC加工文件,相对路径，相对目录"/cnc/nc_files/"
-
 	pthread_t m_thread_refresh_status;    //状态更新线程
 	pthread_t m_thread_compiler;   			//G代码编译运行线程
 	pthread_t m_thread_breakcontinue;		//断点继续线程

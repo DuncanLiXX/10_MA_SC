@@ -1005,6 +1005,7 @@ int HMICommunication::ProcessHmiCmd(){
             case CMD_HMI_CLEAR_IO_MAP:            //HMI向SC请求清除IO重映射数据
             case CMD_HMI_APPEND_ORDER_LIST:
             case CMD_HMI_CLEAR_ORDER_LIST:
+            case CMD_HMI_SET_ORDER_INDEX:
 #ifdef USES_GRIND_MACHINE
 			case CMD_SC_MECH_ARM_ERR:         //HMI响应机械手告警指令
 #endif

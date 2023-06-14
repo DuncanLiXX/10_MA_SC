@@ -1466,7 +1466,7 @@ bool Compiler::OpenFile(const char *file, bool sub_flag) {
     }
     // @add zk
 
-    if(this->m_work_mode == MDA_COMPILER && !sub_flag){  //
+    if(this->m_work_mode == MDA_COMPILER && !sub_flag){//
         char tmp_file[kMaxPathLen] = {0};	//ÎÄ¼þÂ·¾¶
         this->m_p_channel_control->GetMdaFilePath(tmp_file);
         if(strcmp(file, tmp_file) != 0){
@@ -2329,11 +2329,8 @@ bool Compiler::RunMessage() {
     }
 
     //	int count = m_p_parser_result->GetLength();
-    //printf("1111111111111111\n");
     ListNode<RecordMsg *> *node = m_p_parser_result->HeadNode();
     CodeMsgType msg_type = NORMAL_MSG;
-
-    //printf("222222222222222\n");
 
     while (node != nullptr) {
         msg = static_cast<RecordMsg *>(node->data);

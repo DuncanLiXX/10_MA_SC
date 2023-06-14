@@ -38,7 +38,7 @@
 
 #define USES_PMC_2_0         //使用PMC2.0版本
 
-#define USES_TOOL_COMPENSATE    //支持刀具半径补偿
+//#define USES_TOOL_COMPENSATE    //支持刀具半径补偿
 
 #define USES_MODBUS_PROTOCAL   //支持组态通讯协议
 
@@ -55,6 +55,8 @@
 //#define USES_STOP_SPD_IN_RESET   //支持复位时停主轴
 
 #define USES_MC_B_BOARD       //支持MC-B主板
+
+#define NEW_WOOD_MACHINE      //0M-B 木工项目定制功能
 
 //#define USES_WOOD_MACHINE     //支持木工专机
 

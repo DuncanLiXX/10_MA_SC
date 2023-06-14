@@ -3011,7 +3011,12 @@ void ChannelEngine::ProcessHmiCmd(HMICmdFrame &cmd){
     case CMD_HMI_CLEAR_WORKPIECE:      //HMI请求SC将加工计数清零,临时计数(区分白夜班)
     case CMD_HMI_CLEAR_TOTAL_PIECE:    //总共计数清零
     case CMD_HMI_SET_REQUIRE_PIECE:    //设置需求件数
-        if(cmd.channel_index < this->m_p_general_config->chn_count)
+    case CMD_HMI_APPEND_ORDER_LIST:
+	case CMD_HMI_CLEAR_ORDER_LIST:
+	case CMD_HMI_SET_ORDER_INDEX:
+		this->m_p_channel_control[0].ProcessHmiCmd(cmd);
+		// 暂时不考虑多通道
+		/*if(cmd.channel_index < this->m_p_general_config->chn_count)
             m_p_channel_control[cmd.channel_index].ProcessHmiCmd(cmd);
         else if(cmd.channel_index == CHANNEL_ENGINE_INDEX){
             for(int i = 0; i < this->m_p_general_config->chn_count; i++){
@@ -3019,6 +3024,7 @@ void ChannelEngine::ProcessHmiCmd(HMICmdFrame &cmd){
             }
         }else
             g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "命令[%d]通道号非法！%d", cmd.cmd, cmd.channel_index);
+         */
         break;
     case CMD_HMI_SET_PARA:		//设置参数
         this->ProcessHmiSetParam(cmd);
@@ -5420,6 +5426,11 @@ bool ChannelEngine::Start(){
         for(uint8_t i = 0; i < m_p_channel_mode_group[m_n_cur_chn_group_index].GetChannelCount(); i++){
             chn = m_p_channel_mode_group[m_n_cur_chn_group_index].GetChannel(i);
             UpdateHandwheelState(chn);
+
+#ifdef NEW_WOOD_MACHINE
+            m_p_channel_control[chn].m_b_need_pre_prog = true;
+            m_p_channel_control[chn].m_b_in_next_prog = false;
+#endif
 
             m_p_channel_control[chn].StartRunGCode();
         }

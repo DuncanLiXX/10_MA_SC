@@ -4551,29 +4551,26 @@ int ChannelControl::Run(){
 				}
                 else{
 
-                    //printf("----------------------------> CompileLine\n");
 					if(m_p_compiler->RunMessage()){
-                        //printf("----------------------------> RunMessage\n");
+
 						if(!ExecuteMessage()){
-                            //printf("----------------------------> ExecuteMessage\n");
+
 							if(m_error_code != ERR_NONE){
 
 								g_ptr_trace->PrintTrace(TRACE_WARNING, CHANNEL_CONTROL_SC, "execute message error2, %d\n", m_error_code);
 								m_n_run_thread_state = ERROR; //编译出错
 							}else{  //执行未成功，转换为WAIT_EXECUTE状态
-
 								usleep(10000);   //休眠10ms
-                                //printf("----------------------------> WaitExcute\n");
 							}
 						}
 					}
 					else{
 						if(m_p_compiler->GetErrorCode() != ERR_NONE){
-                            //printf("ccccc\n");
+
 							CreateError(m_p_compiler->GetErrorCode(), ERROR_LEVEL, CLEAR_BY_MCP_RESET, 0, m_n_channel_index);
 							m_n_run_thread_state = ERROR;
 						}else{
-							//printf("dcba\n");
+
 							m_n_run_thread_state = WAIT_RUN;//执行失败，状态切换到WAIT_RUN
 						}
 					}
@@ -4687,17 +4684,38 @@ int ChannelControl::Run(){
         {
         	usleep(10000);   //非运行状态，线程挂起10ms
 #ifdef NEW_WOOD_MACHINE
+
+        	// 所有加工程序结束 后置程序运行结束 回到排程列表第一个文件
+        	if(m_b_in_next_prog){
+				m_b_in_next_prog = false;
+				if(!order_file_vector.empty()){
+					char path[kMaxPathLen];
+					char file_name[150];
+					current_order_index = 1;
+					strcpy(path, PATH_NC_FILE);
+					strcpy(file_name, order_file_vector.at(0).c_str());
+					strcat(path, file_name);
+					strcpy(m_channel_status.cur_nc_file_name,file_name);
+					g_ptr_parm_manager->SetCurNcFile(m_n_channel_index, m_channel_status.cur_nc_file_name);    //修改当前NC文件
+					this->m_p_compiler->OpenFile(path);
+					this->SendOpenFileCmdToHmi(m_channel_status.cur_nc_file_name);
+				}
+			}
+
+        	// 加工文件M30   需要启动后置程序
         	if(m_b_need_next_prog){
-        		char  filename[] = "O9703.NC";
+        		char  filename[] = "O9030.NC";
         		strcpy(m_channel_status.cur_nc_file_name, filename);
         		g_ptr_parm_manager->SetCurNcFile(m_n_channel_index, m_channel_status.cur_nc_file_name);    //修改当前NC文件
-        		this->m_p_compiler->OpenFile("/cnc/nc_files/O9703.NC");
+        		this->m_p_compiler->OpenFile("/cnc/nc_files/O9030.NC");
+        		this->SendOpenFileCmdToHmi(m_channel_status.cur_nc_file_name);
         		this->StartRunGCode();
         		m_b_in_next_prog = true;
         		m_b_need_next_prog = false;
         		m_b_g110_call =false;   //非后置程序不允许G110调用
         	}
 
+        	// 后置程序M30  需要调用G110 指定的加工 程序
         	if(m_b_g110_call){
         		char path[kMaxPathLen];
         		strcpy(path, PATH_NC_FILE);
@@ -4707,6 +4725,7 @@ int ChannelControl::Run(){
         		this->m_p_compiler->OpenFile(path);
         		this->SendOpenFileCmdToHmi(m_channel_status.cur_nc_file_name);
         		this->StartRunGCode();
+        		m_b_in_next_prog = false;
         		m_b_g110_call = false;
         	}
 #endif
@@ -10984,7 +11003,9 @@ bool ChannelControl::ExecuteOpenFileMsg(RecordMsg *msg){
 	int index = int(openfile_msg->OData);
 
 	// G110 打开的序号不存在
-	if(index < 0 || index >= order_file_vector.size()){
+	if(index <= 0 || index > order_file_vector.size()){
+
+		printf("index: %d, order_file_vector.size(): %d\n", index, order_file_vector.size());
 		m_error_code = ORDER_INDEX_ERROR;
 		CreateError(ORDER_INDEX_ERROR, ERROR_LEVEL, CLEAR_BY_MCP_RESET, openfile_msg->GetLineNo(), m_n_channel_index, 0);
 		return false;
@@ -10993,7 +11014,7 @@ bool ChannelControl::ExecuteOpenFileMsg(RecordMsg *msg){
 	memset(g110_file_name, 0, sizeof(g110_file_name));
 
 	current_order_index = index;
-	strcpy(g110_file_name, order_file_vector.at(index).c_str());
+	strcpy(g110_file_name, order_file_vector.at(index-1).c_str());
 
 	// 打开G110 程序调用标志
 	this->m_b_g110_call = true;
@@ -20128,15 +20149,9 @@ void ChannelControl::PrintDebugInfo1(){
 // @test zk
 void ChannelControl::test(){
 	//CreateError(33002, INFO_LEVEL, CLEAR_BY_MCP_RESET, 0, m_n_channel_index);
-	if(this->m_channel_status.machining_state != MS_READY){
-		this->StopRunGCode();  //停止当前运行
-	}
-
-	//设置加工复位的状态量
-	this->m_n_restart_line = 10;
-	this->m_n_restart_step = 1;
-	this->m_n_restart_mode = NORMAL_RESTART;
-	m_channel_rt_status.line_no = m_n_restart_line;
+	printf("enter in test()\n");
+	order_file_vector.push_back("O0002.NC");
+	printf("order_file_vector.size(): %d\n", order_file_vector.size());
 
 }
 

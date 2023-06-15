@@ -6621,6 +6621,7 @@ bool ChannelEngine::CheckAxisHardLimit(uint8_t phy_axis, int8_t dir){
     printf("cur phy axis: %hhu, dir = %hhu, post_mask = 0x%llx, neg_mask = 0x%llx\n", phy_axis, dir, this->m_hard_limit_postive, m_hard_limit_negative);
     //if(this->m_b_ret_ref || this->m_b_ret_ref_auto)   //回参考点时屏蔽硬限位  //回参考点时也需要硬限位检查
     //    return false;
+
     if(dir == DIR_POSITIVE){
         if(this->m_hard_limit_postive & (0x01<<phy_axis))
             return true;
@@ -6629,6 +6630,20 @@ bool ChannelEngine::CheckAxisHardLimit(uint8_t phy_axis, int8_t dir){
             return true;
     }else{
         return true;
+    }
+
+    // 同步轴也要判断丛轴状态
+    int axisMask = GetSyncAxisCtrl()->GetSlaveAxis(phy_axis);
+    for (int i = 0; i < this->m_p_general_config->axis_count; ++i) {
+        if(axisMask & (0x01<<i)){
+            if(dir == DIR_POSITIVE){
+                if(this->m_hard_limit_postive & (0x01<<i))
+                    return true;
+            }else if(dir == DIR_NEGATIVE){
+                if(this->m_hard_limit_negative & (0x01<<i))
+                    return true;
+            }
+        }
     }
 
     return false;

@@ -3214,7 +3214,7 @@ MacroCmdMsg::MacroCmdMsg(LexerMacroCmd *macro){
 	SetMsgType(MACRO_MSG);
 	this->m_n_run_step = 0;
 	this->m_ln_offset = 0;
-	this->SetFlag(FLAG_WAIT_MOVE_OVER, true);   //需要等待运动到位
+	//this->SetFlag(FLAG_WAIT_MOVE_OVER, true);   //需要等待运动到位
 	if(macro == nullptr){
 		this->m_macro_cmd = MACRO_CMD_INVALID;
 		while(!m_macro_expression[0].empty())

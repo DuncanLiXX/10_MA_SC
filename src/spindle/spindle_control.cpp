@@ -16,6 +16,10 @@
 
 using namespace Spindle;
 
+static struct timeval time_start;
+static struct timeval time_end;
+
+
 SpindleControl::SpindleControl()
 {
 }
@@ -526,6 +530,13 @@ void SpindleControl::RspORCMA(bool success)
 {
     if(!spindle)
         return;
+
+	// @test zk
+	gettimeofday(&time_end, NULL);
+
+	//printf("=============== time elapse %d sec\n", time_end.tv_sec - time_start.tv_sec);
+	//printf("=============== time elapse %d usec\n", time_end.tv_usec - time_start.tv_usec);
+
     ScPrintf("SpindleControl::RspORCMA : success = %d\n",success);
     // 定位成功，将ORAR置为1，通知PMC定位动作完成
     if(success && ORCMA){
@@ -949,7 +960,8 @@ void SpindleControl::ProcessORCMA(bool ORCMA)
     		}
     		count = 0;
     	}
-
+    	// @test zk
+    	gettimeofday(&time_start, NULL);
         mi->SendSpdLocateCmd(chn, phy_axis+1,true);
     }else{
         //Polar polar = CalPolar();

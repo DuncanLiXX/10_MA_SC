@@ -5354,11 +5354,27 @@ bool ChannelControl::OutputData(RecordMsg *msg, bool flag_block){
     }
     case LINE_MSG:{
 #ifdef NEW_WOOD_MACHINE
-        if(this->m_p_g_reg->QDE == 1){  //快钻功能激活
+    	// 柜体模式且快钻功能打开
+        if(this->m_p_g_reg->BOXM && this->m_p_g_reg->QDE && (this->m_p_g_reg->QDAXIS != 0)){  //快钻功能激活
             LineMsg *linemsg = static_cast<LineMsg *>(msg);
-            uint8_t z_chn_axis = this->GetChnAxisFromName(AXIS_NAME_Z);
+
+
+            uint8_t chn_axis = 0;
+
+            switch(this->m_p_g_reg->QDAXIS){
+            case 1:
+            	chn_axis = this->GetChnAxisFromName(AXIS_NAME_X);
+            	break;
+            case 2:
+            	chn_axis = this->GetChnAxisFromName(AXIS_NAME_Y);
+            	break;
+            case 3:
+            	chn_axis = this->GetChnAxisFromName(AXIS_NAME_Z);
+            	break;
+            }
+
             uint32_t msk = 0x01;
-            if(linemsg->GetAxisMoveMask() == (msk<<z_chn_axis)){   //只有Z轴移动时
+            if(linemsg->GetAxisMoveMask() == (msk<<chn_axis)){   //只有Z轴移动时
                 data_frame.data.cmd = MOVE_G00;   //强制将G01指令替换为G00指令
                 data_frame.data.feed = 0;
 
@@ -5971,9 +5987,11 @@ bool ChannelControl::ExecuteMessage(){
         case EXACT_STOP_MSG:
             res = this->ExecuteExactStopMsg(msg);
             break;
+#ifdef NEW_WOOD_MACHINE
         case OPEN_FILE_MSG:
         	res = this->ExecuteOpenFileMsg(msg);
         	break;
+#endif
         default:
         	break;
         }
@@ -6008,8 +6026,7 @@ bool ChannelControl::ExecuteMessage(){
             }
 
             if(msg->IsNeedWaitMsg() && (this->m_simulate_mode == SIM_NONE || this->m_simulate_mode == SIM_MACHINING)){  //非仿真、加工仿真才需要给MC发送启动指令
-                m_b_mc_need_start = true;
-                //printf("set mc need start true in exec~~~~~\n");
+            	m_b_mc_need_start = true;
             }
 
 
@@ -6159,9 +6176,9 @@ bool ChannelControl::ExecuteAuxMsg(RecordMsg *msg){
                 this->m_mode_restart.rated_spindle_speed = 0;
                 this->m_mode_restart.spindle_dir = SPD_DIR_STOP;
             }else if(mcode == 2 || mcode == 30 || mcode == 99){  //直接结束，切换到READY状态
-                if(mcode == 99 && m_mode_restart.sub_prog_call > 0)
+                if(mcode == 99 && m_mode_restart.sub_prog_call > 0){
                     this->m_mode_restart.sub_prog_call--;
-                else{
+                }else{
                     ResetMcLineNo();//复位MC模块当前行号
                     this->SetCurLineNo(1);
 
@@ -9272,7 +9289,7 @@ bool ChannelControl::ExecuteMacroCmdMsg(RecordMsg *msg){
             ){//加工复位
         return true;
     }
-
+	/*
     //等待MC运行完所有数据
     int count = 0;
     int limited = 1;
@@ -9298,6 +9315,8 @@ bool ChannelControl::ExecuteMacroCmdMsg(RecordMsg *msg){
             usleep(5000);   //等待5ms，因为MC状态更新周期为5ms，需要等待状态确认
         }
     }
+
+    */
 
     if(this->IsStepMode() && this->m_b_need_change_to_pause){//单段，切换暂停状态
         this->m_b_need_change_to_pause = false;
@@ -10995,6 +11014,7 @@ bool ChannelControl::ExecuteExactStopMsg(RecordMsg *msg){
     return true;
 }
 
+#ifdef NEW_WOOD_MACHINE
 bool ChannelControl::ExecuteOpenFileMsg(RecordMsg *msg){
 
 	OpenFileMsg *openfile_msg = (OpenFileMsg *)msg;
@@ -11021,7 +11041,7 @@ bool ChannelControl::ExecuteOpenFileMsg(RecordMsg *msg){
 
 	return true;
 }
-
+#endif
 
 /**
  * @brief 设置功能状态，例如：单段，选停等等
@@ -20149,9 +20169,9 @@ void ChannelControl::PrintDebugInfo1(){
 // @test zk
 void ChannelControl::test(){
 	//CreateError(33002, INFO_LEVEL, CLEAR_BY_MCP_RESET, 0, m_n_channel_index);
-	printf("enter in test()\n");
-	order_file_vector.push_back("O0002.NC");
-	printf("order_file_vector.size(): %d\n", order_file_vector.size());
+	//printf("enter in test()\n");
+	//order_file_vector.push_back("O0002.NC");
+	//printf("order_file_vector.size(): %d\n", order_file_vector.size());
 
 }
 

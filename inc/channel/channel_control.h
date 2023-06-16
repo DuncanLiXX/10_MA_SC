@@ -439,7 +439,11 @@ private:
 	bool ExecuteRestartOverMsg(RecordMsg *msg);   //实际执行加工复位完成指令消息
 	bool ExecuteInputMsg(RecordMsg *msg);		//执行G10 输入指令消息
 	bool ExecuteExactStopMsg(RecordMsg *msg);   // G09
+
+#ifdef NEW_WOOD_MACHINE
 	bool ExecuteOpenFileMsg(RecordMsg *msg);
+#endif
+
 #ifdef USES_SPEED_TORQUE_CTRL	
 	bool ExecuteSpeedCtrlMsg(RecordMsg *msg);   //执行速度控制消息
 	bool ExecuteTorqueCtrlMsg(RecordMsg *msg);   //执行力矩控制消息

@@ -1929,7 +1929,6 @@ bool Parser::CreateLoopMsg(const int gcode){
 	//this->m_p_compiler_status->mode.gmode[GetModeGroup(gcode)] = gcode;
 //	this->m_p_compiler_status->mode.move_mode = 9;
 
-//	printf("create loop msg : %d\n", gcode);
 	ProcessLastBlockRec(new_msg);
 
 //	this->m_p_compiler_status->cur_pos = target; //更新编译当前位置
@@ -3217,7 +3216,7 @@ bool Parser::CreateExactStopMsg(){
 bool Parser::CreateOpenFileMsg(){
 	OpenFileMsg * new_msg = new OpenFileMsg();
 	GetCodeData(O_DATA, new_msg->OData);
-	new_msg->SetFlag(FLAG_WAIT_MOVE_OVER, true);
+	//new_msg->SetFlag(FLAG_WAIT_MOVE_OVER, true);
 	new_msg->SetLineNo(this->m_p_lexer_result->line_no);
 	m_p_parser_result->Append(new_msg);
 	ProcessLastBlockRec(new_msg);
@@ -3716,16 +3715,15 @@ bool Parser::CreateMacroMsg(LexerMacroCmd *macro){
 	(static_cast<MacroCmdMsg *>(new_msg))->SetOffset(this->m_p_lexer_result->offset);
 
 	if(macro->cmd == MACRO_CMD_IF){
-		new_msg->SetFlag(FLAG_WAIT_MOVE_OVER, true);
+		//new_msg->SetFlag(FLAG_WAIT_MOVE_OVER, true);
 	}
-
 
 	if(this->m_p_compiler_status->jump_flag)
 		new_msg->SetFlag(FLAG_JUMP, true);
 
 	m_p_parser_result->Append(new_msg);
 
-	ProcessLastBlockRec(new_msg);
+	//ProcessLastBlockRec(new_msg);
 
 	return true;
 }

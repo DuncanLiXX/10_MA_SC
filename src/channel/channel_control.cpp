@@ -74,17 +74,18 @@ ChannelControl::ChannelControl() {
     this->m_b_cancel_manual_call_macro = false;
 
 #ifdef NEW_WOOD_MACHINE
-    this->m_b_need_pre_prog = false;
-    this->m_b_need_next_prog = false;
-    this->m_b_in_next_prog = false;
-    this->m_b_g110_call = false;
-    current_order_index = -1;
+    m_b_need_pre_prog = false;     // 前置程序待执行
+    m_b_need_next_prog = false;    // 后置程序待执行
+    m_b_in_next_prog = false;	   // 后置程序执行中
+    m_b_g110_call = false;		   // G110 调用程序标志
+    m_b_dust_eliminate = false;      //除尘标志
+    m_b_order_mode_on = false;		//排程模式开
+    current_order_index = -1;      // 当前加载排程列表序号
+    memset(g110_file_name, 0, sizeof(g110_file_name));
+    order_file_vector.clear();     // 排程文件列表
 #endif
-
     this->m_b_delay_to_reset = false;
-
     m_b_pos_captured = false;
-
     m_b_hmi_graph = false;     //默认非图形模式
 
     memset(&m_channel_status, 0x00, sizeof(ChannelStatusCollect));
@@ -1949,7 +1950,7 @@ END:
 #endif
 
 #ifdef NEW_WOOD_MACHINE
-    if(m_b_need_pre_prog){
+    if(m_b_order_mode_on && m_b_need_pre_prog){
     	this->m_p_compiler->CallMarcoProgWithNoPara(9701, false);
     	m_b_need_pre_prog = false;
     }
@@ -4637,7 +4638,7 @@ int ChannelControl::Run(){
         }
         else if(m_n_run_thread_state == PAUSE)
         {
-            usleep(2000);
+        	usleep(2000);
         }
         else if(m_n_run_thread_state == WAIT_EXECUTE)
         {
@@ -4653,6 +4654,20 @@ int ChannelControl::Run(){
                 }
                 else{
                     usleep(10000);
+#ifdef NEW_WOOD_MACHINE
+                    if(m_b_dust_eliminate){
+                    	if(m_channel_mc_status.step_over){
+                    		//TODO 取消单段
+                    		//TODO 记录行号  除尘后程序再起
+                    		SetMcStepMode(false);
+                    		printf("=== dust_eliminate_line: %lu\n", m_channel_rt_status.line_no);
+                    		m_n_run_thread_state = IDLE;
+
+                    		Reset();
+
+                    	}
+                    }
+#endif
                 }
             }
         }
@@ -4685,8 +4700,19 @@ int ChannelControl::Run(){
         	usleep(10000);   //非运行状态，线程挂起10ms
 #ifdef NEW_WOOD_MACHINE
 
+        	// 除尘宏程序调用
+        	if(m_b_dust_eliminate && m_channel_status.machining_state == MS_READY){
+        		m_b_dust_eliminate = false;
+        		char  filename[] = "O9030.NC";
+				strcpy(m_channel_status.cur_nc_file_name, filename);
+				g_ptr_parm_manager->SetCurNcFile(m_n_channel_index, m_channel_status.cur_nc_file_name);    //修改当前NC文件
+				this->m_p_compiler->OpenFile("/cnc/nc_files/O9030.NC");
+				this->SendOpenFileCmdToHmi(m_channel_status.cur_nc_file_name);
+				this->StartRunGCode();
+        	}
+
         	// 所有加工程序结束 后置程序运行结束 回到排程列表第一个文件
-        	if(m_b_in_next_prog){
+        	if(m_b_order_mode_on && m_b_in_next_prog){
 				m_b_in_next_prog = false;
 				if(!order_file_vector.empty()){
 					char path[kMaxPathLen];
@@ -4703,7 +4729,7 @@ int ChannelControl::Run(){
 			}
 
         	// 加工文件M30   需要启动后置程序
-        	if(m_b_need_next_prog){
+        	if(m_b_need_next_prog && m_b_dust_eliminate == 0){
         		char  filename[] = "O9030.NC";
         		strcpy(m_channel_status.cur_nc_file_name, filename);
         		g_ptr_parm_manager->SetCurNcFile(m_n_channel_index, m_channel_status.cur_nc_file_name);    //修改当前NC文件
@@ -4716,7 +4742,7 @@ int ChannelControl::Run(){
         	}
 
         	// 后置程序M30  需要调用G110 指定的加工 程序
-        	if(m_b_g110_call){
+        	if(m_b_g110_call && m_b_dust_eliminate == 0){
         		char path[kMaxPathLen];
         		strcpy(path, PATH_NC_FILE);
         		strcat(path, g110_file_name);
@@ -4867,9 +4893,6 @@ bool ChannelControl::RefreshStatusFun(){
 
 
 			if(m_channel_mc_status.cur_mode == MC_MODE_AUTO &&
-#ifdef USES_ADDITIONAL_PROGRAM
-				m_n_add_prog_type == NONE_ADD &&
-#endif
 				m_b_lineno_from_mc && m_channel_mc_status.cur_line_no > 0){  //即刻更新实时状态行号
 			m_channel_rt_status.line_no = m_channel_mc_status.cur_line_no;
 		    }
@@ -4879,12 +4902,9 @@ bool ChannelControl::RefreshStatusFun(){
 		//printf("m_channel_mc_status.cur_mode : %d\n", m_channel_mc_status.cur_mode);
 		//更新系统状态
 		step_mode_flag = IsStepMode();
-		if(step_mode_flag){
-			check_count = 10;    //2;
-		}
-		else{
-			check_count = 10;    //1;   //增加延时，等待轴运行到位
-		}
+
+		check_count = 10;
+
 		if(m_channel_mc_status.cur_mode ==MC_MODE_MANUAL){
 
 			if(m_channel_status.machining_state == MS_PAUSING ||		//暂停中并且MC已切换至手动模式
@@ -4899,11 +4919,8 @@ bool ChannelControl::RefreshStatusFun(){
 						}else{
 							SetMachineState(MS_READY);
 						}
-						if(this->m_channel_status.chn_work_mode == AUTO_MODE
-#ifdef USES_ADDITIONAL_PROGRAM
-								&& this->m_n_add_prog_type != CONTINUE_START_ADD
-#endif
-						){
+						if(this->m_channel_status.chn_work_mode == AUTO_MODE)
+						{
 							this->SetCurLineNo(1);
 							this->InitMcIntpAutoBuf();
 						}else if(m_channel_status.chn_work_mode == MDA_MODE){
@@ -4926,6 +4943,7 @@ bool ChannelControl::RefreshStatusFun(){
 						SetWorkMode(m_change_work_mode_to);
 						m_change_work_mode_to = INVALID_MODE;
 					}
+
 					printf("ChannelControl::RefreshStatusFun() switch to pause\n");
 					m_n_step_change_mode_count = 0;
 				}
@@ -6059,7 +6077,7 @@ bool ChannelControl::ExecuteMessage(){
             if(msg->IsEndMsg()){	//处理M02/M30消息
                 this->m_n_run_thread_state = STOP;
 #ifdef NEW_WOOD_MACHINE
-                if(!m_b_in_next_prog) m_b_need_next_prog = true;
+                if(m_b_order_mode_on && !m_b_in_next_prog) m_b_need_next_prog = true;
 #endif
             }else if(m_n_run_thread_state != WAIT_RUN && this->m_error_code == ERR_NONE && this->IsMachinRunning() && !pause_flag){
                 this->m_n_run_thread_state = RUN;
@@ -20172,6 +20190,10 @@ void ChannelControl::test(){
 	//printf("enter in test()\n");
 	//order_file_vector.push_back("O0002.NC");
 	//printf("order_file_vector.size(): %d\n", order_file_vector.size());
+
+	//m_b_dust_eliminate = true;
+	// 设置单段运行
+	//SetMcStepMode(true);
 
 }
 

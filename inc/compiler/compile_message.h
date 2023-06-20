@@ -331,7 +331,7 @@ public:
 	void IncreaseExecStep(uint8_t index){if(index<m_n_tool_count) m_n_tool_exec_segment[index]++;}   //步骤自加
 
 	int GetSubProgIndex(){return m_n_sub_prog_name;}  //返回子程序号
-	void GetSubProgName(char *name, bool abs_path);	 //返回子程序名
+    //void GetSubProgName(char *name, bool abs_path);	 //返回子程序名
 
 	void SetSubProgType(uint8_t type){m_n_sub_prog_type = type;} //设置子程序类型
 	uint8_t GetSubProgType(){return m_n_sub_prog_type;}   	//返回子程序类型
@@ -460,7 +460,7 @@ public:
 	virtual void PrintString();   //用于程序调试
 
 	int GetSubProgIndex(){return m_n_sub_prog_name;}  //返回子程序号
-	void GetSubProgName(char *name, bool abs_path);					//返回子程序名
+    //void GetSubProgName(char *name, bool abs_path);					//返回子程序名
 	int GetCallTimes(){return m_n_call_times;}		//返回调用次数
 
 	void SetSubProgType(uint8_t type){m_n_sub_prog_type = type;} //设置子程序类型
@@ -496,7 +496,7 @@ public:
 	virtual void PrintString();   //用于程序调试
 
 	int GetMacroProgIndex(){return m_n_macro_prog_name;}  //返回子程序号
-	void GetMacroProgName(char *name, bool abs_path);					//返回子程序名
+    //void GetMacroProgName(char *name, bool abs_path);					//返回子程序名
 	int GetCallTimes(){return m_n_call_times;}		//返回调用次数
 	double *GetParameter(uint32_t &mask, uint8_t &count);     //返回参数数据
 
@@ -562,7 +562,7 @@ public:
 	virtual void PrintString();   //用于程序调试
 
 	int GetMacroProgIndex();  //返回子程序号
-	void GetMacroProgName(char *name, bool abs_path);					//返回子程序名
+    //void GetMacroProgName(char *name, bool abs_path);					//返回子程序名
 	double *GetParameter(uint32_t &mask, uint8_t &count);     //返回参数数据
 
 
@@ -717,7 +717,7 @@ public:
 	int GetHIndex(){return this->m_n_h_index;}   //返回写入的H值号
 
 	int GetMacroProgIndex(){return m_n_macro_prog_name;}  //返回对应宏程序号
-	void GetMacroProgName(char *name, bool abs_path);	   //返回宏程序名
+    //void GetMacroProgName(char *name, bool abs_path);	   //返回宏程序名
 
 	void SetMacroProgType(uint8_t type){m_n_macro_prog_type = type;} //设置宏程序类型
 	uint8_t GetMacroProgType(){return m_n_macro_prog_type;}   	//返回宏程序类型

@@ -50,6 +50,7 @@ const int kNcFileSignLen = 16;   //签名串长度
 
 //刀具相关
 const int kMaxToolCount = 60;    //系统支持最大刀具容量
+//const int kMaxToolCount = 128;
 
 //工艺参数最大组数
 const int kMaxProcParamCount = 10;    //系统支持的工艺参数最大组数

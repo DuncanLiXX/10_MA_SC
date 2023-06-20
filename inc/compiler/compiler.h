@@ -108,6 +108,8 @@ public://公共接口
 
     void setCompensationPos(const DPointChn &pos);
 
+    void GetMacroSubProgPath(int macro_group, int macro_index, bool abs_path, char *name);   //获取宏程序的路径数据
+
 #ifdef USES_WOOD_MACHINE
 	bool FindPreStartSpdCmd(uint64_t line_min , uint64_t line_max, SpindleStartOffset &spd_cmd);   //查找是否存在可预启动的主轴指令
 #endif
@@ -192,8 +194,6 @@ private://私有接口
 	bool JumpToLoopEnd(LoopOffset &loop);    //编译跳转到对应的END指令
 
 	bool CheckJumpGoto(uint64_t line_src, uint64_t line_des);     //检查跳转的目的行的合法性
-
-	void GetMacroSubProgPath(int macro_group, int macro_index, bool abs_path, char *name);   //获取宏程序的路径数据
 
 	uint8_t MapAxisNameToParamIdx(uint8_t axis_name);   //将轴名称映射为变量ID
 

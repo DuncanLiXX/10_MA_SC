@@ -809,6 +809,34 @@ void Clean(){
 }
 
 /**
+  * @brief 初始化设备资源
+  * @return
+  *
+  */
+bool InitSysResource()
+{
+    if (access(PATH_NC_FILE, F_OK) == -1)
+    {
+       if (mkdir(PATH_NC_FILE, S_IRWXU))
+           return false;
+    }
+
+    if (access(PATH_NC_SUB_FILE, F_OK) == -1)
+    {
+        if (mkdir(PATH_NC_SUB_FILE, S_IRWXU))
+            return false;
+    }
+
+    if (mkdir(PATH_NC_MAC_FILE, F_OK) == -1)
+    {
+        if (mkdir(PATH_NC_MAC_FILE, S_IRWXU))
+            return false;
+    }
+
+    return true;
+}
+
+/**
  * @brief 主程序入口函数
  * @return
  */
@@ -839,6 +867,8 @@ int main()
 //	pthread_attr_destroy(&attr);
 
     res = Initialize();
+
+    InitSysResource();
 
     signal(SIGINT, ProgramQuit);
     signal(SIGTERM, ProgramQuit);

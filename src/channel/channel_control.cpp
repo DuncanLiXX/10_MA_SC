@@ -1964,9 +1964,9 @@ END:
  * @brief 设置当前行号从MC模块获取
  */
 void ChannelControl::SetCurLineNoFromMc(){
-
-	if(this->m_n_macroprog_count == 0 || this->m_p_general_config->debug_mode > 0)  //调试模式下或者没有宏程序调用
+    if((this->m_n_macroprog_count == 0 && this->m_n_subprog_count == 0) || this->m_p_general_config->debug_mode > 0) { //调试模式下或者没有宏程序调用
         m_b_lineno_from_mc = true;
+    }
 }
 
 /**
@@ -4021,6 +4021,8 @@ bool ChannelControl::SendOpenFileCmdToHmi(char *filename){
     strcpy(cmd.data, filename);
     cmd.data_len = strlen(cmd.data);
 
+    std::cout << "SendOpenFileCmdToHmi: " << filename << std::endl;
+
     return this->m_p_hmi_comm->SendCmd(cmd);
 }
 
@@ -5204,10 +5206,9 @@ void ChannelControl::SetCurLineNo(uint32_t line_no){
     if(this->m_n_add_prog_type != NONE_ADD)
         return;
 #endif
-    if(this->m_n_macroprog_count == 0 || this->m_p_general_config->debug_mode > 0)
+    if((this->m_n_macroprog_count == 0 && this->m_n_subprog_count == 0) || this->m_p_general_config->debug_mode > 0)
     {
         this->m_channel_rt_status.line_no = line_no;
-        //printf("ChannelControl::SetCurLineNo: %u\n", line_no);
     }
     ResetMcLineNo();//复位MC模块当前行号
 }
@@ -8378,7 +8379,8 @@ bool ChannelControl::ExecuteLoopMsg(RecordMsg *msg){
             if(loopmsg->GetMacroProgType() > 1){
                 char file[kMaxFileNameLen];
                 memset(file, 0x00, kMaxFileNameLen);
-                loopmsg->GetMacroProgName(file, false);
+                //loopmsg->GetMacroProgName(file, false);
+                m_p_compiler->GetMacroSubProgPath(loopmsg->GetMacroProgType(), loopmsg->GetMacroProgIndex(), false, file);
                 this->SendOpenFileCmdToHmi(file);
             }
         }
@@ -9039,22 +9041,25 @@ bool ChannelControl::ExecuteSubProgCallMsg(RecordMsg *msg){
             }
 
             if(sub_msg->GetExecStep(0) == 0){
-                m_n_subprog_count += 1;
 
                 //TODO 向HMI发送命令打开子文件
                 if(this->m_channel_status.chn_work_mode == AUTO_MODE){
-                	if(sub_msg->GetSubProgType() == 2 ||
-                            sub_msg->GetSubProgType() == 4 ||
-                            sub_msg->GetSubProgType() == 6){
+                    //if(sub_msg->GetSubProgType() == 2 ||
+                    //        sub_msg->GetSubProgType() == 4 ||
+                    //        sub_msg->GetSubProgType() == 6){
+                    if (this->m_p_general_config->debug_mode > 0) {
                     	char file[kMaxFileNameLen];
                         memset(file, 0x00, kMaxFileNameLen);
-                        sub_msg->GetSubProgName(file, false);
+                        m_p_compiler->GetMacroSubProgPath(sub_msg->GetSubProgType(), sub_msg->GetSubProgIndex(), false, file);
+                        //sub_msg->GetSubProgName(file, false);
                         this->SendOpenFileCmdToHmi(file);
                     }
+                //}
                 }
 
                 //设置当前行号
                 SetCurLineNo(msg->GetLineNo());
+                m_n_subprog_count += 1;
                 this->m_p_f_reg->DM98 = 1;
                 sub_msg->IncreaseExecStep(0);
             }else if(sub_msg->GetExecStep(0) == 1){
@@ -9163,7 +9168,8 @@ bool ChannelControl::ExecuteMacroProgCallMsg(RecordMsg *msg){
                 if(macro_msg->GetMacroProgType() > 1){
                     char file[kMaxFileNameLen];
                     memset(file, 0x00, kMaxFileNameLen);
-                    macro_msg->GetMacroProgName(file, false);
+                    //macro_msg->GetMacroProgName(file, false);
+                    m_p_compiler->GetMacroSubProgPath(macro_msg->GetMacroProgType(), macro_msg->GetMacroProgIndex(), false, file);
                     this->SendOpenFileCmdToHmi(file);
                 }
             }
@@ -9251,7 +9257,8 @@ bool ChannelControl::ExecuteAutoToolMeasureMsg(RecordMsg *msg){
             if(macro_msg->GetMacroProgType() > 1){
                 char file[kMaxFileNameLen];
                 memset(file, 0x00, kMaxFileNameLen);
-                macro_msg->GetMacroProgName(file, false);
+                //macro_msg->GetMacroProgName(file, false);
+                m_p_compiler->GetMacroSubProgPath(macro_msg->GetMacroProgType(), macro_msg->GetMacroProgIndex(), false, file);
                 this->SendOpenFileCmdToHmi(file);
             }
         }

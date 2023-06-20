@@ -348,7 +348,19 @@ bool AsFileMapInfo::JumpTo(uint64_t pos){
 		return false;  //映射失败
 	}
 
-	return true;
+    return true;
+}
+
+/**
+ * @brief 获取文件所在目录
+ * @return 目录路径
+ */
+string AsFileMapInfo::GetDirName()
+{
+    string full_path = str_file_name;
+    int pos = full_path.find_last_of('/');
+    string dir_path = full_path.substr(0, pos+1);
+    return dir_path;
 }
 
 /**

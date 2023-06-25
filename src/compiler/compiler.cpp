@@ -3146,7 +3146,6 @@ bool Compiler::RunCompensateMsg(RecordMsg *msg) {
         SCToolOffsetConfig * offset_config = g_ptr_parm_manager->GetToolConfig(m_n_channel_index);
         int d_value = tmp->GetCompValue();
         if(d_value > kMaxToolCount  or d_value < 0) return false;
-        printf("===== d value: %d\n", d_value);
         if(d_value == 0){
             this->m_p_tool_compensate->setToolRadius(0);
         }else {
@@ -3934,9 +3933,8 @@ bool Compiler::RunToolMsg(RecordMsg *msg) {
     this->m_n_head_state = HEAD_INFO;
 #endif
 
+    printf("===== run tool msg %d\n", tmp->GetTool(0));
     m_compiler_status.mode.t_mode = tmp->GetTool(0);
-
-
     return true;
 }
 

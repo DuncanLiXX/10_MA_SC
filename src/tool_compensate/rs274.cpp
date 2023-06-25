@@ -1136,7 +1136,7 @@ int Interp::convert_straight_comp2(int move,
             } //else ERS(NCE_BUG_CODE_NOT_G0_OR_G1);
         } else if (concave) {
         	if(settings->cutter_comp_lastmove){
-        		printf("========\n");
+
         	}else{
 
 				if (qc().front().type != QARC_FEED) {

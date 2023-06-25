@@ -3165,7 +3165,14 @@ void ChannelControl::DoRestart(uint64_t line_no){
         printf("设置坐G40模态，%hu to %hu， D %hhu to %hhu\n", m_channel_status.gmode[7], m_mode_restart.gmode[7],
                 m_channel_status.cur_d_code, m_mode_restart.cur_d_code);
 
+        m_channel_status.gmode[7] = m_mode_restart.gmode[7];
         m_channel_status.cur_d_code = m_mode_restart.cur_d_code;
+        SendModeChangToHmi(D_MODE);
+        /*msg = new CompensateMsg(m_mode_restart.gmode[7], m_mode_restart.cur_d_code, src, tar, axis_mask, m_mode_restart.rated_feed, MOVE_G00);
+		if(msg != nullptr){
+			msg->SetLineNo(line_no);
+			this->m_p_output_msg_list_auto->InsertBefore(msg, node);   //插入刀具长度补偿坐标系设定指令
+		}*/
     }
     if(m_channel_status.cur_h_code != m_mode_restart.cur_h_code ||
             m_channel_status.gmode[8] != m_mode_restart.gmode[8]){  //G49模态不匹配或H值不同
@@ -3185,14 +3192,23 @@ void ChannelControl::DoRestart(uint64_t line_no){
     //刀号是否一致，不一致则换刀
     if(this->m_channel_status.cur_tool != this->m_mode_restart.cur_tool){  //不一致，换刀
 
-        //		msg = new AuxMsg(6, 1);    //M06换刀指令
-        //		if(msg != nullptr){
-        //			msg->SetLineNo(line_no);
-        //			this->m_p_output_msg_list_auto->InsertBefore(msg, node);   //插入换刀指令
-        //		}
+    	int tool_number = this->m_mode_restart.cur_tool;
+    	msg = new ToolMsg(&tool_number, 1);
+    	if(msg != nullptr){
+			msg->SetLineNo(line_no);
+			this->m_p_output_msg_list_auto->InsertBefore(msg, node);   //插入换刀指令
+		}
 
-        m_channel_status.cur_tool = m_mode_restart.cur_tool;
-        SendModeChangToHmi(T_MODE);
+
+    	msg = new AuxMsg(6);
+    	if(msg != nullptr){
+			msg->SetLineNo(line_no);
+			this->m_p_output_msg_list_auto->InsertBefore(msg, node);   //插入换刀指令
+		}
+
+        //m_channel_status.cur_tool = m_mode_restart.cur_tool;
+        //SendModeChangToHmi(T_MODE);
+        //printf("44444444444444\n");
     }
 
     //切换主轴状态
@@ -6237,6 +6253,7 @@ bool ChannelControl::ExecuteAuxMsg(RecordMsg *msg){
                 std::cout << "-----------> mode: " << (int)mcode << " sub_call: " << m_mode_restart.sub_prog_call << std::endl;
                 if(mcode == 99 && m_mode_restart.sub_prog_call > 0){
                     this->m_mode_restart.sub_prog_call--;
+                    printf("8888888888888888\n");
                 }else{
                     ResetMcLineNo();//复位MC模块当前行号
                     this->SetCurLineNo(1);
@@ -6694,7 +6711,7 @@ bool ChannelControl::ExecuteAuxMsg(RecordMsg *msg){
             }
             break;
         case 6:		//M06换刀
-            if(tmp->GetExecStep(m_index) == 0){
+        	if(tmp->GetExecStep(m_index) == 0){
                 //TODO 将代码发送给PMC
                 printf("start to execute M06\n");
 
@@ -11094,7 +11111,6 @@ bool ChannelControl::ExecuteOpenFileMsg(RecordMsg *msg){
 
 	OpenFileMsg *openfile_msg = (OpenFileMsg *)msg;
 
-	printf("================ execute g110 msg %lf\n", ((OpenFileMsg *)msg)->OData);
 	int index = int(openfile_msg->OData);
 
 	// G110 打开的序号不存在
@@ -12359,10 +12375,9 @@ void ChannelControl::SetMcCoord(bool flag){
 
 				if(coord_index <= G59_CMD ){
 					origin_pos += (int64_t)(m_p_chn_coord_config[coord_index/10-53].offset[i] * 1e7);    //单位由mm转换为0.1nm
-					printf("===== g54 offset  axis: %i offset %lf\n", i, m_p_chn_coord_config[coord_index/10-53].offset[i]);
+
 				}else if(coord_index <= G5499_CMD){
 					origin_pos += (int64_t)(m_p_chn_ex_coord_config[coord_index/10-5401].offset[i] * 1e7);    //单位由mm转换为0.1nm
-					printf("===== g5401 offset  axis: %i offset %lf\n", i, m_p_chn_ex_coord_config[coord_index/10-5401].offset[i]);
 				}
 
 				if(G52Active){

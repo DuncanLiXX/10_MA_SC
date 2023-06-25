@@ -2039,8 +2039,6 @@ void ChannelEngine::ProcessMiCmd(MiCmdFrame &cmd){
         break;
     case CMD_MI_SET_AXIS_CTRL_MODE:
         this->ProcessMiAxisCtrlModeRsp(cmd); //修改轴控制模式回复
-        //@test
-        printf("===========MI========= ProcessMiAxisCtrlModeRsp");
         break;
     case CMD_MI_SET_AXIS_MACH_POS:   //设置轴当前机械坐标
         this->ProcessSetAxisCurMachPosRsp(cmd);

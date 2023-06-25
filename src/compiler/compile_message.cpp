@@ -995,7 +995,6 @@ ToolMsg::ToolMsg(int *tool, uint8_t total){
 	SetMsgType(TOOL_MSG);
 
 	SetFlag(FLAG_WAIT_MOVE_OVER, true);
-
 }
 
 void ToolMsg::Execute(){
@@ -1347,7 +1346,6 @@ RefReturnMsg& RefReturnMsg::operator=( const RefReturnMsg& msg){
 	this->m_n_axis_mask = msg.m_n_axis_mask;
 	this->m_pos_middle = msg.m_pos_middle;
 	this->ref_id = msg.ref_id;
-	printf("========================= %lf\n", msg.ref_id);
 	return *this;
 }
 

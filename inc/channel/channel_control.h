@@ -382,6 +382,8 @@ public:
     void AddWorkCountPiece(int addnum);  //增加工件计数
     void LimitRotatePos(double &pos, double &move_pr); //限制旋转轴坐标
 
+    bool SubProgIsCurDir(uint8_t type);    // 判断子程序类型是否为当前程序所在目录
+
     uint32_t m_cur_setfeed = 0;
     int main_prog_line_number = 0;
 

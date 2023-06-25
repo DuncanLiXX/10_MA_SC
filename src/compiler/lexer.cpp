@@ -813,7 +813,10 @@ bool Lexer::GetOneGCode(){
 				}
 			}else if(m_cur_domain == 'T'){
 				if(g_code->tcode_count < kMaxTCodeInLine)
+                {
 					g_code->t_value[g_code->tcode_count++] = g_code->value[domain_index];   //保存T指令值
+                    //std::cout << "-------> tcode_count: " << (int)g_code->tcode_count << "value: " << (int)g_code->value[domain_index] << std::endl;
+                }
 				else{//T指令个数超限
 					m_p_lexer_result->error_code = ERR_TOO_MANY_T_CODE;    //告警，T码太多
 					printf("Lexer::GetOneGCode---2, too many t code! tcode_count = %hhu\n", g_code->tcode_count);
@@ -974,7 +977,7 @@ bool Lexer::GetOneMacroExp(){
 bool Lexer::ProcessWord(){
 	bool res = true;
 
-//	printf("lexer::process word, [%s]\n", m_alph_buf);
+    //printf("lexer::process word, [%s]\n", m_alph_buf);
 
 	if(!m_in_macro_exp){//非表达式状态
 		if(m_has_domain){//已存在字母域，告警
@@ -1038,7 +1041,7 @@ bool Lexer::ProcessWord(){
 bool Lexer::ProcessValue(){
 	bool res = true;
 
-//	printf("lexer::process value\n");
+//    printf("lexer::process value\n");
 
 	if(!m_in_macro_exp){//非表达式状态
 		if(m_has_domain){//有字母域

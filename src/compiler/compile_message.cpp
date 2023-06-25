@@ -657,96 +657,96 @@ int LoopMsg::GetMacroProgIndex(){
  * @param name[out] : 输出子程序名称字符串
  * @param abs_path[in] : true--绝对路径   false--相对路径
  */
-void LoopMsg::GetMacroProgName(char *name, bool abs_path){
-	int macro_index = this->GetMacroProgIndex();
-	if(abs_path){
-		if(m_n_macro_prog_type == 2){//同目录下用户宏程序
-			if(macro_index <= 9999)
-				sprintf(name, "%sO%04d.nc", PATH_NC_FILE, macro_index);   //拼接文件名称
-			else
-				sprintf(name, "%sO%d.nc", PATH_NC_FILE, macro_index);
-		}
-		else if(m_n_macro_prog_type == 3){//系统宏程序
-			if(macro_index <= 9999)
-				sprintf(name, "%ssys_sub/O%04d.nc", PATH_NC_FILE, macro_index);
-			else
-				sprintf(name, "%ssys_sub/O%d.nc", PATH_NC_FILE, macro_index);
-		}else if(m_n_macro_prog_type == 4){
-			if(macro_index <= 9999)
-				sprintf(name, "%sO%04d.iso", PATH_NC_FILE, macro_index);   //拼接文件名称
-			else
-				sprintf(name, "%sO%d.iso", PATH_NC_FILE, macro_index);
-		}else if(m_n_macro_prog_type == 5){
-			if(macro_index <= 9999)
-				sprintf(name, "%ssys_sub/O%04d.iso", PATH_NC_FILE, macro_index);
-			else
-				sprintf(name, "%ssys_sub/O%d.iso", PATH_NC_FILE, macro_index);
-		}else if(m_n_macro_prog_type == 6){//同目录下用户宏程序
-			if(macro_index <= 9999)
-				sprintf(name, "%sO%04d.NC", PATH_NC_FILE, macro_index);   //拼接文件名称
-			else
-				sprintf(name, "%sO%d.NC", PATH_NC_FILE, macro_index);
-		}else if(m_n_macro_prog_type == 7){//系统宏程序
-			if(macro_index <= 9999)
-				sprintf(name, "%ssys_sub/O%04d.NC", PATH_NC_FILE, macro_index);
-			else
-				sprintf(name, "%ssys_sub/O%d.NC", PATH_NC_FILE, macro_index);
-		}else if(m_n_macro_prog_type == 8){
-			if(macro_index <= 9999)
-				sprintf(name, "%sO%04d.ISO", PATH_NC_FILE, macro_index);   //拼接文件名称
-			else
-				sprintf(name, "%sO%d.ISO", PATH_NC_FILE, macro_index);
-		}else if(m_n_macro_prog_type == 9){
-			if(macro_index <= 9999)
-				sprintf(name, "%ssys_sub/O%04d.ISO", PATH_NC_FILE, macro_index);
-			else
-				sprintf(name, "%ssys_sub/O%d.ISO", PATH_NC_FILE, macro_index);
-		}
-	}else{
-		if(m_n_macro_prog_type == 2){//同目录下用户宏程序
-			if(macro_index <= 9999)
-				sprintf(name, "O%04d.nc", macro_index);   //拼接文件名称
-			else
-				sprintf(name, "O%d.nc", macro_index);
-		}
-		else if(m_n_macro_prog_type == 3){//系统宏程序
-			if(macro_index <= 9999)
-				sprintf(name, "sys_sub/O%04d.nc", macro_index);
-			else
-				sprintf(name, "sys_sub/O%d.nc", macro_index);
-		}else if(m_n_macro_prog_type == 4){
-			if(macro_index <= 9999)
-				sprintf(name, "O%04d.iso", macro_index);   //拼接文件名称
-			else
-				sprintf(name, "O%d.iso", macro_index);
-		}else if(m_n_macro_prog_type == 5){
-			if(macro_index <= 9999)
-				sprintf(name, "sys_sub/O%04d.iso", macro_index);
-			else
-				sprintf(name, "sys_sub/O%d.iso", macro_index);
-		}else if(m_n_macro_prog_type == 6){//同目录下用户宏程序
-			if(macro_index <= 9999)
-				sprintf(name, "O%04d.NC", macro_index);   //拼接文件名称
-			else
-				sprintf(name, "O%d.NC", macro_index);
-		}else if(m_n_macro_prog_type == 7){//系统宏程序
-			if(macro_index <= 9999)
-				sprintf(name, "sys_sub/O%04d.NC", macro_index);
-			else
-				sprintf(name, "sys_sub/O%d.NC", macro_index);
-		}else if(m_n_macro_prog_type == 8){
-			if(macro_index <= 9999)
-				sprintf(name, "O%04d.ISO", macro_index);   //拼接文件名称
-			else
-				sprintf(name, "O%d.ISO", macro_index);
-		}else if(m_n_macro_prog_type == 9){
-			if(macro_index <= 9999)
-				sprintf(name, "sys_sub/O%04d.ISO", macro_index);
-			else
-				sprintf(name, "sys_sub/O%d.ISO", macro_index);
-		}
-	}
-}
+//void LoopMsg::GetMacroProgName(char *name, bool abs_path){
+//	int macro_index = this->GetMacroProgIndex();
+//	if(abs_path){
+//		if(m_n_macro_prog_type == 2){//同目录下用户宏程序
+//			if(macro_index <= 9999)
+//				sprintf(name, "%sO%04d.nc", PATH_NC_FILE, macro_index);   //拼接文件名称
+//			else
+//				sprintf(name, "%sO%d.nc", PATH_NC_FILE, macro_index);
+//		}
+//		else if(m_n_macro_prog_type == 3){//系统宏程序
+//			if(macro_index <= 9999)
+//				sprintf(name, "%ssys_sub/O%04d.nc", PATH_NC_FILE, macro_index);
+//			else
+//				sprintf(name, "%ssys_sub/O%d.nc", PATH_NC_FILE, macro_index);
+//		}else if(m_n_macro_prog_type == 4){
+//			if(macro_index <= 9999)
+//				sprintf(name, "%sO%04d.iso", PATH_NC_FILE, macro_index);   //拼接文件名称
+//			else
+//				sprintf(name, "%sO%d.iso", PATH_NC_FILE, macro_index);
+//		}else if(m_n_macro_prog_type == 5){
+//			if(macro_index <= 9999)
+//				sprintf(name, "%ssys_sub/O%04d.iso", PATH_NC_FILE, macro_index);
+//			else
+//				sprintf(name, "%ssys_sub/O%d.iso", PATH_NC_FILE, macro_index);
+//		}else if(m_n_macro_prog_type == 6){//同目录下用户宏程序
+//			if(macro_index <= 9999)
+//				sprintf(name, "%sO%04d.NC", PATH_NC_FILE, macro_index);   //拼接文件名称
+//			else
+//				sprintf(name, "%sO%d.NC", PATH_NC_FILE, macro_index);
+//		}else if(m_n_macro_prog_type == 7){//系统宏程序
+//			if(macro_index <= 9999)
+//				sprintf(name, "%ssys_sub/O%04d.NC", PATH_NC_FILE, macro_index);
+//			else
+//				sprintf(name, "%ssys_sub/O%d.NC", PATH_NC_FILE, macro_index);
+//		}else if(m_n_macro_prog_type == 8){
+//			if(macro_index <= 9999)
+//				sprintf(name, "%sO%04d.ISO", PATH_NC_FILE, macro_index);   //拼接文件名称
+//			else
+//				sprintf(name, "%sO%d.ISO", PATH_NC_FILE, macro_index);
+//		}else if(m_n_macro_prog_type == 9){
+//			if(macro_index <= 9999)
+//				sprintf(name, "%ssys_sub/O%04d.ISO", PATH_NC_FILE, macro_index);
+//			else
+//				sprintf(name, "%ssys_sub/O%d.ISO", PATH_NC_FILE, macro_index);
+//		}
+//	}else{
+//		if(m_n_macro_prog_type == 2){//同目录下用户宏程序
+//			if(macro_index <= 9999)
+//				sprintf(name, "O%04d.nc", macro_index);   //拼接文件名称
+//			else
+//				sprintf(name, "O%d.nc", macro_index);
+//		}
+//		else if(m_n_macro_prog_type == 3){//系统宏程序
+//			if(macro_index <= 9999)
+//				sprintf(name, "sys_sub/O%04d.nc", macro_index);
+//			else
+//				sprintf(name, "sys_sub/O%d.nc", macro_index);
+//		}else if(m_n_macro_prog_type == 4){
+//			if(macro_index <= 9999)
+//				sprintf(name, "O%04d.iso", macro_index);   //拼接文件名称
+//			else
+//				sprintf(name, "O%d.iso", macro_index);
+//		}else if(m_n_macro_prog_type == 5){
+//			if(macro_index <= 9999)
+//				sprintf(name, "sys_sub/O%04d.iso", macro_index);
+//			else
+//				sprintf(name, "sys_sub/O%d.iso", macro_index);
+//		}else if(m_n_macro_prog_type == 6){//同目录下用户宏程序
+//			if(macro_index <= 9999)
+//				sprintf(name, "O%04d.NC", macro_index);   //拼接文件名称
+//			else
+//				sprintf(name, "O%d.NC", macro_index);
+//		}else if(m_n_macro_prog_type == 7){//系统宏程序
+//			if(macro_index <= 9999)
+//				sprintf(name, "sys_sub/O%04d.NC", macro_index);
+//			else
+//				sprintf(name, "sys_sub/O%d.NC", macro_index);
+//		}else if(m_n_macro_prog_type == 8){
+//			if(macro_index <= 9999)
+//				sprintf(name, "O%04d.ISO", macro_index);   //拼接文件名称
+//			else
+//				sprintf(name, "O%d.ISO", macro_index);
+//		}else if(m_n_macro_prog_type == 9){
+//			if(macro_index <= 9999)
+//				sprintf(name, "sys_sub/O%04d.ISO", macro_index);
+//			else
+//				sprintf(name, "sys_sub/O%d.ISO", macro_index);
+//		}
+//	}
+//}
 
 /**
  * @brief 返回参数数据
@@ -1045,96 +1045,118 @@ void ToolMsg::PrintString(){
  * @param name[out] : 输出子程序名
  * @param abs_path[in] : true--绝对路径   false--相对路径
  */
-void ToolMsg::GetSubProgName(char *name, bool abs_path){
-	if(abs_path){
-		if(m_n_sub_prog_type == 2){//同目录下用户子程序
-			if(m_n_sub_prog_name <= 9999)
-				sprintf(name, "%sO%04d.nc", PATH_NC_FILE, m_n_sub_prog_name);   //拼接文件名称
-			else
-				sprintf(name, "%sO%d.nc", PATH_NC_FILE, m_n_sub_prog_name);
-		}
-		else if(m_n_sub_prog_type == 3){//系统子程序
-			if(m_n_sub_prog_name <= 9999)
-				sprintf(name, "%ssys_sub/O%04d.nc", PATH_NC_FILE, m_n_sub_prog_name);
-			else
-				sprintf(name, "%ssys_sub/O%d.nc", PATH_NC_FILE, m_n_sub_prog_name);
-		}else if(m_n_sub_prog_type == 4){
-			if(m_n_sub_prog_name <= 9999)
-				sprintf(name, "%sO%04d.iso", PATH_NC_FILE, m_n_sub_prog_name);   //拼接文件名称
-			else
-				sprintf(name, "%sO%d.iso", PATH_NC_FILE, m_n_sub_prog_name);
-		}else if(m_n_sub_prog_type == 5){
-			if(m_n_sub_prog_name <= 9999)
-				sprintf(name, "%ssys_sub/O%04d.iso", PATH_NC_FILE, m_n_sub_prog_name);
-			else
-				sprintf(name, "%ssys_sub/O%d.iso", PATH_NC_FILE, m_n_sub_prog_name);
-		}else if(m_n_sub_prog_type == 6){//同目录下用户宏程序
-			if(m_n_sub_prog_name <= 9999)
-				sprintf(name, "%sO%04d.NC", PATH_NC_FILE, m_n_sub_prog_name);   //拼接文件名称
-			else
-				sprintf(name, "%sO%d.NC", PATH_NC_FILE, m_n_sub_prog_name);
-		}else if(m_n_sub_prog_type == 7){//系统宏程序
-			if(m_n_sub_prog_name <= 9999)
-				sprintf(name, "%ssys_sub/O%04d.NC", PATH_NC_FILE, m_n_sub_prog_name);
-			else
-				sprintf(name, "%ssys_sub/O%d.NC", PATH_NC_FILE, m_n_sub_prog_name);
-		}else if(m_n_sub_prog_type == 8){
-			if(m_n_sub_prog_name <= 9999)
-				sprintf(name, "%sO%04d.ISO", PATH_NC_FILE, m_n_sub_prog_name);   //拼接文件名称
-			else
-				sprintf(name, "%sO%d.ISO", PATH_NC_FILE, m_n_sub_prog_name);
-		}else if(m_n_sub_prog_type == 9){
-			if(m_n_sub_prog_name <= 9999)
-				sprintf(name, "%ssys_sub/O%04d.ISO", PATH_NC_FILE, m_n_sub_prog_name);
-			else
-				sprintf(name, "%ssys_sub/O%d.ISO", PATH_NC_FILE, m_n_sub_prog_name);
-		}
-	}else{
-		if(m_n_sub_prog_type == 2){//同目录下用户子程序
-			if(m_n_sub_prog_name <= 9999)
-				sprintf(name, "O%04d.nc", m_n_sub_prog_name);   //拼接文件名称
-			else
-				sprintf(name, "O%d.nc", m_n_sub_prog_name);
-		}
-		else if(m_n_sub_prog_type == 3){//系统子程序
-			if(m_n_sub_prog_name <= 9999)
-				sprintf(name, "sys_sub/O%04d.nc", m_n_sub_prog_name);
-			else
-				sprintf(name, "sys_sub/O%d.nc", m_n_sub_prog_name);
-		}else if(m_n_sub_prog_type == 4){
-			if(m_n_sub_prog_name <= 9999)
-				sprintf(name, "O%04d.iso", m_n_sub_prog_name);   //拼接文件名称
-			else
-				sprintf(name, "O%d.iso", m_n_sub_prog_name);
-		}else if(m_n_sub_prog_type == 5){
-			if(m_n_sub_prog_name <= 9999)
-				sprintf(name, "sys_sub/O%04d.iso", m_n_sub_prog_name);
-			else
-				sprintf(name, "sys_sub/O%d.iso", m_n_sub_prog_name);
-		}else if(m_n_sub_prog_type == 6){//同目录下用户宏程序
-			if(m_n_sub_prog_name <= 9999)
-				sprintf(name, "O%04d.NC", m_n_sub_prog_name);   //拼接文件名称
-			else
-				sprintf(name, "O%d.NC", m_n_sub_prog_name);
-		}else if(m_n_sub_prog_type == 7){//系统宏程序
-			if(m_n_sub_prog_name <= 9999)
-				sprintf(name, "sys_sub/O%04d.NC", m_n_sub_prog_name);
-			else
-				sprintf(name, "sys_sub/O%d.NC", m_n_sub_prog_name);
-		}else if(m_n_sub_prog_type == 8){
-			if(m_n_sub_prog_name <= 9999)
-				sprintf(name, "O%04d.ISO", m_n_sub_prog_name);   //拼接文件名称
-			else
-				sprintf(name, "O%d.ISO", m_n_sub_prog_name);
-		}else if(m_n_sub_prog_type == 9){
-			if(m_n_sub_prog_name <= 9999)
-				sprintf(name, "sys_sub/O%04d.ISO", m_n_sub_prog_name);
-			else
-				sprintf(name, "sys_sub/O%d.ISO", m_n_sub_prog_name);
-		}
-	}
+//void ToolMsg::GetSubProgName(char *name, bool abs_path){
+//	if(abs_path){
+//        //string dirName = m_p_file_map_info->GetDirName();
+//		if(m_n_sub_prog_type == 2){//同目录下用户子程序
+//			if(m_n_sub_prog_name <= 9999)
+//				sprintf(name, "%sO%04d.nc", PATH_NC_FILE, m_n_sub_prog_name);   //拼接文件名称
+//			else
+//				sprintf(name, "%sO%d.nc", PATH_NC_FILE, m_n_sub_prog_name);
+//		}
+//		else if(m_n_sub_prog_type == 3){//系统子程序
+//			if(m_n_sub_prog_name <= 9999)
+//				sprintf(name, "%ssys_sub/O%04d.nc", PATH_NC_FILE, m_n_sub_prog_name);
+//			else
+//				sprintf(name, "%ssys_sub/O%d.nc", PATH_NC_FILE, m_n_sub_prog_name);
+//		}else if(m_n_sub_prog_type == 4){
+//			if(m_n_sub_prog_name <= 9999)
+//				sprintf(name, "%sO%04d.iso", PATH_NC_FILE, m_n_sub_prog_name);   //拼接文件名称
+//			else
+//				sprintf(name, "%sO%d.iso", PATH_NC_FILE, m_n_sub_prog_name);
+//		}else if(m_n_sub_prog_type == 5){
+//			if(m_n_sub_prog_name <= 9999)
+//				sprintf(name, "%ssys_sub/O%04d.iso", PATH_NC_FILE, m_n_sub_prog_name);
+//			else
+//				sprintf(name, "%ssys_sub/O%d.iso", PATH_NC_FILE, m_n_sub_prog_name);
+//		}else if(m_n_sub_prog_type == 6){//同目录下用户宏程序
+//			if(m_n_sub_prog_name <= 9999)
+//				sprintf(name, "%sO%04d.NC", PATH_NC_FILE, m_n_sub_prog_name);   //拼接文件名称
+//			else
+//				sprintf(name, "%sO%d.NC", PATH_NC_FILE, m_n_sub_prog_name);
+//		}else if(m_n_sub_prog_type == 7){//系统宏程序
+//			if(m_n_sub_prog_name <= 9999)
+//				sprintf(name, "%ssys_sub/O%04d.NC", PATH_NC_FILE, m_n_sub_prog_name);
+//			else
+//				sprintf(name, "%ssys_sub/O%d.NC", PATH_NC_FILE, m_n_sub_prog_name);
+//		}else if(m_n_sub_prog_type == 8){
+//			if(m_n_sub_prog_name <= 9999)
+//				sprintf(name, "%sO%04d.ISO", PATH_NC_FILE, m_n_sub_prog_name);   //拼接文件名称
+//			else
+//				sprintf(name, "%sO%d.ISO", PATH_NC_FILE, m_n_sub_prog_name);
+//		}else if(m_n_sub_prog_type == 9){
+//			if(m_n_sub_prog_name <= 9999)
+//				sprintf(name, "%ssys_sub/O%04d.ISO", PATH_NC_FILE, m_n_sub_prog_name);
+//			else
+//				sprintf(name, "%ssys_sub/O%d.ISO", PATH_NC_FILE, m_n_sub_prog_name);
+//        }else if (m_n_sub_prog_type == 10){
+//            if(m_n_sub_prog_name <= 9999)
+//                sprintf(name, "%ssys_mac/O%04d.nc", PATH_NC_FILE, m_n_sub_prog_name);
+//            else
+//                sprintf(name, "%ssys_mac/O%d.nc", PATH_NC_FILE, m_n_sub_prog_name);
+//        }else if (m_n_sub_prog_type == 11){
+//            if(m_n_sub_prog_name <= 9999)
+//                sprintf(name, "%ssys_mac/O%04d.NC", PATH_NC_FILE, m_n_sub_prog_name);
+//            else
+//                sprintf(name, "%ssys_mac/O%d.NC", PATH_NC_FILE, m_n_sub_prog_name);
+//        }else if (m_n_sub_prog_name == 12){
+//            if(m_n_sub_prog_name <= 9999)
+//                sprintf(name, "%ssys_mac/O%04d.iso", PATH_NC_FILE, m_n_sub_prog_name);
+//            else
+//                sprintf(name, "%ssys_mac/O%d.iso", PATH_NC_FILE, m_n_sub_prog_name);
+//        }else if (m_n_sub_prog_name == 13){
+//            if(m_n_sub_prog_name <= 9999)
+//                sprintf(name, "%ssys_mac/O%04d.ISO", PATH_NC_FILE, m_n_sub_prog_name);
+//            else
+//                sprintf(name, "%ssys_mac/O%d.ISO", PATH_NC_FILE, m_n_sub_prog_name);
+//        }
 
-}
+//	}else{
+//		if(m_n_sub_prog_type == 2){//同目录下用户子程序
+//			if(m_n_sub_prog_name <= 9999)
+//				sprintf(name, "O%04d.nc", m_n_sub_prog_name);   //拼接文件名称
+//			else
+//				sprintf(name, "O%d.nc", m_n_sub_prog_name);
+//		}
+//		else if(m_n_sub_prog_type == 3){//系统子程序
+//			if(m_n_sub_prog_name <= 9999)
+//				sprintf(name, "sys_sub/O%04d.nc", m_n_sub_prog_name);
+//			else
+//				sprintf(name, "sys_sub/O%d.nc", m_n_sub_prog_name);
+//		}else if(m_n_sub_prog_type == 4){
+//			if(m_n_sub_prog_name <= 9999)
+//				sprintf(name, "O%04d.iso", m_n_sub_prog_name);   //拼接文件名称
+//			else
+//				sprintf(name, "O%d.iso", m_n_sub_prog_name);
+//		}else if(m_n_sub_prog_type == 5){
+//			if(m_n_sub_prog_name <= 9999)
+//				sprintf(name, "sys_sub/O%04d.iso", m_n_sub_prog_name);
+//			else
+//				sprintf(name, "sys_sub/O%d.iso", m_n_sub_prog_name);
+//		}else if(m_n_sub_prog_type == 6){//同目录下用户宏程序
+//			if(m_n_sub_prog_name <= 9999)
+//				sprintf(name, "O%04d.NC", m_n_sub_prog_name);   //拼接文件名称
+//			else
+//				sprintf(name, "O%d.NC", m_n_sub_prog_name);
+//		}else if(m_n_sub_prog_type == 7){//系统宏程序
+//			if(m_n_sub_prog_name <= 9999)
+//				sprintf(name, "sys_sub/O%04d.NC", m_n_sub_prog_name);
+//			else
+//				sprintf(name, "sys_sub/O%d.NC", m_n_sub_prog_name);
+//		}else if(m_n_sub_prog_type == 8){
+//			if(m_n_sub_prog_name <= 9999)
+//				sprintf(name, "O%04d.ISO", m_n_sub_prog_name);   //拼接文件名称
+//			else
+//				sprintf(name, "O%d.ISO", m_n_sub_prog_name);
+//		}else if(m_n_sub_prog_type == 9){
+//			if(m_n_sub_prog_name <= 9999)
+//				sprintf(name, "sys_sub/O%04d.ISO", m_n_sub_prog_name);
+//			else
+//				sprintf(name, "sys_sub/O%d.ISO", m_n_sub_prog_name);
+//		}
+//	}
+
+//}
 
 /**
  * @brief 赋值运算符
@@ -1469,46 +1491,46 @@ void AutoToolMeasureMsg::PrintString(){
  * @param name[out] : 宏程序文件绝对路径
  * @param abs_path[in] : true--绝对路径   false--相对路径
  */
-void AutoToolMeasureMsg::GetMacroProgName(char *name, bool abs_path){
-	if(abs_path){
-		if(m_n_macro_prog_type == 2){//同目录下用户宏程序
-			sprintf(name, "%sO%04d.nc", PATH_NC_FILE, m_n_macro_prog_name);   //拼接文件名称
-		}else if(m_n_macro_prog_type == 3){//系统宏程序
-			sprintf(name, "%ssys_sub/O%04d.nc", PATH_NC_FILE, m_n_macro_prog_name);
-		}else if(m_n_macro_prog_type == 4){
-			sprintf(name, "%sO%04d.iso", PATH_NC_FILE, m_n_macro_prog_name);   //拼接文件名称
-		}else if(m_n_macro_prog_type == 5){
-			sprintf(name, "%ssys_sub/O%04d.iso", PATH_NC_FILE, m_n_macro_prog_name);
-		}else 	if(m_n_macro_prog_type == 6){//同目录下用户宏程序
-			sprintf(name, "%sO%04d.NC", PATH_NC_FILE, m_n_macro_prog_name);   //拼接文件名称
-		}else if(m_n_macro_prog_type == 7){//系统宏程序
-			sprintf(name, "%ssys_sub/O%04d.NC", PATH_NC_FILE, m_n_macro_prog_name);
-		}else if(m_n_macro_prog_type == 8){
-			sprintf(name, "%sO%04d.ISO", PATH_NC_FILE, m_n_macro_prog_name);   //拼接文件名称
-		}else if(m_n_macro_prog_type == 9){
-			sprintf(name, "%ssys_sub/O%04d.ISO", PATH_NC_FILE, m_n_macro_prog_name);
-		}
-	}else{
-		if(m_n_macro_prog_type == 2){//同目录下用户宏程序
-			sprintf(name, "O%04d.nc", m_n_macro_prog_name);   //拼接文件名称
-		}else if(m_n_macro_prog_type == 3){//系统宏程序
-			sprintf(name, "sys_sub/O%04d.nc", m_n_macro_prog_name);
-		}else if(m_n_macro_prog_type == 4){
-			sprintf(name, "O%04d.iso", m_n_macro_prog_name);   //拼接文件名称
-		}else if(m_n_macro_prog_type == 5){
-			sprintf(name, "sys_sub/O%04d.iso", m_n_macro_prog_name);
-		}else 	if(m_n_macro_prog_type == 6){//同目录下用户宏程序
-			sprintf(name, "O%04d.NC", m_n_macro_prog_name);   //拼接文件名称
-		}else if(m_n_macro_prog_type == 7){//系统宏程序
-			sprintf(name, "sys_sub/O%04d.NC", m_n_macro_prog_name);
-		}else if(m_n_macro_prog_type == 8){
-			sprintf(name, "O%04d.ISO", m_n_macro_prog_name);   //拼接文件名称
-		}else if(m_n_macro_prog_type == 9){
-			sprintf(name, "sys_sub/O%04d.ISO", m_n_macro_prog_name);
-		}
-	}
+//void AutoToolMeasureMsg::GetMacroProgName(char *name, bool abs_path){
+//	if(abs_path){
+//		if(m_n_macro_prog_type == 2){//同目录下用户宏程序
+//			sprintf(name, "%sO%04d.nc", PATH_NC_FILE, m_n_macro_prog_name);   //拼接文件名称
+//		}else if(m_n_macro_prog_type == 3){//系统宏程序
+//			sprintf(name, "%ssys_sub/O%04d.nc", PATH_NC_FILE, m_n_macro_prog_name);
+//		}else if(m_n_macro_prog_type == 4){
+//			sprintf(name, "%sO%04d.iso", PATH_NC_FILE, m_n_macro_prog_name);   //拼接文件名称
+//		}else if(m_n_macro_prog_type == 5){
+//			sprintf(name, "%ssys_sub/O%04d.iso", PATH_NC_FILE, m_n_macro_prog_name);
+//		}else 	if(m_n_macro_prog_type == 6){//同目录下用户宏程序
+//			sprintf(name, "%sO%04d.NC", PATH_NC_FILE, m_n_macro_prog_name);   //拼接文件名称
+//		}else if(m_n_macro_prog_type == 7){//系统宏程序
+//			sprintf(name, "%ssys_sub/O%04d.NC", PATH_NC_FILE, m_n_macro_prog_name);
+//		}else if(m_n_macro_prog_type == 8){
+//			sprintf(name, "%sO%04d.ISO", PATH_NC_FILE, m_n_macro_prog_name);   //拼接文件名称
+//		}else if(m_n_macro_prog_type == 9){
+//			sprintf(name, "%ssys_sub/O%04d.ISO", PATH_NC_FILE, m_n_macro_prog_name);
+//		}
+//	}else{
+//		if(m_n_macro_prog_type == 2){//同目录下用户宏程序
+//			sprintf(name, "O%04d.nc", m_n_macro_prog_name);   //拼接文件名称
+//		}else if(m_n_macro_prog_type == 3){//系统宏程序
+//			sprintf(name, "sys_sub/O%04d.nc", m_n_macro_prog_name);
+//		}else if(m_n_macro_prog_type == 4){
+//			sprintf(name, "O%04d.iso", m_n_macro_prog_name);   //拼接文件名称
+//		}else if(m_n_macro_prog_type == 5){
+//			sprintf(name, "sys_sub/O%04d.iso", m_n_macro_prog_name);
+//		}else 	if(m_n_macro_prog_type == 6){//同目录下用户宏程序
+//			sprintf(name, "O%04d.NC", m_n_macro_prog_name);   //拼接文件名称
+//		}else if(m_n_macro_prog_type == 7){//系统宏程序
+//			sprintf(name, "sys_sub/O%04d.NC", m_n_macro_prog_name);
+//		}else if(m_n_macro_prog_type == 8){
+//			sprintf(name, "O%04d.ISO", m_n_macro_prog_name);   //拼接文件名称
+//		}else if(m_n_macro_prog_type == 9){
+//			sprintf(name, "sys_sub/O%04d.ISO", m_n_macro_prog_name);
+//		}
+//	}
 
-}
+//}
 
 /**
  * @brief 赋值运算符
@@ -1662,12 +1684,14 @@ bool operator ==( const AuxMsg &one, AuxMsg &two){
 }
 
 /*****************************************************************SubProgCallMsg类***************************************************************/
-SubProgCallMsg::SubProgCallMsg(int pcode, int lcode):AuxMsg(98){
+SubProgCallMsg::SubProgCallMsg(int pcode, int lcode, uint8_t scan):AuxMsg(98){
 	this->m_n_sub_prog_name = pcode;
 	this->m_n_call_times = lcode;
 	memset(this->m_str_last_prog_file, 0x00, kMaxPathLen);
 	SetMsgType(SUBPROG_CALL_MSG);
 	this->SetFlag(FLAG_WAIT_MOVE_OVER, true);   //需要等待运动到位
+
+    m_n_scan_mode = scan;//子程序查找规则
 }
 
 void SubProgCallMsg::Execute(){
@@ -1721,7 +1745,16 @@ void SubProgCallMsg::SetLastProgFile(char *file){
 void SubProgCallMsg::GetLastProgFile(char *file){
 	if(file != nullptr){
 		strcpy(file, m_str_last_prog_file);
-	}
+    }
+}
+
+/**
+ * @brief 返回子程序查找规则
+ * @return
+ */
+uint8_t SubProgCallMsg::GetScanMode() const
+{
+    return m_n_scan_mode;
 }
 
 /**
@@ -1729,96 +1762,96 @@ void SubProgCallMsg::GetLastProgFile(char *file){
  * @param name[out] : 输出子程序名
  * @param abs_path[in] : true--绝对路径   false--相对路径
  */
-void SubProgCallMsg::GetSubProgName(char *name, bool abs_path){
-	if(abs_path){
-		if(m_n_sub_prog_type == 2){//同目录下用户子程序
-			if(m_n_sub_prog_name <= 9999)
-				sprintf(name, "%sO%04d.nc", PATH_NC_FILE, m_n_sub_prog_name);   //拼接文件名称
-			else
-				sprintf(name, "%sO%d.nc", PATH_NC_FILE, m_n_sub_prog_name);
-		}
-		else if(m_n_sub_prog_type == 3){//系统子程序
-			if(m_n_sub_prog_name <= 9999)
-				sprintf(name, "%ssys_sub/O%04d.nc", PATH_NC_FILE, m_n_sub_prog_name);
-			else
-				sprintf(name, "%ssys_sub/O%d.nc", PATH_NC_FILE, m_n_sub_prog_name);
-		}else if(m_n_sub_prog_type == 4){
-			if(m_n_sub_prog_name <= 9999)
-				sprintf(name, "%sO%04d.iso", PATH_NC_FILE, m_n_sub_prog_name);   //拼接文件名称
-			else
-				sprintf(name, "%sO%d.iso", PATH_NC_FILE, m_n_sub_prog_name);
-		}else if(m_n_sub_prog_type == 5){
-			if(m_n_sub_prog_name <= 9999)
-				sprintf(name, "%ssys_sub/O%04d.iso", PATH_NC_FILE, m_n_sub_prog_name);
-			else
-				sprintf(name, "%ssys_sub/O%d.iso", PATH_NC_FILE, m_n_sub_prog_name);
-		}else if(m_n_sub_prog_type == 6){//同目录下用户宏程序
-			if(m_n_sub_prog_name <= 9999)
-				sprintf(name, "%sO%04d.NC", PATH_NC_FILE, m_n_sub_prog_name);   //拼接文件名称
-			else
-				sprintf(name, "%sO%d.NC", PATH_NC_FILE, m_n_sub_prog_name);
-		}else if(m_n_sub_prog_type == 7){//系统宏程序
-			if(m_n_sub_prog_name <= 9999)
-				sprintf(name, "%ssys_sub/O%04d.NC", PATH_NC_FILE, m_n_sub_prog_name);
-			else
-				sprintf(name, "%ssys_sub/O%d.NC", PATH_NC_FILE, m_n_sub_prog_name);
-		}else if(m_n_sub_prog_type == 8){
-			if(m_n_sub_prog_name <= 9999)
-				sprintf(name, "%sO%04d.ISO", PATH_NC_FILE, m_n_sub_prog_name);   //拼接文件名称
-			else
-				sprintf(name, "%sO%d.ISO", PATH_NC_FILE, m_n_sub_prog_name);
-		}else if(m_n_sub_prog_type == 9){
-			if(m_n_sub_prog_name <= 9999)
-				sprintf(name, "%ssys_sub/O%04d.ISO", PATH_NC_FILE, m_n_sub_prog_name);
-			else
-				sprintf(name, "%ssys_sub/O%d.ISO", PATH_NC_FILE, m_n_sub_prog_name);
-		}
-	}else{
-		if(m_n_sub_prog_type == 2){//同目录下用户子程序
-			if(m_n_sub_prog_name <= 9999)
-				sprintf(name, "O%04d.nc", m_n_sub_prog_name);   //拼接文件名称
-			else
-				sprintf(name, "O%d.nc", m_n_sub_prog_name);
-		}
-		else if(m_n_sub_prog_type == 3){//系统子程序
-			if(m_n_sub_prog_name <= 9999)
-				sprintf(name, "sys_sub/O%04d.nc", m_n_sub_prog_name);
-			else
-				sprintf(name, "sys_sub/O%d.nc", m_n_sub_prog_name);
-		}else if(m_n_sub_prog_type == 4){
-			if(m_n_sub_prog_name <= 9999)
-				sprintf(name, "O%04d.iso", m_n_sub_prog_name);   //拼接文件名称
-			else
-				sprintf(name, "O%d.iso", m_n_sub_prog_name);
-		}else if(m_n_sub_prog_type == 5){
-			if(m_n_sub_prog_name <= 9999)
-				sprintf(name, "sys_sub/O%04d.iso", m_n_sub_prog_name);
-			else
-				sprintf(name, "sys_sub/O%d.iso", m_n_sub_prog_name);
-		}else if(m_n_sub_prog_type == 6){//同目录下用户宏程序
-			if(m_n_sub_prog_name <= 9999)
-				sprintf(name, "O%04d.NC", m_n_sub_prog_name);   //拼接文件名称
-			else
-				sprintf(name, "O%d.NC", m_n_sub_prog_name);
-		}else if(m_n_sub_prog_type == 7){//系统宏程序
-			if(m_n_sub_prog_name <= 9999)
-				sprintf(name, "sys_sub/O%04d.NC", m_n_sub_prog_name);
-			else
-				sprintf(name, "sys_sub/O%d.NC", m_n_sub_prog_name);
-		}else if(m_n_sub_prog_type == 8){
-			if(m_n_sub_prog_name <= 9999)
-				sprintf(name, "O%04d.ISO", m_n_sub_prog_name);   //拼接文件名称
-			else
-				sprintf(name, "O%d.ISO", m_n_sub_prog_name);
-		}else if(m_n_sub_prog_type == 9){
-			if(m_n_sub_prog_name <= 9999)
-				sprintf(name, "sys_sub/O%04d.ISO", m_n_sub_prog_name);
-			else
-				sprintf(name, "sys_sub/O%d.ISO", m_n_sub_prog_name);
-		}
-	}
+//void SubProgCallMsg::GetSubProgName(char *name, bool abs_path){
+//	if(abs_path){
+//		if(m_n_sub_prog_type == 2){//同目录下用户子程序
+//			if(m_n_sub_prog_name <= 9999)
+//				sprintf(name, "%sO%04d.nc", PATH_NC_FILE, m_n_sub_prog_name);   //拼接文件名称
+//			else
+//				sprintf(name, "%sO%d.nc", PATH_NC_FILE, m_n_sub_prog_name);
+//		}
+//		else if(m_n_sub_prog_type == 3){//系统子程序
+//			if(m_n_sub_prog_name <= 9999)
+//				sprintf(name, "%ssys_sub/O%04d.nc", PATH_NC_FILE, m_n_sub_prog_name);
+//			else
+//				sprintf(name, "%ssys_sub/O%d.nc", PATH_NC_FILE, m_n_sub_prog_name);
+//		}else if(m_n_sub_prog_type == 4){
+//			if(m_n_sub_prog_name <= 9999)
+//				sprintf(name, "%sO%04d.iso", PATH_NC_FILE, m_n_sub_prog_name);   //拼接文件名称
+//			else
+//				sprintf(name, "%sO%d.iso", PATH_NC_FILE, m_n_sub_prog_name);
+//		}else if(m_n_sub_prog_type == 5){
+//			if(m_n_sub_prog_name <= 9999)
+//				sprintf(name, "%ssys_sub/O%04d.iso", PATH_NC_FILE, m_n_sub_prog_name);
+//			else
+//				sprintf(name, "%ssys_sub/O%d.iso", PATH_NC_FILE, m_n_sub_prog_name);
+//		}else if(m_n_sub_prog_type == 6){//同目录下用户宏程序
+//			if(m_n_sub_prog_name <= 9999)
+//				sprintf(name, "%sO%04d.NC", PATH_NC_FILE, m_n_sub_prog_name);   //拼接文件名称
+//			else
+//				sprintf(name, "%sO%d.NC", PATH_NC_FILE, m_n_sub_prog_name);
+//		}else if(m_n_sub_prog_type == 7){//系统宏程序
+//			if(m_n_sub_prog_name <= 9999)
+//				sprintf(name, "%ssys_sub/O%04d.NC", PATH_NC_FILE, m_n_sub_prog_name);
+//			else
+//				sprintf(name, "%ssys_sub/O%d.NC", PATH_NC_FILE, m_n_sub_prog_name);
+//		}else if(m_n_sub_prog_type == 8){
+//			if(m_n_sub_prog_name <= 9999)
+//				sprintf(name, "%sO%04d.ISO", PATH_NC_FILE, m_n_sub_prog_name);   //拼接文件名称
+//			else
+//				sprintf(name, "%sO%d.ISO", PATH_NC_FILE, m_n_sub_prog_name);
+//		}else if(m_n_sub_prog_type == 9){
+//			if(m_n_sub_prog_name <= 9999)
+//				sprintf(name, "%ssys_sub/O%04d.ISO", PATH_NC_FILE, m_n_sub_prog_name);
+//			else
+//				sprintf(name, "%ssys_sub/O%d.ISO", PATH_NC_FILE, m_n_sub_prog_name);
+//		}
+//	}else{
+//		if(m_n_sub_prog_type == 2){//同目录下用户子程序
+//			if(m_n_sub_prog_name <= 9999)
+//				sprintf(name, "O%04d.nc", m_n_sub_prog_name);   //拼接文件名称
+//			else
+//				sprintf(name, "O%d.nc", m_n_sub_prog_name);
+//		}
+//		else if(m_n_sub_prog_type == 3){//系统子程序
+//			if(m_n_sub_prog_name <= 9999)
+//				sprintf(name, "sys_sub/O%04d.nc", m_n_sub_prog_name);
+//			else
+//				sprintf(name, "sys_sub/O%d.nc", m_n_sub_prog_name);
+//		}else if(m_n_sub_prog_type == 4){
+//			if(m_n_sub_prog_name <= 9999)
+//				sprintf(name, "O%04d.iso", m_n_sub_prog_name);   //拼接文件名称
+//			else
+//				sprintf(name, "O%d.iso", m_n_sub_prog_name);
+//		}else if(m_n_sub_prog_type == 5){
+//			if(m_n_sub_prog_name <= 9999)
+//				sprintf(name, "sys_sub/O%04d.iso", m_n_sub_prog_name);
+//			else
+//				sprintf(name, "sys_sub/O%d.iso", m_n_sub_prog_name);
+//		}else if(m_n_sub_prog_type == 6){//同目录下用户宏程序
+//			if(m_n_sub_prog_name <= 9999)
+//				sprintf(name, "O%04d.NC", m_n_sub_prog_name);   //拼接文件名称
+//			else
+//				sprintf(name, "O%d.NC", m_n_sub_prog_name);
+//		}else if(m_n_sub_prog_type == 7){//系统宏程序
+//			if(m_n_sub_prog_name <= 9999)
+//				sprintf(name, "sys_sub/O%04d.NC", m_n_sub_prog_name);
+//			else
+//				sprintf(name, "sys_sub/O%d.NC", m_n_sub_prog_name);
+//		}else if(m_n_sub_prog_type == 8){
+//			if(m_n_sub_prog_name <= 9999)
+//				sprintf(name, "O%04d.ISO", m_n_sub_prog_name);   //拼接文件名称
+//			else
+//				sprintf(name, "O%d.ISO", m_n_sub_prog_name);
+//		}else if(m_n_sub_prog_type == 9){
+//			if(m_n_sub_prog_name <= 9999)
+//				sprintf(name, "sys_sub/O%04d.ISO", m_n_sub_prog_name);
+//			else
+//				sprintf(name, "sys_sub/O%d.ISO", m_n_sub_prog_name);
+//		}
+//	}
 
-}
+//}
 
 /**
  * @brief 赋值运算符
@@ -1869,13 +1902,15 @@ bool operator ==( const SubProgCallMsg &one, SubProgCallMsg &two){
  * @param count ：参数个数
  * @param mask ：参数mask
  */
-MacroProgCallMsg::MacroProgCallMsg(int pcode, int lcode, double *param, uint8_t count, uint32_t mask):ModeMsg(G65_CMD){
+MacroProgCallMsg::MacroProgCallMsg(int pcode, int lcode, double *param, uint8_t count, uint32_t mask, uint8_t scan):ModeMsg(G65_CMD){
 
 	this->m_n_macro_prog_name = pcode;
 	this->m_n_call_times = lcode;
 	this->m_mask_param = mask;
 	this->m_p_df_param = param;
 	this->m_n_param_count = count;
+
+    m_n_scan_mode = scan;//子程序查找模式
 
 	SetMsgType(MACRO_PROG_CALL_MSG);
 	this->SetFlag(FLAG_WAIT_MOVE_OVER, true);   //需要等待运动到位
@@ -1952,7 +1987,16 @@ void MacroProgCallMsg::SetLastProgFile(char *file){
 void MacroProgCallMsg::GetLastProgFile(char *file){
 	if(file != nullptr){
 		strcpy(file, m_str_last_prog_file);
-	}
+    }
+}
+
+/**
+ * @brief 返回宏程序查找规则
+ * @return
+ */
+uint8_t MacroProgCallMsg::GetScanMode() const
+{
+    return m_n_scan_mode;
 }
 
 
@@ -1961,96 +2005,96 @@ void MacroProgCallMsg::GetLastProgFile(char *file){
  * @param name[out] : 输出子程序名称字符串
  * @param abs_path[in] : true--绝对路径   false--相对路径
  */
-void MacroProgCallMsg::GetMacroProgName(char *name, bool abs_path){
-	if(abs_path){
-		if(m_n_macro_prog_type == 2){//同目录下用户宏程序
-			if(m_n_macro_prog_name <= 9999)
-				sprintf(name, "%sO%04d.nc", PATH_NC_FILE, m_n_macro_prog_name);   //拼接文件名称
-			else
-				sprintf(name, "%sO%d.nc", PATH_NC_FILE, m_n_macro_prog_name);
-		}
-		else if(m_n_macro_prog_type == 3){//系统宏程序
-			if(m_n_macro_prog_name <= 9999)
-				sprintf(name, "%ssys_sub/O%04d.nc", PATH_NC_FILE, m_n_macro_prog_name);
-			else
-				sprintf(name, "%ssys_sub/O%d.nc", PATH_NC_FILE, m_n_macro_prog_name);
-		}else if(m_n_macro_prog_type == 4){
-			if(m_n_macro_prog_name <= 9999)
-				sprintf(name, "%sO%04d.iso", PATH_NC_FILE, m_n_macro_prog_name);   //拼接文件名称
-			else
-				sprintf(name, "%sO%d.iso", PATH_NC_FILE, m_n_macro_prog_name);
-		}else if(m_n_macro_prog_type == 5){
-			if(m_n_macro_prog_name <= 9999)
-				sprintf(name, "%ssys_sub/O%04d.iso", PATH_NC_FILE, m_n_macro_prog_name);
-			else
-				sprintf(name, "%ssys_sub/O%d.iso", PATH_NC_FILE, m_n_macro_prog_name);
-		}else if(m_n_macro_prog_type == 6){//同目录下用户宏程序
-			if(m_n_macro_prog_name <= 9999)
-				sprintf(name, "%sO%04d.NC", PATH_NC_FILE, m_n_macro_prog_name);   //拼接文件名称
-			else
-				sprintf(name, "%sO%d.NC", PATH_NC_FILE, m_n_macro_prog_name);
-		}else if(m_n_macro_prog_type == 7){//系统宏程序
-			if(m_n_macro_prog_name <= 9999)
-				sprintf(name, "%ssys_sub/O%04d.NC", PATH_NC_FILE, m_n_macro_prog_name);
-			else
-				sprintf(name, "%ssys_sub/O%d.NC", PATH_NC_FILE, m_n_macro_prog_name);
-		}else if(m_n_macro_prog_type == 8){
-			if(m_n_macro_prog_name <= 9999)
-				sprintf(name, "%sO%04d.ISO", PATH_NC_FILE, m_n_macro_prog_name);   //拼接文件名称
-			else
-				sprintf(name, "%sO%d.ISO", PATH_NC_FILE, m_n_macro_prog_name);
-		}else if(m_n_macro_prog_type == 9){
-			if(m_n_macro_prog_name <= 9999)
-				sprintf(name, "%ssys_sub/O%04d.ISO", PATH_NC_FILE, m_n_macro_prog_name);
-			else
-				sprintf(name, "%ssys_sub/O%d.ISO", PATH_NC_FILE, m_n_macro_prog_name);
-		}
-	}else{
-		if(m_n_macro_prog_type == 2){//同目录下用户宏程序
-			if(m_n_macro_prog_name <= 9999)
-				sprintf(name, "O%04d.nc", m_n_macro_prog_name);   //拼接文件名称
-			else
-				sprintf(name, "O%d.nc", m_n_macro_prog_name);
-		}
-		else if(m_n_macro_prog_type == 3){//系统宏程序
-			if(m_n_macro_prog_name <= 9999)
-				sprintf(name, "sys_sub/O%04d.nc", m_n_macro_prog_name);
-			else
-				sprintf(name, "sys_sub/O%d.nc", m_n_macro_prog_name);
-		}else if(m_n_macro_prog_type == 4){
-			if(m_n_macro_prog_name <= 9999)
-				sprintf(name, "O%04d.iso", m_n_macro_prog_name);   //拼接文件名称
-			else
-				sprintf(name, "O%d.iso", m_n_macro_prog_name);
-		}else if(m_n_macro_prog_type == 5){
-			if(m_n_macro_prog_name <= 9999)
-				sprintf(name, "sys_sub/O%04d.iso", m_n_macro_prog_name);
-			else
-				sprintf(name, "sys_sub/O%d.iso", m_n_macro_prog_name);
-		}else if(m_n_macro_prog_type == 6){//同目录下用户宏程序
-			if(m_n_macro_prog_name <= 9999)
-				sprintf(name, "O%04d.NC", m_n_macro_prog_name);   //拼接文件名称
-			else
-				sprintf(name, "O%d.NC", m_n_macro_prog_name);
-		}else if(m_n_macro_prog_type == 7){//系统宏程序
-			if(m_n_macro_prog_name <= 9999)
-				sprintf(name, "sys_sub/O%04d.NC", m_n_macro_prog_name);
-			else
-				sprintf(name, "sys_sub/O%d.NC", m_n_macro_prog_name);
-		}else if(m_n_macro_prog_type == 8){
-			if(m_n_macro_prog_name <= 9999)
-				sprintf(name, "O%04d.ISO", m_n_macro_prog_name);   //拼接文件名称
-			else
-				sprintf(name, "O%d.ISO", m_n_macro_prog_name);
-		}else if(m_n_macro_prog_type == 9){
-			if(m_n_macro_prog_name <= 9999)
-				sprintf(name, "sys_sub/O%04d.ISO", m_n_macro_prog_name);
-			else
-				sprintf(name, "sys_sub/O%d.ISO", m_n_macro_prog_name);
-		}
-	}
+//void MacroProgCallMsg::GetMacroProgName(char *name, bool abs_path){
+//	if(abs_path){
+//		if(m_n_macro_prog_type == 2){//同目录下用户宏程序
+//			if(m_n_macro_prog_name <= 9999)
+//				sprintf(name, "%sO%04d.nc", PATH_NC_FILE, m_n_macro_prog_name);   //拼接文件名称
+//			else
+//				sprintf(name, "%sO%d.nc", PATH_NC_FILE, m_n_macro_prog_name);
+//		}
+//		else if(m_n_macro_prog_type == 3){//系统宏程序
+//			if(m_n_macro_prog_name <= 9999)
+//				sprintf(name, "%ssys_sub/O%04d.nc", PATH_NC_FILE, m_n_macro_prog_name);
+//			else
+//				sprintf(name, "%ssys_sub/O%d.nc", PATH_NC_FILE, m_n_macro_prog_name);
+//		}else if(m_n_macro_prog_type == 4){
+//			if(m_n_macro_prog_name <= 9999)
+//				sprintf(name, "%sO%04d.iso", PATH_NC_FILE, m_n_macro_prog_name);   //拼接文件名称
+//			else
+//				sprintf(name, "%sO%d.iso", PATH_NC_FILE, m_n_macro_prog_name);
+//		}else if(m_n_macro_prog_type == 5){
+//			if(m_n_macro_prog_name <= 9999)
+//				sprintf(name, "%ssys_sub/O%04d.iso", PATH_NC_FILE, m_n_macro_prog_name);
+//			else
+//				sprintf(name, "%ssys_sub/O%d.iso", PATH_NC_FILE, m_n_macro_prog_name);
+//		}else if(m_n_macro_prog_type == 6){//同目录下用户宏程序
+//			if(m_n_macro_prog_name <= 9999)
+//				sprintf(name, "%sO%04d.NC", PATH_NC_FILE, m_n_macro_prog_name);   //拼接文件名称
+//			else
+//				sprintf(name, "%sO%d.NC", PATH_NC_FILE, m_n_macro_prog_name);
+//		}else if(m_n_macro_prog_type == 7){//系统宏程序
+//			if(m_n_macro_prog_name <= 9999)
+//				sprintf(name, "%ssys_sub/O%04d.NC", PATH_NC_FILE, m_n_macro_prog_name);
+//			else
+//				sprintf(name, "%ssys_sub/O%d.NC", PATH_NC_FILE, m_n_macro_prog_name);
+//		}else if(m_n_macro_prog_type == 8){
+//			if(m_n_macro_prog_name <= 9999)
+//				sprintf(name, "%sO%04d.ISO", PATH_NC_FILE, m_n_macro_prog_name);   //拼接文件名称
+//			else
+//				sprintf(name, "%sO%d.ISO", PATH_NC_FILE, m_n_macro_prog_name);
+//		}else if(m_n_macro_prog_type == 9){
+//			if(m_n_macro_prog_name <= 9999)
+//				sprintf(name, "%ssys_sub/O%04d.ISO", PATH_NC_FILE, m_n_macro_prog_name);
+//			else
+//				sprintf(name, "%ssys_sub/O%d.ISO", PATH_NC_FILE, m_n_macro_prog_name);
+//		}
+//	}else{
+//		if(m_n_macro_prog_type == 2){//同目录下用户宏程序
+//			if(m_n_macro_prog_name <= 9999)
+//				sprintf(name, "O%04d.nc", m_n_macro_prog_name);   //拼接文件名称
+//			else
+//				sprintf(name, "O%d.nc", m_n_macro_prog_name);
+//		}
+//		else if(m_n_macro_prog_type == 3){//系统宏程序
+//			if(m_n_macro_prog_name <= 9999)
+//				sprintf(name, "sys_sub/O%04d.nc", m_n_macro_prog_name);
+//			else
+//				sprintf(name, "sys_sub/O%d.nc", m_n_macro_prog_name);
+//		}else if(m_n_macro_prog_type == 4){
+//			if(m_n_macro_prog_name <= 9999)
+//				sprintf(name, "O%04d.iso", m_n_macro_prog_name);   //拼接文件名称
+//			else
+//				sprintf(name, "O%d.iso", m_n_macro_prog_name);
+//		}else if(m_n_macro_prog_type == 5){
+//			if(m_n_macro_prog_name <= 9999)
+//				sprintf(name, "sys_sub/O%04d.iso", m_n_macro_prog_name);
+//			else
+//				sprintf(name, "sys_sub/O%d.iso", m_n_macro_prog_name);
+//		}else if(m_n_macro_prog_type == 6){//同目录下用户宏程序
+//			if(m_n_macro_prog_name <= 9999)
+//				sprintf(name, "O%04d.NC", m_n_macro_prog_name);   //拼接文件名称
+//			else
+//				sprintf(name, "O%d.NC", m_n_macro_prog_name);
+//		}else if(m_n_macro_prog_type == 7){//系统宏程序
+//			if(m_n_macro_prog_name <= 9999)
+//				sprintf(name, "sys_sub/O%04d.NC", m_n_macro_prog_name);
+//			else
+//				sprintf(name, "sys_sub/O%d.NC", m_n_macro_prog_name);
+//		}else if(m_n_macro_prog_type == 8){
+//			if(m_n_macro_prog_name <= 9999)
+//				sprintf(name, "O%04d.ISO", m_n_macro_prog_name);   //拼接文件名称
+//			else
+//				sprintf(name, "O%d.ISO", m_n_macro_prog_name);
+//		}else if(m_n_macro_prog_type == 9){
+//			if(m_n_macro_prog_name <= 9999)
+//				sprintf(name, "sys_sub/O%04d.ISO", m_n_macro_prog_name);
+//			else
+//				sprintf(name, "sys_sub/O%d.ISO", m_n_macro_prog_name);
+//		}
+//	}
 
-}
+//}
 
 /**
  * @brief 赋值运算符

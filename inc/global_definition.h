@@ -71,6 +71,7 @@
 //文件目录定义
 #define PATH_NC_FILE "/cnc/nc_files/"    //NC加工文件目录0
 #define PATH_NC_SUB_FILE "/cnc/nc_files/sys_sub/"   //系统子程序目录
+#define PATH_NC_MAC_FILE "/cnc/nc_files/mac_sub/"   //用户子程序目录
 #define PATH_NC_SIGN_FILE "/cnc/nc_files/md5/"   //NC文件签名文件目录
 #define PATH_LOG_FILE "/cnc/trace/log/"	//LOG文件目录
 #define PATH_ALARM_FILE "/cnc/trace/alarm/"	//告警文件目录

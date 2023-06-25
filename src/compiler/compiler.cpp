@@ -338,7 +338,7 @@ bool Compiler::SetCurPos(const DPoint &cur_pos) {
     //			m_compiler_status.cur_pos.x, m_compiler_status.cur_pos.y, m_compiler_status.cur_pos.z, m_compiler_status.cur_pos.a4,
     //			m_compiler_status.cur_pos.a5, m_compiler_status.cur_pos.a6, cur_pos.x, cur_pos.y, cur_pos.z, cur_pos.a4, cur_pos.a5, cur_pos.a6);
     //	this->m_compiler_status.cur_pos = cur_pos;
-    int count = 0; 
+    int count = 0;
     uint32_t mask = m_p_parser->GetPmcAxisMask();//PMCÖáµÄÑÚÂë
     for(int i = 0; i < this->m_p_channel_config->chn_axis_count && count < 8; i++){
         if(mask & (0x01<<i))
@@ -365,12 +365,12 @@ bool Compiler::SetCurPos(const DPointChn &cur_pos) {
     //			m_compiler_status.cur_pos.m_df_point[0], m_compiler_status.cur_pos.m_df_point[1], m_compiler_status.cur_pos.m_df_point[2], m_compiler_status.cur_pos.m_df_point[3],
     //			m_compiler_status.cur_pos.m_df_point[4], m_compiler_status.cur_pos.m_df_point[5], cur_pos.m_df_point[0], cur_pos.m_df_point[1], cur_pos.m_df_point[2],
     //			cur_pos.m_df_point[3], cur_pos.m_df_point[4], cur_pos.m_df_point[5]);
-	this->m_compiler_status.cur_pos = cur_pos;
+    this->m_compiler_status.cur_pos = cur_pos;
 
-	/*for(int i=0; i<kMaxAxisChn; i++){
-		m_p_tool_compensate->setCurAxisPos(i,
-				this->m_compiler_status.cur_pos.m_df_point[i]);
-	}*/
+    /*for(int i=0; i<kMaxAxisChn; i++){
+        m_p_tool_compensate->setCurAxisPos(i,
+                this->m_compiler_status.cur_pos.m_df_point[i]);
+    }*/
 
     return true;
 }
@@ -490,7 +490,7 @@ bool Compiler::ReloadScene(bool bRecPos){
     //ºê³ÌĞòµ÷ÓÃÓĞ²¿·ÖÄ£Ì¬²»ÓÃ»Ö¸´
     // @modify zk  ²âÊÔµÃµ½ M98 ÀàĞÍÎªSUB_PROG G65 P¡¢¹Ì¶¨Ñ­»· ÀàĞÍÎª MACRO_PROG
     if(this->m_n_sub_program == MACRO_PROG){
-    	mode_tmp = this->m_compiler_status.mode;
+        mode_tmp = this->m_compiler_status.mode;
     }
 
 
@@ -721,7 +721,7 @@ void Compiler::PreScan() {
     CompilerScene *ptr_scene = nullptr;
     StackRec<CompilerScene> *scene_node = nullptr;
     if(this->m_b_prescan_in_stack){
-    	scene_node = this->m_stack_scene.bottom();
+        scene_node = this->m_stack_scene.bottom();
         if(scene_node != nullptr){
             ptr_scene = &scene_node->rec;
             file = fopen(ptr_scene->file_map_info.str_file_name, "r+");
@@ -761,9 +761,9 @@ void Compiler::PreScan() {
     //	total_size = map.ln_file_size;
     //µÚÒ»±éÉ¨Ãè£¬Ê¶±ğ³ö×Ó³ÌĞòºÅ£¨O****£©,ÒÔ¼°GOTOÖ¸Áî
     while ((read_block = getline(&line, &len, file)) != -1) {
-    	//	read_size_bak = read_size;
+        //	read_size_bak = read_size;
         //	while(this->GetPreScanLine(line, read_size, map) > 0){
-    	if (m_b_breakout_prescan) //ÖĞ¶ÏÍË³ö
+        if (m_b_breakout_prescan) //ÖĞ¶ÏÍË³ö
             goto END;
         line_no++;
         this->PreScanLine1(line, read_size, line_no, comment_flag, loop_stack, ptr_scene);
@@ -847,7 +847,7 @@ void Compiler::PreScan() {
            nTimeDelay);
 
 END:
-	if (line != nullptr)
+    if (line != nullptr)
         free(line);   //ÊÍ·Ågetlineº¯Êı·ÖÅäµÄ»º³å
     fclose(file);
     // @add zk ÊÔÊÔ  ¿ÉÄÜÓĞÆäËûÎÊÌâ
@@ -953,7 +953,7 @@ void Compiler::PreScanLine1(char *buf, uint64_t offset, uint64_t line_no,
                 memset(digit_buf, 0, kMaxDigitBufLen+1);
             }
         }else if(*pc == 'I' && *(pc + 1) == 'F' && first_alpha){
-        	if_cmd = true;
+            if_cmd = true;
             pc += 2;
             continue;
         }else if(*pc == 'E' && *(pc + 1) == 'N'&& *(pc + 2) == 'D'&& *(pc + 3) == 'I' && *(pc + 4) == 'F' && first_alpha){
@@ -1243,7 +1243,7 @@ void Compiler::PreScanLine1(char *buf, uint64_t offset, uint64_t line_no,
 
     // ÕÒµ½ if Ö¸Áî
     if(if_cmd){
-    	// ³õÊ¼»¯»ù´¡±äÁ¿
+        // ³õÊ¼»¯»ù´¡±äÁ¿
         m_else_count_prescan = 0;
         m_node_vector_index = m_node_vector_len;
         m_node_vector_len ++;
@@ -1785,8 +1785,8 @@ bool Compiler::CompileOver() {
 void Compiler::RecycleCompile() {
     printf("compiler::RecycleCompile\n");
     //if (m_n_sub_program != MAIN_PROG) {  //×Ó³ÌĞò¿ÉÒÔÑ­»·µ÷ÓÃ
-	//	printf("sub prog return\n");
-	//	return;
+    //	printf("sub prog return\n");
+    //	return;
     //}
     this->m_p_file_map_info->ResetFile();  //ÎÄ¼ş¸´Î»µ½Í·²¿
     this->m_compiler_status.mode.Reset();
@@ -1823,7 +1823,7 @@ void Compiler::SetMode(CompilerWorkMode mode) {
         //		}
         //		pthread_mutex_lock(&m_mutex_change_state);
 
-    	//»º´æ×´Ì¬
+        //»º´æ×´Ì¬
         this->SaveScene();
 
         //¸´Î»±àÒëÆ÷×´Ì¬
@@ -1842,7 +1842,7 @@ void Compiler::SetMode(CompilerWorkMode mode) {
         //		if(m_n_thread_state == RUN){//Èç¹û±àÒëÆ÷ÔÚRUN×´Ì¬£¬ÔòÏÈÍ£Ö¹
         //			this->StopCompile();
         //		}
-    	char tmp_file[kMaxPathLen] = {0};	//ÎÄ¼şÂ·¾¶
+        char tmp_file[kMaxPathLen] = {0};	//ÎÄ¼şÂ·¾¶
         this->m_p_channel_control->GetMdaFilePath(tmp_file);
         if(strcmp(this->m_p_file_map_info->str_file_name, tmp_file) != 0){  //
             //			printf("Compiler::SetMode, clear file:%s\n", this->m_p_file_map_info->str_file_name);
@@ -1949,6 +1949,7 @@ void Compiler::Reset(){
     m_b_compile_over = false;
     this->m_n_restart_line = 0;
     this->m_n_restart_mode = NOT_RESTART;
+    m_n_cur_dir_sub_prog = false;
 
     m_error_code = ERR_NONE;
 
@@ -2054,7 +2055,7 @@ bool Compiler::GetLineData() {
     //
     //	gettimeofday(&tvStart, NULL);
 
-	//printf("enter getlinedata\n");
+    //printf("enter getlinedata\n");
 
     bool res = true;
     if(m_p_file_map_info == nullptr || m_b_compile_over) {  //±àÒë½áÊø
@@ -2112,7 +2113,7 @@ REDO:
     //¶ÁÈ¡ÏÂÒ»¸ö×Ö·û
     if (m_ln_read_size >= block_limit - 1) {   //µ½´ïÓ³Éä¿éÎ²²¿
 
-    	if (m_ln_read_size >= m_p_file_map_info->ln_file_size - 1) {  //µ½´ïÎÄ¼şÎ²
+        if (m_ln_read_size >= m_p_file_map_info->ln_file_size - 1) {  //µ½´ïÎÄ¼şÎ²
             c_next = '\0';
         } else {
             if (m_p_file_map_info->Swapdown()) {
@@ -2131,8 +2132,8 @@ REDO:
     this->m_lexer_result.offset = this->m_ln_read_size;      //±£´æĞĞÊ×Æ«ÒÆÁ¿
 
     //while (!m_b_eof && (c_cur != '\r' || c_next != '\n') &&//¼æÈİÁ½ÖÖ»»ĞĞ¸ñÊ½£¨\r\nºÍ\n£©
-	while (!m_b_eof && (c_cur != '\r' || c_next != '\n') &&
-    		(c_cur != '\n')) {
+    while (!m_b_eof && (c_cur != '\r' || c_next != '\n') &&
+            (c_cur != '\n')) {
         if (!m_b_comment) {
             if (c_cur == '(') {
                 m_b_comment = true;
@@ -2242,7 +2243,7 @@ REDO:
 
     } else {
         //		this->StopCompile();
-    	g_ptr_trace->PrintTrace(TRACE_DETAIL, COMPILER_CHN, "end of the file\n");
+        g_ptr_trace->PrintTrace(TRACE_DETAIL, COMPILER_CHN, "end of the file\n");
     }
 
     if (index == 0) {  //Èç¹û¿Õ°×ĞĞÇÒÎÄ¼şÎ´½áÊø£¬Ôò¼ÌĞø¶ÁÈ¡ÏÂÒ»ĞĞ
@@ -2335,7 +2336,7 @@ bool Compiler::RunMessage() {
     RecordMsg *msg = nullptr;
 
     if(compiler_lock){
-    	return false;
+        return false;
     }
 
     //	int count = m_p_parser_result->GetLength();
@@ -2423,14 +2424,14 @@ bool Compiler::RunMessage() {
             case REF_RETURN_MSG:
                 res = this->RunRefReturnMsg(msg);
                 break;
-#ifdef USES_SPEED_TORQUE_CTRL	
+#ifdef USES_SPEED_TORQUE_CTRL
             case SPEED_CTRL_MSG:
                 res = this->RunSpeedCtrlMsg(msg);
                 break;
             case TORQUE_CTRL_MSG:
                 res = this->RunTorqueCtrlMsg(msg);
                 break;
-#endif			
+#endif
             case SKIP_MSG:
                 res = this->RunSkipMsg(msg);
                 break;
@@ -2482,7 +2483,7 @@ bool Compiler::RunMessage() {
                 m_error_code = m_p_tool_compensate->err_code;
 
                 CreateError(m_p_tool_compensate->err_code, ERROR_LEVEL, CLEAR_BY_MCP_RESET,
-                		m_p_tool_compensate->err_lino, m_n_channel_index);
+                        m_p_tool_compensate->err_lino, m_n_channel_index);
                 //m_p_tool_compensate->clearError();
 
                 res = false;
@@ -2581,7 +2582,7 @@ bool Compiler::RunSubProgCallMsg(RecordMsg *msg) {
 
 
     //²éÕÒ×Ó³ÌĞò
-    int sub_loc = this->FindSubProgram(sub_index);
+    int sub_loc = this->FindSubProgram(sub_index, false, sub_msg->GetScanMode());
     sub_msg->SetSubProgType(sub_loc);
     if (sub_loc == 0) {
         CreateErrorMsg(ERR_NO_SUB_PROG, msg->GetLineNo());  //ÕÒ²»µ½¶ÔÓ¦×Ó³ÌĞò
@@ -2612,7 +2613,7 @@ bool Compiler::RunSubProgCallMsg(RecordMsg *msg) {
         }
 
         if (!this->m_p_file_map_info->JumpTo(offset_sub)) {   //Ó³ÉäÊ§°Ü
-        	CreateErrorMsg(ERR_JUMP_SUB_PROG, msg->GetLineNo());  //×Ó³ÌĞòÌø×ªÊ§°Ü
+            CreateErrorMsg(ERR_JUMP_SUB_PROG, msg->GetLineNo());  //×Ó³ÌĞòÌø×ªÊ§°Ü
             return false;
         }
 
@@ -2627,9 +2628,11 @@ bool Compiler::RunSubProgCallMsg(RecordMsg *msg) {
         isSubInSameFile = true;
     } else {
 
-    	isSubInSameFile = false;
+        isSubInSameFile = false;
 
-        sub_msg->GetSubProgName(filepath, true);
+
+        GetMacroSubProgPath(sub_msg->GetSubProgType(), sub_msg->GetSubProgIndex(), true, filepath);
+        //sub_msg->GetSubProgName(filepath, true);
         sub_msg->SetLastProgFile(this->m_p_file_map_info->str_file_name+strlen(PATH_NC_FILE));  // ±£´æµ±Ç°ÎÄ¼şÂ·¾¶£¬Ïà¶ÔÂ·¾¶
         //¶ÀÁ¢×ÓÎÄ¼ş´ò¿ª
         if (!this->OpenFile(filepath, (bool)m_n_sub_program)){ //³¢ÊÔ´ò¿ªncÎÄ¼şÊ§°Ü
@@ -2664,7 +2667,7 @@ bool Compiler::RunMacroProgCallMsg(RecordMsg *msg){
     int macro_index = sub_msg->GetMacroProgIndex();
 
     //²éÕÒ×Ó³ÌĞò
-    int macro_loc = this->FindSubProgram(macro_index);
+    int macro_loc = this->FindSubProgram(macro_index, false, sub_msg->GetScanMode());
     sub_msg->SetMacroProgType(macro_loc);
     if (macro_loc == 0) {
         CreateErrorMsg(ERR_NO_SUB_PROG, msg->GetLineNo());  //ÕÒ²»µ½¶ÔÓ¦×Ó³ÌĞò
@@ -2709,7 +2712,7 @@ bool Compiler::RunMacroProgCallMsg(RecordMsg *msg){
         }
 
         if (!this->m_p_file_map_info->JumpTo(offset_sub)) {   //Ó³ÉäÊ§°Ü
-        	CreateErrorMsg(ERR_JUMP_SUB_PROG, msg->GetLineNo());  //×Ó³ÌĞòÌø×ªÊ§°Ü
+            CreateErrorMsg(ERR_JUMP_SUB_PROG, msg->GetLineNo());  //×Ó³ÌĞòÌø×ªÊ§°Ü
             return false;
         }
 
@@ -2725,9 +2728,10 @@ bool Compiler::RunMacroProgCallMsg(RecordMsg *msg){
 
     } else {
 
-    	isSubInSameFile = false;
+        isSubInSameFile = false;
 
-        sub_msg->GetMacroProgName(filepath, true);
+        //sub_msg->GetMacroProgName(filepath, true);
+        GetMacroSubProgPath(sub_msg->GetMacroProgType(), sub_msg->GetMacroProgIndex(), true, filepath);
 
         sub_msg->SetLastProgFile(this->m_p_file_map_info->str_file_name+strlen(PATH_NC_FILE));  //±£´æµ±Ç°ÎÄ¼şÂ·¾¶, Ïà¶ÔÂ·¾¶£¬·¢ËÍ¸øHMI
         //¶ÀÁ¢×ÓÎÄ¼ş´ò¿ª
@@ -2805,7 +2809,8 @@ bool Compiler::RunAutoToolMeasureMsg(RecordMsg *msg){
     //´ò¿ª×Ó³ÌĞòÎÄ¼ş
     this->m_n_sub_program = MACRO_PROG;
     char filepath[kMaxPathLen] = { 0 };   //ÎÄ¼şÂ·¾¶
-    sub_msg->GetMacroProgName(filepath, true);
+    //sub_msg->GetMacroProgName(filepath, true);
+    GetMacroSubProgPath(sub_msg->GetMacroProgType(), sub_msg->GetMacroProgIndex(), true, filepath);
 
 
     //¶ÀÁ¢×ÓÎÄ¼ş´ò¿ª
@@ -2838,7 +2843,7 @@ bool Compiler::RunCoordMsg(RecordMsg *msg) {
         m_compiler_status.mode.gmode[0] = gcode;  //¸üĞÂÄ£Ì¬
         break;
     case G53_CMD:		//G53  »ú´²×ø±êÏµ
-    	//´¦ÀíÔöÁ¿±à³ÌÖ¸Áî
+        //´¦ÀíÔöÁ¿±à³ÌÖ¸Áî
         if(m_compiler_status.mode.gmode[3] == G91_CMD){  //ÔöÁ¿±à³ÌÄ£Ê½
             double *p_target_pos = tmp->GetTargetPos().m_df_point;
             double *p_source_pos = m_compiler_status.cur_pos.m_df_point;
@@ -2859,7 +2864,7 @@ bool Compiler::RunCoordMsg(RecordMsg *msg) {
             // ½â¾öÒ»¼ü»ØÁãÖĞ G53Òì³£ÎÊÌâ
 
             //½«Ä¿±êÎ»ÖÃ»»ËãÎª¹¤¼ş×ø±êÏµ
-        	this->m_p_channel_control->TransMachCoordToWorkCoord(tmp->GetTargetPos(), m_compiler_status.mode.gmode[14], m_compiler_status.mode.h_mode, tmp->GetAxisMask());
+            this->m_p_channel_control->TransMachCoordToWorkCoord(tmp->GetTargetPos(), m_compiler_status.mode.gmode[14], m_compiler_status.mode.h_mode, tmp->GetAxisMask());
         }
 
         // Ğı×ªÖá×ø±ê´¦Àí
@@ -3167,7 +3172,7 @@ bool Compiler::RunCompensateMsg(RecordMsg *msg) {
         tmp->SetCompLastValue(m_compiler_status.mode.h_mode);  //¼ÇÂ¼ÀúÊ·Öµ
         m_compiler_status.mode.h_mode = 0;  //È¡Ïûµ¶³¤²¹³¥»òÕßRTCP
     }else if(gcode == G40_CMD){
-    	tmp->SetCompLastValue(m_compiler_status.mode.d_mode);  //¼ÇÂ¼ÀúÊ·Öµ
+        tmp->SetCompLastValue(m_compiler_status.mode.d_mode);  //¼ÇÂ¼ÀúÊ·Öµ
         m_compiler_status.mode.d_mode = 0;   //È¡Ïûµ¶¾ß°ë¾¶²¹³¥
     }
 
@@ -3300,7 +3305,7 @@ bool Compiler::RunSkipMsg(RecordMsg *msg){
     return true;
 }
 
-#ifdef USES_SPEED_TORQUE_CTRL	
+#ifdef USES_SPEED_TORQUE_CTRL
 /**
  * @brief ±àÒëÆ÷ÖĞÔËĞĞËÙ¶È¿ØÖÆÏûÏ¢
  * @param msg : Ö¸ÁîÏûÏ¢
@@ -3650,8 +3655,8 @@ bool Compiler::RunMacroMsg(RecordMsg *msg) {
         }
         break;
     case MACRO_CMD_IF:{
-    	//@test
-    	//printf("===== IF CMD %llu\n", tmp->GetLineNo());
+        //@test
+        //printf("===== IF CMD %llu\n", tmp->GetLineNo());
         if(!tmp->GetMacroExpCalFlag(0)){
             if(!m_p_parser->GetExpressionResult(tmp->GetMacroExp(0), tmp->GetMacroExpResult(0))) {//±í´ïÊ½ÔËËãÊ§°Ü
                 m_error_code = m_p_parser->GetErrorCode();
@@ -3670,12 +3675,12 @@ bool Compiler::RunMacroMsg(RecordMsg *msg) {
             //printf("===== node vectors vector size: %d\n", m_node_vectors_vector.size());
 
             for(vector<IfElseOffset> node_vector : m_node_vectors_vector){
-            	// @test
+                // @test
                 //printf("===== node lino: %llu, tmp lino: %llu\n", node_vector.at(0).line_no, tmp->GetLineNo());
 
-            	if(node_vector.at(0).line_no == tmp->GetLineNo()){
-            		//printf("===== node lino: %llu, tmp lino: %llu\n", node_vector.at(0).line_no, tmp->GetLineNo());
-            		node = node_vector.at(0);
+                if(node_vector.at(0).line_no == tmp->GetLineNo()){
+                    //printf("===== node lino: %llu, tmp lino: %llu\n", node_vector.at(0).line_no, tmp->GetLineNo());
+                    node = node_vector.at(0);
                 }
             }
 
@@ -3719,10 +3724,10 @@ bool Compiler::RunMacroMsg(RecordMsg *msg) {
     }
     case MACRO_CMD_ELSEIF:{
 
-    	//@test
-		//printf("===== ELSEIF CMD %llu\n", tmp->GetLineNo());
+        //@test
+        //printf("===== ELSEIF CMD %llu\n", tmp->GetLineNo());
 
-    	if(m_node_stack_run.size() == 0){
+        if(m_node_stack_run.size() == 0){
             printf("IF ELSE ²»Æ¥Åä, Ã»ÓĞifÈëÕ»µ«Óöµ½  else/ elseif\n");
             CreateErrorMsg(IF_ELSE_MATCH_FAILED, tmp->GetLineNo());
             return false;
@@ -3784,10 +3789,10 @@ bool Compiler::RunMacroMsg(RecordMsg *msg) {
     }
     case MACRO_CMD_ELSE:{
 
-    	//@test
-		//printf("===== ELSE CMD %llu\n", tmp->GetLineNo());
+        //@test
+        //printf("===== ELSE CMD %llu\n", tmp->GetLineNo());
 
-    	if(m_node_stack_run.size() == 0){
+        if(m_node_stack_run.size() == 0){
             printf("IF ELSE ²»Æ¥Åä, Ã»ÓĞifÈëÕ»µ«Óöµ½  else/ elseif 222\n");
             CreateErrorMsg(IF_ELSE_MATCH_FAILED, tmp->GetLineNo());
             return false;
@@ -3810,16 +3815,16 @@ bool Compiler::RunMacroMsg(RecordMsg *msg) {
     }
     case MACRO_CMD_ENDIF:{
 
-    	//@test
-		//printf("===== ENDIF CMD %llu\n", tmp->GetLineNo());
+        //@test
+        //printf("===== ENDIF CMD %llu\n", tmp->GetLineNo());
 
-    	if(m_node_stack_run.size() == 0){
+        if(m_node_stack_run.size() == 0){
             printf("IF ELSE ²»Æ¥Åä, Ã»ÓĞifÈëÕ»µ«Óöµ½  endif \n");
             CreateErrorMsg(IF_ELSE_MATCH_FAILED, tmp->GetLineNo());
             return false;
         }
 
-    	m_node_stack_run.pop_back();
+        m_node_stack_run.pop_back();
         m_else_jump_stack_run.pop_back();
         m_b_else_jump = m_else_jump_stack_run.back();
         break;
@@ -4013,7 +4018,7 @@ bool Compiler::RunLoopMsg(RecordMsg *msg) {
     // @zk ½«¹Ì¶¨Ñ­»·Ö¸ÁîÖ¸¶¨µÄ²ÎÊı ±£´æµ½¾Ö²¿±äÁ¿ (¸²¸Ç X_ Y_ Z_ ...)
     while(pm != 0){
         if(pm & 0x01){
-        	pv->SetVarValue(kLoopParamToLocalVarIndex[i], *pp);
+            pv->SetVarValue(kLoopParamToLocalVarIndex[i], *pp);
             pp++;
         }
         pm = pm>>1;
@@ -4026,7 +4031,8 @@ bool Compiler::RunLoopMsg(RecordMsg *msg) {
     this->m_n_sub_program = MACRO_PROG;
     char filepath[kMaxPathLen] = { 0 };   //ÎÄ¼şÂ·¾¶
 
-    sub_msg->GetMacroProgName(filepath, true);
+    //sub_msg->GetMacroProgName(filepath, true);
+    GetMacroSubProgPath(sub_msg->GetMacroProgType(), sub_msg->GetMacroProgIndex(), true, filepath);
 
     sub_msg->SetLastProgFile(this->m_p_file_map_info->str_file_name+strlen(PATH_NC_FILE));  //±£´æµ±Ç°ÎÄ¼şÂ·¾¶, Ïà¶ÔÂ·¾¶£¬·¢ËÍ¸øHMI
     //¶ÀÁ¢×ÓÎÄ¼ş´ò¿ª
@@ -4322,7 +4328,7 @@ bool Compiler::DoParser() {
  * @return 0--µ÷ÓÃÊ§°Ü   ÆäËü--µ÷ÓÃ³É¹¦
  */
 int Compiler::CallMarcoProgWithNoPara(int macro_index, bool flag){
-	//²éÕÒ×Ó³ÌĞò
+    //²éÕÒ×Ó³ÌĞò
     int macro_loc = this->FindSubProgram(macro_index);
 
     if (macro_loc == 0 || macro_loc == 1) {
@@ -4365,48 +4371,139 @@ int Compiler::CallMarcoProgWithNoPara(int macro_index, bool flag){
 }
 
 /**
- * @brief »ñÈ¡ºê³ÌĞòµÄÂ·¾¶Êı¾İ
- * @param macro_group : ºê³ÌĞòÀàĞÍ£¬1--ÔÚ±¾³ÌĞòÄÚ   2/6--Í¬Ä¿Â¼ÏÂncÎÄ¼ş    3/7--ÏµÍ³×Ó³ÌĞòÄ¿Â¼ncÎÄ¼ş    4/8--Í¬Ä¿Â¼ÏÂisoÎÄ¼ş    5/9--ÏµÍ³×Ó³ÌĞòÄ¿Â¼isoÎÄ¼ş
- * @param macro_index : ºê³ÌĞòºÅ
+ * @brief »ñÈ¡×Ó³ÌĞòµÄÂ·¾¶Êı¾İ
+ * @param macro_group : ³ÌĞòÀàĞÍ£¬1--ÔÚ±¾³ÌĞòÄÚ   2/6--Í¬Ä¿Â¼ÏÂncÎÄ¼ş    3/7--ÏµÍ³×Ó³ÌĞòÄ¿Â¼ncÎÄ¼ş    4/8--Í¬Ä¿Â¼ÏÂisoÎÄ¼ş    5/9--ÏµÍ³×Ó³ÌĞòÄ¿Â¼isoÎÄ¼ş
+ * @param macro_index : ³ÌĞòºÅ
  * @param abs_path : ÊÇ·ñ¾ø¶ÔÂ·¾¶
- * @param name[out] : Êä³öºê³ÌĞòÎÄ¼şÂ·¾¶
+ * @param name[out] : Êä³ö³ÌĞòÎÄ¼şÂ·¾¶
  */
 void Compiler::GetMacroSubProgPath(int macro_group, int macro_index, bool abs_path, char *name){
     if(abs_path){
+        string dirName = m_p_file_map_info->GetDirName();
         if(macro_group == 2){//Í¬Ä¿Â¼ÏÂÓÃ»§ºê³ÌĞò
-            sprintf(name, "%sO%04d.nc", PATH_NC_FILE, macro_index);   //Æ´½ÓÎÄ¼şÃû³Æ
+            if(macro_index <= 9999)
+                sprintf(name, "%sO%04d.nc", dirName.c_str(), macro_index);   //Æ´½ÓÎÄ¼şÃû³Æ
+            else
+                sprintf(name, "%sO%d.nc", dirName.c_str(), macro_index);
         }else if(macro_group == 3){//ÏµÍ³ºê³ÌĞò
-            sprintf(name, "%ssys_sub/O%04d.nc", PATH_NC_FILE, macro_index);
+            if(macro_index <= 9999)
+                sprintf(name, "%ssys_sub/O%04d.nc", PATH_NC_FILE, macro_index);
+            else
+                sprintf(name, "%ssys_sub/O%d.nc", PATH_NC_FILE, macro_index);
         }else if(macro_group == 4){
-            sprintf(name, "%sO%04d.iso", PATH_NC_FILE, macro_index);   //Æ´½ÓÎÄ¼şÃû³Æ
+            if(macro_index <= 9999)
+                sprintf(name, "%sO%04d.iso", dirName.c_str(), macro_index);   //Æ´½ÓÎÄ¼şÃû³Æ
+            else
+                sprintf(name, "%sO%d.iso", dirName.c_str(), macro_index);
         }else if(macro_group == 5){
-            sprintf(name, "%ssys_sub/O%04d.iso", PATH_NC_FILE, macro_index);
+            if(macro_index <= 9999)
+                sprintf(name, "%ssys_sub/O%04d.iso", PATH_NC_FILE, macro_index);
+            else
+                sprintf(name, "%ssys_sub/O%d.iso", PATH_NC_FILE, macro_index);
         }else if(macro_group == 6){//Í¬Ä¿Â¼ÏÂÓÃ»§ºê³ÌĞò
-            sprintf(name, "%sO%04d.NC", PATH_NC_FILE, macro_index);   //Æ´½ÓÎÄ¼şÃû³Æ
+            if(macro_index <= 9999)
+                sprintf(name, "%sO%04d.NC", dirName.c_str(), macro_index);   //Æ´½ÓÎÄ¼şÃû³Æ
+            else
+                sprintf(name, "%sO%d.NC", dirName.c_str(), macro_index);
         }else if(macro_group == 7){//ÏµÍ³ºê³ÌĞò
-            sprintf(name, "%ssys_sub/O%04d.NC", PATH_NC_FILE, macro_index);
+            if(macro_index <= 9999)
+                sprintf(name, "%ssys_sub/O%04d.NC", PATH_NC_FILE, macro_index);
+            else
+                sprintf(name, "%ssys_sub/O%d.NC", PATH_NC_FILE, macro_index);
         }else if(macro_group == 8){
-            sprintf(name, "%sO%04d.ISO", PATH_NC_FILE, macro_index);   //Æ´½ÓÎÄ¼şÃû³Æ
+            if(macro_index <= 9999)
+                sprintf(name, "%sO%04d.ISO", dirName.c_str(), macro_index);   //Æ´½ÓÎÄ¼şÃû³Æ
+            else
+                sprintf(name, "%sO%d.ISO", dirName.c_str(), macro_index);//Æ´½ÓÎÄ¼şÃû³Æ
         }else if(macro_group == 9){
-            sprintf(name, "%ssys_sub/O%04d.ISO", PATH_NC_FILE, macro_index);
+            if(macro_index <= 9999)
+                sprintf(name, "%ssys_sub/O%04d.ISO", PATH_NC_FILE, macro_index);
+            else
+                sprintf(name, "%ssys_sub/O%d.ISO", PATH_NC_FILE, macro_index);
+        }else if(macro_group == 10){
+            if(macro_index <= 9999)
+                sprintf(name, "%smac_sub/O%04d.nc", PATH_NC_FILE, macro_index);
+            else
+                sprintf(name, "%smac_sub/O%d.nc", PATH_NC_FILE, macro_index);
+        }else if(macro_group == 11){
+            if(macro_index <= 9999)
+                sprintf(name, "%smac_sub/O%04d.NC", PATH_NC_FILE, macro_index);
+            else
+                sprintf(name, "%smac_sub/O%d.NC", PATH_NC_FILE, macro_index);
+        }else if(macro_group == 12){
+            if(macro_index <= 9999)
+                sprintf(name, "%smac_sub/O%04d.ios", PATH_NC_FILE, macro_index);
+            else
+                sprintf(name, "%smac_sub/O%d.ios", PATH_NC_FILE, macro_index);
+        }else if(macro_group == 13){
+            if(macro_index <= 9999)
+                sprintf(name, "%smac_sub/O%04d.IOS", PATH_NC_FILE, macro_index);
+            else
+                sprintf(name, "%smac_sub/O%d.IOS", PATH_NC_FILE, macro_index);
         }
+
     }else{
+        string dirName = m_p_file_map_info->GetDirName(false);
         if(macro_group == 2){//Í¬Ä¿Â¼ÏÂÓÃ»§ºê³ÌĞò
-            sprintf(name, "O%04d.nc", macro_index);   //Æ´½ÓÎÄ¼şÃû³Æ
+            if(macro_index <= 9999)
+                sprintf(name, "%sO%04d.nc", dirName.c_str(), macro_index);   //Æ´½ÓÎÄ¼şÃû³Æ
+            else
+                sprintf(name, "%sO%d.nc", dirName.c_str(), macro_index);
         }else if(macro_group == 3){//ÏµÍ³ºê³ÌĞò
-            sprintf(name, "sys_sub/O%04d.nc", macro_index);
+            if(macro_index <= 9999)
+                sprintf(name, "sys_sub/O%04d.nc", macro_index);
+            else
+                sprintf(name, "sys_sub/O%d.nc", macro_index);
         }else if(macro_group == 4){
-            sprintf(name, "O%04d.iso", macro_index);   //Æ´½ÓÎÄ¼şÃû³Æ
+            if(macro_index <= 9999)
+                sprintf(name, "%sO%04d.iso", dirName.c_str(), macro_index);   //Æ´½ÓÎÄ¼şÃû³Æ
+            else
+                sprintf(name, "%sO%d.iso", dirName.c_str(), macro_index);
         }else if(macro_group == 5){
-            sprintf(name, "sys_sub/O%04d.iso", macro_index);
+            if(macro_index <= 9999)
+                sprintf(name, "sys_sub/O%04d.iso", macro_index);
+            else
+                sprintf(name, "sys_sub/O%d.iso", macro_index);
         }else 	if(macro_group == 6){//Í¬Ä¿Â¼ÏÂÓÃ»§ºê³ÌĞò
-            sprintf(name, "O%04d.NC", macro_index);   //Æ´½ÓÎÄ¼şÃû³Æ
+            if(macro_index <= 9999)
+                sprintf(name, "%sO%04d.NC", dirName.c_str(), macro_index);   //Æ´½ÓÎÄ¼şÃû³Æ
+            else
+                sprintf(name, "%sO%d.NC", dirName.c_str(), macro_index);
         }else if(macro_group == 7){//ÏµÍ³ºê³ÌĞò
-            sprintf(name, "sys_sub/O%04d.NC", macro_index);
+            if(macro_index <= 9999)
+                sprintf(name, "sys_sub/O%04d.NC", macro_index);
+            else
+                sprintf(name, "sys_sub/O%d.NC", macro_index);
         }else if(macro_group == 8){
-            sprintf(name, "O%04d.ISO", macro_index);   //Æ´½ÓÎÄ¼şÃû³Æ
+            if(macro_index <= 9999)
+                sprintf(name, "%sO%04d.ISO", dirName.c_str(), macro_index);   //Æ´½ÓÎÄ¼şÃû³Æ
+            else
+                sprintf(name, "%sO%d.ISO", dirName.c_str(), macro_index);
         }else if(macro_group == 9){
-            sprintf(name, "sys_sub/O%04d.ISO", macro_index);
+            if(macro_index <= 9999)
+                sprintf(name, "sys_sub/O%04d.ISO", macro_index);
+            else
+                sprintf(name, "sys_sub/O%d.ISO", macro_index);
+        }else if(macro_group == 10){
+            if(macro_index <= 9999)
+                sprintf(name, "mac_sub/O%04d.nc", macro_index);
+            else
+                sprintf(name, "mac_sub/O%d.nc", macro_index);
+        }else if(macro_group == 11){
+            if(macro_index <= 9999)
+                sprintf(name, "mac_sub/O%04d.NC", macro_index);
+            else
+                sprintf(name, "mac_sub/O%d.NC", macro_index);
+        }else if(macro_group == 12){
+            if(macro_index <= 9999)
+                sprintf(name, "mac_sub/O%04d.iso", macro_index);
+            else
+                sprintf(name, "mac_sub/O%d.iso", macro_index);
+        }else if(macro_group == 13){
+            if(macro_index <= 9999)
+                sprintf(name, "mac_sub/O%04d.ISO", macro_index);
+            else
+                sprintf(name, "mac_sub/O%d.ISO", macro_index);
         }
     }
 }
@@ -4418,32 +4515,32 @@ void Compiler::GetMacroSubProgPath(int macro_group, int macro_index, bool abs_pa
  */
 bool Compiler::ReturnFromSubProg() {
 
-	printf("Return from sub program, sub_prog=%d, call_time=%d\n", m_n_sub_program, m_n_sub_call_times);
+    printf("----------------------->Return from sub program, sub_prog=%d, call_time=%d\n", m_n_sub_program, m_n_sub_call_times);
     if (this->m_n_sub_program != MAIN_PROG) {
-    	// ¶à´Îµ÷ÓÃÎ´½áÊø
-    	// Èç¹ûÊÇÍ¬³ÌĞòÄÚ×Ó³ÌĞòµ÷ÓÃ¶à´Î  ²»ÄÜÑ­»·±àÒë  Òª¼ÇÂ¼½Úµã²¢»Ö¸´
+        // ¶à´Îµ÷ÓÃÎ´½áÊø
+        // Èç¹ûÊÇÍ¬³ÌĞòÄÚ×Ó³ÌĞòµ÷ÓÃ¶à´Î  ²»ÄÜÑ­»·±àÒë  Òª¼ÇÂ¼½Úµã²¢»Ö¸´
 
-    	if(--m_n_sub_call_times > 0){
-    		// ×Ó³ÌĞòÔÚÍ¬Ò»¸öÎÄ¼şÀï »¹ÓĞĞ©Çé¿ö´¦Àí²»ÁË
-    		isJumpUpper = false;
-    		if(isSubInSameFile){
-    			if (!this->m_p_file_map_info->JumpTo(ln_read_size)) {   //Ó³ÉäÊ§°Ü
-    				CreateErrorMsg(ERR_JUMP_SUB_PROG, m_ln_cur_line_no);  //×Ó³ÌĞòÌø×ªÊ§°Ü
-					return false;
-				}
+        if(--m_n_sub_call_times > 0){
+            // ×Ó³ÌĞòÔÚÍ¬Ò»¸öÎÄ¼şÀï »¹ÓĞĞ©Çé¿ö´¦Àí²»ÁË
+            isJumpUpper = false;
+            if(isSubInSameFile){
+                if (!this->m_p_file_map_info->JumpTo(ln_read_size)) {   //Ó³ÉäÊ§°Ü
+                    CreateErrorMsg(ERR_JUMP_SUB_PROG, m_ln_cur_line_no);  //×Ó³ÌĞòÌø×ªÊ§°Ü
+                    return false;
+                }
 
-			    this->m_ln_read_size = ln_read_size;
-				this->m_p_cur_file_pos = p_cur_file_pos;
-				this->m_ln_cur_line_no = ln_cur_line_no;
-				m_b_eof = false;
-    			return true;
-    		}
+                this->m_ln_read_size = ln_read_size;
+                this->m_p_cur_file_pos = p_cur_file_pos;
+                this->m_ln_cur_line_no = ln_cur_line_no;
+                m_b_eof = false;
+                return true;
+            }
 
-    		this->RecycleCompile();
+            this->RecycleCompile();
             return true;
 
         }else{
-        	isJumpUpper = true;
+            isJumpUpper = true;
         }
 
     	/*
@@ -4521,11 +4618,17 @@ bool Compiler::ReturnFromSubProg() {
         //´Ó×Ó³ÌĞò·µ»Ø£¬²åÈë×Ó³ÌĞò·µ»ØÏûÏ¢£¬Ö÷Òª¹¦ÄÜÊÇÍ¨ÖªHMI´ò¿ªÉÏÒ»¼¶µ÷ÓÃÎÄ¼ş
         char file[kMaxFileNameLen];
         memset(file, 0x00, kMaxFileNameLen);
-        strcpy(file, m_p_file_map_info->str_file_name);
-        char *p = strrchr(file, '/');
-        if(p != nullptr){
-            strcpy(file, p+1);
+
+        string file_path = m_p_file_map_info->str_file_name;
+        if (file_path.find(PATH_NC_FILE) != string::npos)
+        {
+            file_path = file_path.substr(strlen(PATH_NC_FILE));
         }
+        //char *p = strrchr(file, '/');
+        //if(p != nullptr){
+        //    strcpy(file, p+1);
+        //}
+        strcpy(file, file_path.c_str());
 
         SubProgReturnMsg *msg = new SubProgReturnMsg(file, ret_macro_prog);
         msg->SetLineNo(this->m_ln_cur_line_no-1);
@@ -4539,10 +4642,12 @@ bool Compiler::ReturnFromSubProg() {
 /**
  * @brief ²éÕÒ×Ó³ÌĞò,×Ó³ÌĞòµÄ²éÕÒË³Ğò£º1.±¾³ÌĞòÄÚ  2. NC³ÌĞòÄ¿Â¼  3. ÏµÍ³×Ó³ÌĞòÄ¿Â¼
  * @param sub_name : ×Ó³ÌĞòºÅ
+ * @param scanMoed: ×Ó³ÌĞò²éÕÒ¹æÔò: 0--> (1.sys_sub²éÕÒ, 2.mac_sub²éÕÒ)  1--> (1.±¾Ä¿Â¼²éÕÒ, 2.sys_sub²éÕÒ, 3.mac_sub²éÕÒ)
  * @return 0--Ã»ÕÒµ½¶ÔÓ¦×Ó³ÌĞò   1--ÔÚ±¾³ÌĞòÄÚ   2--Í¬Ä¿Â¼ÏÂncÎÄ¼ş    3--ÏµÍ³×Ó³ÌĞòÄ¿Â¼ncÎÄ¼ş    4--Í¬Ä¿Â¼ÏÂisoÎÄ¼ş    5--ÏµÍ³×Ó³ÌĞòÄ¿Â¼isoÎÄ¼ş
- *                                               6--Í¬Ä¿Â¼ÏÂNCÎÄ¼ş    7--ÏµÍ³×Ó³ÌĞòÄ¿Â¼NCÎÄ¼ş    8--Í¬Ä¿Â¼ÏÂISOÎÄ¼ş    9--ÏµÍ³×Ó³ÌĞòÄ¿Â¼ISOÎÄ¼ş
+ *                            6--Í¬Ä¿Â¼ÏÂNCÎÄ¼ş    7--ÏµÍ³×Ó³ÌĞòÄ¿Â¼NCÎÄ¼ş    8--Í¬Ä¿Â¼ÏÂISOÎÄ¼ş    9--ÏµÍ³×Ó³ÌĞòÄ¿Â¼ISOÎÄ¼ş
+ *                            10-ÓÃ»§×Ó³ÌĞòÄ¿Â¼ncÎÄ¼ş    11-ÓÃ»§×Ó³ÌĞòNCÎÄ¼ş    12-ÓÃ»§×Ó³ÌĞòisoÎÄ¼ş   13-ÓÃ»§×Ó³ÌĞòISOÎÄ¼ş
  */
-int Compiler::FindSubProgram(int sub_name, bool file_only) {   //²éÕÒ²¢´ò¿ª×Ó³ÌĞò
+int Compiler::FindSubProgram(int sub_name, bool file_only, uint8_t scanMode) {   //²éÕÒ²¢´ò¿ª×Ó³ÌĞò
 
     //ÔÚ³ÌĞòÄÚ²¿ËÑË÷
     if(!file_only){
@@ -4559,45 +4664,51 @@ int Compiler::FindSubProgram(int sub_name, bool file_only) {   //²éÕÒ²¢´ò¿ª×Ó³ÌĞ
     //Í¬Ä¿Â¼ÏÂËÑË÷
     //ncÎÄ¼ş
     char filepath[kMaxPathLen] = { 0 };   //ÎÄ¼şÂ·¾¶
-    if (sub_name <= 9999)
-        sprintf(filepath, "%sO%04d.nc", PATH_NC_FILE, sub_name);   //Æ´½ÓÎÄ¼ş¾ø¶ÔÂ·¾¶
-    else
-        sprintf(filepath, "%sO%d.nc", PATH_NC_FILE, sub_name);   //Æ´½ÓÎÄ¼ş¾ø¶ÔÂ·¾¶
-
-    printf("sub program file 1: %s\n", filepath);
-    if (access(filepath, F_OK) == 0) {	//´æÔÚ¶ÔÓ¦ÎÄ¼ş
-        return 2;
-    }else{//ºó×º´óĞ´
-        memset(filepath, 0x00, kMaxPathLen);
+    if (scanMode == 1)
+    {
+        string dirName = m_p_file_map_info->GetDirName();
         if (sub_name <= 9999)
-            sprintf(filepath, "%sO%04d.NC", PATH_NC_FILE, sub_name);   //Æ´½ÓÎÄ¼ş¾ø¶ÔÂ·¾¶
+            sprintf(filepath, "%sO%04d.nc", dirName.c_str(), sub_name);   //Æ´½ÓÎÄ¼ş¾ø¶ÔÂ·¾¶
         else
-            sprintf(filepath, "%sO%d.NC", PATH_NC_FILE, sub_name);   //Æ´½ÓÎÄ¼ş¾ø¶ÔÂ·¾¶
+            sprintf(filepath, "%sO%d.nc", dirName.c_str(), sub_name);   //Æ´½ÓÎÄ¼ş¾ø¶ÔÂ·¾¶
 
+        printf("sub program file 1: %s\n", filepath);
         if (access(filepath, F_OK) == 0) {	//´æÔÚ¶ÔÓ¦ÎÄ¼ş
-            return 6;
+            return 2;
         }
-    }
+        else
+        {//ºó×º´óĞ´
+            memset(filepath, 0x00, kMaxPathLen);
+            if (sub_name <= 9999)
+                sprintf(filepath, "%sO%04d.NC", dirName.c_str(), sub_name);   //Æ´½ÓÎÄ¼ş¾ø¶ÔÂ·¾¶
+            else
+                sprintf(filepath, "%sO%d.NC", dirName.c_str(), sub_name);   //Æ´½ÓÎÄ¼ş¾ø¶ÔÂ·¾¶
 
-    //isoÎÄ¼ş
-    memset(filepath, 0x00, kMaxPathLen);
-    if (sub_name <= 9999)
-        sprintf(filepath, "%sO%04d.iso", PATH_NC_FILE, sub_name);   //Æ´½ÓÎÄ¼ş¾ø¶ÔÂ·¾¶
-    else
-        sprintf(filepath, "%sO%d.iso", PATH_NC_FILE, sub_name);   //Æ´½ÓÎÄ¼ş¾ø¶ÔÂ·¾¶
+            if (access(filepath, F_OK) == 0) {	//´æÔÚ¶ÔÓ¦ÎÄ¼ş
+                return 6;
+            }
+        }
 
-    printf("sub program file 2: %s\n", filepath);
-    if (access(filepath, F_OK) == 0) {	//´æÔÚ¶ÔÓ¦ÎÄ¼ş
-        return 4;
-    }else{
+        //isoÎÄ¼ş
         memset(filepath, 0x00, kMaxPathLen);
         if (sub_name <= 9999)
-            sprintf(filepath, "%sO%04d.ISO", PATH_NC_FILE, sub_name);   //Æ´½ÓÎÄ¼ş¾ø¶ÔÂ·¾¶
+            sprintf(filepath, "%sO%04d.iso", dirName.c_str(), sub_name);   //Æ´½ÓÎÄ¼ş¾ø¶ÔÂ·¾¶
         else
-            sprintf(filepath, "%sO%d.ISO", PATH_NC_FILE, sub_name);   //Æ´½ÓÎÄ¼ş¾ø¶ÔÂ·¾¶
+            sprintf(filepath, "%sO%d.iso", dirName.c_str(), sub_name);   //Æ´½ÓÎÄ¼ş¾ø¶ÔÂ·¾¶
 
+        printf("sub program file 2: %s\n", filepath);
         if (access(filepath, F_OK) == 0) {	//´æÔÚ¶ÔÓ¦ÎÄ¼ş
-            return 8;
+            return 4;
+        }else{
+            memset(filepath, 0x00, kMaxPathLen);
+            if (sub_name <= 9999)
+                sprintf(filepath, "%sO%04d.ISO", dirName.c_str(), sub_name);   //Æ´½ÓÎÄ¼ş¾ø¶ÔÂ·¾¶
+            else
+                sprintf(filepath, "%sO%d.ISO", dirName.c_str(), sub_name);   //Æ´½ÓÎÄ¼ş¾ø¶ÔÂ·¾¶
+
+            if (access(filepath, F_OK) == 0) {	//´æÔÚ¶ÔÓ¦ÎÄ¼ş
+                return 8;
+            }
         }
     }
 
@@ -4640,6 +4751,49 @@ int Compiler::FindSubProgram(int sub_name, bool file_only) {   //²éÕÒ²¢´ò¿ª×Ó³ÌĞ
 
         if (access(filepath, F_OK) == 0) {	//´æÔÚ¶ÔÓ¦ÎÄ¼ş
             return 9;
+        }
+    }
+
+
+    //ÓÃ»§×Ó³ÌĞòÄ¿Â¼ÏÂËÑË÷
+    memset(filepath, 0x00, kMaxPathLen);
+    if (sub_name <= 9999)
+        sprintf(filepath, "%sO%04d.nc", PATH_NC_MAC_FILE, sub_name);  //Æ´½ÓÎÄ¼ş¾ø¶ÔÂ·¾¶
+    else
+        sprintf(filepath, "%sO%d.nc", PATH_NC_MAC_FILE, sub_name);   //Æ´½ÓÎÄ¼ş¾ø¶ÔÂ·¾¶
+    printf("sys sub program file 3: %s\n", filepath);
+    if (access(filepath, F_OK) == 0) {	//´æÔÚ¶ÔÓ¦ÎÄ¼ş
+        return 10;
+    }else{
+        memset(filepath, 0x00, kMaxPathLen);
+        if (sub_name <= 9999)
+            sprintf(filepath, "%sO%04d.NC", PATH_NC_MAC_FILE, sub_name);  //Æ´½ÓÎÄ¼ş¾ø¶ÔÂ·¾¶
+        else
+            sprintf(filepath, "%sO%d.NC", PATH_NC_MAC_FILE, sub_name);   //Æ´½ÓÎÄ¼ş¾ø¶ÔÂ·¾¶
+
+        if (access(filepath, F_OK) == 0){	//´æÔÚ¶ÔÓ¦ÎÄ¼ş
+            return 11;
+        }
+    }
+
+    //isoÎÄ¼ş
+    memset(filepath, 0x00, kMaxPathLen);
+    if (sub_name <= 9999)
+        sprintf(filepath, "%sO%04d.iso", PATH_NC_MAC_FILE, sub_name);  //Æ´½ÓÎÄ¼ş¾ø¶ÔÂ·¾¶
+    else
+        sprintf(filepath, "%sO%d.iso", PATH_NC_MAC_FILE, sub_name);   //Æ´½ÓÎÄ¼ş¾ø¶ÔÂ·¾¶
+    printf("sys sub program file 4: %s\n", filepath);
+    if (access(filepath, F_OK) == 0) {	//´æÔÚ¶ÔÓ¦ÎÄ¼ş
+        return 12;
+    }else{
+        memset(filepath, 0x00, kMaxPathLen);
+        if (sub_name <= 9999)
+            sprintf(filepath, "%sO%04d.ISO", PATH_NC_MAC_FILE, sub_name);  //Æ´½ÓÎÄ¼ş¾ø¶ÔÂ·¾¶
+        else
+            sprintf(filepath, "%sO%d.ISO", PATH_NC_MAC_FILE, sub_name);   //Æ´½ÓÎÄ¼ş¾ø¶ÔÂ·¾¶
+
+        if (access(filepath, F_OK) == 0) {	//´æÔÚ¶ÔÓ¦ÎÄ¼ş
+            return 13;
         }
     }
 
@@ -4811,9 +4965,9 @@ bool Compiler::CheckJumpGoto(uint64_t line_src, uint64_t line_des){
 
     while(m_node_stack_run.size() != 0){
         // Ä¿±êĞĞºÅ ´óÓÚ Õ»¶¥½Úµã¼ÇÂ¼ĞĞºÅ  µ¯³ö
-		IfElseOffset node = m_node_stack_run.back();
-		if(line_des > m_node_vectors_vector.at(node.vec_index).back().line_no){
-        	m_node_stack_run.pop_back();
+        IfElseOffset node = m_node_stack_run.back();
+        if(line_des > m_node_vectors_vector.at(node.vec_index).back().line_no){
+            m_node_stack_run.pop_back();
             m_else_jump_stack_run.pop_back();
         }else{
             break;
@@ -4990,7 +5144,7 @@ void Compiler::SaveLoopParam(LoopMsg *loop){
     //½«µ±Ç°²ÎÊıĞ´ÈëÈ«¾Ö±äÁ¿
     while(pm != 0){
         if(pm & 0x01){
-        	pv->SetVarValue(kLoopParamToGlobalVarIndex[i], *pp);
+            pv->SetVarValue(kLoopParamToGlobalVarIndex[i], *pp);
             pp++;
         }
         pm = pm>>1;
@@ -5217,9 +5371,9 @@ void Compiler::ProcessRotateAxisPos(DPointChn &tar, DPointChn &src, uint32_t mas
 
 void Compiler::setCompensationPos(const DPointChn &pos){
 
-	for(int i=0; i<kMaxAxisChn; i++){
-		m_p_tool_compensate->setCurAxisPos(i,
-				pos.m_df_point[i]);
-	}
+    for(int i=0; i<kMaxAxisChn; i++){
+        m_p_tool_compensate->setCurAxisPos(i,
+                pos.m_df_point[i]);
+    }
 }
 

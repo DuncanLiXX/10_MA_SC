@@ -175,19 +175,6 @@ bool ServeGuide::IsTimeout()
 }
 
 /**
- * @brief 刚性攻丝需要记录速度
- * @param speed
- */
-//void ServeGuide::RecordSpeed(const double *speed)
-//{
-//    auto tap_config = dynamic_pointer_cast<SG_Tapping_Type>(type_ptr_);
-//    if (tap_config)
-//    {
-//        tap_config->RecordSpeed(speed);
-//    }
-//}
-
-/**
  * @brief 发送数据是否准备好，准备好才可以进行数据传送
  * @return true:准备好,false:未准备好
  */

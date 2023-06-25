@@ -2056,7 +2056,7 @@ bool Parser::CreateSubProgCallMsg(){
 		lcode = static_cast<int>(value);
 	}
 
-	RecordMsg *new_msg = new SubProgCallMsg(pcode, lcode);
+    RecordMsg *new_msg = new SubProgCallMsg(pcode, lcode, 1);
 	if(new_msg == nullptr){
 		//TODO 内存分配失败，告警
 		CreateError(ERR_MEMORY_NEW, FATAL_LEVEL, CLEAR_BY_RESET_POWER);
@@ -2962,7 +2962,7 @@ bool Parser::CreateMacroProgCallMsg(){
 	this->GetParaData(&param, pc, pm);
 
 
-	RecordMsg *new_msg = new MacroProgCallMsg(pcode, lcode, param, pc, pm);
+    RecordMsg *new_msg = new MacroProgCallMsg(pcode, lcode, param, pc, pm, 1);
 	if(new_msg == nullptr){
 		//TODO 内存分配失败，告警
 		CreateError(ERR_MEMORY_NEW, FATAL_LEVEL, CLEAR_BY_RESET_POWER);

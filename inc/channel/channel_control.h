@@ -383,6 +383,7 @@ public:
     void LimitRotatePos(double &pos, double &move_pr); //限制旋转轴坐标
 
     uint32_t m_cur_setfeed = 0;
+    int main_prog_line_number = 0;
 
 #ifdef NEW_WOOD_MACHINE
     bool m_b_need_pre_prog;    // 前置程序待执行

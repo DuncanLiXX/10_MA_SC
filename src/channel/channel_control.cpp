@@ -702,6 +702,7 @@ void ChannelControl::Reset(){
     m_b_ret_from_macroprog = false;
     m_b_init_compiler_pos = false;  //编译器初始位置需要重新初始化
     m_b_need_change_to_pause = false;
+    main_prog_line_number = 0;
 
     this->m_p_compiler->Reset();
     if(strlen(m_channel_status.cur_nc_file_name) > 0){
@@ -4397,7 +4398,8 @@ void ChannelControl::CompileOver(){
 #ifdef USES_ADDITIONAL_PROGRAM
         if(this->m_n_add_prog_type != CONTINUE_START_ADD)
 #endif
-            SetMachineState(MS_READY);
+		this->main_prog_line_number = 0;
+		SetMachineState(MS_READY);
     }
 
 #ifndef USES_SIMULATION_TEST
@@ -6189,8 +6191,13 @@ bool ChannelControl::ExecuteAuxMsg(RecordMsg *msg){
     uint8_t m_index = 0;
     int mcode = 0;
 
+    // 只判断主程序行号是否到达程序再起行号
+    if(m_mode_restart.sub_prog_call == 0){
+    	main_prog_line_number = tmp->GetLineNo();
+    }
+
     if(this->m_n_restart_mode != NOT_RESTART &&
-            tmp->GetLineNo() < this->m_n_restart_line
+    		main_prog_line_number < this->m_n_restart_line
         #ifdef USES_ADDITIONAL_PROGRAM
             && this->m_n_add_prog_type == NONE_ADD      //非附加程序运行状态
         #endif
@@ -6302,7 +6309,7 @@ bool ChannelControl::ExecuteAuxMsg(RecordMsg *msg){
         bool block_over = false;
 
         while(1){
-            block_over = CheckBlockOverFlag();
+        	block_over = CheckBlockOverFlag();
             if(this->ReadMcMoveDataCount() > 0 || !block_over ||
                     m_channel_status.machining_state == MS_PAUSED ||
                     m_channel_status.machining_state == MS_WARNING){ //未达到执行条件
@@ -7277,8 +7284,12 @@ void ChannelControl::ExecMCode(AuxMsg *msg, uint8_t index){
 bool ChannelControl::ExecuteLineMsg(RecordMsg *msg, bool flag_block){
     LineMsg *linemsg = (LineMsg *)msg;
 
+    if(m_mode_restart.sub_prog_call == 0){
+    	main_prog_line_number = linemsg->GetLineNo();
+	}
+
     if(this->m_n_restart_mode != NOT_RESTART &&
-            linemsg->GetLineNo() < this->m_n_restart_line
+    		main_prog_line_number < this->m_n_restart_line
         #ifdef USES_ADDITIONAL_PROGRAM
             && this->m_n_add_prog_type == NONE_ADD      //非附加程序运行状态
         #endif
@@ -7373,8 +7384,12 @@ bool ChannelControl::ExecuteLineMsg(RecordMsg *msg, bool flag_block){
 bool ChannelControl::ExecuteRapidMsg(RecordMsg *msg, bool flag_block){
     RapidMsg *rapidmsg = (RapidMsg *)msg;
 
+    if(m_mode_restart.sub_prog_call == 0){
+    	main_prog_line_number = rapidmsg->GetLineNo();
+	}
+
     if(this->m_n_restart_mode != NOT_RESTART &&
-            rapidmsg->GetLineNo() < this->m_n_restart_line
+    		main_prog_line_number < this->m_n_restart_line
         #ifdef USES_ADDITIONAL_PROGRAM
             && this->m_n_add_prog_type == NONE_ADD      //非附加程序运行状态
         #endif

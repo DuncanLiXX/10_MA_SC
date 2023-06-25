@@ -18,6 +18,10 @@
 #include "variable.h"
 #include "parm_manager.h"
 
+#include <future>
+#include <functional>
+#include <unistd.h>
+
 //template<> int ListNode<LabelOffset>::new_count = 0;
 //template<> int ListNode<SubProgOffset>::new_count = 0;
 //template<> int ListNode<LoopRec>::new_count = 0;
@@ -1536,6 +1540,7 @@ bool Compiler::OpenFile(const char *file, bool sub_flag) {
         }
         m_thread_prescan = 0;
     }*/
+    compiler_lock = true;
     m_b_breakout_prescan = false;
     //m_b_prescan_over = false;
     m_b_prescan_in_stack = false;
@@ -1551,7 +1556,11 @@ bool Compiler::OpenFile(const char *file, bool sub_flag) {
     m_stack_vector_index_prescan.clear();
     m_stack_else_count_prescan.clear();
 
-    PreScan();
+    //PreScan();
+
+    static std::future<void> ans;
+    auto func = std::bind(&Compiler::PreScan, this);
+	ans = std::async(std::launch::async, func);
 
 
 #ifdef USES_WOOD_MACHINE
@@ -2361,14 +2370,10 @@ bool Compiler::RunMessage() {
                 res = RunAuxMsg(msg);
                 break;
             case SUBPROG_CALL_MSG:
-            	compiler_lock = true;
             	res = this->RunSubProgCallMsg(msg);
-
                 break;
             case MACRO_PROG_CALL_MSG:
-            	compiler_lock = true;
             	res = this->RunMacroProgCallMsg(msg);
-
                 break;
             case COORD_MSG:
                 res = this->RunCoordMsg(msg);
@@ -2395,7 +2400,6 @@ bool Compiler::RunMessage() {
                 res = this->RunToolMsg(msg);
                 break;
             case LOOP_MSG:
-            	compiler_lock = true;
             	res = this->RunLoopMsg(msg);
                 break;
             case ARC_MSG:
@@ -4546,7 +4550,6 @@ int Compiler::FindSubProgram(int sub_name, bool file_only) {   //²éÕÒ²¢´ò¿ª×Ó³ÌÐ
         while (node != nullptr) {
             if (node->data.sub_index == sub_name) {
                 printf("sub name: %d\n", sub_name);
-                compiler_lock = false;
                 return 1;
             }
             node = node->next;

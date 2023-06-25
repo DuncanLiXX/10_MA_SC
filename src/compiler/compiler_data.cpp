@@ -353,14 +353,35 @@ bool AsFileMapInfo::JumpTo(uint64_t pos){
 
 /**
  * @brief 获取文件所在目录
+ * @param true,返回绝对路径; false,返回相对路径
  * @return 目录路径
  */
-string AsFileMapInfo::GetDirName()
+string AsFileMapInfo::GetDirName(bool abs)
 {
-    string full_path = str_file_name;
-    int pos = full_path.find_last_of('/');
-    string dir_path = full_path.substr(0, pos+1);
-    return dir_path;
+    if (abs)
+    {
+        string full_path = str_file_name;
+        int pos = full_path.find_last_of('/');
+        string dir_path = full_path.substr(0, pos+1);
+        if (dir_path.find("/cnc/mda") != string::npos)
+        {
+            dir_path = PATH_NC_FILE;
+        }
+        return dir_path;
+    }
+    else
+    {
+        string full_path = str_file_name;
+        auto pos = full_path.find_last_of('/');
+        full_path = full_path.substr(0, pos+1);
+        pos = full_path.find(PATH_NC_FILE);
+        if (pos != string::npos)
+        {
+            full_path = full_path.substr(pos+strlen(PATH_NC_FILE));
+        }
+        std::cout << "$$$$$ dir " << full_path << std::endl;
+        return full_path;
+    }
 }
 
 /**

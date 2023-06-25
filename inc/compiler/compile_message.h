@@ -449,7 +449,7 @@ protected:
  */
 class SubProgCallMsg : public AuxMsg{
 public:
-	SubProgCallMsg(int pcode, int lcode);    //构造函数
+    SubProgCallMsg(int pcode, int lcode, uint8_t scan = 0);    //构造函数
 
 	virtual void Execute();		//执行函数
 	virtual void GetData(void* rec );	//获取数据
@@ -469,12 +469,15 @@ public:
 	void SetLastProgFile(char *file);   //设置上一个文件的绝对路径，用于手轮反向引导
 	void GetLastProgFile(char *file);   //获取上一个文件的绝对路径，用于手轮方向引导
 
+    uint8_t GetScanMode() const;
+
 	SubProgCallMsg& operator=( const SubProgCallMsg& msg);  //赋值运算符
 	friend bool operator ==( const SubProgCallMsg &one, SubProgCallMsg &two);  //判断运算符
 private:
 	int m_n_sub_prog_name;   //子程序名
 	int m_n_call_times;     //调用次数
 	uint8_t m_n_sub_prog_type;  //子程序类型  1--在本程序内   2--同目录下nc文件    3--系统子程序目录nc文件     4--同目录下iso文件    5--系统子程序目录iso文件
+    uint8_t m_n_scan_mode = 0;//子程序查找规则 0--> (1.sys_sub查找, 2.mac_sub查找)  1--> (1.本目录查找, 2.sys_sub查找, 3.mac_sub查找)
 
 	char m_str_last_prog_file[kMaxPathLen];   //前一个文件绝对路径，用于反向引导
 };
@@ -484,7 +487,7 @@ private:
  */
 class MacroProgCallMsg : public ModeMsg{
 public:
-	MacroProgCallMsg(int pcode, int lcode, double *param, uint8_t count, uint32_t mask);    //构造函数
+    MacroProgCallMsg(int pcode, int lcode, double *param, uint8_t count, uint32_t mask, uint8_t scan = 0);    //构造函数
 	~MacroProgCallMsg();  //析构函数
 
 	virtual void Execute();		//执行函数
@@ -507,6 +510,8 @@ public:
 	void SetLastProgFile(char *file);   //设置上一个文件的绝对路径，用于手轮反向引导
 	void GetLastProgFile(char *file);   //获取上一个文件的绝对路径，用于手轮方向引导
 
+    uint8_t GetScanMode() const;
+
 	MacroProgCallMsg& operator=( const MacroProgCallMsg& msg);  //赋值运算符
 	friend bool operator ==( const MacroProgCallMsg &one, MacroProgCallMsg &two);  //判断运算符
 private:
@@ -516,6 +521,7 @@ private:
 	uint32_t m_mask_param;   //有效参数MASK
 	uint8_t m_n_param_count;  //参数个数
 	uint8_t m_n_macro_prog_type;  //子程序类型  1--在本程序内   2--同目录下nc文件    3--系统子程序目录nc文件     4--同目录下iso文件    5--系统子程序目录iso文件
+    uint8_t m_n_scan_mode = 0;//宏程序查找规则 0--> (1.sys_sub查找, 2.mac_sub查找)  1--> (1.本目录查找, 2.sys_sub查找, 3.mac_sub查找)
 
 	char m_str_last_prog_file[kMaxPathLen];   //前一个文件绝对路径，用于反向引导
 };

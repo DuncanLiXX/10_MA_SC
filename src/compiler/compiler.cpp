@@ -1939,6 +1939,7 @@ void Compiler::Reset(){
     m_b_compile_over = false;
     this->m_n_restart_line = 0;
     this->m_n_restart_mode = NOT_RESTART;
+    m_n_cur_dir_sub_prog = false;
 
     m_error_code = ERR_NONE;
 
@@ -2542,7 +2543,7 @@ bool Compiler::RunAuxMsg(RecordMsg *msg) {
                 this->m_b_compile_over = true;
             }
 
-            printf("compiler run M99\n");
+            printf("---------------------->compiler run M99\n");
             break;
         case 300: //lidianqiang:MDA×Ô¶¯¼ÓÉÏM30ÁÙÊ±¸ÄÎªM300
             this->m_b_compile_over = true;
@@ -2572,7 +2573,7 @@ bool Compiler::RunSubProgCallMsg(RecordMsg *msg) {
 
 
     //²éÕÒ×Ó³ÌÐò
-    int sub_loc = this->FindSubProgram(sub_index);
+    int sub_loc = this->FindSubProgram(sub_index, false, sub_msg->GetScanMode());
     sub_msg->SetSubProgType(sub_loc);
     if (sub_loc == 0) {
         CreateErrorMsg(ERR_NO_SUB_PROG, msg->GetLineNo());  //ÕÒ²»µ½¶ÔÓ¦×Ó³ÌÐò
@@ -2657,7 +2658,7 @@ bool Compiler::RunMacroProgCallMsg(RecordMsg *msg){
     int macro_index = sub_msg->GetMacroProgIndex();
 
     //²éÕÒ×Ó³ÌÐò
-    int macro_loc = this->FindSubProgram(macro_index);
+    int macro_loc = this->FindSubProgram(macro_index, false, sub_msg->GetScanMode());
     sub_msg->SetMacroProgType(macro_loc);
     if (macro_loc == 0) {
         CreateErrorMsg(ERR_NO_SUB_PROG, msg->GetLineNo());  //ÕÒ²»µ½¶ÔÓ¦×Ó³ÌÐò
@@ -4434,11 +4435,12 @@ void Compiler::GetMacroSubProgPath(int macro_group, int macro_index, bool abs_pa
         }
 
     }else{
+        string dirName = m_p_file_map_info->GetDirName(false);
         if(macro_group == 2){//Í¬Ä¿Â¼ÏÂÓÃ»§ºê³ÌÐò
             if(macro_index <= 9999)
-                sprintf(name, "O%04d.nc", macro_index);   //Æ´½ÓÎÄ¼þÃû³Æ
+                sprintf(name, "%sO%04d.nc", dirName.c_str(), macro_index);   //Æ´½ÓÎÄ¼þÃû³Æ
             else
-                sprintf(name, "O%d.nc", macro_index);
+                sprintf(name, "%sO%d.nc", dirName.c_str(), macro_index);
         }else if(macro_group == 3){//ÏµÍ³ºê³ÌÐò
             if(macro_index <= 9999)
                 sprintf(name, "sys_sub/O%04d.nc", macro_index);
@@ -4446,9 +4448,9 @@ void Compiler::GetMacroSubProgPath(int macro_group, int macro_index, bool abs_pa
                 sprintf(name, "sys_sub/O%d.nc", macro_index);
         }else if(macro_group == 4){
             if(macro_index <= 9999)
-                sprintf(name, "O%04d.iso", macro_index);   //Æ´½ÓÎÄ¼þÃû³Æ
+                sprintf(name, "%sO%04d.iso", dirName.c_str(), macro_index);   //Æ´½ÓÎÄ¼þÃû³Æ
             else
-                sprintf(name, "O%d.iso", macro_index);
+                sprintf(name, "%sO%d.iso", dirName.c_str(), macro_index);
         }else if(macro_group == 5){
             if(macro_index <= 9999)
                 sprintf(name, "sys_sub/O%04d.iso", macro_index);
@@ -4456,9 +4458,9 @@ void Compiler::GetMacroSubProgPath(int macro_group, int macro_index, bool abs_pa
                 sprintf(name, "sys_sub/O%d.iso", macro_index);
         }else 	if(macro_group == 6){//Í¬Ä¿Â¼ÏÂÓÃ»§ºê³ÌÐò
             if(macro_index <= 9999)
-                sprintf(name, "O%04d.NC", macro_index);   //Æ´½ÓÎÄ¼þÃû³Æ
+                sprintf(name, "%sO%04d.NC", dirName.c_str(), macro_index);   //Æ´½ÓÎÄ¼þÃû³Æ
             else
-                sprintf(name, "O%d.NC", macro_index);
+                sprintf(name, "%sO%d.NC", dirName.c_str(), macro_index);
         }else if(macro_group == 7){//ÏµÍ³ºê³ÌÐò
             if(macro_index <= 9999)
                 sprintf(name, "sys_sub/O%04d.NC", macro_index);
@@ -4466,9 +4468,9 @@ void Compiler::GetMacroSubProgPath(int macro_group, int macro_index, bool abs_pa
                 sprintf(name, "sys_sub/O%d.NC", macro_index);
         }else if(macro_group == 8){
             if(macro_index <= 9999)
-                sprintf(name, "O%04d.ISO", macro_index);   //Æ´½ÓÎÄ¼þÃû³Æ
+                sprintf(name, "%sO%04d.ISO", dirName.c_str(), macro_index);   //Æ´½ÓÎÄ¼þÃû³Æ
             else
-                sprintf(name, "O%d.ISO", macro_index);
+                sprintf(name, "%sO%d.ISO", dirName.c_str(), macro_index);
         }else if(macro_group == 9){
             if(macro_index <= 9999)
                 sprintf(name, "sys_sub/O%04d.ISO", macro_index);
@@ -4505,7 +4507,7 @@ void Compiler::GetMacroSubProgPath(int macro_group, int macro_index, bool abs_pa
  */
 bool Compiler::ReturnFromSubProg() {
 
-    printf("Return from sub program, sub_prog=%d, call_time=%d\n", m_n_sub_program, m_n_sub_call_times);
+    printf("----------------------->Return from sub program, sub_prog=%d, call_time=%d\n", m_n_sub_program, m_n_sub_call_times);
     if (this->m_n_sub_program != MAIN_PROG) {
         // ¶à´Îµ÷ÓÃÎ´½áÊø
         // Èç¹ûÊÇÍ¬³ÌÐòÄÚ×Ó³ÌÐòµ÷ÓÃ¶à´Î  ²»ÄÜÑ­»·±àÒë  Òª¼ÇÂ¼½Úµã²¢»Ö¸´
@@ -4631,11 +4633,12 @@ bool Compiler::ReturnFromSubProg() {
 /**
  * @brief ²éÕÒ×Ó³ÌÐò,×Ó³ÌÐòµÄ²éÕÒË³Ðò£º1.±¾³ÌÐòÄÚ  2. NC³ÌÐòÄ¿Â¼  3. ÏµÍ³×Ó³ÌÐòÄ¿Â¼
  * @param sub_name : ×Ó³ÌÐòºÅ
+ * @param scanMoed: ×Ó³ÌÐò²éÕÒ¹æÔò: 0--> (1.sys_sub²éÕÒ, 2.mac_sub²éÕÒ)  1--> (1.±¾Ä¿Â¼²éÕÒ, 2.sys_sub²éÕÒ, 3.mac_sub²éÕÒ)
  * @return 0--Ã»ÕÒµ½¶ÔÓ¦×Ó³ÌÐò   1--ÔÚ±¾³ÌÐòÄÚ   2--Í¬Ä¿Â¼ÏÂncÎÄ¼þ    3--ÏµÍ³×Ó³ÌÐòÄ¿Â¼ncÎÄ¼þ    4--Í¬Ä¿Â¼ÏÂisoÎÄ¼þ    5--ÏµÍ³×Ó³ÌÐòÄ¿Â¼isoÎÄ¼þ
  *                            6--Í¬Ä¿Â¼ÏÂNCÎÄ¼þ    7--ÏµÍ³×Ó³ÌÐòÄ¿Â¼NCÎÄ¼þ    8--Í¬Ä¿Â¼ÏÂISOÎÄ¼þ    9--ÏµÍ³×Ó³ÌÐòÄ¿Â¼ISOÎÄ¼þ
  *                            10-ÓÃ»§×Ó³ÌÐòÄ¿Â¼ncÎÄ¼þ    11-ÓÃ»§×Ó³ÌÐòNCÎÄ¼þ    12-ÓÃ»§×Ó³ÌÐòisoÎÄ¼þ   13-ÓÃ»§×Ó³ÌÐòISOÎÄ¼þ
  */
-int Compiler::FindSubProgram(int sub_name, bool file_only) {   //²éÕÒ²¢´ò¿ª×Ó³ÌÐò
+int Compiler::FindSubProgram(int sub_name, bool file_only, uint8_t scanMode) {   //²éÕÒ²¢´ò¿ª×Ó³ÌÐò
 
     //ÔÚ³ÌÐòÄÚ²¿ËÑË÷
     if(!file_only){
@@ -4653,46 +4656,51 @@ int Compiler::FindSubProgram(int sub_name, bool file_only) {   //²éÕÒ²¢´ò¿ª×Ó³ÌÐ
     //Í¬Ä¿Â¼ÏÂËÑË÷
     //ncÎÄ¼þ
     char filepath[kMaxPathLen] = { 0 };   //ÎÄ¼þÂ·¾¶
-    string dirName = m_p_file_map_info->GetDirName();
-    if (sub_name <= 9999)
-        sprintf(filepath, "%sO%04d.nc", dirName.c_str(), sub_name);   //Æ´½ÓÎÄ¼þ¾ø¶ÔÂ·¾¶
-    else
-        sprintf(filepath, "%sO%d.nc", dirName.c_str(), sub_name);   //Æ´½ÓÎÄ¼þ¾ø¶ÔÂ·¾¶
-
-    printf("sub program file 1: %s\n", filepath);
-    if (access(filepath, F_OK) == 0) {	//´æÔÚ¶ÔÓ¦ÎÄ¼þ
-        return 2;
-    }else{//ºó×º´óÐ´
-        memset(filepath, 0x00, kMaxPathLen);
+    if (scanMode == 1)
+    {
+        string dirName = m_p_file_map_info->GetDirName();
         if (sub_name <= 9999)
-            sprintf(filepath, "%sO%04d.NC", dirName.c_str(), sub_name);   //Æ´½ÓÎÄ¼þ¾ø¶ÔÂ·¾¶
+            sprintf(filepath, "%sO%04d.nc", dirName.c_str(), sub_name);   //Æ´½ÓÎÄ¼þ¾ø¶ÔÂ·¾¶
         else
-            sprintf(filepath, "%sO%d.NC", dirName.c_str(), sub_name);   //Æ´½ÓÎÄ¼þ¾ø¶ÔÂ·¾¶
+            sprintf(filepath, "%sO%d.nc", dirName.c_str(), sub_name);   //Æ´½ÓÎÄ¼þ¾ø¶ÔÂ·¾¶
 
+        printf("sub program file 1: %s\n", filepath);
         if (access(filepath, F_OK) == 0) {	//´æÔÚ¶ÔÓ¦ÎÄ¼þ
-            return 6;
+            return 2;
         }
-    }
+        else
+        {//ºó×º´óÐ´
+            memset(filepath, 0x00, kMaxPathLen);
+            if (sub_name <= 9999)
+                sprintf(filepath, "%sO%04d.NC", dirName.c_str(), sub_name);   //Æ´½ÓÎÄ¼þ¾ø¶ÔÂ·¾¶
+            else
+                sprintf(filepath, "%sO%d.NC", dirName.c_str(), sub_name);   //Æ´½ÓÎÄ¼þ¾ø¶ÔÂ·¾¶
 
-    //isoÎÄ¼þ
-    memset(filepath, 0x00, kMaxPathLen);
-    if (sub_name <= 9999)
-        sprintf(filepath, "%sO%04d.iso", dirName.c_str(), sub_name);   //Æ´½ÓÎÄ¼þ¾ø¶ÔÂ·¾¶
-    else
-        sprintf(filepath, "%sO%d.iso", dirName.c_str(), sub_name);   //Æ´½ÓÎÄ¼þ¾ø¶ÔÂ·¾¶
+            if (access(filepath, F_OK) == 0) {	//´æÔÚ¶ÔÓ¦ÎÄ¼þ
+                return 6;
+            }
+        }
 
-    printf("sub program file 2: %s\n", filepath);
-    if (access(filepath, F_OK) == 0) {	//´æÔÚ¶ÔÓ¦ÎÄ¼þ
-        return 4;
-    }else{
+        //isoÎÄ¼þ
         memset(filepath, 0x00, kMaxPathLen);
         if (sub_name <= 9999)
-            sprintf(filepath, "%sO%04d.ISO", dirName.c_str(), sub_name);   //Æ´½ÓÎÄ¼þ¾ø¶ÔÂ·¾¶
+            sprintf(filepath, "%sO%04d.iso", dirName.c_str(), sub_name);   //Æ´½ÓÎÄ¼þ¾ø¶ÔÂ·¾¶
         else
-            sprintf(filepath, "%sO%d.ISO", dirName.c_str(), sub_name);   //Æ´½ÓÎÄ¼þ¾ø¶ÔÂ·¾¶
+            sprintf(filepath, "%sO%d.iso", dirName.c_str(), sub_name);   //Æ´½ÓÎÄ¼þ¾ø¶ÔÂ·¾¶
 
+        printf("sub program file 2: %s\n", filepath);
         if (access(filepath, F_OK) == 0) {	//´æÔÚ¶ÔÓ¦ÎÄ¼þ
-            return 8;
+            return 4;
+        }else{
+            memset(filepath, 0x00, kMaxPathLen);
+            if (sub_name <= 9999)
+                sprintf(filepath, "%sO%04d.ISO", dirName.c_str(), sub_name);   //Æ´½ÓÎÄ¼þ¾ø¶ÔÂ·¾¶
+            else
+                sprintf(filepath, "%sO%d.ISO", dirName.c_str(), sub_name);   //Æ´½ÓÎÄ¼þ¾ø¶ÔÂ·¾¶
+
+            if (access(filepath, F_OK) == 0) {	//´æÔÚ¶ÔÓ¦ÎÄ¼þ
+                return 8;
+            }
         }
     }
 

@@ -100,7 +100,7 @@ public://公共接口
 
     // sub_name:子程序号
     // file_only:只搜索实际文件
-    int FindSubProgram(int sub_name, bool file_only = false);   //查找并打开子程序
+    int FindSubProgram(int sub_name, bool file_only = false, uint8_t scanMode = 0);   //查找并打开子程序
 
 
     int getSubCallTimes(){ return m_n_sub_call_times;}
@@ -109,6 +109,8 @@ public://公共接口
     void setCompensationPos(const DPointChn &pos);
 
     void GetMacroSubProgPath(int macro_group, int macro_index, bool abs_path, char *name);   //获取宏程序的路径数据
+
+    int m_n_cur_dir_sub_prog = false;    // 当前目录下的子程序
 
 #ifdef USES_WOOD_MACHINE
 	bool FindPreStartSpdCmd(uint64_t line_min , uint64_t line_max, SpindleStartOffset &spd_cmd);   //查找是否存在可预启动的主轴指令

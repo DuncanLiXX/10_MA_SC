@@ -436,7 +436,7 @@ struct AsFileMapInfo
     bool Swapup();		   //向上翻页
     bool ResetFile();         //复位到当前文件头
     bool JumpTo(uint64_t pos);   //将当前读取位置跳转到pos处
-    string GetDirName();        //获取文件所在目录
+    string GetDirName(bool abs = true);        //获取文件所在目录
     AsFileMapInfo& operator=( const AsFileMapInfo& c);
 
 

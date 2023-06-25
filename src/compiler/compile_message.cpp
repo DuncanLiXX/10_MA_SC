@@ -1686,12 +1686,14 @@ bool operator ==( const AuxMsg &one, AuxMsg &two){
 }
 
 /*****************************************************************SubProgCallMsg类***************************************************************/
-SubProgCallMsg::SubProgCallMsg(int pcode, int lcode):AuxMsg(98){
+SubProgCallMsg::SubProgCallMsg(int pcode, int lcode, uint8_t scan):AuxMsg(98){
 	this->m_n_sub_prog_name = pcode;
 	this->m_n_call_times = lcode;
 	memset(this->m_str_last_prog_file, 0x00, kMaxPathLen);
 	SetMsgType(SUBPROG_CALL_MSG);
 	this->SetFlag(FLAG_WAIT_MOVE_OVER, true);   //需要等待运动到位
+
+    m_n_scan_mode = scan;//子程序查找规则
 }
 
 void SubProgCallMsg::Execute(){
@@ -1745,7 +1747,16 @@ void SubProgCallMsg::SetLastProgFile(char *file){
 void SubProgCallMsg::GetLastProgFile(char *file){
 	if(file != nullptr){
 		strcpy(file, m_str_last_prog_file);
-	}
+    }
+}
+
+/**
+ * @brief 返回子程序查找规则
+ * @return
+ */
+uint8_t SubProgCallMsg::GetScanMode() const
+{
+    return m_n_scan_mode;
 }
 
 /**
@@ -1893,13 +1904,15 @@ bool operator ==( const SubProgCallMsg &one, SubProgCallMsg &two){
  * @param count ：参数个数
  * @param mask ：参数mask
  */
-MacroProgCallMsg::MacroProgCallMsg(int pcode, int lcode, double *param, uint8_t count, uint32_t mask):ModeMsg(G65_CMD){
+MacroProgCallMsg::MacroProgCallMsg(int pcode, int lcode, double *param, uint8_t count, uint32_t mask, uint8_t scan):ModeMsg(G65_CMD){
 
 	this->m_n_macro_prog_name = pcode;
 	this->m_n_call_times = lcode;
 	this->m_mask_param = mask;
 	this->m_p_df_param = param;
 	this->m_n_param_count = count;
+
+    m_n_scan_mode = scan;//子程序查找模式
 
 	SetMsgType(MACRO_PROG_CALL_MSG);
 	this->SetFlag(FLAG_WAIT_MOVE_OVER, true);   //需要等待运动到位
@@ -1976,7 +1989,16 @@ void MacroProgCallMsg::SetLastProgFile(char *file){
 void MacroProgCallMsg::GetLastProgFile(char *file){
 	if(file != nullptr){
 		strcpy(file, m_str_last_prog_file);
-	}
+    }
+}
+
+/**
+ * @brief 返回宏程序查找规则
+ * @return
+ */
+uint8_t MacroProgCallMsg::GetScanMode() const
+{
+    return m_n_scan_mode;
 }
 
 

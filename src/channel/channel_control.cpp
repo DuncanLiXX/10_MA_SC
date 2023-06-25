@@ -47,7 +47,7 @@ ChannelControl::ChannelControl() {
     m_thread_compiler = 0;
 
     m_n_subprog_count = 0;
-    m_n_macroprog_count = 0;
+    //m_n_macroprog_count = 0;
     m_b_ret_from_macroprog = false;
 
     m_n_mask_clear_pos = 0;
@@ -698,7 +698,7 @@ void ChannelControl::Reset(){
 //    }
 
     m_n_subprog_count = 0;
-    m_n_macroprog_count = 0;
+    //m_n_macroprog_count = 0;
     m_b_ret_from_macroprog = false;
     m_b_init_compiler_pos = false;  //编译器初始位置需要重新初始化
     m_b_need_change_to_pause = false;
@@ -1965,7 +1965,7 @@ END:
  */
 void ChannelControl::SetCurLineNoFromMc(){
 
-	if(this->m_n_macroprog_count == 0 || this->m_p_general_config->debug_mode > 0)  //调试模式下或者没有宏程序调用
+	if(/*this->m_n_macroprog_count == 0 ||*/ this->m_p_general_config->debug_mode > 0)  //调试模式下或者没有宏程序调用
         m_b_lineno_from_mc = true;
 }
 
@@ -2018,7 +2018,7 @@ void ChannelControl::PauseRunGCode(){
             	this->PauseMc();
             }
             m_n_subprog_count = 0;
-            m_n_macroprog_count = 0;
+            //m_n_macroprog_count = 0;
             m_b_ret_from_macroprog = false;
             m_b_init_compiler_pos = false;  //编译器初始位置需要重新初始化
 
@@ -2143,7 +2143,7 @@ void ChannelControl::StopRunGCode(bool reset){
     }
 
     m_n_subprog_count = 0;
-    m_n_macroprog_count = 0;
+    //m_n_macroprog_count = 0;
     m_b_ret_from_macroprog = false;
     m_b_init_compiler_pos = false;  //编译器初始位置需要重新初始化
     this->m_p_compiler->Reset();
@@ -4249,7 +4249,7 @@ void ChannelControl::SetWorkMode(uint8_t work_mode){
             }
 
             this->m_n_subprog_count = 0;
-            this->m_n_macroprog_count = 0;
+            //this->m_n_macroprog_count = 0;
         }
         this->m_p_compiler->SetMode((CompilerWorkMode)work_mode);	//编译器切换模式
         this->m_p_compiler->SetOutputMsgList(m_p_output_msg_list);  //切换输出队列
@@ -5220,7 +5220,7 @@ void ChannelControl::SetCurLineNo(uint32_t line_no){
     if(this->m_n_add_prog_type != NONE_ADD)
         return;
 #endif
-    if(this->m_n_macroprog_count == 0 || this->m_p_general_config->debug_mode > 0)
+    if(/*this->m_n_macroprog_count == 0 ||*/ this->m_p_general_config->debug_mode > 0)
     {
         this->m_channel_rt_status.line_no = line_no;
         //printf("ChannelControl::SetCurLineNo: %u\n", line_no);
@@ -5770,7 +5770,7 @@ bool ChannelControl::IsStepMode(){
             && (m_n_add_prog_type == NONE_ADD)    //非附加程序运行状态
         #endif
             ){
-        if(this->m_n_macroprog_count == 0 || this->m_p_general_config->debug_mode > 0) //非宏程序调用或者调试模式打开
+        if(/*this->m_n_macroprog_count == 0 ||*/ this->m_p_general_config->debug_mode > 0) //非宏程序调用或者调试模式打开
             return true;
     }
 
@@ -6212,7 +6212,6 @@ bool ChannelControl::ExecuteAuxMsg(RecordMsg *msg){
             }else if(mcode == 2 || mcode == 30 || mcode == 99){  //直接结束，切换到READY状态
                 if(mcode == 99 && m_mode_restart.sub_prog_call > 0){
                     this->m_mode_restart.sub_prog_call--;
-                    printf("8888888888888888\n");
                 }else{
                     ResetMcLineNo();//复位MC模块当前行号
                     this->SetCurLineNo(1);
@@ -6978,9 +6977,11 @@ bool ChannelControl::ExecuteAuxMsg(RecordMsg *msg){
                 if(m_n_subprog_count > 0){
                 	if(m_p_compiler->needJumpUpper()) m_n_subprog_count--;
                     m_b_ret_from_macroprog = false;
+                    printf("===== exe sub 3333333333333333333\n");
                 }
                 else{
                 	m_p_compiler->RecycleCompile();   //主程序则循环调用
+                	printf("===== exe main 4444444444444444444\n");
 //                    this->m_channel_status.workpiece_count++;  //工件计数加一
 //                    g_ptr_parm_manager->SetCurWorkPiece(m_n_channel_index, m_channel_status.workpiece_count);
 //                    this->m_channel_status.workpiece_count_total++;
@@ -8350,7 +8351,7 @@ bool ChannelControl::ExecuteLoopMsg(RecordMsg *msg){
         //设置当前行号
         SetCurLineNo(msg->GetLineNo());
         m_n_subprog_count++;
-        m_n_macroprog_count++;
+        //m_n_macroprog_count++;
         return true;
     }
     //等待MC分块的插补到位信号，以及MI的运行到位信号
@@ -8405,7 +8406,7 @@ bool ChannelControl::ExecuteLoopMsg(RecordMsg *msg){
     SetCurLineNo(msg->GetLineNo());
 
     m_n_subprog_count++;
-    m_n_macroprog_count++;
+    //m_n_macroprog_count++;
 
     if(this->m_p_general_config->debug_mode == 0){
         this->SetMcStepMode(false);
@@ -9114,7 +9115,7 @@ bool ChannelControl::ExecuteMacroProgCallMsg(RecordMsg *msg){
         SetCurLineNo(msg->GetLineNo());
 
         m_n_subprog_count++;
-        m_n_macroprog_count++;
+        //m_n_macroprog_count++;
 
         return true;
     }
@@ -9165,7 +9166,7 @@ bool ChannelControl::ExecuteMacroProgCallMsg(RecordMsg *msg){
         SetCurLineNo(msg->GetLineNo());
 
         m_n_subprog_count--;
-        m_n_macroprog_count--;
+        //m_n_macroprog_count--;
 
     }else{
         if(m_n_subprog_count >= kMaxSubNestedCount){
@@ -9190,7 +9191,7 @@ bool ChannelControl::ExecuteMacroProgCallMsg(RecordMsg *msg){
         SetCurLineNo(msg->GetLineNo());
 
         m_n_subprog_count++;
-        m_n_macroprog_count++;
+        //m_n_macroprog_count++;
 
         if(this->m_p_general_config->debug_mode == 0){
             this->SetMcStepMode(false);
@@ -9278,7 +9279,7 @@ bool ChannelControl::ExecuteAutoToolMeasureMsg(RecordMsg *msg){
     SetCurLineNo(msg->GetLineNo());
 
     m_n_subprog_count++;
-    m_n_macroprog_count++;
+    //m_n_macroprog_count++;
 
     if(this->m_p_general_config->debug_mode == 0){  //非调试模式则单段无效
         this->SetMcStepMode(false);
@@ -9388,8 +9389,9 @@ bool ChannelControl::ExecuteSubProgReturnMsg(RecordMsg *msg){
         //设置当前行号
         SetCurLineNo(msg->GetLineNo());
 
-        if(ret_msg->IsRetFromMacroProg() && m_n_macroprog_count > 0){  //宏程序返回
-            m_n_macroprog_count--;
+        if(ret_msg->IsRetFromMacroProg() /*&& m_n_macroprog_count > 0*/){  //宏程序返回
+            //m_n_macroprog_count--;
+            //m_n_subprog_count--;
             m_b_ret_from_macroprog = true;
         }
         return true;
@@ -9443,9 +9445,11 @@ bool ChannelControl::ExecuteSubProgReturnMsg(RecordMsg *msg){
     }
 
     //设置当前行号
-    if(ret_msg->IsRetFromMacroProg() && m_n_macroprog_count > 0){  //宏程序返回，不更新行号
-        m_n_macroprog_count--;
+    if(ret_msg->IsRetFromMacroProg() /*&& m_n_macroprog_count > 0*/){  //宏程序返回，不更新行号
+    	//m_n_subprog_count --;
+    	//m_n_macroprog_count--;
         m_b_ret_from_macroprog = true;
+        SetCurLineNo(msg->GetLineNo());
 
         if(this->IsStepMode()){
             this->SetMcStepMode(true);
@@ -11097,13 +11101,13 @@ void ChannelControl::SetFuncState(int state, uint8_t mode){
                 this->SetMcStepMode(false);
                 this->m_b_need_change_to_pause = false;
             }
-            else if(this->m_n_macroprog_count == 0 || this->m_p_general_config->debug_mode > 0){  //非宏程序调用，并关闭调试模式
+            else if(/*this->m_n_macroprog_count == 0 ||*/ this->m_p_general_config->debug_mode > 0){  //非宏程序调用，并关闭调试模式
                 this->SetMcStepMode(true);
             }
         }else if(mode == 0){  //关闭
             this->SetMcStepMode(false);
             this->m_b_need_change_to_pause = false;
-        }else if(this->m_n_macroprog_count == 0 || this->m_p_general_config->debug_mode > 0){//打开
+        }else if(/*this->m_n_macroprog_count == 0 ||*/ this->m_p_general_config->debug_mode > 0){//打开
             this->SetMcStepMode(true);
         }
 
@@ -16555,7 +16559,7 @@ void ChannelControl::SaveAutoScene(bool flag){
     m_scene_auto.mc_mode_exec = m_mc_mode_exec;
 
     m_scene_auto.subprog_count = this->m_n_subprog_count;
-    m_scene_auto.macroprog_count = this->m_n_macroprog_count;
+    /*m_scene_auto.macroprog_count = this->m_n_macroprog_count;*/
     m_scene_auto.p_last_output_msg = this->m_p_last_output_msg;
 
     m_scene_auto.need_reload_flag = flag;
@@ -16578,7 +16582,7 @@ void ChannelControl::ReloadAutoScene(){
     m_mc_mode_cur = m_scene_auto.mc_mode_exec;
 
     this->m_n_subprog_count = m_scene_auto.subprog_count;
-    this->m_n_macroprog_count = m_scene_auto.macroprog_count;
+    /*this->m_n_macroprog_count = m_scene_auto.macroprog_count;*/
     this->m_p_last_output_msg = m_scene_auto.p_last_output_msg;
 
 }
@@ -19945,7 +19949,7 @@ bool ChannelControl::CallMacroProgram(uint16_t macro_index){
     if((mode == AUTO_MODE || mode == MDA_MODE) && state == MS_RUNNING){
     	this->m_p_compiler->CallMarcoProgWithNoPara(macro_index);
         m_n_subprog_count++;
-        m_n_macroprog_count++;
+        //m_n_macroprog_count++;
 
         if(this->m_p_general_config->debug_mode == 0){
             this->SetMcStepMode(false);

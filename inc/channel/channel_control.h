@@ -760,7 +760,7 @@ private://私有成员变量
 	uint64_t m_n_send_mc_data_err;	//向MC发送数据失败计数
 
 	uint8_t m_n_subprog_count;     	//子程序嵌套层数计数,包括宏程序调用
-	uint8_t m_n_macroprog_count;    //宏程序嵌套层数计数，不包括子程序
+	//uint8_t m_n_macroprog_count;    //宏程序嵌套层数计数，不包括子程序
 	bool m_b_ret_from_macroprog;    //宏程序返回标志
 
 	//用于保存循环指令参数值

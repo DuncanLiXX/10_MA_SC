@@ -2045,7 +2045,7 @@ bool Compiler::GetLineData() {
     //
     //	gettimeofday(&tvStart, NULL);
 
-    //printf("enter getlinedata\n");
+    printf("enter getlinedata\n");
 
     bool res = true;
     if(m_p_file_map_info == nullptr || m_b_compile_over) {  //编译结束
@@ -4584,6 +4584,7 @@ bool Compiler::ReturnFromSubProg() {
         m_b_prescan_over = false;
 
         printf("exit pre scan thread\n");
+
 
         bool ret_macro_prog = (m_n_sub_program==MACRO_PROG)?true:false;    //返回的调用类型
 

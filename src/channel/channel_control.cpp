@@ -799,6 +799,7 @@ void ChannelControl::Reset(){
         this->SpindleOut(SPD_DIR_STOP);
     }
 #endif
+
     printf("channelcontrol[%hhu] send reset cmd!\n", this->m_n_channel_index);
 }
 
@@ -4630,7 +4631,6 @@ int ChannelControl::Run(){
                 }
             }
             else if(m_p_compiler->IsCompileOver()){  //已经编译完成
-
             	ExecuteMessage();
             }
             else
@@ -5804,7 +5804,8 @@ bool ChannelControl::IsStepMode(){
             && (m_n_add_prog_type == NONE_ADD)    //非附加程序运行状态
         #endif
             ){
-        if(this->m_n_macroprog_count == 0 || this->m_p_general_config->debug_mode > 0) //非宏程序调用或者调试模式打开
+        //if(this->m_n_macroprog_count == 0 || this->m_p_general_config->debug_mode > 0) //非宏程序调用或者调试模式打开
+        if((this->m_n_macroprog_count == 0) || m_p_compiler->m_n_cur_dir_sub_prog || this->m_p_general_config->debug_mode > 0) //非宏程序调用或者调试模式打开
             return true;
     }
 
@@ -6071,7 +6072,7 @@ bool ChannelControl::ExecuteMessage(){
         if(!res){
             if(m_n_run_thread_state != WAIT_RUN  && m_n_run_thread_state != WAIT_EXECUTE){ //当前非WAIT_RUN状态，将线程置为WAIT_EXECUTE状态
                 this->m_n_run_thread_state = WAIT_EXECUTE;
-                // printf("set WAIT_EXECUTE, line = %llu\n", msg->GetLineNo());
+                //printf("set WAIT_EXECUTE, line = %llu\n", msg->GetLineNo());
             }
 
             break;
@@ -6109,12 +6110,12 @@ bool ChannelControl::ExecuteMessage(){
             	this->StartMcIntepolate();
             }
 
-            std::cout << "------------>execute msg: " << (int)msg_type << " last_reg: " << (int)IsStepMode() << std::endl;
             if(IsStepMode()){//单段模式, 非宏程序调用或者打开了调试模式
                 if(msg->CheckFlag(FLAG_LAST_REC)){
                     std::cout << "msg->ismoveMsg: " << (int)msg->IsMoveMsg() << std::endl;
                     std::cout << "msg->type: " << msg_type << std::endl;
                     std::cout << "IsEndMsg: " << msg->IsEndMsg() << std::endl;
+                    std::cout << "sub: " << m_p_compiler->m_n_cur_dir_sub_prog << std::endl;
                     if((!msg->IsMoveMsg() || msg_type == AUX_MSG || msg_type == REF_RETURN_MSG) &&
                             !msg->IsEndMsg()){	//单步模式下，运行完一行的最后一条代码后暂停
                         printf("--------------->PAUSED in execute\n");
@@ -6127,6 +6128,13 @@ bool ChannelControl::ExecuteMessage(){
                 }
                 //				if(msg->GetFlag(FLAG_LAST_REC))
                 //					m_b_step_exec = false;
+            }
+            else
+            {
+                std::cout << "----> FS_SINGLE: " << (int)m_channel_status.func_state_flags.CheckMask(FS_SINGLE_LINE) << std::endl;
+                std::cout << "m_macropgrocont: " << (int)m_n_macroprog_count << std::endl;
+                std::cout << "m_channel_status.chn_work_mode: " << (int)m_channel_status.chn_work_mode << std::endl;
+                std::cout << "m_sum: " << m_simulate_mode << std::endl;
             }
 
             if(msg->IsEndMsg()){	//处理M02/M30消息
@@ -6141,7 +6149,7 @@ bool ChannelControl::ExecuteMessage(){
                      (m_channel_status.machining_state == MS_PAUSED || m_channel_status.machining_state == MS_PAUSING || pause_flag)){
                 m_n_run_thread_state = PAUSE;
             }else{
-                //	printf("execute msg over : m_n_run_thread_state=%hhu, machining_state=%hhu\n", m_n_run_thread_state, m_channel_status.machining_state);
+                //printf("execute msg over : m_n_run_thread_state=%hhu, machining_state=%hhu\n", m_n_run_thread_state, m_channel_status.machining_state);
             }
 
 #ifdef USES_ADDITIONAL_PROGRAM
@@ -6227,6 +6235,7 @@ bool ChannelControl::ExecuteAuxMsg(RecordMsg *msg){
     uint8_t m_count = tmp->GetMCount();   //一行中M代码总数
     uint8_t m_index = 0;
     int mcode = 0;
+
 
     if(this->m_n_restart_mode != NOT_RESTART &&
             tmp->GetLineNo() < this->m_n_restart_line
@@ -7386,6 +7395,7 @@ bool ChannelControl::ExecuteLineMsg(RecordMsg *msg, bool flag_block){
                 this->m_b_need_change_to_pause = false;
                 m_n_run_thread_state = PAUSE;
                 SetMachineState(MS_PAUSED);
+                std::cout << "--------------------------->test step " << std::endl;
                 return false;
             }
         }
@@ -9102,9 +9112,6 @@ bool ChannelControl::ExecuteSubProgCallMsg(RecordMsg *msg){
                 bool need = false;
                 //TODO 向HMI发送命令打开子文件
                 if(this->m_channel_status.chn_work_mode == AUTO_MODE){
-                    //if(sub_msg->GetSubProgType() == 2 ||
-                    //        sub_msg->GetSubProgType() == 4 ||
-                    //        sub_msg->GetSubProgType() == 6){
                     if (this->m_p_general_config->debug_mode > 0 || SubProgIsCurDir(sub_msg->GetSubProgType())) {
                     	char file[kMaxFileNameLen];
                         memset(file, 0x00, kMaxFileNameLen);
@@ -9112,6 +9119,10 @@ bool ChannelControl::ExecuteSubProgCallMsg(RecordMsg *msg){
                         //sub_msg->GetSubProgName(file, false);
                         this->SendOpenFileCmdToHmi(file);
                         need = true;
+                    }
+                    else
+                    {
+                        this->SetMcStepMode(false);
                     }
                 //}
                 }
@@ -9228,8 +9239,9 @@ bool ChannelControl::ExecuteMacroProgCallMsg(RecordMsg *msg){
             return false;
         }
 
+        bool need = false;
         //TODO 向HMI发送命令打开子文件
-        if(this->m_p_general_config->debug_mode > 0 || (!this->IsStepMode()/*todo llx 65也需要跳转*/ && SubProgIsCurDir(macro_msg->GetMacroProgType()))){  //调式模式下，打开宏程序文件
+        if(this->m_p_general_config->debug_mode > 0 || (/*!this->IsStepMode() 65也需要跳转 &&*/ SubProgIsCurDir(macro_msg->GetMacroProgType()))){  //调式模式下，打开宏程序文件
             if(this->m_channel_status.chn_work_mode == AUTO_MODE){
                 if(macro_msg->GetMacroProgType() > 1){
                     char file[kMaxFileNameLen];
@@ -9237,12 +9249,24 @@ bool ChannelControl::ExecuteMacroProgCallMsg(RecordMsg *msg){
                     //macro_msg->GetMacroProgName(file, false);
                     m_p_compiler->GetMacroSubProgPath(macro_msg->GetMacroProgType(), macro_msg->GetMacroProgIndex(), false, file);
                     this->SendOpenFileCmdToHmi(file);
+                    need = true;
+                }
+                else
+                {
+                    this->SetMcStepMode(false);
                 }
             }
         }
 
         //设置当前行号
-        SetCurLineNo(msg->GetLineNo());
+        if (need)
+        {
+            SetCurLineNo(1);
+        }
+        else
+        {
+            SetCurLineNo(msg->GetLineNo());
+        }
 
         m_n_subprog_count++;
         m_n_macroprog_count++;
@@ -9474,6 +9498,8 @@ bool ChannelControl::ExecuteSubProgReturnMsg(RecordMsg *msg){
             break;
     }
 
+    m_p_compiler->m_n_cur_dir_sub_prog = false;//test
+
     if(this->IsStepMode() && this->m_b_need_change_to_pause){//单段，切换暂停状态
         this->m_b_need_change_to_pause = false;
         m_n_run_thread_state = PAUSE;
@@ -9499,6 +9525,10 @@ bool ChannelControl::ExecuteSubProgReturnMsg(RecordMsg *msg){
         printf("execute sub program return msg: file = %s\n", file);
     }
 
+    std::cout << "1 " << (int)ret_msg->IsRetFromMacroProg() << " 2 " << (int)m_n_macroprog_count << std::endl;
+    std::cout << "3 " << (int)IsStepMode() << std::endl;
+    std::cout << "4 " << (int)m_n_macroprog_count << " 5 " << (int)m_n_subprog_count << std::endl;
+    std::cout << "m_n_cur_dir_sub_prog " << m_p_compiler->m_n_cur_dir_sub_prog << std::endl;
     //设置当前行号
     if(ret_msg->IsRetFromMacroProg() && m_n_macroprog_count > 0){  //宏程序返回，不更新行号
         m_n_macroprog_count--;
@@ -9510,6 +9540,9 @@ bool ChannelControl::ExecuteSubProgReturnMsg(RecordMsg *msg){
     }else{
         SetCurLineNo(msg->GetLineNo());
         printf("sub prog return line : %lld\n", msg->GetLineNo());
+        if(this->IsStepMode()){
+            this->SetMcStepMode(true);
+        }
     }
 
     return true;

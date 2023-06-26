@@ -49,8 +49,8 @@ const int kMaxFileNameLen = 128;      //文件名最大长度
 const int kNcFileSignLen = 16;   //签名串长度
 
 //刀具相关
-const int kMaxToolCount = 60;    //系统支持最大刀具容量
-//const int kMaxToolCount = 128;
+//const int kMaxToolCount = 60;    //系统支持最大刀具容量
+const int kMaxToolCount = 128;
 
 //工艺参数最大组数
 const int kMaxProcParamCount = 10;    //系统支持的工艺参数最大组数
@@ -132,8 +132,8 @@ struct HMICmdFrame {
 	uint16_t cmd;            //命令号
 	uint16_t cmd_extension;  //扩展命令号
 	uint16_t data_len;       //数据区字节数,0~255
-	char data[kMaxHmiDataLen];    //短数据区
-//	char *data_huge;            //大数据区指针
+    char data[kMaxHmiDataLen];    //短数据区
+    //char *data_huge;            //大数据区指针
 };
 
 

@@ -1966,7 +1966,7 @@ END:
  */
 void ChannelControl::SetCurLineNoFromMc(){
 
-	if(/*this->m_n_macroprog_count == 0 ||*/ this->m_p_general_config->debug_mode > 0){  //调试模式下或者没有宏程序调用
+	if(this->m_n_macroprog_count == 0 || this->m_p_general_config->debug_mode > 0){  //调试模式下或者没有宏程序调用
 
         m_b_lineno_from_mc = true;
     }
@@ -2151,7 +2151,7 @@ void ChannelControl::StopRunGCode(bool reset){
     }
 
     m_n_subprog_count = 0;
-    //m_n_macroprog_count = 0;
+    m_n_macroprog_count = 0;
     m_b_ret_from_macroprog = false;
     m_b_init_compiler_pos = false;  //编译器初始位置需要重新初始化
     this->m_p_compiler->Reset();
@@ -4283,7 +4283,7 @@ void ChannelControl::SetWorkMode(uint8_t work_mode){
             }
 
             this->m_n_subprog_count = 0;
-            //this->m_n_macroprog_count = 0;
+            this->m_n_macroprog_count = 0;
         }
         this->m_p_compiler->SetMode((CompilerWorkMode)work_mode);	//编译器切换模式
         this->m_p_compiler->SetOutputMsgList(m_p_output_msg_list);  //切换输出队列
@@ -5259,7 +5259,7 @@ void ChannelControl::SetCurLineNo(uint32_t line_no){
         return;
 #endif
 
-    if(/*this->m_n_macroprog_count == 0 ||*/ this->m_p_general_config->debug_mode > 0)
+    if(this->m_n_macroprog_count == 0 || this->m_p_general_config->debug_mode > 0)
     {
         this->m_channel_rt_status.line_no = line_no;
         std::cout << "setcurLineNo:  " << (int)this->m_channel_rt_status.line_no << std::endl;
@@ -5809,7 +5809,7 @@ bool ChannelControl::IsStepMode(){
             && (m_n_add_prog_type == NONE_ADD)    //非附加程序运行状态
         #endif
             ){
-        if(/*this->m_n_macroprog_count == 0 ||*/ this->m_p_general_config->debug_mode > 0) //非宏程序调用或者调试模式打开
+        if(this->m_n_macroprog_count == 0 || this->m_p_general_config->debug_mode > 0) //非宏程序调用或者调试模式打开
             return true;
     }
 
@@ -5947,6 +5947,12 @@ bool ChannelControl::ExecuteMessage(){
         }
         // @test zk
         //printf("---------->excute message line no %llu  msg type: %d flag: %d\n", line_no, msg_type, msg->GetFlags().all);
+
+        // 获取主程序行号
+        if(m_mode_restart.sub_prog_call == 0){
+           	main_prog_line_number = msg->GetLineNo();
+       	}
+
         switch(msg_type){
         case AUX_MSG:
 #ifdef USES_WOOD_MACHINE
@@ -6233,11 +6239,6 @@ bool ChannelControl::ExecuteAuxMsg(RecordMsg *msg){
     uint8_t m_index = 0;
     int mcode = 0;
 
-    // 只判断主程序行号是否到达程序再起行号
-    if(m_mode_restart.sub_prog_call == 0){
-    	main_prog_line_number = tmp->GetLineNo();
-    }
-
     if(this->m_n_restart_mode != NOT_RESTART &&
     		main_prog_line_number < this->m_n_restart_line
         #ifdef USES_ADDITIONAL_PROGRAM
@@ -6310,7 +6311,7 @@ bool ChannelControl::ExecuteAuxMsg(RecordMsg *msg){
 #endif
         }else if(mcode == 99){
             if(m_n_subprog_count > 0){
-                m_n_subprog_count--;
+            	m_n_subprog_count --;
                 m_b_ret_from_macroprog = false;
 
                 this->m_n_run_thread_state = RUN;
@@ -7328,10 +7329,6 @@ void ChannelControl::ExecMCode(AuxMsg *msg, uint8_t index){
 bool ChannelControl::ExecuteLineMsg(RecordMsg *msg, bool flag_block){
     LineMsg *linemsg = (LineMsg *)msg;
 
-    if(m_mode_restart.sub_prog_call == 0){
-    	main_prog_line_number = linemsg->GetLineNo();
-	}
-
     if(this->m_n_restart_mode != NOT_RESTART &&
     		main_prog_line_number < this->m_n_restart_line
         #ifdef USES_ADDITIONAL_PROGRAM
@@ -7516,7 +7513,7 @@ bool ChannelControl::ExecuteArcMsg(RecordMsg *msg, bool flag_block){
     ArcMsg *arc_msg = (ArcMsg *)msg;
 
     if(this->m_n_restart_mode != NOT_RESTART &&
-            arc_msg->GetLineNo() < this->m_n_restart_line
+    		main_prog_line_number < this->m_n_restart_line
         #ifdef USES_ADDITIONAL_PROGRAM
             && this->m_n_add_prog_type == NONE_ADD      //非附加程序运行状态
         #endif
@@ -7568,7 +7565,7 @@ bool ChannelControl::ExecuteCoordMsg(RecordMsg *msg){
 	CoordMsg *coordmsg = (CoordMsg *)msg;
 
     if(this->m_n_restart_mode != NOT_RESTART &&
-            msg->GetLineNo() < this->m_n_restart_line
+    		main_prog_line_number < this->m_n_restart_line
         #ifdef USES_ADDITIONAL_PROGRAM
             && this->m_n_add_prog_type == NONE_ADD      //非附加程序运行状态
         #endif
@@ -7836,7 +7833,7 @@ bool ChannelControl::ExecuteToolMsg(RecordMsg *msg){
     //	}
     ToolMsg *toolmsg = (ToolMsg *)msg;
     if(this->m_n_restart_mode != NOT_RESTART &&
-            msg->GetLineNo() < this->m_n_restart_line
+    		main_prog_line_number < this->m_n_restart_line
         #ifdef USES_ADDITIONAL_PROGRAM
             && this->m_n_add_prog_type == NONE_ADD      //非附加程序运行状态
         #endif
@@ -8096,7 +8093,7 @@ bool ChannelControl::ExecuteModeMsg(RecordMsg *msg){
     ModeMsg *modemsg = (ModeMsg *)msg;
 
     if(this->m_n_restart_mode != NOT_RESTART &&
-            msg->GetLineNo() < this->m_n_restart_line
+    		main_prog_line_number < this->m_n_restart_line
         #ifdef USES_ADDITIONAL_PROGRAM
             && this->m_n_add_prog_type == NONE_ADD      //非附加程序运行状态
         #endif
@@ -8286,7 +8283,7 @@ bool ChannelControl::ExecuteSpeedMsg(RecordMsg *msg){
         spd_config = &m_p_axis_config[phy_spd-1];
 
     if(this->m_n_restart_mode != NOT_RESTART &&
-            msg->GetLineNo() < this->m_n_restart_line
+    		main_prog_line_number < this->m_n_restart_line
         #ifdef USES_ADDITIONAL_PROGRAM
             && this->m_n_add_prog_type == NONE_ADD      //非附加程序运行状态
         #endif
@@ -8395,7 +8392,7 @@ bool ChannelControl::ExecuteLoopMsg(RecordMsg *msg){
     int cmd = loopmsg->GetGCode();
 
     if(this->m_n_restart_mode != NOT_RESTART &&
-            msg->GetLineNo() < this->m_n_restart_line
+    		main_prog_line_number < this->m_n_restart_line
         #ifdef USES_ADDITIONAL_PROGRAM
             && this->m_n_add_prog_type == NONE_ADD      //非附加程序运行状态
         #endif
@@ -8410,7 +8407,7 @@ bool ChannelControl::ExecuteLoopMsg(RecordMsg *msg){
         //设置当前行号
         SetCurLineNo(msg->GetLineNo());
         m_n_subprog_count++;
-        //m_n_macroprog_count++;
+        m_n_macroprog_count++;
         return true;
     }
     //等待MC分块的插补到位信号，以及MI的运行到位信号
@@ -8466,7 +8463,7 @@ bool ChannelControl::ExecuteLoopMsg(RecordMsg *msg){
     SetCurLineNo(msg->GetLineNo());
 
     m_n_subprog_count++;
-    //m_n_macroprog_count++;
+    m_n_macroprog_count++;
 
     if(this->m_p_general_config->debug_mode == 0){
         this->SetMcStepMode(false);
@@ -8533,7 +8530,7 @@ bool ChannelControl::ExecuteCompensateMsg(RecordMsg *msg){
     CompensateMsg *compmsg = (CompensateMsg *)msg;
     int type = compmsg->GetGCode();
     if(this->m_n_restart_mode != NOT_RESTART &&
-            compmsg->GetLineNo() < this->m_n_restart_line
+    		main_prog_line_number < this->m_n_restart_line
         #ifdef USES_ADDITIONAL_PROGRAM
             && this->m_n_add_prog_type == NONE_ADD      //非附加程序运行状态
         #endif
@@ -9043,7 +9040,7 @@ bool ChannelControl::ExecuteSubProgCallMsg(RecordMsg *msg){
     SubProgCallMsg *sub_msg = (SubProgCallMsg *)msg;
 
     if(this->m_n_restart_mode != NOT_RESTART &&
-            msg->GetLineNo() < this->m_n_restart_line
+    		main_prog_line_number < this->m_n_restart_line
         #ifdef USES_ADDITIONAL_PROGRAM
             && this->m_n_add_prog_type == NONE_ADD      //非附加程序运行状态
         #endif
@@ -9055,9 +9052,7 @@ bool ChannelControl::ExecuteSubProgCallMsg(RecordMsg *msg){
     if(m_simulate_mode == SIM_OUTLINE && m_simulate_mode == SIM_TOOLPATH){  //轮廓仿真，刀路仿真
         //设置当前行号
         SetCurLineNo(msg->GetLineNo());
-
         m_n_subprog_count++;
-
         return true;
     }
 
@@ -9144,7 +9139,7 @@ bool ChannelControl::ExecuteSubProgCallMsg(RecordMsg *msg){
                 {
                     SetCurLineNo(msg->GetLineNo());
                 }
-                m_n_subprog_count += 1;
+                m_n_subprog_count++;
                 this->m_p_f_reg->DM98 = 1;
                 sub_msg->IncreaseExecStep(0);
             }else if(sub_msg->GetExecStep(0) == 1){
@@ -9170,7 +9165,7 @@ bool ChannelControl::ExecuteMacroProgCallMsg(RecordMsg *msg){
     MacroProgCallMsg *macro_msg = (MacroProgCallMsg *)msg;
 
     if(this->m_n_restart_mode != NOT_RESTART &&
-            msg->GetLineNo() < this->m_n_restart_line
+    		main_prog_line_number < this->m_n_restart_line
         #ifdef USES_ADDITIONAL_PROGRAM
             && this->m_n_add_prog_type == NONE_ADD      //非附加程序运行状态
         #endif
@@ -9187,7 +9182,7 @@ bool ChannelControl::ExecuteMacroProgCallMsg(RecordMsg *msg){
         SetCurLineNo(msg->GetLineNo());
 
         m_n_subprog_count++;
-        //m_n_macroprog_count++;
+        m_n_macroprog_count++;
 
         return true;
     }
@@ -9238,7 +9233,7 @@ bool ChannelControl::ExecuteMacroProgCallMsg(RecordMsg *msg){
         SetCurLineNo(msg->GetLineNo());
 
         m_n_subprog_count--;
-        //m_n_macroprog_count--;
+        m_n_macroprog_count--;
 
     }else{
         if(m_n_subprog_count >= kMaxSubNestedCount){
@@ -9264,7 +9259,7 @@ bool ChannelControl::ExecuteMacroProgCallMsg(RecordMsg *msg){
         SetCurLineNo(msg->GetLineNo());
 
         m_n_subprog_count++;
-        //m_n_macroprog_count++;
+        m_n_macroprog_count++;
 
         if(this->m_p_general_config->debug_mode == 0){
             this->SetMcStepMode(false);
@@ -9288,7 +9283,7 @@ bool ChannelControl::ExecuteAutoToolMeasureMsg(RecordMsg *msg){
         limit = 4;	//单步模式需要多次验证，因为状态切换有延时
 
     if(this->m_n_restart_mode != NOT_RESTART &&
-            macro_msg->GetLineNo() < this->m_n_restart_line
+    		main_prog_line_number < this->m_n_restart_line
         #ifdef USES_ADDITIONAL_PROGRAM
             && this->m_n_add_prog_type == NONE_ADD      //非附加程序运行状态
         #endif
@@ -9353,7 +9348,7 @@ bool ChannelControl::ExecuteAutoToolMeasureMsg(RecordMsg *msg){
     SetCurLineNo(msg->GetLineNo());
 
     m_n_subprog_count++;
-    //m_n_macroprog_count++;
+    m_n_macroprog_count++;
 
     if(this->m_p_general_config->debug_mode == 0){  //非调试模式则单段无效
         this->SetMcStepMode(false);
@@ -9392,7 +9387,7 @@ bool ChannelControl::ExecuteMacroCmdMsg(RecordMsg *msg){
     // printf("enter execute macro cmd message\n");
 
 	if(this->m_n_restart_mode != NOT_RESTART &&
-            msg->GetLineNo() < this->m_n_restart_line
+			main_prog_line_number < this->m_n_restart_line
         #ifdef USES_ADDITIONAL_PROGRAM
             && this->m_n_add_prog_type == NONE_ADD      //非附加程序运行状态
         #endif
@@ -9451,21 +9446,25 @@ bool ChannelControl::ExecuteSubProgReturnMsg(RecordMsg *msg){
     SubProgReturnMsg *ret_msg = static_cast<SubProgReturnMsg *>(msg);
 
     if(this->m_n_restart_mode != NOT_RESTART &&
-            msg->GetLineNo() < this->m_n_restart_line
+    		main_prog_line_number < this->m_n_restart_line
         #ifdef USES_ADDITIONAL_PROGRAM
             && this->m_n_add_prog_type == NONE_ADD      //非附加程序运行状态
         #endif
             ){//加工复位
-        return true;
+
+    	if(ret_msg->IsRetFromMacroProg() && m_n_macroprog_count > 0){  //宏程序返回
+			m_n_macroprog_count--;
+			m_b_ret_from_macroprog = true;
+		}
+    	return true;
     }
 
     if(m_simulate_mode == SIM_OUTLINE && m_simulate_mode == SIM_TOOLPATH){  //轮廓仿真，刀路仿真
         //设置当前行号
         SetCurLineNo(msg->GetLineNo());
 
-        if(ret_msg->IsRetFromMacroProg() /*&& m_n_macroprog_count > 0*/){  //宏程序返回
-            //m_n_macroprog_count--;
-            //m_n_subprog_count--;
+        if(ret_msg->IsRetFromMacroProg() && m_n_macroprog_count > 0){  //宏程序返回
+        	m_n_macroprog_count--;
             m_b_ret_from_macroprog = true;
         }
         return true;
@@ -9520,9 +9519,8 @@ bool ChannelControl::ExecuteSubProgReturnMsg(RecordMsg *msg){
     }
 
     //设置当前行号
-    if(ret_msg->IsRetFromMacroProg() /*&& m_n_macroprog_count > 0*/){  //宏程序返回，不更新行号
-    	//m_n_subprog_count --;
-    	//m_n_macroprog_count--;
+    if(ret_msg->IsRetFromMacroProg() && m_n_macroprog_count > 0){  //宏程序返回，不更新行号
+    	m_n_macroprog_count--;
         m_b_ret_from_macroprog = true;
         SetCurLineNo(msg->GetLineNo());
 
@@ -9546,7 +9544,7 @@ bool ChannelControl::ExecutePolarIntpMsg(RecordMsg *msg){
     PolarIntpMsg *polarmsg = (PolarIntpMsg *)msg;
 
     if(this->m_n_restart_mode != NOT_RESTART &&
-            msg->GetLineNo() < this->m_n_restart_line
+    		main_prog_line_number < this->m_n_restart_line
         #ifdef USES_ADDITIONAL_PROGRAM
             && this->m_n_add_prog_type == NONE_ADD      //非附加程序运行状态
         #endif
@@ -9709,7 +9707,7 @@ bool ChannelControl::ExecuteRefReturnMsg(RecordMsg *msg){
     RefReturnMsg *refmsg = (RefReturnMsg *)msg;
 
     if(this->m_n_restart_mode != NOT_RESTART &&
-            msg->GetLineNo() < this->m_n_restart_line
+    		main_prog_line_number < this->m_n_restart_line
         #ifdef USES_ADDITIONAL_PROGRAM
             && this->m_n_add_prog_type == NONE_ADD      //非附加程序运行状态
         #endif
@@ -10088,7 +10086,7 @@ bool ChannelControl::ExecuteSkipMsg(RecordMsg *msg){
     SkipMsg *skipmsg = (SkipMsg *)msg;
 
     if(this->m_n_restart_mode != NOT_RESTART &&
-            msg->GetLineNo() < this->m_n_restart_line
+    		main_prog_line_number < this->m_n_restart_line
         #ifdef USES_ADDITIONAL_PROGRAM
             && this->m_n_add_prog_type == NONE_ADD      //非附加程序运行状态
         #endif
@@ -10659,7 +10657,7 @@ bool ChannelControl::ExecuteTimeWaitMsg(RecordMsg *msg){
     TimeWaitMsg *timemsg = (TimeWaitMsg *)msg;
 
     if(this->m_n_restart_mode != NOT_RESTART &&
-            msg->GetLineNo() < this->m_n_restart_line
+    		main_prog_line_number < this->m_n_restart_line
         #ifdef USES_ADDITIONAL_PROGRAM
             && this->m_n_add_prog_type == NONE_ADD      //非附加程序运行状态
         #endif
@@ -10740,7 +10738,7 @@ bool ChannelControl::ExecuteClearCirclePosMsg(RecordMsg *msg){
     ClearCirclePosMsg *clearmsg = (ClearCirclePosMsg *)msg;
 
     if(this->m_n_restart_mode != NOT_RESTART &&
-            clearmsg->GetLineNo() < this->m_n_restart_line
+    		main_prog_line_number < this->m_n_restart_line
         #ifdef USES_ADDITIONAL_PROGRAM
             && this->m_n_add_prog_type == NONE_ADD      //非附加程序运行状态
         #endif
@@ -10886,7 +10884,7 @@ bool ChannelControl::ExecuteInputMsg(RecordMsg * msg){
     //printf("ldata: %lf -- pdata: %lf --- rdata: %lf\n", input_msg->LData, input_msg->PData, input_msg->RData);
 
     if(this->m_n_restart_mode != NOT_RESTART &&
-            input_msg->GetLineNo() < this->m_n_restart_line
+    		main_prog_line_number < this->m_n_restart_line
         #ifdef USES_ADDITIONAL_PROGRAM
             && this->m_n_add_prog_type == NONE_ADD      //非附加程序运行状态
         #endif
@@ -11027,7 +11025,7 @@ bool ChannelControl::ExecuteExactStopMsg(RecordMsg *msg){
     ExactStopMsg * exact_msg = (ExactStopMsg *)msg;
 
     if(this->m_n_restart_mode != NOT_RESTART &&
-            msg->GetLineNo() < this->m_n_restart_line
+    		main_prog_line_number < this->m_n_restart_line
         #ifdef USES_ADDITIONAL_PROGRAM
             && this->m_n_add_prog_type == NONE_ADD      //非附加程序运行状态
         #endif
@@ -11176,13 +11174,13 @@ void ChannelControl::SetFuncState(int state, uint8_t mode){
                 this->SetMcStepMode(false);
                 this->m_b_need_change_to_pause = false;
             }
-            else if(/*this->m_n_macroprog_count == 0 ||*/ this->m_p_general_config->debug_mode > 0){  //非宏程序调用，并关闭调试模式
+            else if(this->m_n_macroprog_count == 0 || this->m_p_general_config->debug_mode > 0){  //非宏程序调用，并关闭调试模式
                 this->SetMcStepMode(true);
             }
         }else if(mode == 0){  //关闭
             this->SetMcStepMode(false);
             this->m_b_need_change_to_pause = false;
-        }else if(/*this->m_n_macroprog_count == 0 ||*/ this->m_p_general_config->debug_mode > 0){//打开
+        }else if(this->m_n_macroprog_count == 0 || this->m_p_general_config->debug_mode > 0){//打开
             this->SetMcStepMode(true);
         }
 
@@ -16634,7 +16632,7 @@ void ChannelControl::SaveAutoScene(bool flag){
     m_scene_auto.mc_mode_exec = m_mc_mode_exec;
 
     m_scene_auto.subprog_count = this->m_n_subprog_count;
-    /*m_scene_auto.macroprog_count = this->m_n_macroprog_count;*/
+    m_scene_auto.macroprog_count = this->m_n_macroprog_count;
     m_scene_auto.p_last_output_msg = this->m_p_last_output_msg;
 
     m_scene_auto.need_reload_flag = flag;
@@ -16657,7 +16655,7 @@ void ChannelControl::ReloadAutoScene(){
     m_mc_mode_cur = m_scene_auto.mc_mode_exec;
 
     this->m_n_subprog_count = m_scene_auto.subprog_count;
-    /*this->m_n_macroprog_count = m_scene_auto.macroprog_count;*/
+    this->m_n_macroprog_count = m_scene_auto.macroprog_count;
     this->m_p_last_output_msg = m_scene_auto.p_last_output_msg;
 
 }

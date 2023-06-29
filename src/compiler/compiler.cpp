@@ -777,6 +777,13 @@ void Compiler::PreScan() {
         }
     }
 
+    // 处理完了配对要检查是否清空
+	if(m_stack_vector_index_prescan.size()>0){
+		CreateError(IF_ELSE_MATCH_FAILED, ERROR_LEVEL, CLEAR_BY_MCP_RESET,
+								line_no, m_n_channel_index);
+		return;
+	}
+
     /*** test if else */
     printf("*********************************************\n");
     for(unsigned int i=0; i<m_node_vectors_vector.size(); i++){
@@ -1344,6 +1351,8 @@ void Compiler::PreScanLine1(char *buf, uint64_t offset, uint64_t line_no,
         else_cmd = false;
         elseif_cmd = false;
     }
+
+
 }
 
 /**
@@ -3709,6 +3718,11 @@ bool Compiler::RunMacroMsg(RecordMsg *msg) {
 
             }else{
                 //条件不成立     往下一个节点跳转
+            	if(node.node_index + 1 >= m_node_vectors_vector.at(node.vec_index).size()){
+            		printf("if node index out of range\n");
+            		break;
+            	}
+
                 node = m_node_vectors_vector.at(node.vec_index).at(node.node_index + 1);
                 m_b_else_jump = false;
 

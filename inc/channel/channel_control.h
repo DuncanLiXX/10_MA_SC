@@ -388,13 +388,13 @@ public:
     int main_prog_line_number = 0;
 
 #ifdef NEW_WOOD_MACHINE
+	int m_n_order_mode;		   // 排序加工模式·
     bool m_b_need_pre_prog;    // 前置程序待执行
     bool m_b_need_next_prog;   // 后置程序待执行
     bool m_b_in_next_prog;	   // 后置程序执行中
     bool m_b_g110_call;		   // G110 调用程序标志
     bool m_b_dust_eliminate;   // 除尘打开标志
     int dust_eliminate_delay;  // 除尘启动延时记数
-    bool m_b_order_mode_on;
     int current_order_index;   // 当前加载排程列表序号
     char g110_file_name[kMaxPathLen];
     std::vector<string> order_file_vector;  // 排程文件列表
@@ -483,7 +483,10 @@ private:
 #ifdef NEW_WOOD_MACHINE
 	void ProcessHmiAppendOrderListFile(HMICmdFrame &cmd);
 	void ProcessHmiSetOrderListIndex(HMICmdFrame &cmd);
-	void ProcessClearOrderList(HMICmdFrame &cmd);
+	void ProcessClearOrderList();
+	void ProcessHmiSetOrderMode(HMICmdFrame &cmd);
+	void ProcessHmiGetOrderLen(HMICmdFrame &cmd);
+	void ProcessHmiGetOrderFile(HMICmdFrame &cmd);
 #endif
 
 

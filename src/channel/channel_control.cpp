@@ -79,10 +79,26 @@ ChannelControl::ChannelControl() {
     m_b_in_next_prog = false;	   // 后置程序执行中
     m_b_g110_call = false;		   // G110 调用程序标志
     m_b_dust_eliminate = false;      //除尘标志
-    m_b_order_mode_on = false;		//排程模式开
+    m_n_order_mode = 0;
     current_order_index = -1;      // 当前加载排程列表序号
     memset(g110_file_name, 0, sizeof(g110_file_name));
     order_file_vector.clear();     // 排程文件列表
+
+    std::ifstream order_list_file;
+	order_list_file.open("/cnc/order_list", ios::in);
+
+	char data[1024];
+	while(!order_list_file.eof()){
+		order_list_file >> data;
+		std::cout << "=====" << data << std::endl;
+		if(data[0] == 0) break;
+		std::string file_name = data;
+		order_file_vector.push_back(file_name);
+		memset(data, 0, sizeof(data));
+	}
+	order_list_file.close();
+
+
 #endif
     this->m_b_delay_to_reset = false;
     m_b_pos_captured = false;
@@ -530,7 +546,6 @@ bool ChannelControl::Initialize(uint8_t chn_index, ChannelEngine *engine, HMICom
             printf("set nc file cmd : %s\n", path);
         }
     }
-
 
 END:
     pthread_attr_destroy(&attr);
@@ -1733,11 +1748,12 @@ void ChannelControl::StartRunGCode(){
     }
 
     //当前的加工文件是否存在
-    if(!this->IsNcFileExist(this->m_channel_status.cur_nc_file_name)){
-        this->m_error_code = ERR_NC_FILE_NOT_EXIST;
-        CreateError(m_error_code, WARNING_LEVEL, CLEAR_BY_MCP_RESET, axis_mask, m_n_channel_index);
-        return;
-    }
+	if(!this->IsNcFileExist(this->m_channel_status.cur_nc_file_name)){
+		this->m_error_code = ERR_NC_FILE_NOT_EXIST;
+		CreateError(m_error_code, WARNING_LEVEL, CLEAR_BY_MCP_RESET, axis_mask, m_n_channel_index);
+		return;
+	}
+
 
 
     //当前正处于停止或暂停过程中，则返回
@@ -1951,8 +1967,12 @@ END:
 #endif
 
 #ifdef NEW_WOOD_MACHINE
-    if(m_b_order_mode_on && m_b_need_pre_prog){
-    	this->m_p_compiler->CallMarcoProgWithNoPara(9701, false);
+
+    printf("m_n_order_mode  %d, m_b_need_pre_prog %d\n",
+    		m_n_order_mode, m_b_need_pre_prog);
+    if(m_n_order_mode > 0 && m_b_need_pre_prog){
+
+    	this->m_p_compiler->CallMarcoProgWithNoPara(9000, false);
     	m_b_need_pre_prog = false;
     }
 #endif
@@ -1965,9 +1985,7 @@ END:
  * @brief 设置当前行号从MC模块获取
  */
 void ChannelControl::SetCurLineNoFromMc(){
-
-	if(this->m_n_macroprog_count == 0 || this->m_p_general_config->debug_mode > 0){  //调试模式下或者没有宏程序调用
-
+    if((this->m_n_macroprog_count == 0 && this->m_n_subprog_count == 0) || this->m_p_general_config->debug_mode > 0) { //调试模式下或者没有宏程序调用
         m_b_lineno_from_mc = true;
     }
     else if (m_p_compiler->m_n_cur_dir_sub_prog)
@@ -2691,11 +2709,20 @@ void ChannelControl::ProcessHmiCmd(HMICmdFrame &cmd){
     	this->ProcessHmiAppendOrderListFile(cmd);
     	break;
 	case CMD_HMI_CLEAR_ORDER_LIST:
-		this->ProcessClearOrderList(cmd);
+		this->ProcessClearOrderList();
 		break;
 	case CMD_HMI_SET_ORDER_INDEX:
 		this->ProcessHmiSetOrderListIndex(cmd);
 		break;
+	case CMD_HMI_SET_ORDER_MODE:
+		this->ProcessHmiSetOrderMode(cmd);
+		break;
+    case CMD_HMI_GET_ORDER_LEN:
+    	this->ProcessHmiGetOrderLen(cmd);
+    	break;
+    case CMD_HMI_GET_ORDER_FILE:
+    	this->ProcessHmiGetOrderFile(cmd);
+    	break;
 #endif
 
     default:
@@ -3751,24 +3778,81 @@ void ChannelControl::ProcessHmiAppendOrderListFile(HMICmdFrame &cmd){
 	}
 
 	string file_name = cmd.data;
-	std::cout << "append order list file: " << file_name << std::endl;
+	std::cout << "===== append order list file: " << file_name << std::endl;
 	order_file_vector.push_back(file_name);
+
+	std::ofstream order_list_file;
+	order_list_file.open("/cnc/order_list", ios::app);
+	order_list_file << file_name << std::endl;
+	order_list_file.close();
 }
 
 void ChannelControl::ProcessHmiSetOrderListIndex(HMICmdFrame &cmd){
 
-	if(cmd.cmd_extension >= 0 && cmd.cmd_extension < order_file_vector.size()){
-		current_order_index = cmd.cmd_extension;
+	printf("===== set order index %d\n", cmd.cmd_extension);
+	int index = cmd.cmd_extension -1;
+
+	if(index >= 0 && index < order_file_vector.size()){
+		current_order_index = index;
 		// @todo  加载对应文件
 
 	}else{
 		printf("order index invalid\n");
 	}
+
+	/*
+	for(std::string name: order_file_vector){
+		std::cout << name << std::endl;
+	}
+	*/
 }
 
-void ChannelControl::ProcessClearOrderList(HMICmdFrame &cmd){
+void ChannelControl::ProcessClearOrderList(){
+	printf("====  clear order list\n");
 	current_order_index = -1;
 	order_file_vector.clear();
+
+	std::ofstream order_list_file;
+	order_list_file.open("/cnc/order_list", ios::out);
+	order_list_file.close();
+}
+
+void ChannelControl::ProcessHmiSetOrderMode(HMICmdFrame &cmd){
+	printf("===== set order mode %d\n", cmd.cmd_extension);
+	if(cmd.cmd_extension >= 0 && cmd.cmd_extension <= 6){
+		m_n_order_mode = cmd.cmd_extension;
+	}else{
+		printf("set order mode invalid\n");
+		m_n_order_mode = 0;
+	}
+}
+
+void ChannelControl::ProcessHmiGetOrderLen(HMICmdFrame &cmd){
+		cmd.frame_number |= 0x8000;
+		memset(cmd.data, 0, sizeof(cmd.data));
+		int len = order_file_vector.size();
+		memcpy(cmd.data, &len, sizeof(len));
+		cmd.data_len = sizeof(len);
+		m_p_hmi_comm->SendCmd(cmd);
+}
+
+void ChannelControl::ProcessHmiGetOrderFile(HMICmdFrame &cmd){
+	cmd.frame_number |= 0x8000;
+	memset(cmd.data, 0, sizeof(cmd.data));
+	printf("===== get order file %d\n", cmd.cmd_extension);
+	int index = cmd.cmd_extension -1;
+
+	if(index >= 0 && index < order_file_vector.size()){
+		memcpy(cmd.data, order_file_vector.at(index).c_str(),
+				order_file_vector.at(index).length()+1);
+		cmd.data_len = order_file_vector.at(index).length()+1;
+
+	}else{
+		cmd.data_len = 0;
+		printf("order index invalid\n");
+	}
+
+	m_p_hmi_comm->SendCmd(cmd);
 }
 #endif
 
@@ -4757,18 +4841,18 @@ int ChannelControl::Run(){
         		char  filename[] = "O9030.NC";
 				strcpy(m_channel_status.cur_nc_file_name, filename);
 				g_ptr_parm_manager->SetCurNcFile(m_n_channel_index, m_channel_status.cur_nc_file_name);    //修改当前NC文件
-				this->m_p_compiler->OpenFile("/cnc/nc_files/O9030.NC");
+				this->m_p_compiler->OpenFile("/cnc/nc_files/sys_sub/O9030.NC");
 				this->SendOpenFileCmdToHmi(m_channel_status.cur_nc_file_name);
 				this->StartRunGCode();
         	}
 
         	// 所有加工程序结束 后置程序运行结束 回到排程列表第一个文件
-        	if(m_b_order_mode_on && m_b_in_next_prog){
+        	if(m_n_order_mode > 0 && m_b_in_next_prog){
 				m_b_in_next_prog = false;
 				if(!order_file_vector.empty()){
 					char path[kMaxPathLen];
 					char file_name[150];
-					current_order_index = 1;
+					current_order_index = 0;
 					strcpy(path, PATH_NC_FILE);
 					strcpy(file_name, order_file_vector.at(0).c_str());
 					strcat(path, file_name);
@@ -4784,7 +4868,7 @@ int ChannelControl::Run(){
         		char  filename[] = "O9030.NC";
         		strcpy(m_channel_status.cur_nc_file_name, filename);
         		g_ptr_parm_manager->SetCurNcFile(m_n_channel_index, m_channel_status.cur_nc_file_name);    //修改当前NC文件
-        		this->m_p_compiler->OpenFile("/cnc/nc_files/O9030.NC");
+        		this->m_p_compiler->OpenFile("/cnc/nc_files/sys_sub/O9030.NC");
         		this->SendOpenFileCmdToHmi(m_channel_status.cur_nc_file_name);
         		this->StartRunGCode();
         		m_b_in_next_prog = true;
@@ -5447,7 +5531,7 @@ bool ChannelControl::OutputData(RecordMsg *msg, bool flag_block){
             }
 
             uint32_t msk = 0x01;
-            if(linemsg->GetAxisMoveMask() == (msk<<chn_axis)){   //只有Z轴移动时
+            if(linemsg->GetAxisMoveMask() == (msk<<chn_axis)){   //只有快钻轴移动时
                 data_frame.data.cmd = MOVE_G00;   //强制将G01指令替换为G00指令
                 data_frame.data.feed = 0;
 
@@ -5767,7 +5851,11 @@ bool ChannelControl::IsMoveMsgLine(){
  * @return  true--存在   false--不存在
  */
 bool ChannelControl::IsNcFileExist(char *file_name){
-    char path[kMaxPathLen] = {0};
+
+	if(strcmp("O9030.NC", file_name) == 0) return true;
+
+	std::cout << file_name << std::endl;
+	char path[kMaxPathLen] = {0};
     strcpy(path, PATH_NC_FILE);
 
     strcat(path, file_name);
@@ -6143,7 +6231,7 @@ bool ChannelControl::ExecuteMessage(){
             if(msg->IsEndMsg()){	//处理M02/M30消息
                 this->m_n_run_thread_state = STOP;
 #ifdef NEW_WOOD_MACHINE
-                if(m_b_order_mode_on && !m_b_in_next_prog) m_b_need_next_prog = true;
+                if(m_n_order_mode > 0 && !m_b_in_next_prog) m_b_need_next_prog = true;
 #endif
             }else if(m_n_run_thread_state != WAIT_RUN && this->m_error_code == ERR_NONE && this->IsMachinRunning() && !pause_flag){
                 this->m_n_run_thread_state = RUN;
@@ -11135,7 +11223,6 @@ bool ChannelControl::ExecuteOpenFileMsg(RecordMsg *msg){
 
 	// G110 打开的序号不存在
 	if(index <= 0 || index > order_file_vector.size()){
-
 		printf("index: %d, order_file_vector.size(): %d\n", index, order_file_vector.size());
 		m_error_code = ORDER_INDEX_ERROR;
 		CreateError(ORDER_INDEX_ERROR, ERROR_LEVEL, CLEAR_BY_MCP_RESET, openfile_msg->GetLineNo(), m_n_channel_index, 0);
@@ -11144,7 +11231,7 @@ bool ChannelControl::ExecuteOpenFileMsg(RecordMsg *msg){
 
 	memset(g110_file_name, 0, sizeof(g110_file_name));
 
-	current_order_index = index;
+	current_order_index = index-1;
 	strcpy(g110_file_name, order_file_vector.at(index-1).c_str());
 
 	// 打开G110 程序调用标志

@@ -294,6 +294,7 @@ bool ChannelControl::Initialize(uint8_t chn_index, ChannelEngine *engine, HMICom
     //	m_n_cur_scode = -1;
     //	m_n_cur_dcode = -1;
     //	m_n_cur_hcode = -1;
+    memset(m_preselect_tool_arr, 0x00, sizeof(int)*kMaxTCodeInLine);
 
     m_n_real_phy_axis = 0;
 
@@ -1190,6 +1191,8 @@ bool ChannelControl::GetSysVarValue(const int index, double&value){
         value = this->m_channel_status.cur_tool;
     }else if(index == 4321){   //当前预选刀号
         value = this->m_channel_status.preselect_tool_no;
+    }else if(index >= 4322 && index <= 4329){
+        value = this->m_preselect_tool_arr[index-4321];
     }else if(index >= 5001 && index < 5001+kMaxAxisChn){   //当前目标位置， 工件坐标系
         value = this->m_channel_rt_status.tar_pos_work.m_df_point[index-5001];
     }else if(index >= 5021 && index < 5021+kMaxAxisChn){  //当前机械坐标
@@ -8017,6 +8020,9 @@ bool ChannelControl::ExecuteToolMsg(RecordMsg *msg){
     uint8_t index = 0;
     uint8_t count = toolmsg->GetCount();
     uint16_t tcode = 0;
+
+    //执行前清理预选刀号宏变量
+    memset(m_preselect_tool_arr, 0x00, sizeof(int)*kMaxTCodeInLine);
     //	uint64_t mask = 0;
     for(index = 0; index < count; index++){
         if(toolmsg->GetExecStep(index) == 0xFF)//已经执行结束的就跳过
@@ -8028,6 +8034,7 @@ bool ChannelControl::ExecuteToolMsg(RecordMsg *msg){
         switch(toolmsg->GetExecStep(index)){
         case 0:{
             this->m_n_cur_tcode = tcode;
+            this->m_preselect_tool_arr[index] = tcode;//预选刀号宏变量
             this->m_channel_status.preselect_tool_no = m_n_cur_tcode;
 
             //TODO 将代码发送给PMC

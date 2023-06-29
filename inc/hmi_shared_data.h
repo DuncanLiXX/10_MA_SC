@@ -213,6 +213,7 @@ enum HMICmdCode {
     CMD_HMI_CLEAR_IO_MAP,            //HMI向SC请求清除IO重映射数据
     CMD_HMI_GET_FILE_SYSTEM,         //HMI向SC请求文件系统
     CMD_HMI_GET_MKDIR,               //HMI向SC请求创建目录
+    CMD_HMI_SET_TOOL_BY_VALUE,       //HMI向SC设置刀具信息
 	 // 木工专用
 	CMD_HMI_APPEND_ORDER_LIST,	     //HMI添加排程加工文件
 	CMD_HMI_CLEAR_ORDER_LIST,		 //HMI清空排程文件列表
@@ -1265,6 +1266,8 @@ struct HmiChnConfig{
     double G73back;		// G73回退距离
     double G83back;		// G83回退距离
 
+    uint8_t tool_number;   // 刀号数
+
 #ifdef USES_WOOD_MACHINE
 	int debug_param_1;             //调试参数1
 	int debug_param_2;             //调试参数2
@@ -1475,6 +1478,19 @@ struct HmiToolPotConfig{
 	int tool_life_cur[kMaxToolCount];								//已使用寿命，单位：min
 	int tool_threshold[kMaxToolCount];                             //刀具寿命预警阈值
 	uint8_t tool_life_type[kMaxToolCount];                          //刀具计寿类型，0--换刀次数，1--切削时间，2--切削距离
+};
+
+/**
+ * @brief 刀具信息单个刀号，与 HMIToolPotConfig 有强关联关系
+ */
+struct HmiToolPotOneConfig {
+    uint8_t tool_type;      //刀具类型
+    uint8_t huge_tool_flag; //是否大刀柄，大刀柄意味着一把刀需要占三个刀位
+    uint8_t tool_pot_index; //刀套号
+    int tool_life_max;      //刀具寿命，单位：min
+    int tool_life_cur;      //已使用寿命，单位：min
+    int tool_threshold;     //刀具寿命预警阈值
+    uint8_t tool_life_type; //刀具计寿类型，0--换刀次数，1--切削时间，2--切削距离
 };
 
 /**

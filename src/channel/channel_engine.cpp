@@ -3182,6 +3182,9 @@ void ChannelEngine::ProcessHmiCmd(HMICmdFrame &cmd){
     case CMD_HMI_CLEAR_IO_MAP:
         ProcessHmiClearIoRemapInfoCmd(cmd);
         break;
+    case CMD_HMI_SET_TOOL_BY_VALUE:
+        ProcessHmiSetToolByValue(cmd);
+        break;
     default:
         g_ptr_trace->PrintTrace(TRACE_WARNING, CHANNEL_ENGINE_SC, "不支持的HMI指令[%d]", cmd.cmd);
         break;
@@ -3421,6 +3424,22 @@ void ChannelEngine::ProcessHmiClearIoRemapInfoCmd(HMICmdFrame &cmd)
     if(!g_ptr_parm_manager->ClearIoRemapInfo()){
         cmd.cmd_extension = 0x01;  //更新失败
     }
+    this->m_p_hmi_comm->SendCmd(cmd);
+}
+
+void ChannelEngine::ProcessHmiSetToolByValue(HMICmdFrame &cmd)
+{
+    cmd.frame_number |= 0x8000;
+
+    int channelId = cmd.channel_index;
+    int toolId = cmd.cmd_extension;
+
+    HmiToolPotOneConfig potValue;
+    memcpy(&potValue, cmd.data, sizeof(HmiToolPotOneConfig));
+
+    GetChnControl(channelId)->SetToolValue(toolId, potValue);
+
+    cmd.cmd_extension = 1;
     this->m_p_hmi_comm->SendCmd(cmd);
 }
 
@@ -3920,7 +3939,7 @@ void ChannelEngine::ProcessHmiSetParam(HMICmdFrame &cmd){
         break;
     case TOOL_OFFSET_CONFIG:	//刀具偏置
         if(cmd.channel_index >= m_p_general_config->chn_count ||     //通道索引超范围
-                (uint8_t)cmd.data[0] >= kMaxToolCount){
+                (uint8_t)cmd.data[0] >= m_p_channel_config->tool_number){
             cmd.data[0] = FAILED;
         }
         else{
@@ -4053,7 +4072,7 @@ void ChannelEngine::ProcessHmiGetParam(HMICmdFrame &cmd){
             cmd.data_len += 1;
         }
 #else
-        if((index >= kMaxToolCount) || cmd.channel_index >= m_p_general_config->chn_count){
+        if((index >= m_p_channel_config->tool_number) || cmd.channel_index >= m_p_general_config->chn_count){
             cmd.data_len = 0;
         }
 #endif
@@ -4075,11 +4094,34 @@ void ChannelEngine::ProcessHmiGetParam(HMICmdFrame &cmd){
     }
     case TOOL_POT_CONFIG:
         std::cout << "Get Pot Config" << std::endl;
+
         if(cmd.channel_index >= m_p_general_config->chn_count)//通道索引超范围
             cmd.data_len = 0;
         else{
-            cmd.data_len = sizeof(HmiToolPotConfig);
-            memcpy(cmd.data, g_ptr_parm_manager->GetToolPotConfig(cmd.channel_index), cmd.data_len);
+            SCToolPotConfig *toolConfig = g_ptr_parm_manager->GetToolPotConfig(cmd.channel_index);
+
+            int i = 0;
+            while(i < kMaxToolCount)
+            {
+                memset((void *)&cmd.data, 0x00, kMaxHmiDataLen);
+                int datalen = sizeof(int);
+                memcpy(cmd.data, &i, datalen);  //设置起始刀号
+
+                while(datalen <= 980) // 分包数据最大为980
+                {
+                    HmiToolPotOneConfig potValue = GetChnControl(cmd.channel_index)->GenPotValue(i, toolConfig);
+                    memcpy(&cmd.data[datalen], &potValue, sizeof(HmiToolPotOneConfig));
+                    datalen += sizeof(HmiToolPotOneConfig);
+
+                    if (++i == kMaxToolCount)
+                        break;
+                }
+                cmd.data_len = datalen;
+                cmd.frame_number |= 0x8000;
+                std::cout << "------> ToolPot: " << i << " datalen: " << cmd.data_len << std::endl;
+                this->m_p_hmi_comm->SendCmd(cmd);
+            }
+            return;
         }
         break;
     case COORD_CONFIG:

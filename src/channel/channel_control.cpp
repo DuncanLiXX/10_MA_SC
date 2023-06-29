@@ -811,7 +811,7 @@ void ChannelControl::Reset(){
 double ChannelControl::GetToolCompRadius(int d_index){
     double radius = 0.0;
 
-    if(d_index <= 0 && d_index >= kMaxToolCount)
+    if(d_index <= 0 && d_index >= m_p_channel_config->tool_number)
         return radius;
 
     radius = m_p_chn_tool_config->radius_compensation[d_index-1]+m_p_chn_tool_config->radius_wear[d_index-1];
@@ -1145,16 +1145,16 @@ bool ChannelControl::GetSysVarValue(const int index, double&value){
         value = this->m_p_chn_tool_config->geometry_comp_basic[2];
     }
 #endif
-    else if(index >= 2001 && index <= 2200){   //刀长磨损补偿
+    else if(index >= 2001 && index <= 2128){   //刀长磨损补偿
         int id = index - 2001;
-        if(id < kMaxToolCount)
+        if(id < m_p_channel_config->tool_number)
             value = this->m_p_chn_tool_config->geometry_wear[id];
         else
             value = 0.0;
 
-    }else if(index >= 2201 && index <= 2400){  //刀长几何补偿
+    }else if(index >= 2201 && index <= 2328){  //刀长几何补偿
         int id = index - 2201;
-        if(id < kMaxToolCount)
+        if(id < m_p_channel_config->tool_number)
             value = this->m_p_chn_tool_config->geometry_compensation[id][2];
         else
             value = 0.0;
@@ -1269,30 +1269,42 @@ bool ChannelControl::GetSysVarValue(const int index, double&value){
     }else if(index == 9001){
     	value = this->m_p_channel_config->G83back;
     }
-    else if(index >= 12001 && index <= 12999){   //刀具半径磨损补偿
+    else if(index >= 12001 && index <= 12128){   //刀具半径磨损补偿
         int id = index - 12001;
-        if(id < kMaxToolCount)
+        if(id < m_p_channel_config->tool_number)
             value = this->m_p_chn_tool_config->radius_wear[id];
         else
             value = 0.0;
-    }else if(index >= 13001 && index <= 13999){   //刀具半径几何补偿
+    }else if(index >= 13001 && index <= 13128){   //刀具半径几何补偿
         int id = index - 13001;
-        if(id < kMaxToolCount)
+        if(id < m_p_channel_config->tool_number)
             value = this->m_p_chn_tool_config->radius_compensation[id];
         else
             value = 0.0;
-    }else if(index >= 30001 && index <= 30060) {    //刀具寿命管理方式
+    }else if(index >= 30001 && index <= 30128) {    //刀具寿命管理方式
         int id = index - 30001;
-        value = this->m_p_chn_tool_info->tool_life_type[id];
-    }else if(index >= 30101 && index <= 30160) {    //刀具最大寿命
-        int id = index - 30101;
-        value = this->m_p_chn_tool_info->tool_life_max[id];
-    }else if(index >= 30201 && index <= 30260) {    //刀具已用寿命
+        if(id < m_p_channel_config->tool_number)
+            value = this->m_p_chn_tool_info->tool_life_type[id];
+        else
+            value = 0.0;
+    }else if(index >= 30201 && index <= 30328) {    //刀具最大寿命
         int id = index - 30201;
-        value = this->m_p_chn_tool_info->tool_life_cur[id];
-    }else if(index >= 30301 && index <= 30360) {    //刀具预警寿命
-        int id = index - 30301;
-        value = this->m_p_chn_tool_info->tool_threshold[id];
+        if(id < m_p_channel_config->tool_number)
+            value = this->m_p_chn_tool_info->tool_life_max[id];
+        else
+            value = 0.0;
+    }else if(index >= 30401 && index <= 30528) {    //刀具已用寿命
+        int id = index - 30401;
+        if(id < m_p_channel_config->tool_number)
+            value = this->m_p_chn_tool_info->tool_life_cur[id];
+        else
+            value = 0.0;
+    }else if(index >= 30601 && index <= 30728) {    //刀具预警寿命
+        int id = index - 30601;
+        if(id < m_p_channel_config->tool_number)
+            value = this->m_p_chn_tool_info->tool_threshold[id];
+        else
+            value = 0.0;
     }else{
         return false;
     }
@@ -1314,19 +1326,19 @@ bool ChannelControl::SetSysVarValue(const int index, const double &value){
 
     }else if(index >= 2001 && index <= 2200){   //刀长磨损补偿
 #else
-    if(index >= 2001 && index <= 2200){   //刀长磨损补偿
+    if(index >= 2001 && index <= 2128){   //刀长磨损补偿
 #endif
         int id = index - 2001;
-        if(id < kMaxToolCount){
+        if(id < m_p_channel_config->tool_number){
             this->m_p_chn_tool_config->geometry_wear[id] = value;
             g_ptr_parm_manager->UpdateToolWear(m_n_channel_index, id, value);
             this->NotifyHmiToolOffsetChanged(id+1);   //通知HMI刀偏值更改
         }else
             return false;
 
-    }else if(index >= 2201 && index <= 2400){  //刀长几何补偿
+    }else if(index >= 2201 && index <= 2328){  //刀长几何补偿
         int id = index - 2201;
-        if(id < kMaxToolCount){
+        if(id < m_p_channel_config->tool_number){
             this->m_p_chn_tool_config->geometry_compensation[id][2] = value;
             // @modify 为什么就这个 id + 1  其他的Update 没有 id + 1
             g_ptr_parm_manager->UpdateToolMeasure(this->m_n_channel_index, id, value);
@@ -1353,10 +1365,13 @@ bool ChannelControl::SetSysVarValue(const int index, const double &value){
     }else if(index == 3901){  //已加工件数
         SetChnCurWorkPiece(value);
     }else if(index == 4320){  //设置当前刀号
-        this->m_channel_status.cur_tool = value;
-        g_ptr_parm_manager->SetCurTool(m_n_channel_index, m_channel_status.cur_tool);
-        this->SendModeChangToHmi(T_MODE);
-
+        if(value < m_p_channel_config->tool_number){
+            this->m_channel_status.cur_tool = value;
+            g_ptr_parm_manager->SetCurTool(m_n_channel_index, m_channel_status.cur_tool);
+            this->SendModeChangToHmi(T_MODE);
+        }
+        else
+            return false;
 #ifdef USES_WOOD_MACHINE
         this->SetMcToolLife();
 #endif
@@ -1473,9 +1488,9 @@ bool ChannelControl::SetSysVarValue(const int index, const double &value){
             return false;
         }
     }
-    else if(index >= 12001 && index <= 12999){   //刀具半径磨损补偿
+    else if(index >= 12001 && index <= 12128){   //刀具半径磨损补偿
         int id = index - 12001;
-        if(id < kMaxToolCount){
+        if(id < m_p_channel_config->tool_number){
             this->m_p_chn_tool_config->radius_wear[id] = value;
             g_ptr_parm_manager->UpdateToolRadiusWear(m_n_channel_index, id, value);
             this->NotifyHmiToolOffsetChanged(id+1);   //通知HMI刀偏值更改
@@ -1483,9 +1498,9 @@ bool ChannelControl::SetSysVarValue(const int index, const double &value){
         else
             return false;;
     }
-    else if(index >= 13001 && index <= 13999){   //刀具半径几何补偿
+    else if(index >= 13001 && index <= 13128){   //刀具半径几何补偿
         int id = index - 13001;
-        if(id < kMaxToolCount){
+        if(id < m_p_channel_config->tool_number){
             this->m_p_chn_tool_config->radius_compensation[id] = value;
 
             g_ptr_parm_manager->UpdateToolRadiusGeo(m_n_channel_index, id, value);
@@ -1494,22 +1509,42 @@ bool ChannelControl::SetSysVarValue(const int index, const double &value){
         else
             return false;
     }
-    else if(index >= 30001 && index <= 30060) {    //刀具寿命管理方式
+    else if(index >= 30001 && index <= 30128) {    //刀具寿命管理方式
         int id = index - 30001;
-        this->m_p_chn_tool_info->tool_life_type[id] = value;
-        NotifyHmiToolPotChanged();
-    }else if(index >= 30101 && index <= 30160) {    //刀具最大寿命
-        int id = index - 30101;
-        this->m_p_chn_tool_info->tool_life_max[id] = value;
-        NotifyHmiToolPotChanged();
-    }else if(index >= 30201 && index <= 30260) {    //刀具已用寿命
+        if(id < m_p_channel_config->tool_number){
+            this->m_p_chn_tool_info->tool_life_type[id] = value;
+            g_ptr_parm_manager->UpdateToolPotConfig(m_n_channel_index);
+            NotifyHmiToolPotChanged();
+        }
+        else
+            return false;
+    }else if(index >= 30201 && index <= 30328) {    //刀具最大寿命
         int id = index - 30201;
-        this->m_p_chn_tool_info->tool_life_cur[id] = value;
-        NotifyHmiToolPotChanged();
-    }else if(index >= 30301 && index <= 30360) {    //刀具预警寿命
-        int id = index - 30301;
-        this->m_p_chn_tool_info->tool_threshold[id] = value;
-        NotifyHmiToolPotChanged();
+        if(id < m_p_channel_config->tool_number){
+            this->m_p_chn_tool_info->tool_life_max[id] = value;
+            g_ptr_parm_manager->UpdateToolPotConfig(m_n_channel_index);
+            NotifyHmiToolPotChanged();
+        }
+        else
+            return false;
+    }else if(index >= 30401 && index <= 30528) {    //刀具已用寿命
+        int id = index - 30401;
+        if(id < m_p_channel_config->tool_number){
+            this->m_p_chn_tool_info->tool_life_cur[id] = value;
+            g_ptr_parm_manager->UpdateToolPotConfig(m_n_channel_index);
+            NotifyHmiToolPotChanged();
+        }
+        else
+            return false;
+    }else if(index >= 30601 && index <= 30728) {    //刀具预警寿命
+        int id = index - 30601;
+        if(id < m_p_channel_config->tool_number){
+            this->m_p_chn_tool_info->tool_threshold[id] = value;
+            g_ptr_parm_manager->UpdateToolPotConfig(m_n_channel_index);
+            NotifyHmiToolPotChanged();
+        }
+        else
+            return false;
     }
     else
         return false;
@@ -5192,7 +5227,7 @@ bool ChannelControl::RefreshStatusFun(){
 		}
 #endif
 
-        if(m_channel_status.cur_tool > 0 && m_channel_status.cur_tool <= kMaxToolCount){
+        if(m_channel_status.cur_tool > 0 && m_channel_status.cur_tool <= m_p_channel_config->tool_number){
             int cur_tool = m_channel_status.cur_tool - 1;
             if(m_p_chn_tool_info->tool_life_type[cur_tool] == ToolPot_Cnt)
             {// 按次计数
@@ -6855,7 +6890,7 @@ bool ChannelControl::ExecuteAuxMsg(RecordMsg *msg){
                 //复位辅助指令信号和DEN信号
                 this->SendMCodeToPmc(0, m_index);
                 int cur_tool = this->m_channel_status.cur_tool - 1;
-                if (cur_tool >= 0 && cur_tool < kMaxToolCount)   //cur_tool=0是主轴
+                if (cur_tool >= 0 && cur_tool < m_p_channel_config->tool_number)   //cur_tool=0是主轴
                 {
                     std::cout << m_p_chn_tool_info->tool_life_max[cur_tool] << " " << m_p_chn_tool_info->tool_life_type[cur_tool] << std::endl;
                     if (m_p_chn_tool_info->tool_life_type[cur_tool] == ToolPot_Cnt)
@@ -6864,7 +6899,7 @@ bool ChannelControl::ExecuteAuxMsg(RecordMsg *msg){
                         NotifyHmiToolPotChanged();
                         g_ptr_parm_manager->UpdateToolPotConfig(m_n_channel_index, *m_p_chn_tool_info);
                         std::cout << "cur_tool: " << cur_tool << " cur_life: " << m_p_chn_tool_info->tool_life_cur[cur_tool]
-                                     << "max_life: " << m_p_chn_tool_info->tool_life_max[cur_tool] << " cur threshold: " << m_p_chn_tool_info->tool_threshold[cur_tool] << std::endl;
+                                  << " max_life: " << m_p_chn_tool_info->tool_life_max[cur_tool] << " cur threshold: " << m_p_chn_tool_info->tool_threshold[cur_tool] << std::endl;
                     }
                 }
                 tmp->SetExecStep(m_index, 0xFF);    //置位结束状态
@@ -10943,7 +10978,7 @@ bool ChannelControl::ExecuteInputMsg(RecordMsg * msg){
     int plane = this->m_mc_mode_exec.bits.mode_g17;
 
     if(input_type < 20){
-        if(tool_number <= 0 or tool_number > kMaxToolCount){
+        if(tool_number <= 0 or tool_number > m_p_channel_config->tool_number){
             // @TODO 刀具号超出范围
             CreateError(ERR_NO_CUR_RUN_DATA, ERROR_LEVEL, CLEAR_BY_MCP_RESET, 0, m_n_channel_index);
             this->m_error_code = ERR_NO_CUR_RUN_DATA;
@@ -14322,6 +14357,34 @@ int ChannelControl::GetCurToolLife(){
         life = this->m_p_chn_tool_info->tool_life_cur[this->m_channel_status.cur_tool-1];
 
     return life;
+}
+
+HmiToolPotOneConfig ChannelControl::GenPotValue(int toolId, const SCToolPotConfig *toolConfig)
+{
+    HmiToolPotOneConfig potValue;
+    potValue.tool_type = toolConfig->tool_type[toolId];
+    potValue.huge_tool_flag = toolConfig->huge_tool_flag[toolId];
+    potValue.tool_pot_index = toolConfig->tool_pot_index[toolId];
+    potValue.tool_life_max = toolConfig->tool_life_max[toolId];
+    potValue.tool_life_cur = toolConfig->tool_life_cur[toolId];
+    potValue.tool_threshold = toolConfig->tool_threshold[toolId];
+    potValue.tool_life_type = toolConfig->tool_life_type[toolId];
+    return potValue;
+}
+
+void ChannelControl::SetToolValue(int toolId, const HmiToolPotOneConfig &value)
+{
+    m_p_chn_tool_info->tool_type[toolId] = value.tool_type;
+    m_p_chn_tool_info->huge_tool_flag[toolId] = value.huge_tool_flag;
+    m_p_chn_tool_info->tool_pot_index[toolId] = value.tool_pot_index;
+    m_p_chn_tool_info->tool_life_max[toolId] = value.tool_life_max;
+    m_p_chn_tool_info->tool_life_cur[toolId] = value.tool_life_cur;
+    m_p_chn_tool_info->tool_threshold[toolId] = value.tool_threshold;
+    m_p_chn_tool_info->tool_life_type[toolId] = value.tool_life_type;
+
+    g_ptr_parm_manager->UpdateToolPotConfig(m_n_channel_index, *m_p_chn_tool_info);
+    std::cout << "cur_tool: " << toolId << " cur_life: " << value.tool_life_cur
+              << " max_life: " << value.tool_life_max << " cur threshold: " << value.tool_threshold << std::endl;
 }
 
 #ifdef USES_GRIND_MACHINE
@@ -19679,7 +19742,7 @@ void ChannelControl::GetHmiToolOffset(const uint8_t idx, HmiToolOffsetConfig &cf
         cfg.radius_wear = 0;
     }else if(idx > 0 && idx <= kMaxToolCount){
 #else
-    if(idx > 0 && idx <= kMaxToolCount){
+    if(idx > 0 && idx <= m_p_channel_config->tool_number){
 #endif
         index = idx-1;
     }
@@ -19717,14 +19780,33 @@ bool ChannelControl::NotifyHmiToolOffsetChanged(uint8_t h_idx){     //
 bool ChannelControl::NotifyHmiToolPotChanged()
 {
     HMICmdFrame cmd;
-    memset((void *)&cmd, 0x00, sizeof(HMICmdFrame));
     cmd.channel_index = m_n_channel_index;
     cmd.cmd = CMD_SC_PARAM_CHANGED;
     cmd.cmd_extension = TOOL_POT_CONFIG;
-    cmd.data_len = sizeof(HmiToolPotConfig);
-    memcpy(&cmd.data[0], g_ptr_parm_manager->GetToolPotConfig(cmd.channel_index), sizeof(HmiToolPotConfig));
 
-    return this->m_p_hmi_comm->SendCmd(cmd);
+    SCToolPotConfig *toolConfig = g_ptr_parm_manager->GetToolPotConfig(cmd.channel_index);
+
+    int i = 0;
+    while(i < kMaxToolCount)
+    {
+        memset((void *)&cmd.data, 0x00, kMaxHmiDataLen);
+        int datalen = sizeof(int);
+        memcpy(cmd.data, &i, datalen);  //设置起始刀号
+
+        while(datalen <= 980) // 分包数据最大为980
+        {
+            HmiToolPotOneConfig potValue = GenPotValue(i, toolConfig);
+            memcpy(&cmd.data[datalen], &potValue, sizeof(HmiToolPotOneConfig));
+            datalen += sizeof(HmiToolPotOneConfig);
+            if (++i == kMaxToolCount)
+                break;
+        }
+        cmd.data_len = datalen;
+        std::cout << "------> ToolPot: " << i << " datalen: " << cmd.data_len << std::endl;
+        this->m_p_hmi_comm->SendCmd(cmd);
+    }
+
+    return true;
 }
 
 

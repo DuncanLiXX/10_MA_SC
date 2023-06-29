@@ -380,6 +380,10 @@ public:
 
     void SyncMcPosition();  // 同步位置
     void AddWorkCountPiece(int addnum);  //增加工件计数
+
+    void SetToolValue(int toolId, const HmiToolPotOneConfig &value); //设置刀具值
+    HmiToolPotOneConfig GenPotValue(int toolId, const SCToolPotConfig *toolConfig);
+
     void LimitRotatePos(double &pos, double &move_pr); //限制旋转轴坐标
 
     bool SubProgIsCurDir(uint8_t type);    // 判断子程序类型是否为当前程序所在目录

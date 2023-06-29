@@ -184,7 +184,7 @@ struct SCChannelConfig{
     double G73back;		// G73回退距离
     double G83back;		// G83回退距离
 
-
+    uint8_t tool_number;    // 刀号数
 #ifdef USES_WOOD_MACHINE
 	int debug_param_1;             //调试参数1
 	int debug_param_2;             //调试参数2

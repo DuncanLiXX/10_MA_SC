@@ -704,6 +704,8 @@ bool ParmManager::ReadChnConfig(){
             m_sc_channel_config[i].G73back = m_ini_chn->GetDoubleValueOrDefault(sname, "G73back", 0);
             m_sc_channel_config[i].G83back = m_ini_chn->GetDoubleValueOrDefault(sname, "G83back", 0);
 
+            m_sc_channel_config[i].tool_number = m_ini_chn->GetIntValueOrDefault(sname, "tool_number", 128);
+
 #ifdef USES_WOOD_MACHINE
 			m_sc_channel_config[i].debug_param_1 = m_ini_chn->GetIntValueOrDefault(sname, "debug_param_1", 0);  //调试参数1
 			m_sc_channel_config[i].debug_param_2 = m_ini_chn->GetIntValueOrDefault(sname, "debug_param_2", 0);  //调试参数2
@@ -800,6 +802,8 @@ bool ParmManager::ReadChnConfig(){
             m_sc_channel_config[i].mpg_level4_step = 1000;
             m_sc_channel_config[i].G73back = 0;
 			m_sc_channel_config[i].G83back = 0;
+
+            m_sc_channel_config[i].tool_number = 128;
 
 
 #ifdef USES_WOOD_MACHINE
@@ -900,6 +904,7 @@ bool ParmManager::ReadChnConfig(){
             m_ini_chn->AddKeyValuePair(string("mpg_level4_step"), string("1000"), ns);
             m_ini_chn->AddKeyValuePair(string("G73back"), string("0"), ns);
             m_ini_chn->AddKeyValuePair(string("G83back"), string("0"), ns);
+            m_ini_chn->AddKeyValuePair(string("tool_number"), string("128"), ns);
 
 #ifdef USES_WOOD_MACHINE
 			m_ini_chn->AddKeyValuePair(string("debug_param_1"), string("0"), ns);
@@ -3492,7 +3497,6 @@ void ParmManager::UpdateToolPotConfig(uint16_t chn_index, SCToolPotConfig &cfg){
 
 	memcpy(&m_sc_tool_pot_config[chn_index], &cfg, sizeof(SCToolPotConfig));		//更新当前参数
 
-
 	sprintf(sname, "channel_%hu", chn_index);
 
 	for(int i = 0; i < kMaxToolCount; i++){
@@ -4658,6 +4662,10 @@ bool ParmManager::UpdateChnParam(uint8_t chn_index, uint32_t param_no, ParamValu
 		sprintf(kname, "auto_tool_measure");
 		m_ini_chn->SetIntValue(sname, kname, value.value_uint8);
 		break;
+    case 353:
+        sprintf(kname, "tool_number");
+        m_ini_chn->SetIntValue(sname, kname, value.value_uint8);
+        break;
 
 	case 400:	//加工代码跟踪
 		sprintf(kname, "gcode_trace");
@@ -6424,6 +6432,9 @@ void ParmManager::ActiveChnParam(uint8_t chn_index, uint32_t param_no, ParamValu
 	case 352:	//对刀仪自动对刀功能
 		this->m_sc_channel_config[chn_index].auto_tool_measure = value.value_uint8;
 		break;
+    case 353: // 刀号数
+        this->m_sc_channel_config[chn_index].tool_number = value.value_uint8;
+        break;
 	case 400:	//加工代码跟踪
 		this->m_sc_channel_config[chn_index].gcode_trace = value.value_uint8;
 		break;

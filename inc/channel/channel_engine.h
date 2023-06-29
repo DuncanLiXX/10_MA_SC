@@ -399,6 +399,7 @@ private:	//私有成员函数
 	void ProcessHmiGetIoRemapInfoCmd(HMICmdFrame &cmd);  //处理HMI获取IO重映射信息命令
 	void ProcessHmiSetIoRemapInfoCmd(HMICmdFrame &cmd);  //处理HMI设置IO重映射信息命令
     void ProcessHmiClearIoRemapInfoCmd(HMICmdFrame &cmd);//处理HMI清除IO重映射信息命令
+    void ProcessHmiSetToolByValue(HMICmdFrame &cmd);    //处理HMI设置刀具信息
 
 	void ProcessHmiSetProcParamCmd(HMICmdFrame &cmd);    //处理HMI设置工艺相关参数的命令
 	void ProcessHmiGetProcParamCmd(HMICmdFrame &cmd);    //处理HMI获取工艺相关参数的命令

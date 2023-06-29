@@ -3145,7 +3145,7 @@ bool Compiler::RunCompensateMsg(RecordMsg *msg) {
 
         SCToolOffsetConfig * offset_config = g_ptr_parm_manager->GetToolConfig(m_n_channel_index);
         int d_value = tmp->GetCompValue();
-        if(d_value > kMaxToolCount  or d_value < 0) return false;
+        if(d_value > m_p_channel_config->tool_number  or d_value < 0) return false;
         if(d_value == 0){
             this->m_p_tool_compensate->setToolRadius(0);
         }else {

@@ -2106,8 +2106,7 @@ bool Parser::CreateSpeedMsg(){
  * @return true--³É¹¦  false--Ê§°Ü
  */
 bool Parser::CreateToolMsg(int *tcode, uint8_t total){
-
-	if(*tcode < 0 or *tcode > 60){
+    if(*tcode < 0 or *tcode > g_ptr_parm_manager->GetChannelConfig()->tool_number){
 		CreateError(ERR_T_EXP_NULL, ERROR_LEVEL, CLEAR_BY_MCP_RESET, m_p_lexer_result->line_no);
 		return false;
 	}

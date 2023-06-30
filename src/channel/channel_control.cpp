@@ -47,7 +47,7 @@ ChannelControl::ChannelControl() {
     m_thread_compiler = 0;
 
     m_n_subprog_count = 0;
-    m_n_macroprog_count = 0;
+    //m_n_macroprog_count = 0;
     m_b_ret_from_macroprog = false;
 
     m_n_mask_clear_pos = 0;
@@ -79,10 +79,26 @@ ChannelControl::ChannelControl() {
     m_b_in_next_prog = false;	   // 后置程序执行中
     m_b_g110_call = false;		   // G110 调用程序标志
     m_b_dust_eliminate = false;      //除尘标志
-    m_b_order_mode_on = false;		//排程模式开
+    m_n_order_mode = 0;
     current_order_index = -1;      // 当前加载排程列表序号
     memset(g110_file_name, 0, sizeof(g110_file_name));
     order_file_vector.clear();     // 排程文件列表
+
+    std::ifstream order_list_file;
+	order_list_file.open("/cnc/order_list", ios::in);
+
+	char data[1024];
+	while(!order_list_file.eof()){
+		order_list_file >> data;
+		std::cout << "=====" << data << std::endl;
+		if(data[0] == 0) break;
+		std::string file_name = data;
+		order_file_vector.push_back(file_name);
+		memset(data, 0, sizeof(data));
+	}
+	order_list_file.close();
+
+
 #endif
     this->m_b_delay_to_reset = false;
     m_b_pos_captured = false;
@@ -532,7 +548,6 @@ bool ChannelControl::Initialize(uint8_t chn_index, ChannelEngine *engine, HMICom
         }
     }
 
-
 END:
     pthread_attr_destroy(&attr);
 
@@ -699,10 +714,11 @@ void ChannelControl::Reset(){
 //    }
 
     m_n_subprog_count = 0;
-    m_n_macroprog_count = 0;
+    //m_n_macroprog_count = 0;
     m_b_ret_from_macroprog = false;
     m_b_init_compiler_pos = false;  //编译器初始位置需要重新初始化
     m_b_need_change_to_pause = false;
+    main_prog_line_number = 0;
 
     this->m_p_compiler->Reset();
     if(strlen(m_channel_status.cur_nc_file_name) > 0){
@@ -1771,11 +1787,12 @@ void ChannelControl::StartRunGCode(){
     }
 
     //当前的加工文件是否存在
-    if(!this->IsNcFileExist(this->m_channel_status.cur_nc_file_name)){
-        this->m_error_code = ERR_NC_FILE_NOT_EXIST;
-        CreateError(m_error_code, WARNING_LEVEL, CLEAR_BY_MCP_RESET, axis_mask, m_n_channel_index);
-        return;
-    }
+	if(!this->IsNcFileExist(this->m_channel_status.cur_nc_file_name)){
+		this->m_error_code = ERR_NC_FILE_NOT_EXIST;
+		CreateError(m_error_code, WARNING_LEVEL, CLEAR_BY_MCP_RESET, axis_mask, m_n_channel_index);
+		return;
+	}
+
 
 
     //当前正处于停止或暂停过程中，则返回
@@ -1989,8 +2006,12 @@ END:
 #endif
 
 #ifdef NEW_WOOD_MACHINE
-    if(m_b_order_mode_on && m_b_need_pre_prog){
-    	this->m_p_compiler->CallMarcoProgWithNoPara(9701, false);
+
+    printf("m_n_order_mode  %d, m_b_need_pre_prog %d\n",
+    		m_n_order_mode, m_b_need_pre_prog);
+    if(m_n_order_mode > 0 && m_b_need_pre_prog){
+
+    	this->m_p_compiler->CallMarcoProgWithNoPara(9000, false);
     	m_b_need_pre_prog = false;
     }
 #endif
@@ -2062,7 +2083,7 @@ void ChannelControl::PauseRunGCode(){
             	this->PauseMc();
             }
             m_n_subprog_count = 0;
-            m_n_macroprog_count = 0;
+            //m_n_macroprog_count = 0;
             m_b_ret_from_macroprog = false;
             m_b_init_compiler_pos = false;  //编译器初始位置需要重新初始化
 
@@ -2727,11 +2748,20 @@ void ChannelControl::ProcessHmiCmd(HMICmdFrame &cmd){
     	this->ProcessHmiAppendOrderListFile(cmd);
     	break;
 	case CMD_HMI_CLEAR_ORDER_LIST:
-		this->ProcessClearOrderList(cmd);
+		this->ProcessClearOrderList();
 		break;
 	case CMD_HMI_SET_ORDER_INDEX:
 		this->ProcessHmiSetOrderListIndex(cmd);
 		break;
+	case CMD_HMI_SET_ORDER_MODE:
+		this->ProcessHmiSetOrderMode(cmd);
+		break;
+    case CMD_HMI_GET_ORDER_LEN:
+    	this->ProcessHmiGetOrderLen(cmd);
+    	break;
+    case CMD_HMI_GET_ORDER_FILE:
+    	this->ProcessHmiGetOrderFile(cmd);
+    	break;
 #endif
 
     default:
@@ -3787,24 +3817,81 @@ void ChannelControl::ProcessHmiAppendOrderListFile(HMICmdFrame &cmd){
 	}
 
 	string file_name = cmd.data;
-	std::cout << "append order list file: " << file_name << std::endl;
+	std::cout << "===== append order list file: " << file_name << std::endl;
 	order_file_vector.push_back(file_name);
+
+	std::ofstream order_list_file;
+	order_list_file.open("/cnc/order_list", ios::app);
+	order_list_file << file_name << std::endl;
+	order_list_file.close();
 }
 
 void ChannelControl::ProcessHmiSetOrderListIndex(HMICmdFrame &cmd){
 
-	if(cmd.cmd_extension >= 0 && cmd.cmd_extension < order_file_vector.size()){
-		current_order_index = cmd.cmd_extension;
+	printf("===== set order index %d\n", cmd.cmd_extension);
+	int index = cmd.cmd_extension -1;
+
+	if(index >= 0 && index < order_file_vector.size()){
+		current_order_index = index;
 		// @todo  加载对应文件
 
 	}else{
 		printf("order index invalid\n");
 	}
+
+	/*
+	for(std::string name: order_file_vector){
+		std::cout << name << std::endl;
+	}
+	*/
 }
 
-void ChannelControl::ProcessClearOrderList(HMICmdFrame &cmd){
+void ChannelControl::ProcessClearOrderList(){
+	printf("====  clear order list\n");
 	current_order_index = -1;
 	order_file_vector.clear();
+
+	std::ofstream order_list_file;
+	order_list_file.open("/cnc/order_list", ios::out);
+	order_list_file.close();
+}
+
+void ChannelControl::ProcessHmiSetOrderMode(HMICmdFrame &cmd){
+	printf("===== set order mode %d\n", cmd.cmd_extension);
+	if(cmd.cmd_extension >= 0 && cmd.cmd_extension <= 6){
+		m_n_order_mode = cmd.cmd_extension;
+	}else{
+		printf("set order mode invalid\n");
+		m_n_order_mode = 0;
+	}
+}
+
+void ChannelControl::ProcessHmiGetOrderLen(HMICmdFrame &cmd){
+		cmd.frame_number |= 0x8000;
+		memset(cmd.data, 0, sizeof(cmd.data));
+		int len = order_file_vector.size();
+		memcpy(cmd.data, &len, sizeof(len));
+		cmd.data_len = sizeof(len);
+		m_p_hmi_comm->SendCmd(cmd);
+}
+
+void ChannelControl::ProcessHmiGetOrderFile(HMICmdFrame &cmd){
+	cmd.frame_number |= 0x8000;
+	memset(cmd.data, 0, sizeof(cmd.data));
+	printf("===== get order file %d\n", cmd.cmd_extension);
+	int index = cmd.cmd_extension -1;
+
+	if(index >= 0 && index < order_file_vector.size()){
+		memcpy(cmd.data, order_file_vector.at(index).c_str(),
+				order_file_vector.at(index).length()+1);
+		cmd.data_len = order_file_vector.at(index).length()+1;
+
+	}else{
+		cmd.data_len = 0;
+		printf("order index invalid\n");
+	}
+
+	m_p_hmi_comm->SendCmd(cmd);
 }
 #endif
 
@@ -4467,7 +4554,8 @@ void ChannelControl::CompileOver(){
 #ifdef USES_ADDITIONAL_PROGRAM
         if(this->m_n_add_prog_type != CONTINUE_START_ADD)
 #endif
-            SetMachineState(MS_READY);
+		this->main_prog_line_number = 0;
+		SetMachineState(MS_READY);
     }
 
 #ifndef USES_SIMULATION_TEST
@@ -4791,18 +4879,18 @@ int ChannelControl::Run(){
         		char  filename[] = "O9030.NC";
 				strcpy(m_channel_status.cur_nc_file_name, filename);
 				g_ptr_parm_manager->SetCurNcFile(m_n_channel_index, m_channel_status.cur_nc_file_name);    //修改当前NC文件
-				this->m_p_compiler->OpenFile("/cnc/nc_files/O9030.NC");
+				this->m_p_compiler->OpenFile("/cnc/nc_files/sys_sub/O9030.NC");
 				this->SendOpenFileCmdToHmi(m_channel_status.cur_nc_file_name);
 				this->StartRunGCode();
         	}
 
         	// 所有加工程序结束 后置程序运行结束 回到排程列表第一个文件
-        	if(m_b_order_mode_on && m_b_in_next_prog){
+        	if(m_n_order_mode > 0 && m_b_in_next_prog){
 				m_b_in_next_prog = false;
 				if(!order_file_vector.empty()){
 					char path[kMaxPathLen];
 					char file_name[150];
-					current_order_index = 1;
+					current_order_index = 0;
 					strcpy(path, PATH_NC_FILE);
 					strcpy(file_name, order_file_vector.at(0).c_str());
 					strcat(path, file_name);
@@ -4818,7 +4906,7 @@ int ChannelControl::Run(){
         		char  filename[] = "O9030.NC";
         		strcpy(m_channel_status.cur_nc_file_name, filename);
         		g_ptr_parm_manager->SetCurNcFile(m_n_channel_index, m_channel_status.cur_nc_file_name);    //修改当前NC文件
-        		this->m_p_compiler->OpenFile("/cnc/nc_files/O9030.NC");
+        		this->m_p_compiler->OpenFile("/cnc/nc_files/sys_sub/O9030.NC");
         		this->SendOpenFileCmdToHmi(m_channel_status.cur_nc_file_name);
         		this->StartRunGCode();
         		m_b_in_next_prog = true;
@@ -5292,7 +5380,8 @@ void ChannelControl::SetCurLineNo(uint32_t line_no){
     if(this->m_n_add_prog_type != NONE_ADD)
         return;
 #endif
-    if((this->m_n_macroprog_count == 0 && this->m_n_subprog_count == 0) || this->m_p_general_config->debug_mode > 0)
+
+    if(this->m_n_macroprog_count == 0 || this->m_p_general_config->debug_mode > 0)
     {
         this->m_channel_rt_status.line_no = line_no;
         std::cout << "setcurLineNo:  " << (int)this->m_channel_rt_status.line_no << std::endl;
@@ -5480,7 +5569,7 @@ bool ChannelControl::OutputData(RecordMsg *msg, bool flag_block){
             }
 
             uint32_t msk = 0x01;
-            if(linemsg->GetAxisMoveMask() == (msk<<chn_axis)){   //只有Z轴移动时
+            if(linemsg->GetAxisMoveMask() == (msk<<chn_axis)){   //只有快钻轴移动时
                 data_frame.data.cmd = MOVE_G00;   //强制将G01指令替换为G00指令
                 data_frame.data.feed = 0;
 
@@ -5800,7 +5889,11 @@ bool ChannelControl::IsMoveMsgLine(){
  * @return  true--存在   false--不存在
  */
 bool ChannelControl::IsNcFileExist(char *file_name){
-    char path[kMaxPathLen] = {0};
+
+	if(strcmp("O9030.NC", file_name) == 0) return true;
+
+	std::cout << file_name << std::endl;
+	char path[kMaxPathLen] = {0};
     strcpy(path, PATH_NC_FILE);
 
     strcat(path, file_name);
@@ -5981,6 +6074,12 @@ bool ChannelControl::ExecuteMessage(){
         }
         // @test zk
         //printf("---------->excute message line no %llu  msg type: %d flag: %d\n", line_no, msg_type, msg->GetFlags().all);
+
+        // 获取主程序行号
+        if(m_mode_restart.sub_prog_call == 0){
+           	main_prog_line_number = msg->GetLineNo();
+       	}
+
         switch(msg_type){
         case AUX_MSG:
 #ifdef USES_WOOD_MACHINE
@@ -6178,7 +6277,7 @@ bool ChannelControl::ExecuteMessage(){
             if(msg->IsEndMsg()){	//处理M02/M30消息
                 this->m_n_run_thread_state = STOP;
 #ifdef NEW_WOOD_MACHINE
-                if(m_b_order_mode_on && !m_b_in_next_prog) m_b_need_next_prog = true;
+                if(m_n_order_mode > 0 && !m_b_in_next_prog) m_b_need_next_prog = true;
 #endif
             }else if(m_n_run_thread_state != WAIT_RUN && this->m_error_code == ERR_NONE && this->IsMachinRunning() && !pause_flag){
                 this->m_n_run_thread_state = RUN;
@@ -6276,7 +6375,7 @@ bool ChannelControl::ExecuteAuxMsg(RecordMsg *msg){
 
 
     if(this->m_n_restart_mode != NOT_RESTART &&
-            tmp->GetLineNo() < this->m_n_restart_line
+    		main_prog_line_number < this->m_n_restart_line
         #ifdef USES_ADDITIONAL_PROGRAM
             && this->m_n_add_prog_type == NONE_ADD      //非附加程序运行状态
         #endif
@@ -6300,7 +6399,6 @@ bool ChannelControl::ExecuteAuxMsg(RecordMsg *msg){
                 std::cout << "-----------> mode: " << (int)mcode << " sub_call: " << m_mode_restart.sub_prog_call << std::endl;
                 if(mcode == 99 && m_mode_restart.sub_prog_call > 0){
                     this->m_mode_restart.sub_prog_call--;
-                    printf("8888888888888888\n");
                 }else{
                     ResetMcLineNo();//复位MC模块当前行号
                     this->SetCurLineNo(1);
@@ -6348,7 +6446,7 @@ bool ChannelControl::ExecuteAuxMsg(RecordMsg *msg){
 #endif
         }else if(mcode == 99){
             if(m_n_subprog_count > 0){
-                m_n_subprog_count--;
+            	m_n_subprog_count --;
                 m_b_ret_from_macroprog = false;
 
                 this->m_n_run_thread_state = RUN;
@@ -6391,7 +6489,7 @@ bool ChannelControl::ExecuteAuxMsg(RecordMsg *msg){
         bool block_over = false;
 
         while(1){
-            block_over = CheckBlockOverFlag();
+        	block_over = CheckBlockOverFlag();
             if(this->ReadMcMoveDataCount() > 0 || !block_over ||
                     m_channel_status.machining_state == MS_PAUSED ||
                     m_channel_status.machining_state == MS_WARNING){ //未达到执行条件
@@ -7066,9 +7164,11 @@ bool ChannelControl::ExecuteAuxMsg(RecordMsg *msg){
                 if(m_n_subprog_count > 0){
                 	if(m_p_compiler->needJumpUpper()) m_n_subprog_count--;
                     m_b_ret_from_macroprog = false;
+                    printf("===== exe sub 3333333333333333333\n");
                 }
                 else{
                 	m_p_compiler->RecycleCompile();   //主程序则循环调用
+                	printf("===== exe main 4444444444444444444\n");
 //                    this->m_channel_status.workpiece_count++;  //工件计数加一
 //                    g_ptr_parm_manager->SetCurWorkPiece(m_n_channel_index, m_channel_status.workpiece_count);
 //                    this->m_channel_status.workpiece_count_total++;
@@ -7365,7 +7465,7 @@ bool ChannelControl::ExecuteLineMsg(RecordMsg *msg, bool flag_block){
     LineMsg *linemsg = (LineMsg *)msg;
 
     if(this->m_n_restart_mode != NOT_RESTART &&
-            linemsg->GetLineNo() < this->m_n_restart_line
+    		main_prog_line_number < this->m_n_restart_line
         #ifdef USES_ADDITIONAL_PROGRAM
             && this->m_n_add_prog_type == NONE_ADD      //非附加程序运行状态
         #endif
@@ -7461,8 +7561,12 @@ bool ChannelControl::ExecuteLineMsg(RecordMsg *msg, bool flag_block){
 bool ChannelControl::ExecuteRapidMsg(RecordMsg *msg, bool flag_block){
     RapidMsg *rapidmsg = (RapidMsg *)msg;
 
+    if(m_mode_restart.sub_prog_call == 0){
+    	main_prog_line_number = rapidmsg->GetLineNo();
+	}
+
     if(this->m_n_restart_mode != NOT_RESTART &&
-            rapidmsg->GetLineNo() < this->m_n_restart_line
+    		main_prog_line_number < this->m_n_restart_line
         #ifdef USES_ADDITIONAL_PROGRAM
             && this->m_n_add_prog_type == NONE_ADD      //非附加程序运行状态
         #endif
@@ -7545,7 +7649,7 @@ bool ChannelControl::ExecuteArcMsg(RecordMsg *msg, bool flag_block){
     ArcMsg *arc_msg = (ArcMsg *)msg;
 
     if(this->m_n_restart_mode != NOT_RESTART &&
-            arc_msg->GetLineNo() < this->m_n_restart_line
+    		main_prog_line_number < this->m_n_restart_line
         #ifdef USES_ADDITIONAL_PROGRAM
             && this->m_n_add_prog_type == NONE_ADD      //非附加程序运行状态
         #endif
@@ -7597,7 +7701,7 @@ bool ChannelControl::ExecuteCoordMsg(RecordMsg *msg){
 	CoordMsg *coordmsg = (CoordMsg *)msg;
 
     if(this->m_n_restart_mode != NOT_RESTART &&
-            msg->GetLineNo() < this->m_n_restart_line
+    		main_prog_line_number < this->m_n_restart_line
         #ifdef USES_ADDITIONAL_PROGRAM
             && this->m_n_add_prog_type == NONE_ADD      //非附加程序运行状态
         #endif
@@ -7865,7 +7969,7 @@ bool ChannelControl::ExecuteToolMsg(RecordMsg *msg){
     //	}
     ToolMsg *toolmsg = (ToolMsg *)msg;
     if(this->m_n_restart_mode != NOT_RESTART &&
-            msg->GetLineNo() < this->m_n_restart_line
+    		main_prog_line_number < this->m_n_restart_line
         #ifdef USES_ADDITIONAL_PROGRAM
             && this->m_n_add_prog_type == NONE_ADD      //非附加程序运行状态
         #endif
@@ -8129,7 +8233,7 @@ bool ChannelControl::ExecuteModeMsg(RecordMsg *msg){
     ModeMsg *modemsg = (ModeMsg *)msg;
 
     if(this->m_n_restart_mode != NOT_RESTART &&
-            msg->GetLineNo() < this->m_n_restart_line
+    		main_prog_line_number < this->m_n_restart_line
         #ifdef USES_ADDITIONAL_PROGRAM
             && this->m_n_add_prog_type == NONE_ADD      //非附加程序运行状态
         #endif
@@ -8319,7 +8423,7 @@ bool ChannelControl::ExecuteSpeedMsg(RecordMsg *msg){
         spd_config = &m_p_axis_config[phy_spd-1];
 
     if(this->m_n_restart_mode != NOT_RESTART &&
-            msg->GetLineNo() < this->m_n_restart_line
+    		main_prog_line_number < this->m_n_restart_line
         #ifdef USES_ADDITIONAL_PROGRAM
             && this->m_n_add_prog_type == NONE_ADD      //非附加程序运行状态
         #endif
@@ -8428,7 +8532,7 @@ bool ChannelControl::ExecuteLoopMsg(RecordMsg *msg){
     int cmd = loopmsg->GetGCode();
 
     if(this->m_n_restart_mode != NOT_RESTART &&
-            msg->GetLineNo() < this->m_n_restart_line
+    		main_prog_line_number < this->m_n_restart_line
         #ifdef USES_ADDITIONAL_PROGRAM
             && this->m_n_add_prog_type == NONE_ADD      //非附加程序运行状态
         #endif
@@ -8566,7 +8670,7 @@ bool ChannelControl::ExecuteCompensateMsg(RecordMsg *msg){
     CompensateMsg *compmsg = (CompensateMsg *)msg;
     int type = compmsg->GetGCode();
     if(this->m_n_restart_mode != NOT_RESTART &&
-            compmsg->GetLineNo() < this->m_n_restart_line
+    		main_prog_line_number < this->m_n_restart_line
         #ifdef USES_ADDITIONAL_PROGRAM
             && this->m_n_add_prog_type == NONE_ADD      //非附加程序运行状态
         #endif
@@ -9076,7 +9180,7 @@ bool ChannelControl::ExecuteSubProgCallMsg(RecordMsg *msg){
     SubProgCallMsg *sub_msg = (SubProgCallMsg *)msg;
 
     if(this->m_n_restart_mode != NOT_RESTART &&
-            msg->GetLineNo() < this->m_n_restart_line
+    		main_prog_line_number < this->m_n_restart_line
         #ifdef USES_ADDITIONAL_PROGRAM
             && this->m_n_add_prog_type == NONE_ADD      //非附加程序运行状态
         #endif
@@ -9088,9 +9192,7 @@ bool ChannelControl::ExecuteSubProgCallMsg(RecordMsg *msg){
     if(m_simulate_mode == SIM_OUTLINE && m_simulate_mode == SIM_TOOLPATH){  //轮廓仿真，刀路仿真
         //设置当前行号
         SetCurLineNo(msg->GetLineNo());
-
         m_n_subprog_count++;
-
         return true;
     }
 
@@ -9178,7 +9280,7 @@ bool ChannelControl::ExecuteSubProgCallMsg(RecordMsg *msg){
                 {
                     SetCurLineNo(msg->GetLineNo());
                 }
-                m_n_subprog_count += 1;
+                m_n_subprog_count++;
                 this->m_p_f_reg->DM98 = 1;
                 sub_msg->IncreaseExecStep(0);
             }else if(sub_msg->GetExecStep(0) == 1){
@@ -9204,7 +9306,7 @@ bool ChannelControl::ExecuteMacroProgCallMsg(RecordMsg *msg){
     MacroProgCallMsg *macro_msg = (MacroProgCallMsg *)msg;
 
     if(this->m_n_restart_mode != NOT_RESTART &&
-            msg->GetLineNo() < this->m_n_restart_line
+    		main_prog_line_number < this->m_n_restart_line
         #ifdef USES_ADDITIONAL_PROGRAM
             && this->m_n_add_prog_type == NONE_ADD      //非附加程序运行状态
         #endif
@@ -9335,7 +9437,7 @@ bool ChannelControl::ExecuteAutoToolMeasureMsg(RecordMsg *msg){
         limit = 4;	//单步模式需要多次验证，因为状态切换有延时
 
     if(this->m_n_restart_mode != NOT_RESTART &&
-            macro_msg->GetLineNo() < this->m_n_restart_line
+    		main_prog_line_number < this->m_n_restart_line
         #ifdef USES_ADDITIONAL_PROGRAM
             && this->m_n_add_prog_type == NONE_ADD      //非附加程序运行状态
         #endif
@@ -9439,7 +9541,7 @@ bool ChannelControl::ExecuteMacroCmdMsg(RecordMsg *msg){
     // printf("enter execute macro cmd message\n");
 
 	if(this->m_n_restart_mode != NOT_RESTART &&
-            msg->GetLineNo() < this->m_n_restart_line
+			main_prog_line_number < this->m_n_restart_line
         #ifdef USES_ADDITIONAL_PROGRAM
             && this->m_n_add_prog_type == NONE_ADD      //非附加程序运行状态
         #endif
@@ -9498,12 +9600,17 @@ bool ChannelControl::ExecuteSubProgReturnMsg(RecordMsg *msg){
     SubProgReturnMsg *ret_msg = static_cast<SubProgReturnMsg *>(msg);
 
     if(this->m_n_restart_mode != NOT_RESTART &&
-            msg->GetLineNo() < this->m_n_restart_line
+    		main_prog_line_number < this->m_n_restart_line
         #ifdef USES_ADDITIONAL_PROGRAM
             && this->m_n_add_prog_type == NONE_ADD      //非附加程序运行状态
         #endif
             ){//加工复位
-        return true;
+
+    	if(ret_msg->IsRetFromMacroProg() && m_n_macroprog_count > 0){  //宏程序返回
+			m_n_macroprog_count--;
+			m_b_ret_from_macroprog = true;
+		}
+    	return true;
     }
 
     if(m_simulate_mode == SIM_OUTLINE && m_simulate_mode == SIM_TOOLPATH){  //轮廓仿真，刀路仿真
@@ -9511,7 +9618,7 @@ bool ChannelControl::ExecuteSubProgReturnMsg(RecordMsg *msg){
         SetCurLineNo(msg->GetLineNo());
 
         if(ret_msg->IsRetFromMacroProg() && m_n_macroprog_count > 0){  //宏程序返回
-            m_n_macroprog_count--;
+        	m_n_macroprog_count--;
             m_b_ret_from_macroprog = true;
         }
         return true;
@@ -9573,8 +9680,9 @@ bool ChannelControl::ExecuteSubProgReturnMsg(RecordMsg *msg){
     std::cout << "m_n_cur_dir_sub_prog " << m_p_compiler->m_n_cur_dir_sub_prog << std::endl;
     //设置当前行号
     if(ret_msg->IsRetFromMacroProg() && m_n_macroprog_count > 0){  //宏程序返回，不更新行号
-        m_n_macroprog_count--;
+    	m_n_macroprog_count--;
         m_b_ret_from_macroprog = true;
+        SetCurLineNo(msg->GetLineNo());
 
         if(this->IsStepMode()){
             this->SetMcStepMode(true);
@@ -9599,7 +9707,7 @@ bool ChannelControl::ExecutePolarIntpMsg(RecordMsg *msg){
     PolarIntpMsg *polarmsg = (PolarIntpMsg *)msg;
 
     if(this->m_n_restart_mode != NOT_RESTART &&
-            msg->GetLineNo() < this->m_n_restart_line
+    		main_prog_line_number < this->m_n_restart_line
         #ifdef USES_ADDITIONAL_PROGRAM
             && this->m_n_add_prog_type == NONE_ADD      //非附加程序运行状态
         #endif
@@ -9762,7 +9870,7 @@ bool ChannelControl::ExecuteRefReturnMsg(RecordMsg *msg){
     RefReturnMsg *refmsg = (RefReturnMsg *)msg;
 
     if(this->m_n_restart_mode != NOT_RESTART &&
-            msg->GetLineNo() < this->m_n_restart_line
+    		main_prog_line_number < this->m_n_restart_line
         #ifdef USES_ADDITIONAL_PROGRAM
             && this->m_n_add_prog_type == NONE_ADD      //非附加程序运行状态
         #endif
@@ -10141,7 +10249,7 @@ bool ChannelControl::ExecuteSkipMsg(RecordMsg *msg){
     SkipMsg *skipmsg = (SkipMsg *)msg;
 
     if(this->m_n_restart_mode != NOT_RESTART &&
-            msg->GetLineNo() < this->m_n_restart_line
+    		main_prog_line_number < this->m_n_restart_line
         #ifdef USES_ADDITIONAL_PROGRAM
             && this->m_n_add_prog_type == NONE_ADD      //非附加程序运行状态
         #endif
@@ -10712,7 +10820,7 @@ bool ChannelControl::ExecuteTimeWaitMsg(RecordMsg *msg){
     TimeWaitMsg *timemsg = (TimeWaitMsg *)msg;
 
     if(this->m_n_restart_mode != NOT_RESTART &&
-            msg->GetLineNo() < this->m_n_restart_line
+    		main_prog_line_number < this->m_n_restart_line
         #ifdef USES_ADDITIONAL_PROGRAM
             && this->m_n_add_prog_type == NONE_ADD      //非附加程序运行状态
         #endif
@@ -10793,7 +10901,7 @@ bool ChannelControl::ExecuteClearCirclePosMsg(RecordMsg *msg){
     ClearCirclePosMsg *clearmsg = (ClearCirclePosMsg *)msg;
 
     if(this->m_n_restart_mode != NOT_RESTART &&
-            clearmsg->GetLineNo() < this->m_n_restart_line
+    		main_prog_line_number < this->m_n_restart_line
         #ifdef USES_ADDITIONAL_PROGRAM
             && this->m_n_add_prog_type == NONE_ADD      //非附加程序运行状态
         #endif
@@ -10939,7 +11047,7 @@ bool ChannelControl::ExecuteInputMsg(RecordMsg * msg){
     //printf("ldata: %lf -- pdata: %lf --- rdata: %lf\n", input_msg->LData, input_msg->PData, input_msg->RData);
 
     if(this->m_n_restart_mode != NOT_RESTART &&
-            input_msg->GetLineNo() < this->m_n_restart_line
+    		main_prog_line_number < this->m_n_restart_line
         #ifdef USES_ADDITIONAL_PROGRAM
             && this->m_n_add_prog_type == NONE_ADD      //非附加程序运行状态
         #endif
@@ -11080,7 +11188,7 @@ bool ChannelControl::ExecuteExactStopMsg(RecordMsg *msg){
     ExactStopMsg * exact_msg = (ExactStopMsg *)msg;
 
     if(this->m_n_restart_mode != NOT_RESTART &&
-            msg->GetLineNo() < this->m_n_restart_line
+    		main_prog_line_number < this->m_n_restart_line
         #ifdef USES_ADDITIONAL_PROGRAM
             && this->m_n_add_prog_type == NONE_ADD      //非附加程序运行状态
         #endif
@@ -11190,7 +11298,6 @@ bool ChannelControl::ExecuteOpenFileMsg(RecordMsg *msg){
 
 	// G110 打开的序号不存在
 	if(index <= 0 || index > order_file_vector.size()){
-
 		printf("index: %d, order_file_vector.size(): %d\n", index, order_file_vector.size());
 		m_error_code = ORDER_INDEX_ERROR;
 		CreateError(ORDER_INDEX_ERROR, ERROR_LEVEL, CLEAR_BY_MCP_RESET, openfile_msg->GetLineNo(), m_n_channel_index, 0);
@@ -11199,7 +11306,7 @@ bool ChannelControl::ExecuteOpenFileMsg(RecordMsg *msg){
 
 	memset(g110_file_name, 0, sizeof(g110_file_name));
 
-	current_order_index = index;
+	current_order_index = index-1;
 	strcpy(g110_file_name, order_file_vector.at(index-1).c_str());
 
 	// 打开G110 程序调用标志
@@ -20138,7 +20245,7 @@ bool ChannelControl::CallMacroProgram(uint16_t macro_index){
     if((mode == AUTO_MODE || mode == MDA_MODE) && state == MS_RUNNING){
     	this->m_p_compiler->CallMarcoProgWithNoPara(macro_index);
         m_n_subprog_count++;
-        m_n_macroprog_count++;
+        //m_n_macroprog_count++;
 
         if(this->m_p_general_config->debug_mode == 0){
             this->SetMcStepMode(false);

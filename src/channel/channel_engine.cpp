@@ -3012,6 +3012,9 @@ void ChannelEngine::ProcessHmiCmd(HMICmdFrame &cmd){
     case CMD_HMI_APPEND_ORDER_LIST:
 	case CMD_HMI_CLEAR_ORDER_LIST:
 	case CMD_HMI_SET_ORDER_INDEX:
+	case CMD_HMI_SET_ORDER_MODE:
+    case CMD_HMI_GET_ORDER_LEN:
+    case CMD_HMI_GET_ORDER_FILE:
 		this->m_p_channel_control[0].ProcessHmiCmd(cmd);
 		// 暂时不考虑多通道
 		/*if(cmd.channel_index < this->m_p_general_config->chn_count)
@@ -5468,7 +5471,9 @@ bool ChannelEngine::Start(){
             UpdateHandwheelState(chn);
 
 #ifdef NEW_WOOD_MACHINE
-            if(m_p_channel_control[chn].m_b_order_mode_on){
+            printf("====== channel engine m_n_order_mode: %d\n",
+            		m_p_channel_control[chn].m_n_order_mode);
+            if(m_p_channel_control[chn].m_n_order_mode > 0){
             	m_p_channel_control[chn].m_b_need_pre_prog = true;
             	m_p_channel_control[chn].m_b_in_next_prog = false;
             }

@@ -18,6 +18,10 @@
 #include "variable.h"
 #include "parm_manager.h"
 
+#include <future>
+#include <functional>
+#include <unistd.h>
+
 //template<> int ListNode<LabelOffset>::new_count = 0;
 //template<> int ListNode<SubProgOffset>::new_count = 0;
 //template<> int ListNode<LoopRec>::new_count = 0;
@@ -162,7 +166,7 @@ void Compiler::InitCompiler() {
     m_ln_cur_line_no = 1;   //当前编译行号
 
     this->m_b_breakout_prescan = false;
-    this->m_b_prescan_over = false;
+    //this->m_b_prescan_over = false;
     m_b_prescan_in_stack = false;
 
     memset(m_line_buf, 0x00, kMaxLineSize); //初始化编译行的缓冲区
@@ -773,6 +777,13 @@ void Compiler::PreScan() {
         }
     }
 
+    // 处理完了配对要检查是否清空
+	if(m_stack_vector_index_prescan.size()>0){
+		CreateError(IF_ELSE_MATCH_FAILED, ERROR_LEVEL, CLEAR_BY_MCP_RESET,
+								line_no, m_n_channel_index);
+		return;
+	}
+
     /*** test if else */
     printf("*********************************************\n");
     for(unsigned int i=0; i<m_node_vectors_vector.size(); i++){
@@ -834,7 +845,7 @@ void Compiler::PreScan() {
         }
     }
 
-    m_b_prescan_over = true;  //成功结束
+    //m_b_prescan_over = true;  //成功结束
 
     gettimeofday(&tvNow, NULL);
     nTimeDelay = (tvNow.tv_sec - tvStart.tv_sec) * 1000000 + tvNow.tv_usec
@@ -1340,6 +1351,8 @@ void Compiler::PreScanLine1(char *buf, uint64_t offset, uint64_t line_no,
         else_cmd = false;
         elseif_cmd = false;
     }
+
+
 }
 
 /**
@@ -1536,8 +1549,9 @@ bool Compiler::OpenFile(const char *file, bool sub_flag) {
         }
         m_thread_prescan = 0;
     }*/
+    compiler_lock = true;
     m_b_breakout_prescan = false;
-    m_b_prescan_over = false;
+    //m_b_prescan_over = false;
     m_b_prescan_in_stack = false;
     this->m_p_list_label->Clear();
     this->m_p_list_subprog->Clear();
@@ -1551,7 +1565,11 @@ bool Compiler::OpenFile(const char *file, bool sub_flag) {
     m_stack_vector_index_prescan.clear();
     m_stack_else_count_prescan.clear();
 
-    PreScan();
+    //PreScan();
+
+    static std::future<void> ans;
+    auto func = std::bind(&Compiler::PreScan, this);
+	ans = std::async(std::launch::async, func);
 
 
 #ifdef USES_WOOD_MACHINE
@@ -1631,6 +1649,7 @@ bool Compiler::OpenFileInScene(const char *file){
 
     scene.file_map_info.Clear();//防止后面delete scene时将文件映射关闭
 
+    /*
     void* thread_result;
     //创建预扫描线程
     if (!m_b_prescan_over && m_thread_prescan != 0) {
@@ -1676,9 +1695,9 @@ bool Compiler::OpenFileInScene(const char *file){
                         0, m_n_channel_index);
         }
         m_thread_prescan = 0;
-    }
+    }*/
     m_b_breakout_prescan = false;
-    m_b_prescan_over = false;
+    //m_b_prescan_over = false;
     m_b_prescan_in_stack = true;
     //	this->m_p_list_label->Clear();
     //	this->m_p_list_subprog->Clear();
@@ -1686,7 +1705,7 @@ bool Compiler::OpenFileInScene(const char *file){
 
     m_stack_loop.empty();  //清空循环位置数据
 
-    pthread_attr_t attr;
+    /*pthread_attr_t attr;
     struct sched_param param;
     pthread_attr_init(&attr);
     pthread_attr_setschedpolicy(&attr, SCHED_RR);
@@ -1694,13 +1713,13 @@ bool Compiler::OpenFileInScene(const char *file){
 
     param.__sched_priority = 35; //95; //主程序，预扫描线程比编译线程优先级一，因为主程序可能比较大
     pthread_attr_setschedparam(&attr, &param);
-
+	*/
     /* Use scheduling parameters of attr */
     //	res = pthread_attr_setinheritsched(&attr, PTHREAD_EXPLICIT_SCHED); //不继承父线程调度方式，否则以上的设置不生效
     //	if (res) {
     //		printf("pthread setinheritsched failed\n");
     //	}
-    res = pthread_create(&m_thread_prescan, &attr, Compiler::PreScanThread, this);    //开启G代码预编译线程
+    /*res = pthread_create(&m_thread_prescan, &attr, Compiler::PreScanThread, this);    //开启G代码预编译线程
     if (res != 0) {
         g_ptr_trace->PrintLog(LOG_ALARM, "CHN[%d]编译器预扫描线程创建失败! res = %d, errno = %d, errstr=%s",
                               m_n_channel_index, res, errno, strerror(errno));
@@ -1711,8 +1730,8 @@ bool Compiler::OpenFileInScene(const char *file){
 
     pthread_attr_destroy(&attr);
 
-    printf("exit OpenFileInScene priority %d\n", param.__sched_priority);
-
+    printf("exit OpenFileInScene priority %d\n", param.__sched_priority);*/
+    PreScan();
     return true;
 }
 
@@ -2361,14 +2380,10 @@ bool Compiler::RunMessage() {
                 res = RunAuxMsg(msg);
                 break;
             case SUBPROG_CALL_MSG:
-                compiler_lock = true;
-                res = this->RunSubProgCallMsg(msg);
-
+            	res = this->RunSubProgCallMsg(msg);
                 break;
             case MACRO_PROG_CALL_MSG:
-                compiler_lock = true;
-                res = this->RunMacroProgCallMsg(msg);
-
+            	res = this->RunMacroProgCallMsg(msg);
                 break;
             case COORD_MSG:
                 res = this->RunCoordMsg(msg);
@@ -2395,8 +2410,7 @@ bool Compiler::RunMessage() {
                 res = this->RunToolMsg(msg);
                 break;
             case LOOP_MSG:
-                compiler_lock = true;
-                res = this->RunLoopMsg(msg);
+            	res = this->RunLoopMsg(msg);
                 break;
             case ARC_MSG:
                 res = this->RunArcMsg(msg);
@@ -2538,12 +2552,14 @@ bool Compiler::RunAuxMsg(RecordMsg *msg) {
             //		break;
         case 99:   //M99
             if (m_n_sub_program != MAIN_PROG) {
-                this->ReturnFromSubProg();   //子程序则返回调用程序
+            	printf("===== run sub 11111111111111111\n");
+            	this->ReturnFromSubProg();   //子程序则返回调用程序
             } else {
-                this->m_b_compile_over = true;
+            	this->m_b_compile_over = true;
+            	printf("===== run main 22222222222222222\n");
             }
 
-            printf("---------------------->compiler run M99\n");
+            //printf("compiler run M99\n");
             break;
         case 300: //lidianqiang:MDA自动加上M30临时改为M300
             this->m_b_compile_over = true;
@@ -2564,8 +2580,10 @@ bool Compiler::RunSubProgCallMsg(RecordMsg *msg) {
     if (msg == nullptr)
         return true;
 
+    /*
     if (!this->m_b_prescan_over && m_thread_prescan != 0) //预扫描未结束，暂不执行
         return false;
+        */
 
     SubProgCallMsg *sub_msg = (SubProgCallMsg *) msg;
 
@@ -2649,9 +2667,9 @@ bool Compiler::RunMacroProgCallMsg(RecordMsg *msg){
     if (msg == nullptr)
         return true;
 
-    if (!this->m_b_prescan_over && m_thread_prescan != 0){ //预扫描未结束，暂不执行
+    /*if (!this->m_b_prescan_over && m_thread_prescan != 0){ //预扫描未结束，暂不执行
         return false;
-    }
+    }*/
 
     MacroProgCallMsg *sub_msg = (MacroProgCallMsg *) msg;
 
@@ -2752,10 +2770,11 @@ bool Compiler::RunAutoToolMeasureMsg(RecordMsg *msg){
     if(*this->m_p_simulate_mode != SIM_NONE)  //仿真直接返回
         return true;
 
+    /*
     if (!this->m_b_prescan_over && m_thread_prescan != 0){ //预扫描未结束，暂不执行
 
         return false;
-    }
+    }*/
 
     AutoToolMeasureMsg *sub_msg = (AutoToolMeasureMsg *) msg;
 
@@ -3699,6 +3718,11 @@ bool Compiler::RunMacroMsg(RecordMsg *msg) {
 
             }else{
                 //条件不成立     往下一个节点跳转
+            	if(node.node_index + 1 >= m_node_vectors_vector.at(node.vec_index).size()){
+            		printf("if node index out of range\n");
+            		break;
+            	}
+
                 node = m_node_vectors_vector.at(node.vec_index).at(node.node_index + 1);
                 m_b_else_jump = false;
 
@@ -3951,7 +3975,7 @@ bool Compiler::RunLoopMsg(RecordMsg *msg) {
     int gcode = sub_msg->GetGCode();
 
     //TODO  调用循环指令子程序
-    if (!this->m_b_prescan_over && m_thread_prescan != 0){ //预扫描未结束，暂不执行
+    if (/*!this->m_b_prescan_over &&*/ m_thread_prescan != 0){ //预扫描未结束，暂不执行
         return false;
     }
 
@@ -4533,6 +4557,7 @@ bool Compiler::ReturnFromSubProg() {
             isJumpUpper = true;
         }
 
+    	/*
         //预扫描线程是否结束，未结束则退出
         void * thread_result;
         int res = 0;
@@ -4579,9 +4604,9 @@ bool Compiler::ReturnFromSubProg() {
                             0, m_n_channel_index);
             }
             m_thread_prescan = 0;
-        }
+        }*/
         m_b_breakout_prescan = false;
-        m_b_prescan_over = false;
+        //m_b_prescan_over = false;
 
         printf("exit pre scan thread\n");
 
@@ -4645,7 +4670,6 @@ int Compiler::FindSubProgram(int sub_name, bool file_only, uint8_t scanMode) {  
         while (node != nullptr) {
             if (node->data.sub_index == sub_name) {
                 printf("sub name: %d\n", sub_name);
-                compiler_lock = false;
                 return 1;
             }
             node = node->next;
@@ -4813,8 +4837,9 @@ int Compiler::FindJumpLabel(int label, uint64_t &offset, uint64_t &line_no) {
         node = node->next;
     }
 
-    if(res != 1 && this->m_b_prescan_over)  //预扫描已结束，但是未找到跳转点
+    if(res != 1 /*&& this->m_b_prescan_over*/)  //预扫描已结束，但是未找到跳转点
         res = 0;
+
 
     return res;
 }

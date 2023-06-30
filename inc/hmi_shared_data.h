@@ -218,6 +218,9 @@ enum HMICmdCode {
 	CMD_HMI_APPEND_ORDER_LIST,	     //HMI添加排程加工文件
 	CMD_HMI_CLEAR_ORDER_LIST,		 //HMI清空排程文件列表
 	CMD_HMI_SET_ORDER_INDEX,		 //设置当前排程序号
+	CMD_HMI_SET_ORDER_MODE,          //设置排程模式
+	CMD_HMI_GET_ORDER_LEN,			 //获取排程列表长度
+	CMD_HMI_GET_ORDER_FILE,			 //根据序号获取排程列表文件名
 
 	//SC-->HMI
 	CMD_SC_NEW_ALARM = 100,			//SC向HMI发送新的告警信息 100

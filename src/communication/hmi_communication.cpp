@@ -1007,6 +1007,9 @@ int HMICommunication::ProcessHmiCmd(){
             case CMD_HMI_CLEAR_ORDER_LIST:
             case CMD_HMI_SET_ORDER_INDEX:
             case CMD_HMI_SET_TOOL_BY_VALUE: //HMI向SC设置刀具信息
+            case CMD_HMI_SET_ORDER_MODE:
+            case CMD_HMI_GET_ORDER_LEN:
+            case CMD_HMI_GET_ORDER_FILE:
 #ifdef USES_GRIND_MACHINE
 			case CMD_SC_MECH_ARM_ERR:         //HMI响应机械手告警指令
 #endif

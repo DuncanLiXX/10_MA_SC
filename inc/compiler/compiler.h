@@ -319,7 +319,7 @@ private://私有成员
 
 	int m_n_s_code_in_prescan;      //预扫描中记录当前S指令值
 #endif
-	bool m_b_prescan_over;         //预扫描结束
+	//bool m_b_prescan_over;         //预扫描结束
 	bool m_b_breakout_prescan;     //中断预扫描线程标志
 	bool m_b_prescan_in_stack;     //预扫描栈中的文件
 	Variable *m_p_variable;        //宏变量指针

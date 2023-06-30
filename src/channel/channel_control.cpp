@@ -12419,6 +12419,20 @@ void ChannelControl::UpdateModeData(uint16_t mode_type, int value)
 }
 
 /**
+ * @brief 判断当前轴是否运动停止
+ * @param phyAxis
+ * @return
+ */
+bool ChannelControl::IsMoveStop(uint8_t phyAxis)
+{
+    if ((m_channel_mc_status.manu_axis_over_mask & (0x01<<phyAxis)) == 0) {
+        return false;
+    }
+    else
+        return true;
+}
+
+/**
  * @brief 设置坐标系原点数据
  * @param flag : 激活工件坐标系标志， true - 激活   false - 失效
  */

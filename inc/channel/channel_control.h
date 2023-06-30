@@ -363,6 +363,7 @@ public:
 
     void UpdateModeData(uint16_t mode_type, int value);//由SC直接更新D模态数据
 
+    bool IsMoveStop(uint8_t phyAxis);//运动是否停止
 #ifdef USES_ADDITIONAL_PROGRAM
 	bool CallAdditionalProgram(AddProgType type);  //调用附加程序（前置/后置）
 #endif

@@ -6048,13 +6048,17 @@ void ChannelEngine::SetJPState(uint8_t chn, uint8_t JP, uint8_t last_JP, ChnWork
             this->m_p_mi_comm->ReadPhyAxisCurFedBckPos(m_df_phy_axis_pos_feedback, m_df_phy_axis_pos_intp,m_df_phy_axis_speed_feedback,
                                                        m_df_phy_axis_torque_feedback, m_df_spd_angle, m_p_general_config->axis_count);
             SetCurAxis(chn, chn_axis);
-            ManualMove(DIR_POSITIVE);
-            g_ptr_tracelog_processor->SendToHmi(kPanelOper, kDebug, "点动[轴" + to_string(chn_axis) + "]+");
-            usleep(200000);
+            int phyAxis = GetChnAxistoPhyAixs(m_n_cur_channle_index, chn_axis);
+            if (GetChnControl()->IsMoveStop(phyAxis))
+            {
+                ManualMove(DIR_POSITIVE);
+                g_ptr_tracelog_processor->SendToHmi(kPanelOper, kDebug, "点动[轴" + to_string(chn_axis) + "]+");
+            }
+            //usleep(200000);
         }else if(mode == MANUAL_MODE){ // 轴正向移动松开，并且为手动连续模式
             ManualMoveStop(m_p_channel_config[chn].chn_axis_phy[i]-1);
             //g_ptr_tracelog_processor->SendToHmi(kPanelOper, kDebug, "点动释放[轴" + to_string(chn_axis) + "]+");
-            usleep(200000);
+            //usleep(200000);
         }
     }
 }
@@ -6074,13 +6078,19 @@ void ChannelEngine::SetJNState(uint8_t chn, uint8_t JN, uint8_t last_JN, ChnWork
                                                        m_df_phy_axis_torque_feedback, m_df_spd_angle, m_p_general_config->axis_count);
 
             SetCurAxis(chn, chn_axis);
-            ManualMove(DIR_NEGATIVE);
-            usleep(200000);
-            g_ptr_tracelog_processor->SendToHmi(kPanelOper, kDebug, "点动[轴" + to_string(chn_axis) + "]-");
+            int phyAxis = GetChnAxistoPhyAixs(m_n_cur_channle_index, chn_axis);
+            if (GetChnControl()->IsMoveStop(phyAxis))
+            {
+                ManualMove(DIR_NEGATIVE);
+                g_ptr_tracelog_processor->SendToHmi(kPanelOper, kDebug, "点动[轴" + to_string(chn_axis) + "]-");
+            }
+            //usleep(200000);
+
+
         }else if(mode == MANUAL_MODE){ // 轴正向移动松开，并且为手动连续模式
             ManualMoveStop(m_p_channel_config[chn].chn_axis_phy[i]-1);
             //g_ptr_tracelog_processor->SendToHmi(kPanelOper, kDebug, "点动释放[轴" + to_string(chn_axis) + "]-");
-            usleep(200000);
+            //usleep(200000);
         }
     }
 }
@@ -6209,25 +6219,28 @@ void ChannelEngine::ManualMoveAbs(uint8_t phy_axis, double vel, double pos){
  * @param pos : 绝对位置
  * @param outlimit : 是否超出软限位
  */
-void ChannelEngine::ManualMoveAbs(uint8_t phy_axis, double vel, double pos, double &real_pos)
+bool ChannelEngine::ManualMoveAbs(uint8_t phy_axis, double vel, double pos, double &real_pos)
 {
     double pos_cur = this->m_df_phy_axis_pos_feedback[phy_axis];        //当前位置
-    double pos_tar = pos_cur + pos;                                     //目标位置
-    ManualMoveDir dir = (pos_tar > pos_cur)?DIR_POSITIVE:DIR_NEGATIVE;  //移动方向
+    //double pos_tar = pos_cur + pos;                                     //目标位置
+    ManualMoveDir dir = (pos > pos_cur)?DIR_POSITIVE:DIR_NEGATIVE;  //移动方向
 
     //检查软限位
     double limit = 0;
     if(CheckSoftLimit(dir, phy_axis, this->m_df_phy_axis_pos_feedback[phy_axis])){
         printf("soft limit active, manual move abs return \n");
         real_pos = pos_cur;
-        return;
-    }else if(GetSoftLimt(dir, phy_axis, limit) && dir == DIR_POSITIVE && pos_tar > limit){
+        return false;
+    }else if(GetSoftLimt(dir, phy_axis, limit) && dir == DIR_POSITIVE && pos > limit){
         real_pos = limit;
-    }else if(GetSoftLimt(dir, phy_axis, limit) && dir == DIR_NEGATIVE && pos_tar < limit){
+        std::cout << "real pos : " << real_pos << std::endl;
+    }else if(GetSoftLimt(dir, phy_axis, limit) && dir == DIR_NEGATIVE && pos < limit){
         real_pos = limit;
+        std::cout << "real pos : " << real_pos << std::endl;
     }
 
     ManualMoveAbs(phy_axis, vel, pos);
+    return true;
 }
 
 /**
@@ -10899,10 +10912,14 @@ void ChannelEngine::EcatIncAxisFindRefWithZeroSignal(uint8_t phy_axis){
             this->ManualMoveAbs(phy_axis, m_p_axis_config[phy_axis].ret_ref_speed, 0);
 #else
             real_pos = m_p_axis_config[phy_axis].axis_home_pos[0];
-            this->ManualMoveAbs(phy_axis, m_p_axis_config[phy_axis].ret_ref_speed, m_p_axis_config[phy_axis].axis_home_pos[0], real_pos);
+            if (this->ManualMoveAbs(phy_axis, m_p_axis_config[phy_axis].ret_ref_speed, m_p_axis_config[phy_axis].axis_home_pos[0], real_pos)) {
 #endif
-            m_n_ret_ref_step[phy_axis]++;  //跳转下一步
-            std::cout << "step 16, axis_home_pos:" << m_p_axis_config[phy_axis].axis_home_pos[0] << std::endl;
+                m_n_ret_ref_step[phy_axis]++;  //跳转下一步
+                std::cout << "step 16, axis_home_pos:" << m_p_axis_config[phy_axis].axis_home_pos[0] << std::endl;
+            } else {
+                m_n_ret_ref_step[phy_axis] = 18;
+                std::cout << "goto 18, limit err" << std::endl;
+            }
         }
         break;
     }
@@ -11205,8 +11222,12 @@ void ChannelEngine::GotoZeroPos(int phy_axis)
         break;
     case 1: {                            //运动到第一参考点
         real_pos = m_p_axis_config[phy_axis].axis_home_pos[0];
-        this->ManualMoveAbs(phy_axis, m_p_axis_config[phy_axis].rapid_speed, m_p_axis_config[phy_axis].axis_home_pos[0], real_pos);
-        m_n_ret_ref_step[phy_axis] = 2;  //跳转下一步
+        if (this->ManualMoveAbs(phy_axis, m_p_axis_config[phy_axis].rapid_speed, m_p_axis_config[phy_axis].axis_home_pos[0], real_pos)) {
+            m_n_ret_ref_step[phy_axis] = 2;  //跳转下一步
+        }
+        else {
+            m_n_ret_ref_step[phy_axis] = 3;
+        }
     }
         break;
     case 2:                            //运动完成
@@ -12084,9 +12105,13 @@ void ChannelEngine::EcatAxisFindRefWithZeroSignal(uint8_t phy_axis){
         unsigned int time_elpase = (time_now.tv_sec-m_time_ret_ref[phy_axis].tv_sec)*1000000+time_now.tv_usec-m_time_ret_ref[phy_axis].tv_usec;
         if(time_elpase >= 200000){ //延时200ms
             real_pos = m_p_axis_config[phy_axis].axis_home_pos[0];
-            this->ManualMoveAbs(phy_axis, m_p_axis_config[phy_axis].ret_ref_speed, m_p_axis_config[phy_axis].axis_home_pos[0], real_pos);
-            m_n_ret_ref_step[phy_axis]++;
-            std::cout << "step 17, move to " << m_p_axis_config[phy_axis].axis_home_pos[0] << std::endl;
+            if (this->ManualMoveAbs(phy_axis, m_p_axis_config[phy_axis].ret_ref_speed, m_p_axis_config[phy_axis].axis_home_pos[0], real_pos)) {
+                m_n_ret_ref_step[phy_axis]++;
+                std::cout << "step 17, move to " << m_p_axis_config[phy_axis].axis_home_pos[0] << std::endl;
+            }else {
+                m_n_ret_ref_step[phy_axis] = 19;
+                std::cout << "goto 19, limit err" << std::endl;
+            }
         }
     }
         break;
@@ -12504,9 +12529,16 @@ void ChannelEngine::EcatAxisFindRefNoZeroSignal(uint8_t phy_axis){
         unsigned int time_elpase = (time_now.tv_sec-m_time_ret_ref[phy_axis].tv_sec)*1000000+time_now.tv_usec-m_time_ret_ref[phy_axis].tv_usec;
         if(time_elpase >= 200000){ //延时200ms
             real_pos = m_p_axis_config[phy_axis].axis_home_pos[0];
-            this->ManualMoveAbs(phy_axis, m_p_axis_config[phy_axis].ret_ref_speed, m_p_axis_config[phy_axis].axis_home_pos[0], real_pos);
-            m_n_ret_ref_step[phy_axis]++;
-            std::cout << "step 17, move to " << m_p_axis_config[phy_axis].axis_home_pos[0] << std::endl;
+            if (this->ManualMoveAbs(phy_axis, m_p_axis_config[phy_axis].ret_ref_speed, m_p_axis_config[phy_axis].axis_home_pos[0], real_pos))
+            {
+                m_n_ret_ref_step[phy_axis]++;
+                std::cout << "step 17, move to " << m_p_axis_config[phy_axis].axis_home_pos[0] << std::endl;
+            }
+            else
+            {
+                m_n_ret_ref_step[phy_axis] = 19;
+                std::cout << "goto 19, limit err" << std::endl;
+            }
         }
     }
         break;

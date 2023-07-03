@@ -2064,14 +2064,13 @@ bool Compiler::GetLineData() {
     //
     //	gettimeofday(&tvStart, NULL);
 
-    printf("enter getlinedata\n");
+    //printf("enter getlinedata\n");
 
     bool res = true;
     if(m_p_file_map_info == nullptr || m_b_compile_over) {  //编译结束
-        //	printf("getline return, 111, %d, %d\n", (int)m_p_file_map_info, m_b_compile_over);
+        //printf("getline return, 111, %d, %d\n", (int)m_p_file_map_info, m_b_compile_over);
         return false;
     }
-
 
     this->m_p_lexer->Reset(); //词法分析器复位
     memset(m_line_buf, 0x00, static_cast<size_t>(kMaxLineSize));
@@ -2097,7 +2096,9 @@ bool Compiler::GetLineData() {
         }
         return true;
 #else
-        if(m_n_sub_program == MAIN_PROG) return false;
+        if(m_n_sub_program == MAIN_PROG){
+        	return false;
+        }
 #endif
     }
 
@@ -2552,11 +2553,9 @@ bool Compiler::RunAuxMsg(RecordMsg *msg) {
             //		break;
         case 99:   //M99
             if (m_n_sub_program != MAIN_PROG) {
-            	printf("===== run sub 11111111111111111\n");
             	this->ReturnFromSubProg();   //子程序则返回调用程序
             } else {
             	this->m_b_compile_over = true;
-            	printf("===== run main 22222222222222222\n");
             }
 
             //printf("compiler run M99\n");
@@ -4877,7 +4876,7 @@ bool Compiler::JumpToLoopEnd(LoopOffset &loop) {
 
     stack_loop.empty();
     while (this->GetLineData()) {
-        if (strcasestr(this->m_line_buf, "DO") != nullptr) {	//有DO指令
+    	if (strcasestr(this->m_line_buf, "DO") != nullptr) {	//有DO指令
             if(DoLexer()){//词法分析成功
                 if (m_lexer_result.macro_flag){//宏表达式
                     if(m_lexer_result.nc_code.macro_cmd.cmd == MACRO_CMD_WHILE_DO){

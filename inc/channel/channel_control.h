@@ -394,6 +394,7 @@ public:
 
 #ifdef NEW_WOOD_MACHINE
 	int m_n_order_mode;		   // 排序加工模式·
+	bool m_b_order_finished;   // 排程执行是否结束
     bool m_b_need_pre_prog;    // 前置程序待执行
     bool m_b_need_next_prog;   // 后置程序待执行
     bool m_b_in_next_prog;	   // 后置程序执行中

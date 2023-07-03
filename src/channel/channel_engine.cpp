@@ -5473,7 +5473,7 @@ bool ChannelEngine::Start(){
 #ifdef NEW_WOOD_MACHINE
             printf("====== channel engine m_n_order_mode: %d\n",
             		m_p_channel_control[chn].m_n_order_mode);
-            if(m_p_channel_control[chn].m_n_order_mode > 0){
+            if(m_p_channel_control[chn].m_n_order_mode > 0 && m_p_channel_control[chn].m_b_order_finished){
             	m_p_channel_control[chn].m_b_need_pre_prog = true;
             	m_p_channel_control[chn].m_b_in_next_prog = false;
             }

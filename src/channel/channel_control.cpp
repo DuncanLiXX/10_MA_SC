@@ -84,7 +84,6 @@ ChannelControl::ChannelControl() {
     current_order_index = -1;      // 当前加载排程列表序号
     memset(g110_file_name, 0, sizeof(g110_file_name));
     order_file_vector.clear();     // 排程文件列表
-
     std::ifstream order_list_file;
 	order_list_file.open("/cnc/order_list", ios::in);
 
@@ -608,6 +607,15 @@ void ChannelControl::InitialChannelStatus(){
 
     //	strcpy(m_channel_status.cur_nc_file_name, "20.nc");	//for test
     g_ptr_parm_manager->GetCurNcFile(this->m_n_channel_index, m_channel_status.cur_nc_file_name);
+
+#ifdef NEW_WOOD_MACHINE
+    // 初始化 从宏变量获取排程模式
+	double order_mode;
+	GetMacroVar(50002, order_mode);
+	m_n_order_mode = int(order_mode);
+	printf("===== m_n_order_mode: %d\n", m_n_order_mode);
+#endif
+
 }
 
 
@@ -3843,10 +3851,20 @@ void ChannelControl::ProcessHmiSetOrderListIndex(HMICmdFrame &cmd){
 
 	if(index >= 0 && index < order_file_vector.size()){
 		current_order_index = index;
-		// @todo  加载对应文件
+
+		char path[kMaxPathLen];
+		char file_name[255];
+
+		strcpy(path, PATH_NC_FILE);
+		strcpy(file_name, order_file_vector.at(index).c_str());
+		strcat(path, file_name);
+		strcpy(m_channel_status.cur_nc_file_name,file_name);
+		g_ptr_parm_manager->SetCurNcFile(m_n_channel_index, m_channel_status.cur_nc_file_name);    //修改当前NC文件
+		this->m_p_compiler->OpenFile(path);
+		this->SendOpenFileCmdToHmi(m_channel_status.cur_nc_file_name);
 
 	}else{
-		printf("order index invalid\n");
+		printf("===== order index invalid\n");
 	}
 
 	/*
@@ -5572,8 +5590,8 @@ bool ChannelControl::OutputData(RecordMsg *msg, bool flag_block){
 #ifdef NEW_WOOD_MACHINE
     	// 柜体模式且快钻功能打开
         if(this->m_p_g_reg->BOXM && this->m_p_g_reg->QDE && (this->m_p_g_reg->QDAXIS != 0)){  //快钻功能激活
-            LineMsg *linemsg = static_cast<LineMsg *>(msg);
-
+        //if(1){
+        	LineMsg *linemsg = static_cast<LineMsg *>(msg);
 
             uint8_t chn_axis = 0;
 

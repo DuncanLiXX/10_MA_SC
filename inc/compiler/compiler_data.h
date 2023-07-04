@@ -600,6 +600,8 @@ struct CompilerScene{
 	LoopRecList list_loop;		//循环体队列,记录本文件内的所有循环体起始位置
 	LoopOffsetStack stack_loop;     //循环位置数据
 
+    bool b_cur_dir_sub_prog = false;    //子程序是否在同目录中
+
 	/************************************************/
 	// 主容器 每个vector<IfElseOffset> 都是一个IF.......ENDIF记录
 	vector<vector<IfElseOffset>> node_vectors_vector;

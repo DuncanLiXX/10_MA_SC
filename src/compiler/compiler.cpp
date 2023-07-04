@@ -426,6 +426,7 @@ bool Compiler::SaveScene() {
     scene.list_subprog = *m_p_list_subprog;
     scene.list_loop = *m_p_list_loop;
     scene.stack_loop = m_stack_loop;
+    scene.b_cur_dir_sub_prog = m_n_cur_dir_sub_prog;
 
     /***************************************/
     scene.node_vectors_vector = m_node_vectors_vector;
@@ -520,6 +521,7 @@ bool Compiler::ReloadScene(bool bRecPos){
     *m_p_list_loop = scene.list_loop;
     m_stack_loop = scene.stack_loop;
 
+    m_n_cur_pre_sub_prog = scene.b_cur_dir_sub_prog;
     /***********************************/
     m_node_vectors_vector = scene.node_vectors_vector;
     m_node_stack_run = scene.node_stack_run;
@@ -1105,7 +1107,8 @@ void Compiler::PreScanLine1(char *buf, uint64_t offset, uint64_t line_no,
         pc++;
     }
 
-    if (sub_prog && digit_count > 0) { //找到子程序头
+    //if (sub_prog && digit_count > 0) { //找到子程序头
+    if (sub_prog && digit_count >= 4) { //找到子程序头
         SubProgOffset sub_offset;
         sub_offset.offset = offset;
         sub_offset.line_no = line_no;
@@ -1959,6 +1962,7 @@ void Compiler::Reset(){
     this->m_n_restart_line = 0;
     this->m_n_restart_mode = NOT_RESTART;
     m_n_cur_dir_sub_prog = false;
+    m_n_cur_pre_sub_prog = false;
 
     m_error_code = ERR_NONE;
 
@@ -2064,7 +2068,7 @@ bool Compiler::GetLineData() {
     //
     //	gettimeofday(&tvStart, NULL);
 
-    printf("enter getlinedata\n");
+    //printf("enter getlinedata\n");
 
     bool res = true;
     if(m_p_file_map_info == nullptr || m_b_compile_over) {  //编译结束
@@ -2303,7 +2307,7 @@ bool Compiler::CompileLine() {
     //
     //	gettimeofday(&tvStart, NULL);
 
-    //	printf("------> compile line ...\n");
+    //printf("------> compile line ...\n");
 
     bool res = true;
 
@@ -2374,6 +2378,7 @@ bool Compiler::RunMessage() {
                 ///printf("compiler run message  line no: %llu,  type: %d flag: %d\n ", cur_line, msg_type, msg->GetFlags().all);
             }
             // @test zk
+            std::cout << "RunMessage: " << (int)msg_type << std::endl;
 
             switch (msg_type) {
             case AUX_MSG:
@@ -2502,6 +2507,7 @@ bool Compiler::RunMessage() {
 
         node = this->m_p_block_msg_list->HeadNode();  //取下一个消息
     }
+
 
     /*if(res){
         printf("----compiler run message %llu success\n", lineNo);
@@ -4610,7 +4616,6 @@ bool Compiler::ReturnFromSubProg() {
 
         printf("exit pre scan thread\n");
 
-
         bool ret_macro_prog = (m_n_sub_program==MACRO_PROG)?true:false;    //返回的调用类型
 
         //局部变量出栈
@@ -4679,9 +4684,10 @@ int Compiler::FindSubProgram(int sub_name, bool file_only, uint8_t scanMode) {  
     //同目录下搜索
     //nc文件
     char filepath[kMaxPathLen] = { 0 };   //文件路径
-    if (scanMode == 1)
+    string dirName = m_p_file_map_info->GetDirName();
+    if (scanMode == 1 && dirName != PATH_NC_SUB_FILE && dirName != PATH_NC_MAC_FILE)
     {
-        string dirName = m_p_file_map_info->GetDirName();
+
         if (sub_name <= 9999)
             sprintf(filepath, "%sO%04d.nc", dirName.c_str(), sub_name);   //拼接文件绝对路径
         else
@@ -4776,7 +4782,7 @@ int Compiler::FindSubProgram(int sub_name, bool file_only, uint8_t scanMode) {  
         sprintf(filepath, "%sO%04d.nc", PATH_NC_MAC_FILE, sub_name);  //拼接文件绝对路径
     else
         sprintf(filepath, "%sO%d.nc", PATH_NC_MAC_FILE, sub_name);   //拼接文件绝对路径
-    printf("sys sub program file 3: %s\n", filepath);
+    printf("sys sub program file 5: %s\n", filepath);
     if (access(filepath, F_OK) == 0) {	//存在对应文件
         return 10;
     }else{
@@ -4797,7 +4803,7 @@ int Compiler::FindSubProgram(int sub_name, bool file_only, uint8_t scanMode) {  
         sprintf(filepath, "%sO%04d.iso", PATH_NC_MAC_FILE, sub_name);  //拼接文件绝对路径
     else
         sprintf(filepath, "%sO%d.iso", PATH_NC_MAC_FILE, sub_name);   //拼接文件绝对路径
-    printf("sys sub program file 4: %s\n", filepath);
+    printf("sys sub program file 6: %s\n", filepath);
     if (access(filepath, F_OK) == 0) {	//存在对应文件
         return 12;
     }else{

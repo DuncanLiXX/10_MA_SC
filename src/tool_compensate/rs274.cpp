@@ -1888,6 +1888,11 @@ void STRAIGHT_FEED(int line_number,
 
 	DPointChn source(temp_point[0], temp_point[1], temp_point[2]);
 	DPointChn target(x, y, z);
+	int axis_mask = 0;
+	if(x != temp_point[0]) axis_mask |= 1;
+	if(y != temp_point[1]) axis_mask |= 2;
+	if(z != temp_point[2]) axis_mask |= 4;
+
 	temp_point[0] = x;
 	temp_point[1] = y;
 	temp_point[2] = z;
@@ -1899,7 +1904,7 @@ void STRAIGHT_FEED(int line_number,
 	target.SetAxisValue(7, v);
 
 
-	RecordMsg *new_msg = new LineMsg(source, target, feed_rate, 7);
+	RecordMsg *new_msg = new LineMsg(source, target, feed_rate, axis_mask);
 	if(new_msg == nullptr){
 		//TODO ÄÚ´æ·ÖÅäÊ§°Ü£¬¸æ¾¯
 		CreateError(ERR_MEMORY_NEW, FATAL_LEVEL, CLEAR_BY_RESET_POWER);

@@ -2728,6 +2728,7 @@ void ChannelControl::ProcessHmiCmd(HMICmdFrame &cmd){
         this->ProcessHmiGetMacroVarCmd(cmd);
         break;
     case CMD_HMI_SET_MACRO_VAR:        //HMI向SC设置宏变量寄存器的值   31
+    case CMD_HMI_MEMSET_MACRO_VALUE:
         this->ProcessHmiSetMacroVarCmd(cmd);
         break;
 
@@ -2780,6 +2781,12 @@ void ChannelControl::ProcessHmiCmd(HMICmdFrame &cmd){
     case CMD_HMI_GET_ORDER_FILE:
     	this->ProcessHmiGetOrderFile(cmd);
     	break;
+    case CMD_HMI_INSERT_MACRO_VALUE:
+    	this->ProcessHmiInsertMacroValue(cmd);
+    	break;
+	case CMD_HMI_POP_MACRO_VALUE:
+		this->ProcessHmiPopMacroValue(cmd);
+		break;
 #endif
 
     default:
@@ -2852,13 +2859,44 @@ void ChannelControl::ProcessHmiSetMacroVarCmd(HMICmdFrame &cmd){
         return;
     }
     if(cmd.data_len < 5){	//数据长度不合法
-        cmd.cmd_extension = FAILED;
+        printf("cmd.data_len : %d\n", cmd.data_len);
+    	cmd.cmd_extension = FAILED;
         this->m_p_hmi_comm->SendCmd(cmd);
         g_ptr_trace->PrintLog(LOG_ALARM, "ChannelControl::ProcessHmiSetMacroVarCmd()数据长度不合法，data_len = %hu！", cmd.data_len);
         return;
     }
+
+
     memcpy(&start_index, &cmd.data[0], 4);
-    memcpy(&count, &cmd.data[4], 1);
+    memcpy(&count, &cmd.data[4], 4);
+
+
+    if(cmd.cmd == CMD_HMI_MEMSET_MACRO_VALUE){
+    	int start;
+    	int len;
+    	double value;
+    	memcpy(&start, &cmd.data[0], 4);
+    	memcpy(&len, &cmd.data[4], 4);
+    	memcpy(&value, &cmd.data[8], 8);
+
+    	if(start < 50000 || start >55000){
+    		printf("macro index out of range \n");
+    		cmd.cmd_extension = FAILED;
+    		m_p_hmi_comm->SendCmd(cmd);
+    	}
+
+    	if((start + len) < 50000 || (start + len) >55000){
+     		printf("macro index out of range \n");
+    		cmd.cmd_extension = FAILED;
+     		m_p_hmi_comm->SendCmd(cmd);
+    	}
+
+    	this->m_macro_variable.MemsetMacroVar(start, len, value);
+
+		cmd.cmd_extension = SUCCEED;
+		this->m_p_hmi_comm->SendCmd(cmd);
+    	return;
+    }
 
     if(count > 100 || cmd.data_len != 5+(sizeof(double)+1)*count){ //数据长度不合法
         cmd.cmd_extension = FAILED;
@@ -3825,6 +3863,38 @@ void ChannelControl::ProcessMdaData(HMICmdFrame &cmd){
 
 }
 
+void ChannelControl::ProcessHmiInsertMacroValue(HMICmdFrame cmd){
+	cmd.frame_number |= 0x8000;   //设置回复标志
+
+	int index, end;
+	double data;
+
+	memcpy(&index, &cmd.data[0], 4);
+	memcpy(&end, &cmd.data[4], 4);
+	memcpy(&data, &cmd.data[8], 8);
+
+	this->m_macro_variable.InsertMacroVar(index, end, data);
+
+	printf("===== %d %d %lf\n", index, end, data);
+
+	cmd.cmd_extension = SUCCEED;
+	this->m_p_hmi_comm->SendCmd(cmd);
+}
+
+void ChannelControl::ProcessHmiPopMacroValue(HMICmdFrame cmd){
+	cmd.frame_number |= 0x8000;   //设置回复标志
+
+	int index, end;
+
+	memcpy(&index, &cmd.data[0], 4);
+	memcpy(&end, &cmd.data[4], 4);
+
+	this->m_macro_variable.PopMacroVar(index, end);
+	printf("===== %d %d\n", index, end);
+
+	cmd.cmd_extension = SUCCEED;
+	this->m_p_hmi_comm->SendCmd(cmd);
+}
 
 #ifdef NEW_WOOD_MACHINE
 
@@ -4156,8 +4226,6 @@ bool ChannelControl::SendManualToolMeasureResToHmi(bool res){
     cmd.cmd = CMD_SC_TOOL_MEASURE_OVER;
     cmd.cmd_extension = res?SUCCEED:FAILED;
     cmd.data_len = 0;
-
-
     return this->m_p_hmi_comm->SendCmd(cmd);
 }
 

@@ -59,6 +59,10 @@ public:
 
 	int CopyVar(char *buf, uint32_t max_size, uint32_t start_index, uint8_t count);		//拷贝变量数据
 
+	void MemsetMacroVar(int start, int count, double value);
+	void InsertMacroVar(int index, int end, double value);
+	void PopMacroVar(int index, int end);
+
 private:
 	void InitKeepVar();					//初始化非易失性宏变量
 	void InitMacroVar();
@@ -66,6 +70,7 @@ private:
 	bool GetSysVar(int index, int &value);		    //获取系统变量，int型
 	bool SetSysVar(int index, double value);		//设置系统变量，double型
 	bool SetSysVar(int index, int value);			//设置系统变量，int型
+	void SyncUserMacroVar();
 
 private:
 	uint8_t m_n_channel_index;                  //所属通道

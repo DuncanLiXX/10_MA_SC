@@ -720,3 +720,61 @@ LocalVarScene &LocalVarScene::operator =(LocalVarScene &one){
 
 	return *this;
 }
+
+
+void Variable::MemsetMacroVar(int start, int count, double value){
+
+	if(start >= 50000){
+		int idx = start - 50000;
+		printf("===== start %d count %d value %lf\n", start, count, value);
+		for(int i=idx; i<idx+count; i++){
+			m_b_init_user_macro[i] = 1;
+			m_df_user_macro[i] = value;
+			SaveMacroComm(start + i);
+		}
+	}
+	return;
+}
+
+void Variable::InsertMacroVar(int index, int end, double value){
+
+	if(index >= 50000){
+		int idx = index - 50000;
+		int tail = end - 50000;
+		for(int i = tail; i>idx; i--){
+			m_df_user_macro[i] = m_df_user_macro[i-1];
+		}
+		m_df_user_macro[idx] = value;
+	}
+
+	SyncUserMacroVar();
+	return ;
+}
+
+void Variable::PopMacroVar(int index, int end){
+
+	if(index >= 50000){
+		int idx = index - 50000;
+		int tail = end - 50000;
+
+		for(int i=idx; i<tail; i++){
+			m_df_user_macro[i] = m_df_user_macro[i+1];
+		}
+		m_df_user_macro[tail] = 0;
+	}
+
+	SyncUserMacroVar();
+	return;
+}
+
+void Variable::SyncUserMacroVar(){
+	fseek(this->m_fp_macro_var, 0, SEEK_SET);
+
+	fwrite(m_b_init_user_macro, sizeof(m_b_init_user_macro), 1, m_fp_macro_var);
+	fwrite(m_df_user_macro, sizeof(m_df_user_macro), 1, m_fp_macro_var);
+
+	if(m_fp_macro_var != nullptr){
+		fsync(fileno(m_fp_macro_var));
+	}
+	return ;
+}

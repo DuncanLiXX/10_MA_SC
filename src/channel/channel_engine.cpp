@@ -1477,8 +1477,8 @@ void ChannelEngine::PoweroffHandler(int signo, siginfo_t *info, void *context){
  * @brief 掉电时保存数据
  */
 void ChannelEngine::SaveDataPoweroff(){
-    //system("date >> save.txt");
-    //system("echo \"start\" >> save.txt");
+    system("date >> save.txt");
+    system("echo \"start\" >> save.txt");
     //保存PMC寄存器数据
     if((this->m_mask_import_param & (0x01<<CONFIG_PMC_REG)) == 0)
         this->m_p_pmc_reg->SaveRegData();
@@ -1504,9 +1504,9 @@ void ChannelEngine::SaveDataPoweroff(){
     delete g_ptr_trace;
     g_ptr_trace = nullptr;
 
-    //system("date >> save.txt");
-    //system("echo \"end\" >> save.txt");
-    //system("sync");
+    system("date >> save.txt");
+    system("echo \"end\" >> save.txt");
+    system("sync");
 }
 
 /**
@@ -3015,6 +3015,9 @@ void ChannelEngine::ProcessHmiCmd(HMICmdFrame &cmd){
 	case CMD_HMI_SET_ORDER_MODE:
     case CMD_HMI_GET_ORDER_LEN:
     case CMD_HMI_GET_ORDER_FILE:
+    case CMD_HMI_MEMSET_MACRO_VALUE:
+    case CMD_HMI_INSERT_MACRO_VALUE:
+    case CMD_HMI_POP_MACRO_VALUE:
 		this->m_p_channel_control[0].ProcessHmiCmd(cmd);
 		// 暂时不考虑多通道
 		/*if(cmd.channel_index < this->m_p_general_config->chn_count)

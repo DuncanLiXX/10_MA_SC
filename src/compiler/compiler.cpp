@@ -1574,7 +1574,6 @@ bool Compiler::OpenFile(const char *file, bool sub_flag) {
     auto func = std::bind(&Compiler::PreScan, this);
 	ans = std::async(std::launch::async, func);
 
-
 #ifdef USES_WOOD_MACHINE
     m_p_list_spd_start->Clear();
 #endif

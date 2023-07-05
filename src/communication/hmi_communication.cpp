@@ -1010,6 +1010,9 @@ int HMICommunication::ProcessHmiCmd(){
             case CMD_HMI_SET_ORDER_MODE:
             case CMD_HMI_GET_ORDER_LEN:
             case CMD_HMI_GET_ORDER_FILE:
+            case CMD_HMI_MEMSET_MACRO_VALUE:
+            case CMD_HMI_INSERT_MACRO_VALUE:
+            case CMD_HMI_POP_MACRO_VALUE:
 #ifdef USES_GRIND_MACHINE
 			case CMD_SC_MECH_ARM_ERR:         //HMI响应机械手告警指令
 #endif

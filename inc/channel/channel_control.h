@@ -487,6 +487,8 @@ private:
 	void ProcessHmiSetCurMachPosCmd(HMICmdFrame &cmd);      //处理HMI设置轴当前位置的机械坐标命令
 	void ProcessHmiClearMsgCmd(HMICmdFrame &cmd);     //处理HMI清除消息命令
 
+	void ProcessHmiInsertMacroValue(HMICmdFrame cmd);
+	void ProcessHmiPopMacroValue(HMICmdFrame cmd);
 #ifdef NEW_WOOD_MACHINE
 	void ProcessHmiAppendOrderListFile(HMICmdFrame &cmd);
 	void ProcessHmiSetOrderListIndex(HMICmdFrame &cmd);
@@ -796,7 +798,6 @@ private://私有成员变量
 	struct timeval m_time_start_mc;    //最后一次发送MC启动命令的时间，用于读取MC运行到位标志时的延时判断
 
 	Variable m_macro_variable;          //宏变量
-
 	PmcRegister *m_p_pmc_reg;			//PMC寄存器
 	FRegBits *m_p_f_reg;			    //本通道F寄存器指针
 	const GRegBits *m_p_g_reg;			//本通道G寄存器指针

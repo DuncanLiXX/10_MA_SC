@@ -3297,6 +3297,7 @@ void ChannelControl::DoRestart(uint64_t line_no){
             this->m_p_output_msg_list_auto->InsertBefore(msg, node);   //插入工件坐标系设定指令
         }
     }
+
     if(m_channel_status.cur_d_code != m_mode_restart.cur_d_code ||
             m_channel_status.gmode[7] != m_mode_restart.gmode[7]){  //G40模态不匹配或D值不同
         printf("设置坐G40模态，%hu to %hu， D %hhu to %hhu\n", m_channel_status.gmode[7], m_mode_restart.gmode[7],
@@ -3356,6 +3357,7 @@ void ChannelControl::DoRestart(uint64_t line_no){
             this->m_p_output_msg_list_auto->InsertBefore(msg, node);   //插入S值指定指令
         }
     }
+
     if(this->m_channel_status.spindle_dir != this->m_mode_restart.spindle_dir){  //主轴工作状态不同
         int mcode = 5;  //默认M05
         if(m_mode_restart.spindle_dir == SPD_DIR_POSITIVE)
@@ -3368,7 +3370,9 @@ void ChannelControl::DoRestart(uint64_t line_no){
             this->m_p_output_msg_list_auto->InsertBefore(msg, node);   //插入主轴旋转指令
         }
     }
+    // TODO 恢复用户M代码
 
+    // 执行运动指令消息
     if(this->m_channel_rt_status.cur_pos_work != m_mode_restart.pos_target){   //当前位置不是起点位置
         printf("坐标不一致，[%lf, %lf, %lf] to [%lf, %lf, %lf]\n", m_channel_rt_status.cur_pos_work.m_df_point[0], m_channel_rt_status.cur_pos_work.m_df_point[1],
                 m_channel_rt_status.cur_pos_work.m_df_point[2], m_mode_restart.pos_target.m_df_point[0], m_mode_restart.pos_target.m_df_point[1],
@@ -3458,7 +3462,6 @@ void ChannelControl::DoRestart(uint64_t line_no){
         msg->SetLineNo(line_no);
         this->m_p_output_msg_list_auto->InsertBefore(msg, node);   //插入加工复位完成指令
     }
-
 
     //设置RESTART标志
     this->m_n_restart_step = 2;

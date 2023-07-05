@@ -256,6 +256,7 @@ enum HMICmdCode {
     CMD_SC_NOTIFY_TRACELOG,         //SC通知HMI操作记录        0x7F
     CMD_SC_NOTIFY_PROTECT_STATUS,   //SC通知HMI保护状态        0x80
     CMD_SC_NOTIFY_GATHER_FINISH,    //SC通知HMI采集完成        0x81
+    CMD_SC_DISPLAY_MDI_FILE,        //SC通知子程序显示         0x82
 	CMD_HMI_GUARD = 255       //HMI命令字卫兵 0xFF
 };
 

@@ -723,7 +723,7 @@ void ChannelControl::Reset(){
 //    }
 
     m_n_subprog_count = 0;
-    //m_n_macroprog_count = 0;
+    m_n_macroprog_count = 0;
     m_b_ret_from_macroprog = false;
     m_b_init_compiler_pos = false;  //编译器初始位置需要重新初始化
     m_b_need_change_to_pause = false;
@@ -736,6 +736,13 @@ void ChannelControl::Reset(){
         strcpy(file_name, PATH_NC_FILE);
         strcat(file_name, m_channel_status.cur_nc_file_name);   //拼接文件绝对路径
         this->SendOpenFileCmdToHmi(m_channel_status.cur_nc_file_name);
+    }
+    if(m_channel_status.chn_work_mode == MDA_MODE){
+        char file_name[128];
+        memset(file_name, 0x0, 128);
+        strcpy(file_name, MDI_FILE_NAME);
+        //strcat(file_name, m_channel_status.cur_nc_file_name);   //拼接文件绝对路径
+        this->SendOpenFileCmdToHmi(file_name);
     }
 
     this->m_macro_variable.Reset();   //宏变量复位
@@ -2048,7 +2055,6 @@ void ChannelControl::SetCurLineNoFromMc(){
     else if (m_p_compiler->m_n_cur_dir_sub_prog)
     {
         m_b_lineno_from_mc = true;
-        //m_p_compiler->m_n_cur_dir_sub_prog = false;
     }
 }
 
@@ -2482,6 +2488,11 @@ bool ChannelControl::SubProgIsCurDir(uint8_t type)
         m_p_compiler->m_n_cur_dir_sub_prog = true;
         return true;
     }
+    else if (type == 1)
+    {// 本程序内也需要显示
+        m_p_compiler->m_n_cur_dir_sub_prog = true;
+        return true;
+    }
     else
     {
         m_p_compiler->m_n_cur_dir_sub_prog = false;
@@ -2566,6 +2577,7 @@ void ChannelControl::SendMonitorData(bool bAxis, bool btime){
 
     //@test zk  MDA 模式下显示行号
     if(m_channel_mc_status.cur_mode == MC_MODE_MDA &&
+            m_b_lineno_from_mc &&/*llx add 解决子程序行号刷新异常问题*/
             m_channel_mc_status.cur_line_no > 0 &&
             !m_b_manual_call_macro/*llx add 宏程序调用不能显示行号*/){ //没有调用宏程序
     	m_channel_rt_status.line_no = m_channel_mc_status.cur_line_no;
@@ -4293,6 +4305,20 @@ bool ChannelControl::SendOpenFileCmdToHmi(char *filename){
     return this->m_p_hmi_comm->SendCmd(cmd);
 }
 
+bool ChannelControl::SendMDIOpenFileCmdToHmi(char *filename)
+{
+    HMICmdFrame cmd;
+    cmd.frame_number = 0;
+    cmd.channel_index = m_n_channel_index;
+    cmd.cmd = CMD_SC_DISPLAY_MDI_FILE;
+    cmd.cmd_extension = 0;
+    strcpy(cmd.data, filename);
+    cmd.data_len = strlen(cmd.data);
+
+    std::cout << "------------> SendMDIOpenFileCmdToHmi: " << filename << std::endl;
+
+    return this->m_p_hmi_comm->SendCmd(cmd);
+}
 
 /**
  * @brief 设置加工状态
@@ -6042,7 +6068,6 @@ bool ChannelControl::IsStepMode(){
             && (m_n_add_prog_type == NONE_ADD)    //非附加程序运行状态
         #endif
             ){
-        //if(this->m_n_macroprog_count == 0 || this->m_p_general_config->debug_mode > 0) //非宏程序调用或者调试模式打开
         if((this->m_n_macroprog_count == 0) || m_p_compiler->m_n_cur_dir_sub_prog || this->m_p_general_config->debug_mode > 0) //非宏程序调用或者调试模式打开
             return true;
     }
@@ -7561,6 +7586,76 @@ void ChannelControl::ExecMCode(AuxMsg *msg, uint8_t index){
 }
 
 /**
+ * @brief 给 HMI 发送子程序信息（子程序名和行号）
+ * @param curDir 是否在当前目录中查找
+ */
+void ChannelControl::UpdateSubCallToHmi(int type, int index, int lineNo, bool curDir)
+{
+    bool need = false;// 是否需要子程序调试
+    need = this->m_p_general_config->debug_mode > 0 || (curDir && SubProgIsCurDir(type));
+
+    if (need)// 子程序跳转
+    {
+        if(type != 1)
+        { //子程序不在本程序内
+            if (this->m_channel_status.chn_work_mode == AUTO_MODE)
+            {
+                char file[kMaxFileNameLen];
+                memset(file, 0x00, kMaxFileNameLen);
+                m_p_compiler->GetMacroSubProgPath(type, index, true, file);
+                this->SendOpenFileCmdToHmi(file);
+                SetCurLineNo(1);
+            }
+            else if (this->m_channel_status.chn_work_mode == MDA_MODE)
+            {
+                char file[kMaxFileNameLen];
+                memset(file, 0x00, kMaxFileNameLen);
+                m_p_compiler->GetMacroSubProgPath(type, index, true, file);
+                this->SendMDIOpenFileCmdToHmi(file);
+                SetCurLineNo(1);
+            }
+        }
+        //else
+        //{
+        //    SetCurLineNo(msg->GetLineNo());
+        //}
+    }
+    else
+    {// 子程序不跳转
+        this->SetMcStepMode(false);
+        SetCurLineNo(lineNo);
+    }
+    return;
+}
+
+/**
+ * @brief 给 HMI 发送调用返回后的程序信息（子程序名和行号）
+ * @param retMsg
+ */
+void ChannelControl::UpdateReturnCallToHmi(SubProgReturnMsg *ret_msg)
+{
+#ifdef USES_ADDITIONAL_PROGRAM
+    if(this->m_channel_status.chn_work_mode == AUTO_MODE && m_n_add_prog_type == NONE_ADD &&
+            (!ret_msg->IsRetFromMacroProg() || this->m_p_general_config->debug_mode > 0)){    //自动模式，并且是子程序返回或者调试模式打开
+#else
+    if(this->m_channel_status.chn_work_mode == AUTO_MODE &&
+            (!ret_msg->IsRetFromMacroProg() || this->m_p_general_config->debug_mode > 0 || m_p_compiler->m_n_cur_dir_sub_prog)){    //自动模式，并且是子程序返回或者调试模式打开
+#endif
+        char file[kMaxFileNameLen];
+        memset(file, 0x00, kMaxFileNameLen);
+        ret_msg->GetReturnFileName(file);
+        this->SendOpenFileCmdToHmi(file);
+    }
+    else if(this->m_channel_status.chn_work_mode == MDA_MODE &&
+             (!ret_msg->IsRetFromMacroProg() || this->m_p_general_config->debug_mode > 0 || m_p_compiler->m_n_cur_dir_sub_prog)){    //自动模式，并且是子程序返回或者调试模式打开
+        char file[kMaxFileNameLen];
+        memset(file, 0x00, kMaxFileNameLen);
+        strcpy(file, MDI_FILE_NAME);
+        this->SendMDIOpenFileCmdToHmi(file);
+    }
+}
+
+/**
  * @brief 实际执行直线切削指令消息
  * @param msg : 指令消息
  * @param flag_block : 是否需要强制附上快结束标志
@@ -8692,27 +8787,17 @@ bool ChannelControl::ExecuteLoopMsg(RecordMsg *msg){
     }
 
     //TODO 向HMI发送命令打开子文件
-    if(this->m_p_general_config->debug_mode > 0){  //调式模式下，打开宏程序文件
-        if(this->m_channel_status.chn_work_mode == AUTO_MODE){
-            if(loopmsg->GetMacroProgType() > 1){
-                char file[kMaxFileNameLen];
-                memset(file, 0x00, kMaxFileNameLen);
-                //loopmsg->GetMacroProgName(file, false);
-                m_p_compiler->GetMacroSubProgPath(loopmsg->GetMacroProgType(), loopmsg->GetMacroProgIndex(), false, file);
-                this->SendOpenFileCmdToHmi(file);
-            }
-        }
-    }
+    UpdateSubCallToHmi(loopmsg->GetMacroProgType(), loopmsg->GetMacroProgIndex(), loopmsg->GetLineNo());
 
     //设置当前行号
-    SetCurLineNo(msg->GetLineNo());
+    //SetCurLineNo(msg->GetLineNo());
 
     m_n_subprog_count++;
     m_n_macroprog_count++;
 
-    if(this->m_p_general_config->debug_mode == 0){
-        this->SetMcStepMode(false);
-    }
+    //if(this->m_p_general_config->debug_mode == 0){
+    //    this->SetMcStepMode(false);
+    //}
 
     //更新模态
     if(cmd == G89_CMD)
@@ -9358,33 +9443,8 @@ bool ChannelControl::ExecuteSubProgCallMsg(RecordMsg *msg){
 
             if(sub_msg->GetExecStep(0) == 0){
 
-                bool need = false;
-                //TODO 向HMI发送命令打开子文件
-                if(this->m_channel_status.chn_work_mode == AUTO_MODE){
-                    if (this->m_p_general_config->debug_mode > 0 || SubProgIsCurDir(sub_msg->GetSubProgType())) {
-                    	char file[kMaxFileNameLen];
-                        memset(file, 0x00, kMaxFileNameLen);
-                        m_p_compiler->GetMacroSubProgPath(sub_msg->GetSubProgType(), sub_msg->GetSubProgIndex(), false, file);
-                        //sub_msg->GetSubProgName(file, false);
-                        this->SendOpenFileCmdToHmi(file);
-                        need = true;
-                    }
-                    else
-                    {
-                        this->SetMcStepMode(false);
-                    }
-                //}
-                }
+                UpdateSubCallToHmi(sub_msg->GetSubProgType(), sub_msg->GetSubProgIndex(), sub_msg->GetLineNo(), true);
 
-                //设置当前行号
-                if (need)
-                {
-                    SetCurLineNo(1);
-                }
-                else
-                {
-                    SetCurLineNo(msg->GetLineNo());
-                }
                 m_n_subprog_count++;
                 this->m_p_f_reg->DM98 = 1;
                 sub_msg->IncreaseExecStep(0);
@@ -9488,41 +9548,47 @@ bool ChannelControl::ExecuteMacroProgCallMsg(RecordMsg *msg){
             return false;
         }
 
-        bool need = false;
-        //TODO 向HMI发送命令打开子文件
-        if(this->m_p_general_config->debug_mode > 0 || (/*!this->IsStepMode() 65也需要跳转 &&*/ SubProgIsCurDir(macro_msg->GetMacroProgType()))){  //调式模式下，打开宏程序文件
-            if(this->m_channel_status.chn_work_mode == AUTO_MODE){
-                if(macro_msg->GetMacroProgType() > 1){
-                    char file[kMaxFileNameLen];
-                    memset(file, 0x00, kMaxFileNameLen);
-                    //macro_msg->GetMacroProgName(file, false);
-                    m_p_compiler->GetMacroSubProgPath(macro_msg->GetMacroProgType(), macro_msg->GetMacroProgIndex(), false, file);
-                    this->SendOpenFileCmdToHmi(file);
-                    need = true;
-                }
-                else
-                {
-                    this->SetMcStepMode(false);
-                }
-            }
-        }
+//        bool need = false;
+//        //TODO 向HMI发送命令打开子文件
+//        if(this->m_p_general_config->debug_mode > 0 || (/*!this->IsStepMode() 65也需要跳转 &&*/ SubProgIsCurDir(macro_msg->GetMacroProgType()))){  //调式模式下，打开宏程序文件
+//            if(this->m_channel_status.chn_work_mode == AUTO_MODE){
+//                if(macro_msg->GetMacroProgType() != 1){
+//                    char file[kMaxFileNameLen];
+//                    memset(file, 0x00, kMaxFileNameLen);
+//                    //macro_msg->GetMacroProgName(file, false);
+//                    m_p_compiler->GetMacroSubProgPath(macro_msg->GetMacroProgType(), macro_msg->GetMacroProgIndex(), false, file);
+//                    this->SendOpenFileCmdToHmi(file);
 
-        //设置当前行号
-        if (need)
-        {
-            SetCurLineNo(1);
-        }
-        else
-        {
-            SetCurLineNo(msg->GetLineNo());
-        }
+//                }
+//                need = true;
+//            }
+//            else
+//            {
+//                this->SetMcStepMode(false);
+//            }
+//        }
+//        else
+//        {
+//            this->SetMcStepMode(false);
+//        }
+
+//        //设置当前行号
+//        if (need && macro_msg->GetMacroProgType() != 1)
+//        {
+//            SetCurLineNo(1);
+//        }
+//        else
+//        {
+//            SetCurLineNo(msg->GetLineNo());
+//        }
+        UpdateSubCallToHmi(macro_msg->GetMacroProgType(), macro_msg->GetMacroProgIndex(), macro_msg->GetLineNo(), true);
 
         m_n_subprog_count++;
         m_n_macroprog_count++;
 
-        if(this->m_p_general_config->debug_mode == 0){
-            this->SetMcStepMode(false);
-        }
+        //if(this->m_p_general_config->debug_mode == 0){
+        //    this->SetMcStepMode(false);
+        //}
 
     }
 
@@ -9591,17 +9657,7 @@ bool ChannelControl::ExecuteAutoToolMeasureMsg(RecordMsg *msg){
     }
 
     //TODO 向HMI发送命令打开子文件
-    if(this->m_p_general_config->debug_mode > 0){  //调式模式下，打开宏程序文件
-        if(this->m_channel_status.chn_work_mode == AUTO_MODE){
-            if(macro_msg->GetMacroProgType() > 1){
-                char file[kMaxFileNameLen];
-                memset(file, 0x00, kMaxFileNameLen);
-                //macro_msg->GetMacroProgName(file, false);
-                m_p_compiler->GetMacroSubProgPath(macro_msg->GetMacroProgType(), macro_msg->GetMacroProgIndex(), false, file);
-                this->SendOpenFileCmdToHmi(file);
-            }
-        }
-    }
+    UpdateSubCallToHmi(macro_msg->GetMacroProgType(), macro_msg->GetMacroProgIndex(), macro_msg->GetLineNo());
 
     //设置当前行号
     SetCurLineNo(msg->GetLineNo());
@@ -9609,10 +9665,10 @@ bool ChannelControl::ExecuteAutoToolMeasureMsg(RecordMsg *msg){
     m_n_subprog_count++;
     m_n_macroprog_count++;
 
-    if(this->m_p_general_config->debug_mode == 0){  //非调试模式则单段无效
-        this->SetMcStepMode(false);
+    //if(this->m_p_general_config->debug_mode == 0){  //非调试模式则单段无效
+    //    this->SetMcStepMode(false);
         //	this->m_b_need_change_to_pause = false;
-    }
+    //}
     return true;
 }
 
@@ -9741,7 +9797,7 @@ bool ChannelControl::ExecuteSubProgReturnMsg(RecordMsg *msg){
         if(this->ReadMcMoveDataCount() > 0 || !block_over ||
                 m_channel_status.machining_state == MS_PAUSED ||
                 m_channel_status.machining_state == MS_WARNING){ //未达到执行条件
-            //	printf("aux exec return: 0x%x\n", m_p_mc_comm->ReadRunOverValue());
+            //printf("aux exec return: 0x%x\n", m_p_mc_comm->ReadRunOverValue());
             return false;    //还未运行到位
         }
         else if(++count < limit){
@@ -9752,37 +9808,21 @@ bool ChannelControl::ExecuteSubProgReturnMsg(RecordMsg *msg){
             break;
     }
 
-    m_p_compiler->m_n_cur_dir_sub_prog = false;//test
-
     if(this->IsStepMode() && this->m_b_need_change_to_pause){//单段，切换暂停状态
         this->m_b_need_change_to_pause = false;
         m_n_run_thread_state = PAUSE;
         SetMachineState(MS_PAUSED);
         return false;
     }
-
-
-    std::cout << "m_n_cur_dir_sub_prog -->        " <<  (int)m_p_compiler->m_n_cur_dir_sub_prog << std::endl;
     //TODO 向HMI发送命令打开上级文件文件
-#ifdef USES_ADDITIONAL_PROGRAM
-    if(this->m_channel_status.chn_work_mode == AUTO_MODE && m_n_add_prog_type == NONE_ADD &&
-            (!ret_msg->IsRetFromMacroProg() || this->m_p_general_config->debug_mode > 0)){    //自动模式，并且是子程序返回或者调试模式打开
-#else
-    if(this->m_channel_status.chn_work_mode == AUTO_MODE &&
-            (!ret_msg->IsRetFromMacroProg() || this->m_p_general_config->debug_mode > 0 || m_p_compiler->m_n_cur_dir_sub_prog)){    //自动模式，并且是子程序返回或者调试模式打开
-#endif
-        char file[kMaxFileNameLen];
-        memset(file, 0x00, kMaxFileNameLen);
-        ret_msg->GetReturnFileName(file);
-        this->SendOpenFileCmdToHmi(file);
-
-        printf("execute sub program return msg: file = %s\n", file);
-    }
+    UpdateReturnCallToHmi(ret_msg);
 
     std::cout << "1 " << (int)ret_msg->IsRetFromMacroProg() << " 2 " << (int)m_n_macroprog_count << std::endl;
     std::cout << "3 " << (int)IsStepMode() << std::endl;
     std::cout << "4 " << (int)m_n_macroprog_count << " 5 " << (int)m_n_subprog_count << std::endl;
-    std::cout << "m_n_cur_dir_sub_prog " << m_p_compiler->m_n_cur_dir_sub_prog << std::endl;
+
+    std::cout << "m_n_cur_dir_sub_prog " << m_p_compiler->m_n_cur_dir_sub_prog << "m_p_compiler->m_n_cur_pre_sub_prog: " << m_p_compiler->m_n_cur_pre_sub_prog << std::endl;
+    m_p_compiler->m_n_cur_dir_sub_prog = m_p_compiler->m_n_cur_pre_sub_prog;
     //设置当前行号
     if(ret_msg->IsRetFromMacroProg() && m_n_macroprog_count > 0){  //宏程序返回，不更新行号
     	m_n_macroprog_count--;
@@ -9799,7 +9839,6 @@ bool ChannelControl::ExecuteSubProgReturnMsg(RecordMsg *msg){
             this->SetMcStepMode(true);
         }
     }
-
     return true;
 }
 
@@ -11432,7 +11471,6 @@ void ChannelControl::SetFuncState(int state, uint8_t mode){
 	if(m_b_in_next_prog) return;
 #endif
 
-
 	bool cur_check = m_channel_status.func_state_flags.CheckMask(state);
     if(mode != 10){
         if(mode == 0 && !cur_check)  //无变化
@@ -12336,6 +12374,8 @@ void ChannelControl::SetMcStepMode(bool flag){
     cmd.data.axis_index = NO_AXIS;
     cmd.data.cmd = CMD_MC_SET_STEP_MODE;
     cmd.data.data[0] = flag?1:0;
+
+    std::cout << ">>>>>>>>>>>>-------------------------------> SetMcStepMode: " << (int)flag << std::endl;
 
     if(!this->m_b_mc_on_arm)
         m_p_mc_comm->WriteCmd(cmd);

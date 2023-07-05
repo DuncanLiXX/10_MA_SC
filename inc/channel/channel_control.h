@@ -227,6 +227,7 @@ public:
 	int GetCurManualStep();	//获取当前手动单步步长设置
 
 	bool SendOpenFileCmdToHmi(char *filename); 	//向HMI发送切换NC文件显示命令
+    bool SendMDIOpenFileCmdToHmi(char *filename); //向HMI发送MDI切换NC文件显示命令
 
 	void SpindleOut(int dir, int speed=0);			//主轴输出
 
@@ -645,6 +646,8 @@ private:
 
 	void ExecMCode(AuxMsg *msg, uint8_t index);     //具体执行M指令系统动作
 
+    void UpdateSubCallToHmi(int type, int index, int lineNo, bool curDir = false);
+    void UpdateReturnCallToHmi(SubProgReturnMsg *retMsg);
 //	void SendMiTapAxisCmd(uint16_t spd, uint16_t zAxis);   //发送攻丝轴号给MI
 //	void SendMiTapParamCmd();      //发送攻丝参数给MI
 //	void SendMiTapRatioCmd(int32_t ratio);   //发送攻丝比例给MI

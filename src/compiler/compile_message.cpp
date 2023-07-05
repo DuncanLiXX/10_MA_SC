@@ -2189,7 +2189,7 @@ int SubProgReturnMsg::GetOutputData(GCodeFrame *data, uint32_t mask, bool flag){
 }
 
 void SubProgReturnMsg::PrintString(){
-	printf("SubProgReturnMsg[file:%s]\n", this->m_str_file_name);
+    printf("SubProgReturnMsg[file:%s]\n", this->m_str_file_name);
 }
 
 

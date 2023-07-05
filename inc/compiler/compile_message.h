@@ -59,7 +59,7 @@ public:
 //	RecordMsg *GetPreMsg(){return m_p_prev;}   //返回上一条消息指针
 //	RecordMsg *GetNextMsg(){return m_p_next;}  //返回下一条消息的指针
 
-	void SetMsgType(CodeMsgType type){m_n_type = type;}   //设置消息类型
+    void SetMsgType(CodeMsgType type){m_n_type = type;}   //设置消息类型
 	CodeMsgType GetMsgType(){return m_n_type;}           //获取消息类型
 	void SetLineNo(uint64_t line){m_n_line_no = line;}    //设置行号
 	uint64_t GetLineNo(){return m_n_line_no;}             //获取行号

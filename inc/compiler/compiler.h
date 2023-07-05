@@ -111,6 +111,7 @@ public://公共接口
     void GetMacroSubProgPath(int macro_group, int macro_index, bool abs_path, char *name);   //获取宏程序的路径数据
 
     bool m_n_cur_dir_sub_prog = false;    // 是否为当前目录下的子程序
+    bool m_n_cur_pre_sub_prog = false;    // 多级调用时使用
 
 #ifdef USES_WOOD_MACHINE
 	bool FindPreStartSpdCmd(uint64_t line_min , uint64_t line_max, SpindleStartOffset &spd_cmd);   //查找是否存在可预启动的主轴指令

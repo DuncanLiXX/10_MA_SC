@@ -617,6 +617,8 @@ CompilerScene& CompilerScene::operator=( const CompilerScene& c){
 	this->list_subprog = c.list_subprog;
 	this->stack_loop = c.stack_loop;
 
+    this->b_cur_dir_sub_prog = c.b_cur_dir_sub_prog;
+
 	/***********if else ¥¶¿Ì***************/
 	node_vectors_vector = c.node_vectors_vector;
 	node_stack_run = c.node_stack_run;

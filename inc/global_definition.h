@@ -96,7 +96,7 @@
 #define PATH_ESB_FILE "/cnc/svo_esb/"    //伺服描述文件存放路径
 #define PATH_UPDATE_DISK_CMD "/cnc/diskup/scripts/scup.sh" //一键升级SC脚本
 #define PATH_BACK_DISK_CMD "/cnc/disk/scripts/scback.sh" //一键备份SC脚本
-#define MDI_FILE_NAME "mda_0.nc"
+#define MDI_FILE_NAME "mda_0.NC"
 
 #define PATH_SIMULATE_DATA "/cnc/tmp/simulate_data.dat"   //仿真数据文件
 #define PATH_TAP_STATE "/cnc/config/tap_state.dat"      //攻丝状态数据文件

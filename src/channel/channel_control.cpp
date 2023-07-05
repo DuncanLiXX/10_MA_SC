@@ -773,6 +773,7 @@ void ChannelControl::Reset(){
     //		this->m_n_hw_trace_state = NORMAL_TRACE;
 
     SetCurLineNo(1);
+    m_b_need_delay_step = false;
 
 #ifdef USES_SPEED_TORQUE_CTRL	
     if(this->ResetAllAxisCtrlMode(0)){
@@ -4240,6 +4241,7 @@ bool ChannelControl::SendOpenFileCmdToHmi(char *filename){
 bool ChannelControl::SendMDIOpenFileCmdToHmi(char *filename)
 {
     HMICmdFrame cmd;
+    memset(cmd.data, 0, kMaxHmiDataLen);
     cmd.frame_number = 0;
     cmd.channel_index = m_n_channel_index;
     cmd.cmd = CMD_SC_DISPLAY_MDI_FILE;
@@ -4247,7 +4249,8 @@ bool ChannelControl::SendMDIOpenFileCmdToHmi(char *filename)
     strcpy(cmd.data, filename);
     cmd.data_len = strlen(cmd.data);
 
-    std::cout << "------------> SendMDIOpenFileCmdToHmi: " << filename << std::endl;
+    std::cout << "file: " << filename << std::endl;
+    std::cout << "------------> SendMDIOpenFileCmdToHmi: " << filename << " " << (int)strlen(cmd.data) << std::endl;
 
     return this->m_p_hmi_comm->SendCmd(cmd);
 }
@@ -7571,7 +7574,7 @@ void ChannelControl::UpdateReturnCallToHmi(SubProgReturnMsg *ret_msg)
             (!ret_msg->IsRetFromMacroProg() || this->m_p_general_config->debug_mode > 0)){    //自动模式，并且是子程序返回或者调试模式打开
 #else
     if(this->m_channel_status.chn_work_mode == AUTO_MODE &&
-            (!ret_msg->IsRetFromMacroProg() || this->m_p_general_config->debug_mode > 0 || m_p_compiler->m_n_cur_dir_sub_prog)){    //自动模式，并且是子程序返回或者调试模式打开
+            (/*!ret_msg->IsRetFromMacroProg() ||*/ this->m_p_general_config->debug_mode > 0 || m_p_compiler->m_n_cur_dir_sub_prog)){    //自动模式，并且是子程序返回或者调试模式打开
 #endif
         char file[kMaxFileNameLen];
         memset(file, 0x00, kMaxFileNameLen);
@@ -7579,7 +7582,7 @@ void ChannelControl::UpdateReturnCallToHmi(SubProgReturnMsg *ret_msg)
         this->SendOpenFileCmdToHmi(file);
     }
     else if(this->m_channel_status.chn_work_mode == MDA_MODE &&
-             (!ret_msg->IsRetFromMacroProg() || this->m_p_general_config->debug_mode > 0 || m_p_compiler->m_n_cur_dir_sub_prog)){    //自动模式，并且是子程序返回或者调试模式打开
+             (/*!ret_msg->IsRetFromMacroProg() ||*/ this->m_p_general_config->debug_mode > 0 || m_p_compiler->m_n_cur_dir_sub_prog)){    //自动模式，并且是子程序返回或者调试模式打开
         char file[kMaxFileNameLen];
         memset(file, 0x00, kMaxFileNameLen);
         strcpy(file, MDI_FILE_NAME);
@@ -9761,14 +9764,16 @@ bool ChannelControl::ExecuteSubProgReturnMsg(RecordMsg *msg){
         m_b_ret_from_macroprog = true;
         SetCurLineNo(msg->GetLineNo());
 
-        if(this->IsStepMode()){
+        if(this->IsStepMode() || m_b_need_delay_step){
             this->SetMcStepMode(true);
+            m_b_need_delay_step = false;
         }
     }else{
         SetCurLineNo(msg->GetLineNo());
         printf("sub prog return line : %lld\n", msg->GetLineNo());
         if(this->IsStepMode()){
             this->SetMcStepMode(true);
+            m_b_need_delay_step = false;
         }
     }
     return true;
@@ -11417,16 +11422,22 @@ void ChannelControl::SetFuncState(int state, uint8_t mode){
                 this->SetMcStepMode(false);
                 this->m_b_need_change_to_pause = false;
             }
-            else if(this->m_n_macroprog_count == 0 || this->m_p_general_config->debug_mode > 0){  //非宏程序调用，并关闭调试模式
+            else if(this->m_n_macroprog_count == 0 || m_p_compiler->m_n_cur_dir_sub_prog || this->m_p_general_config->debug_mode > 0){  //非宏程序调用，并关闭调试模式
                 this->SetMcStepMode(true);
+            }
+            else {//调用子程序块中，子程序执行完才能开启单段
+                m_b_need_delay_step = true;
             }
         }else if(mode == 0){  //关闭
             printf("1111111111111111\n");
         	this->SetMcStepMode(false);
             this->m_b_need_change_to_pause = false;
-        }else if(this->m_n_macroprog_count == 0 || this->m_p_general_config->debug_mode > 0){//打开
+        }else if(this->m_n_macroprog_count == 0 || m_p_compiler->m_n_cur_dir_sub_prog ||  this->m_p_general_config->debug_mode > 0){//打开
         	printf("2222222222222222\n");
             this->SetMcStepMode(true);
+        }
+        else {//调用子程序块中，子程序执行完才能开启单段
+            m_b_need_delay_step = true;
         }
 
     }

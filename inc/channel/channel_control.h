@@ -764,6 +764,7 @@ private://私有成员变量
 
 	uint8_t m_n_step_change_mode_count ;    //用于单段模式状态切换确认计数，由于mc的响应延时一定要连续2次达到条件才切换状态
 //	bool m_b_step_exec;    //单步执行标志
+    bool m_b_need_delay_step = false;// 单段是否需要被推迟
 
 	McModeStatus m_mc_mode_exec;   //指令消息执行时修改的MC模态组信息
 	McModeStatus m_mc_mode_cur;	   //最近一次从MC获取的MC模态信息

@@ -733,10 +733,10 @@ private://私有成员变量
 	CompilerState m_n_run_thread_state;   //G代码编译运行线程运行状态
 //	CompilerState m_n_run_state_auto_bak;	//保存自动模式的G代码运行线程状态备份
 
-	OutputMsgList *m_p_output_msg_list;   		//待输出至MC的指令消息队列，根据模式指向AUTO和MDA的队列
-	OutputMsgList *m_p_output_msg_list_auto;   //AUTO模式待输出至MC的指令消息队列
-	OutputMsgList *m_p_output_msg_list_mda;   //MDA模式待输出至MC的指令消息队列
-//	GCodeFrameBuffer *m_p_output_buffer;    //运动控制数据，此缓冲区的数据只存放轴运动指令，只有来了后续指令时才把前一条指令发送出去
+	OutputMsgList *m_p_output_msg_list;   		 //待输出至MC的指令消息队列，根据模式指向AUTO和MDA的队列
+	OutputMsgList *m_p_output_msg_list_auto;     //AUTO模式待输出至MC的指令消息队列
+	OutputMsgList *m_p_output_msg_list_mda;      //MDA模式待输出至MC的指令消息队列
+//	GCodeFrameBuffer *m_p_output_buffer;         //运动控制数据，此缓冲区的数据只存放轴运动指令，只有来了后续指令时才把前一条指令发送出去
 
 	ListNode<RecordMsg *> *m_p_last_output_msg;   //最近发送的运动数据
 	HWTraceState m_n_hw_trace_state;        //手轮跟踪状态

@@ -8786,7 +8786,6 @@ void ChannelEngine::RefreshPmcNotReady()
         f_reg_last = &m_f_reg_last.bits[i];
         //FRegBits *f_reg_last = nullptr;
         if(g_reg->RRW == 1 && g_reg_last->RRW == 0){
-            //printf("kkk11111111111111111111\n");
         	this->SystemReset();
         }
         if(g_reg->ERS == 1 && g_reg_last->ERS == 0){//响应复位操作，让MI未正常初始化时，能响应复位按钮
@@ -8849,13 +8848,13 @@ bool ChannelEngine::RefreshMiStatusFun(){
             continue;
         }
         //读取欠压信号
+
         if(!m_b_power_off && g_sys_state.system_ready && this->m_p_mc_comm->ReadUnderVoltWarn()){
             printf("OFF\n");
             m_b_power_off = true;
 
             SaveDataPoweroff();
             g_sys_state.system_quit = true;   //程序退出
-
 
             printf("OUT\n");
             return true;

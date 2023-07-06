@@ -2756,7 +2756,7 @@ int LineMsg::GetOutputData(GCodeFrame *data, uint32_t mask, bool flag){
 		ps = this->m_point_source.m_df_point;
 	for(int i = 0; i < kMaxAxisChn && count < 8; i++){
         if(mask & ms){
-            *pp = ps[i];
+        	*pp = ps[i];
 		}
         pp++;
         count++;

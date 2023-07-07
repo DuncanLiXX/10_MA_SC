@@ -742,7 +742,7 @@ void ChannelControl::Reset(){
         memset(file_name, 0x0, 128);
         strcpy(file_name, MDI_FILE_NAME);
         //strcat(file_name, m_channel_status.cur_nc_file_name);   //拼接文件绝对路径
-        this->SendOpenFileCmdToHmi(file_name);
+        this->SendMDIOpenFileCmdToHmi(file_name);
     }
 
     this->m_macro_variable.Reset();   //宏变量复位
@@ -2439,8 +2439,8 @@ void ChannelControl::RefreshAxisIntpPos(){
     int count = 0;
     for(int i = 0; i < m_p_channel_config->chn_axis_count && count < 8; i++){
         if(g_ptr_chn_engine->GetPmcActive(this->GetPhyAxis(i))) {
-            //m_channel_rt_status.cur_pos_work.m_df_point[i] = m_channel_rt_status.cur_pos_machine.m_df_point[i];   //pmc轴的工件坐标同机械坐标
-            //m_channel_rt_status.tar_pos_work.m_df_point[i] = m_channel_rt_status.cur_pos_machine.m_df_point[i] + m_p_channel_engine->GetPmcAxisRemain(i);   //pmc轴余移动量从mi读取
+            m_channel_rt_status.cur_pos_work.m_df_point[i] = m_channel_rt_status.cur_pos_machine.m_df_point[i];   //pmc轴的工件坐标同机械坐标
+            m_channel_rt_status.tar_pos_work.m_df_point[i] = m_channel_rt_status.cur_pos_machine.m_df_point[i] + m_p_channel_engine->GetPmcAxisRemain(i);   //pmc轴余移动量从mi读取
             count++;
             continue;
         }

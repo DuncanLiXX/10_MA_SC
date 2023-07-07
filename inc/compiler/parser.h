@@ -133,7 +133,8 @@ private:
 	char m_axis_name[kAxisNameBufSize];     //通道轴名称，暂时只支持单字母轴名称
 	uint8_t m_axis_name_ex[kMaxAxisChn];     //通道轴名称扩展下标
 	uint64_t m_mode_mask;             //G指令模态组掩码，用于标志当前代码行出现了哪些模态组的指令，出现的对应bit置一
-	int m_mode_code[kMaxGModeCount];  //当前编译行包含的有效模态指令
+	int m_gmode[kMaxGModeCount];  //当前编译行包含的有效模态指令
+	int m_mmode[150];             // M模态指令组
 	bool m_b_has_g53;               //当前编译行包含G53指令
 
 	CompileStatusCollect *m_p_compiler_status;   //编译器状态集合指针

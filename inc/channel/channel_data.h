@@ -189,6 +189,7 @@ struct ChnRestartMode{
 	int32_t cur_scode;                      //当前S指令
 	uint32_t rated_feed; 					//用户设定进给速度，单位：um/s
 	uint16_t gmode[kMaxGModeCount]; 		//G指令模态通道当前模态
+	uint16_t mmode[kMaxMModeCount];						// M模态组
 	uint8_t cur_tool;               		//当前刀号，从1开始编号，0为主轴刀号
 	uint8_t cur_tcode;		                //当前T指令
 	uint8_t cur_h_code;						//当前H补偿号

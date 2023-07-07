@@ -264,7 +264,7 @@ bool Parser::CheckGCode(LexerGCode *gcode){
 	MacroVarValue res;
 	//int code_limit = kMaxGCodeCount;
 	//int mode_code[kMaxGModeCount];
-	memset(m_mode_code, 0x00, sizeof(int)*kMaxGModeCount);
+	memset(m_gmode, 0x00, sizeof(int)*kMaxGModeCount);
 	this->m_b_has_g53 = false;
 	for(int i = 0; i < gcode->gcode_count; i++){
 		if(gcode->g_value[i] < 0){//为负值，说明此G代码含有宏表达式
@@ -331,18 +331,18 @@ bool Parser::CheckGCode(LexerGCode *gcode){
 			}
 		}
 
-		m_mode_code[GCode2Mode[code]] = gcode->g_value[i];
+		m_gmode[GCode2Mode[code]] = gcode->g_value[i];
 	}
 	this->m_mode_mask = mode_mask;
 
-	//删除无效的同组G代码，G代码顺序会按照模态组由小到大重新排序
+//	删除无效的同组G代码，
 //	if(count < gcode->gcode_count){
 //		gcode->gcode_count = count;
 //		memset(gcode->g_value, 0x00, kMaxGCodeInLine*sizeof(int));
 //		int index = 0;
 //		for(int i = 0; i < kMaxGModeCount; i++){
 //			if(mode_mask &0x01){
-//				gcode->g_value[index++] = m_mode_code[i];
+//				gcode->g_value[index++] = m_gmode[i];
 //				if(index == count)
 //					break;
 //			}
@@ -359,7 +359,7 @@ bool Parser::CheckGCode(LexerGCode *gcode){
 		}
 		if(m_mode_mask & GMODE_01)
 			cc++;
-		if((m_mode_mask & GMODE_09) && (m_mode_code[9] != G80_CMD))
+		if((m_mode_mask & GMODE_09) && (m_gmode[9] != G80_CMD))
 			cc++;
 		if(cc > 1){//告警
 			m_error_code = ERR_NOT_IN_ONE_LINE;  //存在不可同行的指令
@@ -433,7 +433,7 @@ bool Parser::CheckGCode(LexerGCode *gcode){
 bool Parser::HasMacroProgCall(){
 
 	//存在G65指令
-	if((m_mode_mask & GMODE_00) && (m_mode_code[0] == G65_CMD)){
+	if((m_mode_mask & GMODE_00) && (m_gmode[0] == G65_CMD)){
 		return true;
 	}
 
@@ -486,7 +486,7 @@ bool Parser::AnalyzeGCode(LexerGCode *gcode){
 
 
 
-	if(((m_mode_mask & GMODE_00) && (m_mode_code[0] == G65_CMD)) ||  //G65宏程序调用
+	if(((m_mode_mask & GMODE_00) && (m_gmode[0] == G65_CMD)) ||  //G65宏程序调用
 			(m_mode_mask & GMODE_09) ||                              //固定循环指令
 			(((m_mode_mask & GMODE_01) == 0) && (m_p_compiler_status->mode.gmode[9] != G80_CMD))){
 		macro_call_flag = true;
@@ -518,29 +518,29 @@ bool Parser::AnalyzeGCode(LexerGCode *gcode){
 	//处理自定义指令,第39组模态
 	if(m_mode_mask & GMODE_39){
 		user_defined_code = true;
-		if(m_mode_code[kMaxGModeCount-1] == G200_CMD){
+		if(m_gmode[kMaxGModeCount-1] == G200_CMD){
 			if(!this->CreateClearCirclePosMsg())
 				return false;
-		}else if(m_mode_code[kMaxGModeCount-1] == G120_CMD){
+		}else if(m_gmode[kMaxGModeCount-1] == G120_CMD){
 			if(!CreateInfoMsg()){
 				return false;
 			}
-		}else if(m_mode_code[kMaxGModeCount-1] == G84_3_CMD){
-			if(!CreateModeMsg(m_mode_code[kMaxGModeCount-1]))
+		}else if(m_gmode[kMaxGModeCount-1] == G84_3_CMD){
+			if(!CreateModeMsg(m_gmode[kMaxGModeCount-1]))
 				return false;
 		}
 #ifdef USES_SPEED_TORQUE_CTRL
-		else if(m_mode_code[kMaxGModeCount-1] == G1000_CMD || 
-			m_mode_code[kMaxGModeCount-1] == G1001_CMD|| 
-			m_mode_code[kMaxGModeCount-1] == G1002_CMD|| 
-			m_mode_code[kMaxGModeCount-1] == G1003_CMD){  //创建速度控制指令消息
-			if(!CreateSpeedCtrlMsg(m_mode_code[kMaxGModeCount-1]))
+		else if(m_gmode[kMaxGModeCount-1] == G1000_CMD ||
+				m_gmode[kMaxGModeCount-1] == G1001_CMD||
+				m_gmode[kMaxGModeCount-1] == G1002_CMD||
+				m_gmode[kMaxGModeCount-1] == G1003_CMD){  //创建速度控制指令消息
+			if(!CreateSpeedCtrlMsg(m_gmode[kMaxGModeCount-1]))
 				return false;
-		}else if(m_mode_code[kMaxGModeCount-1] == G2000_CMD ||
-		m_mode_code[kMaxGModeCount-1] == G2001_CMD ||
-		m_mode_code[kMaxGModeCount-1] == G2002_CMD ||
-		m_mode_code[kMaxGModeCount-1] == G2003_CMD){  //创建力矩控制指令消息
-			if(!CreateTorqueCtrlMsg(m_mode_code[kMaxGModeCount-1]))
+		}else if(m_gmode[kMaxGModeCount-1] == G2000_CMD ||
+				m_gmode[kMaxGModeCount-1] == G2001_CMD ||
+				m_gmode[kMaxGModeCount-1] == G2002_CMD ||
+				m_gmode[kMaxGModeCount-1] == G2003_CMD){  //创建力矩控制指令消息
+			if(!CreateTorqueCtrlMsg(m_gmode[kMaxGModeCount-1]))
 				return false;
 		}
 #endif
@@ -549,20 +549,20 @@ bool Parser::AnalyzeGCode(LexerGCode *gcode){
 
 	//处理21组模态指令：G12.1/G12.2/G12.3/G13.1  极坐标插补及磨床相关指令
 	if(m_mode_mask & GMODE_21){
-		if(!this->CreatePolarIntpMsg(m_mode_code[21])){
+		if(!this->CreatePolarIntpMsg(m_gmode[21])){
 			return false;
 		}
 	}
 
 	//处理02组模态指令：G17/G18/G19 平面指定指令
 	if(m_mode_mask & GMODE_02){
-		if(!CreateModeMsg(m_mode_code[2]))
+		if(!CreateModeMsg(m_gmode[2]))
 			return false;
 	}
 
 	//处理06组模态指令：G20/G21 公制英制转换
 	if(m_mode_mask & GMODE_06){
-		if(!CreateModeMsg(m_mode_code[6]))
+		if(!CreateModeMsg(m_gmode[6]))
 			return false;
 	}
 
@@ -576,7 +576,7 @@ bool Parser::AnalyzeGCode(LexerGCode *gcode){
 
 	//处理03组模态指令：G90/G91 绝对、增量指令
 	if(m_mode_mask & GMODE_03){
-		if(!CreateModeMsg(m_mode_code[3]))
+		if(!CreateModeMsg(m_gmode[3]))
 			return false;
 	}
 
@@ -584,57 +584,57 @@ bool Parser::AnalyzeGCode(LexerGCode *gcode){
 
 	//处理05组模态指令：G94/G95 每分钟进给，每转进给
 	if(m_mode_mask & GMODE_05){
-		if(!CreateModeMsg(m_mode_code[5]))
+		if(!CreateModeMsg(m_gmode[5]))
 			return false;
 	}
 
 
 	//处理00组非模态指令
 	if(m_mode_mask & GMODE_00){//TODO 处理00组非模态指令：G04/G10/G28/G29/G71/G72/G92/G52等等, G53指令不在此处理
-		if(m_mode_code[0] == G52_CMD ||
-//				m_mode_code[0] == G53_CMD ||
-				m_mode_code[0] == G92_CMD){  //坐标系指令
-			if(!CreateCoordMsg(m_mode_code[0])){
+		if(m_gmode[0] == G52_CMD ||
+//				m_gmode[0] == G53_CMD ||
+				m_gmode[0] == G92_CMD){  //坐标系指令
+			if(!CreateCoordMsg(m_gmode[0])){
 				return false;
 			}
 //			else if(m_mode_code[0] == G53_CMD)
 //				has_move_code = true;
-		}else if(m_mode_code[0] == G04_CMD){
+		}else if(m_gmode[0] == G04_CMD){
 			if(!CreateTimeWaitMsg()){
 				return false;
 			}
-		}else if(m_mode_code[0] == G27_CMD or m_mode_code[0] == G28_CMD or m_mode_code[0] == G30_CMD){
-			if(!CreateRefReturnMsg(m_mode_code[0]))
+		}else if(m_gmode[0] == G27_CMD or m_gmode[0] == G28_CMD or m_gmode[0] == G30_CMD){
+			if(!CreateRefReturnMsg(m_gmode[0]))
 				return false;
 			else
 				has_move_code = true;
-		}else if(m_mode_code[0] == G31_CMD){
-			if(!CreateSkipRunMsg(m_mode_code[0]))
+		}else if(m_gmode[0] == G31_CMD){
+			if(!CreateSkipRunMsg(m_gmode[0]))
 				return false;
 			else
 				has_move_code = true;
-		}else if(m_mode_code[0] == G65_CMD){ //宏程序调用
+		}else if(m_gmode[0] == G65_CMD){ //宏程序调用
 			if(!CreateMacroProgCallMsg())
 				return false;
-		}else if(m_mode_code[0] == G37_CMD){
+		}else if(m_gmode[0] == G37_CMD){
 			if(!CreateAutoToolMeasureMsg())
 				return false;
 			else
 				has_move_code = true;
-		}else if(m_mode_code[0] == G10_CMD){
+		}else if(m_gmode[0] == G10_CMD){
 			if(!CreateInputMsg()){
 				return false;
 			}
-		}else if(m_mode_code[0] == G09_CMD){
+		}else if(m_gmode[0] == G09_CMD){
 			if(!CreateExactStopMsg()){
 				return false;
 			}
-		}else if(m_mode_code[0] == G110_CMD){
+		}else if(m_gmode[0] == G110_CMD){
 			if(!CreateOpenFileMsg())
 				return false;
 		}
 		else{
-			if(!CreateModeMsg(m_mode_code[0]))
+			if(!CreateModeMsg(m_gmode[0]))
 				return false;
 		}
 	}
@@ -643,7 +643,7 @@ bool Parser::AnalyzeGCode(LexerGCode *gcode){
 	//TODO 处理07组模态指令：G40/G41/G42 半径补偿指令
 	if(m_mode_mask & GMODE_07){
 		//has_move_code = true;
-		if(!this->CreateCompensateMsg(m_mode_code[7])){
+		if(!this->CreateCompensateMsg(m_gmode[7])){
 			return false;
 		}
 	}
@@ -651,7 +651,7 @@ bool Parser::AnalyzeGCode(LexerGCode *gcode){
 	//TODO 处理08组模态指令：G43/G44/G49 长度补偿指令
 	if(m_mode_mask & GMODE_08){
 		has_move_code = true;
-		if(!this->CreateCompensateMsg(m_mode_code[8])){
+		if(!this->CreateCompensateMsg(m_gmode[8])){
 			return false;
 		}
 	}
@@ -659,19 +659,19 @@ bool Parser::AnalyzeGCode(LexerGCode *gcode){
 	//TODO 处理14组模态指令：G54~G59 工件坐标系选择指令，包括G5401~G5499扩展工件坐标系
 	if(m_mode_mask & GMODE_14){
 
-		printf("create gcode : %d\n", m_mode_code[14]);
-		if(!CreateCoordMsg(m_mode_code[14]))
+		printf("create gcode : %d\n", m_gmode[14]);
+		if(!CreateCoordMsg(m_gmode[14]))
 			return false;
 	}
 
 	if(m_mode_mask & GMODE_15){
-		if(!CreateModeMsg(m_mode_code[15]))
+		if(!CreateModeMsg(m_gmode[15]))
 			return false;
 	}
 
 	//处理10组模态指令：G98/G99 固定循环（初始平面/R点平面）返回
 	if(m_mode_mask & GMODE_10){
-		if(!CreateModeMsg(m_mode_code[10]))
+		if(!CreateModeMsg(m_gmode[10]))
 			return false;
 	}
 
@@ -679,7 +679,7 @@ bool Parser::AnalyzeGCode(LexerGCode *gcode){
 	//处理09组模态指令：G73/G74/G76/G80/G81~G89 固定循环指令
 	if(m_mode_mask & GMODE_09){
 		has_move_code = true;
-		if(!CreateLoopMsg(m_mode_code[9]))
+		if(!CreateLoopMsg(m_gmode[9]))
 			return false;
 	}
 
@@ -687,7 +687,7 @@ bool Parser::AnalyzeGCode(LexerGCode *gcode){
 	if(m_mode_mask & GMODE_01 && !has_move_code){
 
 		has_move_code = true;
-		switch(m_mode_code[1]){
+		switch(m_gmode[1]){
 		case G00_CMD:
 			if(!CreateRapidMsg())
 				return false;
@@ -698,12 +698,12 @@ bool Parser::AnalyzeGCode(LexerGCode *gcode){
 			break;
 		case G02_CMD:
 		case G03_CMD:
-			if(!CreateArcMsg(m_mode_code[1]))
+			if(!CreateArcMsg(m_gmode[1]))
 				return false;
 			break;
 		default:
 			//生成不支持指令错误消息
-			printf("unsupported G code[%d]!\n", m_mode_code[1]);
+			printf("unsupported G code[%d]!\n", m_gmode[1]);
 			m_error_code = ERR_INVALID_CODE;
 			return false;
 		}
@@ -720,7 +720,7 @@ bool Parser::AnalyzeGCode(LexerGCode *gcode){
 
 			//存在G53则生成G53指令
 			if(this->m_b_has_g53){
-				if(!CreateCoordMsg(m_mode_code[0])){
+				if(!CreateCoordMsg(m_gmode[0])){
 					return false;
 				}
 				else
@@ -827,6 +827,19 @@ bool Parser::ProcessMCode(LexerGCode *gcode){
 			return false;
 
 	}else if(gcode->mcode_count > 1){
+
+		memset(m_mmode, 0, sizeof(m_mmode));
+		for(int i=0; i<gcode->mcode_count; i++){
+			int m_code = gcode->m_value[i];
+			int m_group =  MCode2Mode[m_code];
+
+			if(m_mmode[m_group] != 0){
+				printf("same group mmode in one line\n");
+				m_error_code = ERR_MCODE_SEPARATED;  //存在不能同行的M指令
+				return false;
+			}
+			m_mmode[m_group] = gcode->m_value[i];
+		}
 
 		if(!this->CreateAuxMsg(gcode->m_value, gcode->mcode_count))
 			return false;
@@ -3138,7 +3151,7 @@ bool Parser::CreateSpindleCheckMsg(){
 	//TODO 检查参数
 
 
-	RecordMsg *new_msg = new SpindleCheckMsg(m_mode_code[19], p, q, r, i);
+	RecordMsg *new_msg = new SpindleCheckMsg(m_gmode[19], p, q, r, i);
 	if(new_msg == nullptr){
 		//TODO 内存分配失败，告警
 		CreateError(ERR_MEMORY_NEW, FATAL_LEVEL, CLEAR_BY_RESET_POWER);

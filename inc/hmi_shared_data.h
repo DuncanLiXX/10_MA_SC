@@ -39,6 +39,7 @@ const int kMaxChnCount = 4;   //最大通道数量
 const int kMaxAxisChn = 8;   //每个通道的最大轴数量
 const int kMaxSpindleChn = 6;   //每个通道支持的主轴最大数量
 const int kMaxGModeCount = 40;   //G代码模态组数
+const int kMaxMModeCount = 40;   //M代码模态组
 
 
 //注意: 此处定义与windows的定义不同，windows为256字节

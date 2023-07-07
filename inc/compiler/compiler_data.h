@@ -41,6 +41,7 @@ extern const int kMaxGCodeCount;     //系统定义G指令最大值
 extern const char *MacroKeys[];  //宏指令
 extern const char *MacroFunc[];  //宏运算命令
 extern const unsigned char GCode2Mode[];   //G代码模态映射，下标为G代码索引，取整数部分，比如G02和G02.3的索引都为2
+extern unsigned char MCode2Mode[];
 extern const int kMacroParamToLocalVarIndex[]; //宏程序参数对应的局部变量索引, 顺序对应A/B/C/D/E...X/Y/Z，0表示非法
 extern const int kLoopParamToLocalVarIndex[];  //循环指令参数对应的局部变量索引, 顺序对应A/B/C/D/E...X/Y/Z，0表示非法， 相对宏程序自变量增加了P参数
 extern const int kLoopParamToGlobalVarIndex[]; //循环指令参数对应全局变量索引，顺序对应A/B/C/D/E...X/Y/Z，0表示非法

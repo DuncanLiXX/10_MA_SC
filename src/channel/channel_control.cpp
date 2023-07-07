@@ -1664,6 +1664,7 @@ void ChannelControl::InitRestartMode(){
     m_mode_restart.gmode[17] = G15_CMD;  //17组默认15   极坐标指令取消
     m_mode_restart.gmode[19] = G26_CMD;  //19组默认G26  主轴速度变动检测ON
 
+    memset(m_mode_restart.mmode, 0, sizeof(m_mode_restart.mmode));
     m_mode_restart.cur_d_code = this->m_channel_status.cur_d_code;
     m_mode_restart.cur_h_code = this->m_channel_status.cur_h_code;
     m_mode_restart.cur_tool = this->m_channel_status.cur_tool;
@@ -3359,7 +3360,7 @@ void ChannelControl::DoRestart(uint64_t line_no){
         }
     }
 
-    if(this->m_channel_status.spindle_dir != this->m_mode_restart.spindle_dir){  //主轴工作状态不同
+    /*if(this->m_channel_status.spindle_dir != this->m_mode_restart.spindle_dir){  //主轴工作状态不同
         int mcode = 5;  //默认M05
         if(m_mode_restart.spindle_dir == SPD_DIR_POSITIVE)
             mcode = 3;
@@ -3370,8 +3371,18 @@ void ChannelControl::DoRestart(uint64_t line_no){
             msg->SetLineNo(line_no);
             this->m_p_output_msg_list_auto->InsertBefore(msg, node);   //插入主轴旋转指令
         }
-    }
+    }*/
     // TODO 恢复用户M代码
+    for(int i=0; i<kMaxMModeCount; i++){
+    	if(m_mode_restart.mmode[i] != 0){
+    		int mcode = m_mode_restart.mmode[i];
+    		printf("mmode : %d\n", m_mode_restart.mmode[i]);
+    		msg = new AuxMsg(&mcode, 1);
+            msg->SetLineNo(line_no);
+            this->m_p_output_msg_list_auto->InsertBefore(msg, node);   //插入主轴旋转指令
+            node = this->m_p_output_msg_list_auto->HeadNode();
+    	}
+    }
 
     // 执行运动指令消息
     if(this->m_channel_rt_status.cur_pos_work != m_mode_restart.pos_target){   //当前位置不是起点位置
@@ -6516,12 +6527,13 @@ bool ChannelControl::ExecuteAuxMsg(RecordMsg *msg){
             && this->m_n_add_prog_type == NONE_ADD      //非附加程序运行状态
         #endif
             ){//加工复位
-        for(m_index = 0; m_index < m_count; m_index++){
+
+    	for(m_index = 0; m_index < m_count; m_index++){
             mcode = tmp->GetMCode(m_index);
 
             if(mcode == 6){//换刀
                 this->m_mode_restart.cur_tool = this->m_mode_restart.cur_tcode;
-            }else if(mcode == 3){
+            }/*else if(mcode == 3){
                 this->m_mode_restart.rated_spindle_speed = this->m_mode_restart.cur_scode;
                 this->m_mode_restart.spindle_dir = SPD_DIR_POSITIVE;
             }else if(mcode == 4){
@@ -6530,7 +6542,7 @@ bool ChannelControl::ExecuteAuxMsg(RecordMsg *msg){
             }else if(mcode == 5){
                 this->m_mode_restart.rated_spindle_speed = 0;
                 this->m_mode_restart.spindle_dir = SPD_DIR_STOP;
-            }else if(mcode == 2 || mcode == 30 || mcode == 99){  //直接结束，切换到READY状态
+            }*/else if(mcode == 2 || mcode == 30 || mcode == 99){  //直接结束，切换到READY状态
 
                 std::cout << "-----------> mode: " << (int)mcode << " sub_call: " << m_mode_restart.sub_prog_call << std::endl;
                 if(mcode == 99 && m_mode_restart.sub_prog_call > 0){
@@ -6538,15 +6550,18 @@ bool ChannelControl::ExecuteAuxMsg(RecordMsg *msg){
                 }else{
                     ResetMcLineNo();//复位MC模块当前行号
                     this->SetCurLineNo(1);
-
                     CompileOver();
                     this->m_n_restart_mode = NOT_RESTART;
                     this->m_n_restart_line = 0;
                     this->m_n_restart_step = 0;
                     this->m_p_compiler->SetRestartPara(0, m_n_restart_mode);   //复位编译器的加工复位标志
-
                     this->ClearHmiInfoMsg();   //清除HMI的提示信息
                 }
+            }
+
+            int group = MCode2Mode[mcode];
+            if(group != 0){
+            	m_mode_restart.mmode[group] = mcode;
             }
 
         }

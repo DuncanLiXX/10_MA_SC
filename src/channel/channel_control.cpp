@@ -742,7 +742,7 @@ void ChannelControl::Reset(){
         memset(file_name, 0x0, 128);
         strcpy(file_name, MDI_FILE_NAME);
         //strcat(file_name, m_channel_status.cur_nc_file_name);   //拼接文件绝对路径
-        this->SendOpenFileCmdToHmi(file_name);
+        this->SendMDIOpenFileCmdToHmi(file_name);
     }
 
     this->m_macro_variable.Reset();   //宏变量复位
@@ -5531,7 +5531,7 @@ void ChannelControl::SetCurLineNo(uint32_t line_no){
         return;
 #endif
 
-    if(this->m_n_macroprog_count == 0 || this->m_p_general_config->debug_mode > 0)
+    //if(this->m_n_macroprog_count == 0 || this->m_p_compiler->m_n_cur_dir_sub_prog || this->m_p_general_config->debug_mode > 0)
     {
         this->m_channel_rt_status.line_no = line_no;
         std::cout << "setcurLineNo:  " << (int)this->m_channel_rt_status.line_no << std::endl;
@@ -7641,6 +7641,7 @@ void ChannelControl::UpdateSubCallToHmi(int type, int index, int lineNo, bool cu
     }
     else
     {// 子程序不跳转
+        std::cout << "setCurLineNo:-----------------> " << lineNo << std::endl;
         this->SetMcStepMode(false);
         SetCurLineNo(lineNo);
     }
@@ -7710,12 +7711,12 @@ bool ChannelControl::ExecuteLineMsg(RecordMsg *msg, bool flag_block){
         }
     }
 
-
     uint32_t mask = linemsg->GetAxisMoveMask();
     for(int i=0; i<m_p_channel_config->chn_axis_count; i++){
         if((mask & (0x01<<i)) == 0)
             continue;
         if (g_ptr_chn_engine->GetPmcActive(GetPhyAxis(i))) {
+            ScPrintf("execute lineMsg. %d\n", i);
             m_error_code = ERR_PMC_IVALID_USED;
             CreateError(ERR_PMC_IVALID_USED, ERROR_LEVEL, CLEAR_BY_MCP_RESET, 0, m_n_channel_index, i);
             return false;
@@ -7800,6 +7801,7 @@ bool ChannelControl::ExecuteRapidMsg(RecordMsg *msg, bool flag_block){
         if((mask & (0x01<<i)) == 0)
             continue;
         if (g_ptr_chn_engine->GetPmcActive(GetPhyAxis(i))) {
+            ScPrintf("execute ExecuteRapidMsg. %d\n", i);
             m_error_code = ERR_PMC_IVALID_USED;
             CreateError(ERR_PMC_IVALID_USED, ERROR_LEVEL, CLEAR_BY_MCP_RESET, 0, m_n_channel_index, i);
             return false;
@@ -7886,6 +7888,7 @@ bool ChannelControl::ExecuteArcMsg(RecordMsg *msg, bool flag_block){
             continue;
 
         if (g_ptr_chn_engine->GetPmcActive(GetPhyAxis(i))) {
+            ScPrintf("execute ExecuteArcMsg. %d\n", i);
             m_error_code = ERR_PMC_IVALID_USED;
             CreateError(ERR_PMC_IVALID_USED, ERROR_LEVEL, CLEAR_BY_MCP_RESET, 0, m_n_channel_index);
             return false;
@@ -11957,6 +11960,7 @@ void ChannelControl::ManualMove(int8_t dir){
 
     if(g_ptr_chn_engine->GetPmcActive(this->GetPhyAxis(m_channel_status.cur_axis))) {
         //this->ManualMovePmc(dir);
+        ScPrintf("ManualMove. %d\n", m_channel_status.cur_axis);
         m_error_code = ERR_PMC_IVALID_USED;
         CreateError(ERR_PMC_IVALID_USED, ERROR_LEVEL, CLEAR_BY_MCP_RESET, 0, m_n_channel_index, m_channel_status.cur_axis);
         return;
@@ -12119,6 +12123,7 @@ void ChannelControl::ManualMove(uint8_t axis, double pos, double vel, bool workc
 
     if(g_ptr_chn_engine->GetPmcActive(this->GetPhyAxis(axis))) {
         //this->ManualMovePmc(axis, pos, vel);
+        ScPrintf("ManualMove. %d\n", this->GetPhyAxis(axis));
         m_error_code = ERR_PMC_IVALID_USED;
         CreateError(ERR_PMC_IVALID_USED, ERROR_LEVEL, CLEAR_BY_MCP_RESET, 0, m_n_channel_index, axis);
         return;

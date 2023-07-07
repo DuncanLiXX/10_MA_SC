@@ -12941,6 +12941,33 @@ bool ChannelEngine::SetPmcActive(uint64_t phy_axis)
     if (phy_axis >= max_axis_cnt) //最多支持64个轴
         return false;
     m_pmc_axis_active_mask |= (0x01 << phy_axis);
+
+
+    McCmdFrame cmd;
+    memset(&cmd, 0x00, sizeof(McCmdFrame));
+
+    uint8_t chn_axis = 0;
+    int chn_index = GetAxisChannel(phy_axis, chn_axis);;
+    if (chn_index < 0 || chn_index >= GetChnCount())
+        return true;
+
+    //通知MC
+    cmd.data.axis_index = chn_axis+1;
+    cmd.data.channel_index = chn_index;
+
+    cmd.data.cmd = CMD_MC_SET_AXIS_ON;
+
+    // 1--使能该轴
+    cmd.data.data[0] = 1;
+    // 2--PMC轴插补
+    cmd.data.data[1] = 2;
+
+    if(!this->IsMcArmChn(chn_index))
+        m_p_mc_comm->WriteCmd(cmd);
+    else
+        m_p_mc_arm_comm->WriteCmd(cmd);
+
+
     return true;
 }
 
@@ -12954,6 +12981,31 @@ bool ChannelEngine::RstPmcActive(uint64_t phy_axis)
     if (phy_axis >= max_axis_cnt) //最多支持64个轴
         return false;
     m_pmc_axis_active_mask &= ~(0x01 << phy_axis);
+
+    McCmdFrame cmd;
+    memset(&cmd, 0x00, sizeof(McCmdFrame));
+
+    uint8_t chn_axis = 0;
+    int chn_index = GetAxisChannel(phy_axis, chn_axis);;
+    if (chn_index < 0 || chn_index >= GetChnCount())
+        return true;
+
+    //通知MC
+    cmd.data.axis_index = chn_axis+1;
+    cmd.data.channel_index = chn_index;
+
+    cmd.data.cmd = CMD_MC_SET_AXIS_ON;
+
+    // 1--复位使能
+    cmd.data.data[0] = 0;
+    // 2--PMC轴插补
+    cmd.data.data[1] = 2;
+
+    if(!this->IsMcArmChn(chn_index))
+        m_p_mc_comm->WriteCmd(cmd);
+    else
+        m_p_mc_arm_comm->WriteCmd(cmd);
+
     return true;
 }
 

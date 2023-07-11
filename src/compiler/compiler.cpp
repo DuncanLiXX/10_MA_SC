@@ -4349,6 +4349,7 @@ int Compiler::CallMarcoProgWithNoPara(int macro_index, bool flag){
     //查找子程序
     int macro_loc = this->FindSubProgram(macro_index);
 
+    std::cout << "macro loc: " << macro_loc << std::endl;
     if (macro_loc == 0 || macro_loc == 1) {
         printf("create error in CallMarcoProgWithNoPara\n");
         CreateErrorMsg(ERR_NO_SUB_PROG, 0);  //找不到对应子程序

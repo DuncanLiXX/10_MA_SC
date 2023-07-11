@@ -4730,13 +4730,29 @@ bool ChannelEngine::CheckSoftLimit(ManualMoveDir dir, uint8_t phy_axis, double p
 //        }
 //        return false;
 //    }
+    deque<ErrorInfo> infos;
+    infos = g_ptr_alarm_processor->GetErrorInfo();
+    for(auto itr = infos.begin(); itr != infos.end(); ++itr)
+    {
+        if (itr->axis_index == chn_axis)
+        {
+            if (itr->error_code == ERR_SOFTLIMIT_POS && dir == DIR_POSITIVE)
+            {
+                return true;
+            }
+            if (itr->error_code == ERR_SOFTLIMIT_NEG && dir == DIR_NEGATIVE)
+            {
+                return true;
+            }
+        }
+    }
 
     if(dir == DIR_POSITIVE && pos >= limit2){
-        CreateError(ERR_SOFTLIMIT_POS, WARNING_LEVEL, CLEAR_BY_MCP_RESET, 0, chn, chn_axis);
+        CreateError(ERR_SOFTLIMIT_POS, ERROR_LEVEL, CLEAR_BY_MCP_RESET, 0, chn, chn_axis);
         return true;
     }
     else if(dir == DIR_NEGATIVE && pos <= limit1){
-        CreateError(ERR_SOFTLIMIT_NEG, WARNING_LEVEL, CLEAR_BY_MCP_RESET, 0, chn, chn_axis);
+        CreateError(ERR_SOFTLIMIT_NEG, ERROR_LEVEL, CLEAR_BY_MCP_RESET, 0, chn, chn_axis);
         return true;
     }
 
@@ -4780,6 +4796,40 @@ bool ChannelEngine::GetSoftLimt(ManualMoveDir dir, uint8_t phy_axis, double &lim
     else if(dir == DIR_POSITIVE)
         limit = limit2;
 
+    return true;
+}
+
+bool ChannelEngine::GetLimitTargetPos(ManualMoveDir dir, uint8_t chn_axis, double curPos, double &tar_pos)
+{
+
+    //uint8_t phy_axis = this->GetPhyAxis(chn_axis);
+
+//    double limit = 0;
+//    if(CheckSoftLimit(dir, phy_axis, curPos)){
+//        return false;
+//    }else if(GetSoftLimt((ManualMoveDir)dir, phy_axis, limit) && dir == DIR_POSITIVE && tar_pos > limit*1e7){
+//        tar_pos = limit * 1e7;
+//    }else if(GetSoftLimt((ManualMoveDir)dir, phy_axis, limit) && dir == DIR_NEGATIVE && tar_pos < limit*1e7){
+//        tar_pos = limit * 1e7;
+//    }
+
+//    //同步轴也需要对应的判断
+//    if (GetSyncAxisCtrl()->CheckSyncState(phy_axis) == 1)
+//    {
+//        int axisMask = GetSyncAxisCtrl()->GetSlaveAxis(phy_axis);
+//        for (int i = 0; i < this->m_p_general_config->axis_count; ++i) {
+//            if(axisMask & (0x01<<i)){
+//                limit = 0;
+//                if(CheckSoftLimit(dir, i, curPos)){
+//                    return false;
+//                }else if(GetSoftLimt((ManualMoveDir)dir, i, limit) && dir == DIR_POSITIVE && tar_pos > limit*1e7){
+//                    tar_pos = limit * 1e7;
+//                }else if(GetSoftLimt((ManualMoveDir)dir, i, limit) && dir == DIR_NEGATIVE && tar_pos < limit*1e7){
+//                    tar_pos = limit * 1e7;
+//                }
+//            }
+//        }
+//    }
     return true;
 }
 
@@ -9554,7 +9604,6 @@ void ChannelEngine::ProcessPmcSignal(){
         	if(m_p_pmc_reg->FReg().bits[i].RST != 1)
         	{
         		this->m_p_channel_control[0].CallMacroProgram(g_reg->MPCS);
-        		printf("=========== CallMacroProgram %d\n", g_reg->MPCS);
         		f_reg->MPCO = 1;   //调用结束
         	}
         }else if(g_reg_last->EMPC == 1 && g_reg->EMPC == 0){

@@ -1140,7 +1140,6 @@ int HMICommunication::TransFile(){
 	while(!g_sys_state.system_quit){
 
 		sem_wait(&m_sem_tcp_file);//等待tcp文件传输信号
-
 	//	sem_post(&this->m_sem_tcp_send_test);  //自发自收测试
 
 		if(g_sys_state.eth0_running && g_sys_state.hmi_comm_ready){
@@ -4845,14 +4844,14 @@ int HMICommunication::RecvFile(){
 
 	}
 
-	gettimeofday(&tvNow, NULL);
-	nTimeDelay = (tvNow.tv_sec-tvStart.tv_sec)*1000000+tvNow.tv_usec-tvStart.tv_usec;
-	printf("total time = %u us, filesize = %lld\n", nTimeDelay, file_size);
+    gettimeofday(&tvNow, NULL);
+    nTimeDelay = (tvNow.tv_sec-tvStart.tv_sec)*1000000+tvNow.tv_usec-tvStart.tv_usec;
+    printf("total time = %u us, filesize = %lld\n", nTimeDelay, file_size);
 
 //	sync();
 //	fclose(file_bak);
-	close(fd);
-	sync();
+    close(fd);
+    sync();
 
 	if(read_total == file_size){
 		if(file_type == FILE_G_CODE){
@@ -4861,7 +4860,7 @@ int HMICommunication::RecvFile(){
 			if(fd > 0){
 				write(fd, file_sign, kNcFileSignLen);
 				close(fd);
-				sync();
+                sync();
 			}
 			else
 				g_ptr_trace->PrintTrace(TRACE_ERROR, HMI_COMMUNICATION, "保存NC文件签名失败！");
@@ -4911,6 +4910,7 @@ int HMICommunication::RecvFile(){
         sem_post(&m_sem_background);//通知执行后台程序
     }
 
+
 	END:
 #ifdef USES_TCP_FILE_TRANS_KEEP
 	sync();
@@ -4919,7 +4919,7 @@ int HMICommunication::RecvFile(){
 	if(m_soc_file_send > 0){
 		close(m_soc_file_send);
 		m_soc_file_send = -1;
-		sync();
+        sync();
 		printf("close file trans socket!\n");
 	}
 #endif

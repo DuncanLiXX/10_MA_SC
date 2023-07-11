@@ -21,6 +21,7 @@
 #include "spindle_control.h"
 #include "showsc.h"
 #include "axis_status_ctrl.h"
+#include "sync_axis_ctrl.h"
 
 using namespace Spindle;
 
@@ -11710,6 +11711,53 @@ void ChannelControl::SetCurAxis(uint8_t axis){
     this->SendChnStatusChangeCmdToHmi(CUR_AXIS);
 }
 
+bool ChannelControl::GetLimitTargetPos(ManualMoveDir dir, uint8_t chn_axis, int64_t &tar_pos)
+{
+    uint8_t phy_axis = this->GetPhyAxis(chn_axis);
+
+    double curPos = GetAxisCurMachPos(chn_axis);
+    double limit = 0;
+    if(CheckSoftLimit(dir, phy_axis, curPos)){
+        return false;
+    }else if(GetSoftLimt((ManualMoveDir)dir, phy_axis, limit) && dir == DIR_POSITIVE && tar_pos > limit*1e7){
+        tar_pos = limit * 1e7;
+    }else if(GetSoftLimt((ManualMoveDir)dir, phy_axis, limit) && dir == DIR_NEGATIVE && tar_pos < limit*1e7){
+        tar_pos = limit * 1e7;
+    }
+
+    //同步轴也需要对应的判断
+    if (g_ptr_chn_engine->GetSyncAxisCtrl()->CheckSyncState(phy_axis) == 1)
+    {
+        int axisMask = g_ptr_chn_engine->GetSyncAxisCtrl()->GetSlaveAxis(phy_axis);
+        for (int i = 0; i < this->m_p_general_config->axis_count; ++i) {
+            if(axisMask & (0x01<<i)){
+                limit = 0;
+                //获取当前通道轴号
+                int chn_axis = GetChnAxisFromPhyAxis(i);
+                if (chn_axis != 0xFF)
+                {
+                    double subPos = GetAxisCurMachPos(chn_axis);
+                    double dif = curPos - subPos;
+                    std::cout << "dif--->: " << dif << std::endl;
+
+                    if(CheckSoftLimit(dir, i, subPos)){
+                        return false;
+                    }else if(GetSoftLimt((ManualMoveDir)dir, i, limit) && dir == DIR_POSITIVE && tar_pos > limit*1e7){
+                        tar_pos = (limit+dif) * 1e7;
+                    }else if(GetSoftLimt((ManualMoveDir)dir, i, limit) && dir == DIR_NEGATIVE && tar_pos < limit*1e7){
+                        tar_pos = (limit+dif) * 1e7;
+                    }
+                }
+                else
+                {
+                    continue;
+                }
+            }
+        }
+    }
+    return true;
+}
+
 /**
  * @brief 手轮移动指令
  * @param hw_count : 手轮摇动的格数，正向为正数，负向为负数
@@ -11932,11 +11980,14 @@ void ChannelControl::ManualMove(int8_t dir){
     int64_t tar_pos = 0;
     if(GetChnWorkMode() == MANUAL_STEP_MODE){ //手动单步
         tar_pos = cur_pos + GetCurManualStep()*1e4*dir;		//转换单位为0.1nm
-
     }else{
         tar_pos = cur_pos + 99999*1e7*dir;    //手动连续模式，将目标位置设置的很远
     }
+
     //检查软限位
+    if (!GetLimitTargetPos((ManualMoveDir)dir, m_channel_status.cur_axis, tar_pos))
+        return ;
+    /*
     double limit = 0;
     if(CheckSoftLimit((ManualMoveDir)dir, phy_axis,
                       GetAxisCurMachPos(m_channel_status.cur_axis))){
@@ -11947,6 +11998,7 @@ void ChannelControl::ManualMove(int8_t dir){
     }else if(GetSoftLimt((ManualMoveDir)dir, phy_axis, limit) && dir == DIR_NEGATIVE && tar_pos < limit*1e7){
         tar_pos = limit * 1e7;
     }
+    */
     int64_t n_inc_dis = tar_pos - cur_pos;
     std::cout << std::endl;
     std::cout << "Inpt: " << (double)GetAxisCurInptTarPosWithCompensation(m_channel_status.cur_axis, false) << std::endl;
@@ -12044,6 +12096,10 @@ void ChannelControl::ManualMovePmc(int8_t dir){
     }
 
     //检查软限位
+
+    if (!GetLimitTargetPos((ManualMoveDir)dir, m_channel_status.cur_axis, tar_pos))
+        return ;
+    /*
     double limit = 0;
     if(CheckSoftLimit((ManualMoveDir)dir, phy_axis,
                       GetAxisCurMachPos(m_channel_status.cur_axis))){
@@ -12054,6 +12110,7 @@ void ChannelControl::ManualMovePmc(int8_t dir){
     }else if(GetSoftLimt((ManualMoveDir)dir, phy_axis, limit) && dir == DIR_NEGATIVE && tar_pos < limit * 1e7){
         tar_pos = limit * 1e7;
     }
+    */
     int64_t n_inc_dis = tar_pos - GetAxisCurIntpTarPos(m_channel_status.cur_axis, true)*1e7;
 
     if((m_p_channel_engine->GetMlkMask() & (0x01<<m_channel_status.cur_axis))
@@ -12140,6 +12197,9 @@ void ChannelControl::ManualMove(uint8_t axis, double pos, double vel, bool workc
     ManualMoveDir dir = (tar_pos > cur_pos)?DIR_POSITIVE:DIR_NEGATIVE;  //移动方向
 
     //检查软限位
+    if (!GetLimitTargetPos((ManualMoveDir)dir, m_channel_status.cur_axis, tar_pos))
+        return ;
+    /*
     double limit = 0;
     if(CheckSoftLimit(dir, phy_axis, GetAxisCurMachPos(axis))){
         printf("soft limit active, manual move abs return \n");
@@ -12149,6 +12209,7 @@ void ChannelControl::ManualMove(uint8_t axis, double pos, double vel, bool workc
     }else if(GetSoftLimt(dir, phy_axis, limit) && dir == DIR_NEGATIVE && pos < limit * 1e7){
         tar_pos = limit * 1e7;
     }
+    */
 
     McCmdFrame cmd;
     memset(&cmd, 0x00, sizeof(McCmdFrame));
@@ -12354,6 +12415,9 @@ void ChannelControl::ManualMovePmc(uint8_t axis, double pos, double vel){
     int64_t cur_pos = GetAxisCurMachPos(axis)*1e7;  //当前位置
     ManualMoveDir dir = (tar_pos > cur_pos)?DIR_POSITIVE:DIR_NEGATIVE;  //移动方向
     //检查软限位
+    if (!GetLimitTargetPos((ManualMoveDir)dir, m_channel_status.cur_axis, tar_pos))
+        return ;
+    /*
     double limit = 0;
     if(CheckSoftLimit(dir, phy_axis, GetAxisCurMachPos(axis))){
         printf("soft limit active, manual move abs return \n");
@@ -12363,6 +12427,7 @@ void ChannelControl::ManualMovePmc(uint8_t axis, double pos, double vel){
     }else if(GetSoftLimt(dir, phy_axis, limit) && dir == DIR_NEGATIVE && pos < limit * 1e7){
         tar_pos = limit * 1e7;
     }
+    */
 
     memcpy(&cmd.data.data[1], &tar_pos, sizeof(tar_pos));  //设置目标位置
 

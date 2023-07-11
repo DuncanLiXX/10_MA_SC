@@ -141,6 +141,8 @@ public:
 	void SetMcAutoBufMax(uint16_t count){this->m_n_mc_auto_buf_max = count;}   //设置MC自动模式运动数据缓冲数量
 	uint16_t GetMcAutoBufMax(){return this->m_n_mc_auto_buf_max;}   //获取MC单通道自动数据缓冲数量
 
+    bool GetLimitTargetPos(ManualMoveDir dir, uint8_t chn_axis, int64_t &tarPos);
+
 	void ManualMove(int8_t dir);		//手动移动
     //void ManualMove2(uint8_t axis, int8_t dir, double vel, double inc_dis);  //手动移动，向dir方向移动dis距离
 	void ManualMoveStop();			//停止当前轴手动移动

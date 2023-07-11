@@ -82,6 +82,7 @@ void SetMcArmComm(MCArmCommunication *comm){this->m_p_mc_arm_comm = comm;}   //É
 	void SendPmcAxisToHmi();    //·¢ËÍPMCÖáÎ»ÖÃ¸øHMI
 
 	void ProcessHmiCmd(HMICmdFrame &cmd);  //´¦ÀíHMIÖ¸Áî
+	void ProcessHmiBigFrame(uint16_t cmd, char * buf);
 	void ProcessMcCmdRsp(McCmdFrame &rsp);	//´¦ÀíMCÄ£¿éµÄÖ¸Áî»Ø¸´
 	void ProcessMiCmd(MiCmdFrame &cmd);		//´¦ÀíMIÄ£¿éµÄÖ¸Áî
 

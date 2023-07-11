@@ -3198,6 +3198,17 @@ void ChannelEngine::ProcessHmiCmd(HMICmdFrame &cmd){
     }
 }
 
+void ChannelEngine::ProcessHmiBigFrame(uint16_t cmd, char * buf){
+
+	switch(cmd){
+	case CMD_HMI_SET_MACRO_ARRAY:
+		this->m_p_channel_control[0].ProcessHmiBigFrame(cmd, buf);
+		break;
+	default:
+		break;
+	}
+}
+
 /**
  * @brief 处理HMI获取授权信息指令
  * @param cmd : HMI指令包

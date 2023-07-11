@@ -431,9 +431,7 @@ int LoadSp6Data_2(){
     }
     close(fp_done);
 
-
     END:
-
 
     //关闭设备文件
     close(fp);

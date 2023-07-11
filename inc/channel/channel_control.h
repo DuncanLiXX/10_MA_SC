@@ -81,6 +81,8 @@ public:
 
 	void ProcessHmiCmd(HMICmdFrame &cmd);  //处理HMI指令
 
+	void ProcessHmiBigFrame(uint16_t cmd, char *buf);
+
 	void GetChnStatus(HmiChannelStatus &status);  //获取通道状态
 
 	uint8_t GetChnWorkMode(){return m_channel_status.chn_work_mode;}   //获取通道当前工作模式

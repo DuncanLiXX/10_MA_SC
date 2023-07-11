@@ -218,6 +218,7 @@ enum HMICmdCode {
 	CMD_HMI_MEMSET_MACRO_VALUE,      //批量设置宏变量
 	CMD_HMI_INSERT_MACRO_VALUE,      //插入宏变量 并把元素循环右移
 	CMD_HMI_POP_MACRO_VALUE,         //删除宏变量 并把元素循环左移
+	CMD_HMI_SET_MACRO_ARRAY,		 //设置宏变量数组 一次最多1000个宏变量
 	 // 木工专用
 	CMD_HMI_APPEND_ORDER_LIST,	     //HMI添加排程加工文件
 	CMD_HMI_CLEAR_ORDER_LIST,		 //HMI清空排程文件列表

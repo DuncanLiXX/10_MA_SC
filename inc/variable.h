@@ -62,6 +62,7 @@ public:
 	void MemsetMacroVar(int start, int count, double value);
 	void InsertMacroVar(int index, int end, double value);
 	void PopMacroVar(int index, int end);
+	void SetMacroArray(int index, int count, char * buf);
 
 private:
 	void InitKeepVar();					//初始化非易失性宏变量

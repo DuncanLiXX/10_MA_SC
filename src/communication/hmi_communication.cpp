@@ -522,8 +522,6 @@ bool HMICommunication::SendCmd(HMICmdFrame &cmd){
 		}
 		
 	}
-
-
 	return true;
 }
 
@@ -774,6 +772,9 @@ void HMICommunication::RecvHmiCmd(){
 	HMICmdFrame &data = cmd_node.cmd;
 	ssize_t res = 0;   //接收数据返回值
 
+	char BigData[12800];
+	memset(BigData, 0, sizeof(BigData));
+
 	while(1){
 		if(m_list_recv->EmptyBufLen() == 0){  //接收缓冲已满
 			break;
@@ -781,13 +782,24 @@ void HMICommunication::RecvHmiCmd(){
 
 		bzero((char *)&data, kMaxHmiCmdFrameLen);
 
-		res = recvfrom(m_soc_udp_recv, &data, kMaxHmiCmdFrameLen, 0, (struct sockaddr *)&cmd_node.ip_addr, &m_n_addr_len);
+		res = recvfrom(m_soc_udp_recv, BigData, 12800, 0, (struct sockaddr *)&cmd_node.ip_addr, &m_n_addr_len);
+
 
 		if(res == -1 && errno == EAGAIN){	//无数据可读
 			break;
 		}else if (res == 0){
 			printf("recvfrom error, errno = %d\n", errno);
 			break;
+		}else if(res <= kMaxHmiCmdFrameLen){
+			memcpy(&data, BigData, kMaxHmiCmdFrameLen);
+		}else{
+			// TODO 处理大数据
+
+			memcpy(&big_frame_buffer, BigData, res);
+			uint16_t cmd;
+			memcpy(&cmd, BigData, 2);
+			data.cmd = cmd;
+			printf("===== cmd: %d\n", cmd);
 		}
 
 
@@ -1075,7 +1087,10 @@ int HMICommunication::ProcessHmiCmd(){
             case CMD_HMI_SERVE_DATA_RESET:          //HMI向SC请求伺服引导复位（调试用）
                 ProcessHmiServoDataReset(cmd);
                 break;
-			default:
+            case CMD_HMI_SET_MACRO_ARRAY:
+            	m_p_channel_engine->ProcessHmiBigFrame(cmd.cmd, big_frame_buffer);
+            	break;
+            default:
 				g_ptr_trace->PrintLog(LOG_ALARM, "收到不支持的HMI指令cmd=%d", cmd.cmd);
 				break;
 			}

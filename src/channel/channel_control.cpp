@@ -562,7 +562,10 @@ END:
  * @brief 初始化通道状态
  */
 void ChannelControl::InitialChannelStatus(){
-    memset(&m_channel_status, 0x00, sizeof(m_channel_status));
+
+	printf("===== ChannelControl::InitialChannelStatus\n");
+
+	memset(&m_channel_status, 0x00, sizeof(m_channel_status));
 
     InitGCodeMode();  //初始化G模态
 
@@ -2037,7 +2040,7 @@ END:
     if(m_n_order_mode > 0 && m_b_need_pre_prog && m_b_order_finished){
     	m_b_order_finished = false;
     	m_b_need_pre_prog = false;
-    	SetFuncState(FS_SINGLE_LINE, false);
+    	//SetFuncState(FS_SINGLE_LINE, false);
     	CallMacroProgram(9000);
 
     }
@@ -2808,6 +2811,29 @@ void ChannelControl::ProcessHmiCmd(HMICmdFrame &cmd){
 
     }
 }
+
+
+void ChannelControl::ProcessHmiBigFrame(uint16_t cmd, char *buf){
+
+	switch(cmd){
+	case CMD_HMI_SET_MACRO_ARRAY:
+		uint16_t cmd;
+		int index;
+		int count;
+
+		memcpy(&cmd, buf, 2);
+		memcpy(&index, buf+2, 4);
+		memcpy(&count, buf+6, 4);
+
+		printf("cmd: %d index: %d count: %d\n", cmd, index, count);
+		this->m_macro_variable.SetMacroArray(index, count, buf+10);
+
+		break;
+	default:
+		break;
+	}
+}
+
 
 /**
  * @brief 处理回参考点命令
@@ -3985,6 +4011,7 @@ void ChannelControl::ProcessHmiSetOrderMode(HMICmdFrame &cmd){
 	printf("===== set order mode %d\n", cmd.cmd_extension);
 	if(cmd.cmd_extension >= 0 && cmd.cmd_extension <= 6){
 		m_n_order_mode = cmd.cmd_extension;
+		printf("===== m_n_order_mode %d\n", m_n_order_mode);
 	}else{
 		printf("set order mode invalid\n");
 		m_n_order_mode = 0;
@@ -12395,8 +12422,6 @@ void ChannelControl::SetMcStepMode(bool flag){
     cmd.data.axis_index = NO_AXIS;
     cmd.data.cmd = CMD_MC_SET_STEP_MODE;
     cmd.data.data[0] = flag?1:0;
-
-    std::cout << ">>>>>>>>>>>>-------------------------------> SetMcStepMode: " << (int)flag << std::endl;
 
     if(!this->m_b_mc_on_arm)
         m_p_mc_comm->WriteCmd(cmd);

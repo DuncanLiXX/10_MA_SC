@@ -192,7 +192,7 @@
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/inc/communication}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/inc/channel}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/inc/compiler}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;D:\FPGA\SC_Module\inc\spindle&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/inc/spindle}&quot;"/>
 								</option>
 								<option id="xilinx.gnu.compiler.inferred.swplatform.flags.2088853963" name="Software Platform Inferred Flags" superClass="xilinx.gnu.compiler.inferred.swplatform.flags" value="" valueType="string"/>
 								<inputType id="xilinx.gnu.armv7.linux.cxx.compiler.input.1152938031" name="C++ source files" superClass="xilinx.gnu.armv7.linux.cxx.compiler.input"/>
@@ -302,7 +302,7 @@
 								<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/inc/communication}&quot;"/>
 								<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/inc/channel}&quot;"/>
 								<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/inc/compiler}&quot;"/>
-								<listOptionValue builtIn="false" value="&quot;D:\FPGA\SC_Module\inc\spindle&quot;"/>
+								<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/inc/spindle}&quot;"/>
 							</option>
 							<inputType id="xilinx.gnu.armv7.linux.cxx.compiler.input.1096140206" name="C++ source files" superClass="xilinx.gnu.armv7.linux.cxx.compiler.input"/>
 						</tool>

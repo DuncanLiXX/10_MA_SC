@@ -38,7 +38,6 @@ ParmManager *g_ptr_parm_manager = nullptr;    //参数管理器
 TraceInfo *g_ptr_trace = nullptr;             //日志调试接口
 AlarmProcessor *g_ptr_alarm_processor = nullptr;        //告警处理器接口
 TraceLogProcess *g_ptr_tracelog_processor = nullptr;    //操作记录
-
 ADCommunication *g_ptr_ad_comm = nullptr;     //辅助设备通讯接口
 
 

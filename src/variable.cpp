@@ -726,7 +726,6 @@ void Variable::MemsetMacroVar(int start, int count, double value){
 
 	if(start >= 50000){
 		int idx = start - 50000;
-		printf("===== start %d count %d value %lf\n", start, count, value);
 		for(int i=idx; i<idx+count; i++){
 			m_b_init_user_macro[i] = 1;
 			m_df_user_macro[i] = value;
@@ -766,6 +765,16 @@ void Variable::PopMacroVar(int index, int end){
 	SyncUserMacroVar();
 	return;
 }
+
+void Variable::SetMacroArray(int index, int count, char * buf){
+	int start = index - 50000;
+
+	memcpy(&m_df_user_macro[start], buf, sizeof(double)*count);
+
+	SyncUserMacroVar();
+}
+
+
 
 void Variable::SyncUserMacroVar(){
 	fseek(this->m_fp_macro_var, 0, SEEK_SET);

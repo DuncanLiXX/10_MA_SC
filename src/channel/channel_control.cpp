@@ -88,6 +88,7 @@ ChannelControl::ChannelControl() {
 	order_list_file.open("/cnc/order_list", ios::in);
 
 	char data[1024];
+	memset(data, 0, 1024);
 	while(!order_list_file.eof()){
 		order_list_file >> data;
 		std::cout << "=====" << data << std::endl;
@@ -4838,10 +4839,10 @@ int ChannelControl::Run(){
 				m_channel_mc_status.intp_tar_pos.y,
 				m_channel_mc_status.intp_tar_pos.z);*/
 
+
     	if(m_n_run_thread_state == RUN)
         {
 
-        	//printf("m_n_run_thread_state = RUN\n");
             pthread_mutex_lock(&m_mutex_change_state);
             //printf("locked 9\n");
             //			if(this->m_channel_status.chn_work_mode == AUTO_MODE &&
@@ -4959,7 +4960,7 @@ int ChannelControl::Run(){
         }
         else if(m_n_run_thread_state == ERROR)
         {
-            //TODO 处理错误
+        	//TODO 处理错误
             g_ptr_trace->PrintTrace(TRACE_WARNING, CHANNEL_CONTROL_SC, "Compile Error:%d, %d\n", m_error_code, m_p_compiler->GetErrorCode());
             //CreateError(m_error_code, ERROR_LEVEL, CLEAR_BY_MCP_RESET, 0, m_n_channel_index);
             // @test zk  解决编译报警但运行并未停止问题
@@ -4969,6 +4970,7 @@ int ChannelControl::Run(){
         }
         else if(m_n_run_thread_state == STOP)
         {
+
             //TODO 编译结束，复位编译器状态及变量
 
             m_n_run_thread_state = IDLE;
@@ -5012,8 +5014,7 @@ int ChannelControl::Run(){
         }
         else if(m_n_run_thread_state == WAIT_RUN)
         {
-
-            pthread_mutex_lock(&m_mutex_change_state);
+        	pthread_mutex_lock(&m_mutex_change_state);
 
             bf = m_p_compiler->RunMessage();
 
@@ -5102,8 +5103,6 @@ int ChannelControl::Run(){
 					}
 				}
         	}
-
-
 #endif
         }
     }
@@ -6123,7 +6122,7 @@ bool ChannelControl::IsStepMode(){
  * @return true--成功  false--失败
  */
 bool ChannelControl::ExecuteMessage(){
-    int count = m_p_output_msg_list->GetLength();
+	int count = m_p_output_msg_list->GetLength();
     if(count == 0){
     	return true;
     }
@@ -6219,6 +6218,7 @@ bool ChannelControl::ExecuteMessage(){
         node = m_p_output_msg_list->HeadNode();
     }
 
+
     while(node != nullptr){
         msg = static_cast<RecordMsg *>(node->data);
         end_cmd = 0;
@@ -6232,6 +6232,7 @@ bool ChannelControl::ExecuteMessage(){
                 ){  //运行到复位指定行，需要先重建模态
             this->DoRestart(msg->GetLineNo());
             this->m_n_run_thread_state = WAIT_EXECUTE;
+
             return res;
         }
 
@@ -6248,7 +6249,7 @@ bool ChannelControl::ExecuteMessage(){
             //printf("---------->excute message line no %llu  msg type: %d flags: %d addr: %p\n", line_no, msg_type, msg->GetFlags().all, msg);
         }
         // @test zk
-        //printf("---------->excute message line no %llu  msg type: %d flag: %d\n", line_no, msg_type, msg->GetFlags().all);
+        printf("---------->excute message line no %llu  msg type: %d flag: %d\n", line_no, msg_type, msg->GetFlags().all);
 
         // 获取主程序行号
         if(m_mode_restart.sub_prog_call == 0){
@@ -7930,11 +7931,6 @@ bool ChannelControl::ExecuteArcMsg(RecordMsg *msg, bool flag_block){
         this->m_channel_status.gmode[1] = arc_msg->GetGCode();    //仿真模式下，立即修改当前模式,不通知HMI
     }
 
-    /*if(m_channel_status.gmode[9] != G80_CMD){
-		m_channel_status.gmode[9] = G80_CMD;
-		this->SendChnStatusChangeCmdToHmi(G_MODE);
-	}*/
-
     this->m_n_run_thread_state = RUN;
 
     return true;
@@ -7949,7 +7945,7 @@ bool ChannelControl::ExecuteCoordMsg(RecordMsg *msg){
     //首先将缓冲中的所有待发送指令发送给MC
 	CoordMsg *coordmsg = (CoordMsg *)msg;
 
-    if(this->m_n_restart_mode != NOT_RESTART &&
+	if(this->m_n_restart_mode != NOT_RESTART &&
     		main_prog_line_number < this->m_n_restart_line)
     {//加工复位
 
@@ -8108,13 +8104,15 @@ bool ChannelControl::ExecuteCoordMsg(RecordMsg *msg){
         }
 
     }else if(gcode == G53_CMD){ //机械坐标系
-        if(!OutputData(msg, true))
+
+    	if(!OutputData(msg, true))
             return false;
 
         if(this->m_simulate_mode != SIM_NONE)  //保存仿真当前位置
             this->m_pos_simulate_cur_work = coordmsg->GetTargetPos();
 
     }else if(m_simulate_mode == SIM_NONE || m_simulate_mode == SIM_MACHINING){  //非仿真模式或者加工仿真模式
+
 
     	if(G52Active) return true;
 
@@ -8123,7 +8121,7 @@ bool ChannelControl::ExecuteCoordMsg(RecordMsg *msg){
     	uint16_t coord_mc = 0;
         switch(coordmsg->GetExecStep()){
         case 0:
-            //第一步：更新模态，将新工件坐标系发送到MC
+        	//第一步：更新模态，将新工件坐标系发送到MC
             if(gcode != G92_CMD && gcode != G52_CMD)
             	this->m_channel_status.gmode[14] = gcode;
 
@@ -8134,7 +8132,7 @@ bool ChannelControl::ExecuteCoordMsg(RecordMsg *msg){
 
             return false;
         case 1:
-            //第二步：等待MC设置新工件坐标系完成
+        	//第二步：等待MC设置新工件坐标系完成
             if(!this->m_b_mc_on_arm)
                 this->m_p_mc_comm->ReadChnCurCoord(m_n_channel_index, coord_mc);  //读取MC当前工件坐标系
             else
@@ -8479,6 +8477,8 @@ bool ChannelControl::ExecuteModeMsg(RecordMsg *msg){
         int cmd = modemsg->GetGCode();
         //	this->m_mode_restart.pos_target = loopmsg->GetTargetPos();
         this->m_mode_restart.gmode[GetModeGroup(cmd)] = cmd;
+        if(cmd == G91_CMD)
+        	m_channel_status.gmode[3] = G91_CMD;
         return true;
     }
 

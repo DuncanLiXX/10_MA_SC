@@ -773,13 +773,14 @@ void HMICommunication::RecvHmiCmd(){
 	ssize_t res = 0;   //接收数据返回值
 
 	char BigData[12800];
-	memset(BigData, 0, sizeof(BigData));
+
 
 	while(1){
 		if(m_list_recv->EmptyBufLen() == 0){  //接收缓冲已满
 			break;
 		}
 
+		memset(BigData, 0, sizeof(BigData));
 		bzero((char *)&data, kMaxHmiCmdFrameLen);
 
 		res = recvfrom(m_soc_udp_recv, BigData, 12800, 0, (struct sockaddr *)&cmd_node.ip_addr, &m_n_addr_len);
@@ -794,7 +795,6 @@ void HMICommunication::RecvHmiCmd(){
 			memcpy(&data, BigData, kMaxHmiCmdFrameLen);
 		}else{
 			// TODO 处理大数据
-
 			memcpy(&big_frame_buffer, BigData, res);
 			uint16_t cmd;
 			memcpy(&cmd, BigData, 2);

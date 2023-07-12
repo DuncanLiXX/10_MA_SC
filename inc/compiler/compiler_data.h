@@ -19,7 +19,7 @@ class RecordMsg;
 const int kMaxTagCount = 26;     //最大地址标签数，26个英文字母
 const int kMaxGCodeInLine = 16;  //一行最大G代码个数
 //#ifdef USES_WOOD_MACHINE
-const int kMaxMCodeInLine = 16;   //一行最大M代码个数
+const int kMaxMCodeInLine = 3;   //一行最大M代码个数
 const int kMaxTCodeInLine = 16;   //32;   //一行最大T代码个数
 const int kMaxMacroInLine = 16;   //32;   //一行最大Macro表达式个数
 //#else

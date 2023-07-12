@@ -543,6 +543,7 @@ bool Compiler::ReloadScene(bool bRecPos){
         this->m_compiler_status.mode.d_mode = mode_tmp.d_mode;
         this->m_compiler_status.mode.h_mode = mode_tmp.h_mode;
         this->m_compiler_status.mode.t_mode = mode_tmp.t_mode;
+        this->m_compiler_status.mode.f_mode = mode_tmp.f_mode;
     }
 
     if (same_file) {
@@ -2596,7 +2597,9 @@ bool Compiler::RunSubProgCallMsg(RecordMsg *msg) {
 
     //查找子程序
     int sub_loc = this->FindSubProgram(sub_index, false, sub_msg->GetScanMode());
+
     sub_msg->SetSubProgType(sub_loc);
+
     if (sub_loc == 0) {
         CreateErrorMsg(ERR_NO_SUB_PROG, msg->GetLineNo());  //找不到对应子程序
         return false;
@@ -2998,6 +3001,12 @@ bool Compiler::RunLineMsg(RecordMsg *msg) {
     LineMsg *tmp = (LineMsg *) msg;
 
     double feed = m_compiler_status.mode.f_mode;
+
+    if(feed < 0.00001){
+		m_error_code = ERR_NO_F_DATA;
+		return false;
+    }
+
     tmp->SetFeed(feed);  //设置进给速度
 
     //处理增量编程指令
@@ -3054,6 +3063,15 @@ bool Compiler::RunArcMsg(RecordMsg *msg) {
     ArcMsg *tmp = (ArcMsg *) msg;
     int gcode = tmp->GetGCode();
 
+	double feed = m_compiler_status.mode.f_mode;
+
+	if(feed < 0.00001){
+		m_error_code = ERR_NO_F_DATA;
+		return false;
+	}
+
+	tmp->SetFeed(feed);  //设置进给速度
+
     //处理增量编程指令
     if(m_compiler_status.mode.gmode[3] == G91_CMD){  //增量编程模式
         double *p_target_pos = tmp->GetTargetPos().m_df_point;
@@ -3079,8 +3097,6 @@ bool Compiler::RunArcMsg(RecordMsg *msg) {
     // 旋转轴坐标处理
     if(tmp->GetAxisMoveMask() & m_p_channel_control->GetRotAxisMask())
         ProcessRotateAxisPos(tmp->GetTargetPos(), m_compiler_status.cur_pos, tmp->GetAxisMoveMask());
-
-    tmp->SetFeed(m_compiler_status.mode.f_mode);
 
     m_compiler_status.mode.gmode[1] = gcode;
     //  m_compiler_status.mode.gmode[9] = G80_CMD;  //自动取消循环指令

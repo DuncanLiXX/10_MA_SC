@@ -4810,40 +4810,6 @@ bool ChannelEngine::GetSoftLimt(ManualMoveDir dir, uint8_t phy_axis, double &lim
     return true;
 }
 
-bool ChannelEngine::GetLimitTargetPos(ManualMoveDir dir, uint8_t chn_axis, double curPos, double &tar_pos)
-{
-
-    //uint8_t phy_axis = this->GetPhyAxis(chn_axis);
-
-//    double limit = 0;
-//    if(CheckSoftLimit(dir, phy_axis, curPos)){
-//        return false;
-//    }else if(GetSoftLimt((ManualMoveDir)dir, phy_axis, limit) && dir == DIR_POSITIVE && tar_pos > limit*1e7){
-//        tar_pos = limit * 1e7;
-//    }else if(GetSoftLimt((ManualMoveDir)dir, phy_axis, limit) && dir == DIR_NEGATIVE && tar_pos < limit*1e7){
-//        tar_pos = limit * 1e7;
-//    }
-
-//    //同步轴也需要对应的判断
-//    if (GetSyncAxisCtrl()->CheckSyncState(phy_axis) == 1)
-//    {
-//        int axisMask = GetSyncAxisCtrl()->GetSlaveAxis(phy_axis);
-//        for (int i = 0; i < this->m_p_general_config->axis_count; ++i) {
-//            if(axisMask & (0x01<<i)){
-//                limit = 0;
-//                if(CheckSoftLimit(dir, i, curPos)){
-//                    return false;
-//                }else if(GetSoftLimt((ManualMoveDir)dir, i, limit) && dir == DIR_POSITIVE && tar_pos > limit*1e7){
-//                    tar_pos = limit * 1e7;
-//                }else if(GetSoftLimt((ManualMoveDir)dir, i, limit) && dir == DIR_NEGATIVE && tar_pos < limit*1e7){
-//                    tar_pos = limit * 1e7;
-//                }
-//            }
-//        }
-//    }
-    return true;
-}
-
 /**
  * @brief 处理HMI更新螺补数据
  * @param cmd : HMI发送的数据更新包

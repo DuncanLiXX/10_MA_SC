@@ -74,6 +74,8 @@ void SetMcArmComm(MCArmCommunication *comm){this->m_p_mc_arm_comm = comm;}   //…
     void ReadIoDev_pmc2();                               //PMC2.0∞Ê±æ£¨∂¡»°SD_LINK¥”’æ…Ë±∏≈‰÷√
     bool CheckIoDev_pmc2(const BdioDevInfo &info);       //ºÏ≤‚SD_LINK≤Œ ˝ «∑Ò∫œ¿Ì
     bool SelectHandleWheel(int indexId, int channelId);  //≈‰÷√ ÷¬÷Õ®µ¿”≥…‰
+
+    bool ReadAlarm_pmc();                                //∂¡»° PMC ±®æØ≈‰÷√
 #else
 	void ReadIoDev_pmc1();     //PMC1.0∞Ê±æ£¨∂¡»°SD_LINK¥”’æ…Ë±∏≈‰÷√
 #endif

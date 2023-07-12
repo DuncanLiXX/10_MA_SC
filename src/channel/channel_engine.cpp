@@ -495,6 +495,12 @@ bool ChannelEngine::SelectHandleWheel(int indexId, int channelId)
         return false;
     }
 }
+
+bool ChannelEngine::ReadAlarm_pmc()
+{
+    return true;
+}
+
 #else
 /**
  * @breif PMC1.0版本，读取SD_LINK从站设备配置

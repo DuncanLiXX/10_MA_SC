@@ -411,6 +411,9 @@ public:
     std::vector<string> order_file_vector;  // 排程文件列表
 #endif
 
+    void UpdateSubCallToHmi(int type, int index, int lineNo, bool curDir = false);
+    void UpdateReturnCallToHmi(SubProgReturnMsg *retMsg);
+
 private:
 	void InitialChannelStatus();		//初始化通道状态
     static void *CompileThread(void *args);  //G代码运行线程函数
@@ -650,8 +653,6 @@ private:
 
 	void ExecMCode(AuxMsg *msg, uint8_t index);     //具体执行M指令系统动作
 
-    void UpdateSubCallToHmi(int type, int index, int lineNo, bool curDir = false);
-    void UpdateReturnCallToHmi(SubProgReturnMsg *retMsg);
 //	void SendMiTapAxisCmd(uint16_t spd, uint16_t zAxis);   //发送攻丝轴号给MI
 //	void SendMiTapParamCmd();      //发送攻丝参数给MI
 //	void SendMiTapRatioCmd(int32_t ratio);   //发送攻丝比例给MI

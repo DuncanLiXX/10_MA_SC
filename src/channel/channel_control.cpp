@@ -9860,20 +9860,24 @@ bool ChannelControl::ExecuteSubProgReturnMsg(RecordMsg *msg){
     std::cout << "3 " << (int)IsStepMode() << std::endl;
     std::cout << "4 " << (int)m_n_macroprog_count << " 5 " << (int)m_n_subprog_count << std::endl;
 
-    std::cout << "m_n_cur_dir_sub_prog " << m_p_compiler->m_n_cur_dir_sub_prog << "m_p_compiler->m_n_cur_pre_sub_prog: " << m_p_compiler->m_n_cur_pre_sub_prog << std::endl;
+    std::cout << "m_n_cur_dir_sub_prog " << m_p_compiler->m_n_cur_dir_sub_prog << " m_p_compiler->m_n_cur_pre_sub_prog: " << m_p_compiler->m_n_cur_pre_sub_prog << std::endl;
     m_p_compiler->m_n_cur_dir_sub_prog = m_p_compiler->m_n_cur_pre_sub_prog;
     //设置当前行号
     if(ret_msg->IsRetFromMacroProg() && m_n_macroprog_count > 0){  //宏程序返回，不更新行号
     	m_n_macroprog_count--;
         m_b_ret_from_macroprog = true;
-        SetCurLineNo(msg->GetLineNo());
+        int lineNo = msg->GetLineNo();
+        if (lineNo <= 0) lineNo = 1;
+        SetCurLineNo(lineNo);
 
         if(this->IsStepMode() || m_b_need_delay_step){
             this->SetMcStepMode(true);
             m_b_need_delay_step = false;
         }
     }else{
-        SetCurLineNo(msg->GetLineNo());
+        int lineNo = msg->GetLineNo();
+        if (lineNo <= 0) lineNo = 1;
+        SetCurLineNo(lineNo);
         printf("sub prog return line : %lld\n", msg->GetLineNo());
         if(this->IsStepMode()){
             this->SetMcStepMode(true);
@@ -20513,9 +20517,10 @@ bool ChannelControl::CallMacroProgram(uint16_t macro_index){
     uint8_t state = this->m_channel_status.machining_state;
     //自动、MDA模式(必须在MS_RUNNING状态)
     if((mode == AUTO_MODE || mode == MDA_MODE) && state == MS_RUNNING){
+
     	this->m_p_compiler->CallMarcoProgWithNoPara(macro_index);
         m_n_subprog_count++;
-        //m_n_macroprog_count++;
+        m_n_macroprog_count++;
 
         if(this->m_p_general_config->debug_mode == 0){
             this->SetMcStepMode(false);

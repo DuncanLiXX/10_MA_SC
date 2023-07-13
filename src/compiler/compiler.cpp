@@ -4365,6 +4365,7 @@ int Compiler::CallMarcoProgWithNoPara(int macro_index, bool flag){
     //查找子程序
     int macro_loc = this->FindSubProgram(macro_index);
 
+    std::cout << "macro loc: " << macro_loc << std::endl;
     if (macro_loc == 0 || macro_loc == 1) {
         printf("create error in CallMarcoProgWithNoPara\n");
         CreateErrorMsg(ERR_NO_SUB_PROG, 0);  //找不到对应子程序
@@ -4397,9 +4398,10 @@ int Compiler::CallMarcoProgWithNoPara(int macro_index, bool flag){
     this->m_n_head_state = HEAD_INFO;
 
     //TODO 向HMI发送命令打开子文件
-    if(flag && g_ptr_parm_manager->GetSystemConfig()->debug_mode > 0){ //调式模式下，打开宏程序文件
-        this->m_p_channel_control->SendOpenFileCmdToHmi(filepath);
-    }
+    this->m_p_channel_control->UpdateSubCallToHmi(macro_loc, macro_index, 1);
+    //if(flag && g_ptr_parm_manager->GetSystemConfig()->debug_mode > 0){ //调式模式下，打开宏程序文件
+    //    this->m_p_channel_control->SendOpenFileCmdToHmi(filepath);
+    //}
 
     return macro_loc;
 }

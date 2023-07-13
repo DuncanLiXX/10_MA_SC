@@ -495,6 +495,12 @@ bool ChannelEngine::SelectHandleWheel(int indexId, int channelId)
         return false;
     }
 }
+
+bool ChannelEngine::ReadAlarm_pmc()
+{
+    return true;
+}
+
 #else
 /**
  * @breif PMC1.0版本，读取SD_LINK从站设备配置
@@ -4741,13 +4747,29 @@ bool ChannelEngine::CheckSoftLimit(ManualMoveDir dir, uint8_t phy_axis, double p
 //        }
 //        return false;
 //    }
+    deque<ErrorInfo> infos;
+    infos = g_ptr_alarm_processor->GetErrorInfo();
+    for(auto itr = infos.begin(); itr != infos.end(); ++itr)
+    {
+        if (itr->axis_index == chn_axis)
+        {
+            if (itr->error_code == ERR_SOFTLIMIT_POS && dir == DIR_POSITIVE)
+            {
+                return true;
+            }
+            if (itr->error_code == ERR_SOFTLIMIT_NEG && dir == DIR_NEGATIVE)
+            {
+                return true;
+            }
+        }
+    }
 
     if(dir == DIR_POSITIVE && pos >= limit2){
-        CreateError(ERR_SOFTLIMIT_POS, WARNING_LEVEL, CLEAR_BY_MCP_RESET, 0, chn, chn_axis);
+        CreateError(ERR_SOFTLIMIT_POS, ERROR_LEVEL, CLEAR_BY_MCP_RESET, 0, chn, chn_axis);
         return true;
     }
     else if(dir == DIR_NEGATIVE && pos <= limit1){
-        CreateError(ERR_SOFTLIMIT_NEG, WARNING_LEVEL, CLEAR_BY_MCP_RESET, 0, chn, chn_axis);
+        CreateError(ERR_SOFTLIMIT_NEG, ERROR_LEVEL, CLEAR_BY_MCP_RESET, 0, chn, chn_axis);
         return true;
     }
 
@@ -9565,7 +9587,6 @@ void ChannelEngine::ProcessPmcSignal(){
         	if(m_p_pmc_reg->FReg().bits[i].RST != 1)
         	{
         		this->m_p_channel_control[0].CallMacroProgram(g_reg->MPCS);
-        		printf("=========== CallMacroProgram %d\n", g_reg->MPCS);
         		f_reg->MPCO = 1;   //调用结束
         	}
         }else if(g_reg_last->EMPC == 1 && g_reg->EMPC == 0){

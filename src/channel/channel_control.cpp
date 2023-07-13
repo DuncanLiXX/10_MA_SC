@@ -3410,7 +3410,7 @@ void ChannelControl::DoRestart(uint64_t line_no){
             node = this->m_p_output_msg_list_auto->HeadNode();
     	}
     }
-
+    printf("===== DoRestart...\n");
     // 执行运动指令消息
     if(this->m_channel_rt_status.cur_pos_work != m_mode_restart.pos_target){   //当前位置不是起点位置
         printf("坐标不一致，[%lf, %lf, %lf] to [%lf, %lf, %lf]\n", m_channel_rt_status.cur_pos_work.m_df_point[0], m_channel_rt_status.cur_pos_work.m_df_point[1],
@@ -3431,6 +3431,7 @@ void ChannelControl::DoRestart(uint64_t line_no){
                 msg->SetLineNo(line_no);
                 msg->SetFlag(FLAG_BLOCK_OVER, true);
                 this->m_p_output_msg_list_auto->InsertBefore(msg, node);   //插入抬Z轴指令
+                printf("111111111\n");
             }
         }
 
@@ -3454,6 +3455,7 @@ void ChannelControl::DoRestart(uint64_t line_no){
                 msg->SetLineNo(line_no);
                 msg->SetFlag(FLAG_BLOCK_OVER, true);
                 this->m_p_output_msg_list_auto->InsertBefore(msg, node);   //插入非XYZ轴复位指令
+                printf("2222222222\n");
             }
         }
 
@@ -3478,6 +3480,7 @@ void ChannelControl::DoRestart(uint64_t line_no){
                 msg->SetLineNo(line_no);
                 msg->SetFlag(FLAG_BLOCK_OVER, true);
                 this->m_p_output_msg_list_auto->InsertBefore(msg, node);   //插入非XYZ轴复位指令
+                printf("3333333333\n");
             }
         }
 
@@ -3491,9 +3494,12 @@ void ChannelControl::DoRestart(uint64_t line_no){
                 msg->SetLineNo(line_no);
                 msg->SetFlag(FLAG_BLOCK_OVER, true);
                 this->m_p_output_msg_list_auto->InsertBefore(msg, node);   //插入Z轴复位指令
+                printf("4444444444444\n");
             }
         }
     }
+
+    printf("===== DoRestart End ...\n");
 
     //插入复位完成消息
     msg = new RestartOverMsg();
@@ -5089,6 +5095,12 @@ int ChannelControl::Run(){
 				else if(m_b_in_next_prog){
 					m_b_in_next_prog = false;
 					m_b_order_finished = true;
+					if(m_p_g_reg->SBK){
+						SetFuncState(FS_SINGLE_LINE, true);
+						//this->SetMcStepMode(true);
+						//this->m_b_need_change_to_pause = true;
+					}
+
 					if(!order_file_vector.empty()){
 						char path[kMaxPathLen];
 						char file_name[150];
@@ -6129,7 +6141,7 @@ bool ChannelControl::ExecuteMessage(){
 
     bool res = false;
     RecordMsg *msg = nullptr;
-    ListNode<RecordMsg *> *node = nullptr;   //
+    ListNode<RecordMsg *> *node = nullptr;
     ListNode<RecordMsg *> *node_next = nullptr;
     CodeMsgType msg_type = NORMAL_MSG;
     bool flag = false;
@@ -6224,16 +6236,23 @@ bool ChannelControl::ExecuteMessage(){
         end_cmd = 0;
         if(m_channel_status.chn_work_mode == AUTO_MODE &&
                 m_n_restart_mode != NOT_RESTART && this->m_n_restart_step == 1 &&
-                this->m_mode_restart.sub_prog_call == 0 &&     //在主程序中
-                msg->GetLineNo() >= this->m_n_restart_line
-        #ifdef USES_ADDITIONAL_PROGRAM
-                && this->m_n_add_prog_type == NONE_ADD      //非附加程序运行状态
-        #endif
+                this->m_mode_restart.sub_prog_call == 0    //在主程序中
                 ){  //运行到复位指定行，需要先重建模态
-            this->DoRestart(msg->GetLineNo());
-            this->m_n_run_thread_state = WAIT_EXECUTE;
-
-            return res;
+        	// 如果程序再起到回原点指令下一行, 需要执行回原点指令,提前一行开始恢复。
+        	if(msg->GetMsgType() == REF_RETURN_MSG){
+				printf("===============================\n");
+        		if(msg->GetLineNo() >= this->m_n_restart_line-1){
+					this->DoRestart(msg->GetLineNo());
+					this->m_n_run_thread_state = WAIT_EXECUTE;
+					return res;
+				}
+			}else{
+				if(msg->GetLineNo() >= this->m_n_restart_line){
+					this->DoRestart(msg->GetLineNo());
+					this->m_n_run_thread_state = WAIT_EXECUTE;
+					return res;
+				}
+			}
         }
 
         flag = false;
@@ -6249,7 +6268,7 @@ bool ChannelControl::ExecuteMessage(){
             //printf("---------->excute message line no %llu  msg type: %d flags: %d addr: %p\n", line_no, msg_type, msg->GetFlags().all, msg);
         }
         // @test zk
-        printf("---------->excute message line no %llu  msg type: %d flag: %d\n", line_no, msg_type, msg->GetFlags().all);
+        //printf("---------->excute message line no %llu  msg type: %d flag: %d\n", line_no, msg_type, msg->GetFlags().all);
 
         // 获取主程序行号
         if(m_mode_restart.sub_prog_call == 0){
@@ -6424,10 +6443,10 @@ bool ChannelControl::ExecuteMessage(){
 
             if(IsStepMode()){//单段模式, 非宏程序调用或者打开了调试模式
                 if(msg->CheckFlag(FLAG_LAST_REC)){
-                    std::cout << "msg->ismoveMsg: " << (int)msg->IsMoveMsg() << std::endl;
-                    std::cout << "msg->type: " << msg_type << std::endl;
-                    std::cout << "IsEndMsg: " << msg->IsEndMsg() << std::endl;
-                    std::cout << "sub: " << m_p_compiler->m_n_cur_dir_sub_prog << std::endl;
+                    //std::cout << "msg->ismoveMsg: " << (int)msg->IsMoveMsg() << std::endl;
+                    //std::cout << "msg->type: " << msg_type << std::endl;
+                    //std::cout << "IsEndMsg: " << msg->IsEndMsg() << std::endl;
+                    //std::cout << "sub: " << m_p_compiler->m_n_cur_dir_sub_prog << std::endl;
                     if((!msg->IsMoveMsg() || msg_type == AUX_MSG || msg_type == REF_RETURN_MSG) &&
                             !msg->IsEndMsg()){	//单步模式下，运行完一行的最后一条代码后暂停
                         printf("--------------->PAUSED in execute\n");
@@ -6443,10 +6462,10 @@ bool ChannelControl::ExecuteMessage(){
             }
             else
             {
-                std::cout << "----> FS_SINGLE: " << (int)m_channel_status.func_state_flags.CheckMask(FS_SINGLE_LINE) << std::endl;
-                std::cout << "m_macropgrocont: " << (int)m_n_macroprog_count << std::endl;
-                std::cout << "m_channel_status.chn_work_mode: " << (int)m_channel_status.chn_work_mode << std::endl;
-                std::cout << "m_sum: " << m_simulate_mode << std::endl;
+                //std::cout << "----> FS_SINGLE: " << (int)m_channel_status.func_state_flags.CheckMask(FS_SINGLE_LINE) << std::endl;
+                //std::cout << "m_macropgrocont: " << (int)m_n_macroprog_count << std::endl;
+                //std::cout << "m_channel_status.chn_work_mode: " << (int)m_channel_status.chn_work_mode << std::endl;
+                //std::cout << "m_sum: " << m_simulate_mode << std::endl;
             }
 
             if(msg->IsEndMsg()){	//处理M02/M30消息
@@ -7823,7 +7842,7 @@ bool ChannelControl::ExecuteRapidMsg(RecordMsg *msg, bool flag_block){
         this->m_mode_restart.gmode[1] = rapidmsg->GetGCode();   //更新模态
         return true;
     }
-
+    printf("kkkkkkk\n");
     uint32_t mask = rapidmsg->GetAxisMoveMask();
     for(int i=0; i<m_p_channel_config->chn_axis_count; i++){
         if((mask & (0x01<<i)) == 0)
@@ -9000,7 +9019,7 @@ bool ChannelControl::ExecuteCompensateMsg(RecordMsg *msg){
 	// @test zk
 
     bool flag = this->m_n_hw_trace_state==REVERSE_TRACE?true:false;    //是否反向引导
-        int value = flag?compmsg->GetLastCompValue():compmsg->GetCompValue();
+	int value = flag?compmsg->GetLastCompValue():compmsg->GetCompValue();
     //切换补偿值，更新模态
 
     uint16_t offset_mc = 0;  //mc中的当前刀偏
@@ -9937,10 +9956,8 @@ bool ChannelControl::ExecutePolarIntpMsg(RecordMsg *msg){
         return false;
     }
 
-
     //设置当前行号
     SetCurLineNo(polarmsg->GetLineNo());
-
 
     //切换补偿值，更新模态
     int type = polarmsg->GetGCode();
@@ -9948,7 +9965,6 @@ bool ChannelControl::ExecutePolarIntpMsg(RecordMsg *msg){
 
     if(intp_type == G13_1_CMD)
         intp_type = 0;
-
 
     //	else if(type == G12_2_CMD){//设置磨削状态， 先更新到MC模态信息
 
@@ -10032,11 +10048,8 @@ bool ChannelControl::ExecutePolarIntpMsg(RecordMsg *msg){
         printf("G12.2/G12.3 execute error!\n");
         break;
     }
-    //	}
-
 
     m_n_run_thread_state = RUN;
-
 
     printf("execute polarintp message:%d\n", type);
 
@@ -10054,22 +10067,41 @@ bool ChannelControl::ExecuteRefReturnMsg(RecordMsg *msg){
     RefReturnMsg *refmsg = (RefReturnMsg *)msg;
 
     if(this->m_n_restart_mode != NOT_RESTART &&
-    		main_prog_line_number < this->m_n_restart_line
+    		main_prog_line_number < this->m_n_restart_line-1
         #ifdef USES_ADDITIONAL_PROGRAM
             && this->m_n_add_prog_type == NONE_ADD      //非附加程序运行状态
         #endif
             ){//加工复位
         //	this->m_mode_restart.pos_target = loopmsg->GetTargetPos();
         uint32_t axis_mask = refmsg->GetAxisMask();
-        DPointChn pos = m_mode_restart.pos_target;
-        for(int i = 0; i < this->m_p_channel_config->chn_axis_count; i++){
-            if(axis_mask & (0x01<<i)){
-                pos.m_df_point[i] = m_p_axis_config[this->GetPhyAxis(i)].axis_home_pos[0];
-            }
-        }
-        this->TransMachCoordToWorkCoord(pos, m_mode_restart.gmode[14], m_mode_restart.cur_h_code, axis_mask);
-        m_mode_restart.pos_target = pos;
+        int gcode = refmsg->GetGCode();
 
+        DPointChn pos = m_mode_restart.pos_target;
+        if(gcode == G28_CMD){
+			for(int i = 0; i < this->m_p_channel_config->chn_axis_count; i++){
+				if(axis_mask & (0x01<<i)){
+					pos.m_df_point[i] = m_p_axis_config[this->GetPhyAxis(i)].axis_home_pos[0];
+				}
+			}
+        }else if(gcode == G30_CMD){
+        	int ref_id = refmsg->ref_id;
+        	for(int i = 0; i < this->m_p_channel_config->chn_axis_count; i++){
+				if(axis_mask & (0x01<<i)){
+					pos.m_df_point[i] = m_p_axis_config[this->GetPhyAxis(i)].axis_home_pos[ref_id-1];
+				}
+			}
+        }else if(gcode == G27_CMD){
+        	for(int i = 0; i < m_p_channel_config->chn_axis_count; i++){
+				if(axis_mask & (0x01<<i)){
+					pos.m_df_point[i] = this->GetPhyAxis(i);
+				}
+			}
+        	m_mode_restart.pos_target = pos;
+        	return true;
+        }
+
+        this->TransMachCoordToWorkCoord(pos, m_mode_restart.gmode[14], m_mode_restart.cur_h_code, axis_mask);
+		m_mode_restart.pos_target = pos;
         return true;
     }
 
@@ -10078,7 +10110,7 @@ bool ChannelControl::ExecuteRefReturnMsg(RecordMsg *msg){
         //设置当前行号
         SetCurLineNo(refmsg->GetLineNo());
 
-        //		int gcode = refmsg->GetGCode();
+        //int gcode = refmsg->GetGCode();
         uint32_t axis_mask = refmsg->GetAxisMask();
         DPointChn &mid_pos = refmsg->GetMiddlePos();
 
@@ -10136,8 +10168,9 @@ bool ChannelControl::ExecuteRefReturnMsg(RecordMsg *msg){
         if(this->ReadMcMoveDataCount() > 0 || !block_over ||
                 m_channel_status.machining_state == MS_PAUSED ||
                 m_channel_status.machining_state == MS_WARNING){ //未达到执行条件
-            //			printf("RefReturnMsg exec return: %d, %d , %d\n", block_over, ReadMcMoveDataCount(), m_channel_status.machining_state);
-            return false;    //还未运行到位
+            //printf("RefReturnMsg exec return: %d, %d , %d\n", block_over, ReadMcMoveDataCount(), m_channel_status.machining_state);
+
+        	return false;    //还未运行到位
         }
         else if(++count < limit){
             usleep(5000);   //等待5ms，因为MC状态更新周期为5ms，需要等待状态确认
@@ -10320,7 +10353,8 @@ bool ChannelControl::ExecuteRefReturnMsg(RecordMsg *msg){
             break;
         }
     }else if(gcode == G27_CMD){
-        switch(refmsg->GetExecStep()){
+        printf("111111111\n");
+    	switch(refmsg->GetExecStep()){
         case 0:
             printf("G27 step 0 ...\n");
             // 移动到 G27 指定点
@@ -11532,11 +11566,9 @@ void ChannelControl::SetFuncState(int state, uint8_t mode){
                 m_b_need_delay_step = true;
             }
         }else if(mode == 0){  //关闭
-            printf("1111111111111111\n");
         	this->SetMcStepMode(false);
             this->m_b_need_change_to_pause = false;
         }else if(this->m_n_macroprog_count == 0 || m_p_compiler->m_n_cur_dir_sub_prog ||  this->m_p_general_config->debug_mode > 0){//打开
-        	printf("2222222222222222\n");
             this->SetMcStepMode(true);
         }
         else {//调用子程序块中，子程序执行完才能开启单段

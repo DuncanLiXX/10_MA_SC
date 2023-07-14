@@ -80,6 +80,8 @@ ChannelControl::ChannelControl() {
     m_b_need_next_prog = false;    // 后置程序待执行
     m_b_in_next_prog = false;	   // 后置程序执行中
     m_b_g110_call = false;		   // G110 调用程序标志
+    m_b_g111_call = false;
+    exec_m30_over = false;
     m_b_dust_eliminate = false;      //除尘标志
     m_n_order_mode = 0;
     current_order_index = -1;      // 当前加载排程列表序号
@@ -845,6 +847,8 @@ void ChannelControl::Reset(){
 	m_b_need_next_prog = false;    // 后置程序待执行
 	m_b_in_next_prog = false;	   // 后置程序执行中
 	m_b_g110_call = false;		   // G110 调用程序标志
+	m_b_g111_call = false;
+	exec_m30_over = false;
 	m_b_dust_eliminate = false;      //除尘标志
 #endif
 
@@ -2039,7 +2043,8 @@ END:
 
     printf("m_n_order_mode  %d, m_b_need_pre_prog %d m_b_order_finished: %d\n",
     		m_n_order_mode, m_b_need_pre_prog, m_b_order_finished);
-    if(m_n_order_mode > 0 && m_b_need_pre_prog && m_b_order_finished){
+    if(m_n_order_mode > 0 && m_b_need_pre_prog &&
+    		m_b_order_finished && m_n_restart_mode == NOT_RESTART){
     	m_b_order_finished = false;
     	m_b_need_pre_prog = false;
     	//SetFuncState(FS_SINGLE_LINE, false);
@@ -5058,8 +5063,8 @@ int ChannelControl::Run(){
 				this->StartRunGCode();
         	}
 
-        	if(m_n_order_mode > 0 && m_b_dust_eliminate == 0){
-
+        	if(m_n_order_mode > 0 && m_b_dust_eliminate == 0 && exec_m30_over){
+        		exec_m30_over = false;
 				// 加工文件M30   需要启动后置程序
 				if(m_b_need_next_prog){
 					char  filename[] = "O9030.NC";
@@ -5074,7 +5079,7 @@ int ChannelControl::Run(){
 					m_b_g110_call =false;   //非后置程序不允许G110调用
 				}
 				// 后置程序M30  需要调用G110 指定的加工 程序
-				else if(m_b_g110_call){
+				else if(m_b_in_next_prog && m_b_g110_call){
 					char path[kMaxPathLen];
 					strcpy(path, PATH_NC_FILE);
 					strcat(path, g110_file_name);
@@ -5087,33 +5092,26 @@ int ChannelControl::Run(){
 					m_b_g110_call = false;
 					if(m_p_g_reg->SBK){
 						SetFuncState(FS_SINGLE_LINE, true);
-						//this->SetMcStepMode(true);
-						//this->m_b_need_change_to_pause = true;
 					}
 
 				}
 				// 所有加工程序结束 后置程序运行结束 回到排程列表第一个文件
-				else if(m_b_in_next_prog){
+				else if(m_b_in_next_prog && m_b_g111_call){
 					m_b_in_next_prog = false;
 					m_b_order_finished = true;
 					if(m_p_g_reg->SBK){
 						SetFuncState(FS_SINGLE_LINE, true);
-						//this->SetMcStepMode(true);
-						//this->m_b_need_change_to_pause = true;
 					}
 
-					if(!order_file_vector.empty()){
-						char path[kMaxPathLen];
-						char file_name[150];
-						current_order_index = 0;
-						strcpy(path, PATH_NC_FILE);
-						strcpy(file_name, order_file_vector.at(0).c_str());
-						strcat(path, file_name);
-						strcpy(m_channel_status.cur_nc_file_name,file_name);
-						g_ptr_parm_manager->SetCurNcFile(m_n_channel_index, m_channel_status.cur_nc_file_name);    //修改当前NC文件
-						this->m_p_compiler->OpenFile(path);
-						this->SendOpenFileCmdToHmi(m_channel_status.cur_nc_file_name);
-					}
+					char path[kMaxPathLen];
+					strcpy(path, PATH_NC_FILE);
+					strcat(path, g110_file_name);
+					strcpy(m_channel_status.cur_nc_file_name, g110_file_name);
+					g_ptr_parm_manager->SetCurNcFile(m_n_channel_index, m_channel_status.cur_nc_file_name);    //修改当前NC文件
+					this->m_p_compiler->OpenFile(path);
+					this->SendOpenFileCmdToHmi(m_channel_status.cur_nc_file_name);
+					m_n_run_thread_state = ERROR;
+					CreateError(ERR_ORDER_FINISH, ERROR_LEVEL, CLEAR_BY_MCP_RESET, 0, m_n_channel_index);
 				}
         	}
 #endif
@@ -6235,18 +6233,17 @@ bool ChannelControl::ExecuteMessage(){
     while(node != nullptr){
         msg = static_cast<RecordMsg *>(node->data);
         end_cmd = 0;
+
         if(m_channel_status.chn_work_mode == AUTO_MODE &&
                 m_n_restart_mode != NOT_RESTART && this->m_n_restart_step == 1 &&
                 this->m_mode_restart.sub_prog_call == 0    //在主程序中
                 ){  //运行到复位指定行，需要先重建模态
         	// 如果程序再起到回原点指令下一行, 需要执行回原点指令,提前一行开始恢复。
-        	if(msg->GetMsgType() == REF_RETURN_MSG){
-				printf("===============================\n");
-        		if(msg->GetLineNo() >= this->m_n_restart_line-1){
-					this->DoRestart(msg->GetLineNo());
-					this->m_n_run_thread_state = WAIT_EXECUTE;
-					return res;
-				}
+        	if(msg->GetMsgType() == REF_RETURN_MSG && msg->GetLineNo() == this->m_n_restart_line-1){
+				this->DoRestart(msg->GetLineNo()+1);
+				this->m_n_run_thread_state = WAIT_EXECUTE;
+				return res;
+
 			}else{
 				if(msg->GetLineNo() >= this->m_n_restart_line){
 					this->DoRestart(msg->GetLineNo());
@@ -6417,6 +6414,7 @@ bool ChannelControl::ExecuteMessage(){
                     ){
 
                 if(this->m_n_restart_step == 1){  //扫描阶段的数据执行完后直接删除
+                	printf("===== delete node lino: %llu\n", node->data->GetLineNo());
                 	this->m_p_output_msg_list->Delete(node);   //删除此节点命令
                     node = m_p_output_msg_list->HeadNode();  //取下一个消息
                     return res;
@@ -6907,6 +6905,7 @@ bool ChannelControl::ExecuteAuxMsg(RecordMsg *msg){
                 }
                 tmp->SetExecStep(m_index, 0xFF);    //置位结束状态
 
+                exec_m30_over = true;
                 printf("execute M30 over\n");
             }
 
@@ -7843,7 +7842,7 @@ bool ChannelControl::ExecuteRapidMsg(RecordMsg *msg, bool flag_block){
         this->m_mode_restart.gmode[1] = rapidmsg->GetGCode();   //更新模态
         return true;
     }
-    printf("kkkkkkk\n");
+
     uint32_t mask = rapidmsg->GetAxisMoveMask();
     for(int i=0; i<m_p_channel_config->chn_axis_count; i++){
         if((mask & (0x01<<i)) == 0)
@@ -7970,6 +7969,13 @@ bool ChannelControl::ExecuteCoordMsg(RecordMsg *msg){
     {//加工复位
 
     	int gcode = coordmsg->GetGCode();
+    	if(gcode == G92_CMD || gcode == G52_CMD){
+    		m_error_code = ERR_RESTART_G92_G52;
+			CreateError(ERR_RESTART_G92_G52, ERROR_LEVEL, CLEAR_BY_MCP_RESET, gcode, m_n_channel_index, main_prog_line_number);
+    		return false;
+    	}
+
+
 		if ((gcode >= G54_CMD && gcode <= G59_CMD)
 				|| (gcode >= G5401_CMD && gcode <= G5499_CMD) || gcode == 541){
 			this->m_mode_restart.gmode[14] = gcode;//更新模态
@@ -9767,8 +9773,8 @@ bool ChannelControl::ExecuteMacroCmdMsg(RecordMsg *msg){
             ){//加工复位
         return true;
     }
-	/*
-    //等待MC运行完所有数据
+    /*
+	//等待MC运行完所有数据
     int count = 0;
     int limited = 1;
     if(this->IsStepMode())  //单段模式需要多等待一个周期，状态刷新需要一个周期
@@ -9792,9 +9798,7 @@ bool ChannelControl::ExecuteMacroCmdMsg(RecordMsg *msg){
             //		printf("Macro cmd: step=%d, %d, c = %d\n", m_channel_mc_status.step_over,m_channel_mc_status.auto_block_over, count);
             usleep(5000);   //等待5ms，因为MC状态更新周期为5ms，需要等待状态确认
         }
-    }
-
-    */
+    }*/
 
     if(this->IsStepMode() && this->m_b_need_change_to_pause){//单段，切换暂停状态
         this->m_b_need_change_to_pause = false;
@@ -9805,8 +9809,6 @@ bool ChannelControl::ExecuteMacroCmdMsg(RecordMsg *msg){
 
     //设置当前行号
     SetCurLineNo(msg->GetLineNo());
-    printf("execute macro msg  %llu...\n", msg->GetLineNo());
-
     return true;
 }
 
@@ -10477,7 +10479,7 @@ bool ChannelControl::ExecuteSkipMsg(RecordMsg *msg){
             && this->m_n_add_prog_type == NONE_ADD      //非附加程序运行状态
         #endif
             ){//加工复位
-
+    	this->m_mode_restart.pos_target = skipmsg->GetTargetPos();  //更新目标位置
         return true;
     }
 
@@ -11532,8 +11534,14 @@ bool ChannelControl::ExecuteOpenFileMsg(RecordMsg *msg){
 	current_order_index = index-1;
 	strcpy(g110_file_name, order_file_vector.at(index-1).c_str());
 
-	// 打开G110 程序调用标志
-	this->m_b_g110_call = true;
+
+
+	if(!openfile_msg->order_end){
+		// 打开G110 程序调用标志
+		this->m_b_g110_call = true;
+	}else{
+		this->m_b_g111_call = true;
+	}
 
 	return true;
 }

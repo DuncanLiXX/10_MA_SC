@@ -11642,7 +11642,11 @@ void ChannelControl::SetFuncState(int state, uint8_t mode){
                 this->SetMcStepMode(false);
                 this->m_b_need_change_to_pause = false;
             }
-            else if(this->m_n_macroprog_count == 0 || m_p_compiler->m_n_cur_dir_sub_prog || this->m_p_general_config->debug_mode > 0){  //非宏程序调用，并关闭调试模式
+            else if (this->m_p_general_config->debug_mode > 0)
+            {
+                this->SetMcStepMode(true);
+            }
+            else if((this->m_n_macroprog_count == 0 || m_p_compiler->m_n_cur_dir_sub_prog) && !m_b_in_block_prog){  //非宏程序调用，并关闭调试模式
                 this->SetMcStepMode(true);
             }
             else {//调用子程序块中，子程序执行完才能开启单段

@@ -5131,6 +5131,7 @@ int ChannelControl::Run(){
 					strcpy(m_channel_status.cur_nc_file_name, g110_file_name);
 					g_ptr_parm_manager->SetCurNcFile(m_n_channel_index, m_channel_status.cur_nc_file_name);    //修改当前NC文件
 					this->m_p_compiler->OpenFile(path);
+
 					this->SendOpenFileCmdToHmi(m_channel_status.cur_nc_file_name);
 					this->StartRunGCode();
 					m_b_in_next_prog = false;
@@ -5146,9 +5147,14 @@ int ChannelControl::Run(){
 					m_b_in_next_prog = false;
                     std::cout << "-------------------------------->>> " << (int)m_b_in_block_prog << std::endl;
 					m_b_order_finished = true;
-					if(m_p_g_reg->SBK){
-						SetFuncState(FS_SINGLE_LINE, true);
-					}
+                    //if(m_p_g_reg->SBK){
+                    //	SetFuncState(FS_SINGLE_LINE, true);
+                    //}
+                    if (IsStepMode())
+                    {
+                        this->SetMcStepMode(true);
+                        m_b_need_delay_step = false;
+                    }
 
 					char path[kMaxPathLen];
 					strcpy(path, PATH_NC_FILE);
@@ -7776,8 +7782,7 @@ void ChannelControl::UpdateReturnCallToHmi(SubProgReturnMsg *ret_msg)
         char file[kMaxFileNameLen];
         memset(file, 0x00, kMaxFileNameLen);
         ret_msg->GetReturnFileName(file);
-        std::cout << "Test----------------------------------> " << file << std::endl;
-        strcpy(file, MDI_FILE_NAME);
+        //strcpy(file, MDI_FILE_NAME);
         this->SendMDIOpenFileCmdToHmi(file);
     }
 }

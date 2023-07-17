@@ -3877,8 +3877,9 @@ ExactStopMsg& ExactStopMsg::operator=( const ExactStopMsg& msg){
 	return *this;
 }
 
-OpenFileMsg::OpenFileMsg():RecordMsg(){
+OpenFileMsg::OpenFileMsg(bool end):RecordMsg(){
 	SetMsgType(OPEN_FILE_MSG);
+	order_end = end;
 }
 
 OpenFileMsg::~OpenFileMsg(){

@@ -632,6 +632,9 @@ bool Parser::AnalyzeGCode(LexerGCode *gcode){
 		}else if(m_gmode[0] == G110_CMD){
 			if(!CreateOpenFileMsg())
 				return false;
+		}else if(m_gmode[0] == G111_CMD){
+			if(!CreateOpenFileMsg(true))
+				return false;
 		}
 		else{
 			if(!CreateModeMsg(m_gmode[0]))
@@ -3225,8 +3228,8 @@ bool Parser::CreateExactStopMsg(){
  * @param
  * @return
  */
-bool Parser::CreateOpenFileMsg(){
-	OpenFileMsg * new_msg = new OpenFileMsg();
+bool Parser::CreateOpenFileMsg(bool flag_end){
+	OpenFileMsg * new_msg = new OpenFileMsg(flag_end);
 	GetCodeData(O_DATA, new_msg->OData);
 	//new_msg->SetFlag(FLAG_WAIT_MOVE_OVER, true);
 	new_msg->SetLineNo(this->m_p_lexer_result->line_no);

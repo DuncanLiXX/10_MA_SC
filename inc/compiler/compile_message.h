@@ -1133,7 +1133,7 @@ public:
 
 class OpenFileMsg :public RecordMsg{
 public:
-	OpenFileMsg();    //构造函数
+	OpenFileMsg(bool end = false);    //构造函数
 	virtual ~OpenFileMsg();  //析构函数
 
 	virtual void Execute();		//执行函数
@@ -1144,6 +1144,7 @@ public:
 	virtual void PrintString();   //用于程序调试
 	OpenFileMsg& operator=( const OpenFileMsg& msg);  //赋值运算符
 	double OData;
+	bool order_end;
 };
 
 

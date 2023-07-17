@@ -411,6 +411,8 @@ public:
     std::vector<string> order_file_vector;  // 排程文件列表
 #endif
 
+    bool m_b_in_block_prog = false; // 锁块
+
     void UpdateSubCallToHmi(int type, int index, int lineNo, bool curDir = false);
     void UpdateReturnCallToHmi(SubProgReturnMsg *retMsg);
 

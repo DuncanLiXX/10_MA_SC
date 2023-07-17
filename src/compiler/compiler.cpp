@@ -3392,6 +3392,7 @@ bool Compiler::RunClearCirclePosMsg(RecordMsg *msg){
  * @return
  */
 bool Compiler::RunMacroMsg(RecordMsg *msg) {
+    std::cout << "--------------->RunMacroMsg: " << std::endl;
     if (msg == nullptr)
         return true;
 
@@ -4678,7 +4679,7 @@ bool Compiler::ReturnFromSubProg() {
 /**
  * @brief 查找子程序,子程序的查找顺序：1.本程序内  2. NC程序目录  3. 系统子程序目录
  * @param sub_name : 子程序号
- * @param scanMoed: 子程序查找规则: 0--> (1.sys_sub查找, 2.mac_sub查找)  1--> (1.本目录查找, 2.sys_sub查找, 3.mac_sub查找)
+ * @param scanMode: 子程序查找规则: 0--> (1.sys_sub查找, 2.mac_sub查找)  1--> (1.本目录查找, 2.sys_sub查找, 3.mac_sub查找)
  * @return 0--没找到对应子程序   1--在本程序内   2--同目录下nc文件    3--系统子程序目录nc文件    4--同目录下iso文件    5--系统子程序目录iso文件
  *                            6--同目录下NC文件    7--系统子程序目录NC文件    8--同目录下ISO文件    9--系统子程序目录ISO文件
  *                            10-用户子程序目录nc文件    11-用户子程序NC文件    12-用户子程序iso文件   13-用户子程序ISO文件

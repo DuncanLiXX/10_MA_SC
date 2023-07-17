@@ -3735,7 +3735,7 @@ bool Parser::CreateMacroMsg(LexerMacroCmd *macro){
 
 	m_p_parser_result->Append(new_msg);
 
-	//ProcessLastBlockRec(new_msg);
+    ProcessLastBlockRec(new_msg);
 
 	return true;
 }

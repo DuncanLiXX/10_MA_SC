@@ -733,6 +733,7 @@ void ChannelControl::Reset(){
     m_b_init_compiler_pos = false;  //编译器初始位置需要重新初始化
     m_b_need_change_to_pause = false;
     main_prog_line_number = 0;
+    m_b_in_block_prog = false;
 
     this->m_p_compiler->Reset();
     if(strlen(m_channel_status.cur_nc_file_name) > 0){
@@ -2056,12 +2057,18 @@ END:
  * @brief 设置当前行号从MC模块获取
  */
 void ChannelControl::SetCurLineNoFromMc(){
-    if((this->m_n_macroprog_count == 0 && this->m_n_subprog_count == 0) || this->m_p_general_config->debug_mode > 0) { //调试模式下或者没有宏程序调用
-        m_b_lineno_from_mc = true;
-    }
-    else if (m_p_compiler->m_n_cur_dir_sub_prog)
+    //std::cout << "m_b_in_block_prog: " << (int)m_b_in_block_prog << " " << (int)m_n_macroprog_count << " " << (int)m_n_subprog_count << std::endl;
+    if (!m_b_in_block_prog)
     {
-        m_b_lineno_from_mc = true;
+        if((this->m_n_macroprog_count == 0 && this->m_n_subprog_count == 0) || this->m_p_general_config->debug_mode > 0) { //调试模式下或者没有宏程序调用
+            //std::cout << "--------------------------------->>:set true------>>" << std::endl;
+            m_b_lineno_from_mc = true;
+        }
+        else if (m_p_compiler->m_n_cur_dir_sub_prog)
+        {
+            //std::cout << "--------------------------------->>:set true------>>" << std::endl;
+            m_b_lineno_from_mc = true;
+        }
     }
 }
 
@@ -4358,7 +4365,8 @@ bool ChannelControl::SendMDIOpenFileCmdToHmi(char *filename)
     cmd.cmd = CMD_SC_DISPLAY_MDI_FILE;
     cmd.cmd_extension = 0;
     strcpy(cmd.data, filename);
-    cmd.data_len = strlen(cmd.data);
+    cmd.data_len = strlen(cmd.data+1);
+    cmd.data[cmd.data_len] = '\0';
 
     std::cout << "file: " << filename << std::endl;
     std::cout << "------------> SendMDIOpenFileCmdToHmi: " << filename << " " << (int)strlen(cmd.data) << std::endl;
@@ -5056,12 +5064,28 @@ int ChannelControl::Run(){
 
 				// 加工文件M30   需要启动后置程序
 				if(m_b_need_next_prog){
-					char  filename[] = "O9030.NC";
-					strcpy(m_channel_status.cur_nc_file_name, filename);
-					g_ptr_parm_manager->SetCurNcFile(m_n_channel_index, m_channel_status.cur_nc_file_name);    //修改当前NC文件
-					this->m_p_compiler->OpenFile("/cnc/nc_files/sys_sub/O9030.NC");
-					this->SendOpenFileCmdToHmi("/sys_sub/O9030.NC");//m_channel_status.cur_nc_file_name);
-					SetFuncState(FS_SINGLE_LINE, false);
+                    char  filename[] = "O9030.NC";
+                    strcpy(m_channel_status.cur_nc_file_name, filename);
+                    //g_ptr_parm_manager->SetCurNcFile(m_n_channel_index, m_channel_status.cur_nc_file_name);    //修改当前NC文件
+                    //this->m_p_compiler->OpenFile("/cnc/nc_files/sys_sub/O9030.NC");
+
+                    int index = 9030;
+                    if (this->m_p_general_config->debug_mode == 0)
+                        m_b_in_block_prog = true;
+                    std::cout << "-------------------------------->>> " << (int)m_b_in_block_prog << std::endl;
+
+                    char file[kMaxFileNameLen];
+                    memset(file, 0x00, kMaxFileNameLen);
+                    int type = m_p_compiler->FindSubProgram(index, false);
+                    m_p_compiler->GetMacroSubProgPath(type, index, true, file);
+
+                    //strcpy(m_channel_status.cur_nc_file_name, file);
+                    //g_ptr_parm_manager->SetCurNcFile(m_n_channel_index, m_channel_status.cur_nc_file_name);    //修改当前NC文件
+                    this->m_p_compiler->OpenFile(file);
+
+                    UpdateSubCallToHmi(type, index, 1);
+
+                    //SetFuncState(FS_SINGLE_LINE, false);
 					this->StartRunGCode();
 					m_b_in_next_prog = true;
 					m_b_need_next_prog = false;
@@ -5069,6 +5093,14 @@ int ChannelControl::Run(){
 				}
 				// 后置程序M30  需要调用G110 指定的加工 程序
 				else if(m_b_g110_call){
+                    m_b_in_block_prog = false;
+                    if (IsStepMode())
+                    {
+                        this->SetMcStepMode(true);
+                        m_b_need_delay_step = false;
+                    }
+
+                    std::cout << "-------------------------------->>> " << (int)m_b_in_block_prog << std::endl;
 					char path[kMaxPathLen];
 					strcpy(path, PATH_NC_FILE);
 					strcat(path, g110_file_name);
@@ -5079,16 +5111,18 @@ int ChannelControl::Run(){
 					this->StartRunGCode();
 					m_b_in_next_prog = false;
 					m_b_g110_call = false;
-					if(m_p_g_reg->SBK){
-						SetFuncState(FS_SINGLE_LINE, true);
+                    //if(m_p_g_reg->SBK){
+                    //	SetFuncState(FS_SINGLE_LINE, true);
 						//this->SetMcStepMode(true);
 						//this->m_b_need_change_to_pause = true;
-					}
+                    //}
 
 				}
 				// 所有加工程序结束 后置程序运行结束 回到排程列表第一个文件
 				else if(m_b_in_next_prog){
+                    m_b_in_block_prog = false;
 					m_b_in_next_prog = false;
+                    std::cout << "-------------------------------->>> " << (int)m_b_in_block_prog << std::endl;
 					m_b_order_finished = true;
 					if(!order_file_vector.empty()){
 						char path[kMaxPathLen];
@@ -5558,10 +5592,13 @@ void ChannelControl::SetCurLineNo(uint32_t line_no){
         return;
 #endif
 
-    //if(this->m_n_macroprog_count == 0 || this->m_p_compiler->m_n_cur_dir_sub_prog || this->m_p_general_config->debug_mode > 0)
+    if (!m_b_in_block_prog)
     {
-        this->m_channel_rt_status.line_no = line_no;
-        std::cout << "setcurLineNo:  " << (int)this->m_channel_rt_status.line_no << std::endl;
+        if((this->m_n_macroprog_count == 0 && this->m_n_subprog_count == 0) || this->m_p_compiler->m_n_cur_dir_sub_prog || this->m_p_general_config->debug_mode > 0)
+        {
+            this->m_channel_rt_status.line_no = line_no;
+            std::cout << "setcurLineNo:  " << (int)this->m_channel_rt_status.line_no << std::endl;
+        }
     }
     ResetMcLineNo();//复位MC模块当前行号
 }
@@ -6250,7 +6287,7 @@ bool ChannelControl::ExecuteMessage(){
             //printf("---------->excute message line no %llu  msg type: %d flags: %d addr: %p\n", line_no, msg_type, msg->GetFlags().all, msg);
         }
         // @test zk
-        printf("---------->excute message line no %llu  msg type: %d flag: %d\n", line_no, msg_type, msg->GetFlags().all);
+        //printf("---------->excute message line no %llu  msg type: %d flag: %d\n", line_no, msg_type, msg->GetFlags().all);
 
         // 获取主程序行号
         if(m_mode_restart.sub_prog_call == 0){
@@ -6431,9 +6468,16 @@ bool ChannelControl::ExecuteMessage(){
                     std::cout << "sub: " << m_p_compiler->m_n_cur_dir_sub_prog << std::endl;
                     if((!msg->IsMoveMsg() || msg_type == AUX_MSG || msg_type == REF_RETURN_MSG) &&
                             !msg->IsEndMsg()){	//单步模式下，运行完一行的最后一条代码后暂停
-                        printf("--------------->PAUSED in execute\n");
-                        m_n_run_thread_state = PAUSE;
-                        pause_flag = true;
+                        if (msg->GetMsgType() != MACRO_MSG)
+                        {
+                            printf("--------------->PAUSED in execute\n");
+                            m_n_run_thread_state = PAUSE;
+                            pause_flag = true;
+                        }
+                        else
+                        {
+                            this->m_b_need_change_to_pause = true;   //mc运行完成后切换暂停状态
+                        }
                     }else if(msg->IsMoveMsg()){
                         std::cout << "---> ExecuteMessage m_b_need_change_to_pause " << std::endl;
                         this->m_b_need_change_to_pause = true;   //mc运行完成后切换暂停状态
@@ -7671,6 +7715,7 @@ void ChannelControl::UpdateSubCallToHmi(int type, int index, int lineNo, bool cu
     else
     {// 子程序不跳转
         std::cout << "setCurLineNo:-----------------> " << lineNo << std::endl;
+
         this->SetMcStepMode(false);
         SetCurLineNo(lineNo);
     }
@@ -7790,6 +7835,7 @@ bool ChannelControl::ExecuteLineMsg(RecordMsg *msg, bool flag_block){
     }else if(!OutputData(msg, flag_block))
         return false;
 
+    std::cout << "LineMsg out put --> " << (int)flag_block << std::endl;
     m_n_run_thread_state = RUN;
 
     if(this->m_simulate_mode == SIM_OUTLINE || this->m_simulate_mode == SIM_TOOLPATH){
@@ -9748,7 +9794,8 @@ bool ChannelControl::ExecuteMacroCmdMsg(RecordMsg *msg){
             ){//加工复位
         return true;
     }
-	/*
+
+    /*
     //等待MC运行完所有数据
     int count = 0;
     int limited = 1;
@@ -9760,7 +9807,7 @@ bool ChannelControl::ExecuteMacroCmdMsg(RecordMsg *msg){
 
         if(this->ReadMcMoveDataCount() > 0 ||
                 // @test zk 解决MDI执行宏程序 遇到宏变量计算卡顿问题  不确定会不会产生新问题
-                //	(!this->CheckStepOverFlag() && !this->CheckBlockOverFlag()) ||
+                (!this->CheckStepOverFlag() && !this->CheckBlockOverFlag()) ||
                 m_channel_status.machining_state == MS_PAUSED ||
                 m_channel_status.machining_state == MS_WARNING){
             bool flag1 = this->CheckStepOverFlag();
@@ -9770,22 +9817,22 @@ bool ChannelControl::ExecuteMacroCmdMsg(RecordMsg *msg){
         }
         else{
             count++;
-            //		printf("Macro cmd: step=%d, %d, c = %d\n", m_channel_mc_status.step_over,m_channel_mc_status.auto_block_over, count);
+            printf("Macro cmd: step=%d, %d, c = %d\n", m_channel_mc_status.step_over,m_channel_mc_status.auto_block_over, count);
             usleep(5000);   //等待5ms，因为MC状态更新周期为5ms，需要等待状态确认
         }
     }
-
     */
 
-    if(this->IsStepMode() && this->m_b_need_change_to_pause){//单段，切换暂停状态
-        this->m_b_need_change_to_pause = false;
-        m_n_run_thread_state = PAUSE;
-        SetMachineState(MS_PAUSED);
-        return false;
-    }
+    //std::cout << "--------------------> isStepMode: " << (int)IsStepMode() << " to_pause: " << (int)m_b_need_change_to_pause << std::endl;
+    //if(this->IsStepMode() /*&& this->m_b_need_change_to_pause*/){//单段，切换暂停状态
+    //    this->m_b_need_change_to_pause = false;
+    //    m_n_run_thread_state = PAUSE;
+    //    SetMachineState(MS_PAUSED);
+    //    return false;
+    //}
 
-    //设置当前行号
-    SetCurLineNo(msg->GetLineNo());
+    //SetCurLineNo(msg->GetLineNo());
+
     printf("execute macro msg  %llu...\n", msg->GetLineNo());
 
     return true;

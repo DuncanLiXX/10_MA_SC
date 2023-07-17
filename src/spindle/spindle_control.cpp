@@ -602,8 +602,11 @@ int32_t SpindleControl::GetSpindleSpeed()
         return 0;
 
     if(spindle->axis_interface == 0){
-        int speed = cnc_speed_virtual;
-        return speed;
+        if(cnc_polar == Polar::Positive){
+        	return cnc_speed_virtual;
+        }else{
+        	return -cnc_speed_virtual;
+        }
     }
 
     int32_t umps;
@@ -659,10 +662,10 @@ void SpindleControl::UpdateSpindleState()
     // 这里要判断是否需要换挡
     // 0：不用换挡，继续往下执行，直接输出转速
     // 1：需要换挡，转速的输出由SendGearLevel内部处理，先返回
-    if(UpdateSpindleLevel(cnc_speed))
-    {
-    	return;
-    }
+    //if(UpdateSpindleLevel(cnc_speed))
+    //{
+    //	return;
+    //}
 
     SendSpdSpeedToMi();
 }
@@ -693,7 +696,7 @@ Polar SpindleControl::CalPolar()
     int polar = Stop; // 速度极性 -1:未初始化 0:正 1:负 2:停
     if(SSIN == 0) // 极性由cnc来确定
     {
-        // 主轴定向功能，极性由参数ORM设定
+    	// 主轴定向功能，极性由参数ORM设定
         if(SOR == 1)
         {
         	return (Polar)ORM;
@@ -711,7 +714,7 @@ Polar SpindleControl::CalPolar()
         }
         else
         {
-            polar = cnc_polar;
+        	polar = cnc_polar;
             if(CWM == 1 && (polar == Positive || polar == Negative))
                 polar = !polar;
         }
@@ -720,6 +723,8 @@ Polar SpindleControl::CalPolar()
     {
         polar = SGN;
     }
+
+    printf("===== polar: %d\n", polar);
     return (Polar)polar;
 }
 
@@ -855,7 +860,7 @@ void SpindleControl::CalLevel(uint8_t &GR1O, uint8_t &GR2O, uint8_t &GR3O)
 
 void SpindleControl::SendSpdSpeedToMi()
 {
-    if(!spindle)
+	if(!spindle)
         return;
     Polar polar;
     int32_t output;
@@ -885,6 +890,7 @@ void SpindleControl::SendSpdSpeedToMi()
         	output = spindle->spd_min_speed;
 
         cnc_speed_virtual = output;
+        printf("===== cnc_speed_virtual: %d\n", cnc_speed_virtual);
         F->RO = output;
     }
 

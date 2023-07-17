@@ -77,16 +77,17 @@ void SpindleControl::InputSCode(uint32_t s_code)
         return;
 
     ScPrintf("SpindleControl::InputSCode s_code = %d\n", s_code);
-    F->scode_0 = (s_code&0xFF);
-    F->scode_1 = ((s_code>>8)&0xFF);
-    F->scode_2 = ((s_code>>16)&0xFF);
-    F->scode_3 = ((s_code>>24)&0xFF);
-
     cnc_speed = s_code;
     if(cnc_speed > spindle->spd_max_speed)
         cnc_speed = spindle->spd_max_speed;
     if(cnc_speed < spindle->spd_min_speed)
         cnc_speed = spindle->spd_min_speed;
+
+    F->scode_0 = (cnc_speed&0xFF);
+    F->scode_1 = ((cnc_speed>>8)&0xFF);
+    F->scode_2 = ((cnc_speed>>16)&0xFF);
+    F->scode_3 = ((cnc_speed>>24)&0xFF);
+
     if(CalPolar() == Stop)
         return;
     UpdateSpindleState();
@@ -601,7 +602,7 @@ int32_t SpindleControl::GetSpindleSpeed()
         return 0;
 
     if(spindle->axis_interface == 0){
-        int speed = cnc_speed * SOV/100.0;
+        int speed = cnc_speed_virtual;
         return speed;
     }
 
@@ -652,14 +653,15 @@ void SpindleControl::UpdateParams()
 // 根据当前状态更新转速
 void SpindleControl::UpdateSpindleState()
 {
-    if(!spindle)
-        return;
+    if(!spindle){
+    	return;
+    }
     // 这里要判断是否需要换挡
     // 0：不用换挡，继续往下执行，直接输出转速
     // 1：需要换挡，转速的输出由SendGearLevel内部处理，先返回
     if(UpdateSpindleLevel(cnc_speed))
     {
-        return;
+    	return;
     }
 
     SendSpdSpeedToMi();
@@ -877,6 +879,12 @@ void SpindleControl::SendSpdSpeedToMi()
         // 获取速度
         output = CalDaOutput();
         // 速度输出到PMC（不考虑方向）
+        if(output > spindle->spd_max_speed)
+        	output = spindle->spd_max_speed;
+        if(output < spindle->spd_min_speed)
+        	output = spindle->spd_min_speed;
+
+        cnc_speed_virtual = output;
         F->RO = output;
     }
 

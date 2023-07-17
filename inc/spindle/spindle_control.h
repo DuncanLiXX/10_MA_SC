@@ -173,6 +173,7 @@ public:
     Spindle::Level level{Spindle::Low};           // 当前档位
     Spindle::Polar cnc_polar{Spindle::Stop};    // 主轴方向
     uint32_t cnc_speed{0};              // S代码的转速 单位:rpm
+    uint32_t cnc_speed_virtual{0};
     double tap_feed{0.0};                    // 攻丝进给
 
     Spindle::Mode mode{Spindle::Speed};             // 控制模式

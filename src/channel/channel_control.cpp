@@ -11624,9 +11624,9 @@ bool ChannelControl::ExecuteOpenFileMsg(RecordMsg *msg){
  */
 void ChannelControl::SetFuncState(int state, uint8_t mode){
 
-#ifdef NEW_WOOD_MACHINE
-	if(m_b_in_next_prog) return;
-#endif
+//#ifdef NEW_WOOD_MACHINE
+//	if(m_b_in_next_prog) return;
+//#endif
 
 	bool cur_check = m_channel_status.func_state_flags.CheckMask(state);
     if(mode != 10){

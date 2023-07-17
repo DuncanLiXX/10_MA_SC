@@ -667,6 +667,7 @@ private:
 #ifdef USES_TWINING_FUNC
 	void ActiveTwiningFunc(int active);   //开关缠绕功能
 #endif
+	void setOrderIndex(int index);
 
 
 private://私有成员变量

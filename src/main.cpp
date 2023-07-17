@@ -528,7 +528,6 @@ int LoadMiData(){
 
     printf("加载MI模块成功！\n");
 
-
     END:
     //取消内存映射
     if(p_addr_base != MAP_FAILED)

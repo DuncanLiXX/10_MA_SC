@@ -842,6 +842,11 @@ void ChannelControl::Reset(){
 #endif
 
 #ifdef NEW_WOOD_MACHINE
+    if(m_b_in_next_prog){
+    	setOrderIndex(current_order_index);
+    }
+
+
 	m_b_order_finished = true;
 	m_b_need_pre_prog = false;     // 前置程序待执行
 	m_b_need_next_prog = false;    // 后置程序待执行
@@ -3984,7 +3989,17 @@ void ChannelControl::ProcessHmiSetOrderListIndex(HMICmdFrame &cmd){
 
 	printf("===== set order index %d\n", cmd.cmd_extension);
 	int index = cmd.cmd_extension -1;
+	setOrderIndex(index);
 
+
+	/*
+	for(std::string name: order_file_vector){
+		std::cout << name << std::endl;
+	}
+	*/
+}
+
+void ChannelControl::setOrderIndex(int index){
 	if(index >= 0 && index < order_file_vector.size()){
 		current_order_index = index;
 
@@ -4002,12 +4017,6 @@ void ChannelControl::ProcessHmiSetOrderListIndex(HMICmdFrame &cmd){
 	}else{
 		printf("===== order index invalid\n");
 	}
-
-	/*
-	for(std::string name: order_file_vector){
-		std::cout << name << std::endl;
-	}
-	*/
 }
 
 void ChannelControl::ProcessClearOrderList(){
@@ -5063,7 +5072,10 @@ int ChannelControl::Run(){
 				this->StartRunGCode();
         	}
 
-        	if(m_n_order_mode > 0 && m_b_dust_eliminate == 0 && exec_m30_over){
+        	if( m_n_order_mode > 0 &&
+				m_b_dust_eliminate == 0 &&
+				exec_m30_over &&
+				m_channel_status.chn_work_mode == AUTO_MODE){
         		exec_m30_over = false;
 				// 加工文件M30   需要启动后置程序
 				if(m_b_need_next_prog){
@@ -9808,7 +9820,7 @@ bool ChannelControl::ExecuteMacroCmdMsg(RecordMsg *msg){
     }
 
     //设置当前行号
-    SetCurLineNo(msg->GetLineNo());
+    //SetCurLineNo(msg->GetLineNo());
     return true;
 }
 
@@ -10253,7 +10265,6 @@ bool ChannelControl::ExecuteRefReturnMsg(RecordMsg *msg){
 
                             }
                             //    printf("cur work pos = %lf, tar pos = %lf\n", m_channel_rt_status.cur_pos_work.GetAxisPos(i), pos[i]);
-
                         }
                     }
                 }
@@ -10360,7 +10371,6 @@ bool ChannelControl::ExecuteRefReturnMsg(RecordMsg *msg){
             break;
         }
     }else if(gcode == G27_CMD){
-        printf("111111111\n");
     	switch(refmsg->GetExecStep()){
         case 0:
             printf("G27 step 0 ...\n");

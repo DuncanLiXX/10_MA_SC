@@ -3445,7 +3445,7 @@ void ChannelControl::DoRestart(uint64_t line_no){
             node = this->m_p_output_msg_list_auto->HeadNode();
     	}
     }
-    printf("===== DoRestart...\n");
+
     // 执行运动指令消息
     if(this->m_channel_rt_status.cur_pos_work != m_mode_restart.pos_target){   //当前位置不是起点位置
         printf("坐标不一致，[%lf, %lf, %lf] to [%lf, %lf, %lf]\n", m_channel_rt_status.cur_pos_work.m_df_point[0], m_channel_rt_status.cur_pos_work.m_df_point[1],
@@ -3466,7 +3466,7 @@ void ChannelControl::DoRestart(uint64_t line_no){
                 msg->SetLineNo(line_no);
                 msg->SetFlag(FLAG_BLOCK_OVER, true);
                 this->m_p_output_msg_list_auto->InsertBefore(msg, node);   //插入抬Z轴指令
-                printf("111111111\n");
+
             }
         }
 
@@ -3490,7 +3490,7 @@ void ChannelControl::DoRestart(uint64_t line_no){
                 msg->SetLineNo(line_no);
                 msg->SetFlag(FLAG_BLOCK_OVER, true);
                 this->m_p_output_msg_list_auto->InsertBefore(msg, node);   //插入非XYZ轴复位指令
-                printf("2222222222\n");
+
             }
         }
 
@@ -3515,7 +3515,7 @@ void ChannelControl::DoRestart(uint64_t line_no){
                 msg->SetLineNo(line_no);
                 msg->SetFlag(FLAG_BLOCK_OVER, true);
                 this->m_p_output_msg_list_auto->InsertBefore(msg, node);   //插入非XYZ轴复位指令
-                printf("3333333333\n");
+
             }
         }
 
@@ -3529,12 +3529,10 @@ void ChannelControl::DoRestart(uint64_t line_no){
                 msg->SetLineNo(line_no);
                 msg->SetFlag(FLAG_BLOCK_OVER, true);
                 this->m_p_output_msg_list_auto->InsertBefore(msg, node);   //插入Z轴复位指令
-                printf("4444444444444\n");
+
             }
         }
     }
-
-    printf("===== DoRestart End ...\n");
 
     //插入复位完成消息
     msg = new RestartOverMsg();
@@ -6338,7 +6336,7 @@ bool ChannelControl::ExecuteMessage(){
             //printf("---------->excute message line no %llu  msg type: %d flags: %d addr: %p\n", line_no, msg_type, msg->GetFlags().all, msg);
         }
         // @test zk
-        printf("---------->excute message line no %llu  msg type: %d flag: %d\n", line_no, msg_type, msg->GetFlags().all);
+        //printf("---------->excute message line no %llu  msg type: %d flag: %d\n", line_no, msg_type, msg->GetFlags().all);
 
         // 获取主程序行号
         if(m_mode_restart.sub_prog_call == 0){
@@ -8053,10 +8051,9 @@ bool ChannelControl::ExecuteCoordMsg(RecordMsg *msg){
     	int gcode = coordmsg->GetGCode();
     	if(gcode == G92_CMD || gcode == G52_CMD){
     		m_error_code = ERR_RESTART_G92_G52;
-			CreateError(ERR_RESTART_G92_G52, ERROR_LEVEL, CLEAR_BY_MCP_RESET, gcode, m_n_channel_index, main_prog_line_number);
+			CreateError(ERR_RESTART_G92_G52, ERROR_LEVEL, CLEAR_BY_MCP_RESET, main_prog_line_number, 0, 0);
     		return false;
     	}
-
 
 		if ((gcode >= G54_CMD && gcode <= G59_CMD)
 				|| (gcode >= G5401_CMD && gcode <= G5499_CMD) || gcode == 541){
@@ -10171,11 +10168,12 @@ bool ChannelControl::ExecuteRefReturnMsg(RecordMsg *msg){
         uint32_t axis_mask = refmsg->GetAxisMask();
         int gcode = refmsg->GetGCode();
 
-        DPointChn pos = m_mode_restart.pos_target;
+        DPointChn pos;
         if(gcode == G28_CMD){
 			for(int i = 0; i < this->m_p_channel_config->chn_axis_count; i++){
 				if(axis_mask & (0x01<<i)){
 					pos.m_df_point[i] = m_p_axis_config[this->GetPhyAxis(i)].axis_home_pos[0];
+					printf("===== g28 %lf %d\n", pos.m_df_point[i], i);
 				}
 			}
         }else if(gcode == G30_CMD){
@@ -10186,18 +10184,22 @@ bool ChannelControl::ExecuteRefReturnMsg(RecordMsg *msg){
 				}
 			}
         }else if(gcode == G27_CMD){
+
+        	DPointChn &mid_pos = refmsg->GetMiddlePos();
         	for(int i = 0; i < m_p_channel_config->chn_axis_count; i++){
 				if(axis_mask & (0x01<<i)){
-					pos.m_df_point[i] = this->GetPhyAxis(i);
+					pos.m_df_point[i] = mid_pos.m_df_point[i];
 				}
 			}
         	m_mode_restart.pos_target = pos;
+        	this->m_p_compiler->SetCurPos(pos);   //同步编译器位置
         	return true;
         }
 
         this->TransMachCoordToWorkCoord(pos, m_mode_restart.gmode[14], m_mode_restart.cur_h_code, axis_mask);
 		m_mode_restart.pos_target = pos;
-        return true;
+		this->m_p_compiler->SetCurPos(pos);   //同步编译器位置
+		return true;
     }
 
     if(this->m_simulate_mode == SIM_OUTLINE || this->m_simulate_mode == SIM_TOOLPATH){

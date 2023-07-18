@@ -1068,7 +1068,6 @@ bool MICommunication::WriteCmd(MiCmdFrame &data, bool resend){
 	uint16_t flag = 0;
 
 	CalMiCmdCrc(data);	//计算CRC
-
 	pthread_mutex_lock(&m_mutex_cmd_down);//上锁
 
 	if(!resend && this->m_list_cmd->GetLength() > 0){ //非重发并且重发队列非空，则直接进入重发队列，防止命令乱序

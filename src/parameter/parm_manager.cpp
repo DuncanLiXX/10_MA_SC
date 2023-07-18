@@ -5374,15 +5374,15 @@ bool ParmManager::UpdateAxisParam(uint8_t axis_index, uint32_t param_no, ParamVa
         break;
     case 1711:	//齿轮低档位最高转速
         sprintf(kname, "spd_gear_speed_low");
-        m_ini_axis->SetIntValue(sname, kname,value.value_uint16);
+        m_ini_axis->SetIntValue(sname, kname,value.value_uint32);
         break;
     case 1712:	//齿轮中档位最高转速
         sprintf(kname, "spd_gear_speed_middle");
-        m_ini_axis->SetIntValue(sname, kname,value.value_uint16);
+        m_ini_axis->SetIntValue(sname, kname,value.value_uint32);
         break;
     case 1713:	//齿轮高档位最高转速
         sprintf(kname, "spd_gear_speed_high");
-        m_ini_axis->SetIntValue(sname, kname,value.value_uint16);
+        m_ini_axis->SetIntValue(sname, kname,value.value_uint32);
         break;
     case 1714:	//B方式档1->档2电机转速
         sprintf(kname, "spd_gear_switch_speed1");
@@ -7120,13 +7120,13 @@ void ParmManager::ActiveAxisParam(uint8_t axis_index, uint32_t param_no, ParamVa
         this->m_sc_axis_config[axis_index].spd_motor_max_speed = value.value_uint16;
         break;
     case 1711:	//齿轮低档位最高转速
-        this->m_sc_axis_config[axis_index].spd_gear_speed_low = value.value_uint16;
+        this->m_sc_axis_config[axis_index].spd_gear_speed_low = value.value_uint32;
         break;
     case 1712:	//齿轮中档位最高转速
-        this->m_sc_axis_config[axis_index].spd_gear_speed_middle = value.value_uint16;
+        this->m_sc_axis_config[axis_index].spd_gear_speed_middle = value.value_uint32;
         break;
     case 1713:	//齿轮高档位最高转速
-        this->m_sc_axis_config[axis_index].spd_gear_speed_high = value.value_uint16;
+        this->m_sc_axis_config[axis_index].spd_gear_speed_high = value.value_uint32;
         break;
     case 1714:	//B方式档1->档2电机转速
         this->m_sc_axis_config[axis_index].spd_gear_switch_speed1 = value.value_uint16;

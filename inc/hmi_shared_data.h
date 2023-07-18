@@ -1414,9 +1414,9 @@ struct HmiAxisConfig{
     uint16_t spd_sor_speed;                     //主轴齿轮换档/定向时的主轴转速 rpm
     uint16_t spd_motor_min_speed;               //主轴电机最小钳制速度
     uint16_t spd_motor_max_speed;               //主轴电机最大钳制速度
-    uint16_t spd_gear_speed_low;                //齿轮低档位最高转速 rpm
-    uint16_t spd_gear_speed_middle;             //齿轮中档位最高转速 rpm
-    uint16_t spd_gear_speed_high;               //齿轮高档位最高转速 rpm
+    uint32_t spd_gear_speed_low;                //齿轮低档位最高转速 rpm
+    uint32_t spd_gear_speed_middle;             //齿轮中档位最高转速 rpm
+    uint32_t spd_gear_speed_high;               //齿轮高档位最高转速 rpm
     uint16_t spd_gear_switch_speed1;            //B方式档1->档2电机转速
     uint16_t spd_gear_switch_speed2;            //B方式档2->档3电机转速
     double spd_sync_error_gain;               //同步误差增益  范围为0~1000，默认为200

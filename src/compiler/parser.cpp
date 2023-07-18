@@ -1452,14 +1452,14 @@ bool Parser::GetExpressionResult(MacroExpression &express, MacroVarValue &res){
 					goto REC;  //÷’÷πº∆À„£¨ª÷∏¥ ˝æ›
 				}
 			}
-		//	res_tmp = GetMacroVar(static_cast<int>(value1));
+        //	res_tmp = GetMacroVar(static_cast<int>(value1));
 			if(!GetMacroVar(static_cast<int>(value1.value), res_tmp.value, res_tmp.init)){
 				m_error_code = ERR_INVALID_MACRO_EXP;
 				printf("@@@@@@ERR_INVALID_MACRO_EXP4\n");
 				return false;
 			}
 
-//			printf("read var: %d , %lf\n", static_cast<int>(value1.value), res_tmp.value);
+//            printf("read var: %d , %lf\n", static_cast<int>(value1.value), res_tmp.value);
 
 			stack_value.push(res_tmp);
 		}

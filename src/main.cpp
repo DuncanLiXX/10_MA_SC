@@ -584,7 +584,7 @@ int Initialize(){
     memset(&g_sys_info, 0x00, sizeof(g_sys_info));  //初始化系统信息结构
     //sprintf(g_sys_info.sw_version_info.sc, "%s.%02d%02d%02d%02d%02d", ADX_SC_VERSION, YEAR-2000, MONTH, DAY, HOUR, MINUTE);
     //@modify zk SC-00.00.17  0M-B最后版本  0M-B木工定制从 0.1.0开始重新记数
-    sprintf(g_sys_info.sw_version_info.sc, "SC-00.01.04");
+    sprintf(g_sys_info.sw_version_info.sc, "SC-00.01.04_llx");
     strcpy(g_sys_info.sw_version_info.mc, "P0.0.0");
     strcpy(g_sys_info.sw_version_info.mi, "P0.0.0");
 

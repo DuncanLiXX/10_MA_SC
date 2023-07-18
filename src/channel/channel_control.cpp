@@ -1248,7 +1248,7 @@ bool ChannelControl::GetSysVarValue(const int index, double&value){
         value = this->m_channel_status.cur_tool;
     }else if(index == 4321){   //当前预选刀号
         value = this->m_channel_status.preselect_tool_no;
-    }else if(index >= 4322 && index <= 4329){
+    }else if(index >= 4322 && index <= 4336){
         value = this->m_preselect_tool_arr[index-4321];
     }else if(index >= 5001 && index < 5001+kMaxAxisChn){   //当前目标位置， 工件坐标系
         value = this->m_channel_rt_status.tar_pos_work.m_df_point[index-5001];
@@ -8443,6 +8443,9 @@ bool ChannelControl::ExecuteToolMsg(RecordMsg *msg){
         }
 
         SetCurLineNo(toolmsg->GetLineNo());
+
+        //执行前清理预选刀号宏变量
+        memset(m_preselect_tool_arr, 0x00, sizeof(int)*kMaxTCodeInLine);
     }
 
 
@@ -8453,21 +8456,25 @@ bool ChannelControl::ExecuteToolMsg(RecordMsg *msg){
     uint8_t count = toolmsg->GetCount();
     uint16_t tcode = 0;
 
-    //执行前清理预选刀号宏变量
-    memset(m_preselect_tool_arr, 0x00, sizeof(int)*kMaxTCodeInLine);
     //	uint64_t mask = 0;
     for(index = 0; index < count; index++){
         if(toolmsg->GetExecStep(index) == 0xFF)//已经执行结束的就跳过
             continue;
 
         tcode = toolmsg->GetTool(index);
-        printf("tool index = %hhu, tcode=%hu, step = %hhu\n", index, tcode, toolmsg->GetExecStep(index));
+        //printf("tool index = %hhu, tcode=%hu, step = %hhu\n", index, tcode, toolmsg->GetExecStep(index));
 
         switch(toolmsg->GetExecStep(index)){
         case 0:{
-            this->m_n_cur_tcode = tcode;
+            if (index == 0)
+            {
+                this->m_n_cur_tcode = tcode;
+                this->m_channel_status.preselect_tool_no = m_n_cur_tcode;
+            }
+
             this->m_preselect_tool_arr[index] = tcode;//预选刀号宏变量
-            this->m_channel_status.preselect_tool_no = m_n_cur_tcode;
+            std::cout << "tcode: " << tcode << " tool_arr: " << m_preselect_tool_arr[index] << std::endl;
+
 
             //TODO 将代码发送给PMC
             this->SendTCodeToPmc(tcode, index);
@@ -8540,7 +8547,7 @@ bool ChannelControl::ExecuteToolMsg(RecordMsg *msg){
 
 #endif
 
-    printf("execute tool message: cur_t_code=%d, return %hhu\n", m_n_cur_tcode, bRet);
+    //printf("execute tool message: cur_t_code=%d, return %hhu\n", m_n_cur_tcode, bRet);
 
     return bRet;
 }

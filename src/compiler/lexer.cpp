@@ -681,7 +681,6 @@ bool Lexer::Compile(){
 			res = GetOneRecord();  //最后处理一组数据
 		}
 	}
-
 	return res;
 }
 

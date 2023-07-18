@@ -2053,8 +2053,25 @@ END:
     		m_b_order_finished && m_n_restart_mode == NOT_RESTART){
     	m_b_order_finished = false;
     	m_b_need_pre_prog = false;
-    	//SetFuncState(FS_SINGLE_LINE, false);
     	CallMacroProgram(9000);
+
+    	/*
+    	//SetFuncState(FS_SINGLE_LINE, false);
+		char  filename[] = "O9000.NC";
+		strcpy(m_channel_status.cur_nc_file_name, filename);
+		//g_ptr_parm_manager->SetCurNcFile(m_n_channel_index, m_channel_status.cur_nc_file_name);    //修改当前NC文件
+		//this->m_p_compiler->OpenFile("/cnc/nc_files/sys_sub/O9030.NC");
+
+		int index = 9000;
+		if (this->m_p_general_config->debug_mode == 0)
+			m_b_in_block_prog = true;
+
+		char file[kMaxFileNameLen];
+		memset(file, 0x00, kMaxFileNameLen);
+		int type = m_p_compiler->FindSubProgram(index, false);
+		m_p_compiler->GetMacroSubProgPath(type, index, true, file);
+		this->m_p_compiler->OpenFile(file);
+		*/
 
     }
 #endif
@@ -4837,7 +4854,6 @@ void *ChannelControl::CompileThread(void *args){
 
     res = p_channel_control->Run();
 
-
     printf("Exit ChannelControl::CompileThread!\n");
     pthread_exit(NULL);
 }
@@ -5095,13 +5111,13 @@ int ChannelControl::Run(){
                     int index = 9030;
                     if (this->m_p_general_config->debug_mode == 0)
                         m_b_in_block_prog = true;
-                    std::cout << "-------------------------------->>> " << (int)m_b_in_block_prog << std::endl;
 
                     char file[kMaxFileNameLen];
                     memset(file, 0x00, kMaxFileNameLen);
                     int type = m_p_compiler->FindSubProgram(index, false);
                     m_p_compiler->GetMacroSubProgPath(type, index, true, file);
 
+                    //std::cout << "-------------------------------->>> " << (int)m_b_in_block_prog << std::endl;
                     //strcpy(m_channel_status.cur_nc_file_name, file);
                     //g_ptr_parm_manager->SetCurNcFile(m_n_channel_index, m_channel_status.cur_nc_file_name);    //修改当前NC文件
                     this->m_p_compiler->OpenFile(file);
@@ -5123,7 +5139,7 @@ int ChannelControl::Run(){
                         m_b_need_delay_step = false;
                     }
 
-                    std::cout << "-------------------------------->>> " << (int)m_b_in_block_prog << std::endl;
+                    //std::cout << "-------------------------------->>> " << (int)m_b_in_block_prog << std::endl;
 
 					char path[kMaxPathLen];
 					strcpy(path, PATH_NC_FILE);
@@ -5626,7 +5642,7 @@ void ChannelControl::SetCurLineNo(uint32_t line_no){
         if((this->m_n_macroprog_count == 0 && this->m_n_subprog_count == 0) || this->m_p_compiler->m_n_cur_dir_sub_prog || this->m_p_general_config->debug_mode > 0)
         {
             this->m_channel_rt_status.line_no = line_no;
-            std::cout << "setcurLineNo:  " << (int)this->m_channel_rt_status.line_no << std::endl;
+            //std::cout << "setcurLineNo:  " << (int)this->m_channel_rt_status.line_no << std::endl;
         }
     }
     ResetMcLineNo();//复位MC模块当前行号
@@ -6322,7 +6338,7 @@ bool ChannelControl::ExecuteMessage(){
             //printf("---------->excute message line no %llu  msg type: %d flags: %d addr: %p\n", line_no, msg_type, msg->GetFlags().all, msg);
         }
         // @test zk
-        //printf("---------->excute message line no %llu  msg type: %d flag: %d\n", line_no, msg_type, msg->GetFlags().all);
+        printf("---------->excute message line no %llu  msg type: %d flag: %d\n", line_no, msg_type, msg->GetFlags().all);
 
         // 获取主程序行号
         if(m_mode_restart.sub_prog_call == 0){
@@ -7751,7 +7767,7 @@ void ChannelControl::UpdateSubCallToHmi(int type, int index, int lineNo, bool cu
     }
     else
     {// 子程序不跳转
-        std::cout << "setCurLineNo:-----------------> " << lineNo << std::endl;
+        //std::cout << "setCurLineNo:-----------------> " << lineNo << std::endl;
 
         this->SetMcStepMode(false);
         SetCurLineNo(lineNo);

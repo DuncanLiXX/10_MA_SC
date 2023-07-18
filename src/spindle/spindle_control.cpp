@@ -662,10 +662,10 @@ void SpindleControl::UpdateSpindleState()
     // 这里要判断是否需要换挡
     // 0：不用换挡，继续往下执行，直接输出转速
     // 1：需要换挡，转速的输出由SendGearLevel内部处理，先返回
-    //if(UpdateSpindleLevel(cnc_speed))
-    //{
-    //	return;
-    //}
+    if(UpdateSpindleLevel(cnc_speed))
+    {
+    	return;
+    }
 
     SendSpdSpeedToMi();
 }
@@ -724,7 +724,6 @@ Polar SpindleControl::CalPolar()
         polar = SGN;
     }
 
-    printf("===== polar: %d\n", polar);
     return (Polar)polar;
 }
 
@@ -733,7 +732,7 @@ int32_t SpindleControl::CalDaOutput()
 {
     if(!spindle)
         return 0;
-    int32_t output; // 转速
+    int32_t output = 0; // 转速
     uint16_t max_spd = GetMaxSpeed();
 
     if(SIND == 0) // 速度由cnc来确定
@@ -748,7 +747,31 @@ int32_t SpindleControl::CalDaOutput()
             rpm = spindle->spd_sor_speed;
         }
         rpm *= SOV/100.0; // 乘以倍率
-        output = da_prec * (1.0 * rpm/max_spd);   // 转化为电平值
+
+        // @add zk 模拟量主轴转速
+		if(rpm > spindle->spd_max_speed)
+			rpm = spindle->spd_max_speed;
+		if(rpm < spindle->spd_min_speed)
+			rpm = spindle->spd_min_speed;
+
+		cnc_speed_virtual = rpm;
+
+		if(spindle->spd_vctrl_mode == 1){
+			output = da_prec * (1.0 * rpm/max_spd);   // 转化为电平值
+		}else if(spindle->spd_vctrl_mode == 2){
+			int zero_offset = da_prec/2;
+			if(cnc_polar == Polar::Positive){
+				output = zero_offset * (1.0*rpm/max_spd);
+				output = zero_offset + output;
+			}else{
+				output = zero_offset * (1.0*rpm/max_spd);
+				output = zero_offset - output;
+			}
+		}else{
+			output = 0;
+		}
+
+
     }
     else // 速度由pmc来确定
     {
@@ -883,14 +906,7 @@ void SpindleControl::SendSpdSpeedToMi()
     {
         // 获取速度
         output = CalDaOutput();
-        // 速度输出到PMC（不考虑方向）
-        if(output > spindle->spd_max_speed)
-        	output = spindle->spd_max_speed;
-        if(output < spindle->spd_min_speed)
-        	output = spindle->spd_min_speed;
-
-        cnc_speed_virtual = output;
-        printf("===== cnc_speed_virtual: %d\n", cnc_speed_virtual);
+        printf("===== F->RO: %d\n", output);
         F->RO = output;
     }
 

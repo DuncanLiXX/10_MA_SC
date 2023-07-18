@@ -4185,6 +4185,10 @@ bool ParmManager::UpdateSystemParam(uint32_t param_no, ParamValue &value){
 		sprintf(kname, "manual_ret_ref_mode");
 		m_ini_system->SetIntValue(sname, kname, value.value_uint8);
 		break;
+	case 36:
+		sprintf(kname, "da_prec");
+		m_ini_system->SetIntValue(sname, kname, value.value_uint8);
+		break;
 	case 60:	//ÆÕÍ¨IOÂË²¨Ê±¼ä
 		sprintf(kname, "io_filter_time");
 		m_ini_system->SetIntValue(sname, kname, value.value_uint32);

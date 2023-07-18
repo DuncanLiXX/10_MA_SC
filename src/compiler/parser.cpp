@@ -132,6 +132,7 @@ uint32_t Parser::GetPmcAxisMask()
  */
 bool Parser::Compile(){
 	bool res = true;
+
 	if(m_p_lexer_result == nullptr){
 		CreateError(ERR_COMPILER_INTER, FATAL_LEVEL, CLEAR_BY_RESET_POWER);
 		return false;
@@ -712,7 +713,6 @@ bool Parser::AnalyzeGCode(LexerGCode *gcode){
 		}
 
 	}
-
 
 
 	// 保存之前的模态处理
@@ -1445,12 +1445,12 @@ bool Parser::GetExpressionResult(MacroExpression &express, MacroVarValue &res){
 
 			if(this->IsSysVar(static_cast<int>(value1.value))){
 				//判断MC是否运行到位
-				if(!ChannelEngine::GetInstance()->GetChnControl(m_n_channel_index)->IsBlockRunOver() ||
+				/*if(!ChannelEngine::GetInstance()->GetChnControl(m_n_channel_index)->IsBlockRunOver() ||
 						!ChannelEngine::GetInstance()->GetChnControl(m_n_channel_index)->IsOutputMsgRunover()){
 //					printf("wait run over : blockflag=%hhu, outputempty=%hhu\n", ChannelEngine::GetInstance()->GetChnControl(m_n_channel_index)->IsBlockRunOver(),
 //							ChannelEngine::GetInstance()->GetChnControl(m_n_channel_index)->IsOutputMsgRunover());
 					goto REC;  //终止计算，恢复数据
-				}
+				}*/
 			}
         //	res_tmp = GetMacroVar(static_cast<int>(value1));
 			if(!GetMacroVar(static_cast<int>(value1.value), res_tmp.value, res_tmp.init)){
@@ -1479,8 +1479,8 @@ bool Parser::GetExpressionResult(MacroExpression &express, MacroVarValue &res){
 
 			if(this->IsSysVar(static_cast<int>(value2.value))){
 				//判断MC是否运行到位
-				if(!ChannelEngine::GetInstance()->GetChnControl(m_n_channel_index)->IsBlockRunOver())
-					goto REC;  //终止计算，恢复数据
+				/*if(!ChannelEngine::GetInstance()->GetChnControl(m_n_channel_index)->IsBlockRunOver())
+					goto REC;  //终止计算，恢复数据*/
 			}
 
 			if(!SetMacroVar(static_cast<int>(value2.value), value1.value, value1.init)){
@@ -1710,7 +1710,6 @@ bool Parser::GetExpressionResult(MacroExpression &express, MacroVarValue &res){
 		res = stack_value.top();
 		stack_value.pop();
 	}
-//	printf("get exp result: value = %lf, init = %hhu\n", res.value, res.init);
 	return true;
 
 	REC:  //恢复数据
@@ -2249,6 +2248,8 @@ bool Parser::CreateCompensateMsg(int gcode){
  * @return true--成功  false--失败
  */
 bool Parser::CreateRapidMsg(){
+
+
 	DPointChn source = this->m_p_compiler_status->cur_pos;   //起点
 	DPointChn target = source;	//终点
 	uint32_t axis_mask = 0;
@@ -2262,7 +2263,6 @@ bool Parser::CreateRapidMsg(){
 
 	if(!GetTargetPos(target, axis_mask, &pmc_count))   //获取插补轴目标位置
 		return false;
-
 //	uint8_t count = this->GetTargetPosEx(pmc_data, pmc_mask, inc_flag, m_n_pmc_axis_count);   //获取PMC轴运动数据
 //	if(count == 0xFF){
 //		return false;
@@ -3429,7 +3429,7 @@ bool Parser::GetTargetPos(DPointChn &target, uint32_t &axis_mask, uint8_t *count
 				return false;
 			}
 		}else{//无扩展下标
-			 addr = static_cast<DataAddr>(m_axis_name[i]-'A');
+			addr = static_cast<DataAddr>(m_axis_name[i]-'A');
 			 if(GetCodeData(addr, data)){//有此参数，读取成功
 				 has_valid_world = true;
 				 if(((g_code->mask_dot & (0x01<<addr)) == 0) &&

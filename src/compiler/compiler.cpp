@@ -4337,7 +4337,6 @@ bool Compiler::DoLexer() {
  */
 bool Compiler::DoParser() {
     bool res = true;
-
     res = m_p_parser->Compile();
     if (!res) { //产生非语法错误
         m_error_code = ERR_COMPILER_INTER;  //编译器内部错误

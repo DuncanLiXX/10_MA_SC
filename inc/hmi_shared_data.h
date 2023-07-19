@@ -1213,7 +1213,8 @@ struct HmiChnConfig{
 //	uint8_t chn_axis_z;			//基本轴Z对应的物理轴索引
 	uint8_t chn_axis_phy[kMaxAxisChn];	//其它轴对应的物理轴索引
 
-	uint8_t chn_axis_name[kMaxAxisChn];	//轴名称
+    uint8_t chn_axis_name[kMaxAxisChn];     //轴名称
+    uint8_t chn_axis_order[kMaxAxisChn];    //轴显示顺序
 	uint8_t chn_axis_name_ex[kMaxAxisChn];	//轴名称下标
 
 	uint8_t intep_mode;				//插补模式   0：XYZ三轴插补  1：所有轴插补

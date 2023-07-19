@@ -99,7 +99,7 @@ void Parser::RefreshAxisName(){
 			if(this->m_b_axis_name_ex){
 				m_axis_name_ex[i] = chn_config->chn_axis_name_ex[i];
 
-//				printf("%c%hhu, ", m_axis_name[i], m_axis_name_ex[i]);
+                printf("-------------------------------->%c %hhu, ", m_axis_name[i], m_axis_name_ex[i]);
 			}
 
             if(g_ptr_chn_engine->GetPmcActive(phy_axis-1)) {
@@ -2249,7 +2249,7 @@ bool Parser::CreateCompensateMsg(int gcode){
  */
 bool Parser::CreateRapidMsg(){
 
-
+    std::cout << "CreateRapidMsg------------------------------》 " << std::endl;
 	DPointChn source = this->m_p_compiler_status->cur_pos;   //起点
 	DPointChn target = source;	//终点
 	uint32_t axis_mask = 0;
@@ -3355,6 +3355,8 @@ bool Parser::GetAxisExData(uint8_t name, uint8_t name_ex, double &data){
 	uint16_t mask = (0x01<<(name_ex-1));
 	MacroVarValue res;
 
+    std::cout << "GetAxisExData: " << (int)name_ex << std::endl;
+
 	if(g_code->mask_pos[name] & mask){
 //		printf("Parser::GetAxisExData, mask_pos=0x%x, mask=0x%x\n", g_code->mask_pos[name], mask);
 		if(g_code->mask_pos_macro[name] & mask){ //表达式
@@ -3372,6 +3374,7 @@ bool Parser::GetAxisExData(uint8_t name, uint8_t name_ex, double &data){
 		}
 		else{ //常数值
 			data = g_code->pos_value[name][name_ex-1];
+            std::cout << "getPos Value: " << data << " " << (int)name_ex << std::endl;
 		}
 		g_code->mask_pos[name] &= (~mask);   //使用过后就复位此参数mask
 	}else
@@ -3405,6 +3408,7 @@ bool Parser::GetTargetPos(DPointChn &target, uint32_t &axis_mask, uint8_t *count
 //		addr = static_cast<DataAddr>(m_axis_name[i]-'A');
 
 		axis_name_idx = chn_config->chn_axis_name[i];
+        std::cout << "GetTarget Pos: " << (int)axis_name_idx << "ex->" << (int)chn_config->chn_axis_name_ex[i] << " " << (int)m_b_axis_name_ex << std::endl;
 		if(m_b_axis_name_ex && chn_config->chn_axis_name_ex[i] > 0){  //有扩展下标
 			has_valid_world = true;
 			if(this->GetAxisExData(axis_name_idx, this->m_axis_name_ex[i], data)){  //有数据

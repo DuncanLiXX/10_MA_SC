@@ -2056,28 +2056,20 @@ END:
     	m_b_need_pre_prog = false;
     	//CallMacroProgram(9000);
 
-
-    	//SetFuncState(FS_SINGLE_LINE, false);
     	m_b_in_next_prog = true;
-		char  filename[] = "O9000.NC";
+		char  filename[] = "/sys_sub/O9000.NC";
 		strcpy(m_channel_status.cur_nc_file_name, filename);
-		//g_ptr_parm_manager->SetCurNcFile(m_n_channel_index, m_channel_status.cur_nc_file_name);    //修改当前NC文件
-		//this->m_p_compiler->OpenFile("/cnc/nc_files/sys_sub/O9030.NC");
-
-		int index = 9000;
-		if (this->m_p_general_config->debug_mode == 0)
-			m_b_in_block_prog = true;
-
 		char file[kMaxFileNameLen];
-		memset(file, 0x00, kMaxFileNameLen);
-		int type = m_p_compiler->FindSubProgram(index, false);
-		m_p_compiler->GetMacroSubProgPath(type, index, true, file);
-		this->m_p_compiler->OpenFile(file);
+        memset(file, 0x00, kMaxFileNameLen);
+        strcpy(file, "/cnc/nc_files/sys_sub/O9000.NC");
 
+        if(this->m_p_compiler->OpenFile(file))
+        	UpdateProgramCallToHmi(file, 1);
 
     }else if(m_n_order_mode == 0 &&
     		 m_channel_status.chn_work_mode == AUTO_MODE){
     	CallMacroProgram(9999);
+
     }
 #endif
 
@@ -5094,8 +5086,13 @@ int ChannelControl::Run(){
         		char  filename[] = "O9030.NC";
 				strcpy(m_channel_status.cur_nc_file_name, filename);
 				g_ptr_parm_manager->SetCurNcFile(m_n_channel_index, m_channel_status.cur_nc_file_name);    //修改当前NC文件
-				this->m_p_compiler->OpenFile("/cnc/nc_files/sys_sub/O9030.NC");
-				this->SendOpenFileCmdToHmi(m_channel_status.cur_nc_file_name);
+
+                //this->SendOpenFileCmdToHmi(m_channel_status.cur_nc_file_name);
+                char file[kMaxFileNameLen];
+                memset(file, 0x00, kMaxFileNameLen);
+                strcpy(file, "/cnc/nc_files/sys_sub/O9030.NC");
+                this->m_p_compiler->OpenFile(file);
+                UpdateProgramCallToHmi(file, 1);
 				this->StartRunGCode();
         	}
 
@@ -5106,28 +5103,15 @@ int ChannelControl::Run(){
         		exec_m30_over = false;
 				// 加工文件M30   需要启动后置程序
 				if(m_b_need_next_prog){
-                    char  filename[] = "O9030.NC";
+                    char  filename[] = "/sys_sub/O9030.NC";
                     strcpy(m_channel_status.cur_nc_file_name, filename);
-                    //g_ptr_parm_manager->SetCurNcFile(m_n_channel_index, m_channel_status.cur_nc_file_name);    //修改当前NC文件
-                    //this->m_p_compiler->OpenFile("/cnc/nc_files/sys_sub/O9030.NC");
-
-                    int index = 9030;
-                    if (this->m_p_general_config->debug_mode == 0)
-                        m_b_in_block_prog = true;
 
                     char file[kMaxFileNameLen];
                     memset(file, 0x00, kMaxFileNameLen);
-                    int type = m_p_compiler->FindSubProgram(index, false);
-                    m_p_compiler->GetMacroSubProgPath(type, index, true, file);
-
-                    //std::cout << "-------------------------------->>> " << (int)m_b_in_block_prog << std::endl;
-                    //strcpy(m_channel_status.cur_nc_file_name, file);
-                    //g_ptr_parm_manager->SetCurNcFile(m_n_channel_index, m_channel_status.cur_nc_file_name);    //修改当前NC文件
+                    strcpy(file, "/cnc/nc_files/sys_sub/O9030.NC");
                     this->m_p_compiler->OpenFile(file);
+                    UpdateProgramCallToHmi(file, 1);
 
-                    UpdateSubCallToHmi(type, index, 1);
-
-                    //SetFuncState(FS_SINGLE_LINE, false);
 					this->StartRunGCode();
 					m_b_in_next_prog = true;
 					m_b_need_next_prog = false;
@@ -6151,7 +6135,9 @@ bool ChannelControl::IsMoveMsgLine(){
  */
 bool ChannelControl::IsNcFileExist(char *file_name){
 
-	if(strcmp("O9030.NC", file_name) == 0) return true;
+	// 前置后置程序 默认存在
+	//if(strcmp("O9030.NC", file_name) == 0) return true;
+	//if(strcmp("O9000.NC", file_name) == 0) return true;
 
 	std::cout << file_name << std::endl;
 	char path[kMaxPathLen] = {0};
@@ -7772,6 +7758,36 @@ void ChannelControl::UpdateSubCallToHmi(int type, int index, int lineNo, bool cu
     {// 子程序不跳转
         //std::cout << "setCurLineNo:-----------------> " << lineNo << std::endl;
 
+        this->SetMcStepMode(false);
+        SetCurLineNo(lineNo);
+    }
+    return;
+}
+
+/**
+ * @brief 给 HMI 发送子程序信息（主程序跳转）
+ * @param curDir 是否在当前目录中查找
+ */
+void ChannelControl::UpdateProgramCallToHmi(char *filePath, int lineNo)
+{
+    if (this->m_p_general_config->debug_mode > 0)// 子程序跳转
+    {
+        if (this->m_channel_status.chn_work_mode == AUTO_MODE)
+        {
+            this->SendOpenFileCmdToHmi(filePath);
+            SetCurLineNo(1);
+        }
+        else if (this->m_channel_status.chn_work_mode == MDA_MODE)
+        {
+            this->SendMDIOpenFileCmdToHmi(filePath);
+            SetCurLineNo(1);
+        }
+
+    }
+    else
+    {// 子程序不跳转
+        //std::cout << "setCurLineNo:-----------------> " << lineNo << std::endl;
+    	m_b_in_block_prog = true;
         this->SetMcStepMode(false);
         SetCurLineNo(lineNo);
     }

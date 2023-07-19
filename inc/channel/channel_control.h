@@ -415,6 +415,7 @@ public:
 
     bool m_b_in_block_prog = false; // Ëø¿é
 
+    void UpdateProgramCallToHmi(char *filePath, int lineNo);
     void UpdateSubCallToHmi(int type, int index, int lineNo, bool curDir = false);
     void UpdateReturnCallToHmi(SubProgReturnMsg *retMsg);
 

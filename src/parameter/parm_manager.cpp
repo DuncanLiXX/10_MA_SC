@@ -636,7 +636,10 @@ bool ParmManager::ReadChnConfig(){
 				memset(kname, 0x00, sizeof(kname));
 				sprintf(kname, "chn_axis_name_%d", j+1);
 				m_sc_channel_config[i].chn_axis_name[j] = m_ini_chn->GetIntValueOrDefault(sname, kname, j);
-				memset(kname, 0x00, sizeof(kname));
+                memset(kname, 0x00, sizeof(kname));
+                sprintf(kname, "chn_axis_order_%d", j+1);
+                m_sc_channel_config[i].chn_axis_order[j] = m_ini_chn->GetIntValueOrDefault(sname, kname, j+1);// 轴顺序从1开始计数，0为不显示
+				memset(kname, 0x00, sizeof(kname)); 
 				sprintf(kname, "chn_axis_name_ex_%d", j+1);
 				m_sc_channel_config[i].chn_axis_name_ex[j] = m_ini_chn->GetIntValueOrDefault(sname, kname, 0);
 			}
@@ -742,6 +745,7 @@ bool ParmManager::ReadChnConfig(){
 			}
 			for(j = 0; j < kMaxAxisChn; j++){
 				m_sc_channel_config[i].chn_axis_name[j] = j;
+                m_sc_channel_config[i].chn_axis_order[j] = j + 1;
 				m_sc_channel_config[i].chn_axis_name_ex[j] = 0;
 			}
 			m_sc_channel_config[i].intep_mode = 0;
@@ -844,6 +848,11 @@ bool ParmManager::ReadChnConfig(){
 				memset(kname, 0x00, sizeof(kname));
 				sprintf(kname, "chn_axis_name_ex_%d", j+1);
 				m_ini_chn->AddKeyValuePair(kname, string("0"), ns);
+                memset(value, 0x00, sizeof(value));
+                sprintf(value, "%d", j+1);
+                memset(kname, 0x00, sizeof(kname));
+                sprintf(kname, "chn_axis_order_%d", j+1);
+                m_ini_chn->AddKeyValuePair(kname, value, ns);
 			}
 			m_ini_chn->AddKeyValuePair(string("intep_mode"), string("0"), ns);
 			m_ini_chn->AddKeyValuePair(string("intep_cycle"), string("1"), ns);
@@ -4510,6 +4519,17 @@ bool ParmManager::UpdateChnParam(uint8_t chn_index, uint32_t param_no, ParamValu
 		sprintf(kname, "chn_axis_name_%d", param_no-135);
 		m_ini_chn->SetIntValue(sname, kname, value.value_uint8);
 		break;
+    case 144:
+    case 145:
+    case 146:
+    case 147:
+    case 148:
+    case 149:
+    case 150:
+    case 151:
+        sprintf(kname, "chn_axis_order_%d", param_no-143);
+        m_ini_chn->SetIntValue(sname, kname, value.value_uint8);
+        break;
 	case 168:  //轴名称扩展下标
 	case 169:
 	case 170:
@@ -6239,6 +6259,16 @@ void ParmManager::ActiveChnParam(uint8_t chn_index, uint32_t param_no, ParamValu
 	case 143:
 		this->m_sc_channel_config[chn_index].chn_axis_name[param_no-136] = value.value_uint8;
 		break;
+    case 144:
+    case 145:
+    case 146:
+    case 147:
+    case 148:
+    case 149:
+    case 150:
+    case 151:
+        this->m_sc_channel_config[chn_index].chn_axis_order[param_no-144] = value.value_uint8;
+        break;
 	case 168:
 	case 169:
 	case 170:

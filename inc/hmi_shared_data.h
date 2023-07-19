@@ -448,7 +448,6 @@ enum ErrorType {
     ERR_RET_REF_Z_ERR       = 605,  //搜索Z脉冲位置超限，原点建立失败
     ERR_RET_SYNC_ERR        = 606,  //从动轴禁止回零
     ERR_RET_NOT_SUPPORT     = 607,  //不支持的回零方式
-	ERR_RESTART_G92_G52     = 608,  // 程序再起 不支持G92 G52
 
 	//加工告警	1000~1999
     ERR_EMERGENCY = 1000,               //紧急停止
@@ -585,7 +584,7 @@ enum ErrorType {
 
 	ORDER_INDEX_ERROR       = 2061,   // G110 指定程序号不存在
 	ERR_ORDER_FINISH        = 2602,
-
+	ERR_RESTART_G92_G52     = 2603,  // 程序再起 不支持G92 G52
 
 	//刀补告警	5000~6999
     ERR_CANCEL_R_COMP_WITHOUT_MOVE      = 5000, //取消刀具半径补偿时没有轴移动

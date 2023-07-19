@@ -3355,8 +3355,6 @@ bool Parser::GetAxisExData(uint8_t name, uint8_t name_ex, double &data){
 	uint16_t mask = (0x01<<(name_ex-1));
 	MacroVarValue res;
 
-    std::cout << "GetAxisExData: " << (int)name_ex << std::endl;
-
 	if(g_code->mask_pos[name] & mask){
 //		printf("Parser::GetAxisExData, mask_pos=0x%x, mask=0x%x\n", g_code->mask_pos[name], mask);
 		if(g_code->mask_pos_macro[name] & mask){ //表达式
@@ -3408,7 +3406,6 @@ bool Parser::GetTargetPos(DPointChn &target, uint32_t &axis_mask, uint8_t *count
 //		addr = static_cast<DataAddr>(m_axis_name[i]-'A');
 
 		axis_name_idx = chn_config->chn_axis_name[i];
-        std::cout << "GetTarget Pos: " << (int)axis_name_idx << "ex->" << (int)chn_config->chn_axis_name_ex[i] << " " << (int)m_b_axis_name_ex << std::endl;
 		if(m_b_axis_name_ex && chn_config->chn_axis_name_ex[i] > 0){  //有扩展下标
 			has_valid_world = true;
 			if(this->GetAxisExData(axis_name_idx, this->m_axis_name_ex[i], data)){  //有数据

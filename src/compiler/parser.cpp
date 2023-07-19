@@ -99,7 +99,7 @@ void Parser::RefreshAxisName(){
 			if(this->m_b_axis_name_ex){
 				m_axis_name_ex[i] = chn_config->chn_axis_name_ex[i];
 
-                printf("-------------------------------->%c %hhu, ", m_axis_name[i], m_axis_name_ex[i]);
+                //printf("%c %hhu, ", m_axis_name[i], m_axis_name_ex[i]);
 			}
 
             if(g_ptr_chn_engine->GetPmcActive(phy_axis-1)) {

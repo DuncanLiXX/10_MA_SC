@@ -94,7 +94,7 @@ ChannelControl::ChannelControl() {
 	memset(data, 0, 1024);
 	while(!order_list_file.eof()){
 		order_list_file >> data;
-		std::cout << "=====" << data << std::endl;
+		//std::cout << "=====" << data << std::endl;
 		if(data[0] == 0) break;
 		std::string file_name = data;
 		order_file_vector.push_back(file_name);
@@ -2053,10 +2053,11 @@ END:
     		m_b_order_finished && m_n_restart_mode == NOT_RESTART){
     	m_b_order_finished = false;
     	m_b_need_pre_prog = false;
-    	CallMacroProgram(9000);
+    	//CallMacroProgram(9000);
 
-    	/*
+
     	//SetFuncState(FS_SINGLE_LINE, false);
+    	m_b_in_next_prog = true;
 		char  filename[] = "O9000.NC";
 		strcpy(m_channel_status.cur_nc_file_name, filename);
 		//g_ptr_parm_manager->SetCurNcFile(m_n_channel_index, m_channel_status.cur_nc_file_name);    //修改当前NC文件
@@ -2071,7 +2072,7 @@ END:
 		int type = m_p_compiler->FindSubProgram(index, false);
 		m_p_compiler->GetMacroSubProgPath(type, index, true, file);
 		this->m_p_compiler->OpenFile(file);
-		*/
+
 
     }
 #endif

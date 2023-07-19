@@ -702,7 +702,8 @@ bool Variable::SaveMacroComm(int index){
 		g_ptr_trace->PrintTrace(TRACE_ERROR, USER_MACRO_VARIABLE, "写入用户宏变量失败！");
 		return false;
 	}
-
+	fflush(m_fp_macro_var);
+	fsync(fileno(m_fp_macro_var));
 	this->m_b_save_keep = true;
 	return true;
 }

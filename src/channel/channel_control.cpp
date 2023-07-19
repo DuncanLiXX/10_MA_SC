@@ -2047,10 +2047,11 @@ END:
 
 #ifdef NEW_WOOD_MACHINE
 
-    printf("m_n_order_mode  %d, m_b_need_pre_prog %d m_b_order_finished: %d\n",
-    		m_n_order_mode, m_b_need_pre_prog, m_b_order_finished);
-    if(m_n_order_mode > 0 && m_b_need_pre_prog &&
-    		m_b_order_finished && m_n_restart_mode == NOT_RESTART){
+    if(m_n_order_mode > 0 &&
+		m_b_need_pre_prog &&
+		m_b_order_finished &&
+		m_n_restart_mode == NOT_RESTART&&
+		m_channel_status.chn_work_mode == AUTO_MODE){
     	m_b_order_finished = false;
     	m_b_need_pre_prog = false;
     	//CallMacroProgram(9000);
@@ -2074,6 +2075,9 @@ END:
 		this->m_p_compiler->OpenFile(file);
 
 
+    }else if(m_n_order_mode == 0 &&
+    		 m_channel_status.chn_work_mode == AUTO_MODE){
+    	CallMacroProgram(9999);
     }
 #endif
 

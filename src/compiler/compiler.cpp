@@ -4756,7 +4756,7 @@ int Compiler::FindSubProgram(int sub_name, bool file_only, uint8_t scanMode) {  
         sprintf(filepath, "%sO%04d.nc", PATH_NC_SUB_FILE, sub_name);  //拼接文件绝对路径
     else
         sprintf(filepath, "%sO%d.nc", PATH_NC_SUB_FILE, sub_name);   //拼接文件绝对路径
-    printf("sys sub program file 3: %s\n", filepath);
+    //printf("sys sub program file 3: %s\n", filepath);
     if (access(filepath, F_OK) == 0) {	//存在对应文件
         return 3;
     }else{
@@ -4777,7 +4777,7 @@ int Compiler::FindSubProgram(int sub_name, bool file_only, uint8_t scanMode) {  
         sprintf(filepath, "%sO%04d.iso", PATH_NC_SUB_FILE, sub_name);  //拼接文件绝对路径
     else
         sprintf(filepath, "%sO%d.iso", PATH_NC_SUB_FILE, sub_name);   //拼接文件绝对路径
-    printf("sys sub program file 4: %s\n", filepath);
+    //printf("sys sub program file 4: %s\n", filepath);
     if (access(filepath, F_OK) == 0) {	//存在对应文件
         return 5;
     }else{
@@ -4799,7 +4799,7 @@ int Compiler::FindSubProgram(int sub_name, bool file_only, uint8_t scanMode) {  
         sprintf(filepath, "%sO%04d.nc", PATH_NC_MAC_FILE, sub_name);  //拼接文件绝对路径
     else
         sprintf(filepath, "%sO%d.nc", PATH_NC_MAC_FILE, sub_name);   //拼接文件绝对路径
-    printf("sys sub program file 5: %s\n", filepath);
+    //printf("sys sub program file 5: %s\n", filepath);
     if (access(filepath, F_OK) == 0) {	//存在对应文件
         return 10;
     }else{
@@ -4820,7 +4820,7 @@ int Compiler::FindSubProgram(int sub_name, bool file_only, uint8_t scanMode) {  
         sprintf(filepath, "%sO%04d.iso", PATH_NC_MAC_FILE, sub_name);  //拼接文件绝对路径
     else
         sprintf(filepath, "%sO%d.iso", PATH_NC_MAC_FILE, sub_name);   //拼接文件绝对路径
-    printf("sys sub program file 6: %s\n", filepath);
+    //printf("sys sub program file 6: %s\n", filepath);
     if (access(filepath, F_OK) == 0) {	//存在对应文件
         return 12;
     }else{

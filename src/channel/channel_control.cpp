@@ -83,6 +83,7 @@ ChannelControl::ChannelControl() {
     m_b_g111_call = false;
     exec_m30_over = false;
     m_b_dust_eliminate = false;      //除尘标志
+    m_b_in_common_pre_prog = false;
     m_n_order_mode = 0;
     current_order_index = -1;      // 当前加载排程列表序号
     memset(g110_file_name, 0, sizeof(g110_file_name));
@@ -2057,20 +2058,24 @@ END:
     	//CallMacroProgram(9000);
 
     	m_b_in_next_prog = true;
-		char  filename[] = "/sys_sub/O9000.NC";
+		char  filename[] = "/sys_sub/SYS_MACRO_STRAT.NC";
 		strcpy(m_channel_status.cur_nc_file_name, filename);
 		char file[kMaxFileNameLen];
         memset(file, 0x00, kMaxFileNameLen);
-        strcpy(file, "/cnc/nc_files/sys_sub/O9000.NC");
+        strcpy(file, "/cnc/nc_files/sys_sub/SYS_MACRO_STRAT.NC");
 
         if(this->m_p_compiler->OpenFile(file))
         	UpdateProgramCallToHmi(file, 1);
 
     }else if(m_n_order_mode == 0 &&
+    		!m_b_in_common_pre_prog &&
+			 m_n_restart_mode == NOT_RESTART&&
     		 m_channel_status.chn_work_mode == AUTO_MODE){
     	CallMacroProgram(9999);
-
     }
+    //@zk 程序再起 单段执行 避免调用前置程序
+    m_b_in_common_pre_prog = true;
+
 #endif
 
     printf("exit ChannelControl::StartRunGCode()\n");
@@ -3397,7 +3402,6 @@ void ChannelControl::DoRestart(uint64_t line_no){
 			msg->SetLineNo(line_no);
 			this->m_p_output_msg_list_auto->InsertBefore(msg, node);   //插入换刀指令
 		}
-
 
     	msg = new AuxMsg(6);
     	if(msg != nullptr){
@@ -5103,12 +5107,12 @@ int ChannelControl::Run(){
         		exec_m30_over = false;
 				// 加工文件M30   需要启动后置程序
 				if(m_b_need_next_prog){
-                    char  filename[] = "/sys_sub/O9030.NC";
+                    char  filename[] = "/sys_sub/SYS_MACRO_M30.NC";
                     strcpy(m_channel_status.cur_nc_file_name, filename);
 
                     char file[kMaxFileNameLen];
                     memset(file, 0x00, kMaxFileNameLen);
-                    strcpy(file, "/cnc/nc_files/sys_sub/O9030.NC");
+                    strcpy(file, "/cnc/nc_files/sys_sub/SYS_MACRO_M30.NC");
                     this->m_p_compiler->OpenFile(file);
                     UpdateProgramCallToHmi(file, 1);
 
@@ -6974,6 +6978,7 @@ bool ChannelControl::ExecuteAuxMsg(RecordMsg *msg){
                 tmp->SetExecStep(m_index, 0xFF);    //置位结束状态
 
                 exec_m30_over = true;
+                m_b_in_common_pre_prog = false;
                 printf("execute M30 over\n");
             }
 
@@ -20672,7 +20677,9 @@ void ChannelControl::SendHmiGraphPosData(){
  * @param macro_index : 宏程序编号
  */
 bool ChannelControl::CallMacroProgram(uint16_t macro_index){
-    g_ptr_trace->PrintTrace(TRACE_INFO, CHANNEL_CONTROL_SC, "ChannelControl[%hhu]::CallMacroProgram, macro_index = %hu\n", this->m_n_channel_index, macro_index);
+    //g_ptr_trace->PrintTrace(TRACE_INFO, CHANNEL_CONTROL_SC, "ChannelControl[%hhu]::CallMacroProgram, macro_index = %hu\n", this->m_n_channel_index, macro_index);
+
+    printf("ChannelControl::CallMacroProgram, macro_index = %hu\n", macro_index);
     uint8_t mode = this->m_channel_status.chn_work_mode;
     uint8_t state = this->m_channel_status.machining_state;
     //自动、MDA模式(必须在MS_RUNNING状态)

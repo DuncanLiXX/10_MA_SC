@@ -604,8 +604,10 @@ int32_t SpindleControl::GetSpindleSpeed()
     if(spindle->axis_interface == 0){
         if(cnc_polar == Polar::Positive){
         	return cnc_speed_virtual;
-        }else{
+        }else if(cnc_polar == Polar::Negative){
         	return -cnc_speed_virtual;
+        }else if(cnc_polar == Polar::Stop){
+        	return 0;
         }
     }
 

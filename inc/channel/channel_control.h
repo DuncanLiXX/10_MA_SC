@@ -410,6 +410,7 @@ public:
     int dust_eliminate_delay;  // 除尘启动延时记数
     int current_order_index;   // 当前加载排程列表序号
     char g110_file_name[kMaxPathLen];
+    bool m_b_in_common_pre_prog;  // 普通程序调用前置程序
     std::vector<string> order_file_vector;  // 排程文件列表
 #endif
 

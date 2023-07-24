@@ -3519,7 +3519,7 @@ void ChannelControl::DoRestart(uint64_t line_no){
 
         //Z轴抬到机械原点
         if(phy_axis_z != NO_AXIS){
-            tar.SetAxisValue(chn_axis_z, this->m_p_axis_config[phy_axis_z].axis_home_pos[5]);
+            tar.SetAxisValue(chn_axis_z, this->m_p_axis_config[phy_axis_z].axis_home_pos[4]);
             axis_mask = 0x01<<chn_axis_z;
             msg = new RapidMsg(src, tar, axis_mask);
             if(msg != nullptr){

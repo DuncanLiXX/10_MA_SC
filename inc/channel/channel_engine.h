@@ -637,6 +637,7 @@ private:  //私有成员变量
     AxisStatusCtrl *m_axis_status_ctrl;
 
 	BdioDevList m_list_bdio_dev;    //SD-LINK设备队列
+    map<int, PmcAlarmInfo> m_map_pmc_alarm; // 梯图报警映射关系
 
 	//回参考点相关参数
 	bool m_b_ret_ref;                 //回参考点状态

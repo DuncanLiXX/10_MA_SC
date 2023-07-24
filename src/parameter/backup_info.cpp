@@ -65,6 +65,9 @@ Backup_Info::Backup_Info(int type, string path)
 
 bool Backup_Info::Package(struct zip_t *zip)
 {
+//   最早版本使用 minizip 库进行压缩，测试发现某些未知情况下， minizip 生成的压缩包，HMI 无法正常解析
+//   因此，注释了这部分代码，使用 HMI 相同的压缩方式，统一调用 zip 命令进行压缩（zip命令压缩不在这里执行，在此函数后执行），所以这个函数的内容就先注释掉了
+
 //   if(access(m_path.c_str(), F_OK) == 0)
 //   {//文件存在
 //        int ret = zip_entry_open(zip, m_pack_name.c_str());

@@ -12,6 +12,7 @@
 #include "alarm_processor.h"
 #include "hmi_communication.h"
 #include "channel_engine.h"
+#include "channel_control.h"
 #include "axis_status_ctrl.h"
 
 const int kMaxAlarmCount = 40;   //告警缓冲区最大值
@@ -547,14 +548,14 @@ void AlarmProcessor::ProcessAlarm(ErrorInfo *err){
     default:
 
 #ifdef USES_PMC_2_0
-        if(err->error_code >=20000 && err->error_code < 20080){
+        if(err->error_code >=20000 && err->error_code < 20999){
         }
-        else if(err->error_code >=20080 && err->error_code < 20144){
+        else if(err->error_code >=21000 && err->error_code < 21999){
         }
-        else if (err->error_code >= 20144 && err->error_code < 20184) {
+        else if (err->error_code >= 22000 && err->error_code < 22999) {
             this->m_p_chn_engine->Stop(false);   //终止加工
         }
-        else if (err->error_code >= 20184 && err->error_code < 20199) {
+        else if (err->error_code >= 23000 && err->error_code < 23999) {
             this->m_p_chn_engine->Stop(false);  //急停处理
         }
 
@@ -645,6 +646,22 @@ void AlarmProcessor::ProcessAutoAlarm()
                 {
                     m_error_info_input_list->RemoveData(i);
                     std::cout << "clear pmc alarm info: " << info.error_code << std::endl;
+
+                    bool hasError = false;
+                    count = m_error_info_input_list->BufLen();
+                    for (int j = 0; j < count; ++j) {
+                        ErrorInfo *err = m_error_info_input_list->ReadDataPtr(j);
+                        if (err->error_level <= ERROR_LEVEL)
+                        {
+                            hasError = true;
+                            break;
+                        }
+                    }
+                    if (!hasError)
+                    {
+                        g_ptr_chn_engine->GetChnControl()->SetALSignal(0);
+                    }
+
                     break;
                 }
                 else
@@ -653,11 +670,12 @@ void AlarmProcessor::ProcessAutoAlarm()
                         << " err_level : " << (int)err->error_level << " channel_index: " << (int)err->channel_index
                         << " axis_index: " << (int)err->axis_index << " clear_type: " << (int)err->clear_type << std::endl;
 
-                    std::cout << "info " << " error_code: " << (uint16_t)info.error_code << " error_info " << (int32_t)info.error_info
-                        << " err_level : " << (int)info.error_level << " channel_index: " << (int)info.channel_index
-                        << " axis_index: " << (int)info.axis_index << " clear_type: " << (int)info.clear_type << std::endl;
+                    //std::cout << "info " << " error_code: " << (uint16_t)info.error_code << " error_info " << (int32_t)info.error_info
+                    //    << " err_level : " << (int)info.error_level << " channel_index: " << (int)info.channel_index
+                    //    << " axis_index: " << (int)info.axis_index << " clear_type: " << (int)info.clear_type << std::endl;
                 }
             }
+
             pthread_mutex_unlock(&m_mutex);
             NotifyToHmi();
 

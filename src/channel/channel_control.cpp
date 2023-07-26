@@ -29,65 +29,6 @@ int ctrlmode_switch_wait = 0;   //用于轴模式切换等待延时
 
 bool Flag_SyncCrcPos = true;
 
-
-/*
-bool isGBK(unsigned char* data, int len)  {
-    int i  = 0;
-    while (i < len)  {
-        if (data[i] <= 0x7f) {
-            //编码小于等于127,只有一个字节的编码，兼容ASCII
-            i++;
-            continue;
-        } else {
-            //大于127的使用双字节编码
-            if  (data[i] >= 0x81 &&
-                data[i] <= 0xfe &&
-                data[i + 1] >= 0x40 &&
-                data[i + 1] <= 0xfe &&
-                data[i + 1] != 0xf7) {
-                i += 2;
-                continue;
-            } else {
-                return false;
-            }
-        }
-    }
-    return true;
-}
-
-bool isUtf8(unsigned char* data, int len) {
-    int num = 0;
-    int i = 0;
-    while (i < len) {
-        if ((data[i] & 0x80) == 0x00) {
-            // 0XXX_XXXX
-            i++;
-            continue;
-        }
-        else if ((num = preNUm(data[i])) > 2) {
-        // 110X_XXXX 10XX_XXXX
-        // 1110_XXXX 10XX_XXXX 10XX_XXXX
-        // 1111_0XXX 10XX_XXXX 10XX_XXXX 10XX_XXXX
-        // 1111_10XX 10XX_XXXX 10XX_XXXX 10XX_XXXX 10XX_XXXX
-        // 1111_110X 10XX_XXXX 10XX_XXXX 10XX_XXXX 10XX_XXXX 10XX_XXXX
-        // preNUm() 返回首个字节8个bits中首0bit前面1bit的个数，该数量也是该字符所使用的字节数
-        i++;
-        for(int j = 0; j < num - 1; j++) {
-            //判断后面num - 1 个字节是不是都是10开
-            if ((data[i] & 0xc0) != 0x80) {
-                    return false;
-                }
-                i++;
-        }
-    } else {
-        //其他情况说明不是utf-8
-        return false;
-    }
-    }
-    return true;
-}
-*/
-
 /**
  * @brief 构造函数
  */
@@ -107,7 +48,7 @@ ChannelControl::ChannelControl() {
     m_thread_compiler = 0;
 
     m_n_subprog_count = 0;
-    //m_n_macroprog_count = 0;
+    m_n_macroprog_count = 0;
     m_b_ret_from_macroprog = false;
 
     m_n_mask_clear_pos = 0;
@@ -1938,9 +1879,8 @@ void ChannelControl::StartRunGCode(){
     	Flag_SyncCrcPos = false;
     }
     if(this->m_channel_status.chn_work_mode == AUTO_MODE){
-
-        string msg = "开始加工程序(" + string(this->m_channel_status.cur_nc_file_name) + ")";
-        g_ptr_tracelog_processor->SendToHmi(kProcessInfo, kDebug, msg);
+        string msg = "开始加工程序|" + string(m_channel_status.cur_nc_file_name);
+        g_ptr_tracelog_processor->SendToHmi(kProcessInfo, kCombine, msg);
 
         if(this->m_channel_status.machining_state == MS_READY){  //就绪状态则直接启动编译
             this->SendWorkModeToMc(MC_MODE_AUTO);
@@ -2197,8 +2137,8 @@ void ChannelControl::PauseRunGCode(){
     uint8_t state = MS_PAUSING;
 
     if(this->m_channel_status.chn_work_mode == AUTO_MODE){
-        string msg = "暂停加工程序(" + string(this->m_channel_status.cur_nc_file_name) + ")";
-        g_ptr_tracelog_processor->SendToHmi(kProcessInfo, kDebug, msg);
+        string msg = "暂停加工程序|" + string(this->m_channel_status.cur_nc_file_name);
+        g_ptr_tracelog_processor->SendToHmi(kProcessInfo, kCombine, msg);
         if(this->m_simulate_mode != SIM_NONE &&
                 (m_channel_status.machining_state == MS_OUTLINE_SIMULATING ||
                  m_channel_status.machining_state == MS_TOOL_PATH_SIMULATING ||
@@ -2304,8 +2244,8 @@ void ChannelControl::StopCompilerRun(){
  * @param reset : 是否复位数据和行号， true--复位   false--不复位
  */
 void ChannelControl::StopRunGCode(bool reset){
-    string msg = "停止加工程序(" + string(this->m_channel_status.cur_nc_file_name) + ")";
-    g_ptr_tracelog_processor->SendToHmi(kProcessInfo, kDebug, msg);
+    string msg = "停止加工程序|" + string(this->m_channel_status.cur_nc_file_name);
+    g_ptr_tracelog_processor->SendToHmi(kProcessInfo, kCombine, msg);
     printf("ChannelControl::StopRunGCode()\n");
 
     if(this->m_channel_status.machining_state == MS_READY && !m_b_cancel_manual_call_macro)  //空闲状态直接返回
@@ -4483,8 +4423,8 @@ void ChannelControl::SetMachineState(uint8_t mach_state){
         //停止伺服监控
         g_ptr_chn_engine->m_serverGuide.ResetRecord();
 
-        string msg = "结束加工程序(" + string(this->m_channel_status.cur_nc_file_name) + ")";
-        g_ptr_tracelog_processor->SendToHmi(kProcessInfo, kDebug, msg);
+        string msg = "结束加工程序|" + string(this->m_channel_status.cur_nc_file_name);
+        g_ptr_tracelog_processor->SendToHmi(kProcessInfo, kCombine, msg);
 
     }
 

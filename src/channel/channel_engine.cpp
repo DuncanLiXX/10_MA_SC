@@ -5509,9 +5509,10 @@ bool ChannelEngine::Start(){
 #ifdef NEW_WOOD_MACHINE
             printf("====== channel engine m_n_order_mode: %d\n",
             		m_p_channel_control[chn].m_n_order_mode);
-            if(m_p_channel_control[chn].m_n_order_mode > 0 && m_p_channel_control[chn].m_b_order_finished){
-            	m_p_channel_control[chn].m_b_need_pre_prog = true;
-            	m_p_channel_control[chn].m_b_in_next_prog = false;
+            if(m_p_channel_control[chn].m_n_order_mode > 0 &&
+            		m_p_channel_control[chn].m_order_step == 0 &&
+					m_p_channel_control[chn].GetWorkMode() == AUTO_MODE){
+            	m_p_channel_control[chn].SetOrderStep(1);
             }
 #endif
 
@@ -5533,14 +5534,18 @@ bool ChannelEngine::Pause(){
     ChnWorkMode work_mode = (ChnWorkMode)m_p_channel_control[m_n_cur_channle_index].GetChnWorkMode();
 
     if(work_mode == AUTO_MODE){
-        //		m_p_channel_control[m_n_cur_channle_index].Pause();
-        //		for(int i = 0; i < this->m_p_general_config->chn_count; i++){
-        //			m_p_channel_control[i].Pause();
-        //		}
 
-        for(uint8_t i = 0; i < m_p_channel_mode_group[m_n_cur_chn_group_index].GetChannelCount(); i++){
-            m_p_channel_control[m_p_channel_mode_group[m_n_cur_chn_group_index].GetChannel(i)].Pause();
-        }
+        //for(uint8_t i = 0; i < m_p_channel_mode_group[m_n_cur_chn_group_index].GetChannelCount(); i++){
+
+        	// 前置 程序或后置程序执行时  禁止暂停
+#ifdef NEW_WOOD_MACHINE
+    	if(m_p_channel_control[0].m_order_step == 2 ||
+        	   m_p_channel_control[0].m_order_step == 6	)
+        		return true;
+#endif
+        	m_p_channel_control[0].Pause();
+            //m_p_channel_control[m_p_channel_mode_group[m_n_cur_chn_group_index].GetChannel(i)].Pause();
+        //}
 
     }else if(work_mode == MDA_MODE){
         m_p_channel_control[m_n_cur_channle_index].Pause();

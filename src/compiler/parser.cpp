@@ -287,6 +287,11 @@ bool Parser::CheckGCode(LexerGCode *gcode){
 		}
 		code = gcode->g_value[i]/10;
 
+		if(code > 5499){
+			CreateError(ERR_INVALID_CODE, ERROR_LEVEL, CLEAR_BY_MCP_RESET, m_p_lexer_result->line_no);
+			return false;
+		}
+
 		// @add zk  新增 对G54.1 P XX 支持
 		if(gcode->g_value[i] == 541){
 			double value = 0.0;
@@ -378,6 +383,11 @@ bool Parser::CheckGCode(LexerGCode *gcode){
 				usleep(10000);  //休眠10ms，等待MC运行到位
 			}
 			if(res.init){
+				if(res.value > 99999999){
+					CreateError(ERR_INVALID_CODE, ERROR_LEVEL, CLEAR_BY_MCP_RESET, m_p_lexer_result->line_no);
+					return false;
+				}
+
 				gcode->m_value[i] = res.value;
 			}else{
 				m_error_code = ERR_M_EXP_NULL;   //
@@ -410,6 +420,11 @@ bool Parser::CheckGCode(LexerGCode *gcode){
 				usleep(10000);  //休眠10ms，等待MC运行到位
 			}
 			if(res.init){
+				if(res.value > 128){
+					CreateError(ERR_INVALID_CODE, ERROR_LEVEL, CLEAR_BY_MCP_RESET, m_p_lexer_result->line_no);
+					return false;
+				}
+
 				gcode->t_value[i] = res.value;
 			}else{
 				m_error_code = ERR_T_EXP_NULL;   //
@@ -836,7 +851,7 @@ bool Parser::ProcessMCode(LexerGCode *gcode){
 			int m_code = gcode->m_value[i];
 			int m_group =  MCode2Mode[m_code];
 
-			if(m_mmode[m_group] != 0){
+			if(m_group != 0 && m_mmode[m_group] != 0){
 				printf("same group mmode in one line\n");
 				m_error_code = ERR_MCODE_SEPARATED;  //存在不能同行的M指令
 				return false;
@@ -2009,6 +2024,11 @@ bool Parser::CreateFeedMsg(){
 		return false;
 	}
 
+	if(df_feed > 999999){
+		CreateError(ERR_INVALID_CODE, ERROR_LEVEL, CLEAR_BY_MCP_RESET, m_p_lexer_result->line_no);
+		return false;
+	}
+
 //	int feed = static_cast<int>(df_feed);
 
 	RecordMsg *new_msg = new FeedMsg(df_feed, m_p_compiler_status->mode.f_mode);
@@ -2098,6 +2118,11 @@ bool Parser::CreateSpeedMsg(){
 
 	int speed = static_cast<int>(df_speed);
 
+	if(speed <-99999 || speed > 99999){
+		CreateError(ERR_INVALID_CODE, ERROR_LEVEL, CLEAR_BY_MCP_RESET, m_p_lexer_result->line_no);
+		return false;
+	}
+
 	RecordMsg *new_msg = new SpeedMsg(speed);
 	if(new_msg == nullptr){
 		//TODO 内存分配失败，告警
@@ -2110,7 +2135,6 @@ bool Parser::CreateSpeedMsg(){
 	m_p_parser_result->Append(new_msg);
 
 	ProcessLastBlockRec(new_msg);
-
 	return true;
 }
 
@@ -2177,6 +2201,11 @@ bool Parser::CreateCompensateMsg(int gcode){
 		}
 		data = static_cast<uint16_t>(df_data);
 
+		if(data > g_ptr_parm_manager->GetChannelConfig()->tool_number){
+			m_error_code = ERR_INVALID_CODE;
+			return false;
+		}
+
 //		if(m_p_compiler_status->mode.gmode[1] == G01_CMD)
 //			move_type = MOVE_G01;
 
@@ -2194,6 +2223,11 @@ bool Parser::CreateCompensateMsg(int gcode){
 			}
 		}
 		data = static_cast<uint16_t>(df_data);
+
+		if(data > g_ptr_parm_manager->GetChannelConfig()->tool_number){
+			m_error_code = ERR_INVALID_CODE;
+			return false;
+		}
 
 		if(m_p_compiler_status->mode.gmode[1] == G01_CMD)
 			move_type = MOVE_G01;
@@ -2249,7 +2283,6 @@ bool Parser::CreateCompensateMsg(int gcode){
  */
 bool Parser::CreateRapidMsg(){
 
-    std::cout << "CreateRapidMsg------------------------------》 " << std::endl;
 	DPointChn source = this->m_p_compiler_status->cur_pos;   //起点
 	DPointChn target = source;	//终点
 	uint32_t axis_mask = 0;

@@ -799,7 +799,6 @@ void HMICommunication::RecvHmiCmd(){
 			uint16_t cmd;
 			memcpy(&cmd, BigData, 2);
 			data.cmd = cmd;
-			printf("===== cmd: %d\n", cmd);
 		}
 
 

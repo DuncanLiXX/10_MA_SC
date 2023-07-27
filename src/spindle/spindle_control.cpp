@@ -739,7 +739,7 @@ int32_t SpindleControl::CalDaOutput()
 
     if(SIND == 0) // 速度由cnc来确定
     {
-        int32_t rpm = 0;
+    	int32_t rpm = 0;
         if(SOR == 0)
         {
             rpm = cnc_speed;  // 单位:rpm
@@ -773,11 +773,10 @@ int32_t SpindleControl::CalDaOutput()
 			output = 0;
 		}
 
-
     }
     else // 速度由pmc来确定
     {
-        output = RI;
+    	output = RI;
     }
     printf("SIND=%d SOR=%d cnc_speed=%d SOV=%d max_spd=%d da_prec=%d\n",SIND,SOR,cnc_speed,SOV,max_spd,da_prec);
 
@@ -785,6 +784,7 @@ int32_t SpindleControl::CalDaOutput()
     {
         output = da_prec - 1;
     }
+
     return output;
 }
 
@@ -887,6 +887,8 @@ void SpindleControl::SendSpdSpeedToMi()
 {
 	if(!spindle)
         return;
+
+
     Polar polar;
     int32_t output;
     // 位置模式
@@ -902,11 +904,11 @@ void SpindleControl::SendSpdSpeedToMi()
 
     if(polar == Stop)
     {
-        output = 0;
+    	output = 0;
     }
     else
     {
-        // 获取速度
+    	// 获取速度
         output = CalDaOutput();
         printf("===== F->RO: %d\n", output);
         F->RO = output;

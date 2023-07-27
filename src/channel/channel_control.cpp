@@ -103,7 +103,6 @@ ChannelControl::ChannelControl() {
 	}
 	order_list_file.close();
 
-
 #endif
     this->m_b_delay_to_reset = false;
     m_b_pos_captured = false;
@@ -116,7 +115,6 @@ ChannelControl::ChannelControl() {
 
     this->InitMcModeStatus();
     m_channel_rt_status.cur_pos_machine = 0.0;
-
     m_channel_rt_status.cur_feedbck_velocity = 0.0;
     m_channel_rt_status.cur_feedbck_torque= 0.0;
 #ifdef USES_SPEED_TORQUE_CTRL	

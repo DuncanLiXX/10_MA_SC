@@ -288,7 +288,7 @@ bool Parser::CheckGCode(LexerGCode *gcode){
 		code = gcode->g_value[i]/10;
 
 		if(code > 5499){
-			CreateError(ERR_INVALID_CODE, ERROR_LEVEL, CLEAR_BY_MCP_RESET, m_p_lexer_result->line_no);
+			m_error_code = ERR_INVALID_CODE;
 			return false;
 		}
 
@@ -383,11 +383,6 @@ bool Parser::CheckGCode(LexerGCode *gcode){
 				usleep(10000);  //休眠10ms，等待MC运行到位
 			}
 			if(res.init){
-				if(res.value > 99999999){
-					CreateError(ERR_INVALID_CODE, ERROR_LEVEL, CLEAR_BY_MCP_RESET, m_p_lexer_result->line_no);
-					return false;
-				}
-
 				gcode->m_value[i] = res.value;
 			}else{
 				m_error_code = ERR_M_EXP_NULL;   //
@@ -421,7 +416,7 @@ bool Parser::CheckGCode(LexerGCode *gcode){
 			}
 			if(res.init){
 				if(res.value > 128){
-					CreateError(ERR_INVALID_CODE, ERROR_LEVEL, CLEAR_BY_MCP_RESET, m_p_lexer_result->line_no);
+					m_error_code = ERR_INVALID_CODE;
 					return false;
 				}
 
@@ -2055,6 +2050,13 @@ bool Parser::CreateFeedMsg(){
  * @return
  */
 bool Parser::CreateAuxMsg(int *mcode, uint8_t total){
+	for(int i=0; i<total; i++){
+		if(*(mcode + i) > 99999999){
+			m_error_code = ERR_INVALID_CODE;
+			return false;
+		}
+	}
+
 	AuxMsg *new_msg = new AuxMsg(mcode, total);
 	if(new_msg == nullptr){
 		//TODO 内存分配失败，告警

@@ -496,9 +496,88 @@ bool ChannelEngine::SelectHandleWheel(int indexId, int channelId)
     }
 }
 
+/**
+ * @brief 读取梯图报警信息
+ * @return
+ */
 bool ChannelEngine::ReadAlarm_pmc()
 {
+    std::ifstream ifs;
+    ifs.open(PATH_PMC_LDR, std::ios::binary | std::ios::in);
+    if (ifs.is_open())
+    {
+        // #WARNMESSAGE@# 从梯图文件中找到报警信息配置
+        char readChar[15] = {0};
+        while(!ifs.eof())
+        {
+            char ch = ifs.get();
+            if (ch == '#')
+            {
+                ifs.read(&readChar[0], 13);
+                if (!strcmp(readChar, "WARNMESSAGE@#"))
+                {
+                    std::cout << "Find #WARNMESSAGE@#" << std::endl;
+                    break;
+                }
+            }
+        }
+
+        if (!ifs.eof())
+        {
+            auto ReadSequenceValue = [&]()->int {//从梯图中读取数据
+                    int val = 0;
+                    ifs.read(reinterpret_cast<char *>(&val), sizeof(val));
+                    val = BigLittleSwitch32(val);
+                    return val;
+            };
+
+            int num = ReadSequenceValue();
+
+            //std::cout << "read num = " << num << std::endl;
+            for(int i = 0; i < num; ++i)
+            {
+                int errAddr = ReadSequenceValue();
+                int errNum  = ReadSequenceValue();
+                int strNum  = ReadSequenceValue();
+
+
+                char *nch = nullptr;
+                if (strNum > 0)// strNum 可能为-1
+                {
+                    char *nch = new char[strNum];
+                    ifs.read(nch, strNum);
+                }
+
+                //std::cout << "errAddr: " << errAddr << " errNum:" << errNum << " strNum:" << strNum << std::endl;
+                PmcAlarmInfo info;
+                info.alarmNum = errNum;
+                if (nch)
+                {
+                    info.alarmMsg = nch;
+                    delete [] nch;
+                }
+                m_map_pmc_alarm.insert(pair<int, PmcAlarmInfo>(errAddr, info));
+            }
+        }
+        else
+        {
+            std::cout << "Not Find #WARNMESSAGE@#" << std::endl;
+        }
+
+
+        ifs.close();
+    }
+    else
+    {
+        printf("报警信息初始化失败，无法打开梯图文件\n");
+    }
+
+    //for (auto itr = m_map_pmc_alarm.begin(); itr != m_map_pmc_alarm.end(); ++itr)
+    //{
+    //    std::cout << itr->first << " " << itr->second.alarmNum << " " << itr->second.alarmMsg <<std::endl;
+    //}
     return true;
+
 }
 
 #else
@@ -1168,6 +1247,8 @@ void ChannelEngine::Initialize(HMICommunication *hmi_comm, MICommunication *mi_c
     }
 
     this->InitBdioDev();
+
+    this->ReadAlarm_pmc();
 
     printf("init pmc axis ctrl \n");
     //初始设置PMC通道控制对象
@@ -9206,7 +9287,6 @@ void ChannelEngine::CheckBattery(){
  */
 static int reset_delay_count = 0;
 void ChannelEngine::ProcessPmcSignal(){
-
     static bool inited = false;
     const GRegBits *g_reg = nullptr;
     GRegBits *g_reg_last = nullptr;
@@ -9788,7 +9868,6 @@ void ChannelEngine::ProcessPmcSignal(){
 
     //处理PMC的告警，即A地址寄存器
     this->ProcessPmcAlarm();
-
 }
 
 /**
@@ -9871,21 +9950,29 @@ void ChannelEngine::ProcessPmcAlarm(){
         if(value != 0){
             bit = 0;
             while(value != 0 && bit <8){
-                if(value & 0x01){
-                    errorno = 20000+i*8+bit;
-                    if(errorno < 20080)
-                        errtype = INFO_LEVEL;
-                    else if(errorno < 20144)
-                        errtype = WARNING_LEVEL;
-                    else if(errorno < 20184)
-                        errtype = ERROR_LEVEL;
-                    else
-                        errtype = FATAL_LEVEL;
-                    CreateError(errorno, errtype, CLEAR_BY_AUTO, 0, CHANNEL_ENGINE_INDEX);
+                if (value & 0x01)
+                {
+                    int errAddr = i*8+bit+1;
+                    if (m_map_pmc_alarm.count(errAddr))
+                    {
+                        errtype = MAX_LEVEL;
+                        int errorno = m_map_pmc_alarm.at(errAddr).alarmNum;
+                        if(errorno >= 20000 && errorno <= 20999)
+                            errtype = INFO_LEVEL;
+                        else if(errorno >= 21000 && errorno <= 21999)
+                            errtype = WARNING_LEVEL;
+                        else if(errorno >= 22000 && errorno <= 22999)
+                            errtype = ERROR_LEVEL;
+                        else if(errorno >= 23000 && errorno <= 23999)
+                            errtype = FATAL_LEVEL;
+                        if (errtype != MAX_LEVEL)
+                            CreateError(errorno, errtype, CLEAR_BY_AUTO, 0, CHANNEL_ENGINE_INDEX);
+                    }
                 }
 
                 value = value>>1;  //右移一位
                 ++bit;
+
             }
         }
         alarmreg += 1;  //pt++;

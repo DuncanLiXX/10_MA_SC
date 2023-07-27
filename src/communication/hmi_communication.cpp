@@ -4024,6 +4024,7 @@ void HMICommunication::PackageSysBackupFile()
         }
     }
 
+    // 调用系统 zip 命令进行压缩
     string zipCommand = "zip -1 " + BACKUP_DIR + " -r " + pack_arg;
     int ret = system(zipCommand.c_str());
     std::cout << "ret: " << ret << std::endl;

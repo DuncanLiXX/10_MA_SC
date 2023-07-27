@@ -560,5 +560,14 @@ typedef ListBuffer<ProcParamUpdate> UpdateProcParamList;   //´ıÉúĞ§¹¤ÒÕÏà¹Ø²ÎÊı¶
 
 typedef ListBuffer<IoRemapInfo> IoRemapList;      //IOÖØ¶¨ÏòÊı¾İ¶ÓÁĞ
 
+/**
+ * @brief ´æ´¢Ò»ÌõÌİÍ¼±¨¾¯ĞÅÏ¢
+ */
+struct PmcAlarmInfo
+{
+    int alarmNum = 0;   /** ÌİÍ¼±¨¾¯±àºÅ */
+    string alarmMsg;    /** ÌİÍ¼±¨¾¯ÄÚÈİ */
+};
+
 
 #endif /* INC_PARAMETER_PARM_DEFINITION_H_ */

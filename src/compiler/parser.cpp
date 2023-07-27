@@ -2248,8 +2248,6 @@ bool Parser::CreateCompensateMsg(int gcode){
  * @return true--成功  false--失败
  */
 bool Parser::CreateRapidMsg(){
-
-    std::cout << "CreateRapidMsg------------------------------》 " << std::endl;
 	DPointChn source = this->m_p_compiler_status->cur_pos;   //起点
 	DPointChn target = source;	//终点
 	uint32_t axis_mask = 0;

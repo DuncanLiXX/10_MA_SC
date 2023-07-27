@@ -4386,7 +4386,7 @@ bool ChannelControl::SendOpenFileCmdToHmi(char *filename){
     strcpy(cmd.data, filename);
     cmd.data_len = strlen(cmd.data);
 
-    std::cout << "------------> SendOpenFileCmdToHmi: " << filename << std::endl;
+    std::cout << "SendOpenFileCmdToHmi: " << filename << std::endl;
 
     return this->m_p_hmi_comm->SendCmd(cmd);
 }
@@ -7203,6 +7203,7 @@ bool ChannelControl::ExecuteAuxMsg(RecordMsg *msg){
             }
 
             break;
+            /*
         case 36:    //换刀完成
         {
             if(tmp->GetExecStep(m_index) == 0){
@@ -7230,7 +7231,7 @@ bool ChannelControl::ExecuteAuxMsg(RecordMsg *msg){
                     gettimeofday(&time_now, NULL);
                     time_elpase = (time_now.tv_sec-m_time_m_start[m_index].tv_sec)*1000000+time_now.tv_usec-m_time_m_start[m_index].tv_usec;
                     if(time_elpase > kMCodeTimeout && !this->GetMExcSig(m_index)
-                            && this->m_p_g_reg->FIN == 0 && !this->GetMFINSig(m_index)/*再次判断FIN，此时的内存数据可能已经刷新*/){//超过200ms任未进入执行状态，则告警“不支持的M代码”
+                            && this->m_p_g_reg->FIN == 0 && !this->GetMFINSig(m_index)){//再次判断FIN，此时的内存数据可能已经刷新,超过200ms任未进入执行状态，则告警“不支持的M代码”
                         CreateError(ERR_M_CODE, ERROR_LEVEL, CLEAR_BY_MCP_RESET, mcode, m_n_channel_index);
                         this->m_error_code = ERR_M_CODE;
                     }else
@@ -7275,7 +7276,7 @@ bool ChannelControl::ExecuteAuxMsg(RecordMsg *msg){
                 tmp->SetExecStep(m_index, 0xFF);    //置位结束状态
             }
         }
-            break;
+            break;*/
 #ifdef USES_GRIND_MACHINE
         case 10: //开启震荡磨
             this->EnableGrindShock(true);
@@ -8557,6 +8558,20 @@ bool ChannelControl::ExecuteToolMsg(RecordMsg *msg){
                 break;		//未到延时时间
 
             this->SetTFSig(index, false);    //复位选通信号
+
+            int cur_tool = toolmsg->GetTool(index) - 1;
+            if (cur_tool >= 0 && cur_tool < m_p_channel_config->tool_number)   //cur_tool=0是主轴
+            {
+                std::cout << m_p_chn_tool_info->tool_life_max[cur_tool] << " " << m_p_chn_tool_info->tool_life_type[cur_tool] << std::endl;
+                if (m_p_chn_tool_info->tool_life_type[cur_tool] == ToolPot_Cnt)
+                {//刀具寿命：计次方式
+                    m_p_chn_tool_info->tool_life_cur[cur_tool]++;
+                    NotifyHmiToolPotChanged();
+                    g_ptr_parm_manager->UpdateToolPotConfig(m_n_channel_index, *m_p_chn_tool_info);
+                    std::cout << "cur_tool: " << cur_tool << " cur_life: " << m_p_chn_tool_info->tool_life_cur[cur_tool]
+                              << " max_life: " << m_p_chn_tool_info->tool_life_max[cur_tool] << " cur threshold: " << m_p_chn_tool_info->tool_threshold[cur_tool] << std::endl;
+                }
+            }
 
             toolmsg->IncreaseExecStep(index);
             break;
@@ -9994,9 +10009,8 @@ bool ChannelControl::ExecuteSubProgReturnMsg(RecordMsg *msg){
     //TODO 向HMI发送命令打开上级文件文件
     UpdateReturnCallToHmi(ret_msg);
 
-    std::cout << "1 " << (int)ret_msg->IsRetFromMacroProg() << " 2 " << (int)m_n_macroprog_count << std::endl;
-    std::cout << "3 " << (int)IsStepMode() << std::endl;
-    std::cout << "4 " << (int)m_n_macroprog_count << " 5 " << (int)m_n_subprog_count << std::endl;
+    std::cout << "RetFromMacro: " << (int)ret_msg->IsRetFromMacroProg() << " MacroCount " << (int)m_n_macroprog_count << std::endl;
+    std::cout << "IsStepMode: " << (int)IsStepMode() << " subProgCount: " << (int)m_n_subprog_count << std::endl;
 
     std::cout << "m_n_cur_dir_sub_prog " << m_p_compiler->m_n_cur_dir_sub_prog << " m_p_compiler->m_n_cur_pre_sub_prog: " << m_p_compiler->m_n_cur_pre_sub_prog << std::endl;
     m_p_compiler->m_n_cur_dir_sub_prog = m_p_compiler->m_n_cur_pre_sub_prog;

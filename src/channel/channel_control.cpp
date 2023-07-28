@@ -1855,6 +1855,12 @@ void ChannelControl::StartRunGCode(){
         return;
     }
 
+    if (this->m_channel_status.chn_work_mode == MDA_MODE && !g_ptr_chn_engine->HasMDIData())
+    {
+        std::cout << "Empty Mdi Data, nothing can run..." << std::endl;
+        return;
+    }
+
 #ifdef USES_ADDITIONAL_PROGRAM
     AddProgType add_type = NONE_ADD;   //运行附加程序类型
 #endif

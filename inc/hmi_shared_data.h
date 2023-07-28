@@ -219,13 +219,15 @@ enum HMICmdCode {
 	CMD_HMI_INSERT_MACRO_VALUE,      //插入宏变量 并把元素循环右移
 	CMD_HMI_POP_MACRO_VALUE,         //删除宏变量 并把元素循环左移
 	CMD_HMI_SET_MACRO_ARRAY,		 //设置宏变量数组 一次最多1000个宏变量
-	 // 木工专用
+     // 木工专用 begin
 	CMD_HMI_APPEND_ORDER_LIST,	     //HMI添加排程加工文件
 	CMD_HMI_CLEAR_ORDER_LIST,		 //HMI清空排程文件列表
 	CMD_HMI_SET_ORDER_INDEX,		 //设置当前排程序号
 	CMD_HMI_SET_ORDER_MODE,          //设置排程模式
 	CMD_HMI_GET_ORDER_LEN,			 //获取排程列表长度
 	CMD_HMI_GET_ORDER_FILE,			 //根据序号获取排程列表文件名
+    // 木工专用 end
+    CMD_HMI_SEND_MDI_INFO,      //发送MDI当前状态信息
 
 	//SC-->HMI
 	CMD_SC_NEW_ALARM = 100,			//SC向HMI发送新的告警信息 100

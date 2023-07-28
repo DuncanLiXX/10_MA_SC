@@ -89,6 +89,7 @@ ChannelEngine::ChannelEngine() {
     m_b_emergency = false;
     m_b_power_off = false;
     m_b_reset_rst_signal = false;
+    m_mdi_mode_ready = false;
 
     this->m_n_cur_pmc_axis = 0xFF;      //默认没有当前轴
     this->m_pmc_axis_active_mask = 0;   //默认所有轴都没有激活PMC轴
@@ -3278,6 +3279,9 @@ void ChannelEngine::ProcessHmiCmd(HMICmdFrame &cmd){
     case CMD_HMI_SET_TOOL_BY_VALUE:
         ProcessHmiSetToolByValue(cmd);
         break;
+    case CMD_HMI_SEND_MDI_INFO:
+        ProcessHmiMdiInfo(cmd);
+        break;
     default:
         g_ptr_trace->PrintTrace(TRACE_WARNING, CHANNEL_ENGINE_SC, "不支持的HMI指令[%d]", cmd.cmd);
         break;
@@ -3544,6 +3548,21 @@ void ChannelEngine::ProcessHmiSetToolByValue(HMICmdFrame &cmd)
     GetChnControl(channelId)->SetToolValue(toolId, potValue);
 
     cmd.cmd_extension = 1;
+    this->m_p_hmi_comm->SendCmd(cmd);
+}
+
+void ChannelEngine::ProcessHmiMdiInfo(HMICmdFrame &cmd)
+{
+    cmd.frame_number |= 0x8000;
+
+    bool hasData = cmd.cmd_extension;
+
+    if (hasData)
+        m_mdi_mode_ready = true;
+    else
+        m_mdi_mode_ready = false;
+
+    std::cout << "ProcessHmiInfo: " << (int)hasData << std::endl;
     this->m_p_hmi_comm->SendCmd(cmd);
 }
 
@@ -4768,6 +4787,11 @@ void ChannelEngine::UpdatePSW()
     }
 
     freg->PSW1 = PSW1;
+}
+
+bool ChannelEngine::HasMDIData()
+{
+    return m_mdi_mode_ready;
 }
 
 bool ChannelEngine::CheckSoftLimit(ManualMoveDir dir, uint8_t phy_axis, double pos){

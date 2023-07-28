@@ -723,6 +723,7 @@ void TraceLogProcess::SendToHmi(OptType optType, MsgType msgType, string strMsg)
 
     hmi_cmd.data_len = 2*len + strLen;
 
+    std::cout << "type: " << (int)msgType << "content: " << strMsg << std::endl;
     m_p_hmi_comm->SendCmd(hmi_cmd);
 }
 

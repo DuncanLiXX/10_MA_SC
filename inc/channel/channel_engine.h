@@ -313,7 +313,7 @@ void SetMcArmComm(MCArmCommunication *comm){this->m_p_mc_arm_comm = comm;}   //É
     bool UpdateMcModel(const string &mcPath);
 
     void UpdatePSW();   //Ë¢ĞÂÎ»ÖÃ¿ª¹ØĞÅºÅ
-
+    bool HasMDIData();
     // ¼ì²âÊÇ·ñÈíÏŞÎ»³¬ÏŞ
     // dir: ·½Ïò
     // phy_axis: ÎïÀíÖáºÅ ´Ó0¿ªÊ¼
@@ -403,6 +403,7 @@ private:	//Ë½ÓĞ³ÉÔ±º¯Êı
 	void ProcessHmiSetIoRemapInfoCmd(HMICmdFrame &cmd);  //´¦ÀíHMIÉèÖÃIOÖØÓ³ÉäĞÅÏ¢ÃüÁî
     void ProcessHmiClearIoRemapInfoCmd(HMICmdFrame &cmd);//´¦ÀíHMIÇå³ıIOÖØÓ³ÉäĞÅÏ¢ÃüÁî
     void ProcessHmiSetToolByValue(HMICmdFrame &cmd);    //´¦ÀíHMIÉèÖÃµ¶¾ßĞÅÏ¢
+    void ProcessHmiMdiInfo(HMICmdFrame &cmd);           //´¦ÀíHMIÉèÖÃMDIÏà¹ØĞÅÏ¢
 
 	void ProcessHmiSetProcParamCmd(HMICmdFrame &cmd);    //´¦ÀíHMIÉèÖÃ¹¤ÒÕÏà¹Ø²ÎÊıµÄÃüÁî
 	void ProcessHmiGetProcParamCmd(HMICmdFrame &cmd);    //´¦ÀíHMI»ñÈ¡¹¤ÒÕÏà¹Ø²ÎÊıµÄÃüÁî
@@ -610,6 +611,7 @@ private:  //Ë½ÓĞ³ÉÔ±±äÁ¿
 	bool m_b_recv_mi_heartbeat;     //±êÖ¾Ê×´ÎÊÕµ½MIµÄĞÄÌø°ü£¬´ËÊ±¿ÉÒÔ¿ªÊ¼¸ø£Í£É·¢ËÍ³õÊ¼»¯²ÎÊı
     bool m_b_recv_mi_plc_ready;     //PMC×¼±¸ºÃĞÅºÅ
 	bool m_b_init_mi_over;			//±êÖ¾¸øMI·¢ËÍ³õÊ¼»¯²ÎÊıÍê³É
+    bool m_mdi_mode_ready;          //mdi×¼±¸ºÃĞÅºÅ,½çÃæµã»÷ÔØÈë°´Å¥ºó£¬mdi²ÅÄÜÔËĞĞ²âÊÔ,HMIµã»÷ÔØÈë»áÖÃÎ»£¬Çå³ı»á¸´Î»
 
 	PmcRegister *m_p_pmc_reg;			//PMC¼Ä´æÆ÷
 	GRegister m_g_reg_last;             //ÉÏÒ»ÖÜÆÚµÄG¼Ä´æÆ÷

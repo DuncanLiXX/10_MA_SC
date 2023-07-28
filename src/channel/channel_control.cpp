@@ -249,7 +249,6 @@ void ChannelControl::InitGCodeMode(){
     //	m_channel_status.gmode[4] = G23_CMD;
     m_channel_status.gmode[5] = G94_CMD;  //05组默认G94  每分钟进给
     m_channel_status.gmode[6] = G21_CMD;  //06组默认G21  公制单位
-
     m_channel_status.gmode[7] = G40_CMD;  //07组默认G40
     m_channel_status.gmode[8] = G49_CMD;  //08组默认G49
     m_channel_status.gmode[9] = G80_CMD;  //09组默认G80
@@ -258,7 +257,6 @@ void ChannelControl::InitGCodeMode(){
     m_channel_status.gmode[14] = G54_CMD;  //14组默认G54  G54工件坐标系
     m_channel_status.gmode[15] = G64_CMD;  //15组默认G64  切削方式
     m_channel_status.gmode[16] = G69_CMD;  //16组默认G69  坐标旋转或者三维坐标变换方式OFF
-
     m_channel_status.gmode[17] = G15_CMD;  //17组默认15   极坐标指令取消
     m_channel_status.gmode[19] = G26_CMD;  //19组默认G26  主轴速度变动检测ON
 }
@@ -280,7 +278,6 @@ bool ChannelControl::Initialize(uint8_t chn_index, ChannelEngine *engine, HMICom
     int res = 0;
 
     char path[kMaxPathLen] = {0};
-
     m_n_channel_index = chn_index;
     m_p_channel_engine = engine;
     m_p_hmi_comm = hmi_comm;
@@ -6919,7 +6916,7 @@ bool ChannelControl::ExecuteAuxMsg(RecordMsg *msg){
                     m_channel_status.machining_state == MS_WARNING){ //未达到执行条件
                 //printf("aux exec return: 0x%x\n", m_p_mc_comm->ReadRunOverValue());
 
-            	if(tmp->GetMCode(m_index) == 6 &&
+            	if((tmp->GetMCode(m_index) == 3 || tmp->GetMCode(m_index) == 4) &&
             			tmp->GetLineNo() == m_channel_mc_status.cur_line_no){
             		break;
             	}

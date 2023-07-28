@@ -3412,6 +3412,12 @@ bool ChannelControl::DoRestart(uint64_t line_no){
     if(this->m_channel_status.cur_tool != this->m_mode_restart.cur_tool){  //不一致，换刀
 
     	int tool_number = this->m_mode_restart.cur_tool;
+
+
+
+
+    	return false;
+
     	msg = new ToolMsg(&tool_number, 1);
     	if(msg != nullptr){
 			msg->SetLineNo(line_no);
@@ -9384,6 +9390,7 @@ bool ChannelControl::ExecuteCompensateMsg(RecordMsg *msg){
             	this->m_channel_status.gmode[8] = type;
                 this->m_channel_status.cur_h_code = value;
                 this->SetMcToolOffset(true);
+                printf("step0 G43 44 code: %d  hcode: %d\n", type, value);
             }
 
             compmsg->SetExecStep(1);	//跳转下一步
@@ -9408,6 +9415,7 @@ bool ChannelControl::ExecuteCompensateMsg(RecordMsg *msg){
                     this->m_p_mc_comm->ReadChnCurToolOffset(this->m_n_channel_index, offset_mc);  //读取MC当前刀偏
                 else
                     this->m_p_mc_arm_comm->ReadChnCurToolOffset(m_n_channel_index, offset_mc);
+
                 if(offset_mc == value){
                     compmsg->SetExecStep(2);  //跳转下一步
                 }

@@ -33,6 +33,16 @@ struct SCAxisConfig;     //SC轴配置
 struct FRegBits;		//F寄存器点位定义
 struct GRegBits;		//G寄存器点位定义
 
+
+
+enum RunStep{
+	STEP_GETLINE = 1,
+	STEP_COMPILE = 2,
+	STEP_RUN = 3,
+	STEP_EXECUTE = 4,
+};
+
+
 /**
  * @brief 通道控制类
  */
@@ -70,7 +80,7 @@ public:
 	void Pause(); 			//停止G代码
     void HardLimitPause();  //触发硬限位时，停止各轴运行
 
-	void StartRunGCode();  //开始G代码运行
+    void StartRunGCode();  //开始G代码运行
 	void StopRunGCode(bool reset = true);	//停止G代码运行
 	void StopCompilerRun();		//停止编译
 
@@ -88,6 +98,7 @@ public:
 	uint8_t GetChnWorkMode(){return m_channel_status.chn_work_mode;}   //获取通道当前工作模式
 
 	void SetWorkMode(uint8_t work_mode);  //切换工作模式
+	uint8_t GetWorkMode();
 
 	bool IsRapidManualMove(){return m_channel_status.func_state_flags.CheckMask(FS_MANUAL_RAPID);}       //是否快速手动移动
 
@@ -398,20 +409,41 @@ public:
     int main_prog_line_number = 0;
 
 #ifdef NEW_WOOD_MACHINE
-	int m_n_order_mode;		   // 排序加工模式·
-	bool m_b_order_finished;   // 排程执行是否结束
-    bool m_b_need_pre_prog;    // 前置程序待执行
-    bool m_b_need_next_prog;   // 后置程序待执行
-    bool m_b_in_next_prog;	   // 后置程序执行中
-    bool m_b_g110_call;		   // G110 调用程序标志
-    bool m_b_g111_call;
+	enum order_step{
+		STEP_IDLE = 0,            // 排程未启动
+		STEP_WAIT_PREPROG = 1,    // 等待前置程序执行
+		STEP_PREPROG = 2,         // 前置程序执行中
+		//STEP_WAIT_WORKPROG = 3,   // 等待加工程序执行
+		STEP_WORKPROG = 4,	      // 加工程序执行中
+		//STEP_WAIT_ENDPROG = 5,	  // 等待后置程序执行
+		STEP_ENDPROG = 6,		  // 后置程序执行中
+		STEP_ORDERFINISH = 7,     // 排程结束
+	};
+
+
+	void SetOrderStep(int step){m_order_step = step;}
+
+    int m_n_order_mode;		   // 排序加工模式·
+
+    int m_order_step = 0;      //
+
+    //bool m_b_order_finished;   // 排程执行是否结束
+    //bool m_b_need_pre_prog;    // 前置程序待执行
+    //bool m_b_need_next_prog;   // 后置程序待执行
+    //bool m_b_in_next_prog;	   // 后置程序执行中
+    //bool m_b_g110_call;		   // G110 调用程序标志
+    //bool m_b_g111_call;
+
     bool exec_m30_over;
     bool m_b_dust_eliminate;   // 除尘打开标志
     int dust_eliminate_delay;  // 除尘启动延时记数
+
     int current_order_index;   // 当前加载排程列表序号
     char g110_file_name[kMaxPathLen];
     bool m_b_in_common_pre_prog;  // 普通程序调用前置程序
     std::vector<string> order_file_vector;  // 排程文件列表
+
+    char reset_file[kMaxFileNameLen];
 #endif
 
     bool m_b_in_block_prog = false; // 锁块
@@ -654,7 +686,7 @@ private:
     bool NotifyHmiToolPotChanged();    //通知HMI刀具信息发生改变
     bool NotifyHmiMCode(int mcode);
 
-	void DoRestart(uint64_t line_no);     //加工复位执行函数
+	bool DoRestart(uint64_t line_no);     //加工复位执行函数
 	void InitRestartMode();         //初始化加工复位中间模态
 
 	void ExecMCode(AuxMsg *msg, uint8_t index);     //具体执行M指令系统动作
@@ -901,6 +933,7 @@ private://私有成员变量
 	bool G92Active = false;
 	bool flag_cancel_g52 = true;
 	bool g43_4_active = false;
+	bool g44_active = false;
 };
 
 #endif /* INC_CHANNEL_CHANNEL_CONTROL_H_ */

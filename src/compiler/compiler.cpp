@@ -2292,7 +2292,6 @@ REDO:
 #endif
         }
     }
-
     return res;
 }
 
@@ -2336,7 +2335,6 @@ bool Compiler::CompileLine() {
     //		printf("***compile 10000 line cost %ldus***\n", total2);
     //		total2 = 0;
     //	}
-
     return res;
 }
 
@@ -2379,7 +2377,7 @@ bool Compiler::RunMessage() {
                 ///printf("compiler run message  line no: %llu,  type: %d flag: %d\n ", cur_line, msg_type, msg->GetFlags().all);
             }
             // @test zk
-            std::cout << "RunMessage: " << (int)msg_type << std::endl;
+            //std::cout << "RunMessage: " << (int)msg_type << std::endl;
 
             switch (msg_type) {
             case AUX_MSG:
@@ -2509,12 +2507,6 @@ bool Compiler::RunMessage() {
         node = this->m_p_block_msg_list->HeadNode();  //取下一个消息
     }
 
-
-    /*if(res){
-        printf("----compiler run message %llu success\n", lineNo);
-    }else{
-        printf("----compiler run message %llu failed\n", lineNo);
-    }*/
     if (!res)   //llx add,处理2033报警，下次启动卡死问题
         compiler_lock = false;
 
@@ -3136,7 +3128,6 @@ bool Compiler::RunSpeedMsg(RecordMsg *msg) {
     SpeedMsg *tmp = (SpeedMsg *) msg;
 
     m_compiler_status.mode.s_mode = tmp->GetSpeed();
-
     return true;
 }
 

@@ -267,8 +267,10 @@ bool ListBuffer<T>::InsertBefore(const T &data, ListNode<T> *pos){
 	new_node->pre = pos->pre;
 	pos->pre = new_node;
 	if(pos == m_ptr_head){//Í·²¿²åÈë
+		printf("list insert 11111\n");
 		m_ptr_head = new_node;
 	}else{
+		printf("list insert 22222\n");
 		new_node->pre->next = new_node;
 	}
 

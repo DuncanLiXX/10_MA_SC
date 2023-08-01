@@ -616,7 +616,6 @@ void ChannelControl::InitialChannelStatus(){
 	double order_mode;
 	GetMacroVar(50002, order_mode);
 	m_n_order_mode = int(order_mode);
-	printf("===== m_n_order_mode: %d\n", m_n_order_mode);
 #endif
 
 }
@@ -865,6 +864,7 @@ void ChannelControl::Reset(){
 	m_order_step = STEP_IDLE;
 	exec_m30_over = false;
 	m_b_dust_eliminate = false;      //除尘标志
+	m_b_in_common_pre_prog = false;
 #endif
 
     printf("channelcontrol[%hhu] send reset cmd!\n", this->m_n_channel_index);
@@ -2067,7 +2067,6 @@ END:
 		m_order_step == STEP_WAIT_PREPROG &&
 		m_n_restart_mode == NOT_RESTART&&
 		m_channel_status.chn_work_mode == AUTO_MODE){
-    	printf("0000000000\n");
     	memset(reset_file, 0, sizeof(reset_file));
     	strcpy(reset_file, m_channel_status.cur_nc_file_name);
     	//m_b_in_next_prog = true;
@@ -2101,7 +2100,7 @@ END:
  * @brief 设置当前行号从MC模块获取
  */
 void ChannelControl::SetCurLineNoFromMc(){
-    //std::cout << "m_b_in_block_prog: " << (int)m_b_in_block_prog << " " << (int)m_n_macroprog_count << " " << (int)m_n_subprog_count << std::endl;
+    std::cout << "m_b_in_block_prog: " << (int)m_b_in_block_prog << " " << (int)m_n_macroprog_count << " " << (int)m_n_subprog_count << std::endl;
     if (!m_b_in_block_prog)
     {
         if((this->m_n_macroprog_count == 0 && this->m_n_subprog_count == 0) || this->m_p_general_config->debug_mode > 0) { //调试模式下或者没有宏程序调用
@@ -3108,11 +3107,9 @@ void ChannelControl::ProcessHmiRestartCmd(HMICmdFrame &cmd){
 void ChannelControl::ProcessHmiSetRequirePieceCmd(HMICmdFrame &cmd)
 {
     cmd.frame_number |= 0x8000;
-
     memcpy(&m_channel_status.workpiece_require, cmd.data, cmd.data_len);
     std::cout << "setCurRequired piece " << m_channel_status.workpiece_require << std::endl;
     g_ptr_parm_manager->SetCurRequirePiece(m_n_channel_index, m_channel_status.workpiece_require);
-
     this->m_p_hmi_comm->SendCmd(cmd);
 }
 
@@ -3192,7 +3189,6 @@ void ChannelControl::ProcessHmiSetCurMachPosCmd(HMICmdFrame &cmd){
             mi_cmd.data.cmd = CMD_MI_SET_AXIS_MACH_POS;
             mi_cmd.data.axis_index = phy_axis+1;
 
-
             mi_cmd.data.data[0] = pos&0xFFFF;
             mi_cmd.data.data[1] = (pos>>16)&0xFFFF;
 
@@ -3213,8 +3209,6 @@ void ChannelControl::ProcessHmiSetCurMachPosCmd(HMICmdFrame &cmd){
 void ChannelControl::ProcessHmiClearMsgCmd(HMICmdFrame &cmd){
     cmd.frame_number |= 0x8000;
     cmd.data_len = 0;
-
-
 
     if(cmd.cmd_extension == 0xFF){  //清空告警队列
         g_ptr_alarm_processor->Clear();
@@ -3414,11 +3408,10 @@ bool ChannelControl::DoRestart(uint64_t line_no){
     //刀号是否一致，不一致则换刀
     if(this->m_channel_status.cur_tool != this->m_mode_restart.cur_tool){  //不一致，换刀
 
+    	// 程序再起 暂时无法实现换刀
     	int tool_number = this->m_mode_restart.cur_tool;
-
-
-
-
+    	CreateError(ERR_AUTO_TOOL_MEASURE, ERROR_LEVEL, CLEAR_BY_MCP_RESET);
+    	m_n_run_thread_state = ERROR;
     	return false;
 
     	msg = new ToolMsg(&tool_number, 1);
@@ -3463,7 +3456,7 @@ bool ChannelControl::DoRestart(uint64_t line_no){
     		msg = new AuxMsg(&mcode, 1);
             msg->SetLineNo(line_no);
             this->m_p_output_msg_list_auto->InsertBefore(msg, node);   //插入主轴旋转指令
-            node = this->m_p_output_msg_list_auto->HeadNode();
+            //node = this->m_p_output_msg_list_auto->HeadNode();
     	}
     }
 
@@ -3483,7 +3476,6 @@ bool ChannelControl::DoRestart(uint64_t line_no){
 			 tar.SetAxisValue(chn_axis_z, this->m_p_axis_config[phy_axis_z].axis_home_pos[4]);
 			 axis_mask = 0x01<<chn_axis_z;
 			 TransMachCoordToWorkCoord(tar, m_channel_status.gmode[14], axis_mask);
-			printf("===== Z Home: %lf\n", tar.m_df_point[2]);
 			 msg = new RapidMsg(src, tar, axis_mask);
 			 if(msg != nullptr){
 				 msg->SetLineNo(line_no);
@@ -3506,16 +3498,15 @@ bool ChannelControl::DoRestart(uint64_t line_no){
 				 tar.m_df_point[i] = m_mode_restart.pos_target.m_df_point[i];
 			 }
 		 }
+
 		 if(axis_mask != 0){
 			 msg = new RapidMsg(src, tar, axis_mask);
 			 if(msg != nullptr){
 				 msg->SetLineNo(line_no);
 				 msg->SetFlag(FLAG_BLOCK_OVER, true);
 				 this->m_p_output_msg_list_auto->InsertBefore(msg, node);   //插入非XYZ轴复位指令
-
 			 }
 		 }
-
 
 		 //XY轴运动到起点位置
 		 axis_mask = 0;
@@ -4512,7 +4503,6 @@ void ChannelControl::SetMachineState(uint8_t mach_state){
     }else if(mach_state == MS_RUNNING){
         this->m_p_f_reg->STL = 1;
         this->m_p_f_reg->SPL = 0;
-        printf("33333333333333\n");
     }*/
 
     g_ptr_trace->PrintTrace(TRACE_INFO, CHANNEL_CONTROL_SC, "exit SetMachineState, old = %d, new = %d\n", m_channel_status.machining_state, mach_state);
@@ -4912,11 +4902,11 @@ int ChannelControl::Run(){
 				m_channel_mc_status.intp_tar_pos.y,
 				m_channel_mc_status.intp_tar_pos.z);*/
     	// @test zk
-    	//static int old_status;
-    	//if(m_n_run_thread_state != old_status){
-		//printf("------->  m_n_run_thread_state : %d\n", m_n_run_thread_state);
-    		//old_status = m_n_run_thread_state;
-    	//}
+    	static int old_status;
+    	if(m_n_run_thread_state != old_status){
+    		printf("------->  m_n_run_thread_state : %d\n", m_n_run_thread_state);
+    		old_status = m_n_run_thread_state;
+    	}
 
     	if(m_n_run_thread_state == RUN)
         {
@@ -4924,7 +4914,9 @@ int ChannelControl::Run(){
             pthread_mutex_lock(&m_mutex_change_state);
             if(m_n_hw_trace_state == REVERSE_TRACE || m_p_last_output_msg != this->m_p_output_msg_list->TailNode())
             {
-
+            	//自动模式下，反向引导或者正向引导缓冲数据未发送完，则不进行编译
+                //	printf("@@@@@@, last= %d, tail=%d\n", m_p_last_output_msg, m_p_output_msg_list->TailNode());
+                //printf("11111\n");
             	bf = ExecuteMessage();
 
 				if(!bf){
@@ -4953,144 +4945,67 @@ int ChannelControl::Run(){
 						m_n_run_thread_state = WAIT_RUN;//执行失败，状态切换到WAIT_RUN
 				}
 			}
-            else if(m_p_compiler->IsCompileOver()){  //已经编译完成
-            	ExecuteMessage();
-            }else
+			else if(m_p_compiler->GetLineData())
 			{
-            	/*
-            	switch(run_step){
+				//获取一行源码
+				if(!m_p_compiler->CompileLine())  //编译一行代码
+				{
+					m_n_run_thread_state = ERROR; //编译出错
+					g_ptr_trace->PrintTrace(TRACE_WARNING, CHANNEL_CONTROL_SC, "#####Compile Error#####\n");
+				}
+                else{
 
-					case STEP_GETLINE:{
-						printf("1111111\n");
-						if(!m_p_compiler->GetLineData()){
-							if(m_p_compiler->IsCompileOver()){
-								ExecuteMessage();
-							}else{
-								if(m_p_compiler->GetErrorCode() != ERR_NONE){
-									m_n_run_thread_state = ERROR;
-								}
-							}
-							break;
-						}else{
-							if(m_n_restart_mode != NOT_RESTART){
-								run_step = STEP_COMPILE;
-							}
-						}
+					if(m_p_compiler->RunMessage()){
 
-						if(++compile_count >= 20){
-							compile_count = 0;
-							usleep(2000);     //连续编译50条，休眠2ms
-						}
-					}
-
-					case STEP_COMPILE:{
-						printf("2222222\n");
-						if(!m_p_compiler->CompileLine()){
-							m_n_run_thread_state = ERROR; //编译出错
-							break;
-						}else{
-							if(m_n_restart_mode != NOT_RESTART){
-								run_step = STEP_RUN;
-							}
-						}
-					}
-					case STEP_RUN:{
-						printf("3333333\n");
-						if(!m_p_compiler->RunMessage()){
-							m_n_run_thread_state = WAIT_RUN;//执行失败，状态切换到WAIT_RUN
-							break;
-						}else{
-							if(m_n_restart_mode != NOT_RESTART){
-								run_step = STEP_EXECUTE;
-							}
-						}
-					}
-					case STEP_EXECUTE:{
-						printf("4444444\n");
 						if(!ExecuteMessage()){
+
 							if(m_error_code != ERR_NONE){
+
 								g_ptr_trace->PrintTrace(TRACE_WARNING, CHANNEL_CONTROL_SC, "execute message error2, %d\n", m_error_code);
 								m_n_run_thread_state = ERROR; //编译出错
 							}else{  //执行未成功，转换为WAIT_EXECUTE状态
 								usleep(10000);   //休眠10ms
 							}
-							break;
-						}else{
-							if(m_n_restart_mode != NOT_RESTART){
-								run_step = STEP_GETLINE;
-							}
 						}
-						printf("444444488\n");
 					}
-            	}
-            	*/
+					else{
+						if(m_p_compiler->GetErrorCode() != ERR_NONE){
 
+							CreateError(m_p_compiler->GetErrorCode(), ERROR_LEVEL, CLEAR_BY_MCP_RESET, 0, m_n_channel_index);
+							m_n_run_thread_state = ERROR;
+						}else{
 
-            	// 获取一行
-            	bool res = m_p_compiler->GetLineData();
-
-            	if(res){
-            		// 编译一行
-            		res = m_p_compiler->CompileLine();
-
-            		if(res){
-
-            			res = m_p_compiler->RunMessage();
-
-            			if(res){
-
-            				res = ExecuteMessage();
-
-            				if(!res){
-            					if(m_error_code != ERR_NONE){
-									g_ptr_trace->PrintTrace(TRACE_WARNING, CHANNEL_CONTROL_SC, "execute message error2, %d\n", m_error_code);
-									m_n_run_thread_state = ERROR; //编译出错
-								}else{  //执行未成功，转换为WAIT_EXECUTE状态
-									usleep(10000);   //休眠10ms
-								}
-            				}
-
-
-            			}else{
-            				m_n_run_thread_state = WAIT_RUN;//执行失败，状态切换到WAIT_RUN
-            			}
-
-
-            		}else{
-            			m_n_run_thread_state = ERROR; //编译出错
-            		}
-
-                    if(++compile_count >= 20){
-                        compile_count = 0;
-                        usleep(2000);     //连续编译50条，休眠2ms
-                    }
-
-            	}else if(m_p_compiler->IsCompileOver()){
-            		ExecuteMessage();
-            	}else{
-            		if(m_p_compiler->GetErrorCode() != ERR_NONE){
-            			m_n_run_thread_state = ERROR;
-            		}
-            	}
-
-				// 检查编译过程是否有报错
-				if(m_p_compiler->GetErrorCode() != ERR_NONE){
-					g_ptr_trace->PrintTrace(TRACE_WARNING, CHANNEL_CONTROL_SC, "Get line data error!\n");
-					m_n_run_thread_state = ERROR;
+							m_n_run_thread_state = WAIT_RUN;//执行失败，状态切换到WAIT_RUN
+						}
+					}
 				}
 
-				// 检查文件结束是否有M30 指令
-            	if( m_p_compiler->IsEndOfFile() &&
-					!m_p_compiler->IsCompileOver() &&
-					this->m_channel_status.chn_work_mode == AUTO_MODE &&
-					!m_p_compiler->IsPreScaning() &&
-					!m_p_compiler->IsSubProgram())
-            	{
-					m_n_run_thread_state = ERROR;
-					g_ptr_trace->PrintLog(LOG_ALARM, "CHN[%d]语法错误，未找到结束指令！", m_n_channel_index);
-					CreateError(ERR_NO_END, ERROR_LEVEL, CLEAR_BY_MCP_RESET, 0, m_n_channel_index);
-            	}
-			}
+                if(++compile_count >= 20){
+                    compile_count = 0;
+                    usleep(2000);     //连续编译50条，休眠2ms
+                }
+            }
+            else if(m_p_compiler->IsCompileOver()){  //已经编译完成
+            	ExecuteMessage();
+            }
+            else
+            {//出错
+            	if(m_p_compiler->GetErrorCode() != ERR_NONE){
+                    g_ptr_trace->PrintTrace(TRACE_WARNING, CHANNEL_CONTROL_SC, "Get line data error!\n");
+                    m_n_run_thread_state = ERROR;
+                }
+            }
+
+            if(m_p_compiler->IsEndOfFile() && !m_p_compiler->IsCompileOver() &&
+                    this->m_channel_status.chn_work_mode == AUTO_MODE && !m_p_compiler->IsPreScaning() && !m_p_compiler->IsSubProgram()
+                    )
+            {
+
+            	m_n_run_thread_state = ERROR;
+                g_ptr_trace->PrintLog(LOG_ALARM, "CHN[%d]语法错误，未找到结束指令！", m_n_channel_index);
+                CreateError(ERR_NO_END, ERROR_LEVEL, CLEAR_BY_MCP_RESET, 0, m_n_channel_index);
+            }
+
             pthread_mutex_unlock(&m_mutex_change_state);
         }
         else if(m_n_run_thread_state == ERROR)
@@ -5105,11 +5020,9 @@ int ChannelControl::Run(){
         }
         else if(m_n_run_thread_state == STOP)
         {
-
             //TODO 编译结束，复位编译器状态及变量
 
             m_n_run_thread_state = IDLE;
-
             g_ptr_trace->PrintTrace(TRACE_INFO, CHANNEL_CONTROL_SC, "Compiler run STOP!!!!!\n");
         }
         else if(m_n_run_thread_state == PAUSE)
@@ -5201,20 +5114,14 @@ int ChannelControl::Run(){
 
         		// 前置程序执行结束
         		if(m_order_step == STEP_PREPROG){
-        			if (IsStepMode())
-					{
-						this->SetMcStepMode(true);
-						m_b_need_delay_step = false;
-					}
-
 					char path[kMaxPathLen];
 					strcpy(path, PATH_NC_FILE);
 					strcat(path, g110_file_name);
 					strcpy(m_channel_status.cur_nc_file_name, g110_file_name);
 					g_ptr_parm_manager->SetCurNcFile(m_n_channel_index, m_channel_status.cur_nc_file_name);    //修改当前NC文件
 					this->m_p_compiler->OpenFile(path);
-
-					this->SendOpenFileCmdToHmi(m_channel_status.cur_nc_file_name);
+					UpdateProgramCallToHmi(path, 1);
+					m_b_in_block_prog = false;
 					this->StartRunGCode();
 
 					m_order_step = STEP_WORKPROG;
@@ -5243,8 +5150,8 @@ int ChannelControl::Run(){
 					strcpy(m_channel_status.cur_nc_file_name, g110_file_name);
 					g_ptr_parm_manager->SetCurNcFile(m_n_channel_index, m_channel_status.cur_nc_file_name);    //修改当前NC文件
 					this->m_p_compiler->OpenFile(path);
-
 					this->SendOpenFileCmdToHmi(m_channel_status.cur_nc_file_name);
+					m_b_in_block_prog = false;
 					this->StartRunGCode();
 					m_order_step = STEP_WORKPROG;
         		}else if(m_order_step == STEP_ORDERFINISH){
@@ -5279,7 +5186,7 @@ int ChannelControl::Run(){
 				// 后置程序M30  需要调用G110 指定的加工 程序
                 else if(m_b_in_next_prog && m_b_g110_call){
                 	printf("222222222222222222\n");
-                	m_b_in_block_prog = false;
+
                     if (IsStepMode())
                     {
                         this->SetMcStepMode(true);
@@ -5305,7 +5212,6 @@ int ChannelControl::Run(){
 				}
 				// 所有加工程序结束 后置程序运行结束 回到排程列表第一个文件
 				else if(m_b_in_next_prog && m_b_g111_call){
-					printf("333333333333333333\n");
 					m_b_in_next_prog = false;
 					m_b_order_finished = true;
                     //if(m_p_g_reg->SBK){
@@ -9696,7 +9602,8 @@ bool ChannelControl::ExecuteErrorMsg(RecordMsg *msg){
     //		}
     //	}
 
-    int limit = 1;
+    /*
+	int limit = 1;
     if(this->IsStepMode())
         limit = 4;	//单步模式需要多次验证，因为状态切换有延时
 
@@ -9726,7 +9633,7 @@ bool ChannelControl::ExecuteErrorMsg(RecordMsg *msg){
         m_n_run_thread_state = PAUSE;
         SetMachineState(MS_PAUSED);
         return false;
-    }
+    }*/
 
     //生成告警
     ErrorMsg *err = (ErrorMsg *)msg;
@@ -11714,14 +11621,11 @@ bool ChannelControl::ExecuteInputMsg(RecordMsg * msg){
     }
     case 20:{
         int param = input_msg->PData;
-        //printf("11111 pdata: %lf --- rdata: %lf\n", input_msg->PData, input_msg->RData);
 
         if(SetSysVarValue(param, input_msg->RData)){
-        	//printf("22222 param: %d - value: %lf\n", param, input_msg->RData);
         	break;
         }
         else{
-        	//printf("33333 param: %d - value: %lf\n", param, input_msg->RData);
         	CreateError(ERR_NO_CUR_RUN_DATA, ERROR_LEVEL, CLEAR_BY_MCP_RESET, msg->GetLineNo(), m_n_channel_index);
             this->m_error_code = ERR_NO_CUR_RUN_DATA;
             return false;
@@ -18857,7 +18761,6 @@ void ChannelControl::TransMachCoordToWorkCoord(DPointChn &pos, uint16_t coord_id
 
             	if(this->m_p_axis_config[phy_axis].axis_linear_type == LINE_AXIS_Z && m_channel_status.cur_h_code > 0){//Z轴需要加上刀长偏置
                     //	origin_pos += m_p_chn_tool_config->geometry_comp_basic[2];   //基准刀偏
-            		printf("===== z axis tool length compensation...\n");
                 	if(g44_active){
                 		origin_pos -= m_p_chn_tool_config->geometry_compensation[m_channel_status.cur_h_code-1][2];  //
                 	}else{

@@ -857,6 +857,7 @@ enum FileTransType{
 	FILE_PC_DATA,                //螺补数据文件
 	FILE_BACK_DISK,				//一键备份文件
     FILE_BACKUP_CNC,            //全盘备份
+	FILE_ORDER_LIST,
 };
 
 /**

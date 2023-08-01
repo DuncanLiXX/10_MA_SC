@@ -1242,15 +1242,13 @@ struct GRegBits{
 #endif
 	//G216
 	uint8_t EMPC:1;         //PMC调用宏程序使能    G216.0
-#if defined USES_WOOD_MACHINE
-	uint8_t :6;
-	uint8_t QDE:1;             //快钻功能(Quick Drill)使能信号   G216.7
-#elif defined NEW_WOOD_MACHINE
-    uint8_t BDM:1;        //门板模式
-    uint8_t BOXM:1;       //柜体模式
-    uint8_t QDE:1; 		  //快钻功能(Quick Drill)使能信号   G216.3
-    uint8_t QDAXIS:2;     //指定快钻轴号   G216.4~5
-    uint8_t : 2;
+#if defined NEW_WOOD_MACHINE
+    uint8_t BDM:1;        	// 门板模式
+    uint8_t BOXM:1;       	// 柜体模式
+    uint8_t QDE:1; 		  	// 快钻功能(Quick Drill)使能信号   G216.3
+    uint8_t QDAXIS:2;     	// 指定快钻轴号   G216.4~5
+    uint8_t ELIMINATE: 1; 	// 工位1除尘
+    uint8_t ELIMINATE2: 1;	// 工位2除尘
 #else
     uint8_t :7;
 #endif

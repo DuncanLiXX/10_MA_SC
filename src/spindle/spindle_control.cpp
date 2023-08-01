@@ -962,7 +962,6 @@ void SpindleControl::ProcessORCMA(bool ORCMA)
         while(!motor_enable){
         	count ++;
         	if(count > 200){
-        		printf("1111111111111111111\n");
 
         		count = 0;
         		return;
@@ -983,7 +982,6 @@ void SpindleControl::ProcessORCMA(bool ORCMA)
     		while(!motor_enable){
     			count ++;
     			if(count > 200){
-    				printf("333333333333333333333333\n");
     				CreateError(ERR_SPD_LOCATE_FAIL,
     							ERROR_LEVEL,
     							CLEAR_BY_MCP_RESET);
@@ -1010,7 +1008,6 @@ void SpindleControl::ProcessORCMA(bool ORCMA)
         while(!motor_enable){
         	count ++;
         	if(count > 200){
-        		printf("222222222222222222222\n");
 
         		count = 0;
         		return;
@@ -1029,7 +1026,6 @@ void SpindleControl::ProcessORCMA(bool ORCMA)
 
 void SpindleControl::ProcessModeChanged(Spindle::Mode mode)
 {
-    printf("========== ProcessModeChanged  %d\n", mode);
 
     if(mode == Position){
     	ChannelEngine *engine = ChannelEngine::GetInstance();

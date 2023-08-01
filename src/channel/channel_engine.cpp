@@ -5642,12 +5642,13 @@ bool ChannelEngine::Pause(){
 
         //for(uint8_t i = 0; i < m_p_channel_mode_group[m_n_cur_chn_group_index].GetChannelCount(); i++){
 
-        	// 前置 程序或后置程序执行时  禁止暂停
+/*
 #ifdef NEW_WOOD_MACHINE
+    	// 前置 程序或后置程序执行时  禁止暂停
     	if(m_p_channel_control[0].m_order_step == 2 ||
         	   m_p_channel_control[0].m_order_step == 6	)
         		return true;
-#endif
+#endif*/
         	m_p_channel_control[0].Pause();
             //m_p_channel_control[m_p_channel_mode_group[m_n_cur_chn_group_index].GetChannel(i)].Pause();
         //}
@@ -9681,6 +9682,13 @@ void ChannelEngine::ProcessPmcSignal(){
             }
         }
         //#endif
+
+        if(g_reg_last->ELIMINATE != g_reg->ELIMINATE){
+        	if(g_reg->ELIMINATE == 1){
+        		this->m_p_channel_control[0].m_b_dust_eliminate = true;
+        	}
+        }
+
 
 //处理工艺模式切换
 #ifdef USES_WOOD_MACHINE

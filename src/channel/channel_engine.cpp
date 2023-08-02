@@ -1341,7 +1341,6 @@ void ChannelEngine::Initialize(HMICommunication *hmi_comm, MICommunication *mi_c
                              this);
     m_task_consume_ft = std::async(std::launch::async, process);
 
-
     this->InitPoweroffHandler();
     printf("succeed to initialize channel engine\n");
 
@@ -1565,8 +1564,8 @@ void ChannelEngine::PoweroffHandler(int signo, siginfo_t *info, void *context){
  * @brief 掉电时保存数据
  */
 void ChannelEngine::SaveDataPoweroff(){
-    system("date >> save.txt");
-    system("echo \"start\" >> save.txt");
+    system("date >> /cnc/bin/save.txt");
+    system("echo \"start\" >> /cnc/bin/save.txt");
     //保存PMC寄存器数据
     if((this->m_mask_import_param & (0x01<<CONFIG_PMC_REG)) == 0)
         this->m_p_pmc_reg->SaveRegData();
@@ -1592,8 +1591,8 @@ void ChannelEngine::SaveDataPoweroff(){
     delete g_ptr_trace;
     g_ptr_trace = nullptr;
 
-    system("date >> save.txt");
-    system("echo \"end\" >> save.txt");
+    system("date >> /cnc/bin/save.txt");
+    system("echo \"end\" >> /cnc/bin/save.txt");
     system("sync");
 }
 
@@ -9685,7 +9684,13 @@ void ChannelEngine::ProcessPmcSignal(){
 
         if(g_reg_last->ELIMINATE != g_reg->ELIMINATE){
         	if(g_reg->ELIMINATE == 1){
-        		this->m_p_channel_control[0].m_b_dust_eliminate = true;
+        		m_p_channel_control->ProcessEliminate(1);
+        	}
+        }
+
+        if(g_reg_last->ELIMINATE2 != g_reg->ELIMINATE2){
+        	if(g_reg->ELIMINATE2 == 1){
+        		m_p_channel_control->ProcessEliminate(2);
         	}
         }
 

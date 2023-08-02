@@ -420,22 +420,18 @@ public:
 		STEP_ORDERFINISH = 7,     // 排程结束
 	};
 
-
 	void SetOrderStep(int step){m_order_step = step;}
+	void ProcessEliminate(int work_station);
 
     int m_n_order_mode;		   // 排序加工模式·
     int m_order_step = 0;      //
-
-    //bool m_b_order_finished;   // 排程执行是否结束
-    //bool m_b_need_pre_prog;    // 前置程序待执行
-    //bool m_b_need_next_prog;   // 后置程序待执行
-    //bool m_b_in_next_prog;	   // 后置程序执行中
-    //bool m_b_g110_call;		   // G110 调用程序标志
-    //bool m_b_g111_call;
-
     bool exec_m30_over;
+
     bool m_b_dust_eliminate;   // 除尘打开标志
-    int dust_eliminate_delay;  // 除尘启动延时记数
+    int m_eliminate_step = 0;
+    int m_eliminate_station = 0;
+    char eliminate_breakfile[kMaxFileNameLen];
+    int eliminate_breakline = -1;
 
     int current_order_index;   // 当前加载排程列表序号
     char g110_file_name[kMaxPathLen];

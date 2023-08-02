@@ -424,7 +424,6 @@ public:
 	void SetOrderStep(int step){m_order_step = step;}
 
     int m_n_order_mode;		   // 排序加工模式·
-
     int m_order_step = 0;      //
 
     //bool m_b_order_finished;   // 排程执行是否结束

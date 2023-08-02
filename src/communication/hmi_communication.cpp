@@ -1945,6 +1945,9 @@ void HMICommunication::ProcessHmiGetFileCmd(HMICmdFrame &cmd){
 		}else if(cmd.cmd_extension == FILE_ESB_DEV){ //请求伺服描述文件
 			memset(m_str_file_name, 0x00, kMaxFileNameLen);
 			strcpy(m_str_file_name, cmd.data);
+        }else if(cmd.cmd_extension == FILE_ORDER_LIST){  //排程列表文件
+			memset(m_str_file_name, 0x00, kMaxFileNameLen);
+			strcpy(m_str_file_name, "/cnc/order_list");
         }
 
 		sem_post(&m_sem_tcp_file);  //发送信号，激活文件传输线程
@@ -3674,6 +3677,8 @@ int HMICommunication::SendFile(){
 		}
     }else if(file_type == FILE_BACKUP_CNC) { //备份
         strcpy(filepath, BACKUP_DIR.c_str());
+    }else if(file_type == FILE_ORDER_LIST){
+    	strcpy(filepath, "/cnc/order_list");
     }
 //	else if(file_type == FILE_SYSTEM_CONFIG){
 //
@@ -3743,10 +3748,9 @@ TRAN:
 			goto END;
 		}
 
-		//printf("---------------> send_total %llu\n", send_total);
 		send_total += send_size;
 
-//		printf("send file: total = %lld, send= %lld\n", file_size, send_total);
+		//printf("send file: total = %lld, send= %lld\n", file_size, send_total);
 		if(send_count++ >= 50){
 			usleep(1000);
 			send_count = 0;

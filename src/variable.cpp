@@ -725,13 +725,13 @@ LocalVarScene &LocalVarScene::operator =(LocalVarScene &one){
 
 void Variable::MemsetMacroVar(int start, int count, double value){
 
-	if(start >= 50000){
+	if(start >= 50000 && start <55000 && start+count <55000){
 		int idx = start - 50000;
 		for(int i=idx; i<idx+count; i++){
 			m_b_init_user_macro[i] = 1;
 			m_df_user_macro[i] = value;
-			SaveMacroComm(start + i);
 		}
+		SyncUserMacroVar();
 	}
 	return;
 }
@@ -768,6 +768,7 @@ void Variable::PopMacroVar(int index, int end){
 }
 
 void Variable::SetMacroArray(int index, int count, char * buf){
+
 	int start = index - 50000;
 
 	memcpy(&m_df_user_macro[start], buf, sizeof(double)*count);
@@ -783,7 +784,9 @@ void Variable::SyncUserMacroVar(){
 	fwrite(m_b_init_user_macro, sizeof(m_b_init_user_macro), 1, m_fp_macro_var);
 	fwrite(m_df_user_macro, sizeof(m_df_user_macro), 1, m_fp_macro_var);
 
+
 	if(m_fp_macro_var != nullptr){
+		fflush(m_fp_macro_var);
 		fsync(fileno(m_fp_macro_var));
 	}
 	return ;

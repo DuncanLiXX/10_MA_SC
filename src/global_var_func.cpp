@@ -63,6 +63,9 @@ void CreateError(uint16_t error_code, uint8_t error_level,
         return;  //ÖØ¸´¸æ¾¯
     }
 
+    if (g_ptr_chn_engine->GetPoweroffFlag())
+        return;
+
     ErrorInfo err_info;
     memset(&err_info, 0x00, sizeof(ErrorInfo));
     time_t cur_time;

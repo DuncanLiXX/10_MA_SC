@@ -198,6 +198,7 @@ void SetMcArmComm(MCArmCommunication *comm){this->m_p_mc_arm_comm = comm;}   //É
 	void SetPmcSignal(uint8_t chn_index, int signal, bool flag);	//ÉèÖÃÍ¨µÀµÄPMCĞÅºÅ
 
 	void SetPoweoffFlag(bool flag){m_b_power_off = flag;}  //ÉèÖÃµôµç±êÖ¾
+    bool GetPoweroffFlag() { return m_b_power_off; }
 
 	void RefreshFile(char *file);   //Ë¢ĞÂncÎÄ¼şfile
 	void RemapFile(char *file);		//ÖØĞÂ¼ÓÔØÎÄ¼şfile

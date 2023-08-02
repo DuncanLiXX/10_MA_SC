@@ -13,6 +13,7 @@
 #include "global_definition.h"
 #include "showsc.h"
 #include "singleton.h"
+#include <channel_engine.h>
 
 //文件保存目录
 #define LOG_PATH "/cnc/trace/log/"

@@ -2879,6 +2879,7 @@ void ChannelControl::ProcessHmiBigFrame(uint16_t cmd, char *buf){
 	default:
 		break;
 	}
+
 	usleep(10000);
 }
 
@@ -5071,25 +5072,33 @@ int ChannelControl::Run(){
 				m_channel_status.machining_state == MS_READY &&
 				m_eliminate_step == 1){
 
-        		if(eliminate_breakline == -1){
+        		if(eliminate_breakline == -1){   //不是正在加工 跳转除尘
         			strcpy(eliminate_breakfile, m_channel_status.cur_nc_file_name);
         		}else{
         			// 复位没有结束 除尘不能开始
         			if(!eliminate_reset_finished) continue;
         		}
 
-        		char  filename[] = "/sys_sub/O9030.NC";
+        		char  filename[kMaxFileNameLen];
+        		memset(filename, 0x00, kMaxFileNameLen);
+        		if(m_eliminate_station == 1){
+        			strcpy(filename, "/sys_sub/SYS_MACRO_CLEARDUST1.NC");
+        		}else if(m_eliminate_station == 2){
+        			strcpy(filename, "/sys_sub/SYS_MACRO_CLEARDUST2.NC");
+        		}
+
 				strcpy(m_channel_status.cur_nc_file_name, filename);
 
 				char file[kMaxFileNameLen];
 				memset(file, 0x00, kMaxFileNameLen);
-				strcpy(file, "/cnc/nc_files/sys_sub/O9030.NC");
+				strcpy(file, PATH_NC_FILE);
+				strcat(file, filename);
 				this->m_p_compiler->OpenFile(file);
 				this->SendOpenFileCmdToHmi(m_channel_status.cur_nc_file_name);
 				m_b_in_block_prog = false;
 				this->StartRunGCode();
 				m_eliminate_step = 2;
-				printf("===== dust eliminate\n");
+
         	}else if(m_b_dust_eliminate && m_eliminate_step == 2){
 
         		char path[kMaxPathLen] = {0};
@@ -11728,6 +11737,7 @@ bool ChannelControl::ExecuteOpenFileMsg(RecordMsg *msg){
 }
 
 void ChannelControl::ProcessEliminate(int work_station){
+	printf("===== ChannelControl::ProcessEliminate %d\n", work_station);
 	if(!m_b_dust_eliminate &&
 		m_order_step != STEP_PREPROG &&
 		m_order_step != STEP_ENDPROG &&
@@ -11740,10 +11750,11 @@ void ChannelControl::ProcessEliminate(int work_station){
 		memset(eliminate_breakfile, 0, sizeof(eliminate_breakfile));
 		eliminate_breakline = -1;
 
+		m_p_f_reg->ELIMI1 = 1;
+		m_p_f_reg->ELIMI2 = 1;
+
 		if(this->m_n_run_thread_state != IDLE){
 			this->SetMcStepMode(true);
-    		m_p_f_reg->ELIMI1 = 1;
-    		m_p_f_reg->ELIMI2 = 1;
 		}
 	}
 }

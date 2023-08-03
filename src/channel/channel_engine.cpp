@@ -8710,7 +8710,7 @@ void ChannelEngine::ClearPmcAxisMoveData(){
 void ChannelEngine::SystemReset(){
 
     printf("system reset\n");
-    //this->m_p_pmc_reg->SaveRegData();
+    this->m_p_pmc_reg->SaveRegData();
     //各通道复位
     for(int i = 0; i < this->m_p_general_config->chn_count; i++){
         // 攻丝状态禁止复位

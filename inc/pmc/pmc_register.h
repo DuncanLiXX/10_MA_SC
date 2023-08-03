@@ -603,8 +603,8 @@ struct FRegBits{
 	uint8_t MPCO:1;           //PMC宏程序调用结束     F216.0
 #ifdef NEW_WOOD_MACHINE
 	uint8_t :5;
-	uint8_t ELIMI1 :1;
-	uint8_t ELIMI2 :1;
+	uint8_t ELIMI1 :1;  // F216.6
+	uint8_t ELIMI2 :1;  // F216.7
 #else
 	uint8_t :7;
 #endif

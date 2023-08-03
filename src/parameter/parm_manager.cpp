@@ -638,8 +638,9 @@ bool ParmManager::ReadChnConfig(){
 				m_sc_channel_config[i].chn_axis_name[j] = m_ini_chn->GetIntValueOrDefault(sname, kname, j);
                 memset(kname, 0x00, sizeof(kname));
                 sprintf(kname, "chn_axis_order_%d", j+1);
-                m_sc_channel_config[i].chn_axis_order[j] = m_ini_chn->GetIntValueOrDefault(sname, kname, j+1);// 轴顺序从1开始计数，0为不显示
-				memset(kname, 0x00, sizeof(kname)); 
+                //m_sc_channel_config[i].chn_axis_order[j] = m_ini_chn->GetIntValueOrDefault(sname, kname, j+1);// 轴顺序从1开始计数，0为不显示
+                m_sc_channel_config[i].chn_axis_order[j] = m_ini_chn->GetIntValueOrDefault(sname, kname, 1);
+                memset(kname, 0x00, sizeof(kname));
 				sprintf(kname, "chn_axis_name_ex_%d", j+1);
 				m_sc_channel_config[i].chn_axis_name_ex[j] = m_ini_chn->GetIntValueOrDefault(sname, kname, 0);
 			}
@@ -745,7 +746,8 @@ bool ParmManager::ReadChnConfig(){
 			}
 			for(j = 0; j < kMaxAxisChn; j++){
 				m_sc_channel_config[i].chn_axis_name[j] = j;
-                m_sc_channel_config[i].chn_axis_order[j] = j + 1;
+                //m_sc_channel_config[i].chn_axis_order[j] = j + 1;
+                m_sc_channel_config[i].chn_axis_order[j] = 1;
 				m_sc_channel_config[i].chn_axis_name_ex[j] = 0;
 			}
 			m_sc_channel_config[i].intep_mode = 0;

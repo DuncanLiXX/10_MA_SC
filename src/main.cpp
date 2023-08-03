@@ -583,9 +583,9 @@ int Initialize(){
     InitSysState();
     memset(&g_sys_info, 0x00, sizeof(g_sys_info));  //初始化系统信息结构
     // 木工版本号
-    sprintf(g_sys_info.sw_version_info.sc, "SC-00.01.07t");
+    //sprintf(g_sys_info.sw_version_info.sc, "SC-00.01.07t");
     // 0M-B 版本号
-    //sprintf(g_sys_info.sw_version_info.sc, "SC-00.00.19");
+    sprintf(g_sys_info.sw_version_info.sc, "SC-00.00.19");
     strcpy(g_sys_info.sw_version_info.mc, "P0.0.0");
     strcpy(g_sys_info.sw_version_info.mi, "P0.0.0");
 

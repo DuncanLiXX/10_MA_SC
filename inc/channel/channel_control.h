@@ -427,7 +427,9 @@ public:
     int m_order_step = 0;      //
     bool exec_m30_over;
 
-    bool m_b_dust_eliminate;   // 除尘打开标志
+    bool m_b_dust_eliminate = false;   // 除尘打开标志
+    bool eliminate_reset_flag = false; // 除尘复位标志
+    bool eliminate_reset_finished = false;
     int m_eliminate_step = 0;
     int m_eliminate_station = 0;
     char eliminate_breakfile[kMaxFileNameLen];

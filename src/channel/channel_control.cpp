@@ -624,6 +624,7 @@ void ChannelControl::Reset(){
 
 	Flag_SyncCrcPos = true;
 
+
     if(this->m_thread_breakcontinue > 0){//处于断点继续线程执行过程中，则退出断点继续线程
         this->CancelBreakContinueThread();
     }
@@ -797,13 +798,13 @@ void ChannelControl::Reset(){
             this->SetMcToolOffset(true);
     }
 
-    m_simulate_mode = SIM_NONE;    //默认在非仿真模式
-    this->SetMiSimMode(false);  //复位MI仿真状态
+    m_simulate_mode = SIM_NONE; 	//默认在非仿真模式
+    this->SetMiSimMode(false);  	//复位MI仿真状态
 
     //复位通道状态为READY
-    uint8_t state = MS_READY;   //告警状态
+    uint8_t state = MS_READY;   	//告警状态
 
-    this->SetMachineState(state);  //更新通道状态
+    this->SetMachineState(state);  	//更新通道状态
 
     this->ResetMode();   //复位通道模态数据
 
@@ -842,23 +843,23 @@ void ChannelControl::Reset(){
 			if(this->m_p_compiler->OpenFile(path)){
 				this->SendOpenFileCmdToHmi(m_channel_status.cur_nc_file_name);
 			}
-
     	}else{
     		setOrderIndex(current_order_index);
     	}
     }
 
-	//m_b_order_finished = true;
-	//m_b_need_pre_prog = false;     // 前置程序待执行
-	//m_b_need_next_prog = false;    // 后置程序待执行
-	//m_b_in_next_prog = false;	   // 后置程序执行中
-	//m_b_g110_call = false;		   // G110 调用程序标志
-	//m_b_g111_call = false;
+	if(!eliminate_reset_flag){
+		m_order_step = STEP_IDLE;
+		exec_m30_over = false;
+		eliminate_reset_flag = false;
+		m_b_dust_eliminate = false;
+		m_p_f_reg->ELIMI1 = 0;
+		m_p_f_reg->ELIMI2 = 0;
+	}
 
-	m_order_step = STEP_IDLE;
-	exec_m30_over = false;
-	//m_b_dust_eliminate = false;      //除尘标志
 	m_b_in_common_pre_prog = false;
+	eliminate_reset_finished = true;
+
 #endif
 
     printf("channelcontrol[%hhu] send reset cmd!\n", this->m_n_channel_index);
@@ -872,7 +873,7 @@ void ChannelControl::Reset(){
 double ChannelControl::GetToolCompRadius(int d_index){
     double radius = 0.0;
 
-    if(d_index <= 0 && d_index >= m_p_channel_config->tool_number)
+    if(d_index <= 0 || d_index >= m_p_channel_config->tool_number)
         return radius;
 
     radius = m_p_chn_tool_config->radius_compensation[d_index-1]+m_p_chn_tool_config->radius_wear[d_index-1];
@@ -2076,6 +2077,7 @@ END:
         m_order_step = STEP_PREPROG;
 
     }else if(m_n_order_mode == 0 &&
+    		m_eliminate_step == 0 &&
     		!m_b_in_common_pre_prog &&
 			 m_n_restart_mode == NOT_RESTART&&
     		 m_channel_status.chn_work_mode == AUTO_MODE){
@@ -2871,14 +2873,13 @@ void ChannelControl::ProcessHmiBigFrame(uint16_t cmd, char *buf){
 		memcpy(&index, buf+2, 4);
 		memcpy(&count, buf+6, 4);
 
-		printf("cmd: %d index: %d count: %d\n", cmd, index, count);
+		//printf("cmd: %d index: %d count: %d\n", cmd, index, count);
 		this->m_macro_variable.SetMacroArray(index, count, buf+10);
-
 		break;
 	default:
 		break;
 	}
-	usleep(5000);
+	usleep(10000);
 }
 
 
@@ -5028,7 +5029,8 @@ int ChannelControl::Run(){
                     		strcpy(eliminate_breakfile, m_channel_status.cur_nc_file_name);
                     		eliminate_breakline = m_channel_rt_status.line_no;
                     		SetMcStepMode(false);
-                    		m_n_run_thread_state = IDLE;
+                    		eliminate_reset_flag = true;
+                    		eliminate_reset_finished = false;
                     		Reset();
                     	}
                     }
@@ -5066,11 +5068,14 @@ int ChannelControl::Run(){
 
         	// 除尘宏程序调用
         	if(m_b_dust_eliminate &&
-        			m_channel_status.machining_state == MS_READY &&
-        			m_eliminate_step == 1){
+				m_channel_status.machining_state == MS_READY &&
+				m_eliminate_step == 1){
 
         		if(eliminate_breakline == -1){
         			strcpy(eliminate_breakfile, m_channel_status.cur_nc_file_name);
+        		}else{
+        			// 复位没有结束 除尘不能开始
+        			if(!eliminate_reset_finished) continue;
         		}
 
         		char  filename[] = "/sys_sub/O9030.NC";
@@ -5084,6 +5089,7 @@ int ChannelControl::Run(){
 				m_b_in_block_prog = false;
 				this->StartRunGCode();
 				m_eliminate_step = 2;
+				printf("===== dust eliminate\n");
         	}else if(m_b_dust_eliminate && m_eliminate_step == 2){
 
         		char path[kMaxPathLen] = {0};
@@ -5102,16 +5108,18 @@ int ChannelControl::Run(){
 					}
 
         	        //设置加工复位的状态量
-        	        this->m_n_restart_line = eliminate_breakline;
+        	        this->m_n_restart_line = eliminate_breakline+1;
         	        this->m_n_restart_step = 1;
         	        this->m_n_restart_mode = NORMAL_RESTART;
         	        m_channel_rt_status.line_no = m_n_restart_line;
         	        StartRunGCode();
-
         		}
 
+        		m_p_f_reg->ELIMI1 = 0;
+        		m_p_f_reg->ELIMI2 = 0;
         		m_b_dust_eliminate = false;
         		m_eliminate_step = 0;
+        		continue;
         	}
 
         	if( m_n_order_mode > 0 &&
@@ -5174,7 +5182,6 @@ int ChannelControl::Run(){
 					CreateError(ERR_ORDER_FINISH, ERROR_LEVEL, CLEAR_BY_MCP_RESET, 0, m_n_channel_index);
 					m_order_step = STEP_IDLE;
         		}
-
         	}
 #endif
         }
@@ -11721,7 +11728,11 @@ bool ChannelControl::ExecuteOpenFileMsg(RecordMsg *msg){
 }
 
 void ChannelControl::ProcessEliminate(int work_station){
-	if(!m_b_dust_eliminate && m_channel_status.chn_work_mode == AUTO_MODE){
+	if(!m_b_dust_eliminate &&
+		m_order_step != STEP_PREPROG &&
+		m_order_step != STEP_ENDPROG &&
+		m_channel_status.chn_work_mode == AUTO_MODE){
+
 		this->m_b_dust_eliminate = true;
 		m_eliminate_step = 1;
 		m_eliminate_station = work_station;
@@ -11731,6 +11742,8 @@ void ChannelControl::ProcessEliminate(int work_station){
 
 		if(this->m_n_run_thread_state != IDLE){
 			this->SetMcStepMode(true);
+    		m_p_f_reg->ELIMI1 = 1;
+    		m_p_f_reg->ELIMI2 = 1;
 		}
 	}
 }

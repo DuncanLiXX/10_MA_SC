@@ -601,7 +601,13 @@ struct FRegBits{
 #endif
 	//F216
 	uint8_t MPCO:1;           //PMC宏程序调用结束     F216.0
+#ifdef NEW_WOOD_MACHINE
+	uint8_t :5;
+	uint8_t ELIMI1 :1;
+	uint8_t ELIMI2 :1;
+#else
 	uint8_t :7;
+#endif
 	//F217
 	uint8_t :8;
 	//F218

@@ -1564,8 +1564,8 @@ void ChannelEngine::PoweroffHandler(int signo, siginfo_t *info, void *context){
  * @brief 掉电时保存数据
  */
 void ChannelEngine::SaveDataPoweroff(){
-    system("date >> /cnc/bin/save.txt");
-    system("echo \"start\" >> /cnc/bin/save.txt");
+    //system("date >> /cnc/bin/save.txt");
+    //system("echo \"start\" >> /cnc/bin/save.txt");
     //保存PMC寄存器数据
     if((this->m_mask_import_param & (0x01<<CONFIG_PMC_REG)) == 0)
         this->m_p_pmc_reg->SaveRegData();
@@ -1591,9 +1591,9 @@ void ChannelEngine::SaveDataPoweroff(){
     delete g_ptr_trace;
     g_ptr_trace = nullptr;
 
-    system("date >> /cnc/bin/save.txt");
-    system("echo \"end\" >> /cnc/bin/save.txt");
-    system("sync");
+    //system("date >> /cnc/bin/save.txt");
+    //system("echo \"end\" >> /cnc/bin/save.txt");
+    //system("sync");
 }
 
 /**
@@ -8710,6 +8710,7 @@ void ChannelEngine::ClearPmcAxisMoveData(){
 void ChannelEngine::SystemReset(){
 
     printf("system reset\n");
+    //this->m_p_pmc_reg->SaveRegData();
     //各通道复位
     for(int i = 0; i < this->m_p_general_config->chn_count; i++){
         // 攻丝状态禁止复位
@@ -9681,7 +9682,7 @@ void ChannelEngine::ProcessPmcSignal(){
             }
         }
         //#endif
-
+#ifdef NEW_WOOD_MACHINE
         if(g_reg_last->ELIMINATE != g_reg->ELIMINATE){
         	if(g_reg->ELIMINATE == 1){
         		m_p_channel_control->ProcessEliminate(1);
@@ -9693,7 +9694,7 @@ void ChannelEngine::ProcessPmcSignal(){
         		m_p_channel_control->ProcessEliminate(2);
         	}
         }
-
+#endif
 
 //处理工艺模式切换
 #ifdef USES_WOOD_MACHINE

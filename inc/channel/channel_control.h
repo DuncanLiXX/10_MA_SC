@@ -91,7 +91,7 @@ public:
 
 	void ProcessHmiCmd(HMICmdFrame &cmd);  //处理HMI指令
 
-	void ProcessHmiBigFrame(uint16_t cmd, char *buf);
+	void ProcessHmiBigFrame(HMICmdFrame &cmd);
 
 	void GetChnStatus(HmiChannelStatus &status);  //获取通道状态
 

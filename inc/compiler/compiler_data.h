@@ -337,7 +337,6 @@ struct LexerGCode{
 	uint16_t mask_dot_ex[kMaxAxisNameCount];     //标记哪些轴名称扩展字段的数据带小数点
 
 	MacroExpression macro_expression[kMaxMacroInLine];  //记录宏表达式
-
 };
 
 

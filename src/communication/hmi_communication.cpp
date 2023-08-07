@@ -771,6 +771,7 @@ void HMICommunication::RecvHmiCmd(){
 	HMICmdRecvNode cmd_node;
 	HMICmdFrame &data = cmd_node.cmd;
 	ssize_t res = 0;   //接收数据返回值
+	data.BigDataBuffer = NULL;
 
 	char BigData[12800];
 
@@ -785,7 +786,6 @@ void HMICommunication::RecvHmiCmd(){
 
 		res = recvfrom(m_soc_udp_recv, BigData, 12800, 0, (struct sockaddr *)&cmd_node.ip_addr, &m_n_addr_len);
 
-
 		if(res == -1 && errno == EAGAIN){	//无数据可读
 			break;
 		}else if (res == 0){
@@ -794,14 +794,24 @@ void HMICommunication::RecvHmiCmd(){
 		}else if(res <= kMaxHmiCmdFrameLen){
 			memcpy(&data, BigData, kMaxHmiCmdFrameLen);
 		}else{
-			// TODO 处理大数据
-			memcpy(&big_frame_buffer, BigData, res);
 			uint16_t cmd;
 			memcpy(&cmd, BigData, 2);
 			data.cmd = cmd;
+			data.BigDataBuffer = new BigFrameNode();
+			memcpy(data.BigDataBuffer->buffer, BigData, res);
+
+
+
+			// TODO 处理大数据
+			/*memcpy(&big_frame_buffer[10240*big_frame_index], BigData, res);
+			uint16_t cmd;
+			memcpy(&cmd, BigData, 2);
+			data.cmd = cmd;
+			data.cmd_extension = big_frame_index;
+			++ big_frame_index;
+			if(big_frame_index == 5) big_frame_index = 0;*/
+
 		}
-
-
 
         if(data.cmd == CMD_HMI_HEART_BEAT){  //在此处处理心跳，保证优先处理，不会因为处理耗时命令而误发心跳丢失
 
@@ -1088,12 +1098,13 @@ int HMICommunication::ProcessHmiCmd(){
                 ProcessHmiServoDataReset(cmd);
                 break;
             case CMD_HMI_SET_MACRO_ARRAY:
-            	m_p_channel_engine->ProcessHmiBigFrame(cmd.cmd, big_frame_buffer);
+            	m_p_channel_engine->ProcessHmiBigFrame(cmd);
             	break;
             default:
 				g_ptr_trace->PrintLog(LOG_ALARM, "收到不支持的HMI指令cmd=%d", cmd.cmd);
 				break;
 			}
+
 		}
 
         usleep(10000);   //休眠10ms
@@ -2420,6 +2431,7 @@ void HMICommunication::ProcessHmiNcFileSystemCmd(HMICmdRecvNode &cmd_node)
         if (entities.size() > 200 && i/10 == 0)
             usleep(1000);//1ms
     }
+
 
     cmd.cmd_extension = 1;
     this->SendCmd(cmd);

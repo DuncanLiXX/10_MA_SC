@@ -2861,26 +2861,29 @@ void ChannelControl::ProcessHmiCmd(HMICmdFrame &cmd){
 }
 
 
-void ChannelControl::ProcessHmiBigFrame(uint16_t cmd, char *buf){
+void ChannelControl::ProcessHmiBigFrame(HMICmdFrame &cmd){
 
-	switch(cmd){
+	switch(cmd.cmd){
 	case CMD_HMI_SET_MACRO_ARRAY:
-		uint16_t cmd;
+
 		int index;
 		int count;
 
-		memcpy(&cmd, buf, 2);
-		memcpy(&index, buf+2, 4);
-		memcpy(&count, buf+6, 4);
+		//memcpy(&cmd, buf, 2);
 
-		//printf("cmd: %d index: %d count: %d\n", cmd, index, count);
-		this->m_macro_variable.SetMacroArray(index, count, buf+10);
+		if(cmd.BigDataBuffer->buffer!=NULL){
+			memcpy(&index, &cmd.BigDataBuffer->buffer[2], 4);
+			memcpy(&count, &cmd.BigDataBuffer->buffer[6], 4);
+			this->m_macro_variable.SetMacroArray(index, count, &cmd.BigDataBuffer->buffer[10]);
+			printf("ProcessHmiBigFrame index: %d count: %d\n", index, count);
+		}
 		break;
 	default:
 		break;
 	}
 
-	usleep(10000);
+	delete cmd.BigDataBuffer;
+	cmd.BigDataBuffer = NULL;
 }
 
 

@@ -3199,7 +3199,8 @@ void ChannelEngine::ProcessHmiCmd(HMICmdFrame &cmd){
         //        this->ProcessHmiCheckSyncCmd(cmd);
         //        break;
     case CMD_HMI_GET_SYS_INFO:
-    {FILE *stream;
+    {
+    	FILE *stream;
         float val;
         float temp_value;
         char buf[20] = "";
@@ -3288,11 +3289,11 @@ void ChannelEngine::ProcessHmiCmd(HMICmdFrame &cmd){
     }
 }
 
-void ChannelEngine::ProcessHmiBigFrame(uint16_t cmd, char * buf){
+void ChannelEngine::ProcessHmiBigFrame(HMICmdFrame &cmd){
 
-	switch(cmd){
+	switch(cmd.cmd){
 	case CMD_HMI_SET_MACRO_ARRAY:
-		this->m_p_channel_control[0].ProcessHmiBigFrame(cmd, buf);
+		this->m_p_channel_control[0].ProcessHmiBigFrame(cmd);
 		break;
 	default:
 		break;

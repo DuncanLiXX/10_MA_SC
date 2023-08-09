@@ -9802,7 +9802,6 @@ void ChannelEngine::ProcessPmcSignal(){
         }
     //}
 
-
     //复位RST信号
     if(this->m_b_reset_rst_signal){
         struct timeval time_now;
@@ -9827,6 +9826,8 @@ void ChannelEngine::ProcessPmcSignal(){
 
     //处理位置开关
     this->UpdatePSW();
+
+
 
 
     //给出轴在参考点信号

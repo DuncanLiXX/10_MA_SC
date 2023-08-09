@@ -199,6 +199,7 @@ public:
 
 	bool EmergencyStop();		//急停处理
 
+    void Pmc_AutoReset();       //梯图报警消除后自动复位
 	void Reset();               //复位通道状态
 
 	void ProcessHmiSetRefCmd(HMICmdFrame &cmd);			//处理设置参考点命令
@@ -448,7 +449,7 @@ public:
     bool m_b_in_block_prog = false; // 锁块
 
     void UpdateProgramCallToHmi(char *filePath, int lineNo);
-    void UpdateSubCallToHmi(int type, int index, int lineNo, bool curDir = false);
+    void UpdateSubCallToHmi(int type, int index, int lineNo = 0, bool curDir = false);
     void UpdateReturnCallToHmi(SubProgReturnMsg *retMsg);
 
 private:

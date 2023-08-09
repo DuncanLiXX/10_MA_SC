@@ -2247,7 +2247,8 @@ void ChannelControl::StopRunGCode(bool reset){
     g_ptr_tracelog_processor->SendToHmi(kProcessInfo, kCombine, msg);
     printf("ChannelControl::StopRunGCode()\n");
 
-    if(this->m_channel_status.machining_state == MS_READY && !m_b_cancel_manual_call_macro)  //空闲状态直接返回
+    if(this->m_channel_status.machining_state == MS_READY && !m_b_cancel_manual_call_macro
+            && !m_p_f_reg->MPCO/*梯图正在调用宏程序也需要停止*/)  //空闲状态直接返回
         return;
 
     uint8_t state = MS_STOPPING;
@@ -7799,17 +7800,14 @@ void ChannelControl::UpdateSubCallToHmi(int type, int index, int lineNo, bool cu
                 SetCurLineNo(1);
             }
         }
-        //else
-        //{
-        //    SetCurLineNo(msg->GetLineNo());
-        //}
     }
     else
     {// 子程序不跳转
         //std::cout << "setCurLineNo:-----------------> " << lineNo << std::endl;
 
         this->SetMcStepMode(false);
-        SetCurLineNo(lineNo);
+        if (lineNo > 0)
+            SetCurLineNo(lineNo);
     }
     return;
 }
@@ -18023,6 +18021,13 @@ bool ChannelControl::EmergencyStop(){
 
 }
 
+void ChannelControl::Pmc_AutoReset()
+{
+    if (m_channel_status.machining_state == MS_WARNING)
+        Reset();
+    return;
+}
+
 /**
  * @brief 返回是否还有待运行的指令
  * @return
@@ -20822,9 +20827,9 @@ bool ChannelControl::CallMacroProgram(uint16_t macro_index){
         m_n_subprog_count++;
         m_n_macroprog_count++;
 
-        if(this->m_p_general_config->debug_mode == 0){
-            this->SetMcStepMode(false);
-        }
+        //if(this->m_p_general_config->debug_mode == 0){
+        //    this->SetMcStepMode(false);
+        //}
 
 
     }else if(mode == MANUAL_STEP_MODE || mode == MANUAL_MODE || mode == MPG_MODE ||

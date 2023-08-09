@@ -66,6 +66,10 @@ void CreateError(uint16_t error_code, uint8_t error_level,
     if (g_ptr_chn_engine->GetPoweroffFlag())
         return;
 
+    if(error_level < WARNING_LEVEL){
+        g_ptr_chn_engine->SetChnMachineState(channel_index, MS_WARNING);
+    }
+
     ErrorInfo err_info;
     memset(&err_info, 0x00, sizeof(ErrorInfo));
     time_t cur_time;
@@ -99,10 +103,6 @@ void CreateError(uint16_t error_code, uint8_t error_level,
     }
 
     g_ptr_alarm_processor->SetErrorInfo(&err_info);
-
-    if(error_level < WARNING_LEVEL){
-        g_ptr_chn_engine->SetChnMachineState(channel_index, MS_WARNING);
-    }
 
 
 	//保存告警行号，PLC报警时由于error_info存的是PLC报警号信息，所以PLC报警时不保存

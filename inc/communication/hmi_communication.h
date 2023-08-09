@@ -21,7 +21,8 @@
 #include <dirent.h>
 #include <map>
 #include <memory>
-#include <list>
+#include <vector>
+#include <mutex>
 
 
 //#include "hmi_shared_data.h"
@@ -74,7 +75,7 @@ public:
      * @brief 返回文件列表
      * @return list<FS_Entity> 文件列表
      */
-    std::list<FS_Entity> GetEntity() const;
+    std::vector<FS_Entity> GetEntity() const;
 
 private:
     FS_Entity GetInfo(const string &path);  // 获取文件属性相关信息
@@ -82,7 +83,7 @@ private:
 
     HMICommunication *pCommunication;
     string root_path;                       // 根目录
-    std::list<FS_Entity> file_tree;         // 文件列表
+    std::vector<FS_Entity> file_tree;         // 文件列表
 };
 
 // @test zk
@@ -220,6 +221,8 @@ private:
 	void ProcessHmiNcFileInfoCmd(HMICmdRecvNode &cmd_node);    	  //处理HMI获取nc文件详细信息命令
 
     void ProcessHmiNcFileSystemCmd(HMICmdRecvNode &cmd_node);     //处理HMI获取nc文件系统
+    void ProcessGetFileSystemInOnePiece(HMICmdFrame cmd, int id);
+
     void ProcessHmiMkdirCmd(HMICmdRecvNode &cmd_node);            //处理HMI获取创建目录命令
 
 	void ProcessHmiFileOperateCmd(HMICmdRecvNode &cmd_node);      //处理HMI发来的文件操作命令
@@ -318,7 +321,11 @@ private:
 	double mem_percent;  //内存占用率
 	char big_frame_buffer[10240];
 
+
+    bool in_file_sys = false;       //是否处于文件列表请求中
     std::map<int, std::shared_ptr<FileSystemManager>> fileSystem;
+
+    mutex mux_send;
 };
 
 //用于文件另存为线程传递参数

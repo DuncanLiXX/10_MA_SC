@@ -4392,11 +4392,8 @@ int Compiler::CallMarcoProgWithNoPara(int macro_index, bool flag){
         this->m_n_compile_state = FILE_MAIN;
     this->m_n_head_state = HEAD_INFO;
 
-    //TODO 向HMI发送命令打开子文件
-    this->m_p_channel_control->UpdateSubCallToHmi(macro_loc, macro_index, 1);
-    //if(flag && g_ptr_parm_manager->GetSystemConfig()->debug_mode > 0){ //调式模式下，打开宏程序文件
-    //    this->m_p_channel_control->SendOpenFileCmdToHmi(filepath);
-    //}
+    //向HMI发送命令打开子文件
+    this->m_p_channel_control->UpdateSubCallToHmi(macro_loc, macro_index);
 
     return macro_loc;
 }

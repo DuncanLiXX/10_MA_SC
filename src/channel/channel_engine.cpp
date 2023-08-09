@@ -13224,3 +13224,7 @@ void ChannelEngine::ProcessPMCProtect()
     SetProgProtect(level);
 }
 
+void ChannelEngine::refreshOrderList(){
+	m_p_channel_control[0].refreshOrderList();
+}
+

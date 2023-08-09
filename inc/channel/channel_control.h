@@ -405,6 +405,8 @@ public:
 
     bool SubProgIsCurDir(uint8_t type);    // 判断子程序类型是否为当前程序所在目录
 
+    void refreshOrderList();
+
     uint32_t m_cur_setfeed = 0;
     int main_prog_line_number = 0;
 

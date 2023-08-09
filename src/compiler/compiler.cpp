@@ -3387,7 +3387,6 @@ bool Compiler::RunClearCirclePosMsg(RecordMsg *msg){
  * @return
  */
 bool Compiler::RunMacroMsg(RecordMsg *msg) {
-    std::cout << "--------------->RunMacroMsg: " << std::endl;
     if (msg == nullptr)
         return true;
 

@@ -844,6 +844,7 @@ bool Lexer::GetOneMacroCmd(){
 	bool res = true;
 	LexerMacroCmd *macro_cmd = &(m_p_lexer_result->nc_code.macro_cmd);
 	MacroRec rec;
+
 	if(!m_in_macro_exp && !m_in_digit &&
 			m_macro_cmd != MACRO_CMD_DO && m_macro_cmd != MACRO_CMD_END){//没有表达式也没有数值，告警
 		printf("@@@@@@ERR_NC_FORMAT_12\n");

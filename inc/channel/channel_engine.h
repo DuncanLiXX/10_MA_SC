@@ -284,6 +284,8 @@ void SetMcArmComm(MCArmCommunication *comm){this->m_p_mc_arm_comm = comm;}   //É
 
     bool ProcessPcDataImport();      //´¦ÀíÂÝ²¹µ¼ÈëÊý¾Ý
 
+    void refreshOrderList();
+
 #ifdef USES_WOOD_MACHINE
     void SaveToolInfo();    //±£´æµ¶¾ßÐÅÏ¢Êý¾Ý
 #endif

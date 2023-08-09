@@ -83,19 +83,7 @@ ChannelControl::ChannelControl() {
     memset(reset_file, 0, sizeof(reset_file));
     memset(g110_file_name, 0, sizeof(g110_file_name));
     order_file_vector.clear();     // 排程文件列表
-    std::ifstream order_list_file;
-	order_list_file.open("/cnc/order_list", ios::in);
-
-	char data[1024];
-	memset(data, 0, 1024);
-	while(!order_list_file.eof()){
-		order_list_file >> data;
-		if(data[0] == 0) break;
-		std::string file_name = data;
-		order_file_vector.push_back(file_name);
-		memset(data, 0, sizeof(data));
-	}
-	order_list_file.close();
+    refreshOrderList();
 
 #endif
     this->m_b_delay_to_reset = false;
@@ -4017,12 +4005,32 @@ void ChannelControl::ProcessHmiAppendOrderListFile(HMICmdFrame &cmd){
 	order_list_file.close();
 }
 
+void ChannelControl::refreshOrderList(){
+	std::ifstream order_list_file;
+	order_list_file.open("/cnc/order_list", ios::in);
+
+	char data[1024];
+	order_file_vector.clear();
+	memset(data, 0, 1024);
+	while(!order_list_file.eof()){
+
+		order_list_file.getline(data, 1024);
+
+		if(data[0] == 0) break;
+		std::string file_name = data;
+
+		order_file_vector.push_back(file_name);
+		std::cout << "=====" << file_name << std::endl;
+		memset(data, 0, sizeof(data));
+	}
+	order_list_file.close();
+}
+
 void ChannelControl::ProcessHmiSetOrderListIndex(HMICmdFrame &cmd){
 
 	printf("===== set order index %d\n", cmd.cmd_extension);
 	int index = cmd.cmd_extension -1;
 	setOrderIndex(index);
-
 
 	/*
 	for(std::string name: order_file_vector){
@@ -4066,10 +4074,8 @@ void ChannelControl::ProcessClearOrderList(){
 }
 
 void ChannelControl::ProcessHmiSetOrderMode(HMICmdFrame &cmd){
-	printf("===== set order mode %d\n", cmd.cmd_extension);
 	if(cmd.cmd_extension >= 0 && cmd.cmd_extension <= 6){
 		m_n_order_mode = cmd.cmd_extension;
-		printf("===== m_n_order_mode %d\n", m_n_order_mode);
 	}else{
 		printf("set order mode invalid\n");
 		m_n_order_mode = 0;
@@ -8199,8 +8205,6 @@ bool ChannelControl::ExecuteCoordMsg(RecordMsg *msg){
 					}else{
 						offset -= m_p_chn_tool_config->geometry_compensation[m_channel_status.cur_h_code-1][2];
 					}
-
-
 
 					offset -= m_p_chn_tool_config->geometry_wear[m_channel_status.cur_h_code-1];   //叠加磨损补偿
 				}

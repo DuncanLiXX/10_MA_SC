@@ -2094,7 +2094,6 @@ void HMICommunication::ProcessHmiSendFileCmd(HMICmdFrame &cmd){
 
 		cmd.frame_number |= 0x8000;
 		cmd.data[cmd.data_len] = APPROVE;  //接受
-
 	}
 	cmd.data_len++;
 
@@ -4809,6 +4808,9 @@ int HMICommunication::RecvFile(){
         SendHMIBackupStatus(m_sysbackup_status);
         bzero(filepath, kMaxPathLen);
         strcpy(filepath, RECOVER_FILE.c_str());
+    }else if(file_type == FILE_ORDER_LIST){
+    	bzero(filepath, kMaxPathLen);
+    	strcpy(filepath, "/cnc/order_list");
     }
 //	else if(file_type == FILE_SYSTEM_CONFIG){
 //
@@ -4837,6 +4839,7 @@ int HMICommunication::RecvFile(){
 //	file_bak = fopen("/cnc/nc_files/nc_bak.nc", "w+");
 	if(fd == -1/* || file_bak == nullptr*/){
 		g_ptr_trace->PrintTrace(TRACE_ERROR, HMI_COMMUNICATION, "error in recvFile fun, failed to open file[%s]", filepath);
+		printf("error in recvFile fun, failed to open file[%s]", filepath);
 		res = ERR_FILE_TRANS;
 		goto END;
 	}
@@ -4888,6 +4891,10 @@ int HMICommunication::RecvFile(){
 //	fclose(file_bak);
     close(fd);
     sync();
+
+    if(file_type == FILE_ORDER_LIST){
+		m_p_channel_engine->refreshOrderList();
+	}
 
 	if(read_total == file_size){
 		if(file_type == FILE_G_CODE){
@@ -4945,7 +4952,6 @@ int HMICommunication::RecvFile(){
         m_background_type = Background_UnPack;
         sem_post(&m_sem_background);//通知执行后台程序
     }
-
 
 	END:
 #ifdef USES_TCP_FILE_TRANS_KEEP

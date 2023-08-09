@@ -758,19 +758,25 @@ int32_t SpindleControl::CalDaOutput()
 
 		cnc_speed_virtual = rpm;
 
-		if(spindle->spd_vctrl_mode == 1){
+		if(spindle->axis_interface == 1){
+			// 总线主轴 只有一种方式
 			output = da_prec * (1.0 * rpm/max_spd);   // 转化为电平值
-		}else if(spindle->spd_vctrl_mode == 2){
-			int zero_offset = da_prec/2;
-			if(cnc_polar == Polar::Positive){
-				output = zero_offset * (1.0*rpm/max_spd);
-				output = zero_offset + output;
-			}else{
-				output = zero_offset * (1.0*rpm/max_spd);
-				output = zero_offset - output;
-			}
 		}else{
-			output = 0;
+			// 模拟主轴 需要按模式不同计算电压值
+			if(spindle->spd_vctrl_mode == 1){
+				output = da_prec * (1.0 * rpm/max_spd);   // 转化为电平值
+			}else if(spindle->spd_vctrl_mode == 2){
+				int zero_offset = da_prec/2;
+				if(cnc_polar == Polar::Positive){
+					output = zero_offset * (1.0*rpm/max_spd);
+					output = zero_offset + output;
+				}else{
+					output = zero_offset * (1.0*rpm/max_spd);
+					output = zero_offset - output;
+				}
+			}else{
+				output = 0;
+			}
 		}
 
     }

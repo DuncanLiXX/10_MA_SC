@@ -319,7 +319,6 @@ private:
 	CPU_OCCUPY cpu_stat;
 	double cpu_percent;  //cpu占用率
 	double mem_percent;  //内存占用率
-	char big_frame_buffer[10240];
 
 
     bool in_file_sys = false;       //是否处于文件列表请求中

@@ -122,6 +122,10 @@ const int kMaxProcParamCount = 10;    //系统支持的工艺参数最大组数
 #endif
 
 
+struct BigFrameNode{
+	char buffer[10240];
+};
+
 /**
  * @brief HMICmdFrame结构用于定义HMI与SC之间的命令帧
  */
@@ -134,7 +138,7 @@ struct HMICmdFrame {
 	uint16_t cmd_extension;  //扩展命令号
 	uint16_t data_len;       //数据区字节数,0~255
     char data[kMaxHmiDataLen];    //短数据区
-    //char *data_huge;            //大数据区指针
+    BigFrameNode * BigDataBuffer;
 };
 
 

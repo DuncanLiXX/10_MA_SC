@@ -153,6 +153,7 @@ public:
 	ErrorType GetErrorCode(){return m_error_code;}
 
 	bool SendCmd(HMICmdFrame &cmd);           //发送UDP命令
+	bool SendBigFrame(char * buf, int len);   //发送大容量数据
 	bool SendCmdToIp(HMICmdRecvNode &cmd_node);   //向源IP发送命令
 
 	int SendMonitorData(char *buf, int size);  //发送监控数据

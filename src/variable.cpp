@@ -378,7 +378,7 @@ void Variable::ResetLocalVar(){
  * @param count ：变量个数
  * @return 实际拷贝数据字节数
  */
-int Variable::CopyVar(char *buf, uint32_t max_size, uint32_t start_index, uint8_t count){
+int Variable::CopyVar(char *buf, uint32_t max_size, uint32_t start_index, uint32_t count){
 	int res = 0;
 
 	if(start_index <= 33){//局部变量
@@ -424,10 +424,16 @@ int Variable::CopyVar(char *buf, uint32_t max_size, uint32_t start_index, uint8_
 			g_ptr_trace->PrintLog(LOG_ALARM, "Variable::CopyVar()缓冲不足！");
 			return res;
 		}
-		//拷贝初始化标志
-		memcpy(buf, &m_b_init_user_macro[start_index-50000], count);
-		//拷贝变量值
-		memcpy(buf+count, &m_df_user_macro[start_index-50000], count*sizeof(double));
+		if(count > 100){
+			// 为获取1000 个宏变量   不考虑是否初始化
+			memcpy(buf, &m_df_user_macro[start_index-50000], count*sizeof(double));
+
+		}else{
+			//拷贝初始化标志
+			memcpy(buf, &m_b_init_user_macro[start_index-50000], count);
+			//拷贝变量值
+			memcpy(buf+count, &m_df_user_macro[start_index-50000], count*sizeof(double));
+		}
 	}else if(start_index >=1000){//系统变量
 		return res;
 	}else{//非法地址

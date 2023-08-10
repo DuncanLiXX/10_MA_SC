@@ -3562,7 +3562,7 @@ void ChannelEngine::ProcessHmiMdiInfo(HMICmdFrame &cmd)
     else
         m_mdi_mode_ready = false;
 
-    std::cout << "ProcessHmiInfo: " << (int)hasData << std::endl;
+    //std::cout << "ProcessHmiInfo: " << (int)hasData << std::endl;
     this->m_p_hmi_comm->SendCmd(cmd);
 }
 

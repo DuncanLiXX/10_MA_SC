@@ -2894,9 +2894,9 @@ void ChannelControl::ProcessHmiGetMacroVarCmd(HMICmdFrame &cmd){
     cmd.frame_number |= 0x8000;   //设置回复标志
 
     uint32_t start_index = 0;   //起始编号
-    uint8_t count = 0;			//变量个数
+    uint32_t count = 0;			//变量个数
 
-    if(cmd.data_len != 5){	//数据长度不合法
+    if(cmd.data_len != 8){	//数据长度不合法
         cmd.cmd_extension = FAILED;
         this->m_p_hmi_comm->SendCmd(cmd);
         g_ptr_trace->PrintLog(LOG_ALARM, "ChannelControl::ProcessHmiSetMacroVarCmd()数据长度不合法，data_len = %hu！", cmd.data_len);
@@ -2904,7 +2904,33 @@ void ChannelControl::ProcessHmiGetMacroVarCmd(HMICmdFrame &cmd){
     }
 
     memcpy(&start_index, &cmd.data[0], 4);
-    memcpy(&count, &cmd.data[4], 1);
+    memcpy(&count, &cmd.data[4], 4);
+
+    if(count > 100){
+    	if(start_index <50000 || start_index >55000) cmd.cmd_extension = FAILED;
+    	if(start_index + count < 50000 || start_index + count > 55000) cmd.cmd_extension = FAILED;
+    	char buf[10240];
+		memset(buf, 0, 10240);
+		memcpy(buf, &cmd, 10);
+		memcpy(&buf[10], &start_index, 4);
+		memcpy(&buf[14], &count, 4);
+		if(cmd.cmd_extension != FAILED){
+
+			int len = this->m_macro_variable.CopyVar(&buf[18], 10000, start_index, count);
+
+			if(len == 0){
+				this->m_p_hmi_comm->SendCmd(cmd);
+				return;
+			}
+
+			//printf("=====  macro send success  len: %d\n", len);
+			this->m_p_hmi_comm->SendBigFrame(buf, 18+8*count);
+			return;
+		}
+
+		this->m_p_hmi_comm->SendCmd(cmd);
+		return;
+    }
 
     //拷贝数据
     int len = this->m_macro_variable.CopyVar(&cmd.data[cmd.data_len], 1000, start_index, count);
@@ -9413,7 +9439,7 @@ bool ChannelControl::ExecuteCompensateMsg(RecordMsg *msg){
 
     	switch(compmsg->GetExecStep()){  //新流程：先激活RTCP再走运动指令
         case 0://第一步：将新偏置发送到MC
-        	ActiveMcToolOffset(true);
+			ActiveMcToolOffset(true);
             z_axis_offset = m_p_chn_tool_config->geometry_compensation[value-1][2] * 1e3;  //单位由mm转换为um
             //	z_axis_offset += m_p_chn_tool_config->geometry_comp_basic[2] * 1e3;   //基准刀偏
             z_axis_offset += m_p_chn_tool_config->geometry_wear[value-1] * 1e3;   //叠加磨损补偿

@@ -57,7 +57,7 @@ public:
 
 	bool IsKeepChanged(){return this->m_b_save_keep;}   //是否需要同步保存文件
 
-	int CopyVar(char *buf, uint32_t max_size, uint32_t start_index, uint8_t count);		//拷贝变量数据
+	int CopyVar(char *buf, uint32_t max_size, uint32_t start_index, uint32_t count);		//拷贝变量数据
 
 	void MemsetMacroVar(int start, int count, double value);
 	void InsertMacroVar(int index, int end, double value);

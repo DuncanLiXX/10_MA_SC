@@ -526,6 +526,24 @@ bool HMICommunication::SendCmd(HMICmdFrame &cmd){
 	return true;
 }
 
+
+bool HMICommunication::SendBigFrame(char * buf, int len){
+	lock_guard<mutex> lock(mutex);
+	int res = 0;
+
+	if(!g_sys_state.hmi_comm_ready)  //HMI连接尚未准备好
+		return false;
+
+	res = sendto(this->m_soc_udp_send, buf, len, 0, (sockaddr *)&m_addr_udp_hmi, m_n_addr_len);
+
+	if(len != res){
+		printf("ERROR! Failed to send udp cmd to hmi!%d, %d\n", len,res);
+		return false;
+	}
+
+	return true;
+}
+
 /**
  * @brief 向源IP发送命令
  * @param cmd_node :  命令数据节点

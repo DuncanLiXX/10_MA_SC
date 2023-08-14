@@ -235,9 +235,9 @@ struct SCAxisConfig{
     uint8_t ret_ref_mode;					//0--无挡块回零  1--有挡块回零
     uint8_t absolute_ref_mode;              //绝对式电机回零方式 0--回零标记点设定方式    1--无挡块回零方式
 	uint8_t ret_ref_dir;					//回参考点方向		0--负向    1--正向
-	uint8_t ret_ref_change_dir;				//回参考点换向      0--反向    1--同向
-	uint8_t ref_signal;						//参考点信号类型     0--零信号    1--Z信号
-	uint8_t ret_ref_index;					//回参考点顺序		0-11:第一~第十二
+	uint8_t ret_ref_change_dir;				//回参考点换向      0--反向    1--同向      --未使用
+	uint8_t ref_signal;						//参考点信号类型     0--零信号    1--Z信号     --未使用
+	uint8_t ret_ref_index;					//回参考点顺序		0-11:第一~第十二       --未使用
 	uint8_t ref_base_diff_check;			//粗精基准位置偏差检测		0--关闭   1--打开
 	double ref_base_diff;					//粗精基准位置偏差		单位：mm（deg）
 	int64_t ref_encoder;					//零点编码器值，绝对式编码器有效
@@ -266,7 +266,7 @@ struct SCAxisConfig{
     //int16_t backlash_forward;					//正向反向间隙，单位：um(deg)->mm(deg)
     //int16_t backlash_negative;					//负向反向间隙，单位：um(deg)->mm(deg)
     double backlash_forward;					//正向反向间隙，单位：mm(deg)
-    double backlash_negative;					//负向反向间隙，单位：mm(deg)
+    double backlash_negative;					//负向反向间隙，单位：mm(deg)     --未使用
     int16_t backlash_step;                      //反向间隙步长，单位：um(20-300)
 
 	uint8_t  pc_type;							//螺补类型  0 单向螺补  1 双向螺补
@@ -278,7 +278,7 @@ struct SCAxisConfig{
 
 	double soft_limit_max_1;					//正向软限位1
 	double soft_limit_min_1;					//负向软限位1
-	uint8_t soft_limit_check_1;					//软限位1有效
+	uint8_t soft_limit_check_1;					//软限位1有效    --未使用
 	double soft_limit_max_2;					//正向软限位2
 	double soft_limit_min_2;					//负向软限位2
 	uint8_t soft_limit_check_2;					//软限位2有效
@@ -357,7 +357,7 @@ struct SCAxisConfig{
     uint8_t sync_mach_detect;                   //是否进行坐标同步误差检测 0--否   1：是
     uint8_t sync_torque_detect;                 //是否进行扭矩同步误差检测 0--否   1：是
     uint16_t serial_torque_ratio;               //串联力矩系数 单位: 1%
-    uint16_t serial_pre_speed;                  //预载串联速度 单位：rpm
+    uint16_t serial_pre_speed;                  //预载串联速度 单位：rpm   --已取消
 
 	double axis_home_pos[10];				//参考点位置  单位：mm
 	double ref_mark_err;                   //参考点基准误差   单位：mm    有效范围：0~10.0
@@ -382,7 +382,8 @@ struct SCToolOffsetConfig{
 	double geometry_comp_basic[3];                     //基准刀偏置
 #endif
 	double geometry_compensation[kMaxToolCount][3];    //刀具几何偏置，包括长度补偿
-	double geometry_wear[kMaxToolCount];				//刀具长度磨损补偿
+	//double geometry_wear[kMaxToolCount];				//刀具长度磨损补偿
+	double geometry_wear[kMaxToolCount][3];				//刀具长度磨损补偿
 	double radius_compensation[kMaxToolCount];			//刀具半径补偿
 	double radius_wear[kMaxToolCount];					//刀具半径磨损补偿
 };

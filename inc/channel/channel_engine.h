@@ -84,7 +84,7 @@ void SetMcArmComm(MCArmCommunication *comm){this->m_p_mc_arm_comm = comm;}   //É
 	void SendPmcAxisToHmi();    //·¢ËÍPMCÖáÎ»ÖÃ¸øHMI
 
 	void ProcessHmiCmd(HMICmdFrame &cmd);  //´¦ÀíHMIÖ¸Áî
-	void ProcessHmiBigFrame(uint16_t cmd, char * buf);
+	void ProcessHmiBigFrame(HMICmdFrame &cmd);
 	void ProcessMcCmdRsp(McCmdFrame &rsp);	//´¦ÀíMCÄ£¿éµÄÖ¸Áî»Ø¸´
 	void ProcessMiCmd(MiCmdFrame &cmd);		//´¦ÀíMIÄ£¿éµÄÖ¸Áî
 
@@ -198,6 +198,7 @@ void SetMcArmComm(MCArmCommunication *comm){this->m_p_mc_arm_comm = comm;}   //É
 	void SetPmcSignal(uint8_t chn_index, int signal, bool flag);	//ÉèÖÃÍ¨µÀµÄPMCÐÅºÅ
 
 	void SetPoweoffFlag(bool flag){m_b_power_off = flag;}  //ÉèÖÃµôµç±êÖ¾
+    bool GetPoweroffFlag() { return m_b_power_off; }
 
 	void RefreshFile(char *file);   //Ë¢ÐÂncÎÄ¼þfile
 	void RemapFile(char *file);		//ÖØÐÂ¼ÓÔØÎÄ¼þfile
@@ -282,6 +283,8 @@ void SetMcArmComm(MCArmCommunication *comm){this->m_p_mc_arm_comm = comm;}   //É
     bool NotifyHmiPitchCompDataChanged();        //Í¨ÖªHMIÂÝ²¹Êý¾Ý¸ü¸Ä
 
     bool ProcessPcDataImport();      //´¦ÀíÂÝ²¹µ¼ÈëÊý¾Ý
+
+    void refreshOrderList();
 
 #ifdef USES_WOOD_MACHINE
     void SaveToolInfo();    //±£´æµ¶¾ßÐÅÏ¢Êý¾Ý

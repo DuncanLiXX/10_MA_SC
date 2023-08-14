@@ -158,7 +158,7 @@ int MICommunication::InitThread(){
 	pthread_attr_init(&attr);
 	pthread_attr_setschedpolicy(&attr, SCHED_RR);
 	pthread_attr_setstacksize(&attr, kThreadStackSize);	//
-	param.__sched_priority = 37; //97;
+    param.__sched_priority = 39;//37; //97;
 	pthread_attr_setschedparam(&attr, &param);
 	res = pthread_attr_setinheritsched(&attr, PTHREAD_EXPLICIT_SCHED); //不继承父线程调度方式，否则以上的设置不生效
 	if (res) {

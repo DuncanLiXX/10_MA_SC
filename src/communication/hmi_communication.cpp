@@ -235,7 +235,7 @@ int HMICommunication::Initialize(){
 	pthread_attr_init(&attr);
 	pthread_attr_setschedpolicy(&attr, SCHED_RR);
 	pthread_attr_setstacksize(&attr, kThreadStackSize);	//
-	param.__sched_priority = 39; //99;
+    param.__sched_priority = 39; //99;
 	pthread_attr_setschedparam(&attr, &param);
 	res = pthread_attr_setinheritsched(&attr, PTHREAD_EXPLICIT_SCHED); //不继承父线程调度方式，否则以上的设置不生效
 	if (res) {
@@ -489,6 +489,7 @@ int HMICommunication::Clean(){
  */
 bool HMICommunication::SendCmd(HMICmdFrame &cmd){
 
+    lock_guard<mutex> lock(mutex);
 	int res = 0;
 
 	if(!g_sys_state.hmi_comm_ready)  //HMI连接尚未准备好
@@ -522,6 +523,24 @@ bool HMICommunication::SendCmd(HMICmdFrame &cmd){
 		}
 		
 	}
+	return true;
+}
+
+
+bool HMICommunication::SendBigFrame(char * buf, int len){
+	lock_guard<mutex> lock(mutex);
+	int res = 0;
+
+	if(!g_sys_state.hmi_comm_ready)  //HMI连接尚未准备好
+		return false;
+
+	res = sendto(this->m_soc_udp_send, buf, len, 0, (sockaddr *)&m_addr_udp_hmi, m_n_addr_len);
+
+	if(len != res){
+		printf("ERROR! Failed to send udp cmd to hmi!%d, %d\n", len,res);
+		return false;
+	}
+
 	return true;
 }
 
@@ -771,6 +790,7 @@ void HMICommunication::RecvHmiCmd(){
 	HMICmdRecvNode cmd_node;
 	HMICmdFrame &data = cmd_node.cmd;
 	ssize_t res = 0;   //接收数据返回值
+	data.BigDataBuffer = NULL;
 
 	char BigData[12800];
 
@@ -785,7 +805,6 @@ void HMICommunication::RecvHmiCmd(){
 
 		res = recvfrom(m_soc_udp_recv, BigData, 12800, 0, (struct sockaddr *)&cmd_node.ip_addr, &m_n_addr_len);
 
-
 		if(res == -1 && errno == EAGAIN){	//无数据可读
 			break;
 		}else if (res == 0){
@@ -794,14 +813,24 @@ void HMICommunication::RecvHmiCmd(){
 		}else if(res <= kMaxHmiCmdFrameLen){
 			memcpy(&data, BigData, kMaxHmiCmdFrameLen);
 		}else{
-			// TODO 处理大数据
-			memcpy(&big_frame_buffer, BigData, res);
 			uint16_t cmd;
 			memcpy(&cmd, BigData, 2);
 			data.cmd = cmd;
+			data.BigDataBuffer = new BigFrameNode();
+			memcpy(data.BigDataBuffer->buffer, BigData, res);
+
+
+
+			// TODO 处理大数据
+			/*memcpy(&big_frame_buffer[10240*big_frame_index], BigData, res);
+			uint16_t cmd;
+			memcpy(&cmd, BigData, 2);
+			data.cmd = cmd;
+			data.cmd_extension = big_frame_index;
+			++ big_frame_index;
+			if(big_frame_index == 5) big_frame_index = 0;*/
+
 		}
-
-
 
         if(data.cmd == CMD_HMI_HEART_BEAT){  //在此处处理心跳，保证优先处理，不会因为处理耗时命令而误发心跳丢失
 
@@ -826,7 +855,7 @@ void HMICommunication::RecvHmiCmd(){
 
 				continue;
 			}
-		}
+        }
 
 		if(1 != m_list_recv->WriteData(&cmd_node, 1)){
 			g_ptr_trace->PrintLog(LOG_ALARM, "HMI命令缓冲队列溢出！");
@@ -860,7 +889,7 @@ int HMICommunication::ProcessHmiCmd(){
 		gettimeofday(&tv_hmi_cmd1, NULL);
 
 		int nTimeDelay = (tv_hmi_cmd1.tv_sec-tv_hmi_cmd2.tv_sec)*1000000+tv_hmi_cmd1.tv_usec-tv_hmi_cmd2.tv_usec;
-		if(nTimeDelay > 100000){
+        if(nTimeDelay > 150000){
 			printf("receive hmi cmd out; %d\n", nTimeDelay);
 		}
 
@@ -869,7 +898,10 @@ int HMICommunication::ProcessHmiCmd(){
 		tv_hmi_cmd2 = tv_hmi_cmd1;
 
 		//遍历HMI命令接收队列
-		while(m_list_recv->ReadData(&cmd_node, 1) > 0){
+        int processCnt = 0;
+
+        while(m_list_recv->ReadData(&cmd_node, 1) > 0){
+
 //			if(g_sys_state.hmi_comm_ready && cmd.cmd != CMD_HMI_DEVICE_SCAN){  //已连接HMI后丢弃其它IP发来的非设备扫描指令
 //#ifdef USES_MODBUS_PROTOCAL
 //				if(cmd.cmd != CMD_HMI_GET_FILE && cmd.cmd != CMD_HMI_SEND_FILE && cmd.cmd != CMD_HMI_NC_FILE_COUNT &&
@@ -883,21 +915,25 @@ int HMICommunication::ProcessHmiCmd(){
 //#endif
 //			}
 
-			//如果是响应报文，则在发送队列中删除对应报文
-			if((cmd.frame_number & 0x8000) != 0){
-				frame_index = (cmd.frame_number & 0x7FFF);
-				this->DelCmd(frame_index);
-			}
+
+
 
 //			printf("receive hmi cmd[%04X %02X %02X %02X %s]\n", cmd.frame_number, cmd.cmd, cmd.cmd_extension,cmd.data_len, cmd.data);
 			//对命令进行处理
-			switch(cmd.cmd){
+
+            //如果是响应报文，则在发送队列中删除对应报文
+            if((cmd.frame_number & 0x8000) != 0){
+                frame_index = (cmd.frame_number & 0x7FFF);
+                this->DelCmd(frame_index);
+            }
+
+            switch(cmd.cmd){
 //			case CMD_HMI_HEART_BEAT: //HMI心跳  //转移到SigioHandle()中优先处理
 //				m_n_hmi_heartbeat = 0;  //心跳计数归零
 //				break;
 			case CMD_HMI_DEVICE_SCAN:  //扫描指令
 				this->ProcessHmiDeviceScan(cmd_node);
-				break;
+                break;
 			case CMD_HMI_SHAKEHAND://HMI握手
 				this->ProcessHmiShakehand(cmd_node);
 				break;
@@ -994,7 +1030,7 @@ int HMICommunication::ProcessHmiCmd(){
             case CMD_HMI_CLEAR_TOTAL_PIECE:    //HMI请求SC将总共件数
 			case CMD_HMI_GET_LIC_INFO:            //HMI向SC请求授权信息   0x27
 			case CMD_HMI_SEND_LICENSE:            //HMI向SC发送授权码     0x28
-			case CMD_HMI_MANUAL_TOOL_MEASURE:     //HMI向SC发起手动对刀操作  0x29
+            case CMD_HMI_MANUAL_TOOL_MEASURE:     //HMI向SC发起手动对刀操作  0x29
 			case CMD_HMI_GET_IO_REMAP:			//HMI向SC获取IO重定向数据  0x2C
 			case CMD_HMI_SET_IO_REMAP:         //HMI向SC设置IO重定向数据  0x2D
 			case CMD_HMI_SET_PROC_PARAM:      //HMI向SC设置工艺相关参数  0x2E
@@ -1088,12 +1124,15 @@ int HMICommunication::ProcessHmiCmd(){
                 ProcessHmiServoDataReset(cmd);
                 break;
             case CMD_HMI_SET_MACRO_ARRAY:
-            	m_p_channel_engine->ProcessHmiBigFrame(cmd.cmd, big_frame_buffer);
+            	m_p_channel_engine->ProcessHmiBigFrame(cmd);
             	break;
             default:
 				g_ptr_trace->PrintLog(LOG_ALARM, "收到不支持的HMI指令cmd=%d", cmd.cmd);
 				break;
 			}
+
+            if (++processCnt > 10)
+                break;
 		}
 
         usleep(10000);   //休眠10ms
@@ -2083,7 +2122,6 @@ void HMICommunication::ProcessHmiSendFileCmd(HMICmdFrame &cmd){
 
 		cmd.frame_number |= 0x8000;
 		cmd.data[cmd.data_len] = APPROVE;  //接受
-
 	}
 	cmd.data_len++;
 
@@ -2382,6 +2420,8 @@ void HMICommunication::ProcessHmiNcFileInfoCmd(HMICmdRecvNode &cmd_node){
 void HMICommunication::ProcessHmiNcFileSystemCmd(HMICmdRecvNode &cmd_node)
 {
     HMICmdFrame &cmd = cmd_node.cmd;
+    cmd.frame_number |= 0x8000;
+
     char root[kMaxPathLen] = {0};
     char file_system_id = -1;
     if(cmd.data_len > 0){
@@ -2390,37 +2430,63 @@ void HMICommunication::ProcessHmiNcFileSystemCmd(HMICmdRecvNode &cmd_node)
     }
     if (file_system_id < 0)
         return ;
-    std::cout << "type id: " << (int)file_system_id << std::endl;
 
     if (fileSystem.find(file_system_id) == fileSystem.end())
     {
         fileSystem[file_system_id] = std::make_shared<FileSystemManager>(this);
     }
 
-    auto manager = fileSystem.at(file_system_id);
-    manager->SetRoot(root);
-    manager->UpdateInfo();
-    std::list<FS_Entity> entities = manager->GetEntity();
-
-    cmd.frame_number |= 0x8000;
-    for (auto itr = entities.begin(); itr != entities.end(); ++itr)
+    if (!in_file_sys)
     {
+        auto manager = fileSystem.at(file_system_id);
+        manager->SetRoot(root);
+
+        thread t(&HMICommunication::ProcessGetFileSystemInOnePiece, this, cmd, file_system_id);
+        t.detach();
+    }
+    else
+    {
+        std::cout << "ProcessHmiNcFileSystemCmd busy" << std::endl;
+    }
+
+    return;
+}
+
+void HMICommunication::ProcessGetFileSystemInOnePiece(HMICmdFrame cmd, int id)
+{
+    std::cout << "ProcessGetFileSystemInOnePiece" << std::endl;
+
+    size_t cnt = 0;
+    auto manager = fileSystem.at(id);
+    manager->UpdateInfo();
+    std::vector<FS_Entity> entities = manager->GetEntity();
+    std::cout << "FileSystem size: " << entities.size() << std::endl;
+
+    while(cnt < entities.size())
+    {
+        FS_Entity entity = entities[cnt];
         cmd.cmd_extension = 0;
         char time[20] = {0};
-        struct tm *ptm = localtime(&itr->time_);
+        struct tm *ptm = localtime(&entity.time_);
         sprintf(time, "%04d/%02d/%02d %02d:%02d:%02d", ptm->tm_year+1900, ptm->tm_mon+1, ptm->tm_mday,
                 ptm->tm_hour, ptm->tm_min, ptm->tm_sec);
 
-        //std::cout << "type: " << (int)itr->type_ << " name: " << itr->name_ << " size: " << itr->size_ << " time:" << time  << std::endl;
-        memcpy(cmd.data, &(*itr), sizeof(FS_Entity));
-        cmd.data_len = sizeof(*itr);
+        //std::cout << "cmd" << cmd.cmd <<  " type: " << (int)entity.type_ << " name: " << entity.name_ << " size: " << entity.size_ << " time:" << time  << std::endl;
+        memcpy(cmd.data, &(entity), sizeof(FS_Entity));
+        cmd.data_len = sizeof(entity);
         this->SendCmd(cmd);
+        cnt++;
+        //usleep(2000);//2ms
+        if (cnt % 20 == 0)
+            usleep(10000);//10ms
     }
+
 
     cmd.cmd_extension = 1;
     this->SendCmd(cmd);
-    std::cout << "ProcessHmiNcFileSystemCmd Over" << std::endl;
-    //manager->SendInfo(HMICmdRecvNode);
+    in_file_sys = false;
+    std::cout << "ProcessHmiNcFileSystemCmd Over, size: " <<  entities.size() << std::endl;
+    return;
 }
 
 void HMICommunication::ProcessHmiMkdirCmd(HMICmdRecvNode &cmd_node)
@@ -4793,6 +4859,9 @@ int HMICommunication::RecvFile(){
         SendHMIBackupStatus(m_sysbackup_status);
         bzero(filepath, kMaxPathLen);
         strcpy(filepath, RECOVER_FILE.c_str());
+    }else if(file_type == FILE_ORDER_LIST){
+    	bzero(filepath, kMaxPathLen);
+    	strcpy(filepath, "/cnc/order_list");
     }
 //	else if(file_type == FILE_SYSTEM_CONFIG){
 //
@@ -4821,6 +4890,7 @@ int HMICommunication::RecvFile(){
 //	file_bak = fopen("/cnc/nc_files/nc_bak.nc", "w+");
 	if(fd == -1/* || file_bak == nullptr*/){
 		g_ptr_trace->PrintTrace(TRACE_ERROR, HMI_COMMUNICATION, "error in recvFile fun, failed to open file[%s]", filepath);
+		printf("error in recvFile fun, failed to open file[%s]", filepath);
 		res = ERR_FILE_TRANS;
 		goto END;
 	}
@@ -4872,6 +4942,10 @@ int HMICommunication::RecvFile(){
 //	fclose(file_bak);
     close(fd);
     sync();
+
+    if(file_type == FILE_ORDER_LIST){
+		m_p_channel_engine->refreshOrderList();
+	}
 
 	if(read_total == file_size){
 		if(file_type == FILE_G_CODE){
@@ -4929,7 +5003,6 @@ int HMICommunication::RecvFile(){
         m_background_type = Background_UnPack;
         sem_post(&m_sem_background);//通知执行后台程序
     }
-
 
 	END:
 #ifdef USES_TCP_FILE_TRANS_KEEP
@@ -5245,7 +5318,7 @@ bool FileSystemManager::UpdateInfo()
     return ret;
 }
 
-std::list<FS_Entity> FileSystemManager::GetEntity() const
+std::vector<FS_Entity> FileSystemManager::GetEntity() const
 {
     return file_tree;
 }
@@ -5280,6 +5353,7 @@ FS_Entity FileSystemManager::GetInfo(const string &path)
 
 bool FileSystemManager::ScanDir(string dirPath)
 {
+
     if (dirPath.length())
         dirPath.at(dirPath.length()-1) != '/' ? dirPath += '/' : dirPath;
 

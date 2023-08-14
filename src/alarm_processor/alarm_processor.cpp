@@ -659,7 +659,10 @@ void AlarmProcessor::ProcessAutoAlarm()
                     }
                     if (!hasError)
                     {
-                        g_ptr_chn_engine->GetChnControl()->SetALSignal(0);
+                        for(int i = 0; i < g_ptr_chn_engine->GetChnCount(); ++i)
+                        {
+                            g_ptr_chn_engine->GetChnControl()[i].Pmc_AutoReset();
+                        }
                     }
 
                     break;

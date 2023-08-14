@@ -91,7 +91,7 @@ public:
 
 	void ProcessHmiCmd(HMICmdFrame &cmd);  //处理HMI指令
 
-	void ProcessHmiBigFrame(uint16_t cmd, char *buf);
+	void ProcessHmiBigFrame(HMICmdFrame &cmd);
 
 	void GetChnStatus(HmiChannelStatus &status);  //获取通道状态
 
@@ -199,6 +199,7 @@ public:
 
 	bool EmergencyStop();		//急停处理
 
+    void Pmc_AutoReset();       //梯图报警消除后自动复位
 	void Reset();               //复位通道状态
 
 	void ProcessHmiSetRefCmd(HMICmdFrame &cmd);			//处理设置参考点命令
@@ -405,6 +406,8 @@ public:
 
     bool SubProgIsCurDir(uint8_t type);    // 判断子程序类型是否为当前程序所在目录
 
+    void refreshOrderList();
+
     uint32_t m_cur_setfeed = 0;
     int main_prog_line_number = 0;
 
@@ -420,22 +423,20 @@ public:
 		STEP_ORDERFINISH = 7,     // 排程结束
 	};
 
-
 	void SetOrderStep(int step){m_order_step = step;}
+	void ProcessEliminate(int work_station);
 
     int m_n_order_mode;		   // 排序加工模式·
     int m_order_step = 0;      //
-
-    //bool m_b_order_finished;   // 排程执行是否结束
-    //bool m_b_need_pre_prog;    // 前置程序待执行
-    //bool m_b_need_next_prog;   // 后置程序待执行
-    //bool m_b_in_next_prog;	   // 后置程序执行中
-    //bool m_b_g110_call;		   // G110 调用程序标志
-    //bool m_b_g111_call;
-
     bool exec_m30_over;
-    bool m_b_dust_eliminate;   // 除尘打开标志
-    int dust_eliminate_delay;  // 除尘启动延时记数
+
+    bool m_b_dust_eliminate = false;   // 除尘打开标志
+    bool eliminate_reset_flag = false; // 除尘复位标志
+    bool eliminate_reset_finished = false;
+    int m_eliminate_step = 0;
+    int m_eliminate_station = 0;
+    char eliminate_breakfile[kMaxFileNameLen];
+    int eliminate_breakline = -1;
 
     int current_order_index;   // 当前加载排程列表序号
     char g110_file_name[kMaxPathLen];
@@ -448,7 +449,7 @@ public:
     bool m_b_in_block_prog = false; // 锁块
 
     void UpdateProgramCallToHmi(char *filePath, int lineNo);
-    void UpdateSubCallToHmi(int type, int index, int lineNo, bool curDir = false);
+    void UpdateSubCallToHmi(int type, int index, int lineNo = 0, bool curDir = false);
     void UpdateReturnCallToHmi(SubProgReturnMsg *retMsg);
 
 private:

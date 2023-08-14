@@ -1344,7 +1344,6 @@ void ChannelEngine::Initialize(HMICommunication *hmi_comm, MICommunication *mi_c
                              this);
     m_task_consume_ft = std::async(std::launch::async, process);
 
-
     this->InitPoweroffHandler();
     printf("succeed to initialize channel engine\n");
 
@@ -1568,8 +1567,8 @@ void ChannelEngine::PoweroffHandler(int signo, siginfo_t *info, void *context){
  * @brief 掉电时保存数据
  */
 void ChannelEngine::SaveDataPoweroff(){
-    system("date >> save.txt");
-    system("echo \"start\" >> save.txt");
+    //system("date >> /cnc/bin/save.txt");
+    //system("echo \"start\" >> /cnc/bin/save.txt");
     //保存PMC寄存器数据
     if((this->m_mask_import_param & (0x01<<CONFIG_PMC_REG)) == 0)
         this->m_p_pmc_reg->SaveRegData();
@@ -1595,9 +1594,9 @@ void ChannelEngine::SaveDataPoweroff(){
     delete g_ptr_trace;
     g_ptr_trace = nullptr;
 
-    system("date >> save.txt");
-    system("echo \"end\" >> save.txt");
-    system("sync");
+    //system("date >> /cnc/bin/save.txt");
+    //system("echo \"end\" >> /cnc/bin/save.txt");
+    //system("sync");
 }
 
 /**
@@ -3203,7 +3202,8 @@ void ChannelEngine::ProcessHmiCmd(HMICmdFrame &cmd){
         //        this->ProcessHmiCheckSyncCmd(cmd);
         //        break;
     case CMD_HMI_GET_SYS_INFO:
-    {FILE *stream;
+    {
+    	FILE *stream;
         float val;
         float temp_value;
         char buf[20] = "";
@@ -3292,11 +3292,11 @@ void ChannelEngine::ProcessHmiCmd(HMICmdFrame &cmd){
     }
 }
 
-void ChannelEngine::ProcessHmiBigFrame(uint16_t cmd, char * buf){
+void ChannelEngine::ProcessHmiBigFrame(HMICmdFrame &cmd){
 
-	switch(cmd){
+	switch(cmd.cmd){
 	case CMD_HMI_SET_MACRO_ARRAY:
-		this->m_p_channel_control[0].ProcessHmiBigFrame(cmd, buf);
+		this->m_p_channel_control[0].ProcessHmiBigFrame(cmd);
 		break;
 	default:
 		break;
@@ -3565,7 +3565,7 @@ void ChannelEngine::ProcessHmiMdiInfo(HMICmdFrame &cmd)
     else
         m_mdi_mode_ready = false;
 
-    std::cout << "ProcessHmiInfo: " << (int)hasData << std::endl;
+    //std::cout << "ProcessHmiInfo: " << (int)hasData << std::endl;
     this->m_p_hmi_comm->SendCmd(cmd);
 }
 
@@ -8718,6 +8718,7 @@ void ChannelEngine::ClearPmcAxisMoveData(){
 void ChannelEngine::SystemReset(){
 
     printf("system reset\n");
+    this->m_p_pmc_reg->SaveRegData();
     //各通道复位
     for(int i = 0; i < this->m_p_general_config->chn_count; i++){
         // 攻丝状态禁止复位
@@ -9690,13 +9691,19 @@ void ChannelEngine::ProcessPmcSignal(){
             }
         }
         //#endif
-
+#ifdef NEW_WOOD_MACHINE
         if(g_reg_last->ELIMINATE != g_reg->ELIMINATE){
         	if(g_reg->ELIMINATE == 1){
-        		this->m_p_channel_control[0].m_b_dust_eliminate = true;
+        		m_p_channel_control->ProcessEliminate(1);
         	}
         }
 
+        if(g_reg_last->ELIMINATE2 != g_reg->ELIMINATE2){
+        	if(g_reg->ELIMINATE2 == 1){
+        		m_p_channel_control->ProcessEliminate(2);
+        	}
+        }
+#endif
 
 //处理工艺模式切换
 #ifdef USES_WOOD_MACHINE
@@ -9830,7 +9837,6 @@ void ChannelEngine::ProcessPmcSignal(){
         }
     //}
 
-
     //复位RST信号
     if(this->m_b_reset_rst_signal){
         struct timeval time_now;
@@ -9855,6 +9861,8 @@ void ChannelEngine::ProcessPmcSignal(){
 
     //处理位置开关
     this->UpdatePSW();
+
+
 
 
     //给出轴在参考点信号
@@ -13250,5 +13258,9 @@ void ChannelEngine::ProcessPMCProtect()
         level = 4;
 
     SetProgProtect(level);
+}
+
+void ChannelEngine::refreshOrderList(){
+	m_p_channel_control[0].refreshOrderList();
 }
 

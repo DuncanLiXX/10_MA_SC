@@ -1212,6 +1212,9 @@ void ChannelEngine::Initialize(HMICommunication *hmi_comm, MICommunication *mi_c
     this->m_df_phy_axis_pos_intp = new double[m_p_general_config->axis_count];  //分配物理轴当前插补机械坐标存储区
     memset(m_df_phy_axis_pos_intp, 0, sizeof(double)*m_p_general_config->axis_count);
 
+    this->m_df_phy_axis_pos_intp_last = new double[m_p_general_config->axis_count];  //分配物理轴前一周期插补机械坐标存储区
+    memset(m_df_phy_axis_pos_intp_last, 0, sizeof(double)*m_p_general_config->axis_count);
+
     this->m_df_phy_axis_pos_intp_after = new double[m_p_general_config->axis_count];  //分配物理轴当前插补后输出的机械坐标存储区
     memset(m_df_phy_axis_pos_intp_after, 0, sizeof(double)*m_p_general_config->axis_count);
 
@@ -4188,7 +4191,9 @@ void ChannelEngine::ProcessHmiGetParam(HMICmdFrame &cmd){
             cfg.geometry_compensation[0] = pp->geometry_comp_basic[0];
             cfg.geometry_compensation[1] = pp->geometry_comp_basic[1];
             cfg.geometry_compensation[2] = pp->geometry_comp_basic[2];
-            cfg.geometry_wear = 0;
+            cfg.geometry_wear[0] = 0;
+            cfg.geometry_wear[1] = 0;
+            cfg.geometry_wear[2] = 0;
             cfg.radius_compensation = 0;
             cfg.radius_wear = 0;
             memcpy(cmd.data+1, &cfg, cmd.data_len);
@@ -4206,7 +4211,9 @@ void ChannelEngine::ProcessHmiGetParam(HMICmdFrame &cmd){
             cfg.geometry_compensation[0] = pp->geometry_compensation[index][0];
             cfg.geometry_compensation[1] = pp->geometry_compensation[index][1];
             cfg.geometry_compensation[2] = pp->geometry_compensation[index][2];
-            cfg.geometry_wear = pp->geometry_wear[index];
+            cfg.geometry_wear[0] = pp->geometry_wear[index][0];
+            cfg.geometry_wear[1] = pp->geometry_wear[index][1];
+            cfg.geometry_wear[2] = pp->geometry_wear[index][2];
             cfg.radius_compensation = pp->radius_compensation[index];
             cfg.radius_wear = pp->radius_wear[index];
             memcpy(cmd.data+1, &cfg, cmd.data_len);
@@ -9311,6 +9318,7 @@ void ChannelEngine::CheckBattery(){
  * @brief 处理PMC的信号
  */
 static int reset_delay_count = 0;
+static int getAddrValueCount = 0;
 void ChannelEngine::ProcessPmcSignal(){
     static bool inited = false;
     const GRegBits *g_reg = nullptr;
@@ -9725,6 +9733,33 @@ void ChannelEngine::ProcessPmcSignal(){
             }
         }
 #endif
+
+        //处理手动移动反馈信号灯，7个周期后才开始输出轴移动信号
+        if(getAddrValueCount >= 7){
+        	int axisCounts = GetChnControl(i)->GetChnAxisCount();
+        	for(int j=0; j<axisCounts; j++){
+        	    int phy_axis = GetChnControl(i)->GetPhyAxis(j);
+        	    if(m_df_phy_axis_pos_intp[phy_axis]-m_df_phy_axis_pos_intp_last[phy_axis] > 0){  //正向移动
+        	        f_reg->MV |= (0x01<<phy_axis);   //置1
+        	        f_reg->MVD &= ~(0x01<<phy_axis); //置0
+        	       }
+        	    else if(m_df_phy_axis_pos_intp[phy_axis]-m_df_phy_axis_pos_intp_last[phy_axis] < 0){  //负向移动
+        	        f_reg->MV |= 0x01<<phy_axis;     //置1
+        	        f_reg->MVD |= 0x01<<phy_axis;    //置1
+        	    }
+        	    else{  //未移动
+        	        f_reg->MV &= ~(0x01<<phy_axis);  //置0
+        	    }
+        	    m_df_phy_axis_pos_intp_last[phy_axis] = m_df_phy_axis_pos_intp[phy_axis];
+        	}
+        }
+    }
+
+    //7个周期后才开始输出轴移动信号
+    if(getAddrValueCount >= 7){
+    	getAddrValueCount = 0;
+    }else{
+    	getAddrValueCount++;
     }
 
     //处理轴的限位信号，虽然64个轴的限位信号平均分布在四个通道中，但是处理时不分通道

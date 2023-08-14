@@ -587,6 +587,7 @@ private:  //私有成员变量
 
 	double *m_df_phy_axis_pos_feedback;		//物理轴当前反馈机械坐标
 	double *m_df_phy_axis_pos_intp;        //物理轴当前插补机械坐标
+	double *m_df_phy_axis_pos_intp_last;    //物理轴前一周期插补机械坐标
 	double *m_df_phy_axis_pos_intp_after;   //物理轴当前插补后加减速输出的机械坐标,还加上了螺补，反向间隙等补偿值
 	double *m_df_pmc_axis_remain;    //PMC轴余移动量
     map<int32_t, uint32_t> m_pmc_axis_return_speed;//临时用，处理pmc轴倍率问题

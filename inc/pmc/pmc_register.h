@@ -1068,8 +1068,8 @@ struct GRegBits{
 	//G150
     uint8_t EROV:2;                //快速移动倍率信号（PMC轴控制）
     uint8_t :2;
-    uint8_t EOVCA:1;                //倍率取消信号（PMC轴控制）    G150.5
-    uint8_t ERT:1;                  //手动快速移动选择信号(PMC轴控制) G150.6
+    uint8_t EOVCA:1;                //倍率取消信号（PMC轴控制）    G150.4
+    uint8_t ERT:1;                  //手动快速移动选择信号(PMC轴控制) G150.5
     uint8_t :2;
 	//G151
     uint8_t EFOVA:8;               //进给速度倍率信号(PMC轴控制)

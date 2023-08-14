@@ -2081,8 +2081,12 @@ bool ParmManager::ReadToolConfig(){
 				sprintf(kname, "geo_comp_z_%d", j);
 				m_sc_tool_config[i].geometry_compensation[j][2] = 	m_ini_tool->GetDoubleValueOrDefault(sname, kname, 0.0);
 
-				sprintf(kname, "geo_wear_%d", j);
-				m_sc_tool_config[i].geometry_wear[j] = 	m_ini_tool->GetDoubleValueOrDefault(sname, kname, 0.0);
+				sprintf(kname, "geo_wear_x_%d", j);
+				m_sc_tool_config[i].geometry_wear[j][0] = 	m_ini_tool->GetDoubleValueOrDefault(sname, kname, 0.0);
+				sprintf(kname, "geo_wear_y_%d", j);
+				m_sc_tool_config[i].geometry_wear[j][1] = 	m_ini_tool->GetDoubleValueOrDefault(sname, kname, 0.0);
+				sprintf(kname, "geo_wear_z_%d", j);
+				m_sc_tool_config[i].geometry_wear[j][2] = 	m_ini_tool->GetDoubleValueOrDefault(sname, kname, 0.0);
 
 				sprintf(kname, "radius_comp_%d", j);
 				m_sc_tool_config[i].radius_compensation[j] = m_ini_tool->GetDoubleValueOrDefault(sname, kname, 0.0);
@@ -2165,9 +2169,16 @@ bool ParmManager::ReadToolConfig(){
                 m_sc_tool_config[i].geometry_compensation[j][2] = 0.0;   //for test
                 m_ini_tool->AddKeyValuePair(kname, string("0.0"), ns);
 
-				sprintf(kname, "geo_wear_%d", j);
-				m_sc_tool_config[i].geometry_wear[j] = 	0.0;
+				sprintf(kname, "geo_wear_x_%d", j);
+				m_sc_tool_config[i].geometry_wear[j][0] = 	0.0;
 				m_ini_tool->AddKeyValuePair(kname, string("0.0"), ns);
+				sprintf(kname, "geo_wear_y_%d", j);
+				m_sc_tool_config[i].geometry_wear[j][1] = 	0.0;
+				m_ini_tool->AddKeyValuePair(kname, string("0.0"), ns);
+				sprintf(kname, "geo_wear_z_%d", j);
+				m_sc_tool_config[i].geometry_wear[j][2] = 	0.0;
+				m_ini_tool->AddKeyValuePair(kname, string("0.0"), ns);
+
 
 				sprintf(kname, "radius_comp_%d", j);
 				m_sc_tool_config[i].radius_compensation[j] = 0.0;
@@ -3354,10 +3365,10 @@ void ParmManager::UpdateToolWear(uint16_t chn_index, uint8_t index, const double
 	memset(sname, 0x00, sizeof(sname));
 	memset(kname, 0x00, sizeof(kname));
 
-	this->m_sc_tool_config[chn_index].geometry_wear[index] = value;
+	this->m_sc_tool_config[chn_index].geometry_wear[index][2] = value;
 
 	sprintf(sname, "channel_%hu", chn_index);
-	sprintf(kname, "geo_wear_%hhu", index);
+	sprintf(kname, "geo_wear_z_%hhu", index);
 
 	m_ini_tool->SetDoubleValue(sname, kname, value);
 
@@ -3419,7 +3430,9 @@ void ParmManager::UpdateToolOffsetConfig(uint16_t chn_index, uint8_t index, HmiT
 		this->m_sc_tool_config[chn_index].geometry_compensation[index][0] = cfg.geometry_compensation[0];
 		this->m_sc_tool_config[chn_index].geometry_compensation[index][1] = cfg.geometry_compensation[1];
 		this->m_sc_tool_config[chn_index].geometry_compensation[index][2] = cfg.geometry_compensation[2];
-		this->m_sc_tool_config[chn_index].geometry_wear[index] = cfg.geometry_wear;
+		this->m_sc_tool_config[chn_index].geometry_wear[index][0] = cfg.geometry_wear[0];
+		this->m_sc_tool_config[chn_index].geometry_wear[index][1] = cfg.geometry_wear[1];
+		this->m_sc_tool_config[chn_index].geometry_wear[index][2] = cfg.geometry_wear[2];
 		this->m_sc_tool_config[chn_index].radius_compensation[index] = cfg.radius_compensation;
 		this->m_sc_tool_config[chn_index].radius_wear[index] = cfg.radius_wear;
 	}else{//加入待生效队列
@@ -3440,8 +3453,12 @@ void ParmManager::UpdateToolOffsetConfig(uint16_t chn_index, uint8_t index, HmiT
 	sprintf(kname, "geo_comp_z_%hhu", index);
 	m_ini_tool->SetDoubleValue(sname, kname, cfg.geometry_compensation[2]);
 
-	sprintf(kname, "geo_wear_%hhu", index);
-	m_ini_tool->SetDoubleValue(sname, kname, cfg.geometry_wear);
+	sprintf(kname, "geo_wear_x_%hhu", index);
+	m_ini_tool->SetDoubleValue(sname, kname, cfg.geometry_wear[0]);
+	sprintf(kname, "geo_wear_y_%hhu", index);
+	m_ini_tool->SetDoubleValue(sname, kname, cfg.geometry_wear[1]);
+	sprintf(kname, "geo_wear_z_%hhu", index);
+	m_ini_tool->SetDoubleValue(sname, kname, cfg.geometry_wear[2]);
 	sprintf(kname, "radius_comp_%hhu", index);
 	m_ini_tool->SetDoubleValue(sname, kname, cfg.radius_compensation);
 
@@ -3466,7 +3483,9 @@ void ParmManager::UpdateAllToolOffsetConfig(uint16_t chn_index, HmiToolOffsetCon
         this->m_sc_tool_config[chn_index].geometry_compensation[index][0] = cfg.geometry_compensation[0];
         this->m_sc_tool_config[chn_index].geometry_compensation[index][1] = cfg.geometry_compensation[1];
         this->m_sc_tool_config[chn_index].geometry_compensation[index][2] = cfg.geometry_compensation[2];
-        this->m_sc_tool_config[chn_index].geometry_wear[index] = cfg.geometry_wear;
+        this->m_sc_tool_config[chn_index].geometry_wear[index][0] = cfg.geometry_wear[0];
+        this->m_sc_tool_config[chn_index].geometry_wear[index][1] = cfg.geometry_wear[1];
+        this->m_sc_tool_config[chn_index].geometry_wear[index][2] = cfg.geometry_wear[2];
         this->m_sc_tool_config[chn_index].radius_compensation[index] = cfg.radius_compensation;
         this->m_sc_tool_config[chn_index].radius_wear[index] = cfg.radius_wear;
 
@@ -3478,8 +3497,12 @@ void ParmManager::UpdateAllToolOffsetConfig(uint16_t chn_index, HmiToolOffsetCon
         sprintf(kname, "geo_comp_z_%hhu", index);
         m_ini_tool->SetDoubleValue(sname, kname, cfg.geometry_compensation[2]);
 
-        sprintf(kname, "geo_wear_%hhu", index);
-        m_ini_tool->SetDoubleValue(sname, kname, cfg.geometry_wear);
+        sprintf(kname, "geo_wear_x_%hhu", index);
+        m_ini_tool->SetDoubleValue(sname, kname, cfg.geometry_wear[0]);
+        sprintf(kname, "geo_wear_y_%hhu", index);
+        m_ini_tool->SetDoubleValue(sname, kname, cfg.geometry_wear[1]);
+        sprintf(kname, "geo_wear_z_%hhu", index);
+        m_ini_tool->SetDoubleValue(sname, kname, cfg.geometry_wear[2]);
         sprintf(kname, "radius_comp_%hhu", index);
         m_ini_tool->SetDoubleValue(sname, kname, cfg.radius_compensation);
 
@@ -3796,7 +3819,9 @@ bool ParmManager::ActiveToolOffsetParam(uint8_t chn_index){
 				this->m_sc_tool_config[chn_index].geometry_compensation[offset->tool_offset_index][0] = offset->value.geometry_compensation[0];
 				this->m_sc_tool_config[chn_index].geometry_compensation[offset->tool_offset_index][1] = offset->value.geometry_compensation[1];
 				this->m_sc_tool_config[chn_index].geometry_compensation[offset->tool_offset_index][2] = offset->value.geometry_compensation[2];
-				this->m_sc_tool_config[chn_index].geometry_wear[offset->tool_offset_index] = offset->value.geometry_wear;
+				this->m_sc_tool_config[chn_index].geometry_wear[offset->tool_offset_index][0] = offset->value.geometry_wear[0];
+				this->m_sc_tool_config[chn_index].geometry_wear[offset->tool_offset_index][1] = offset->value.geometry_wear[1];
+				this->m_sc_tool_config[chn_index].geometry_wear[offset->tool_offset_index][2] = offset->value.geometry_wear[2];
 				this->m_sc_tool_config[chn_index].radius_compensation[offset->tool_offset_index] = offset->value.radius_compensation;
 				this->m_sc_tool_config[chn_index].radius_wear[offset->tool_offset_index] = offset->value.radius_wear;
 

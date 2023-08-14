@@ -1215,7 +1215,7 @@ bool ChannelControl::GetSysVarValue(const int index, double&value){
     else if(index >= 2001 && index <= 2128){   //µ¶³¤Ä¥Ëð²¹³¥
         int id = index - 2001;
         if(id < m_p_channel_config->tool_number)
-            value = this->m_p_chn_tool_config->geometry_wear[id];
+            value = this->m_p_chn_tool_config->geometry_wear[id][2];
         else
             value = 0.0;
 
@@ -1399,7 +1399,7 @@ bool ChannelControl::SetSysVarValue(const int index, const double &value){
 #endif
         int id = index - 2001;
         if(id < m_p_channel_config->tool_number){
-            this->m_p_chn_tool_config->geometry_wear[id] = value;
+            this->m_p_chn_tool_config->geometry_wear[id][2] = value;
             g_ptr_parm_manager->UpdateToolWear(m_n_channel_index, id, value);
             this->NotifyHmiToolOffsetChanged(id+1);   //Í¨ÖªHMIµ¶Æ«Öµ¸ü¸Ä
         }else
@@ -8241,7 +8241,7 @@ bool ChannelControl::ExecuteCoordMsg(RecordMsg *msg){
 
 
 
-					offset -= m_p_chn_tool_config->geometry_wear[m_channel_status.cur_h_code-1];   //µþ¼ÓÄ¥Ëð²¹³¥
+					offset -= m_p_chn_tool_config->geometry_wear[m_channel_status.cur_h_code-1][2];   //µþ¼ÓÄ¥Ëð²¹³¥
 				}
 			}
 			m_p_chn_g92_offset->offset[i] = offset;
@@ -9453,7 +9453,7 @@ bool ChannelControl::ExecuteCompensateMsg(RecordMsg *msg){
         	ActiveMcToolOffset(true);
             z_axis_offset = m_p_chn_tool_config->geometry_compensation[value-1][2] * 1e3;  //µ¥Î»ÓÉmm×ª»»Îªum
             //	z_axis_offset += m_p_chn_tool_config->geometry_comp_basic[2] * 1e3;   //»ù×¼µ¶Æ«
-            z_axis_offset += m_p_chn_tool_config->geometry_wear[value-1] * 1e3;   //µþ¼ÓÄ¥Ëð²¹³¥
+            z_axis_offset += m_p_chn_tool_config->geometry_wear[value-1][2] * 1e3;   //µþ¼ÓÄ¥Ëð²¹³¥
 
             //	printf("G43.4 send :idx = %d, offset=%d\n", value, z_axis_offset);
 
@@ -9542,7 +9542,7 @@ bool ChannelControl::ExecuteCompensateMsg(RecordMsg *msg){
         //		case 2://µÚÈý²½£º½«ÐÂÆ«ÖÃ·¢ËÍµ½MC
         //
         //			z_axis_offset = m_p_chn_tool_config->geometry_compensation[value-1][2] * 1e3;  //µ¥Î»ÓÉmm×ª»»Îªum
-        //			z_axis_offset += m_p_chn_tool_config->geometry_wear[value-1] * 1e3;   //µþ¼ÓÄ¥Ëð²¹³¥
+        //			z_axis_offset += m_p_chn_tool_config->geometry_wear[value-1][2] * 1e3;   //µþ¼ÓÄ¥Ëð²¹³¥
         //
         //			this->SetMcRtcpMode(G43_4_MODE, G43_4_MODE, z_axis_offset);
         //
@@ -11598,11 +11598,11 @@ bool ChannelControl::ExecuteInputMsg(RecordMsg * msg){
     }
     case 12:{
     	if(isAbs)
-    		this->m_p_chn_tool_config->geometry_wear[tool_number-1] = input_msg->RData;
+    		this->m_p_chn_tool_config->geometry_wear[tool_number-1][2] = input_msg->RData;
     	else
-    		this->m_p_chn_tool_config->geometry_wear[tool_number-1] += input_msg->RData;
+    		this->m_p_chn_tool_config->geometry_wear[tool_number-1][2] += input_msg->RData;
 
-    	double comp_data = this->m_p_chn_tool_config->geometry_wear[tool_number-1];
+    	double comp_data = this->m_p_chn_tool_config->geometry_wear[tool_number-1][2];
 
         g_ptr_parm_manager->UpdateToolWear(this->m_n_channel_index, tool_number-1, comp_data);
         this->NotifyHmiToolOffsetChanged(tool_number);   //Í¨ÖªHMIµ¶Æ«Öµ¸ü¸Ä
@@ -12875,7 +12875,7 @@ void ChannelControl::SetMcAxisToolOffset(uint8_t axis_index){
     if(axis_config.axis_linear_type == LINE_AXIS_Z){
     	offset = m_p_chn_tool_config->geometry_compensation[m_channel_status.cur_h_code-1][2] * 1e7;  //µ¥Î»ÓÉmm×ª»»Îª0.1nm
         //	offset += m_p_chn_tool_config->geometry_comp_basic[2] * 1e7;   //»ù×¼µ¶Æ«
-        offset += m_p_chn_tool_config->geometry_wear[m_channel_status.cur_h_code-1] * 1e7;   //µþ¼ÓÄ¥Ëð²¹³¥
+        offset += m_p_chn_tool_config->geometry_wear[m_channel_status.cur_h_code-1][2] * 1e7;   //µþ¼ÓÄ¥Ëð²¹³¥
     }
     else if(axis_config.axis_linear_type == LINE_AXIS_X || axis_config.axis_linear_type == LINE_AXIS_Y){
         offset = m_p_chn_tool_config->geometry_compensation[m_channel_status.cur_h_code-1][axis_config.axis_linear_type-1] * 1e7;  //µ¥Î»ÓÉmm×ª»»Îª0.1nm
@@ -18767,7 +18767,7 @@ void ChannelControl::TransMachCoordToWorkCoord(DPointChn &pos, uint16_t coord_id
                 		origin_pos += m_p_chn_tool_config->geometry_compensation[m_channel_status.cur_h_code-1][2];  //
                 	}
 
-                    origin_pos += m_p_chn_tool_config->geometry_wear[m_channel_status.cur_h_code-1];   //µþ¼ÓÄ¥Ëð²¹³¥
+                    origin_pos += m_p_chn_tool_config->geometry_wear[m_channel_status.cur_h_code-1][2];   //µþ¼ÓÄ¥Ëð²¹³¥
                 }
             }
 
@@ -18829,7 +18829,7 @@ void ChannelControl::TransMachCoordToWorkCoord(DPointChn &pos, uint16_t coord_id
 					}else{
 						origin_pos += m_p_chn_tool_config->geometry_compensation[m_channel_status.cur_h_code-1][2];  //
 					}
-                    origin_pos += m_p_chn_tool_config->geometry_wear[h_code-1];   //µþ¼ÓÄ¥Ëð²¹³¥
+                    origin_pos += m_p_chn_tool_config->geometry_wear[h_code-1][2];   //µþ¼ÓÄ¥Ëð²¹³¥
                 }
             }
             *pp -= origin_pos;    //»úÐµ×ø±ê - ¹¤¼þ×ø±êÏµÆ«ÒÆ = ¹¤¼þ×ø±ê
@@ -18873,7 +18873,7 @@ void ChannelControl::TransMachCoordToWorkCoord(DPoint &pos, uint16_t coord_idx, 
 					}else{
 						origin_pos += m_p_chn_tool_config->geometry_compensation[m_channel_status.cur_h_code-1][2];  //
 					}
-                    origin_pos += m_p_chn_tool_config->geometry_wear[m_channel_status.cur_h_code-1];   //µþ¼ÓÄ¥Ëð²¹³¥
+                    origin_pos += m_p_chn_tool_config->geometry_wear[m_channel_status.cur_h_code-1][2];   //µþ¼ÓÄ¥Ëð²¹³¥
                 }
 
             }
@@ -18930,7 +18930,7 @@ void ChannelControl::TransWorkCoordToMachCoord(DPointChn &pos, uint16_t coord_id
         			}else{
         				origin_pos += m_p_chn_tool_config->geometry_compensation[m_channel_status.cur_h_code-1][2];  //
         			}
-                    origin_pos += m_p_chn_tool_config->geometry_wear[m_channel_status.cur_h_code-1];   //µþ¼ÓÄ¥Ëð²¹³¥
+                    origin_pos += m_p_chn_tool_config->geometry_wear[m_channel_status.cur_h_code-1][2];   //µþ¼ÓÄ¥Ëð²¹³¥
                 }
 
             }
@@ -18983,7 +18983,7 @@ void ChannelControl::TransWorkCoordToMachCoord(DPoint &pos, uint16_t coord_idx, 
         			}else{
         				origin_pos += m_p_chn_tool_config->geometry_compensation[m_channel_status.cur_h_code-1][2];  //
         			}
-                    origin_pos += m_p_chn_tool_config->geometry_wear[m_channel_status.cur_h_code-1];   //µþ¼ÓÄ¥Ëð²¹³¥
+                    origin_pos += m_p_chn_tool_config->geometry_wear[m_channel_status.cur_h_code-1][2];   //µþ¼ÓÄ¥Ëð²¹³¥
                 }
 
             }
@@ -19027,7 +19027,7 @@ void ChannelControl::TransMachCoordToWorkCoord(double &pos, uint16_t coord_idx, 
 			}else{
 				origin_pos += m_p_chn_tool_config->geometry_compensation[m_channel_status.cur_h_code-1][2];  //
 			}
-            origin_pos += m_p_chn_tool_config->geometry_wear[m_channel_status.cur_h_code-1];   //µþ¼ÓÄ¥Ëð²¹³¥
+            origin_pos += m_p_chn_tool_config->geometry_wear[m_channel_status.cur_h_code-1][2];   //µþ¼ÓÄ¥Ëð²¹³¥
         }
 
     }
@@ -19060,7 +19060,7 @@ void ChannelControl::TransWorkCoordToMachCoord(double &pos, uint16_t coord_idx, 
 			}else{
 				origin_pos += m_p_chn_tool_config->geometry_compensation[m_channel_status.cur_h_code-1][2];  //
 			}
-            origin_pos += m_p_chn_tool_config->geometry_wear[m_channel_status.cur_h_code-1];   //µþ¼ÓÄ¥Ëð²¹³¥
+            origin_pos += m_p_chn_tool_config->geometry_wear[m_channel_status.cur_h_code-1][2];   //µþ¼ÓÄ¥Ëð²¹³¥
         }
 
     }
@@ -19100,7 +19100,7 @@ void ChannelControl::TransWorkCoordToMachCoord(double &pos, uint16_t coord_idx, 
 			}else{
 				origin_pos += m_p_chn_tool_config->geometry_compensation[m_channel_status.cur_h_code-1][2];  //
 			}
-            origin_pos += m_p_chn_tool_config->geometry_wear[h_code-1];   //µþ¼ÓÄ¥Ëð²¹³¥
+            origin_pos += m_p_chn_tool_config->geometry_wear[h_code-1][2];   //µþ¼ÓÄ¥Ëð²¹³¥
         }
 
     }
@@ -19164,12 +19164,12 @@ double ChannelControl::GetAxisCurInptTarPosWithCompensation(uint8_t axis_index, 
                         if (g_compensation == G44_CMD)
                         {
                             origin_pos -= m_p_chn_tool_config->geometry_compensation[m_channel_status.cur_h_code-1][2];  //
-                            origin_pos -= m_p_chn_tool_config->geometry_wear[m_channel_status.cur_h_code-1];   //µþ¼ÓÄ¥Ëð²¹³¥
+                            origin_pos -= m_p_chn_tool_config->geometry_wear[m_channel_status.cur_h_code-1][2];   //µþ¼ÓÄ¥Ëð²¹³¥
                         }
                         else
                         {//G43_CMD G49_CMD
                             origin_pos += m_p_chn_tool_config->geometry_compensation[m_channel_status.cur_h_code-1][2];  //
-                            origin_pos += m_p_chn_tool_config->geometry_wear[m_channel_status.cur_h_code-1];   //µþ¼ÓÄ¥Ëð²¹³¥
+                            origin_pos += m_p_chn_tool_config->geometry_wear[m_channel_status.cur_h_code-1][2];   //µþ¼ÓÄ¥Ëð²¹³¥
                         }
                     }
 
@@ -20449,7 +20449,9 @@ void ChannelControl::GetHmiToolOffset(const uint8_t idx, HmiToolOffsetConfig &cf
         cfg.geometry_compensation[0] = this->m_p_chn_tool_config->geometry_comp_basic[0];
         cfg.geometry_compensation[1] = this->m_p_chn_tool_config->geometry_comp_basic[1];
         cfg.geometry_compensation[2] = this->m_p_chn_tool_config->geometry_comp_basic[2];
-        cfg.geometry_wear = 0;
+        cfg.geometry_wear[0] = 0;
+        cfg.geometry_wear[1] = 0;
+        cfg.geometry_wear[2] = 0;
         cfg.radius_compensation = 0;
         cfg.radius_wear = 0;
     }else if(idx > 0 && idx <= kMaxToolCount){
@@ -20461,7 +20463,9 @@ void ChannelControl::GetHmiToolOffset(const uint8_t idx, HmiToolOffsetConfig &cf
     cfg.geometry_compensation[0] = this->m_p_chn_tool_config->geometry_compensation[index][0];
     cfg.geometry_compensation[1] = this->m_p_chn_tool_config->geometry_compensation[index][1];
     cfg.geometry_compensation[2] = this->m_p_chn_tool_config->geometry_compensation[index][2];
-    cfg.geometry_wear = this->m_p_chn_tool_config->geometry_wear[index];
+    cfg.geometry_wear[0] = this->m_p_chn_tool_config->geometry_wear[index][0];
+    cfg.geometry_wear[1] = this->m_p_chn_tool_config->geometry_wear[index][1];
+    cfg.geometry_wear[2] = this->m_p_chn_tool_config->geometry_wear[index][2];
     cfg.radius_compensation = this->m_p_chn_tool_config->radius_compensation[index];
     cfg.radius_wear = this->m_p_chn_tool_config->radius_wear[index];
 }

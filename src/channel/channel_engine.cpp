@@ -13225,7 +13225,9 @@ void ChannelEngine::ProcessPMCProtect()
     SetProgProtect(level);
 }
 
+#ifdef NEW_WOOD_MACHINE
 void ChannelEngine::refreshOrderList(){
 	m_p_channel_control[0].refreshOrderList();
 }
+#endif
 

@@ -4943,9 +4943,11 @@ int HMICommunication::RecvFile(){
     close(fd);
     sync();
 
+#ifdef NEW_WOOD_MACHINE
     if(file_type == FILE_ORDER_LIST){
 		m_p_channel_engine->refreshOrderList();
 	}
+#endif
 
 	if(read_total == file_size){
 		if(file_type == FILE_G_CODE){

@@ -4044,10 +4044,15 @@ void ChannelControl::refreshOrderList(){
 		order_list_file.getline(data, 1024);
 
 		if(data[0] == 0) break;
-		std::string file_name = data;
+
+		int c = strlen(data);
+		// windows \n linux 识别为乱码
+		if(data[c-1] == 0xD) data[c-1] = 0;
+
+		std::string file_name(data);
 
 		order_file_vector.push_back(file_name);
-		std::cout << "=====" << file_name << std::endl;
+		std::cout << "=====" << file_name <<std::endl;
 		memset(data, 0, sizeof(data));
 	}
 	order_list_file.close();
@@ -5017,10 +5022,9 @@ int ChannelControl::Run(){
                     this->m_channel_status.chn_work_mode == AUTO_MODE && !m_p_compiler->IsPreScaning() && !m_p_compiler->IsSubProgram()
                     )
             {
-
-            	m_n_run_thread_state = ERROR;
-                g_ptr_trace->PrintLog(LOG_ALARM, "CHN[%d]语法错误，未找到结束指令！", m_n_channel_index);
-                CreateError(ERR_NO_END, ERROR_LEVEL, CLEAR_BY_MCP_RESET, 0, m_n_channel_index);
+            	//m_n_run_thread_state = ERROR;
+                //g_ptr_trace->PrintLog(LOG_ALARM, "CHN[%d]语法错误，未找到结束指令！", m_n_channel_index);
+				//CreateError(ERR_NO_END, ERROR_LEVEL, CLEAR_BY_MCP_RESET, 0, m_n_channel_index);
             }
 
             pthread_mutex_unlock(&m_mutex_change_state);
@@ -8981,11 +8985,11 @@ bool ChannelControl::ExecuteSpeedMsg(RecordMsg *msg){
 
     //printf("===== execute: %lf\n", speed->GetSpeed());
 
+
+    // @Todo 控制转速从系统设置获取还是从S代码获取
+
     //S代码输入到主轴模块
     m_p_spindle->InputSCode(speed->GetSpeed());
-
-    //ScPrintf("ExecuteSpeedMsg::%d rpm\n", m_p_spindle->GetSCode());
-
     //更新当前S值
     m_channel_status.rated_spindle_speed = m_p_spindle->GetSCode();
     this->SendModeChangToHmi(S_MODE);

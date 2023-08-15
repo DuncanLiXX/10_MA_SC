@@ -158,7 +158,7 @@ Compiler::~Compiler() {
 void Compiler::InitCompiler() {
     printf("Enter Compiler::InitCompiler\n");
 
-    m_b_check = true;   //默认进行语法检查
+    m_b_check = false;   //默认进行语法检查
     m_b_has_over_code = false;  //默认没有结束指令
 
     m_n_sub_program = MAIN_PROG;  //默认在主程序状态
@@ -2065,14 +2065,11 @@ bool Compiler::GetLineData() {
     //	struct timeval tvStart;
     //	struct timeval tvNow;
     //	unsigned int nTimeDelay = 0;
-    //
     //	gettimeofday(&tvStart, NULL);
-
-    //printf("enter getlinedata\n");
+    //  printf("enter getlinedata\n");
 
     bool res = true;
     if(m_p_file_map_info == nullptr || m_b_compile_over) {  //编译结束
-        //printf("getline return, 111, %d, %d\n", (int)m_p_file_map_info, m_b_compile_over);
         return false;
     }
 
@@ -2088,22 +2085,21 @@ bool Compiler::GetLineData() {
             g_ptr_trace->PrintTrace(TRACE_DETAIL, COMPILER_CHN, "MDA insert M30-2\n");
             return true;
         }
-#ifdef USES_WOOD_MACHINE
-        if(m_n_sub_program == MAIN_PROG){//主程序
-            strcpy(m_line_buf, "M30");   //木工专机可以没有M30指令，系统自动添加
-            this->m_lexer_result.line_no = this->m_ln_cur_line_no;   //更新行号
-            g_ptr_trace->PrintTrace(TRACE_DETAIL, COMPILER_CHN, "Insert M30-2\n");
-        }else{//子程序/宏程序
-            strcpy(m_line_buf, "M99");   //木工专机可以没有M99指令，系统自动添加
-            this->m_lexer_result.line_no = this->m_ln_cur_line_no;   //更新行号
-            g_ptr_trace->PrintTrace(TRACE_DETAIL, COMPILER_CHN, "Insert M99-2\n");
-        }
-        return true;
-#else
-        if(m_n_sub_program == MAIN_PROG){
+
+        if(m_b_check && m_n_sub_program == MAIN_PROG){
         	return false;
+        }else{
+            if(m_n_sub_program == MAIN_PROG){//主程序
+            	strcpy(m_line_buf, "M30");   //木工专机可以没有M30指令，系统自动添加
+                this->m_lexer_result.line_no = this->m_ln_cur_line_no;   //更新行号
+                g_ptr_trace->PrintTrace(TRACE_DETAIL, COMPILER_CHN, "Insert M30-2\n");
+            }else{//子程序/宏程序
+            	strcpy(m_line_buf, "M99");   //木工专机可以没有M99指令，系统自动添加
+                this->m_lexer_result.line_no = this->m_ln_cur_line_no;   //更新行号
+                g_ptr_trace->PrintTrace(TRACE_DETAIL, COMPILER_CHN, "Insert M99-2\n");
+            }
+            return true;
         }
-#endif
     }
 
     if(m_p_cur_file_pos == nullptr){
@@ -2276,20 +2272,21 @@ REDO:
             this->m_lexer_result.line_no = this->m_ln_cur_line_no;   //更新行号
             g_ptr_trace->PrintTrace(TRACE_DETAIL, COMPILER_CHN, "MDA insert M30-1\n");
         } else {
-#ifdef USES_WOOD_MACHINE
-            if(m_n_sub_program == MAIN_PROG){//主程序
-                strcpy(m_line_buf, "M30");   //木工专机可以没有M30指令，系统自动添加
-                this->m_lexer_result.line_no = this->m_ln_cur_line_no;   //更新行号
-                g_ptr_trace->PrintTrace(TRACE_DETAIL, COMPILER_CHN, "Insert M30-1\n");
-            }else{//子程序/宏程序
-                strcpy(m_line_buf, "M99");   //木工专机可以没有M99指令，系统自动添加
-                this->m_lexer_result.line_no = this->m_ln_cur_line_no;   //更新行号
-                g_ptr_trace->PrintTrace(TRACE_DETAIL, COMPILER_CHN, "Insert M99-1\n");
+
+            if(!m_b_check){
+            	if(m_n_sub_program == MAIN_PROG){//主程序
+					strcpy(m_line_buf, "M30");   //木工专机可以没有M30指令，系统自动添加
+					this->m_lexer_result.line_no = this->m_ln_cur_line_no;   //更新行号
+					g_ptr_trace->PrintTrace(TRACE_DETAIL, COMPILER_CHN, "Insert M30-1\n");
+				}else{//子程序/宏程序
+					strcpy(m_line_buf, "M99");   //木工专机可以没有M99指令，系统自动添加
+					this->m_lexer_result.line_no = this->m_ln_cur_line_no;   //更新行号
+					g_ptr_trace->PrintTrace(TRACE_DETAIL, COMPILER_CHN, "Insert M99-1\n");
+				}
+				return true;
+            }else{
+            	return false;
             }
-            return true;
-#else
-            res = false;
-#endif
         }
     }
     return res;
@@ -2304,10 +2301,8 @@ bool Compiler::CompileLine() {
     //	struct timeval tvStart;
     //	struct timeval tvNow;
     //	unsigned int nTimeDelay = 0;
-    //
     //	gettimeofday(&tvStart, NULL);
 
-    //printf("------> compile line ...\n");
 
     bool res = true;
 
@@ -2821,7 +2816,6 @@ bool Compiler::RunAutoToolMeasureMsg(RecordMsg *msg){
     //sub_msg->GetMacroProgName(filepath, true);
     GetMacroSubProgPath(sub_msg->GetMacroProgType(), sub_msg->GetMacroProgIndex(), true, filepath);
 
-
     //独立子文件打开
     if (!this->OpenFile(filepath, (bool)m_n_sub_program)){ //尝试打开nc文件失败
         return false;
@@ -2997,7 +2991,6 @@ bool Compiler::RunLineMsg(RecordMsg *msg) {
 
     printf("===== RunLineMsg F: %lf\n", feed);
     if(feed < 0.00001){
-
     	m_error_code = ERR_NO_F_DATA;
 		return false;
     }
@@ -3023,8 +3016,8 @@ bool Compiler::RunLineMsg(RecordMsg *msg) {
     }else{
         //将目标位置换算为工件坐标系
         if(tmp->IsMachCoord()){
-            printf("G54=%hu, h_code=%hhu\n", m_compiler_status.mode.gmode[14], m_compiler_status.mode.h_mode);
-            printf("line g53: %lf, %lf, %lf\n", tmp->GetTargetPos().m_df_point[0], tmp->GetTargetPos().m_df_point[1], tmp->GetTargetPos().m_df_point[2]);
+            //printf("G54=%hu, h_code=%hhu\n", m_compiler_status.mode.gmode[14], m_compiler_status.mode.h_mode);
+            //printf("line g53: %lf, %lf, %lf\n", tmp->GetTargetPos().m_df_point[0], tmp->GetTargetPos().m_df_point[1], tmp->GetTargetPos().m_df_point[2]);
             this->m_p_channel_control->TransMachCoordToWorkCoord(tmp->GetTargetPos(), m_compiler_status.mode.gmode[14],
                     m_compiler_status.mode.h_mode, tmp->GetAxisMoveMask());
 
@@ -3278,7 +3271,6 @@ bool Compiler::RunRefReturnMsg(RecordMsg *msg){
             p_target_pos++;
             p_source_pos++;
         }
-
     }
 
     m_compiler_status.mode.gmode[0] = gcode;   //修改编译器状态
@@ -4238,13 +4230,12 @@ bool Compiler::CheckHead() {
     }else if(m_n_sub_program != MAIN_PROG){  //在子程序中，可以无%
         res = this->ProcessMain(); //
     }else {
-#ifdef USES_WOOD_MACHINE
-        res = this->ProcessMain();
-#else
+
         if (m_b_check) {
             m_error_code = ERR_NO_START;   //无起始%
         }
-#endif
+
+		res = this->ProcessMain();
 
     }
 

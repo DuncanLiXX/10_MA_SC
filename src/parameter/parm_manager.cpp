@@ -40,8 +40,9 @@ ParmManager::ParmManager(){
 	m_sc_tool_config = nullptr;
 	m_sc_tool_pot_config = nullptr;
 	m_sc_coord_config = nullptr;
-	m_b_poweroff_param = false;
 	m_sc_pc_table = nullptr;
+	m_b_poweroff_param = false;
+
 
 	this->m_p_chn_process_param = nullptr;
 	this->m_p_axis_process_param = nullptr;

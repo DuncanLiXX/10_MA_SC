@@ -344,6 +344,7 @@ void SetMcArmComm(MCArmCommunication *comm){this->m_p_mc_arm_comm = comm;}   //É
 
     ServeGuide  m_serverGuide;
     void NotifyResetGatherToHmi();
+    void NotifyExternalStartToHmi();
 private:	//Ë½ÓÐ³ÉÔ±º¯Êý
 	ChannelEngine();   //¹¹Ôìº¯Êý
 

@@ -265,6 +265,7 @@ enum HMICmdCode {
     CMD_SC_NOTIFY_PROTECT_STATUS,   //SC通知HMI保护状态        0x80
     CMD_SC_NOTIFY_GATHER_FINISH,    //SC通知HMI采集完成        0x81
     CMD_SC_DISPLAY_MDI_FILE,        //SC通知子程序显示         0x82
+	CMD_SC_EXTERNAL_START,          //SC通知外部启动		 0x83
 	CMD_HMI_GUARD = 255       //HMI命令字卫兵 0xFF
 };
 
@@ -1814,9 +1815,7 @@ enum HmiMsgType{
 enum HmiMsgId{
 	MSG_ID_AXIS_REF = 100,	//轴未确定参考点
 	MSG_ID_LIC_OVER = 160,  //系统授权即将到期
-
 	MSG_ID_RESTARTING = 200,   //程序再启动进行中
-
 	MSG_ID_TOOL_CHANGING =210, //换刀进行中
 
 	MSG_ID_GUARD

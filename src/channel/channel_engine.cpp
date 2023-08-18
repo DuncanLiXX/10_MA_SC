@@ -861,6 +861,17 @@ void ChannelEngine::NotifyResetGatherToHmi()
     m_p_hmi_comm->SendCmd(hmi_cmd);
 }
 
+void ChannelEngine::NotifyExternalStartToHmi(){
+    HMICmdFrame hmi_cmd;
+    hmi_cmd.channel_index = CHANNEL_ENGINE_INDEX;
+    hmi_cmd.cmd = 0x83;
+    hmi_cmd.cmd_extension = 0;
+    int status = 0;
+    hmi_cmd.data_len = sizeof(status);
+    memcpy(&hmi_cmd.data[0], &status, hmi_cmd.data_len);
+    m_p_hmi_comm->SendCmd(hmi_cmd);
+}
+
 /**
  * @brief 向MI发送各轴机械锁住状态
  */
@@ -9590,7 +9601,8 @@ void ChannelEngine::ProcessPmcSignal(){
 
         //单段信号  SBK
         if(g_reg->SBK != g_reg_last->SBK){
-            if(g_reg->SBK)
+        	NotifyExternalStartToHmi();
+        	if(g_reg->SBK)
                 this->SetFuncState(i, FS_SINGLE_LINE, 1);
             else
                 this->SetFuncState(i, FS_SINGLE_LINE, 0);
@@ -9861,9 +9873,6 @@ void ChannelEngine::ProcessPmcSignal(){
 
     //处理位置开关
     this->UpdatePSW();
-
-
-
 
     //给出轴在参考点信号
     int byte = 0, bit = 0;

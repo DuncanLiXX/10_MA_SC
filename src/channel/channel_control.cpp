@@ -1775,7 +1775,7 @@ void ChannelControl::ResetMode(){
  * @brief 开始G代码运行
  */
 void ChannelControl::StartRunGCode(){
-	printf("start run g code \n");
+	printf("===== start run g code \n");
 
 	g_ptr_trace->PrintTrace(TRACE_INFO, CHANNEL_CONTROL_SC,"@#@#Enter ChannelControl::StartRunGCode(), m_n_run_thread_state = %d, chn_work_mode = %hhu, machine_mode = %hhu, mc_mode=%hu\n", m_n_run_thread_state,
 			m_channel_status.chn_work_mode, m_channel_status.machining_state, m_channel_mc_status.cur_mode);
@@ -2864,7 +2864,7 @@ void ChannelControl::ProcessHmiBigFrame(HMICmdFrame &cmd){
 			memcpy(&index, &cmd.BigDataBuffer->buffer[2], 4);
 			memcpy(&count, &cmd.BigDataBuffer->buffer[6], 4);
 			this->m_macro_variable.SetMacroArray(index, count, &cmd.BigDataBuffer->buffer[10]);
-			printf("ProcessHmiBigFrame index: %d count: %d\n", index, count);
+			printf("===== ProcessHmiBigFrame index: %d count: %d\n", index, count);
 		}
 		break;
 	default:
@@ -4033,6 +4033,7 @@ void ChannelControl::ProcessHmiAppendOrderListFile(HMICmdFrame &cmd){
 }
 
 void ChannelControl::refreshOrderList(){
+	printf("===== refresh order_list\n");
 	std::ifstream order_list_file;
 	order_list_file.open("/cnc/order_list", ios::in);
 
@@ -4052,7 +4053,7 @@ void ChannelControl::refreshOrderList(){
 		std::string file_name(data);
 
 		order_file_vector.push_back(file_name);
-		std::cout << "=====" << file_name <<std::endl;
+		//std::cout << "=====" << file_name <<std::endl;
 		memset(data, 0, sizeof(data));
 	}
 	order_list_file.close();
@@ -11786,8 +11787,10 @@ void ChannelControl::ProcessEliminate(int work_station){
 		memset(eliminate_breakfile, 0, sizeof(eliminate_breakfile));
 		eliminate_breakline = -1;
 
-		m_p_f_reg->ELIMI1 = 1;
-		m_p_f_reg->ELIMI2 = 1;
+		if(work_station == 1)
+			m_p_f_reg->ELIMI1 = 1;
+		else
+			m_p_f_reg->ELIMI2 = 1;
 
 		if(this->m_n_run_thread_state != IDLE){
 			this->SetMcStepMode(true);

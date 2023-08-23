@@ -242,6 +242,8 @@ char *MICommunication::GetPmcDataAddr(){
 	return ptr;
 }
 
+
+
 void MICommunication::SendOperateCmd(uint16_t opt, uint8_t axis, uint16_t enable)
 {
     MiCmdFrame cmd;

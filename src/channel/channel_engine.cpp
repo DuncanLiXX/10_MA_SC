@@ -8278,6 +8278,10 @@ void ChannelEngine::InitMiParam(){
        //反向间隙初始化方向
        m_p_mi_comm->SendMiParam<uint8_t>(index, 1410, axis_config->init_backlash_dir);
 
+       if(axis_config->axis_type == 2){
+    	   m_p_mi_comm->SendMiParam<uint8_t>(index, 1610, axis_config->spd_vctrl_mode);
+       }
+
         //发送反向间隙参数
         this->SendMiBacklash(i);
 
@@ -9601,7 +9605,7 @@ void ChannelEngine::ProcessPmcSignal(){
 
         //单段信号  SBK
         if(g_reg->SBK != g_reg_last->SBK){
-        	NotifyExternalStartToHmi();
+        	//NotifyExternalStartToHmi();
         	if(g_reg->SBK)
                 this->SetFuncState(i, FS_SINGLE_LINE, 1);
             else

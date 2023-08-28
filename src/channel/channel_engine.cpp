@@ -9421,6 +9421,10 @@ void ChannelEngine::ProcessPmcSignal(){
             this->Start();
         }
 
+        if(g_reg->ST_EXT && g_reg_last->ST_EXT == 0){
+        	NotifyExternalStartToHmi();
+        }
+
         if(g_reg->_SP == 0 && g_reg_last->_SP == 1 && f_reg->SPL == 0 && f_reg->STL == 1){ //循环保持
 
         	this->Pause();
@@ -9605,7 +9609,6 @@ void ChannelEngine::ProcessPmcSignal(){
 
         //单段信号  SBK
         if(g_reg->SBK != g_reg_last->SBK){
-        	//NotifyExternalStartToHmi();
         	if(g_reg->SBK)
                 this->SetFuncState(i, FS_SINGLE_LINE, 1);
             else

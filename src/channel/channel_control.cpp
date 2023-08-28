@@ -2894,12 +2894,12 @@ void ChannelControl::ProcessHmiGetMacroVarCmd(HMICmdFrame &cmd){
     cmd.frame_number |= 0x8000;   //设置回复标志
 
     uint32_t start_index = 0;   //起始编号
-    uint32_t count = 0;			//变量个数
+    uint32_t count = 0;	     	//变量个数
 
     if(cmd.data_len != 8){	//数据长度不合法
         cmd.cmd_extension = FAILED;
         this->m_p_hmi_comm->SendCmd(cmd);
-        g_ptr_trace->PrintLog(LOG_ALARM, "ChannelControl::ProcessHmiSetMacroVarCmd()数据长度不合法，data_len = %hu！", cmd.data_len);
+        g_ptr_trace->PrintLog(LOG_ALARM, "ChannelControl::ProcessHmiGetMacroVarCmd()数据长度不合法，data_len = %hu！", cmd.data_len);
         return;
     }
 

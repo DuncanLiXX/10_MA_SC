@@ -341,9 +341,12 @@ void SetMcArmComm(MCArmCommunication *comm){this->m_p_mc_arm_comm = comm;}   //É
     bool ReadyServerGuide();
     bool RecordingServerGuide();
     void SetServeGuideType(SG_Type_Ptr type);
+    //SG_DATA MonitorRegisterData(SG_PMC_Register_Config cfg);
 
     ServeGuide  m_serverGuide;
     void NotifyResetGatherToHmi();
+
+    void ProcessSAsingal(bool force = false);    //¼±Í£ĞÅºÅĞÅºÅÏà¹Ø´¦Àí
 private:	//Ë½ÓĞ³ÉÔ±º¯Êı
 	ChannelEngine();   //¹¹Ôìº¯Êı
 
@@ -533,8 +536,6 @@ private:	//Ë½ÓĞ³ÉÔ±º¯Êı
 	void CheckTmpDir();    //²âÊÔtmpÄ¿Â¼ÊÇ·ñ´æÔÚ£¬²»´æÔÚÔò´´½¨
 
     int GetRemainDay();     //»ñÈ¡×¢²áÊ£ÓàÊ±¼ä
-
-    void ProcessESPsingal();    //¼±Í£ĞÅºÅĞÅºÅÏà¹Ø´¦Àí
 
     void RefErrorProcess(uint8_t phy_axis);
 

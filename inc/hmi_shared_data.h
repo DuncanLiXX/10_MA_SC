@@ -1888,7 +1888,8 @@ enum class SG_Config_Type
     Rect = 1,
     Circle,
     RecCir,
-    Tapping
+    Tapping,
+    //Register,
 };
 
 /**
@@ -1934,6 +1935,20 @@ struct SG_Tapping_Config
     //uint8_t axis_two = -1;      //Z轴轴号
     uint8_t interval = 8;
 };
+
+/*
+struct SG_PMC_Register_Config
+{
+    struct RegisterData {
+        int type = -1;   // 寄存器类型
+        int addr = 0;    // 寄存器地址
+        int bit  = 0;    // 寄存器位
+    };
+
+    std::list<RegisterData> data;
+    uint8_t interval = 8;
+};
+*/
 
 /* 伺服引导 *******************************************
 ******************************************************/

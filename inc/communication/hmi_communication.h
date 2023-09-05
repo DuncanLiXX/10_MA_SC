@@ -197,6 +197,7 @@ private:
     void UnPackageBackupFile();              //解压备份文件
     void SendHMIBackupStatus(SysUpdateStatus status);   //向HMI发送当前备份/恢复状态
 
+
 	int ResendCmd(HMICmdFrame &cmd);        //重发UDP命令，不加入发送队列
 
 	bool DelCmd(uint16_t frame_index);   //在发送队列中删除对应报文

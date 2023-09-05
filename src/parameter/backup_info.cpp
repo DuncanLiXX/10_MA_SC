@@ -564,3 +564,8 @@ bool Mc_Backup_Info::UnPackage(zip_t *zip, string prefix)
     }
     return true;
 }
+
+Coord_Backup_Self::Coord_Backup_Self(int type, string path, int group)
+{
+
+}

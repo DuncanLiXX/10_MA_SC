@@ -107,6 +107,19 @@ struct SG_Tapping_Type : public SG_Type {
     SG_DATA GenData() override;
 };
 
+/**
+ * @brief 寄存器测量
+ */
+//struct SG_Register_Type : public SG_Type {
+//    SG_Register_Type(SG_PMC_Register_Config cfg)
+//        : cfg_register(cfg), SG_Type(cfg.interval, -1, -1, E_SG_Type::SG_None) { }
+
+//    bool Verify() const override;
+//    SG_DATA GenData() override;
+
+//    SG_PMC_Register_Config cfg_register;
+//};
+
 
 /**
  * @brief 伺服引导

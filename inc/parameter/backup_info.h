@@ -39,6 +39,12 @@ protected:
     bool mk_path(string path);
 };
 
+class Coord_Backup_Self : public Backup_Info {
+public:
+    Coord_Backup_Self(int type, string path, int group);
+
+};
+
 class Script_Backup_Info : public Backup_Info {
 public:
     Script_Backup_Info(int type, string path);
@@ -68,7 +74,6 @@ public:
     virtual ~Mc_Backup_Info() {};
     bool UnPackage(struct zip_t *zip, string prefix) override;
 };
-
 
 class BackUp_Manager {
 public:

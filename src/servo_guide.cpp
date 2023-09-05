@@ -720,3 +720,18 @@ SG_DATA SG_Tapping_Type::GenData()
     SG_DATA data = std::make_tuple(spd_trans, z_axis_feedback, z_axis_inp, feedback_speed_[axis_two_]/1000*60);
     return data;
 }
+
+//bool SG_Register_Type::Verify() const
+//{
+//    return true;
+//}
+
+//SG_DATA SG_Register_Type::GenData()
+//{
+//    //获取当前所处通道
+//    //加锁
+//    //获取对应轴的寄存器值
+//    //返回结果
+//    g_ptr_chn_engine->MonitorRegisterData(cfg_register);
+//    return SG_DATA{};
+//}

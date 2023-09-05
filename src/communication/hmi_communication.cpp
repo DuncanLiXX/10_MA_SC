@@ -2930,6 +2930,23 @@ void HMICommunication::ProcessHmiServoDataRequest(HMICmdFrame &cmd)
         type = std::make_shared<SG_Tapping_Type>(tapping_cfg);
     }
         break;
+        /*
+    case SG_Config_Type::Register:
+    {
+        SG_PMC_Register_Config register_cfg;
+        int num;
+        int curPos = 1;
+        memcpy(&num, cmd.data+curPos, sizeof(int));
+        curPos += sizeof(int);
+        SG_PMC_Register_Config::RegisterData data;
+        memcpy(&data, cmd.data+curPos, sizeof(SG_PMC_Register_Config::RegisterData));
+        curPos += sizeof(SG_PMC_Register_Config::RegisterData);
+        std::cout << "num:::::" << num << std::endl;
+        register_cfg.data.push_back(data);
+        type = std::make_shared<SG_Register_Type>(register_cfg);
+    }
+        break;
+        */
     }
 
     if (!type)
@@ -4045,10 +4062,12 @@ uint64_t HMICommunication::GetConfigPackFileSize(){
 void HMICommunication::PackageSysBackupFile()
 {
     BackUp_Manager manager;
-    manager.Init_Pack_Info(m_maks_sys_backup);
     m_sysbackup_status.m_cur_step = 0;
     m_sysbackup_status.m_total_step = manager.Info_Cnt();
     m_sysbackup_status.m_status = SysUpdateStatus::Backupping;
+
+    manager.Init_Pack_Info(m_maks_sys_backup);
+
     SendHMIBackupStatus(m_sysbackup_status);
     //struct zip_t *zip = zip_open(BACKUP_DIR.c_str(), 1, 'w');
 

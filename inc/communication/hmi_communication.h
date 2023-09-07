@@ -195,6 +195,8 @@ private:
 	uint64_t GetConfigPackFileSize();             //计算配置打包文件总字节数
     void PackageSysBackupFile();             //压缩备份文件
     void UnPackageBackupFile();              //解压备份文件
+    void SaveCoordInfo(BU_Info_Coord info);     //保存数据文件
+    void RestoreCoordInfo(BU_Info_Coord info);                    //恢复数据文件
     void SendHMIBackupStatus(SysUpdateStatus status);   //向HMI发送当前备份/恢复状态
 
 
@@ -233,6 +235,12 @@ private:
 	void ProcessHmiSyncTimeCmd(HMICmdFrame &cmd);          //处理HMI同步系统时间命令
     void ProcessHmiSysBackupCmd(HMICmdFrame &cmd);         //处理HMI备份命令
     void ProcessHmiSysRecoverCmd(HMICmdFrame &cmd);        //处理HMI恢复命令
+    void ProcessHmiDataStoreCmd(HMICmdFrame &cmd);
+    void ProcessHmiCoordStoreCmd(HMICmdFrame &cmd);
+    void ProcessHmiCoordStoreBackUpCmd(HMICmdFrame &cmd);     //处理HMI数据保存命令
+    void ProcessHmiCoordStoreRecoverCmd(HMICmdFrame &cmd);    //处理HMI数据恢复命令
+    void ProcessHmiCoordStoreDeleteCmd(HMICmdFrame &cmd);
+    void ProcessHmiUpdateCoordInfoCmd(HMICmdFrame &cmd);   //处理HMI获取存储信息
     void ProcessHmiClearAlarmFile(HMICmdFrame &cmd);       //处理HMI清除报警文件命令
     void ProcessHmiGetCPUInfo(HMICmdFrame &cmd);					   //处理HMI获取CPU 内存占用信息
     void ProcessHmiServoDataRequest(HMICmdFrame &cmd);     //处理HMI请求开始伺服引导

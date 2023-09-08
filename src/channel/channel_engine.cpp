@@ -1593,6 +1593,10 @@ void ChannelEngine::PoweroffHandler(int signo, siginfo_t *info, void *context){
 void ChannelEngine::SaveDataPoweroff(){
     //system("date >> /cnc/bin/save.txt");
     //system("echo \"start\" >> /cnc/bin/save.txt");
+    FRegBits *f_reg = &m_p_pmc_reg->FReg().bits[0];
+    f_reg->SA = 0;
+    this->m_p_mi_comm->WritePmcReg(PMC_REG_F, m_p_pmc_reg->FReg().all);
+
     //±£´æPMC¼Ä´æÆ÷Êý¾Ý
     if((this->m_mask_import_param & (0x01<<CONFIG_PMC_REG)) == 0)
         this->m_p_pmc_reg->SaveRegData();

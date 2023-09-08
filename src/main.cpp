@@ -826,9 +826,15 @@ bool InitSysResource()
             return false;
     }
 
-    if (mkdir(PATH_NC_MAC_FILE, F_OK) == -1)
+    if (access(PATH_NC_MAC_FILE, F_OK) == -1)
     {
         if (mkdir(PATH_NC_MAC_FILE, S_IRWXU))
+            return false;
+    }
+
+    if (access(PATH_STORE, F_OK) == -1)
+    {
+        if (mkdir(PATH_STORE, S_IRWXU))
             return false;
     }
 

@@ -232,6 +232,8 @@ enum HMICmdCode {
 	CMD_HMI_GET_ORDER_FILE,			 //根据序号获取排程列表文件名
     // 木工专用 end
     CMD_HMI_SEND_MDI_INFO,      //发送MDI当前状态信息
+    CMD_HMI_DATA_STORE_INFO,    //存储信息操作
+    CMD_HMI_UPDATE_COORD_INFO,  //获取坐标存取信息
 
 	//SC-->HMI
 	CMD_SC_NEW_ALARM = 100,			//SC向HMI发送新的告警信息 100
@@ -1865,6 +1867,17 @@ struct SysUpdateStatus {
     Type m_type = Unkown;
 };
 
+enum BackUpInfoType {
+    Backup_Info_Coord,      // 坐标存取, BU_Info_Coord
+};
+
+//对应 BackUpInfoType 的 Backup_Info_Coord
+struct BU_Info_Coord{
+    int groupID = -1;       // 固定范围0-14
+    bool zRecover = 0;      // Z轴是否恢复，恢复时使用，备份时不使用
+    bool globalRecover = 0; // 外部偏置是否恢复，恢复时使用，备份时不使用
+};
+
 struct TraceLogInfo {
     int             opt;    //日志类型
     int             type;   //日志消息类型
@@ -1887,7 +1900,8 @@ enum class SG_Config_Type
     Rect = 1,
     Circle,
     RecCir,
-    Tapping
+    Tapping,
+    //Register,
 };
 
 /**
@@ -1933,6 +1947,20 @@ struct SG_Tapping_Config
     //uint8_t axis_two = -1;      //Z轴轴号
     uint8_t interval = 8;
 };
+
+/*
+struct SG_PMC_Register_Config
+{
+    struct RegisterData {
+        int type = -1;   // 寄存器类型
+        int addr = 0;    // 寄存器地址
+        int bit  = 0;    // 寄存器位
+    };
+
+    std::list<RegisterData> data;
+    uint8_t interval = 8;
+};
+*/
 
 /* 伺服引导 *******************************************
 ******************************************************/

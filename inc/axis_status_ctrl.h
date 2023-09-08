@@ -63,6 +63,7 @@ private:
 
     uint64_t real_phy_axis{0x00};
     bool is_waiting_enable{false};
+    bool SA_Processing{false};
 };
 
 

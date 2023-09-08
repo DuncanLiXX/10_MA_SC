@@ -489,7 +489,7 @@ int HMICommunication::Clean(){
  */
 bool HMICommunication::SendCmd(HMICmdFrame &cmd){
 
-    lock_guard<mutex> lock(mutex);
+    lock_guard<mutex> lock(mux_send);
 	int res = 0;
 
 	if(!g_sys_state.hmi_comm_ready)  //HMI连接尚未准备好
@@ -528,7 +528,7 @@ bool HMICommunication::SendCmd(HMICmdFrame &cmd){
 
 
 bool HMICommunication::SendBigFrame(char * buf, int len){
-	lock_guard<mutex> lock(mutex);
+    lock_guard<mutex> lock(mux_send);
 	int res = 0;
 
 	if(!g_sys_state.hmi_comm_ready)  //HMI连接尚未准备好
@@ -1110,6 +1110,12 @@ int HMICommunication::ProcessHmiCmd(){
                 break;
             case CMD_HMI_RECOVER_REQUEST://HMI向SC请求恢复
                 ProcessHmiSysRecoverCmd(cmd);
+                break;
+            case CMD_HMI_DATA_STORE_INFO://HMI向SC请求进行数据保存
+                ProcessHmiDataStoreCmd(cmd);
+                break;
+            case CMD_HMI_UPDATE_COORD_INFO:
+                ProcessHmiUpdateCoordInfoCmd(cmd);
                 break;
             case CMD_HMI_CLEAR_ALARMFILE:         //HMI向SC请求清空报警文件
                 ProcessHmiClearAlarmFile(cmd);
@@ -1804,6 +1810,7 @@ void HMICommunication::BackgroundFunc()
             case Background_UnPack:
                 UnPackageBackupFile();
                 break;
+
             }
             m_background_type = Background_None;
         }
@@ -2836,6 +2843,143 @@ void HMICommunication::ProcessHmiSysRecoverCmd(HMICmdFrame &cmd)
     }
 }
 
+void HMICommunication::ProcessHmiDataStoreCmd(HMICmdFrame &cmd)
+{
+    int type = cmd.data[0];
+    switch (type) {
+    case 0://坐标存取
+        ProcessHmiCoordStoreCmd(cmd);
+        break;
+    default:
+        break;
+    }
+
+}
+
+void HMICommunication::ProcessHmiCoordStoreCmd(HMICmdFrame &cmd)
+{
+    switch (cmd.cmd_extension) {
+    case 0:
+    {
+        ProcessHmiCoordStoreBackUpCmd(cmd);
+    }
+        break;
+    case 1:
+    {
+        ProcessHmiCoordStoreRecoverCmd(cmd);
+    }
+        break;
+    case 2:
+        ProcessHmiCoordStoreDeleteCmd(cmd);
+        break;
+    default:
+        break;
+
+    }
+}
+
+void HMICommunication::ProcessHmiCoordStoreBackUpCmd(HMICmdFrame &cmd)
+{
+    cmd.frame_number |= 0x8000;
+
+    BU_Info_Coord coord_info;
+    memcpy(&coord_info, &cmd.data[1], sizeof(BU_Info_Coord));
+
+    if (coord_info.groupID >= 0 && coord_info.groupID < Coord_Backup_Self::MaxItem)
+    {
+        std::cout << "coordinfo backup, groupID: " << coord_info.groupID << std::endl;
+
+        Coord_Backup_Self *coord_data = new Coord_Backup_Self(coord_info);
+        int curIndex = m_p_channel_engine->GetCurChannelIndex();
+        m_p_channel_engine->GetChnControl(curIndex)->info_manager.SetData(coord_data);
+
+        SaveCoordInfo(coord_info);
+        cmd.cmd_extension = 0;
+
+    }
+    else
+    {
+        cmd.cmd_extension = -1;
+        SendCmd(cmd);
+    }
+    SendCmd(cmd);
+}
+
+void HMICommunication::ProcessHmiCoordStoreRecoverCmd(HMICmdFrame &cmd)
+{
+    cmd.frame_number |= 0x8000;
+
+    BU_Info_Coord coord_info;
+    memcpy(&coord_info, &cmd.data[1], sizeof(BU_Info_Coord));
+
+    if (coord_info.groupID >= 0 && coord_info.groupID < Coord_Backup_Self::MaxItem)
+    {
+        std::cout << "coordinfo restore, groupID: " << coord_info.groupID << std::endl;
+
+        RestoreCoordInfo(coord_info);
+        cmd.cmd_extension = 0;
+    }
+    else
+    {
+        cmd.cmd_extension = -1;
+    }
+    SendCmd(cmd);
+}
+
+void HMICommunication::ProcessHmiCoordStoreDeleteCmd(HMICmdFrame &cmd)
+{
+    cmd.frame_number |= 0x8000;
+
+    BU_Info_Coord coord_info;
+    memcpy(&coord_info, &cmd.data[1], sizeof(BU_Info_Coord));
+
+    if (coord_info.groupID >= 0 && coord_info.groupID < Coord_Backup_Self::MaxItem)
+    {
+        std::cout << "coordinfo delete, groupID: " << coord_info.groupID << std::endl;
+
+        if (coord_info.groupID >= 0 && coord_info.groupID < Coord_Backup_Self::MaxItem)
+            Coord_Backup_Self::DeleteCoordData(coord_info.groupID);
+
+        cmd.cmd_extension = 0;
+    }
+    else
+    {
+        cmd.cmd_extension = -1;
+    }
+    SendCmd(cmd);
+}
+
+void HMICommunication::ProcessHmiUpdateCoordInfoCmd(HMICmdFrame &cmd)
+{
+    cmd.frame_number |= 0x8000;
+
+    vector<string> infos = Coord_Backup_Self::GetCoordInfoList();
+
+    memset((void *)&cmd.data, 0x00, kMaxHmiDataLen);
+    int datalen = 0;
+    for (size_t i = 0; i < infos.size(); ++i)
+    {
+        string info = to_string(i) + "," + infos[i];
+        memcpy(&cmd.data[datalen], info.c_str(), info.size());
+        datalen += info.size();
+        cmd.data[datalen] = '\n';
+        datalen += 1;
+        if(datalen > 980)// 字节大于980就分批发送
+        {
+            std::cout << "++" << std::endl;
+            cmd.data_len = datalen;
+            SendCmd(cmd);
+            memset((void *)&cmd.data, 0x00, kMaxHmiDataLen);
+            datalen = 0;
+        }
+    }
+//    std::cout << "-->" << (int)cmd.cmd << std::endl;
+    std::cout << "cmd.data: " << cmd.data << std::endl;
+    cmd.data_len = datalen;
+    cmd.cmd_extension = 1;
+    SendCmd(cmd);
+}
+
 /**
  * @brief 处理HMI清除报警文件命令
  * @param cmd : 命令数据
@@ -2930,6 +3074,23 @@ void HMICommunication::ProcessHmiServoDataRequest(HMICmdFrame &cmd)
         type = std::make_shared<SG_Tapping_Type>(tapping_cfg);
     }
         break;
+        /*
+    case SG_Config_Type::Register:
+    {
+        SG_PMC_Register_Config register_cfg;
+        int num;
+        int curPos = 1;
+        memcpy(&num, cmd.data+curPos, sizeof(int));
+        curPos += sizeof(int);
+        SG_PMC_Register_Config::RegisterData data;
+        memcpy(&data, cmd.data+curPos, sizeof(SG_PMC_Register_Config::RegisterData));
+        curPos += sizeof(SG_PMC_Register_Config::RegisterData);
+        std::cout << "num:::::" << num << std::endl;
+        register_cfg.data.push_back(data);
+        type = std::make_shared<SG_Register_Type>(register_cfg);
+    }
+        break;
+        */
     }
 
     if (!type)
@@ -4045,10 +4206,12 @@ uint64_t HMICommunication::GetConfigPackFileSize(){
 void HMICommunication::PackageSysBackupFile()
 {
     BackUp_Manager manager;
-    manager.Init_Pack_Info(m_maks_sys_backup);
     m_sysbackup_status.m_cur_step = 0;
     m_sysbackup_status.m_total_step = manager.Info_Cnt();
     m_sysbackup_status.m_status = SysUpdateStatus::Backupping;
+
+    manager.Init_Pack_Info(m_maks_sys_backup);
+
     SendHMIBackupStatus(m_sysbackup_status);
     //struct zip_t *zip = zip_open(BACKUP_DIR.c_str(), 1, 'w');
 
@@ -4192,6 +4355,36 @@ void HMICommunication::UnPackageBackupFile()
 
     m_sysbackup_status.m_status = SysUpdateStatus::Idle;
     SendHMIBackupStatus(m_sysbackup_status);
+}
+
+void HMICommunication::SaveCoordInfo(BU_Info_Coord info)
+{
+    int curIndex = m_p_channel_engine->GetCurChannelIndex();
+    BackUp_Info_Manager &manager = m_p_channel_engine->GetChnControl(curIndex)->info_manager;
+
+    Coord_Backup_Self *coord_data = new Coord_Backup_Self(info);
+    manager.SetData(coord_data);
+
+    for (auto itr = manager.begin(); itr != manager.end(); ++itr)
+    {
+        (*itr)->Package(nullptr);
+    }
+    manager.Clean_Data();
+}
+
+void HMICommunication::RestoreCoordInfo(BU_Info_Coord info)
+{
+    int curIndex = m_p_channel_engine->GetCurChannelIndex();
+    BackUp_Info_Manager &manager = m_p_channel_engine->GetChnControl(curIndex)->info_manager;
+
+    Coord_Backup_Self *coord_data = new Coord_Backup_Self(info);
+    manager.SetData(coord_data);
+
+    for (auto itr = manager.begin(); itr != manager.end(); ++itr)
+    {
+        (*itr)->UnPackage(nullptr, "");
+    }
+    manager.Clean_Data();
 }
 
 /**

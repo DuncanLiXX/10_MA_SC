@@ -43,6 +43,7 @@ const map<int, SDLINK_SPEC> ChannelEngine::m_SDLINK_MAP =
     //{4,     {"SD-LINK-D1",  12-3,   8,      true}},
     {5,     {"SD-LINK-B2",  7-3,    8,      true}},
     {6,     {"SD-LINK-E2",  12-3,   11,     true}},
+    {7,     {"SD_LINK-B3", 3,       6,      false}},
 };
 
 const uint32_t MC_UPDATE_BLOCK_SIZE = 100;		//MC升级文件帧，每帧包含100字节数据,50个uint16
@@ -816,6 +817,9 @@ bool ChannelEngine::RecordingServerGuide()
     //启动另一个线程，处理数据发送，防止采样周期不准确
     std::thread th(&ServeGuide::ProcessData, &m_serverGuide);
 
+    //g_ptr_chn_engine->m_serverGuide.StartRecord();
+
+
     while(!g_sys_state.system_quit)
     {
         if (m_serverGuide.RefreshRecording())//判断系统是否处于Recording状态，并刷新状态
@@ -843,6 +847,26 @@ void ChannelEngine::SetServeGuideType(SG_Type_Ptr type)
     type->SetInstance(m_df_phy_axis_pos_intp, m_df_phy_axis_pos_feedback, m_df_phy_axis_speed_feedback);
     m_serverGuide.SetType(type);
 }
+
+//SG_DATA ChannelEngine::MonitorRegisterData(SG_PMC_Register_Config cfg)
+//{
+//    union ValueType{
+//        uint8_t value_uint8;
+//        uint16_t value_uint16;
+//        uint32_t value_uint32;
+//        uint64_t value_uint64;
+//    };
+
+//    ValueType reg_value;
+//    using RegisterData = SG_PMC_Register_Config::RegisterData;
+//    for (auto itr = cfg.data.begin(); itr != cfg.data.end(); ++itr)
+//    {
+//        RegisterData data = *itr;
+//        this->m_p_pmc_reg->GetRegValueMulti(static_cast<PmcRegSection>(data.type), data.addr, 1, &reg_value.value_uint8);
+//        std::cout << "value: " << (int)reg_value.value_uint8 << std::endl;
+//    }
+//    return SG_DATA{};
+//}
 
 /**
  * @brief 通知HMI数据采集结束
@@ -9380,7 +9404,7 @@ void ChannelEngine::ProcessPmcSignal(){
 #ifdef USES_PHYSICAL_MOP
         if(g_reg->_ESP == 0 && !m_b_emergency){ //进入急停
             m_b_emergency = true;
-            thread th(&ChannelEngine::ProcessESPsingal, this);
+            thread th(&ChannelEngine::ProcessSAsingal, this, false);
             th.detach();
             std::cout << "in esp --------" << std::endl;
             this->Emergency();
@@ -13086,9 +13110,10 @@ int ChannelEngine::GetRemainDay()
     return remainDay;
 }
 
-void ChannelEngine::ProcessESPsingal()
+void ChannelEngine::ProcessSAsingal(bool force)
 {
-    while (m_b_emergency)
+    std::cout << "ProcessSA Signal" << std::endl;
+    while (m_b_emergency || force)
     {
         this->m_p_mi_comm->ReadPhyAxisCurFedBckPos(m_df_phy_axis_pos_feedback, m_df_phy_axis_pos_intp, m_df_phy_axis_speed_feedback,
             m_df_phy_axis_torque_feedback, m_df_spd_angle, m_p_general_config->axis_count);
@@ -13108,7 +13133,7 @@ void ChannelEngine::ProcessESPsingal()
             break;
     }
 
-    if (m_b_emergency)
+    if (m_b_emergency || force)
     {
         FRegBits *f_reg = &m_p_pmc_reg->FReg().bits[0];
         f_reg->SA = 0;
@@ -13117,6 +13142,7 @@ void ChannelEngine::ProcessESPsingal()
         m_axis_status_ctrl->InputEsp(0);
         usleep(8000);
         m_axis_status_ctrl->UpdateServoState();
+
     }
 
     return;

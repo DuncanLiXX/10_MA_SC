@@ -16,6 +16,7 @@
 #include "compiler.h"
 #include "channel_data.h"
 #include "variable.h"
+#include "backup_info.h"
 #include <pthread.h>
 
 //前置声明
@@ -452,6 +453,12 @@ public:
     void UpdateSubCallToHmi(int type, int index, int lineNo = 0, bool curDir = false);
     void UpdateReturnCallToHmi(SubProgReturnMsg *retMsg);
 
+    //数据保存与恢复
+    BackUp_Info_Manager info_manager;
+
+    bool NotifyHmiWorkcoordChanged(uint8_t coord_idx);   //通知HMI工件坐标系设置发生变更
+    bool NotifyHmiWorkcoordExChanged(uint8_t coor_idx);  //通知HMI 扩展坐标系设置发生变更
+
 private:
 	void InitialChannelStatus();		//初始化通道状态
     static void *CompileThread(void *args);  //G代码运行线程函数
@@ -681,8 +688,6 @@ private:
 
 	void GetHmiToolOffset(const uint8_t idx, HmiToolOffsetConfig &cfg);     //获取指定刀偏的数据
 	bool NotifyHmiToolOffsetChanged(uint8_t h_idx);     //通知HMI刀具偏置参数值发生变更
-	bool NotifyHmiWorkcoordChanged(uint8_t coord_idx);   //通知HMI工件坐标系设置发生变更
-	bool NotifyHmiWorkcoordExChanged(uint8_t coor_idx);  //通知HMI 扩展坐标系设置发生变更
     bool NotifyHmiToolPotChanged();    //通知HMI刀具信息发生改变
     bool NotifyHmiMCode(int mcode);
 
@@ -889,7 +894,6 @@ private://私有成员变量
     uint16_t m_n_graph_pos_count;   //当前位置缓冲数量
 
     int m_preselect_tool_arr[kMaxTCodeInLine];
-	
 
 #ifdef USES_SPEED_TORQUE_CTRL
     uint8_t m_n_need_reset_axis_ctrlmode;				// 各轴复位计数值，当为0时，标识不需要复位，从某个数递减，减为0，标识复位成功

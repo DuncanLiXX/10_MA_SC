@@ -7,6 +7,8 @@
 #include <algorithm>
 #include <future>
 #include <functional>
+#include <global_include.h>
+#include <channel_engine.h>
 
 
 // 以下错误出现时会关闭伺服使能
@@ -104,6 +106,27 @@ void AxisStatusCtrl::UpdateServoState(bool force){
              servo_warn = true;
              break;
         }
+    }
+    //新增流程-》伺服报警需要及时更新 SA 信号，以控制报匝信号(伺服报警后需要断电重启)
+    if(servo_warn) {
+        if (!SA_Processing)
+        {
+            SA_Processing = true;
+            thread th(&ChannelEngine::ProcessSAsingal, g_ptr_chn_engine, true);
+            th.detach();
+        }
+        else if (F->SA == 0 && SA_Processing)
+        {
+            for(int i=0; i<channel->chn_axis_count; i++){
+                // 主轴的使能不在这里控制
+                if(axis[i].axis_type == AXIS_SPINDLE)
+                    continue;
+                mi->SendAxisEnableCmd(i+1, false);
+            }
+            SA_Processing = false;
+            std::cout << "SA process finish" << std::endl;
+        }
+        return;
     }
 
     // 修改使能状态

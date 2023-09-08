@@ -11,6 +11,7 @@
 #include "inifile.h"
 #include "global_include.h"
 #include "channel_engine.h"
+#include "channel_control.h"
 #include <unistd.h>
 #include <sys/stat.h>
 
@@ -563,4 +564,329 @@ bool Mc_Backup_Info::UnPackage(zip_t *zip, string prefix)
             return false;
     }
     return true;
+}
+
+BackUp_Info_Manager::BackUp_Info_Manager()
+{
+    InitCoordInfo();
+}
+
+void BackUp_Info_Manager::SetData(Backup_Info *data)
+{
+    if (m_infoVec.size() != 0)
+    {
+        Clean_Data();
+    }
+    m_infoVec.push_back(data);
+}
+
+void BackUp_Info_Manager::InitCoordInfo()
+{
+    if(access(COORD_DATA_FILE.c_str(), F_OK) != 0)
+    {// 文件不存在，则创建
+        Coord_Backup_Self::InitCoordDatFile();
+    }
+}
+
+void BackUp_Info_Manager::Clean_Data()
+{
+    for (auto itr = m_infoVec.begin(); itr != m_infoVec.end(); ++itr)
+    {
+        if (*itr)
+        {
+            delete *itr;
+            *itr = nullptr;
+        }
+    }
+    m_infoVec.clear();
+}
+
+//非c++17不支持类中定义static变量
+constexpr char Coord_Backup_Self::META_STR[];
+constexpr char Coord_Backup_Self::COORD_STR[];
+constexpr char Coord_Backup_Self::EX_COORD_STR[];
+
+Coord_Backup_Self::Coord_Backup_Self(BU_Info_Coord info)
+    : Backup_Info(-1, ""), coord_info(info)
+{
+
+}
+
+bool Coord_Backup_Self::Package(zip_t *zip)
+{
+    string group_path = "coord/" + to_string(coord_info.groupID) + "/";
+    string meta_path = group_path + META_STR;
+    string coord_path = group_path + COORD_STR;
+    string ex_coord_path = group_path + EX_COORD_STR;
+
+    DeleteCoordData(coord_info.groupID);
+
+    struct zip_t *write_zip = zip_open(COORD_DATA_FILE.c_str(), 1, 'a');
+
+    // 添加 meta 文件
+    zip_entry_open(write_zip, meta_path.c_str());
+    {
+        char ch_data[128]="\0";
+        char ch_name[128]="\0";
+        char ch_meta[256]="\0";
+
+        time_t timep;struct tm *p;
+        time(&timep);p = gmtime(&timep);
+        string myFormat = "%Y-%m-%d %H:%M";
+
+        strftime(ch_data, sizeof(ch_data), myFormat.c_str(), p);
+        g_ptr_parm_manager->GetCurNcFile(channel_id, ch_name);
+        sprintf(ch_meta, "%s%s%s", ch_data,",", ch_name);
+        zip_entry_write(write_zip, ch_meta, strlen(ch_meta));
+    }
+    zip_entry_close(write_zip);
+
+    // 添加 coord.ini
+    zip_entry_open(write_zip, coord_path.c_str());
+    {
+        int ret = zip_entry_fwrite(write_zip, WORK_COORD_FILE);
+    }
+    zip_entry_close(write_zip);
+
+    // 添加 ex_coord.ini
+    zip_entry_open(write_zip, ex_coord_path.c_str());
+    {
+        int ret = zip_entry_fwrite(write_zip, EX_WORK_COORD_FILE);
+    }
+    zip_entry_close(write_zip);
+
+    zip_close(write_zip);
+
+    return true;
+}
+
+bool Coord_Backup_Self::UnPackage(zip_t *zip, string prefix)
+{
+    if (HasCoordData(coord_info.groupID))
+    {
+        //std::cout << "extract data" << std::endl;
+        string coord_group = "coord/" +  std::to_string(coord_info.groupID) + "/";
+        string coord_path  = coord_group + COORD_STR;
+        string ex_coord_path = coord_group + EX_COORD_STR;
+        string extract_coord_path = string(PATH_STORE) + COORD_STR;
+        string extract_ex_coord_path = string(PATH_STORE) + EX_COORD_STR;
+
+        //提取需要的文件
+        struct zip_t *zip_read = zip_open(COORD_DATA_FILE.c_str(), 0, 'r');
+        {
+            zip_entry_open(zip_read, coord_path.c_str());
+            {
+                zip_entry_fread(zip_read, extract_coord_path.c_str());
+            }
+            zip_entry_close(zip_read);
+
+            zip_entry_open(zip_read, ex_coord_path.c_str());
+            {
+                zip_entry_fread(zip_read, extract_ex_coord_path.c_str());
+            }
+            zip_entry_close(zip_read);
+        }
+        zip_close(zip_read);
+
+        //std::cout << "read data" << std::endl;
+        IniFile m_ini_coord, m_ini_ex_coord;
+        m_ini_coord.Load(extract_coord_path);
+        m_ini_ex_coord.Load(extract_ex_coord_path);
+
+        SCCoordConfig config[kWorkCoordCount];
+        SCCoordConfig ex_config[99];
+        char sname[32];
+        char kname[64];
+        int channelID = channel_id;
+        memset(sname, 0x00, sizeof(sname));
+        sprintf(sname, "channel_%d", channelID);
+        for(int j = 0; j < kWorkCoordCount; j++){
+            for(int k = 0; k < kMaxAxisChn; k++){
+                memset(kname, 0x00, sizeof(kname));
+                sprintf(kname, "offset_%d_%d", j, k);
+                config[j].offset[k] = m_ini_coord.GetDoubleValueOrDefault(sname, kname, 0.0);
+            }
+        }
+
+
+        memset(sname, 0x00, sizeof(sname));
+        sprintf(sname, "channel_%d", channelID);
+        for(int j = 0; j < 99; j++){
+            for(int k = 0; k < kMaxAxisChn; k++){
+                memset(kname, 0x00, sizeof(kname));
+                sprintf(kname, "offset_%d_%d", j, k);
+                ex_config[j].offset[k] = m_ini_ex_coord.GetDoubleValueOrDefault(sname, kname, 0.0);
+            }
+        }
+
+
+        SCCoordConfig *sc_coord_config = g_ptr_parm_manager->GetCoordConfig(channelID);
+        SCCoordConfig *sc_ex_coord_config = g_ptr_parm_manager->GetExCoordConfig(channelID);
+        std::cout << "recover data coord" << std::endl;
+
+        for (int i = 0; i < kWorkCoordCount; ++i)
+        {
+            bool hasChanged = false;
+
+            if (i == 0 && coord_info.globalRecover == 0)
+                continue;// 不恢复外部偏置
+
+            for (int j = 0; j < kMaxAxisChn; ++j)
+            {
+                if (j == 2 && coord_info.zRecover == 0)
+                    continue; // 不恢复Z轴
+
+                if (sc_coord_config[i].offset[j] !=  config[i].offset[j])
+                {
+                    hasChanged = true;
+                    sc_coord_config[i].offset[j] = config[i].offset[j];
+                }
+            }
+            if (hasChanged)
+            {
+               g_ptr_chn_engine->GetChnControl(channelID)->NotifyHmiWorkcoordChanged(i);
+            }
+
+        }
+
+        for (int i = 0; i < 99; ++i)
+        {
+            bool hasChanged = false;
+            for (int j = 0; j < kMaxAxisChn; ++j)
+            {
+                if (j == 2 && coord_info.zRecover == 0)
+                    continue; // 不恢复Z轴
+
+                if (sc_ex_coord_config[i].offset[j] != ex_config[i].offset[j])
+                {
+                    hasChanged = true;
+                    sc_ex_coord_config[i].offset[j] = ex_config[i].offset[j];
+                }
+
+                if (hasChanged)
+                {
+                    g_ptr_chn_engine->GetChnControl(channelID)->NotifyHmiWorkcoordExChanged(i);
+                }
+            }
+        }
+
+        g_ptr_parm_manager->SaveParm(COORD_CONFIG);
+        g_ptr_parm_manager->SaveParm(EX_COORD_CONFIG);
+
+        return true;
+    }
+    return false;
+
+
+}
+
+void Coord_Backup_Self::InitCoordDatFile()
+{
+    struct zip_t *zip = zip_open(COORD_DATA_FILE.c_str(), 1, 'w');
+    if (!zip)
+    {
+        std::cout << "file create error: " << zip << std::endl;
+        return;
+    }
+
+
+    for (int i = 0; i < MaxItem; ++i)
+    {
+        string coord_group = "coord/" +  std::to_string(i) + "/";
+        int ret = zip_entry_open(zip, coord_group.c_str());
+        std::cout << "create : " << i << " " << ret << std::endl;
+        zip_entry_close(zip);
+    }
+
+    zip_close(zip);
+
+    return;
+}
+
+vector<string> Coord_Backup_Self::GetCoordInfoList()
+{
+   vector<string> infos;
+   for (int i = 0; i < MaxItem; ++i)
+   {
+        string info = ReadMetaInfo(i);
+        //std::cout << "coord-->info: " << info << std::endl;
+        infos.push_back(info);
+   }
+   return infos;
+}
+
+bool Coord_Backup_Self::HasCoordData(int groupid)
+{
+    struct zip_t *zip = zip_open(COORD_DATA_FILE.c_str(), 1, 'r');
+    if (!zip)
+    {
+        std::cout << "file read error: " << zip << std::endl;
+        return false;
+    }
+
+    string group_path = "coord/" + to_string(groupid) + "/" + META_STR;
+    int ret = zip_entry_open(zip, group_path.c_str());
+    zip_entry_close(zip);
+
+    zip_close(zip);
+
+    if (ret == 0)
+        return true;
+    else
+        return false;
+}
+
+string Coord_Backup_Self::ReadMetaInfo(int groupid)
+{
+    if (HasCoordData(groupid))
+    {
+        struct zip_t *zip = zip_open(COORD_DATA_FILE.c_str(), 1, 'r');
+        if (!zip)
+        {
+            std::cout << "file read error: " << zip << std::endl;
+            return string{};
+        }
+        string group_path = "coord/" + to_string(groupid) + "/" + META_STR;
+        void *buf = NULL;size_t bufsize;
+        string metaInfo = {};
+        zip_entry_open(zip, group_path.c_str());
+        {
+            zip_entry_read(zip, &buf, &bufsize);
+            metaInfo = string((char*)buf, bufsize);
+        }
+        zip_entry_close(zip);
+
+        zip_close(zip);
+
+        return metaInfo;
+    }
+    else
+        return string{};
+}
+
+void Coord_Backup_Self::DeleteCoordData(int gourpid)
+{
+    if (HasCoordData(gourpid))
+    {
+        string group_path = "coord/" + to_string(gourpid) + "/";
+
+        string meta_path = group_path + META_STR;
+        string coord_path = group_path + COORD_STR;
+        string ex_coord_path = group_path + EX_COORD_STR;
+
+        std::cout << "has group:" << gourpid << std::endl;
+        char ch_meta[128];
+        char ch_coord[128];
+        char ch_ex_coord[128];
+        strcpy(ch_meta, meta_path.c_str());
+        strcpy(ch_coord, coord_path.c_str());
+        strcpy(ch_ex_coord, ex_coord_path.c_str());
+
+        char *entries[] = {ch_meta, ch_coord, ch_ex_coord};
+        struct zip_t *delete_zip = zip_open(COORD_DATA_FILE.c_str(), 0, 'd');
+        {
+            zip_entries_delete(delete_zip, entries, 1);
+        }
+        zip_close(delete_zip);
+    }
 }

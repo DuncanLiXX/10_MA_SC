@@ -823,7 +823,6 @@ bool MCCommunication::ReadCmdRsp(McCmdFrame &data){
 
 	WriteRegister(MC_CMD_UP_READ_REQ, 0);  //∂¡»°∫Û÷√0
 
-
 	return true;
 }
 

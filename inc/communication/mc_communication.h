@@ -24,9 +24,9 @@ class ChannelEngine;
 #define MC_REGISTER_BASE		(0x43C00000)		//SC-MC数据交换寄存器基地址
 
 //下行命令通道
-#define MC_CMD_DOWN_FIFO_COUNT  (MC_REGISTER_BASE+0x00)	//FIFO计数,
-#define MC_CMD_DOWN_WRITE_OVER  (MC_REGISTER_BASE+0x04)	//SC写入完成标志，最低位有效，写入前置0，完成后置1
-#define MC_CMD_DOWN_RESET  	 (MC_REGISTER_BASE+0x08)	//全局复位信号，最低位有效，低电平有效即0有效
+#define MC_CMD_DOWN_FIFO_COUNT   (MC_REGISTER_BASE+0x00)	//FIFO计数,
+#define MC_CMD_DOWN_WRITE_OVER   (MC_REGISTER_BASE+0x04)	//SC写入完成标志，最低位有效，写入前置0，完成后置1
+#define MC_CMD_DOWN_RESET  	     (MC_REGISTER_BASE+0x08)	//全局复位信号，最低位有效，低电平有效即0有效
 #define MC_CMD_DOWN_DATA0	 	 (MC_REGISTER_BASE+0x0C)	//命令帧数据0寄存器
 #define MC_CMD_DOWN_DATA1	 	 (MC_REGISTER_BASE+0x10)	//命令帧数据1寄存器
 #define MC_CMD_DOWN_DATA2	 	 (MC_REGISTER_BASE+0x14)	//命令帧数据2寄存器

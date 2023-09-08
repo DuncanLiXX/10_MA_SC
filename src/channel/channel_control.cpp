@@ -723,6 +723,7 @@ void ChannelControl::Reset(){
         strcat(file_name, m_channel_status.cur_nc_file_name);   //拼接文件绝对路径
         this->SendOpenFileCmdToHmi(m_channel_status.cur_nc_file_name);
     }
+
     if(m_channel_status.chn_work_mode == MDA_MODE){
         char file_name[128];
         memset(file_name, 0x0, 128);
@@ -1798,7 +1799,10 @@ void ChannelControl::StartRunGCode(){
     for(int i = 0; i < this->m_p_channel_config->chn_axis_count; i++){
         if((m_channel_status.returned_to_ref_point & (0x01<<i)) == 0x00){
             //有轴未回参考点，通知HMI
-            axis_mask |= (0x01<<i);
+            //@ modify zk
+        	if(m_p_axis_config[i].axis_type == AXIS_SPINDLE) continue;
+
+        	axis_mask |= (0x01<<i);
             g_ptr_trace->PrintLog(LOG_ALARM, "通道[%hhu]轴%hhu未回参考点，禁止自动运行！\n", m_n_channel_index, this->m_p_channel_config->chn_axis_name[i]);
             uint8_t chan_id = CHANNEL_ENGINE_INDEX, axis_id = NO_AXIS;
             g_ptr_chn_engine->GetPhyAxistoChanAxis(i, chan_id, axis_id);
@@ -2785,7 +2789,6 @@ void ChannelControl::ProcessHmiCmd(HMICmdFrame &cmd){
     case CMD_HMI_MEMSET_MACRO_VALUE:
         this->ProcessHmiSetMacroVarCmd(cmd);
         break;
-
     case CMD_HMI_CLEAR_WORKPIECE:      //HMI请求SC将加工计数清零,临时计数(区分白夜班)
         this->ProcessHmiClearWorkPieceCmd(cmd);
         this->SendWorkCountToHmi(m_channel_status.workpiece_count, m_channel_status.workpiece_count_total);   //通知HMI加工计数变更
@@ -20392,8 +20395,6 @@ void ChannelControl::ProcessSkipCmdRsp(MiCmdFrame &cmd){
 
         memcpy(&pos, cmd.data.data, sizeof(int64_t));    //获取位置
 
-
-
         double df = pos;
 
         m_point_capture.m_df_point[axis] = df/1e7;   //转换单位  0.1nm-->mm
@@ -20726,7 +20727,6 @@ void ChannelControl::ProcessMiHWTraceStateChanged(MiCmdFrame &cmd){
 
             this->m_p_mi_comm->WriteCmd(cmd);
         }
-
     }
 }
 

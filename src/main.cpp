@@ -585,7 +585,7 @@ int Initialize(){
     // Ä¾¹¤°æ±¾ºÅ
     //sprintf(g_sys_info.sw_version_info.sc, "SC-00.01.11");
     // 0M-B °æ±¾ºÅ
-    sprintf(g_sys_info.sw_version_info.sc, "SC-00.00.21");
+    sprintf(g_sys_info.sw_version_info.sc, "SC-00.00.22");
     strcpy(g_sys_info.sw_version_info.mc, "P0.0.0");
     strcpy(g_sys_info.sw_version_info.mi, "P0.0.0");
 

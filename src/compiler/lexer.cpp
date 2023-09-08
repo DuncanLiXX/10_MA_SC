@@ -480,6 +480,7 @@ bool Lexer::Compile(){
 				break;
 			case '[':
 				if(m_in_digit){//'['前面不允许出现数字
+					printf("@@@@@@ERR_NC_FORMAT_2*\n");
 					m_p_lexer_result->error_code = ERR_NC_FORMAT;
 					break;
 				}
@@ -612,6 +613,7 @@ bool Lexer::Compile(){
 				break;
 			case '/':
 				if(!m_in_macro_exp){  //非处理宏表达式状态，告警
+					printf("@@@@@@ERR_NC_FORMAT_3*\n");
 					m_p_lexer_result->error_code = ERR_NC_FORMAT;
 					break;
 				}

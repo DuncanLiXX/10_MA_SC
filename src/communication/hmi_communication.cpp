@@ -2936,10 +2936,17 @@ void HMICommunication::ProcessHmiCoordStoreDeleteCmd(HMICmdFrame &cmd)
     if (coord_info.groupID >= 0 && coord_info.groupID < Coord_Backup_Self::MaxItem)
     {
         std::cout << "coordinfo delete, groupID: " << coord_info.groupID << std::endl;
+        Coord_Backup_Self::DeleteCoordData(coord_info.groupID);
 
-        if (coord_info.groupID >= 0 && coord_info.groupID < Coord_Backup_Self::MaxItem)
-            Coord_Backup_Self::DeleteCoordData(coord_info.groupID);
-
+        cmd.cmd_extension = 0;
+    }
+    else if (coord_info.groupID == 0XFF)
+    {
+        std::cout << "coordinfo delete, all: " << coord_info.groupID << std::endl;
+        for (int i = 0; i < Coord_Backup_Self::MaxItem; ++i)
+        {
+            Coord_Backup_Self::DeleteCoordData(i);
+        }
         cmd.cmd_extension = 0;
     }
     else
@@ -2952,6 +2959,7 @@ void HMICommunication::ProcessHmiCoordStoreDeleteCmd(HMICmdFrame &cmd)
 void HMICommunication::ProcessHmiUpdateCoordInfoCmd(HMICmdFrame &cmd)
 {
     cmd.frame_number |= 0x8000;
+    cmd.cmd_extension = 0;
 
     vector<string> infos = Coord_Backup_Self::GetCoordInfoList();
 
@@ -2966,17 +2974,17 @@ void HMICommunication::ProcessHmiUpdateCoordInfoCmd(HMICmdFrame &cmd)
         datalen += 1;
         if(datalen > 980)// 字节大于980就分批发送
         {
-            std::cout << "++" << std::endl;
+            //std::cout << "++" << std::endl;
             cmd.data_len = datalen;
+            cmd.cmd_extension = 1;
             SendCmd(cmd);
             memset((void *)&cmd.data, 0x00, kMaxHmiDataLen);
             datalen = 0;
         }
     }
-//    std::cout << "-->" << (int)cmd.cmd << std::endl;
     std::cout << "cmd.data: " << cmd.data << std::endl;
     cmd.data_len = datalen;
-    cmd.cmd_extension = 1;
+    cmd.cmd_extension = 0;
     SendCmd(cmd);
 }
 

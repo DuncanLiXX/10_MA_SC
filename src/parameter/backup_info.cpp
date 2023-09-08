@@ -885,7 +885,7 @@ void Coord_Backup_Self::DeleteCoordData(int gourpid)
         char *entries[] = {ch_meta, ch_coord, ch_ex_coord};
         struct zip_t *delete_zip = zip_open(COORD_DATA_FILE.c_str(), 0, 'd');
         {
-            zip_entries_delete(delete_zip, entries, 1);
+            zip_entries_delete(delete_zip, entries, 3);
         }
         zip_close(delete_zip);
     }

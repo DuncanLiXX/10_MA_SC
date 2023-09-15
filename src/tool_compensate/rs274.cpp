@@ -1106,8 +1106,6 @@ int Interp::convert_straight_comp2(int move,
             concave = 1;
         } else {
             concave = 0;
-            mid_x = (opx + (radius * cos(alpha + gamma)));
-            mid_y = (opy + (radius * sin(alpha + gamma)));
         }
 
         if (!concave && (beta > small)) {       /* ARC NEEDED */
@@ -1150,7 +1148,6 @@ int Interp::convert_straight_comp2(int move,
 					// this should replace the endpoint of the previous move
 					mid_x = cx + retreat * cos(theta + gamma);
 					mid_y = cy + retreat * sin(theta + gamma);
-
 
 					double vecStartx = opx - temp_point[0];
 					double vecStarty = opy - temp_point[1];

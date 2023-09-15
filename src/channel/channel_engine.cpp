@@ -1325,7 +1325,9 @@ void ChannelEngine::Initialize(HMICommunication *hmi_comm, MICommunication *mi_c
         printf("device SN: %s\n",m_device_sn);
     }
 #ifdef USES_LICENSE_FUNC
+
     m_ln_local_time = ReadLocalTime(m_device_sn);//读取本地计时文件
+
     if(m_ln_local_time < 0){//读取本地计时文件异常
         if(m_ln_local_time == -1){
             g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "本地计时文件不存在!");
@@ -9436,7 +9438,7 @@ void ChannelEngine::ProcessPmcSignal(){
         }
 
         if((g_reg->ST && g_reg_last->ST == 0) && g_reg->_SP == 1 && f_reg->STL == 0){ //循环启动
-            this->Start();
+        	this->Start();
         }
 
         if(g_reg->ST_EXT && g_reg_last->ST_EXT == 0){
@@ -9471,7 +9473,8 @@ void ChannelEngine::ProcessPmcSignal(){
 
         // 攻丝状态()不让复位
         if(g_reg->ERS == 1 && g_reg_last->ERS == 0){
-            this->SystemReset();
+
+        	this->SystemReset();
         }
 
         // 某个轴机械锁住信号发生了改变

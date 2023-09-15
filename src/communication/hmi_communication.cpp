@@ -2919,6 +2919,9 @@ void HMICommunication::ProcessHmiCoordStoreRecoverCmd(HMICmdFrame &cmd)
 
         RestoreCoordInfo(coord_info);
         cmd.cmd_extension = 0;
+
+        int index = m_p_channel_engine->GetCurChannelIndex();
+        m_p_channel_engine->GetChnControl(index)->SetMcCoord(true);
     }
     else
     {

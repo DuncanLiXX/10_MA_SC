@@ -1429,7 +1429,6 @@ int Interp::move_endpoint_and_flush(setup_pointer settings, double x, double y)
             if(l1 != 0.0 && endpoint_valid && fabs(l2) > fabs(l1) + 0.254) {
                 printf("Arc move in concave corner cannot be reached by the tool without gouging\n");
                 err_code = CONCAVE_CORNER_ERROR;
-
             }
             q.data.arc_feed.end1 = x;
             q.data.arc_feed.end2 = y;

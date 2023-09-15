@@ -9034,17 +9034,6 @@ bool ChannelEngine::RefreshMiStatusFun(){
             continue;
         }
         //¶ÁÈ¡Ç·Ñ¹ÐÅºÅ
-
-        static bool hasVoltWarn = false;
-        if (!hasVoltWarn && this->m_p_mc_comm->ReadUnderVoltWarn())
-        {
-            hasVoltWarn = true;
-            FRegBits *f_reg = &m_p_pmc_reg->FReg().bits[0];
-            f_reg->SA = 0;
-            this->m_p_mi_comm->WritePmcReg(PMC_REG_F, m_p_pmc_reg->FReg().all);
-            std::cout << "Write SA signal " << std::endl;
-        }
-
         if(!m_b_power_off && g_sys_state.system_ready && this->m_p_mc_comm->ReadUnderVoltWarn()){
             printf("OFF\n");
             m_b_power_off = true;

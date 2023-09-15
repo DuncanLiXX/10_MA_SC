@@ -773,6 +773,8 @@ bool Coord_Backup_Self::UnPackage(zip_t *zip, string prefix)
         g_ptr_parm_manager->SaveParm(COORD_CONFIG);
         g_ptr_parm_manager->SaveParm(EX_COORD_CONFIG);
 
+        remove(extract_coord_path.c_str());
+        remove(extract_ex_coord_path.c_str());
         return true;
     }
     return false;

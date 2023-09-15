@@ -9052,7 +9052,6 @@ bool ChannelEngine::RefreshMiStatusFun(){
             SaveDataPoweroff();
             g_sys_state.system_quit = true;   //³ÌÐòÍË³ö
 
-            usleep(10000);
             printf("OUT\n");
             return true;
         }

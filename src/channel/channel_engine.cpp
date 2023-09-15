@@ -885,6 +885,17 @@ void ChannelEngine::NotifyResetGatherToHmi()
     m_p_hmi_comm->SendCmd(hmi_cmd);
 }
 
+void ChannelEngine::NotifyExternalStartToHmi(){
+    HMICmdFrame hmi_cmd;
+    hmi_cmd.channel_index = CHANNEL_ENGINE_INDEX;
+    hmi_cmd.cmd = 0x83;
+    hmi_cmd.cmd_extension = 0;
+    int status = 0;
+    hmi_cmd.data_len = sizeof(status);
+    memcpy(&hmi_cmd.data[0], &status, hmi_cmd.data_len);
+    m_p_hmi_comm->SendCmd(hmi_cmd);
+}
+
 /**
  * @brief 向MI发送各轴机械锁住状态
  */
@@ -1228,7 +1239,7 @@ void ChannelEngine::Initialize(HMICommunication *hmi_comm, MICommunication *mi_c
 
     this->InitPcAllocList();
 
-    this->m_n_da_prec = pow(2, this->m_p_general_config->da_prec-1);
+    this->m_n_da_prec = 2048; //pow(2, this->m_p_general_config->da_prec-1);
 
     this->m_df_phy_axis_pos_feedback = new double[m_p_general_config->axis_count];  //分配物理轴当前反馈机械坐标存储区
     memset(m_df_phy_axis_pos_feedback, 0, sizeof(double)*m_p_general_config->axis_count);
@@ -5654,7 +5665,6 @@ bool ChannelEngine::Start(){
             	m_p_channel_control[chn].SetOrderStep(1);
             }
 #endif
-
             m_p_channel_control[chn].StartRunGCode();
         }
 
@@ -6565,7 +6575,7 @@ void ChannelEngine::ManualMovePmc(uint8_t phy_axis, int8_t dir){
     //设置目标位置
     int64_t cur_pos = m_df_phy_axis_pos_feedback[phy_axis]*1e7;  //当前位置
     int64_t tar_pos = 0;
-    if(this->m_p_channel_control[0].GetChnWorkMode() == MANUAL_STEP_MODE){ //手动单步
+    if(this->m_p_channel_control[chn].GetChnWorkMode() == MANUAL_STEP_MODE){ //手动单步
         tar_pos = cur_pos + m_p_channel_control[chn].GetCurManualStep()*1e4*dir;		//转换单位为0.1nm
 
     }else{
@@ -6597,7 +6607,7 @@ void ChannelEngine::ManualMovePmc(uint8_t phy_axis, int8_t dir){
 
     //设置速度
     uint32_t feed = this->m_p_axis_config[phy_axis].manual_speed*1000/60;   //转换单位为um/s
-    if(this->m_p_channel_control[0].IsRapidManualMove()){
+    if(this->m_p_channel_control[chn].IsRapidManualMove()){
         //feed *= 2;  //速度翻倍
 
         // 由原来的手动速度乘2，改为定位速度乘快速倍率
@@ -8294,6 +8304,10 @@ void ChannelEngine::InitMiParam(){
        //反向间隙初始化方向
        m_p_mi_comm->SendMiParam<uint8_t>(index, 1410, axis_config->init_backlash_dir);
 
+       if(axis_config->axis_type == 2){
+    	   m_p_mi_comm->SendMiParam<uint8_t>(index, 1610, axis_config->spd_vctrl_mode);
+       }
+
         //发送反向间隙参数
         this->SendMiBacklash(i);
 
@@ -8406,15 +8420,6 @@ void ChannelEngine::SendMiPcParam(uint8_t axis){
     //uint16_t ref_index = 0;   //参考点对应位置，0开始
     uint16_t pc_type = this->m_p_axis_config[axis].pc_type;
     uint16_t pc_enable = m_p_axis_config[axis].pc_enable;
-
-    //std::cout << "SendMiPcParam() " << std::endl;
-    //std::cout << "axis: " << (int)cmd.data.axis_index << std::endl;
-    //std::cout << "count: " << (int)count << std::endl;
-    //std::cout << "offset: " << (int)offset << std::endl;
-    //std::cout << "inter: " << (int)inter << std::endl;
-    //std::cout << "ref_index: " << (int)ref_index << std::endl;
-    //std::cout << "pc_type: " << (int)pc_type << std::endl;
-    //std::cout << "pc_enable: " << (int)pc_enable << std::endl;
 
     memcpy(cmd.data.data, &count, 2);  //补偿数据个数
     memcpy(&cmd.data.data[1], &offset, 2);   //起始编号
@@ -9444,6 +9449,10 @@ void ChannelEngine::ProcessPmcSignal(){
             this->Start();
         }
 
+        if(g_reg->ST_EXT && g_reg_last->ST_EXT == 0){
+        	NotifyExternalStartToHmi();
+        }
+
         if(g_reg->_SP == 0 && g_reg_last->_SP == 1 && f_reg->SPL == 0 && f_reg->STL == 1){ //循环保持
 
         	this->Pause();
@@ -9628,7 +9637,7 @@ void ChannelEngine::ProcessPmcSignal(){
 
         //单段信号  SBK
         if(g_reg->SBK != g_reg_last->SBK){
-            if(g_reg->SBK)
+        	if(g_reg->SBK)
                 this->SetFuncState(i, FS_SINGLE_LINE, 1);
             else
                 this->SetFuncState(i, FS_SINGLE_LINE, 0);
@@ -9899,9 +9908,6 @@ void ChannelEngine::ProcessPmcSignal(){
 
     //处理位置开关
     this->UpdatePSW();
-
-
-
 
     //给出轴在参考点信号
     int byte = 0, bit = 0;

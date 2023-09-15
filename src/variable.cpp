@@ -295,7 +295,6 @@ bool Variable::SetVarValue(int index, double value){
 		this->m_b_init_user_macro[index-50000] = true;
 		this->m_df_user_macro[index-50000] = value;
 		this->SaveMacroComm(index);   //保存到文件
-		printf("===== SetVarValue value: %lf index: %d\n", value, index);
 	}else if(index >= 1000){	//系统变量
 		return this->SetSysVar(index, value);
 	}else{

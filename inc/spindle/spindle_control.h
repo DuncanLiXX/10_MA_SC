@@ -162,7 +162,7 @@ public:
     SCAxisConfig *spindle{nullptr}; // 主轴1
     uint8_t phy_axis{0};       // 主轴物理轴号,从0开始
     uint8_t z_axis{2};         // z轴物理轴号,从0开始
-    uint32_t da_prec{4095};    // DA精度
+    uint32_t da_prec{2048};    // DA精度
 
     FRegBits *F{nullptr};            // F寄存器
     const GRegBits *G{nullptr};            // G寄存器

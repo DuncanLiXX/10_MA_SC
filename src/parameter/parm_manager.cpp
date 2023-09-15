@@ -69,7 +69,6 @@ ParmManager::ParmManager(){
 	this->m_list_reset = new UpdateParamList();
 	this->m_list_coord = new UpdateCoordList();
 	this->m_list_tool_offset = new UpdateToolOffsetList();
-
 	this->m_list_proc_new_start.Clear();
 	this->m_list_proc_reset.Clear();
 

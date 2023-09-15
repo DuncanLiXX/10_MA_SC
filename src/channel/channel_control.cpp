@@ -726,6 +726,7 @@ void ChannelControl::Reset(){
         strcat(file_name, m_channel_status.cur_nc_file_name);   //拼接文件绝对路径
         this->SendOpenFileCmdToHmi(m_channel_status.cur_nc_file_name);
     }
+
     if(m_channel_status.chn_work_mode == MDA_MODE){
         char file_name[128];
         memset(file_name, 0x0, 128);
@@ -1778,7 +1779,7 @@ void ChannelControl::ResetMode(){
  * @brief 开始G代码运行
  */
 void ChannelControl::StartRunGCode(){
-	printf("start run g code \n");
+	printf("===== start run g code \n");
 
 	g_ptr_trace->PrintTrace(TRACE_INFO, CHANNEL_CONTROL_SC,"@#@#Enter ChannelControl::StartRunGCode(), m_n_run_thread_state = %d, chn_work_mode = %hhu, machine_mode = %hhu, mc_mode=%hu\n", m_n_run_thread_state,
 			m_channel_status.chn_work_mode, m_channel_status.machining_state, m_channel_mc_status.cur_mode);
@@ -1801,7 +1802,10 @@ void ChannelControl::StartRunGCode(){
     for(int i = 0; i < this->m_p_channel_config->chn_axis_count; i++){
         if((m_channel_status.returned_to_ref_point & (0x01<<i)) == 0x00){
             //有轴未回参考点，通知HMI
-            axis_mask |= (0x01<<i);
+            //@ modify zk
+        	if(m_p_axis_config[i].axis_type == AXIS_SPINDLE) continue;
+
+        	axis_mask |= (0x01<<i);
             g_ptr_trace->PrintLog(LOG_ALARM, "通道[%hhu]轴%hhu未回参考点，禁止自动运行！\n", m_n_channel_index, this->m_p_channel_config->chn_axis_name[i]);
             uint8_t chan_id = CHANNEL_ENGINE_INDEX, axis_id = NO_AXIS;
             g_ptr_chn_engine->GetPhyAxistoChanAxis(i, chan_id, axis_id);
@@ -2789,7 +2793,6 @@ void ChannelControl::ProcessHmiCmd(HMICmdFrame &cmd){
     case CMD_HMI_MEMSET_MACRO_VALUE:
         this->ProcessHmiSetMacroVarCmd(cmd);
         break;
-
     case CMD_HMI_CLEAR_WORKPIECE:      //HMI请求SC将加工计数清零,临时计数(区分白夜班)
         this->ProcessHmiClearWorkPieceCmd(cmd);
         this->SendWorkCountToHmi(m_channel_status.workpiece_count, m_channel_status.workpiece_count_total);   //通知HMI加工计数变更
@@ -2868,7 +2871,7 @@ void ChannelControl::ProcessHmiBigFrame(HMICmdFrame &cmd){
 			memcpy(&index, &cmd.BigDataBuffer->buffer[2], 4);
 			memcpy(&count, &cmd.BigDataBuffer->buffer[6], 4);
 			this->m_macro_variable.SetMacroArray(index, count, &cmd.BigDataBuffer->buffer[10]);
-			printf("ProcessHmiBigFrame index: %d count: %d\n", index, count);
+			printf("===== ProcessHmiBigFrame index: %d count: %d\n", index, count);
 		}
 		break;
 	default:
@@ -2898,12 +2901,12 @@ void ChannelControl::ProcessHmiGetMacroVarCmd(HMICmdFrame &cmd){
     cmd.frame_number |= 0x8000;   //设置回复标志
 
     uint32_t start_index = 0;   //起始编号
-    uint32_t count = 0;			//变量个数
+    uint32_t count = 0;	     	//变量个数
 
     if(cmd.data_len != 8){	//数据长度不合法
         cmd.cmd_extension = FAILED;
         this->m_p_hmi_comm->SendCmd(cmd);
-        g_ptr_trace->PrintLog(LOG_ALARM, "ChannelControl::ProcessHmiSetMacroVarCmd()数据长度不合法，data_len = %hu！", cmd.data_len);
+        g_ptr_trace->PrintLog(LOG_ALARM, "ChannelControl::ProcessHmiGetMacroVarCmd()数据长度不合法，data_len = %hu！", cmd.data_len);
         return;
     }
 
@@ -4044,6 +4047,7 @@ void ChannelControl::ProcessHmiAppendOrderListFile(HMICmdFrame &cmd){
 }
 
 void ChannelControl::refreshOrderList(){
+	printf("===== refresh order_list\n");
 	std::ifstream order_list_file;
 	order_list_file.open("/cnc/order_list", ios::in);
 
@@ -4063,7 +4067,7 @@ void ChannelControl::refreshOrderList(){
 		std::string file_name(data);
 
 		order_file_vector.push_back(file_name);
-		std::cout << "=====" << file_name <<std::endl;
+		//std::cout << "=====" << file_name <<std::endl;
 		memset(data, 0, sizeof(data));
 	}
 	order_list_file.close();
@@ -11797,8 +11801,10 @@ void ChannelControl::ProcessEliminate(int work_station){
 		memset(eliminate_breakfile, 0, sizeof(eliminate_breakfile));
 		eliminate_breakline = -1;
 
-		m_p_f_reg->ELIMI1 = 1;
-		m_p_f_reg->ELIMI2 = 1;
+		if(work_station == 1)
+			m_p_f_reg->ELIMI1 = 1;
+		else
+			m_p_f_reg->ELIMI2 = 1;
 
 		if(this->m_n_run_thread_state != IDLE){
 			this->SetMcStepMode(true);
@@ -20434,8 +20440,6 @@ void ChannelControl::ProcessSkipCmdRsp(MiCmdFrame &cmd){
 
         memcpy(&pos, cmd.data.data, sizeof(int64_t));    //获取位置
 
-
-
         double df = pos;
 
         m_point_capture.m_df_point[axis] = df/1e7;   //转换单位  0.1nm-->mm
@@ -20788,7 +20792,6 @@ void ChannelControl::ProcessMiHWTraceStateChanged(MiCmdFrame &cmd){
 
             this->m_p_mi_comm->WriteCmd(cmd);
         }
-
     }
 }
 

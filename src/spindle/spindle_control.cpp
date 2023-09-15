@@ -737,6 +737,11 @@ int32_t SpindleControl::CalDaOutput()
     int32_t output = 0; // 转速
     uint16_t max_spd = GetMaxSpeed();
 
+    // @modify zk 不能以换挡最大速度作为分母算比例
+    if(max_spd > spindle->spd_max_speed){
+    	max_spd = spindle->spd_max_speed;
+    }
+
     if(SIND == 0) // 速度由cnc来确定
     {
     	int32_t rpm = 0;
@@ -748,6 +753,7 @@ int32_t SpindleControl::CalDaOutput()
         {
             rpm = spindle->spd_sor_speed;
         }
+
         rpm *= SOV/100.0; // 乘以倍率
 
         // @add zk 模拟量主轴转速
@@ -758,26 +764,7 @@ int32_t SpindleControl::CalDaOutput()
 
 		cnc_speed_virtual = rpm;
 
-		if(spindle->axis_interface == 1){
-			// 总线主轴 只有一种方式
-			output = da_prec * (1.0 * rpm/max_spd);   // 转化为电平值
-		}else{
-			// 模拟主轴 需要按模式不同计算电压值
-			if(spindle->spd_vctrl_mode == 1){
-				output = da_prec * (1.0 * rpm/max_spd);   // 转化为电平值
-			}else if(spindle->spd_vctrl_mode == 2){
-				int zero_offset = da_prec/2;
-				if(cnc_polar == Polar::Positive){
-					output = zero_offset * (1.0*rpm/max_spd);
-					output = zero_offset + output;
-				}else{
-					output = zero_offset * (1.0*rpm/max_spd);
-					output = zero_offset - output;
-				}
-			}else{
-				output = 0;
-			}
-		}
+		output = da_prec * (1.0 * rpm/max_spd);   // 转化为电平值
 
     }
     else // 速度由pmc来确定
@@ -785,6 +772,7 @@ int32_t SpindleControl::CalDaOutput()
     	output = RI;
     }
     printf("SIND=%d SOR=%d cnc_speed=%d SOV=%d max_spd=%d da_prec=%d\n",SIND,SOR,cnc_speed,SOV,max_spd,da_prec);
+
 
     if(output >= da_prec)
     {
@@ -894,7 +882,6 @@ void SpindleControl::SendSpdSpeedToMi()
 	if(!spindle)
         return;
 
-
     Polar polar;
     int32_t output;
     // 位置模式
@@ -916,18 +903,25 @@ void SpindleControl::SendSpdSpeedToMi()
     {
     	// 获取速度
         output = CalDaOutput();
-        printf("===== F->RO: %d\n", output);
+
+        if(polar == Negative && (spindle->spd_vctrl_mode == 2 || spindle->axis_interface == 1))
+		{
+			output *= -1;
+		}
+
+        output += da_prec*(1.0*spindle->zero_compensation/spindle->spd_max_speed);
+
+        if(output >= 2048) output = 2047;
+        if(output < -2048) output = -2048;
+
         F->RO = output;
+        printf("F->RO: %d  output: %d\n", F->RO, output);
     }
 
     output *= spindle->spd_analog_gain/1000.0;     // 乘以增益
 
-    if(polar == Negative)
-    {
-        output *= -1;
-    }
-
-    output += spindle->zero_compensation; // 加上零漂
+    if(output >= 2048) output = 2047;
+    if(output < -2048) output = -2048;
 
     MiCmdFrame cmd;
     memset(&cmd, 0x00, sizeof(cmd));
@@ -940,7 +934,7 @@ void SpindleControl::SendSpdSpeedToMi()
 
 void SpindleControl::SendSpdSpeedToMi(int16_t speed){
 	int16_t output = 0;
-	output += spindle->zero_compensation;
+	output += da_prec*(1.0*spindle->zero_compensation/spindle->spd_max_speed);
 	MiCmdFrame cmd;
 	memset(&cmd, 0x00, sizeof(cmd));
 	cmd.data.cmd = CMD_MI_SET_SPD_SPEED;

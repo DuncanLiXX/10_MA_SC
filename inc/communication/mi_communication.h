@@ -287,7 +287,6 @@ public:
         WriteCmd(cmd);
     }
 
-
 private://私有接口
 	MICommunication();	//构造函数
 

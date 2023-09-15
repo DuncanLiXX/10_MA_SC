@@ -51,7 +51,6 @@ void DataMirror::trans(void* rec )
 	if( what == XMIRROR_TRANS ){
 
 	}
-
 	else if( what == YMIRROR_TRANS ){
 
 	}
@@ -74,7 +73,7 @@ void DataMirror::trans(DPoint& obj )
 
 void DataMirror::change(DPoint doff )
 {
-	if( what == XMIRROR_TRANS      )
+	if( what == XMIRROR_TRANS )
 	{
             OriValue += doff.x;
             value += doff.x;

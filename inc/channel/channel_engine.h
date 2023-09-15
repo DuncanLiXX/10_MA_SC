@@ -346,7 +346,9 @@ void SetMcArmComm(MCArmCommunication *comm){this->m_p_mc_arm_comm = comm;}   //…
     ServeGuide  m_serverGuide;
     void NotifyResetGatherToHmi();
 
+    void NotifyExternalStartToHmi();
     void ProcessSAsingal(bool force = false);    //º±Õ£–≈∫≈–≈∫≈œ‡πÿ¥¶¿Ì
+
 private:	//ÀΩ”–≥…‘±∫Ø ˝
 	ChannelEngine();   //ππ‘Ï∫Ø ˝
 

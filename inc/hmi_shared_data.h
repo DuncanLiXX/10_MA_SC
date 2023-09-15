@@ -1819,9 +1819,7 @@ enum HmiMsgType{
 enum HmiMsgId{
 	MSG_ID_AXIS_REF = 100,	//轴未确定参考点
 	MSG_ID_LIC_OVER = 160,  //系统授权即将到期
-
 	MSG_ID_RESTARTING = 200,   //程序再启动进行中
-
 	MSG_ID_TOOL_CHANGING =210, //换刀进行中
 
 	MSG_ID_GUARD

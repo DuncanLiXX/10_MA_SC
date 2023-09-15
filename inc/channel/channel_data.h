@@ -101,6 +101,7 @@ struct McModeBits{
 	uint32_t mode_d:7;			//D值
 	uint32_t reserved:8;		//保留
 };
+
 union McModeStatus{
 	McModeBits bits;
 	uint32_t all;
@@ -116,6 +117,7 @@ struct McErrorBits{
 	uint32_t err_data_crc:1;		    //bit5  数据传输校验错
 	uint32_t reserved:26;		        //保留
 };
+
 union McErrorFlag{
 	McErrorBits bits;
 	uint32_t all;
@@ -184,18 +186,18 @@ struct ChannelAutoScene{
  * @brief 通道加工复位扫描模式状态记录，用于在加工复位中记录模式的中间状态
  */
 struct ChnRestartMode{
-	DPointChn pos_target;                   //目标位置
-	int32_t rated_spindle_speed;           	//用户设定主轴转速，单位：转/分
-	int32_t cur_scode;                      //当前S指令
-	uint32_t rated_feed; 					//用户设定进给速度，单位：um/s
-	uint16_t gmode[kMaxGModeCount]; 		//G指令模态通道当前模态
-	uint16_t mmode[kMaxMModeCount];						// M模态组
-	uint8_t cur_tool;               		//当前刀号，从1开始编号，0为主轴刀号
-	uint8_t cur_tcode;		                //当前T指令
-	uint8_t cur_h_code;						//当前H补偿号
-	uint8_t cur_d_code;						//当前D补偿号
-	int8_t spindle_dir;						//主轴方向，-1：反转；0：停转；1：正转
-	uint8_t sub_prog_call;                  //子程序调用记录，包括宏程序调用
+	DPointChn pos_target;                   // 目标位置
+	int32_t rated_spindle_speed;           	// 用户设定主轴转速，单位：转/分
+	int32_t cur_scode;                      // 当前S指令
+	uint32_t rated_feed; 					// 用户设定进给速度，单位：um/s
+	uint16_t gmode[kMaxGModeCount]; 		// G指令模态通道当前模态
+	uint16_t mmode[kMaxMModeCount];			// M模态组
+	uint8_t cur_tool;               		// 当前刀号，从1开始编号，0为主轴刀号
+	uint8_t cur_tcode;		                // 当前T指令
+	uint8_t cur_h_code;						// 当前H补偿号
+	uint8_t cur_d_code;						// 当前D补偿号
+	int8_t spindle_dir;						// 主轴方向，-1：反转；0：停转；1：正转
+	uint8_t sub_prog_call;                  // 子程序调用记录，包括宏程序调用
 };
 
 //螺补数据分配表

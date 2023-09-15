@@ -704,7 +704,7 @@ void Compiler::PreScan() {
     size_t len = 0;
     ssize_t read_block = 0;  	//单次读取的大小
     bool comment_flag = false;   //注释状态
-    int count = 0;
+    //int count = 0;
 
     LoopOffsetStack loop_stack;  //循环体堆栈
 
@@ -774,10 +774,10 @@ void Compiler::PreScan() {
         //	read_size_bak = read_size;
         read_size += read_block;
 
-        if(count++ >= 10000){
-            usleep(1000);
-            count = 0;
-        }
+//        if(count++ >= 10000){
+//            usleep(1000);
+//            count = 0;
+//        }
     }
 
     // 处理完了配对要检查是否清空
@@ -818,7 +818,7 @@ void Compiler::PreScan() {
         read_size = 0;
         comment_flag = false;
         line_no = 0;
-        count = 0;
+        //count = 0;
         //	read_size_bak = read_size;
         //	map.ResetFile();
         while ((read_block = getline(&line, &len, file)) != -1) {
@@ -833,10 +833,10 @@ void Compiler::PreScan() {
             //	read_size_bak = read_size;
             read_size += read_block;
 
-            if(count++ >= 10000){
-                usleep(1000);
-                count = 0;
-            }
+//            if(count++ >= 10000){
+//                usleep(1000);
+//                count = 0;
+//            }
         }
 
         if (total_size != read_size) {	//没有完整读取文件，告警

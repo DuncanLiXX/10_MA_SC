@@ -267,6 +267,8 @@ enum HMICmdCode {
     CMD_SC_NOTIFY_PROTECT_STATUS,   //SC通知HMI保护状态        0x80
     CMD_SC_NOTIFY_GATHER_FINISH,    //SC通知HMI采集完成        0x81
     CMD_SC_DISPLAY_MDI_FILE,        //SC通知子程序显示         0x82
+    CMD_SC_EXTERNAL_START,          //SC通知外部启动          0x83
+    CMD_SC_NOTIFY_WORKINFO_LOG,     //SC通知当前加工程序信息    0x84
 	CMD_HMI_GUARD = 255       //HMI命令字卫兵 0xFF
 };
 
@@ -1177,6 +1179,7 @@ struct HmiSystemConfig{
 	uint8_t trace_level;				//调试跟踪信息记录级别
 	uint8_t debug_mode;					//调试模式		0--关闭    1--模式1    2--模式2    3--模式3
 
+    uint8_t statistics_mode;            //统计方式
 	uint8_t hw_rev_trace;               //手轮反向引导功能   0--关闭   1--打开
 
     /**********************位置开关***************************/
@@ -1887,6 +1890,13 @@ struct TraceLogInfo {
 
 enum ScStatusType {
     Type_ProtectKey = 0,    //程序保护
+};
+
+struct WorkInfoType{
+    char ch_name[128] = {"\0"}; //程序名
+    int once_time = 0;          //程序一次加工所花费时间
+    int total_time = 0;         //当前文件总加工所花费的时间
+    int piece_cnt = 0;          //加工次数
 };
 
 

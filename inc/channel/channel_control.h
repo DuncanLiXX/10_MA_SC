@@ -459,6 +459,7 @@ public:
     bool NotifyHmiWorkcoordChanged(uint8_t coord_idx);   //通知HMI工件坐标系设置发生变更
     bool NotifyHmiWorkcoordExChanged(uint8_t coor_idx);  //通知HMI 扩展坐标系设置发生变更
 
+    bool NotifyHmiWorkInfoChanged(string file_name);
 private:
 	void InitialChannelStatus();		//初始化通道状态
     static void *CompileThread(void *args);  //G代码运行线程函数
@@ -634,6 +635,7 @@ private:
 
     void SetChnCurWorkPiece(int newCnt);   //设置当前加工件数
 	int GetCurToolLife();    //获取当前刀具寿命
+    void UpdateAndLogWorkFile(string file_name);    //换程序时，更新当前程序的加工信息
 
 	uint8_t GetCurPhyAxis();		//获取当前物理轴号
 
@@ -855,6 +857,8 @@ private://私有成员变量
 	struct timeval m_time_t_start[kMaxTCodeInLine];     //T指令执行的开始时间
 	struct timeval m_time_start_maching;     //开始自动加工的时间，用于加工计时
     int32_t        m_time_remain;            //剩余加工时间
+    uint32_t       m_time_curfile_maching;   //当前文件加工时间
+    uint32_t       m_cur_workpiece_count;    //当前文件的加工次数
 
     //for test llx
     struct timeval m_time_test;

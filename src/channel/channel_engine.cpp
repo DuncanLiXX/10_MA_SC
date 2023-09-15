@@ -1593,9 +1593,6 @@ void ChannelEngine::PoweroffHandler(int signo, siginfo_t *info, void *context){
 void ChannelEngine::SaveDataPoweroff(){
     //system("date >> /cnc/bin/save.txt");
     //system("echo \"start\" >> /cnc/bin/save.txt");
-    FRegBits *f_reg = &m_p_pmc_reg->FReg().bits[0];
-    f_reg->SA = 0;
-    this->m_p_mi_comm->WritePmcReg(PMC_REG_F, m_p_pmc_reg->FReg().all);
 
     //保存PMC寄存器数据
     if((this->m_mask_import_param & (0x01<<CONFIG_PMC_REG)) == 0)
@@ -3252,11 +3249,13 @@ void ChannelEngine::ProcessHmiCmd(HMICmdFrame &cmd){
         {
             m_p_channel_control[cmd.channel_index].ClearMachineTimeTotal();
             g_ptr_parm_manager->SetCurTotalMachiningTime(cmd.channel_index, 0);
+            g_ptr_parm_manager->SetCurFileMachiningTime(cmd.channel_index, 0);
         }
         else if(cmd.channel_index == CHANNEL_ENGINE_INDEX){
             for(int i = 0; i < this->m_p_general_config->chn_count; i++){
                 this->m_p_channel_control[i].ClearMachineTimeTotal();
                 g_ptr_parm_manager->SetCurTotalMachiningTime(i, 0);
+                g_ptr_parm_manager->SetCurFileMachiningTime(i, 0);
             }
         }
         break;
@@ -9029,6 +9028,16 @@ bool ChannelEngine::RefreshMiStatusFun(){
         }
         //读取欠压信号
 
+        static bool hasVoltWarn = false;
+        if (!hasVoltWarn && this->m_p_mc_comm->ReadUnderVoltWarn())
+        {
+            hasVoltWarn = true;
+            FRegBits *f_reg = &m_p_pmc_reg->FReg().bits[0];
+            f_reg->SA = 0;
+            this->m_p_mi_comm->WritePmcReg(PMC_REG_F, m_p_pmc_reg->FReg().all);
+            std::cout << "Write SA signal " << std::endl;
+        }
+
         if(!m_b_power_off && g_sys_state.system_ready && this->m_p_mc_comm->ReadUnderVoltWarn()){
             printf("OFF\n");
             m_b_power_off = true;
@@ -9036,6 +9045,7 @@ bool ChannelEngine::RefreshMiStatusFun(){
             SaveDataPoweroff();
             g_sys_state.system_quit = true;   //程序退出
 
+            usleep(10000);
             printf("OUT\n");
             return true;
         }

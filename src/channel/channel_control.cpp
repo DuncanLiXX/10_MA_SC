@@ -118,6 +118,8 @@ ChannelControl::ChannelControl() {
     m_channel_rt_status.line_no = 1;
 
     m_time_remain = 0;
+    m_time_curfile_maching = 0;
+    m_cur_workpiece_count = 0;
 
     m_n_hw_trace_state = NONE_TRACE;
     this->m_n_hw_trace_state_change_to = NONE_TRACE;
@@ -386,7 +388,8 @@ bool ChannelControl::Initialize(uint8_t chn_index, ChannelEngine *engine, HMICom
     this->GetMdaFilePath(m_str_mda_path);   //初始化mda文件路径
 
     m_channel_rt_status.machining_time_total = g_ptr_parm_manager->GetCurTotalMachingTime(chn_index);
-
+    m_time_curfile_maching = g_ptr_parm_manager->GetCurFileMachiningTime(chn_index);
+    m_cur_workpiece_count = g_ptr_parm_manager->GetCurFileWorkPieceCnt(chn_index);
 #ifdef USES_GRIND_MACHINE
     m_p_grind_config = parm->GetGrindConfig();       //磨床参数
 #endif
@@ -2597,6 +2600,7 @@ void ChannelControl::SendMonitorData(bool bAxis, bool btime){
             unsigned int time = cur_time.tv_sec-m_time_start_maching.tv_sec;
             m_channel_rt_status.machining_time += time;
             m_channel_rt_status.machining_time_total += time;
+            m_time_curfile_maching += time;//后来加上，用于统计单个文件的加工时间
 
             m_time_remain -= (int32_t)time;    //剩余加工时间
             m_time_remain > 0 ? m_channel_rt_status.machining_time_remains = m_time_remain
@@ -3872,8 +3876,7 @@ void ChannelControl::ProcessHmiSetNcFileCmd(HMICmdFrame &cmd){
     Flag_SyncCrcPos = true;
     // @add zk 防止打开过长文件名文件
     if(strlen(cmd.data) > 127) return;
-    if (strcmp(m_channel_status.cur_nc_file_name, cmd.data))
-        m_time_remain = 0;
+    string temp_file_name = m_channel_status.cur_nc_file_name;
     if(this->m_channel_status.chn_work_mode != AUTO_MODE){   //非自动模式
         strcpy(m_channel_status.cur_nc_file_name, cmd.data);
         cmd.cmd_extension = SUCCEED;
@@ -3916,6 +3919,14 @@ void ChannelControl::ProcessHmiSetNcFileCmd(HMICmdFrame &cmd){
         this->m_p_compiler->OpenFile(path);
         printf("set nc file cmd2 : %s\n", path);
     }
+
+    if (cmd.cmd_extension == SUCCEED)
+    {
+        UpdateAndLogWorkFile(temp_file_name);
+    }
+
+    if (strcmp(temp_file_name.c_str(), cmd.data))
+        m_time_remain = 0;
 }
 
 /**
@@ -15054,6 +15065,37 @@ int ChannelControl::GetCurToolLife(){
     return life;
 }
 
+
+void ChannelControl::UpdateAndLogWorkFile(string file_name)
+{
+    NotifyHmiWorkInfoChanged(file_name);
+    if (m_p_general_config->statistics_mode == 0)
+    {// 只清除当前加工文件
+        m_time_curfile_maching = 0;
+        m_cur_workpiece_count = 0;
+        g_ptr_parm_manager->SetCurFileMachiningTime(m_n_channel_index, 0);
+        g_ptr_parm_manager->SetCurFileWorkPieceCnt(m_n_channel_index, 0);
+    }
+    else
+    {// 每次加载文件后，所有数据都清除
+        m_time_curfile_maching = 0;
+        m_cur_workpiece_count = 0;
+
+        m_channel_rt_status.machining_time = 0;
+        m_channel_rt_status.machining_time_total = 0;
+        g_ptr_parm_manager->SetCurTotalMachiningTime(m_n_channel_index, 0);
+        g_ptr_parm_manager->SetCurFileMachiningTime(m_n_channel_index, 0);
+        g_ptr_parm_manager->SetCurFileWorkPieceCnt(m_n_channel_index, 0);
+
+        //清除加工件数和累计件数
+        m_channel_status.workpiece_count = 0;
+        m_channel_status.workpiece_count_total = 0;
+        g_ptr_parm_manager->SetCurWorkPiece(m_n_channel_index, m_channel_status.workpiece_count);
+        g_ptr_parm_manager->SetTotalWorkPiece(m_n_channel_index, m_channel_status.workpiece_count_total);
+        this->SendWorkCountToHmi(m_channel_status.workpiece_count, m_channel_status.workpiece_count_total);   //通知HMI加工计数变更
+    }
+}
+
 HmiToolPotOneConfig ChannelControl::GenPotValue(int toolId, const SCToolPotConfig *toolConfig)
 {
     HmiToolPotOneConfig potValue;
@@ -19948,6 +19990,9 @@ void ChannelControl::AddWorkCountPiece(int addNum)
     g_ptr_parm_manager->SetTotalWorkPiece(m_n_channel_index, m_channel_status.workpiece_count_total);
     this->SendWorkCountToHmi(m_channel_status.workpiece_count, m_channel_status.workpiece_count_total);  //通知HMI更新加工计数
 
+    m_cur_workpiece_count += addNum;
+    g_ptr_parm_manager->SetCurFileWorkPieceCnt(m_n_channel_index, m_cur_workpiece_count);
+
     if (m_channel_status.workpiece_require != 0 && m_channel_status.workpiece_count >= m_channel_status.workpiece_require)
     {//已到达需求件数
         CreateError(ERR_REACH_WORK_PIECE, INFO_LEVEL, CLEAR_BY_MCP_RESET);
@@ -20588,6 +20633,26 @@ bool ChannelControl::NotifyHmiWorkcoordExChanged(uint8_t coord_idx){
     memcpy(&cmd.data[1], &this->m_p_chn_ex_coord_config[coord_idx], sizeof(HmiCoordConfig));
 
 
+    return this->m_p_hmi_comm->SendCmd(cmd);
+}
+
+bool ChannelControl::NotifyHmiWorkInfoChanged(string file_name)
+{
+    WorkInfoType workInfo;
+    strcpy(workInfo.ch_name, file_name.c_str());
+    workInfo.once_time = m_time_remain;
+    workInfo.total_time = m_time_curfile_maching;
+    workInfo.piece_cnt = m_cur_workpiece_count;
+
+    HMICmdFrame cmd;
+    memset((void *)&cmd, 0x00, sizeof(HMICmdFrame));
+    cmd.channel_index = CHANNEL_ENGINE_INDEX;
+    cmd.cmd = CMD_SC_NOTIFY_WORKINFO_LOG;
+    memcpy(cmd.data, &workInfo, sizeof(WorkInfoType));
+    cmd.data_len = sizeof(WorkInfoType);
+
+    std::cout << "file name: " << workInfo.ch_name << "1: " << m_time_remain << " 2: " << m_time_curfile_maching
+              << " 3: " << workInfo.piece_cnt << std::endl;
     return this->m_p_hmi_comm->SendCmd(cmd);
 }
 

@@ -74,7 +74,7 @@ struct SCSystemConfig{
 	uint8_t alarm_temperature;			//主板告警温度
 	uint8_t trace_level;				//调试跟踪信息记录级别
 	uint8_t debug_mode;					//调试模式		0--关闭    1--模式1    2--模式2    3--模式3
-
+    uint8_t statistics_mode;            //统计方式
 	uint8_t hw_rev_trace;               //手轮反向引导功能   0--关闭   1--打开
 
     /**********************位置开关***************************/

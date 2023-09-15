@@ -107,6 +107,14 @@ void AxisStatusCtrl::UpdateServoState(bool force){
              break;
         }
     }
+    for (auto itr = list.begin(); itr != list.end(); ++itr)
+    {
+        if (itr->error_level == FATAL_LEVEL)
+        {
+            servo_warn = true;
+            break;
+        }
+    }
     //新增流程-》伺服报警需要及时更新 SA 信号，以控制报匝信号(伺服报警后需要断电重启)
     if(servo_warn) {
         if (!SA_Processing)

@@ -427,7 +427,7 @@ bool ParmManager::ReadSysConfig(){
 		m_sc_system_config->alarm_temperature = m_ini_system->GetIntValueOrDefault("system", "alarm_temperature", 70);
 		m_sc_system_config->trace_level = m_ini_system->GetIntValueOrDefault("system", "trace_level", 0);
 		m_sc_system_config->debug_mode = m_ini_system->GetIntValueOrDefault("system", "debug_mode", 0);
-
+        m_sc_system_config->statistics_mode = m_ini_system->GetIntValueOrDefault("system", "statistics_mode", 0);
         m_sc_system_config->hw_rev_trace = m_ini_system->GetIntValueOrDefault("system", "hw_rev_trace", 0);
 
         m_sc_system_config->pos_check_id_1 = m_ini_system->GetIntValueOrDefault("system", "pos_check_id_1", 0);
@@ -494,6 +494,7 @@ bool ParmManager::ReadSysConfig(){
 		m_sc_system_config->alarm_temperature = 70;
 		m_sc_system_config->trace_level = 0;
 		m_sc_system_config->debug_mode = 0;
+        m_sc_system_config->statistics_mode = 0;
 		m_sc_system_config->hw_rev_trace = 0;
 
         m_sc_system_config->pos_check_id_1 = 0;
@@ -6154,6 +6155,12 @@ void ParmManager::ActiveSystemParam(uint32_t param_no, ParamValue &value){
 	case 93:	//主板告警温度
 		this->m_sc_system_config->alarm_temperature = value.value_uint8;
 		break;
+    case 94:    //统计方式
+        this->m_sc_system_config->statistics_mode = value.value_uint8;
+        {//统计方式改变要清除之前的数据统计
+
+        }
+        break;
 	case 99:	//调试信息级别
 		this->m_sc_system_config->trace_level = value.value_uint8;
 		g_ptr_trace->set_trace_level(m_sc_system_config->trace_level);
@@ -7413,6 +7420,74 @@ uint32_t ParmManager::GetCurTotalMachingTime(uint8_t chn_index)
     sprintf(sname, "channel_%hhu", chn_index);
     memset(kname, 0x00, sizeof(kname));
     sprintf(kname, "cur_total_machinetime");
+    uint32_t value = 0 ;
+    value = m_ini_chn_scene->GetIntValueOrDefault(sname, kname, 0);
+
+    return value;
+}
+
+/**
+ * @brief 设置指定通道的当前文件的加工时间
+ * @param chn_index : 通道号
+ * @param piece : 当前文件加工时间
+ */
+void ParmManager::SetCurFileMachiningTime(uint8_t chn_index, uint32_t totalTime)
+{
+    char sname[32];
+    char kname[64];
+
+    memset(sname, 0x00, sizeof(sname));
+    sprintf(sname, "channel_%hhu", chn_index);
+    memset(kname, 0x00, sizeof(kname));
+    sprintf(kname, "cur_file_machinetime");
+    this->m_ini_chn_scene->SetIntValue(sname, kname, totalTime);
+
+    this->m_ini_chn_scene->Save();
+}
+
+uint32_t ParmManager::GetCurFileWorkPieceCnt(uint8_t chn_index)
+{
+    char sname[32];
+    char kname[64];
+
+    memset(sname, 0x00, sizeof(sname));
+    sprintf(sname, "channel_%hhu", chn_index);
+    memset(kname, 0x00, sizeof(kname));
+    sprintf(kname, "cur_file_workpiece");
+    uint32_t value = 0 ;
+    value = m_ini_chn_scene->GetIntValueOrDefault(sname, kname, 0);
+
+    return value;
+}
+
+void ParmManager::SetCurFileWorkPieceCnt(uint8_t chn_index, uint32_t cnt)
+{
+    char sname[32];
+    char kname[64];
+
+    memset(sname, 0x00, sizeof(sname));
+    sprintf(sname, "channel_%hhu", chn_index);
+    memset(kname, 0x00, sizeof(kname));
+    sprintf(kname, "cur_file_workpiece");
+    this->m_ini_chn_scene->SetIntValue(sname, kname, cnt);
+
+    this->m_ini_chn_scene->Save();
+}
+
+/**
+ * @brief 获取指定通道当前文件加工时间
+ * @param chn_index
+ * @return
+ */
+uint32_t ParmManager::GetCurFileMachiningTime(uint8_t chn_index)
+{
+    char sname[32];
+    char kname[64];
+
+    memset(sname, 0x00, sizeof(sname));
+    sprintf(sname, "channel_%hhu", chn_index);
+    memset(kname, 0x00, sizeof(kname));
+    sprintf(kname, "cur_file_machinetime");
     uint32_t value = 0 ;
     value = m_ini_chn_scene->GetIntValueOrDefault(sname, kname, 0);
 

@@ -1214,11 +1214,13 @@ void ChannelEngine::Initialize(HMICommunication *hmi_comm, MICommunication *mi_c
 
     //创建PMC寄存器类对象
     this->m_p_pmc_reg = new PmcRegister();
+
     if(m_p_pmc_reg == nullptr){
         g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "通道引擎创建PMC寄存器对象失败!");
         m_error_code = ERR_MEMORY_NEW;  //初始化失败
         return;
     }
+
     memset(m_g_reg_last.all, 0x00, sizeof(m_g_reg_last.all));
     memset(m_f_reg_last.all, 0x00, sizeof(m_f_reg_last.all));
 
@@ -1622,10 +1624,10 @@ void ChannelEngine::SaveDataPoweroff(){
     //保存各轴当前位置
     this->SaveCurPhyAxisEncoder();
 
-    //保存刀具寿命信息
-#ifdef USES_WOOD_MACHINE
-    this->SaveToolInfo();
-#endif
+    for(int i = 0; i < this->m_p_general_config->chn_count; i++){
+    	m_p_channel_control[i].saveBreakPoint();
+    }
+
 
     sync();
 
@@ -3146,6 +3148,8 @@ void ChannelEngine::ProcessHmiCmd(HMICmdFrame &cmd){
     case CMD_HMI_MEMSET_MACRO_VALUE:
     case CMD_HMI_INSERT_MACRO_VALUE:
     case CMD_HMI_POP_MACRO_VALUE:
+    case CMD_HMI_SET_CUSTOM_STEP_INC:
+    case CMD_HMI_GET_CUSTOM_STEP_INC:
 		this->m_p_channel_control[0].ProcessHmiCmd(cmd);
 		// 暂时不考虑多通道
 		/*if(cmd.channel_index < this->m_p_general_config->chn_count)

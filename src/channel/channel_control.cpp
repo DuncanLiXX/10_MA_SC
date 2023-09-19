@@ -361,6 +361,31 @@ bool ChannelControl::Initialize(uint8_t chn_index, ChannelEngine *engine, HMICom
         m_channel_status.cur_chn_axis_phy[i]   = m_p_channel_config->chn_axis_phy[i];
     }
 
+    // 断电恢复断点
+    memset(brk_file_name, 0, sizeof(brk_file_name));
+	FILE *fp = fopen("break_file", "r");
+
+	if(fp != NULL){
+		fgets(brk_file_name, sizeof(brk_file_name), fp);
+
+		for(int i=strlen(brk_file_name)+1; i> 0; i--){
+			// 去掉换行符
+			if(brk_file_name[i] == 0xA){
+				brk_file_name[i] = 0;
+			}
+
+			if(brk_file_name[i] != 0){
+				break;
+			}
+		}
+
+		char lino_str[12];
+		memset(lino_str, 0, 10);
+		fgets(lino_str, 10, fp);
+		fclose(fp);
+		brk_line_number = strtol(lino_str, 0, 10);
+	}
+
     ShowSc &showSc = Singleton<ShowSc>::instance();
     showSc.AddComponent(&m_channel_status);
     showSc.AddComponent(&m_channel_rt_status);
@@ -615,6 +640,7 @@ void ChannelControl::Reset(){
 
 	Flag_SyncCrcPos = true;
 
+	this->saveBreakPoint();
 
     if(this->m_thread_breakcontinue > 0){//处于断点继续线程执行过程中，则退出断点继续线程
         this->CancelBreakContinueThread();
@@ -726,6 +752,8 @@ void ChannelControl::Reset(){
         strcat(file_name, m_channel_status.cur_nc_file_name);   //拼接文件绝对路径
         this->SendOpenFileCmdToHmi(m_channel_status.cur_nc_file_name);
     }
+
+
 
     if(m_channel_status.chn_work_mode == MDA_MODE){
         char file_name[128];
@@ -855,6 +883,25 @@ void ChannelControl::Reset(){
 #endif
 
     printf("channelcontrol[%hhu] send reset cmd!\n", this->m_n_channel_index);
+}
+
+void ChannelControl::saveBreakPoint(){
+
+	if(m_channel_status.chn_work_mode == AUTO_MODE  &&
+		   m_channel_status.machining_state == MS_RUNNING){
+
+		memset(brk_file_name, 0, sizeof(brk_file_name));
+		strcpy(brk_file_name, m_channel_status.cur_nc_file_name);
+		brk_line_number = m_channel_mc_status.cur_line_no;
+
+		FILE * fp = fopen("break_file", "w");
+		fprintf(fp, "%s\n", brk_file_name);
+		fprintf(fp, "%d", brk_line_number);
+		fclose(fp);
+
+		printf("==========  file: %s   lino: %d\n", brk_file_name, brk_line_number);
+	}
+	printf("==========  file: %s   lino: %d\n", brk_file_name, brk_line_number);
 }
 
 /**
@@ -1789,6 +1836,18 @@ void ChannelControl::StartRunGCode(){
 			m_channel_status.chn_work_mode != MDA_MODE)
 		return;
 
+	if(m_p_g_reg->BRKC){
+		if(strcmp(m_channel_status.cur_nc_file_name, brk_file_name) != 0){
+			m_error_code = ERR_AXIS_REF_NONE;
+			CreateError(m_error_code, ERROR_LEVEL, CLEAR_BY_MCP_RESET, 0, 0, 0);
+			return;
+		}
+		this->m_n_restart_line = brk_line_number;
+		this->m_n_restart_step = 1;
+		this->m_n_restart_mode = NORMAL_RESTART;
+		m_channel_rt_status.line_no = m_n_restart_line;
+	}
+
 
 #ifdef USES_GRIND_MACHINE
     if(this->m_b_ret_safe_state){  //回安全位置动作未完成
@@ -1883,6 +1942,7 @@ void ChannelControl::StartRunGCode(){
     	this->m_p_compiler->setCompensationPos(this->m_channel_rt_status.cur_pos_work);
     	Flag_SyncCrcPos = false;
     }
+
     if(this->m_channel_status.chn_work_mode == AUTO_MODE){
         string msg = "开始加工程序|" + string(m_channel_status.cur_nc_file_name);
         g_ptr_tracelog_processor->SendToHmi(kProcessInfo, kCombine, msg);
@@ -2250,7 +2310,8 @@ void ChannelControl::StopCompilerRun(){
  * @param reset : 是否复位数据和行号， true--复位   false--不复位
  */
 void ChannelControl::StopRunGCode(bool reset){
-    string msg = "停止加工程序|" + string(this->m_channel_status.cur_nc_file_name);
+
+	string msg = "停止加工程序|" + string(this->m_channel_status.cur_nc_file_name);
     g_ptr_tracelog_processor->SendToHmi(kProcessInfo, kCombine, msg);
     printf("ChannelControl::StopRunGCode()\n");
 
@@ -2265,7 +2326,7 @@ void ChannelControl::StopRunGCode(bool reset){
     }
 
     this->StopCompilerRun(); //停止编译
-
+    this->saveBreakPoint();
     //TODO 向MC模块发送停止命令
     this->PauseMc();
 
@@ -2823,6 +2884,14 @@ void ChannelControl::ProcessHmiCmd(HMICmdFrame &cmd){
         this->ProcessHmiClearMsgCmd(cmd);
         break;
 
+    case CMD_HMI_SET_CUSTOM_STEP_INC:
+    	this->ProcessHmiSetCustomStepInc(cmd);
+    	break;
+
+    case CMD_HMI_GET_CUSTOM_STEP_INC:
+    	this->ProcessHmiGetCustomStepInc(cmd);
+    	break;
+
 #ifdef NEW_WOOD_MACHINE
     case CMD_HMI_APPEND_ORDER_LIST:
     	this->ProcessHmiAppendOrderListFile(cmd);
@@ -2854,6 +2923,46 @@ void ChannelControl::ProcessHmiCmd(HMICmdFrame &cmd){
         break;
 
     }
+}
+
+
+void ChannelControl::ProcessHmiSetCustomStepInc(HMICmdFrame &cmd){
+
+	cmd.frame_number |= 0x8000;   //设置回复标志
+
+	int axis; double step_inc;
+	memcpy(&axis, cmd.data, 4);
+	memcpy(&step_inc, &cmd.data[4], 8);
+
+	if(axis > 0 && axis < 8){
+		custom_step_inc[axis] = step_inc;
+		cmd.cmd_extension = SUCCEED;
+	}else{
+		cmd.cmd_extension = FAILED;
+	}
+
+	this->m_p_hmi_comm->SendCmd(cmd);
+
+}
+
+
+void ChannelControl::ProcessHmiGetCustomStepInc(HMICmdFrame &cmd){
+
+	cmd.frame_number |= 0x8000;   //设置回复标志
+
+	int axis;
+	memcpy(&axis, cmd.data, 4);
+
+	if(axis > 0 && axis < 8){
+		double data = custom_step_inc[axis];
+		memcpy(&cmd.data[4], &data, 8);
+		cmd.data_len = 12;
+		cmd.cmd_extension = SUCCEED;
+	}else{
+		cmd.cmd_extension = FAILED;
+	}
+
+	this->m_p_hmi_comm->SendCmd(cmd);
 }
 
 
@@ -3881,6 +3990,10 @@ void ChannelControl::ProcessHmiSetNcFileCmd(HMICmdFrame &cmd){
         strcpy(m_channel_status.cur_nc_file_name, cmd.data);
         cmd.cmd_extension = SUCCEED;
 
+        if(strcmp(brk_file_name, m_channel_status.cur_nc_file_name) != 0){
+        	brk_line_number = 0;
+        }
+
         this->m_p_hmi_comm->SendCmd(cmd);
 
         if(m_channel_status.machining_state == MS_PAUSED){//通道复位
@@ -3904,6 +4017,11 @@ void ChannelControl::ProcessHmiSetNcFileCmd(HMICmdFrame &cmd){
     }
     else{
         strcpy(m_channel_status.cur_nc_file_name, cmd.data);
+
+        if(strcmp(brk_file_name, m_channel_status.cur_nc_file_name) != 0){
+        	brk_line_number = 0;
+        }
+
         cmd.cmd_extension = SUCCEED;
 
         this->m_p_hmi_comm->SendCmd(cmd);
@@ -3995,7 +4113,7 @@ void ChannelControl::ProcessMdaData(HMICmdFrame &cmd){
 
 }
 
-void ChannelControl::ProcessHmiInsertMacroValue(HMICmdFrame cmd){
+void ChannelControl::ProcessHmiInsertMacroValue(HMICmdFrame &cmd){
 	cmd.frame_number |= 0x8000;   //设置回复标志
 
 	int index, end;
@@ -4481,7 +4599,8 @@ bool ChannelControl::SendMDIOpenFileCmdToHmi(char *filename)
  * @param mach_state
  */
 void ChannelControl::SetMachineState(uint8_t mach_state){
-    // @modify zk 记录之前状态
+
+	// @modify zk 记录之前状态
 	uint8_t old_stat = m_channel_status.machining_state;
 
     //llx add
@@ -4584,7 +4703,8 @@ void ChannelControl::SetWorkMode(uint8_t work_mode){
     if(m_channel_status.chn_work_mode == AUTO_MODE &&
             m_channel_status.machining_state == MS_RUNNING)
     {
-        this->Pause();
+        this->saveBreakPoint();
+    	this->Pause();
         usleep(200000);
     }
 
@@ -5050,6 +5170,7 @@ int ChannelControl::Run(){
             g_ptr_trace->PrintTrace(TRACE_WARNING, CHANNEL_CONTROL_SC, "Compile Error:%d, %d\n", m_error_code, m_p_compiler->GetErrorCode());
             //CreateError(m_error_code, ERROR_LEVEL, CLEAR_BY_MCP_RESET, 0, m_n_channel_index);
             // @test zk  解决编译报警但运行并未停止问题
+            saveBreakPoint();   // 编译报警不经过Alarm模块 特殊处理断点记录
             PauseMc();
 
             m_n_run_thread_state = STOP;
@@ -18049,6 +18170,9 @@ bool ChannelControl::EmergencyStop(){
 
     this->m_p_f_reg->RST = 1;
 
+	this->saveBreakPoint();
+
+
     //停止编译
     pthread_mutex_lock(&m_mutex_change_state);  //等待编译运行线程停止
     //printf("locked 15\n");
@@ -21181,7 +21305,6 @@ void ChannelControl::PrintDebugInfo1(){
            m_channel_mc_status.cur_mode, m_channel_mc_status.cur_feed, m_channel_mc_status.rated_feed, m_channel_mc_status.axis_over_mask);
 
 }
-
 
 // @test zk
 void ChannelControl::test(){

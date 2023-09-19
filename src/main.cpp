@@ -847,7 +847,8 @@ bool InitSysResource()
  */
 int main()
 {
-    int res = ERR_NONE;
+
+	int res = ERR_NONE;
     printf("Welcome to ARADEX 10MA CNC system! Version : [%s, %d-%d-%d]\n", ADX_SC_VERSION, YEAR,MONTH, DAY);
 
     printf("Enter the main loop, thread id = %ld!\n", syscall(SYS_gettid));

@@ -460,6 +460,10 @@ public:
     bool NotifyHmiWorkcoordExChanged(uint8_t coor_idx);  //通知HMI 扩展坐标系设置发生变更
 
     bool NotifyHmiWorkInfoChanged(string file_name);
+    // 保存断点
+    void saveBreakPoint();
+    char brk_file_name[256];
+    uint32_t brk_line_number;
 private:
 	void InitialChannelStatus();		//初始化通道状态
     static void *CompileThread(void *args);  //G代码运行线程函数
@@ -539,9 +543,11 @@ private:
     void ProcessHmiSetRequirePieceCmd(HMICmdFrame &cmd);    //处理
 	void ProcessHmiSetCurMachPosCmd(HMICmdFrame &cmd);      //处理HMI设置轴当前位置的机械坐标命令
 	void ProcessHmiClearMsgCmd(HMICmdFrame &cmd);     //处理HMI清除消息命令
-
-	void ProcessHmiInsertMacroValue(HMICmdFrame cmd);
+	void ProcessHmiInsertMacroValue(HMICmdFrame &cmd);
 	void ProcessHmiPopMacroValue(HMICmdFrame cmd);
+	void ProcessHmiSetCustomStepInc(HMICmdFrame &cmd);
+	void ProcessHmiGetCustomStepInc(HMICmdFrame &cmd);
+
 #ifdef NEW_WOOD_MACHINE
 	void ProcessHmiAppendOrderListFile(HMICmdFrame &cmd);
 	void ProcessHmiSetOrderListIndex(HMICmdFrame &cmd);
@@ -942,6 +948,8 @@ private://私有成员变量
 	bool flag_cancel_g52 = true;
 	bool g43_4_active = false;
 	bool g44_active = false;
+
+	double custom_step_inc[8];        //自定义步长
 };
 
 #endif /* INC_CHANNEL_CHANNEL_CONTROL_H_ */

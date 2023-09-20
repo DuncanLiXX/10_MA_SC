@@ -3323,6 +3323,13 @@ void ChannelEngine::ProcessHmiCmd(HMICmdFrame &cmd){
     case CMD_HMI_SEND_MDI_INFO:
         ProcessHmiMdiInfo(cmd);
         break;
+    case CND_HMI_SET_STATISTICS_LOG:
+    {
+        if(cmd.channel_index < this->m_p_general_config->chn_count){
+            this->m_p_channel_control[cmd.channel_index].UpdateAndLogWorkFile();
+        }
+    }
+        break;
     default:
         g_ptr_trace->PrintTrace(TRACE_WARNING, CHANNEL_ENGINE_SC, "不支持的HMI指令[%d]", cmd.cmd);
         break;

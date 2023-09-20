@@ -631,10 +631,11 @@ bool Coord_Backup_Self::Package(zip_t *zip)
         char ch_meta[256]="\0";
 
         time_t timep;struct tm *p;
-        time(&timep);p = gmtime(&timep);
-        string myFormat = "%Y-%m-%d %H:%M";
+        timep = time(nullptr);
+        p = localtime(&timep);
+        sprintf(ch_data, "%04d-%02d-%02d %02d:%02d", p->tm_year+1900, p->tm_mon+1, p->tm_mday,
+                p->tm_hour, p->tm_min);
 
-        strftime(ch_data, sizeof(ch_data), myFormat.c_str(), p);
         g_ptr_parm_manager->GetCurNcFile(channel_id, ch_name);
         sprintf(ch_meta, "%s%s%s", ch_data,",", ch_name);
         zip_entry_write(write_zip, ch_meta, strlen(ch_meta));

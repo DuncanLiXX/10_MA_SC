@@ -390,6 +390,7 @@ bool ChannelControl::Initialize(uint8_t chn_index, ChannelEngine *engine, HMICom
     m_channel_rt_status.machining_time_total = g_ptr_parm_manager->GetCurTotalMachingTime(chn_index);
     m_time_curfile_maching = g_ptr_parm_manager->GetCurFileMachiningTime(chn_index);
     m_cur_workpiece_count = g_ptr_parm_manager->GetCurFileWorkPieceCnt(chn_index);
+    m_time_remain = g_ptr_parm_manager->GetRemainTime(chn_index);
 #ifdef USES_GRIND_MACHINE
     m_p_grind_config = parm->GetGrindConfig();       //磨床参数
 #endif
@@ -595,6 +596,8 @@ void ChannelControl::InitialChannelStatus(){
 
     //	strcpy(m_channel_status.cur_nc_file_name, "20.nc");	//for test
     g_ptr_parm_manager->GetCurNcFile(this->m_n_channel_index, m_channel_status.cur_nc_file_name);
+
+    m_last_filename = m_channel_status.cur_nc_file_name;
 
 #ifdef NEW_WOOD_MACHINE
     // 初始化 从宏变量获取排程模式
@@ -2613,6 +2616,8 @@ void ChannelControl::SendMonitorData(bool bAxis, bool btime){
                 m_time_remain = m_channel_rt_status.machining_time;
                 m_channel_rt_status.machining_time = 0;
                 g_ptr_parm_manager->SetCurTotalMachiningTime(m_n_channel_index, m_channel_rt_status.machining_time_total);
+                g_ptr_parm_manager->SetCurFileMachiningTime(m_n_channel_index, m_time_curfile_maching);
+                g_ptr_parm_manager->SetRemainTime(m_n_channel_index, m_time_remain);
             }
             if (m_channel_rt_status.machining_time_remains != 0)
                 m_channel_rt_status.machining_time_remains = 0;
@@ -3922,11 +3927,14 @@ void ChannelControl::ProcessHmiSetNcFileCmd(HMICmdFrame &cmd){
 
     if (cmd.cmd_extension == SUCCEED)
     {
-        UpdateAndLogWorkFile(temp_file_name);
+        m_last_filename = temp_file_name;
     }
 
-    if (strcmp(temp_file_name.c_str(), cmd.data))
-        m_time_remain = 0;
+//    if (strcmp(temp_file_name.c_str(), cmd.data))
+//    {
+//        m_time_remain = 0;
+//        g_ptr_parm_manager->SetRemainTime(m_n_channel_index, 0);
+//    }
 }
 
 /**
@@ -15066,33 +15074,40 @@ int ChannelControl::GetCurToolLife(){
 }
 
 
-void ChannelControl::UpdateAndLogWorkFile(string file_name)
+void ChannelControl::UpdateAndLogWorkFile()
 {
-    NotifyHmiWorkInfoChanged(file_name);
-    if (m_p_general_config->statistics_mode == 0)
-    {// 只清除当前加工文件
-        m_time_curfile_maching = 0;
-        m_cur_workpiece_count = 0;
-        g_ptr_parm_manager->SetCurFileMachiningTime(m_n_channel_index, 0);
-        g_ptr_parm_manager->SetCurFileWorkPieceCnt(m_n_channel_index, 0);
-    }
-    else
-    {// 每次加载文件后，所有数据都清除
-        m_time_curfile_maching = 0;
-        m_cur_workpiece_count = 0;
+    if (m_time_curfile_maching)
+    {
+        NotifyHmiWorkInfoChanged(m_last_filename);
+        if (m_p_general_config->statistics_mode == 0)
+        {// 只清除当前加工文件
+            m_time_curfile_maching = 0;
+            m_cur_workpiece_count = 0;
+            m_time_remain = 0;
+            g_ptr_parm_manager->SetCurFileMachiningTime(m_n_channel_index, 0);
+            g_ptr_parm_manager->SetCurFileWorkPieceCnt(m_n_channel_index, 0);
+            g_ptr_parm_manager->SetRemainTime(m_n_channel_index, 0);
+        }
+        else
+        {// 每次加载文件后，所有数据都清除
+            m_time_curfile_maching = 0;
+            m_cur_workpiece_count = 0;
 
-        m_channel_rt_status.machining_time = 0;
-        m_channel_rt_status.machining_time_total = 0;
-        g_ptr_parm_manager->SetCurTotalMachiningTime(m_n_channel_index, 0);
-        g_ptr_parm_manager->SetCurFileMachiningTime(m_n_channel_index, 0);
-        g_ptr_parm_manager->SetCurFileWorkPieceCnt(m_n_channel_index, 0);
+            m_channel_rt_status.machining_time = 0;
+            m_channel_rt_status.machining_time_total = 0;
+            m_time_remain = 0;
+            g_ptr_parm_manager->SetCurTotalMachiningTime(m_n_channel_index, 0);
+            g_ptr_parm_manager->SetCurFileMachiningTime(m_n_channel_index, 0);
+            g_ptr_parm_manager->SetCurFileWorkPieceCnt(m_n_channel_index, 0);
+            g_ptr_parm_manager->SetRemainTime(m_n_channel_index, 0);
 
-        //清除加工件数和累计件数
-        m_channel_status.workpiece_count = 0;
-        m_channel_status.workpiece_count_total = 0;
-        g_ptr_parm_manager->SetCurWorkPiece(m_n_channel_index, m_channel_status.workpiece_count);
-        g_ptr_parm_manager->SetTotalWorkPiece(m_n_channel_index, m_channel_status.workpiece_count_total);
-        this->SendWorkCountToHmi(m_channel_status.workpiece_count, m_channel_status.workpiece_count_total);   //通知HMI加工计数变更
+            //清除加工件数和累计件数
+            m_channel_status.workpiece_count = 0;
+            m_channel_status.workpiece_count_total = 0;
+            g_ptr_parm_manager->SetCurWorkPiece(m_n_channel_index, m_channel_status.workpiece_count);
+            g_ptr_parm_manager->SetTotalWorkPiece(m_n_channel_index, m_channel_status.workpiece_count_total);
+            this->SendWorkCountToHmi(m_channel_status.workpiece_count, m_channel_status.workpiece_count_total);   //通知HMI加工计数变更
+        }
     }
 }
 

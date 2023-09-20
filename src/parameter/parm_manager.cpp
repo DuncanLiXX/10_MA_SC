@@ -4250,6 +4250,22 @@ bool ParmManager::UpdateSystemParam(uint32_t param_no, ParamValue &value){
 		sprintf(kname, "alarm_temperature");
 		m_ini_system->SetIntValue(sname, kname, value.value_uint8);
 		break;
+    case 94:
+        sprintf(kname, "statistics_mode");
+        m_ini_system->SetIntValue(sname, kname, value.value_uint8);
+    {
+        for(int i = 0; i < m_sc_system_config->chn_count; ++i)
+        {
+            g_ptr_parm_manager->SetCurTotalMachiningTime(i, 0);
+            g_ptr_parm_manager->SetCurFileMachiningTime(i, 0);
+            g_ptr_parm_manager->SetCurFileWorkPieceCnt(i, 0);
+            g_ptr_parm_manager->SetRemainTime(i, 0);
+
+            g_ptr_parm_manager->SetCurWorkPiece(i, 0);
+            g_ptr_parm_manager->SetTotalWorkPiece(i, 0);
+        }
+    }
+        break;
 	case 99:	//调试信息级别
 		sprintf(kname, "trace_level");
 		m_ini_system->SetIntValue(sname, kname, value.value_uint8);
@@ -7443,6 +7459,35 @@ void ParmManager::SetCurFileMachiningTime(uint8_t chn_index, uint32_t totalTime)
     this->m_ini_chn_scene->SetIntValue(sname, kname, totalTime);
 
     this->m_ini_chn_scene->Save();
+}
+
+void ParmManager::SetRemainTime(uint8_t chn_index, uint32_t remainTime)
+{
+    char sname[32];
+    char kname[64];
+
+    memset(sname, 0x00, sizeof(sname));
+    sprintf(sname, "channel_%hhu", chn_index);
+    memset(kname, 0x00, sizeof(kname));
+    sprintf(kname, "remain_time");
+    this->m_ini_chn_scene->SetIntValue(sname, kname, remainTime);
+
+    this->m_ini_chn_scene->Save();
+}
+
+uint32_t ParmManager::GetRemainTime(uint8_t chn_index)
+{
+    char sname[32];
+    char kname[64];
+
+    memset(sname, 0x00, sizeof(sname));
+    sprintf(sname, "channel_%hhu", chn_index);
+    memset(kname, 0x00, sizeof(kname));
+    sprintf(kname, "remain_time");
+    uint32_t value = 0 ;
+    value = m_ini_chn_scene->GetIntValueOrDefault(sname, kname, 0);
+
+    return value;
 }
 
 uint32_t ParmManager::GetCurFileWorkPieceCnt(uint8_t chn_index)

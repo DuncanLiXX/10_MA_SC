@@ -234,6 +234,7 @@ enum HMICmdCode {
     CMD_HMI_SEND_MDI_INFO,      //发送MDI当前状态信息
     CMD_HMI_DATA_STORE_INFO,    //存储信息操作
     CMD_HMI_UPDATE_COORD_INFO,  //获取坐标存取信息
+    CND_HMI_SET_STATISTICS_LOG,      //通知日志记录
 
 	//SC-->HMI
 	CMD_SC_NEW_ALARM = 100,			//SC向HMI发送新的告警信息 100

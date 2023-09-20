@@ -728,7 +728,9 @@ struct GRegBits{
 	uint8_t TFIN:1;                 //刀具功能结束信号    G5.3
 	uint8_t :4;
 	//G6
-	uint8_t :6;
+	uint8_t :1;
+	uint8_t BRKC : 1;                 //  断点继续 G6.1
+	uint8_t : 4;
 	uint8_t SKIPP:1;			    //SKIPP信号  G6.6  用于G31跳转
 	uint8_t :1;
 	//G7

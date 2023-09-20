@@ -592,6 +592,7 @@ bool Lexer::Compile(){
 				break;
 			case '*':
 				if(!m_in_macro_exp){//'*'不能出现在非表达式中
+					printf("@@@@@@ERR_NC_FORMAT_3*\n");
 					m_p_lexer_result->error_code = ERR_NC_FORMAT;
 					break;
 				}
@@ -613,7 +614,7 @@ bool Lexer::Compile(){
 				break;
 			case '/':
 				if(!m_in_macro_exp){  //非处理宏表达式状态，告警
-					printf("@@@@@@ERR_NC_FORMAT_3*\n");
+					printf("@@@@@@ERR_NC_FORMAT_4*\n");
 					m_p_lexer_result->error_code = ERR_NC_FORMAT;
 					break;
 				}
@@ -624,6 +625,7 @@ bool Lexer::Compile(){
 					}
 				}
 				else if(m_in_alph){//处理单词
+					printf("@@@@@@ERR_NC_FORMAT_5*\n");
 					m_p_lexer_result->error_code = ERR_NC_FORMAT;
 					break;
 				}
@@ -632,6 +634,7 @@ bool Lexer::Compile(){
 				break;
 			case ',':  //对于ATAN/POW运算符会出现逗号
 				if(!this->m_in_macro_exp){
+					printf("@@@@@@ERR_NC_FORMAT_6*\n");
 					m_p_lexer_result->error_code = ERR_NC_FORMAT;
 					break;
 				}
@@ -641,11 +644,13 @@ bool Lexer::Compile(){
 					}
 				}
 				else if(m_in_alph){//处理单词
+					printf("@@@@@@ERR_NC_FORMAT_7*\n");
 					m_p_lexer_result->error_code = ERR_NC_FORMAT;
 					break;
 
 				}
 				if(!m_macro_exp.PushOpt(MACRO_OPT_COMMA)){
+					printf("@@@@@@ERR_NC_FORMAT_8*\n");
 					m_p_lexer_result->error_code = ERR_NC_FORMAT;
 				}
 				break;

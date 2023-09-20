@@ -235,6 +235,9 @@ enum HMICmdCode {
     CMD_HMI_DATA_STORE_INFO,    //存储信息操作
     CMD_HMI_UPDATE_COORD_INFO,  //获取坐标存取信息
     CND_HMI_SET_STATISTICS_LOG,      //通知日志记录
+	CMD_HMI_GET_BREAK_POINT,    // 获取断点信息
+	CMD_HMI_SET_CUSTOM_STEP_INC,    // 设置自定义步长
+	CMD_HMI_GET_CUSTOM_STEP_INC,	// 获取自定义步长
 
 	//SC-->HMI
 	CMD_SC_NEW_ALARM = 100,			//SC向HMI发送新的告警信息 100

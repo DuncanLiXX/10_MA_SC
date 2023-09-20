@@ -1106,8 +1106,6 @@ int Interp::convert_straight_comp2(int move,
             concave = 1;
         } else {
             concave = 0;
-            mid_x = (opx + (radius * cos(alpha + gamma)));
-            mid_y = (opy + (radius * sin(alpha + gamma)));
         }
 
         if (!concave && (beta > small)) {       /* ARC NEEDED */
@@ -1150,7 +1148,6 @@ int Interp::convert_straight_comp2(int move,
 					// this should replace the endpoint of the previous move
 					mid_x = cx + retreat * cos(theta + gamma);
 					mid_y = cy + retreat * sin(theta + gamma);
-
 
 					double vecStartx = opx - temp_point[0];
 					double vecStarty = opy - temp_point[1];
@@ -1432,7 +1429,6 @@ int Interp::move_endpoint_and_flush(setup_pointer settings, double x, double y)
             if(l1 != 0.0 && endpoint_valid && fabs(l2) > fabs(l1) + 0.254) {
                 printf("Arc move in concave corner cannot be reached by the tool without gouging\n");
                 err_code = CONCAVE_CORNER_ERROR;
-
             }
             q.data.arc_feed.end1 = x;
             q.data.arc_feed.end2 = y;

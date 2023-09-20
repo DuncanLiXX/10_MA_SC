@@ -585,7 +585,7 @@ int Initialize(){
     // Ä¾¹¤°æ±¾ºÅ
     //sprintf(g_sys_info.sw_version_info.sc, "SC-00.01.11");
     // 0M-B °æ±¾ºÅ
-    sprintf(g_sys_info.sw_version_info.sc, "SC-00.00.22");
+    sprintf(g_sys_info.sw_version_info.sc, "SC-00.00.23");
     strcpy(g_sys_info.sw_version_info.mc, "P0.0.0");
     strcpy(g_sys_info.sw_version_info.mi, "P0.0.0");
 
@@ -847,7 +847,8 @@ bool InitSysResource()
  */
 int main()
 {
-    int res = ERR_NONE;
+
+	int res = ERR_NONE;
     printf("Welcome to ARADEX 10MA CNC system! Version : [%s, %d-%d-%d]\n", ADX_SC_VERSION, YEAR,MONTH, DAY);
 
     printf("Enter the main loop, thread id = %ld!\n", syscall(SYS_gettid));

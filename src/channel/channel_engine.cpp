@@ -1214,11 +1214,13 @@ void ChannelEngine::Initialize(HMICommunication *hmi_comm, MICommunication *mi_c
 
     //创建PMC寄存器类对象
     this->m_p_pmc_reg = new PmcRegister();
+
     if(m_p_pmc_reg == nullptr){
         g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "通道引擎创建PMC寄存器对象失败!");
         m_error_code = ERR_MEMORY_NEW;  //初始化失败
         return;
     }
+
     memset(m_g_reg_last.all, 0x00, sizeof(m_g_reg_last.all));
     memset(m_f_reg_last.all, 0x00, sizeof(m_f_reg_last.all));
 
@@ -1325,7 +1327,9 @@ void ChannelEngine::Initialize(HMICommunication *hmi_comm, MICommunication *mi_c
         printf("device SN: %s\n",m_device_sn);
     }
 #ifdef USES_LICENSE_FUNC
+
     m_ln_local_time = ReadLocalTime(m_device_sn);//读取本地计时文件
+
     if(m_ln_local_time < 0){//读取本地计时文件异常
         if(m_ln_local_time == -1){
             g_ptr_trace->PrintTrace(TRACE_ERROR, CHANNEL_ENGINE_SC, "本地计时文件不存在!");
@@ -1620,10 +1624,10 @@ void ChannelEngine::SaveDataPoweroff(){
     //保存各轴当前位置
     this->SaveCurPhyAxisEncoder();
 
-    //保存刀具寿命信息
-#ifdef USES_WOOD_MACHINE
-    this->SaveToolInfo();
-#endif
+    for(int i = 0; i < this->m_p_general_config->chn_count; i++){
+    	m_p_channel_control[i].saveBreakPoint();
+    }
+
 
     sync();
 
@@ -3144,6 +3148,8 @@ void ChannelEngine::ProcessHmiCmd(HMICmdFrame &cmd){
     case CMD_HMI_MEMSET_MACRO_VALUE:
     case CMD_HMI_INSERT_MACRO_VALUE:
     case CMD_HMI_POP_MACRO_VALUE:
+    case CMD_HMI_SET_CUSTOM_STEP_INC:
+    case CMD_HMI_GET_CUSTOM_STEP_INC:
 		this->m_p_channel_control[0].ProcessHmiCmd(cmd);
 		// 暂时不考虑多通道
 		/*if(cmd.channel_index < this->m_p_general_config->chn_count)
@@ -9039,17 +9045,6 @@ bool ChannelEngine::RefreshMiStatusFun(){
             continue;
         }
         //读取欠压信号
-
-        static bool hasVoltWarn = false;
-        if (!hasVoltWarn && this->m_p_mc_comm->ReadUnderVoltWarn())
-        {
-            hasVoltWarn = true;
-            FRegBits *f_reg = &m_p_pmc_reg->FReg().bits[0];
-            f_reg->SA = 0;
-            this->m_p_mi_comm->WritePmcReg(PMC_REG_F, m_p_pmc_reg->FReg().all);
-            std::cout << "Write SA signal " << std::endl;
-        }
-
         if(!m_b_power_off && g_sys_state.system_ready && this->m_p_mc_comm->ReadUnderVoltWarn()){
             printf("OFF\n");
             m_b_power_off = true;
@@ -9057,7 +9052,6 @@ bool ChannelEngine::RefreshMiStatusFun(){
             SaveDataPoweroff();
             g_sys_state.system_quit = true;   //程序退出
 
-            usleep(10000);
             printf("OUT\n");
             return true;
         }
@@ -9453,7 +9447,7 @@ void ChannelEngine::ProcessPmcSignal(){
         }
 
         if((g_reg->ST && g_reg_last->ST == 0) && g_reg->_SP == 1 && f_reg->STL == 0){ //循环启动
-            this->Start();
+        	this->Start();
         }
 
         if(g_reg->ST_EXT && g_reg_last->ST_EXT == 0){
@@ -9488,7 +9482,8 @@ void ChannelEngine::ProcessPmcSignal(){
 
         // 攻丝状态()不让复位
         if(g_reg->ERS == 1 && g_reg_last->ERS == 0){
-            this->SystemReset();
+
+        	this->SystemReset();
         }
 
         // 某个轴机械锁住信号发生了改变

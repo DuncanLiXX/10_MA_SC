@@ -1063,6 +1063,7 @@ int HMICommunication::ProcessHmiCmd(){
             case CMD_HMI_SEND_MDI_INFO:     //发送MDI当前状态信息
             case CMD_HMI_SET_CUSTOM_STEP_INC:
             case CMD_HMI_GET_CUSTOM_STEP_INC:
+            case CMD_HMI_GET_BREAK_POINT:
 #ifdef USES_GRIND_MACHINE
 			case CMD_SC_MECH_ARM_ERR:         //HMI响应机械手告警指令
 #endif

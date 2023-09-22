@@ -776,7 +776,8 @@ struct GRegBits{
 	uint8_t reset:1;		//复位信号  G20.1
 	uint8_t :6;
 #else
-	uint8_t :8;
+	uint8_t :7;
+	uint8_t XUD : 1;         // 自定义步长选择信号
 #endif
 
 	//G21

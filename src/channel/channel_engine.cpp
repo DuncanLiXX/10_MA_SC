@@ -1624,9 +1624,11 @@ void ChannelEngine::SaveDataPoweroff(){
     //保存各轴当前位置
     this->SaveCurPhyAxisEncoder();
 
+#ifdef CARVE_MACHINE
     for(int i = 0; i < this->m_p_general_config->chn_count; i++){
     	m_p_channel_control[i].saveBreakPoint();
     }
+#endif
 
 
     sync();
@@ -1980,7 +1982,7 @@ void ChannelEngine::ProcessMcCmdRsp(McCmdFrame &rsp){
     switch(rsp.data.cmd){
     case CMD_MC_SHAKEHANDS:
         if(rsp.data.data[0] == 0x1234 && rsp.data.data[1] == 0x5678){
-            //握手成功
+        	//握手成功
             g_sys_state.module_ready_mask |= MC_READY;  //MC模块就绪
 
 
@@ -2011,7 +2013,6 @@ void ChannelEngine::ProcessMcCmdRsp(McCmdFrame &rsp){
                 g_sys_state.system_ready = true;
 
             g_ptr_trace->PrintTrace(TRACE_INFO, CHANNEL_ENGINE_SC, "@#@#@Get MC shake hand cmd, module_mask=0x%hhu\n", g_sys_state.module_ready_mask);
-
 
         }
         else{//握手失败
@@ -3150,6 +3151,7 @@ void ChannelEngine::ProcessHmiCmd(HMICmdFrame &cmd){
     case CMD_HMI_POP_MACRO_VALUE:
     case CMD_HMI_SET_CUSTOM_STEP_INC:
     case CMD_HMI_GET_CUSTOM_STEP_INC:
+    case CMD_HMI_GET_BREAK_POINT:
 		this->m_p_channel_control[0].ProcessHmiCmd(cmd);
 		// 暂时不考虑多通道
 		/*if(cmd.channel_index < this->m_p_general_config->chn_count)

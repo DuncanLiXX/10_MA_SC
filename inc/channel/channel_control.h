@@ -460,10 +460,14 @@ public:
     bool NotifyHmiWorkcoordExChanged(uint8_t coor_idx);  //通知HMI 扩展坐标系设置发生变更
 
     bool NotifyHmiWorkInfoChanged(string file_name);
+
+#ifdef CARVE_MACHINE
     // 保存断点
     void saveBreakPoint();
     char brk_file_name[256];
     uint32_t brk_line_number;
+#endif
+
 private:
 	void InitialChannelStatus();		//初始化通道状态
     static void *CompileThread(void *args);  //G代码运行线程函数
@@ -547,6 +551,7 @@ private:
 	void ProcessHmiPopMacroValue(HMICmdFrame cmd);
 	void ProcessHmiSetCustomStepInc(HMICmdFrame &cmd);
 	void ProcessHmiGetCustomStepInc(HMICmdFrame &cmd);
+	void ProcessHmiGetBreakPoint(HMICmdFrame &cmd);
 
 #ifdef NEW_WOOD_MACHINE
 	void ProcessHmiAppendOrderListFile(HMICmdFrame &cmd);
@@ -949,7 +954,7 @@ private://私有成员变量
 	bool g43_4_active = false;
 	bool g44_active = false;
 
-	double custom_step_inc[8];        //自定义步长
+	double custom_step_inc[32];        //自定义步长
 };
 
 #endif /* INC_CHANNEL_CHANNEL_CONTROL_H_ */

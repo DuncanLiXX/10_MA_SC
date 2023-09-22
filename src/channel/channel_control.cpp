@@ -361,6 +361,7 @@ bool ChannelControl::Initialize(uint8_t chn_index, ChannelEngine *engine, HMICom
         m_channel_status.cur_chn_axis_phy[i]   = m_p_channel_config->chn_axis_phy[i];
     }
 
+#ifdef CARVE_MACHINE
     // 断电恢复断点
     memset(brk_file_name, 0, sizeof(brk_file_name));
 	FILE *fp = fopen("break_file", "r");
@@ -385,6 +386,20 @@ bool ChannelControl::Initialize(uint8_t chn_index, ChannelEngine *engine, HMICom
 		fclose(fp);
 		brk_line_number = strtol(lino_str, 0, 10);
 	}
+
+#endif
+
+	FILE * fp2;
+
+	// 读取自定义步长
+	fp2 = fopen("../config/custom_step_inc", "rb");
+
+	if(fp2 != NULL){
+		fread(custom_step_inc, 1, sizeof(double)*8, fp2);
+		fclose(fp2);
+	}
+
+
 
     ShowSc &showSc = Singleton<ShowSc>::instance();
     showSc.AddComponent(&m_channel_status);
@@ -573,6 +588,7 @@ END:
  */
 void ChannelControl::InitialChannelStatus(){
 
+
 	printf("===== ChannelControl::InitialChannelStatus\n");
 
 	memset(&m_channel_status, 0x00, sizeof(m_channel_status));
@@ -640,7 +656,6 @@ void ChannelControl::Reset(){
 
 	Flag_SyncCrcPos = true;
 
-	this->saveBreakPoint();
 
     if(this->m_thread_breakcontinue > 0){//处于断点继续线程执行过程中，则退出断点继续线程
         this->CancelBreakContinueThread();
@@ -885,14 +900,20 @@ void ChannelControl::Reset(){
     printf("channelcontrol[%hhu] send reset cmd!\n", this->m_n_channel_index);
 }
 
+#ifdef CARVE_MACHINE
 void ChannelControl::saveBreakPoint(){
 
 	if(m_channel_status.chn_work_mode == AUTO_MODE  &&
-		   m_channel_status.machining_state == MS_RUNNING){
+		   m_channel_status.machining_state == MS_RUNNING &&
+		   m_n_restart_step != 1){
 
 		memset(brk_file_name, 0, sizeof(brk_file_name));
 		strcpy(brk_file_name, m_channel_status.cur_nc_file_name);
-		brk_line_number = m_channel_mc_status.cur_line_no;
+		if(m_channel_mc_status.cur_line_no != 0){
+			brk_line_number = m_channel_mc_status.cur_line_no;
+		}else{
+			brk_line_number = m_channel_rt_status.line_no;
+		}
 
 		FILE * fp = fopen("break_file", "w");
 		fprintf(fp, "%s\n", brk_file_name);
@@ -901,8 +922,10 @@ void ChannelControl::saveBreakPoint(){
 
 		printf("==========  file: %s   lino: %d\n", brk_file_name, brk_line_number);
 	}
-	printf("==========  file: %s   lino: %d\n", brk_file_name, brk_line_number);
+	printf("==========  file: %s   lino: %d machining_state:%d\n",
+			brk_file_name, brk_line_number, m_channel_status.machining_state);
 }
+#endif
 
 /**
  * @brief 获取对应D值得刀具半径补偿值   半径+磨损
@@ -1826,27 +1849,14 @@ void ChannelControl::ResetMode(){
  * @brief 开始G代码运行
  */
 void ChannelControl::StartRunGCode(){
-	printf("===== start run g code \n");
 
-	g_ptr_trace->PrintTrace(TRACE_INFO, CHANNEL_CONTROL_SC,"@#@#Enter ChannelControl::StartRunGCode(), m_n_run_thread_state = %d, chn_work_mode = %hhu, machine_mode = %hhu, mc_mode=%hu\n", m_n_run_thread_state,
+	printf("@#@#Enter ChannelControl::StartRunGCode(), m_n_run_thread_state = %d, chn_work_mode = %hhu, machine_mode = %hhu, mc_mode=%hu\n", m_n_run_thread_state,
 			m_channel_status.chn_work_mode, m_channel_status.machining_state, m_channel_mc_status.cur_mode);
 
 
 	if(m_channel_status.chn_work_mode != AUTO_MODE &&
 			m_channel_status.chn_work_mode != MDA_MODE)
 		return;
-
-	if(m_p_g_reg->BRKC){
-		if(strcmp(m_channel_status.cur_nc_file_name, brk_file_name) != 0){
-			m_error_code = ERR_AXIS_REF_NONE;
-			CreateError(m_error_code, ERROR_LEVEL, CLEAR_BY_MCP_RESET, 0, 0, 0);
-			return;
-		}
-		this->m_n_restart_line = brk_line_number;
-		this->m_n_restart_step = 1;
-		this->m_n_restart_mode = NORMAL_RESTART;
-		m_channel_rt_status.line_no = m_n_restart_line;
-	}
 
 
 #ifdef USES_GRIND_MACHINE
@@ -1899,6 +1909,23 @@ void ChannelControl::StartRunGCode(){
         g_ptr_trace->PrintTrace(TRACE_WARNING, CHANNEL_CONTROL_SC, "machine state is %hhu, return\n", m_channel_status.machining_state);
         return;
     }
+
+#ifdef CARVE_MACHINE
+    if(m_p_g_reg->BRKC){
+		if(strcmp(m_channel_status.cur_nc_file_name, brk_file_name) != 0){
+			m_error_code = ERR_AXIS_REF_NONE;
+			CreateError(m_error_code, ERROR_LEVEL, CLEAR_BY_MCP_RESET, 0, 0, 0);
+			return;
+		}
+		// 暂停后断点继续 不用程序再起
+		if(m_channel_status.machining_state != MS_PAUSED){
+			this->m_n_restart_line = brk_line_number;
+			this->m_n_restart_step = 1;
+			this->m_n_restart_mode = NORMAL_RESTART;
+			m_channel_rt_status.line_no = m_n_restart_line;
+		}
+	}
+#endif
 
     if (this->m_channel_status.chn_work_mode == MDA_MODE && !g_ptr_chn_engine->HasMDIData())
     {
@@ -2028,7 +2055,7 @@ void ChannelControl::StartRunGCode(){
             if(this->m_scene_auto.need_reload_flag){
 #endif
                 if(StartBreakpointContinue()){
-                    g_ptr_trace->PrintTrace(TRACE_INFO, CHANNEL_CONTROL_SC, "start break point continue thread\n");
+                	g_ptr_trace->PrintTrace(TRACE_INFO, CHANNEL_CONTROL_SC, "start break point continue thread\n");
                     gettimeofday(&m_time_start_maching, nullptr);  //初始化启动时间
                     goto END;
                 }
@@ -2326,7 +2353,9 @@ void ChannelControl::StopRunGCode(bool reset){
     }
 
     this->StopCompilerRun(); //停止编译
+#ifdef CARVE_MACHINE
     this->saveBreakPoint();
+#endif
     //TODO 向MC模块发送停止命令
     this->PauseMc();
 
@@ -2892,6 +2921,10 @@ void ChannelControl::ProcessHmiCmd(HMICmdFrame &cmd){
     	this->ProcessHmiGetCustomStepInc(cmd);
     	break;
 
+    case CMD_HMI_GET_BREAK_POINT:
+    	this->ProcessHmiGetBreakPoint(cmd);
+    	break;
+
 #ifdef NEW_WOOD_MACHINE
     case CMD_HMI_APPEND_ORDER_LIST:
     	this->ProcessHmiAppendOrderListFile(cmd);
@@ -2934,15 +2967,22 @@ void ChannelControl::ProcessHmiSetCustomStepInc(HMICmdFrame &cmd){
 	memcpy(&axis, cmd.data, 4);
 	memcpy(&step_inc, &cmd.data[4], 8);
 
-	if(axis > 0 && axis < 8){
+	if(axis > 0 && axis < 31){
 		custom_step_inc[axis] = step_inc;
 		cmd.cmd_extension = SUCCEED;
+
+		FILE * fp = fopen("../config/custom_step_inc", "wb");
+
+		if(fp!= NULL){
+			fwrite(custom_step_inc, sizeof(double)*8, 1, fp);
+			fclose(fp);
+		}
+
 	}else{
 		cmd.cmd_extension = FAILED;
 	}
 
 	this->m_p_hmi_comm->SendCmd(cmd);
-
 }
 
 
@@ -2953,7 +2993,7 @@ void ChannelControl::ProcessHmiGetCustomStepInc(HMICmdFrame &cmd){
 	int axis;
 	memcpy(&axis, cmd.data, 4);
 
-	if(axis > 0 && axis < 8){
+	if(axis > 0 && axis < 31){
 		double data = custom_step_inc[axis];
 		memcpy(&cmd.data[4], &data, 8);
 		cmd.data_len = 12;
@@ -2962,6 +3002,21 @@ void ChannelControl::ProcessHmiGetCustomStepInc(HMICmdFrame &cmd){
 		cmd.cmd_extension = FAILED;
 	}
 
+	this->m_p_hmi_comm->SendCmd(cmd);
+}
+
+void ChannelControl::ProcessHmiGetBreakPoint(HMICmdFrame &cmd){
+	cmd.frame_number |= 0x8000;   //设置回复标志
+
+#ifdef CARVE_MACHINE
+	if(m_p_g_reg->BRKC){
+		memcpy(cmd.data, &brk_line_number, 4);
+	}else{
+		memcpy(cmd.data, &m_channel_mc_status.cur_line_no, 4);
+	}
+#endif
+	cmd.data_len = 4;
+	cmd.cmd_extension = SUCCEED;
 	this->m_p_hmi_comm->SendCmd(cmd);
 }
 
@@ -3990,9 +4045,11 @@ void ChannelControl::ProcessHmiSetNcFileCmd(HMICmdFrame &cmd){
         strcpy(m_channel_status.cur_nc_file_name, cmd.data);
         cmd.cmd_extension = SUCCEED;
 
+#ifdef CARVE_MACHINE
         if(strcmp(brk_file_name, m_channel_status.cur_nc_file_name) != 0){
         	brk_line_number = 0;
         }
+#endif
 
         this->m_p_hmi_comm->SendCmd(cmd);
 
@@ -4018,9 +4075,11 @@ void ChannelControl::ProcessHmiSetNcFileCmd(HMICmdFrame &cmd){
     else{
         strcpy(m_channel_status.cur_nc_file_name, cmd.data);
 
+#ifdef CARVE_MACHINE
         if(strcmp(brk_file_name, m_channel_status.cur_nc_file_name) != 0){
         	brk_line_number = 0;
         }
+#endif
 
         cmd.cmd_extension = SUCCEED;
 
@@ -4618,6 +4677,14 @@ void ChannelControl::SetMachineState(uint8_t mach_state){
     if(m_channel_status.machining_state == mach_state)
         return;
 
+#ifdef CARVE_MACHINE
+    if(m_channel_status.chn_work_mode == AUTO_MODE
+		&& m_channel_status.machining_state == MS_RUNNING
+		&& mach_state == MS_PAUSED){
+    	saveBreakPoint();
+    }
+#endif
+
     if(mach_state == MS_WARNING && m_channel_status.machining_state == MS_STOPPING
             && m_channel_mc_status.cur_mode != MC_MODE_MANUAL)  //等待停止到位后再切换为告警状态
         return;
@@ -4703,7 +4770,6 @@ void ChannelControl::SetWorkMode(uint8_t work_mode){
     if(m_channel_status.chn_work_mode == AUTO_MODE &&
             m_channel_status.machining_state == MS_RUNNING)
     {
-        this->saveBreakPoint();
     	this->Pause();
         usleep(200000);
     }
@@ -5157,9 +5223,9 @@ int ChannelControl::Run(){
                     this->m_channel_status.chn_work_mode == AUTO_MODE && !m_p_compiler->IsPreScaning() && !m_p_compiler->IsSubProgram()
                     )
             {
-            	//m_n_run_thread_state = ERROR;
-                //g_ptr_trace->PrintLog(LOG_ALARM, "CHN[%d]语法错误，未找到结束指令！", m_n_channel_index);
-				//CreateError(ERR_NO_END, ERROR_LEVEL, CLEAR_BY_MCP_RESET, 0, m_n_channel_index);
+            	m_n_run_thread_state = ERROR;
+                g_ptr_trace->PrintLog(LOG_ALARM, "CHN[%d]语法错误，未找到结束指令！", m_n_channel_index);
+				CreateError(ERR_NO_END, ERROR_LEVEL, CLEAR_BY_MCP_RESET, 0, m_n_channel_index);
             }
 
             pthread_mutex_unlock(&m_mutex_change_state);
@@ -5170,7 +5236,10 @@ int ChannelControl::Run(){
             g_ptr_trace->PrintTrace(TRACE_WARNING, CHANNEL_CONTROL_SC, "Compile Error:%d, %d\n", m_error_code, m_p_compiler->GetErrorCode());
             //CreateError(m_error_code, ERROR_LEVEL, CLEAR_BY_MCP_RESET, 0, m_n_channel_index);
             // @test zk  解决编译报警但运行并未停止问题
+#ifdef CARVE_MACHINE
             saveBreakPoint();   // 编译报警不经过Alarm模块 特殊处理断点记录
+#endif
+
             PauseMc();
 
             m_n_run_thread_state = STOP;
@@ -5202,7 +5271,8 @@ int ChannelControl::Run(){
                     usleep(10000);
 #ifdef NEW_WOOD_MACHINE
                     if(m_b_dust_eliminate){
-                    	if(m_channel_mc_status.step_over){
+                    	if(m_channel_mc_status.step_over &&
+                    			strstr(m_channel_status.cur_nc_file_name, "SYS_MACRO_CLEARDUST") == NULL){
                     		strcpy(eliminate_breakfile, m_channel_status.cur_nc_file_name);
                     		eliminate_breakline = m_channel_rt_status.line_no;
                     		SetMcStepMode(false);
@@ -5247,7 +5317,7 @@ int ChannelControl::Run(){
         	if(m_b_dust_eliminate &&
 				m_channel_status.machining_state == MS_READY &&
 				m_eliminate_step == 1){
-
+        		printf("111111111111111111111\n");
         		if(eliminate_breakline == -1){   //不是正在加工 跳转除尘
         			strcpy(eliminate_breakfile, m_channel_status.cur_nc_file_name);
         		}else{
@@ -5276,12 +5346,11 @@ int ChannelControl::Run(){
 				m_eliminate_step = 2;
 
         	}else if(m_b_dust_eliminate && m_eliminate_step == 2){
-
+        		printf("222222222222222222222222\n");
         		char path[kMaxPathLen] = {0};
 				strcpy(path, PATH_NC_FILE);
 				strcat(path, eliminate_breakfile);
 				strcpy(m_channel_status.cur_nc_file_name, eliminate_breakfile);
-
 
         		if(eliminate_breakline == -1){
         			if(this->m_p_compiler->OpenFile(path)){
@@ -6701,10 +6770,6 @@ bool ChannelControl::ExecuteMessage(){
 
             if(IsStepMode()){//单段模式, 非宏程序调用或者打开了调试模式
                 if(msg->CheckFlag(FLAG_LAST_REC)){
-                    //std::cout << "msg->ismoveMsg: " << (int)msg->IsMoveMsg() << std::endl;
-                    //std::cout << "msg->type: " << msg_type << std::endl;
-                    //std::cout << "IsEndMsg: " << msg->IsEndMsg() << std::endl;
-                    //std::cout << "sub: " << m_p_compiler->m_n_cur_dir_sub_prog << std::endl;
                     if((!msg->IsMoveMsg() || msg_type == AUX_MSG || msg_type == REF_RETURN_MSG) &&
                             !msg->IsEndMsg()){	//单步模式下，运行完一行的最后一条代码后暂停
                         if (msg->GetMsgType() != MACRO_MSG)
@@ -6721,6 +6786,7 @@ bool ChannelControl::ExecuteMessage(){
                         std::cout << "---> ExecuteMessage m_b_need_change_to_pause " << std::endl;
                         this->m_b_need_change_to_pause = true;   //mc运行完成后切换暂停状态
                     }
+
                 }
                 //				if(msg->GetFlag(FLAG_LAST_REC))
                 //					m_b_step_exec = false;
@@ -11679,7 +11745,6 @@ bool ChannelControl::ExecuteInputMsg(RecordMsg * msg){
 				return false;
 			}
 		}
-
     }
 
 
@@ -12443,7 +12508,6 @@ void ChannelControl::ManualMove(int8_t dir){
     }else{
         tar_pos = cur_pos + 99999*1e7*dir;    //手动连续模式，将目标位置设置的很远
     }
-
     //检查软限位
     if (!GetLimitTargetPos((ManualMoveDir)dir, m_channel_status.cur_axis, tar_pos))
         return ;
@@ -12597,35 +12661,44 @@ void ChannelControl::ManualMovePmc(int8_t dir){
  */
 int ChannelControl::GetCurManualStep(){
     int step = 0;
-    switch(m_channel_status.manual_step){
-    case MANUAL_STEP_1:
-        step = 1;
-        break;
-    case MANUAL_STEP_10:
-        step = 10;
-        break;
-    case MANUAL_STEP_100:
-        step = 100;
-        break;
-    case MANUAL_STEP_500:
-        step = 500;
-        break;
-    case MANUAL_STEP_1000:
-        step = 1000;
-        break;
-    case MANUAL_STEP_5000:
-        step = 5000;
-        break;
-    case MANUAL_STEP_10000:
-        step = 10000;
-        break;
-    case MANUAL_STEP_50000:
-        step = 50000;
-        break;
-    case MANUAL_STEP_INVALID:
 
-        break;
+    if(m_p_g_reg->XUD){
+
+    	step = custom_step_inc[m_channel_status.cur_axis]*1000;
+
+    }else{
+
+    	switch(m_channel_status.manual_step){
+		case MANUAL_STEP_1:
+			step = 1;
+			break;
+		case MANUAL_STEP_10:
+			step = 10;
+			break;
+		case MANUAL_STEP_100:
+			step = 100;
+			break;
+		case MANUAL_STEP_500:
+			step = 500;
+			break;
+		case MANUAL_STEP_1000:
+			step = 1000;
+			break;
+		case MANUAL_STEP_5000:
+			step = 5000;
+			break;
+		case MANUAL_STEP_10000:
+			step = 10000;
+			break;
+		case MANUAL_STEP_50000:
+			step = 50000;
+			break;
+		case MANUAL_STEP_INVALID:
+
+			break;
+		}
     }
+
     return step;
 }
 
@@ -17498,6 +17571,9 @@ void ChannelControl::Pause(){
 //#ifdef NEW_WOOD_MACHINE
 //	if(m_b_in_next_prog) return;
 //#endif
+#ifdef CARVE_MACHINE
+	this->saveBreakPoint();
+#endif
 
     if(m_channel_status.chn_work_mode == AUTO_MODE || m_channel_status.chn_work_mode == MDA_MODE){
         if(this->m_thread_breakcontinue > 0){//处于断点继续线程执行过程中，则退出断点继续线程
@@ -18170,8 +18246,9 @@ bool ChannelControl::EmergencyStop(){
 
     this->m_p_f_reg->RST = 1;
 
+#ifdef CARVE_MACHINE
 	this->saveBreakPoint();
-
+#endif
 
     //停止编译
     pthread_mutex_lock(&m_mutex_change_state);  //等待编译运行线程停止
@@ -18180,7 +18257,6 @@ bool ChannelControl::EmergencyStop(){
     pthread_mutex_unlock(&m_mutex_change_state);
     //printf("unlocked 15\n");
     //停止MC执行
-
     this->PauseMc();
 
     if(this->m_thread_breakcontinue > 0){//处于断点继续线程执行过程中，则退出断点继续线程
@@ -18214,7 +18290,6 @@ bool ChannelControl::EmergencyStop(){
         }
     }
     this->SendChnStatusChangeCmdToHmi(REF_POINT_FLAG);
-
 
     //OP信号复位
     this->m_p_f_reg->OP = 0;

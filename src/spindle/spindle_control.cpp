@@ -914,7 +914,12 @@ void SpindleControl::SendSpdSpeedToMi()
         if(output >= 2048) output = 2047;
         if(output < -2048) output = -2048;
 
-        F->RO = output;
+        if(spindle->spd_vctrl_mode == 0){
+        	F->RO = 0;
+        }else{
+        	F->RO = output;
+        }
+
         printf("F->RO: %d  output: %d\n", F->RO, output);
     }
 

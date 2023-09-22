@@ -831,25 +831,7 @@ int Interp::convert_cutter_compensation_on(int side, double radius,
 
 	if(settings->cutter_comp_side != side){
 		printf("settings->cutter_comp_side : %d\n", settings->cutter_comp_side);
-		//this->reset();
-		//@TODO 刀补方向切换处理
-		/*
-		if(settings->cutter_comp_side && settings->cutter_comp_radius > 0.0 &&
-			!settings->cutter_comp_firstmove){
-			double cx, cy, cz;
-			comp_get_current(settings, &cx, &cy, &cz);
-			move_endpoint_and_flush(settings, cx, cy);
-			dequeue_canons(settings);
-			settings->current_x = settings->program_x;
-			settings->current_y = settings->program_y;
-			settings->current_z = settings->program_z;
-			settings->arc_not_allowed = true;
-		}
 
-		settings->cutter_comp_side = false;
-		settings->cutter_comp_firstmove = true;
-		settings->cutter_comp_lastmove = false;
-		isCompOn = false;*/
 	}
 
 	settings->cutter_comp_side = side;

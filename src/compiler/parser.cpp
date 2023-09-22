@@ -1469,7 +1469,8 @@ bool Parser::GetExpressionResult(MacroExpression &express, MacroVarValue &res){
 				return false;
 			}
 
-//            printf("read var: %d , %lf\n", static_cast<int>(value1.value), res_tmp.value);
+            printf("read var: %d , value: %lf, init: %d\n",
+            		static_cast<int>(value1.value), res_tmp.value, res_tmp.init);
 
 			stack_value.push(res_tmp);
 		}

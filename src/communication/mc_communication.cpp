@@ -865,9 +865,12 @@ bool MCCommunication::ProcessCmdFun(){
 	McCmdFrame cmd_frame;
 //	McCmdFrame *send_cmd = nullptr;
 	ListNode<McCmdFrame> *node = nullptr;
-
+#include <chrono>
 
 	uint64_t read_count = 0;	//for test
+//	std::chrono::time_point<std::chrono::steady_clock> start;
+//	std::chrono::time_point<std::chrono::steady_clock> end;
+//	start = std::chrono::steady_clock::now();
 	while(!g_sys_state.system_quit){//程序不退出
 
 		//处理待发送的命令
@@ -886,13 +889,43 @@ bool MCCommunication::ProcessCmdFun(){
 		if(this->m_list_cmd->GetLength() > 100)
 			g_ptr_trace->PrintLog(LOG_ALARM, "待重发MC命令消息过多[%d]！", m_list_cmd->GetLength());
 
+//		static uint32_t count = 0;
+//		static uint32_t read_c = 0;
+//		McCmdFrame frame;
+//		frame.data.cmd = 0x888;
+//		memcpy(frame.data.data, &count, 4);
+//
+//		//printf("%u\n", *(uint32_t *)frame.data.data);
+//		this->WriteCmd(frame);
+//		count ++;
+//		usleep(500);
 
 		if(!this->ReadCmdRsp(cmd_frame)){
 			//无数据则睡眠2ms
+			//this->m_p_channel_engine->ShakeHandWithMc();  //循环发送握手命令进行测试
 			usleep(2000);
-//			this->m_p_channel_engine->ShakeHandWithMc();  //循环发送握手命令进行测试
 			continue;
 		}
+
+//		if(cmd_frame.data.cmd == 0x888){
+//
+//			uint32_t read_data = *(uint32_t *)&cmd_frame.data.data[2];
+//
+//			if(read_data - read_c <= 1){
+//				//printf("mc rsp: %u\n", *(uint32_t *)&cmd_frame.data.data[2]);
+//				read_c = read_data;
+//
+//				if(read_c > 100000) break;
+//
+//			}else{
+//				if(read_count > 100000){
+//					printf("======== %u break;\n", read_data - read_c);
+//					break;
+//				}
+//				printf("======== %u\n", read_data - read_c);
+//				read_c = read_data;
+//			}
+//		}
 
 		read_count++;	// 读取响应计数
 
@@ -915,6 +948,10 @@ bool MCCommunication::ProcessCmdFun(){
 		//转给ChannelEngine执行
 		this->m_p_channel_engine->ProcessMcCmdRsp(cmd_frame);
 	}
+
+//	end = std::chrono::steady_clock::now();
+//	std::chrono::duration<double> elapsed = end - start;
+//	printf("===== time_elapsed: %lf\n", elapsed.count());
 
 
 	return true;

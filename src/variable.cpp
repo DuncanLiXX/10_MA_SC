@@ -538,7 +538,7 @@ bool Variable::GetSysVar(int index, double&value){
 	else if(index == 3011){  //系统日期，2021.09.15存储为：20210915
 		time_t cur_time;
 		struct tm* time_info;
-		cur_time = time(nullptr);
+        cur_time = time(nullptr);
 		if (cur_time != -1) {
 			time_info = localtime(&cur_time);
 			value = time_info->tm_year + 1900;

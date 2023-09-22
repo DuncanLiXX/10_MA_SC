@@ -116,7 +116,9 @@ public:
     void SetCurRequirePiece(uint8_t chn_index, uint32_t requriePiece);//设置当前需求件数
     void SetCurTotalMachiningTime(uint8_t chn_index, uint32_t totalTime);//设置指定通道的累计加工时间
     uint32_t GetCurTotalMachingTime(uint8_t chn_index);    //获取指定通道的累计加工时间
-    void SetCurFileMachiningTime(uint8_t chn_index, uint32_t totalTime);
+    void SetCurFileMachiningTime(uint8_t chn_index, uint32_t totalTime);//文件加工时间
+    void SetRemainTime(uint8_t chn_index, uint32_t remainTime);
+    uint32_t GetRemainTime(uint8_t chn_index);
     uint32_t GetCurFileWorkPieceCnt(uint8_t chn_index);
     void SetCurFileWorkPieceCnt(uint8_t chn_index, uint32_t cnt);
     uint32_t GetCurFileMachiningTime(uint8_t chn_index);

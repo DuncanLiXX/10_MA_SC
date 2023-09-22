@@ -461,6 +461,8 @@ public:
 
     bool NotifyHmiWorkInfoChanged(string file_name);
 
+    void UpdateAndLogWorkFile();    //换程序时，更新当前程序的加工信息
+	
 #ifdef CARVE_MACHINE
     // 保存断点
     void saveBreakPoint();
@@ -646,7 +648,6 @@ private:
 
     void SetChnCurWorkPiece(int newCnt);   //设置当前加工件数
 	int GetCurToolLife();    //获取当前刀具寿命
-    void UpdateAndLogWorkFile(string file_name);    //换程序时，更新当前程序的加工信息
 
 	uint8_t GetCurPhyAxis();		//获取当前物理轴号
 
@@ -909,6 +910,8 @@ private://私有成员变量
     uint16_t m_n_graph_pos_count;   //当前位置缓冲数量
 
     int m_preselect_tool_arr[kMaxTCodeInLine];
+
+    string m_last_filename;     //上一次加工程序名
 
 #ifdef USES_SPEED_TORQUE_CTRL
     uint8_t m_n_need_reset_axis_ctrlmode;				// 各轴复位计数值，当为0时，标识不需要复位，从某个数递减，减为0，标识复位成功

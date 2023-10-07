@@ -225,9 +225,13 @@ bool Variable::GetVarValue(int index, double &value, bool &init){
 	}else if(index >= 500 && index <1000){	//保持型公共变量
 		init = this->m_b_init_common_keep[index-500];
 		value = this->m_df_common_keep[index-500];
+		// 屏蔽对未初始化变量的检测
+		init = true;
 	}else if(index >=50000 && index < 55000){    //扩展保持型公共变量
 		init = this->m_b_init_user_macro[index-50000];
 		value = this->m_df_user_macro[index-50000];
+		// 屏蔽对未初始化变量的检测
+		init = true;
 		//printf("===== GetVarValue value: %lf init: %d index: %d\n", value, init, index);
 	}else if(index >= 1000){	//系统变量
 		if((index >= 5061 && index <= 5080) ||
@@ -247,6 +251,9 @@ bool Variable::GetVarValue(int index, double &value, bool &init){
 		g_ptr_trace->PrintLog(LOG_ALARM, "变量索引号[%d]非法，获取变量值失败！", index);
 		return false;
 	}
+
+	// 屏蔽对未初始化变量的检测
+	init = true;
 
 	return true;
 }

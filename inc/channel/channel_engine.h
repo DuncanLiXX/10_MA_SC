@@ -349,6 +349,10 @@ void SetMcArmComm(MCArmCommunication *comm){this->m_p_mc_arm_comm = comm;}   //…
     void NotifyExternalStartToHmi();
     void ProcessSAsingal(bool force = false);    //º±Õ£–≈∫≈–≈∫≈œ‡πÿ¥¶¿Ì
 
+public:
+    bool file_receive{false};
+
+
 private:	//ÀΩ”–≥…‘±∫Ø ˝
 	ChannelEngine();   //ππ‘Ï∫Ø ˝
 

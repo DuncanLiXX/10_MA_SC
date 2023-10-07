@@ -231,11 +231,11 @@ enum HMICmdCode {
 	CMD_HMI_GET_ORDER_LEN,			 //获取排程列表长度
 	CMD_HMI_GET_ORDER_FILE,			 //根据序号获取排程列表文件名
     // 木工专用 end
-    CMD_HMI_SEND_MDI_INFO,      //发送MDI当前状态信息
-    CMD_HMI_DATA_STORE_INFO,    //存储信息操作
-    CMD_HMI_UPDATE_COORD_INFO,  //获取坐标存取信息
+    CMD_HMI_SEND_MDI_INFO,           //发送MDI当前状态信息
+    CMD_HMI_DATA_STORE_INFO,         //存储信息操作
+    CMD_HMI_UPDATE_COORD_INFO,       //获取坐标存取信息
     CND_HMI_SET_STATISTICS_LOG,      //通知日志记录
-	CMD_HMI_GET_BREAK_POINT,    // 获取断点信息
+	CMD_HMI_GET_BREAK_POINT,         // 获取断点信息
 	CMD_HMI_SET_CUSTOM_STEP_INC,    // 设置自定义步长
 	CMD_HMI_GET_CUSTOM_STEP_INC,	// 获取自定义步长
 
@@ -1492,6 +1492,7 @@ struct HmiToolOffsetConfig{
 	double geometry_wear[3];				//刀具长度磨损补偿
 	double radius_compensation;			//刀具半径补偿
 	double radius_wear;					//刀具半径磨损补偿
+	double length_compensation;
 };
 
 /**
@@ -1978,15 +1979,14 @@ struct SG_PMC_Register_Config
 /* 伺服引导 *******************************************
 ******************************************************/
 
-
-
 struct FS_Entity
 {
     int type_ = FILE_UNKOWN;
     //std::string name_;
     int size_ = 0;
-    time_t time_;
     char name_[128] ;
+    uint64_t time_;
+    //time_t time_;
     //std::string current_dir;
 };
 

@@ -1463,14 +1463,7 @@ void Compiler::PreScanLine2(char *buf, uint64_t offset, uint64_t line_no,
  * @param sub_flag : 是否子程序文件
  */
 bool Compiler::OpenFile(const char *file, bool sub_flag) {
-    //	bool res = false;
-    //	if(this->m_work_mode == MDA_COMPILER){  //MDA模式下在启动编译时再打开文件
-    //		res = m_p_file_map_info->OpenFile(m_str_mda_path);
-    //	}
-    //	else if(m_work_mode == AUTO_COMPILER){
-    //		res = m_p_file_map_info->OpenFile(file);
-    //	}
-    // printf("compiler::openfile, file[%s], sub_flag= %hhu\n", file, sub_flag);
+
     int res = 0;
 
     // @add zk 加载过长文件名导致崩溃
@@ -1505,54 +1498,6 @@ bool Compiler::OpenFile(const char *file, bool sub_flag) {
     this->m_ln_cur_line_no = 1;
     this->m_b_eof = false;
 
-    /*
-    void* thread_result;
-    //创建预扫描线程
-    if (!m_b_prescan_over && m_thread_prescan != 0){
-        //先退出之前的线程
-        m_b_breakout_prescan = true;
-        int wait_count = 0;
-
-        while (m_b_breakout_prescan && wait_count++ < 200)
-            usleep(1000);  //等待线程退出
-
-        if (m_b_breakout_prescan) {//等待退出失败，则主动cancel线程
-
-            //退出预扫描运行线程
-            res = pthread_cancel(m_thread_prescan);
-            if (res != 0) {
-                g_ptr_trace->PrintLog(LOG_ALARM, "预扫描线程退出失败1！errno = %d\n",
-                                      res);
-                printf("预扫描线程退出失败1111\n");
-                CreateError(ERR_QUIT_PRESCAN, ERROR_LEVEL, CLEAR_BY_RESET_POWER,
-                            0, m_n_channel_index);
-                return false;
-            }
-
-            usleep(1000);
-        }
-        res = pthread_join(m_thread_prescan, &thread_result);  //等待线程退出完成
-        if (res != 0) {
-            g_ptr_trace->PrintLog(LOG_ALARM, "预扫描线程退出失败2！errno = %d\n",
-                                  res);
-            printf("预扫描线程退出失败2222\n");
-            CreateError(ERR_QUIT_PRESCAN, ERROR_LEVEL, CLEAR_BY_RESET_POWER,
-                        0, m_n_channel_index);
-            return false;
-        }
-        m_thread_prescan = 0;
-
-    }else if(m_b_prescan_over && m_thread_prescan != 0){  //释放预扫描线程资源
-        res = pthread_join(m_thread_prescan, &thread_result);  //等待线程退出完成
-        if (res != 0) {
-            g_ptr_trace->PrintLog(LOG_ALARM, "预扫描线程资源释放失败！errno = %d\n",
-                                  res);
-            printf("预扫描线程退出失败3333\n");
-            CreateError(ERR_QUIT_PRESCAN, ERROR_LEVEL, CLEAR_BY_RESET_POWER,
-                        0, m_n_channel_index);
-        }
-        m_thread_prescan = 0;
-    }*/
     compiler_lock = true;
     m_b_breakout_prescan = false;
     //m_b_prescan_over = false;
@@ -1573,38 +1518,13 @@ bool Compiler::OpenFile(const char *file, bool sub_flag) {
 
     static std::future<void> ans;
     auto func = std::bind(&Compiler::PreScan, this);
-	ans = std::async(std::launch::async, func);
+    ans = std::async(std::launch::async, func);
 
 #ifdef USES_WOOD_MACHINE
     m_p_list_spd_start->Clear();
 #endif
 
-    /*
-    pthread_attr_t attr;
-    struct sched_param param;
-    pthread_attr_init(&attr);
-    pthread_attr_setschedpolicy(&attr, SCHED_RR);
-    pthread_attr_setstacksize(&attr, kThreadStackSize);	//
-    if (sub_flag)
-        param.__sched_priority = 36;	//96; //子程序，预扫描线程比编译线程优先级高一级
-    else
-        param.__sched_priority = 35; //95; //主程序，预扫描线程比编译线程优先级一，因为主程序可能比较大
-    pthread_attr_setschedparam(&attr, &param);
 
-
-    res = pthread_create(&m_thread_prescan, &attr, Compiler::PreScanThread, this);    //开启G代码预编译线程
-    if (res != 0) {
-        g_ptr_trace->PrintLog(LOG_ALARM, "CHN[%d]编译器预扫描线程创建失败! res = %d, errno = %d, errstr=%s",
-                              m_n_channel_index, res, errno, strerror(errno));
-        m_error_code = ERR_PRE_SCAN;
-        CreateError(ERR_PRE_SCAN, ERROR_LEVEL, CLEAR_BY_MCP_RESET, 0,
-                    m_n_channel_index);
-    }
-
-    pthread_attr_destroy(&attr);
-
-    printf("exit openfile priority %d\n", param.__sched_priority);
-    */
     return true;
 }
 
@@ -2867,7 +2787,10 @@ bool Compiler::RunCoordMsg(RecordMsg *msg) {
             // 解决一键回零中 G53异常问题
 
             //将目标位置换算为工件坐标系
+        	DPointChn &pt = tmp->GetTargetPos();
+        	printf("===== start:    %lf %lf %lf\n", pt.m_df_point[0],pt.m_df_point[1],pt.m_df_point[2]);
             this->m_p_channel_control->TransMachCoordToWorkCoord(tmp->GetTargetPos(), m_compiler_status.mode.gmode[14], m_compiler_status.mode.h_mode, tmp->GetAxisMask());
+            printf("===== after:    %lf %lf %lf\n", pt.m_df_point[0],pt.m_df_point[1],pt.m_df_point[2]);
         }
 
         // 旋转轴坐标处理
@@ -3265,7 +3188,6 @@ bool Compiler::RunRefReturnMsg(RecordMsg *msg){
                 // printf("RunRefReturnMsg1: i = %d, target=%lf, src=%lf\n", i, *p_target_pos, *p_source_pos);
                 *p_target_pos += *p_source_pos;
                 //				printf("RunRefReturnMsg2: i = %d, target=%lf, src=%lf\n", i, *p_target_pos, *p_source_pos);
-
             }
             tm = tm<<1;
             p_target_pos++;
@@ -4561,54 +4483,6 @@ bool Compiler::ReturnFromSubProg() {
             isJumpUpper = true;
         }
 
-    	/*
-        //预扫描线程是否结束，未结束则退出
-        void * thread_result;
-        int res = 0;
-        if (!m_b_prescan_over && m_thread_prescan != 0) {//预扫描线程未结束，退出并等待其结束
-            //先退出之前的线程
-            m_b_breakout_prescan = true;
-            int wait_count = 0;
-
-            while (m_b_breakout_prescan && wait_count++ < 200)
-                usleep(1000);  //等待线程退出
-            if (m_b_breakout_prescan) {//等待退出失败，则主动cancel线程
-
-                //退出预扫描运行线程
-                res = pthread_cancel(m_thread_prescan);
-                if (res != 0) {
-                    g_ptr_trace->PrintLog(LOG_ALARM, "预扫描线程退出失败3！errno = %d\n",
-                                          res);
-                    printf("预扫描线程退出失败7777\n");
-                    CreateError(ERR_QUIT_PRESCAN, ERROR_LEVEL, CLEAR_BY_RESET_POWER,
-                                0, m_n_channel_index);
-                    return false;
-                }
-
-                usleep(1000);
-            }
-            res = pthread_join(m_thread_prescan, &thread_result);  //等待线程退出完成
-            if (res != 0) {
-                g_ptr_trace->PrintLog(LOG_ALARM, "预扫描线程退出失败4！errno = %d\n",
-                                      res);
-                printf("预扫描线程退出失败8888\n");
-                CreateError(ERR_QUIT_PRESCAN, ERROR_LEVEL, CLEAR_BY_RESET_POWER,
-                            0, m_n_channel_index);
-                return false;
-            }
-            m_thread_prescan = 0;
-
-        }else if(m_b_prescan_over && m_thread_prescan != 0){  //释放预扫描线程资源
-            res = pthread_join(m_thread_prescan, &thread_result);  //等待线程退出完成
-            if (res != 0) {
-                g_ptr_trace->PrintLog(LOG_ALARM, "预扫描线程资源释放失败2！errno = %d\n",
-                                      res);
-                printf("预扫描线程退出失败9999\n");
-                CreateError(ERR_QUIT_PRESCAN, ERROR_LEVEL, CLEAR_BY_RESET_POWER,
-                            0, m_n_channel_index);
-            }
-            m_thread_prescan = 0;
-        }*/
         m_b_breakout_prescan = false;
         //m_b_prescan_over = false;
 

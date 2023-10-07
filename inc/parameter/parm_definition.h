@@ -386,6 +386,7 @@ struct SCToolOffsetConfig{
 	double geometry_wear[kMaxToolCount][3];				//µ¶¾ß³¤¶ÈÄ¥Ëð²¹³¥
 	double radius_compensation[kMaxToolCount];			//µ¶¾ß°ë¾¶²¹³¥
 	double radius_wear[kMaxToolCount];					//µ¶¾ß°ë¾¶Ä¥Ëð²¹³¥
+	double length_compensation[kMaxToolCount];          //µ¶¾ß³¤¶È²¹³¥
 };
 
 /**

@@ -376,28 +376,7 @@ int LoadSp6Data_2(){
         send_size_total += send_size_block;
 
         for(i = 0; i < send_size_block; i++){
-//			for(j = 0; j < 8; j++){
-//				//拉低时钟
-//				lseek(fp_clk, 0, SEEK_SET);
-//				write(fp_clk, "0", 2);
-//				fsync(fp_clk);
-//
-//				//输出bit数据
-//				if(data_buf[i] & (0x80>>j)){
-//					lseek(fp_data, 0, SEEK_SET);
-//					write(fp_data, "1", 2);
-//					fsync(fp_data);
-//				}else{
-//					lseek(fp_data, 0, SEEK_SET);
-//					write(fp_data, "0", 2);
-//					fsync(fp_data);
-//				}
-//
-//				//拉高时钟
-//				lseek(fp_clk, 0, SEEK_SET);
-//				write(fp_clk, "1", 2);
-//				fsync(fp_clk);
-//			}
+
             TRANS_BIT(0);
             TRANS_BIT(1);
             TRANS_BIT(2);
@@ -579,13 +558,13 @@ int GetDiskVersion(char* buf, int len)
  */
 int Initialize(){
     int res = ERR_NONE;
-
     InitSysState();
     memset(&g_sys_info, 0x00, sizeof(g_sys_info));  //初始化系统信息结构
-
-    //sprintf(g_sys_info.sw_version_info.sc, "SC-00.01.11");
-    //sprintf(g_sys_info.sw_version_info.sc, "SC-00.02.1c");
-    sprintf(g_sys_info.sw_version_info.sc, "SC-00.00.23w");
+    //sprintf(g_sys_info.sw_version_info.sc, "SC-WC-0.0.1");
+    //sprintf(g_sys_info.sw_version_info.sc, "SC-00.00.24");
+    sprintf(g_sys_info.sw_version_info.sc, "SC-0.2.5C");
+    //sprintf(g_sys_info.sw_version_info.sc, "SC-0.1.14W");
+    //sprintf(g_sys_info.sw_version_info.sc, "SC-TEST-SERVO");
     strcpy(g_sys_info.sw_version_info.mc, "P0.0.0");
     strcpy(g_sys_info.sw_version_info.mi, "P0.0.0");
 
@@ -853,25 +832,6 @@ int main()
 
     printf("Enter the main loop, thread id = %ld!\n", syscall(SYS_gettid));
 
-//	修改主线程优先级
-//	pthread_attr_t attr;
-//	struct sched_param param;
-//	int policy;
-//	pthread_attr_init(&attr);  //线程属性初始化
-//	pthread_attr_getschedparam(&attr, &param);
-//	pthread_attr_getschedpolicy(&attr, &policy);
-//	pthread_attr_setschedpolicy(&attr, SCHED_RR);
-//
-//
-//
-//	printf("main thread policy: %d, priority: %d\n", policy, param.__sched_priority);
-//	param.__sched_priority = 96;
-//	pthread_attr_setschedparam(&attr, &param);
-//
-//	res = pthread_attr_setinheritsched(&attr, PTHREAD_EXPLICIT_SCHED); //不继承父线程调度方式，否则以上的设置不生效
-//
-//	pthread_attr_destroy(&attr);
-
     res = Initialize();
 
     InitSysResource();
@@ -889,100 +849,13 @@ int main()
             sizeof(ErrorInfo), sizeof(HmiToolPotConfig));
     g_ptr_trace->PrintTrace(TRACE_INFO, MAIN_ENTRANCE_SC, "@#@#@Start SC Module!");
 
-    //测试延时函数
-//	struct timeval tvStart;
-//	struct timeval tvNow;
-//	unsigned int nTimeDelay = 0;
-//    struct timespec req;
-//    struct timeval tv;
-//	unsigned int delay[10] = {500000, 100000, 50000, 10000, 5000, 1000, 500, 100, 10, 1};
-//	int nError = 0;
-//	int ret = 0;
-// //	fd_set rfds;
-// //	int fd = 1;
-//	int max_err[3][10] = {0}; 		//最大误差
-//	int min_err[3][10] = {10000};	//最小误差
-//	int total_err[3][10] = {0};   	//总误差
-//	int avg_err[3][10] = {0};		//平均误差
-//	int count = 0;
-//	memset(&min_err[0][0], 10000, sizeof(int)*10*3);
+
     while (1) {
         if (g_sys_state.system_quit) {
             g_ptr_trace->PrintTrace(TRACE_INFO, MAIN_ENTRANCE_SC, "Break from the main dead loop!\n");
             break;//退出主线程
         }
-//		for(int i = 0; i < 10; i++){
-//			//test usleep()
-//			gettimeofday(&tvStart, NULL);
-//			ret = usleep(delay[i]);
-// //			req.tv_sec = delay[i]/1000000;
-// //			req.tv_nsec = (delay[i]%1000000)*1000;
-// //			ret = nanosleep(&req, NULL);
-// //			FD_ZERO(&rfds);
-// //			FD_SET(fd, &rfds);
-// //			tv.tv_sec = 0;
-// //			tv.tv_usec = delay[i];
-// //			ret = select(0, NULL, NULL, NULL, &tv);
-// //			if(-1 == ret){
-// //				printf("delay error!");
-// //			}
-//			gettimeofday(&tvNow, NULL);
-//			nTimeDelay = (tvNow.tv_sec-tvStart.tv_sec)*1000000+tvNow.tv_usec-tvStart.tv_usec;
-//			nError = nTimeDelay - delay[i];
-//			if(nError < min_err[0][i])
-//				min_err[0][i] = nError;
-//			if(nError > max_err[0][i])
-//				max_err[0][i] = nError;
-//			total_err[0][i] += nError;
-//			printf("select = %u, act = %u, error = %d\n", delay[i], nTimeDelay, nError);
-//
-//			//test nanosleep()
-//			gettimeofday(&tvStart, NULL);
-//			req.tv_sec = delay[i]/1000000;
-//			req.tv_nsec = (delay[i]%1000000)*1000;
-//			ret = nanosleep(&req, NULL);
-//			gettimeofday(&tvNow, NULL);
-//			nTimeDelay = (tvNow.tv_sec-tvStart.tv_sec)*1000000+tvNow.tv_usec-tvStart.tv_usec;
-//			nError = nTimeDelay - delay[i];
-//			if(nError < min_err[1][i])
-//				min_err[1][i] = nError;
-//			if(nError > max_err[1][i])
-//				max_err[1][i] = nError;
-//			total_err[1][i] += nError;
-//
-//			//test select()
-//			gettimeofday(&tvStart, NULL);
-//			tv.tv_sec = 0;
-//			tv.tv_usec = delay[i];
-//			ret = select(0, NULL, NULL, NULL, &tv);
-//			if(-1 == ret){
-//				printf("delay error!");
-//			}
-//			gettimeofday(&tvNow, NULL);
-//			nTimeDelay = (tvNow.tv_sec-tvStart.tv_sec)*1000000+tvNow.tv_usec-tvStart.tv_usec;
-//			nError = nTimeDelay - delay[i];
-//			if(nError < min_err[2][i])
-//				min_err[2][i] = nError;
-//			if(nError > max_err[2][i])
-//				max_err[2][i] = nError;
-//			total_err[2][i] += nError;
-//		}
-//
-//		if(++count == 50)
-//		{
-//			for(int i = 0; i < 10; i++){
-//				avg_err[0][i] = total_err[0][i]/count;
-//				avg_err[1][i] = total_err[1][i]/count;
-//				avg_err[2][i] = total_err[2][i]/count;
-//				printf("%d  :   usleep = %u, nanosleep = %u, select = %u \n", delay[i], avg_err[0][i], avg_err[1][i], avg_err[2][i]);
-//				printf("max: usleep = %u, nanosleep = %u, select = %u \n", max_err[0][i], max_err[1][i], max_err[2][i]);
-//				printf("min: usleep = %u, nanosleep = %u, select = %u \n", min_err[0][i], min_err[1][i], min_err[2][i]);
-//			}
-//
-//			break;
-//		}
 
-//		CheckNetState("eth0");  //检测网络状态
 
         g_ptr_chn_engine->DoIdle();
 
@@ -998,95 +871,4 @@ int main()
     return res;
 }
 
-//#define SET_SECTION8_LED _IO('x', 1) //设置8段管
-//#define GET_SECTION8_LED _IO('x', 2) //获取8段管
-//#define GET_ALARM_GPIO _IO('x', 3) //获取报警电平
-//#define SET_NOTIFY_PID _IO('x', 4) //设置通知PID
-//
-//void alarm_signal_handler(int signo, siginfo_t *info, void *context)
-//{
-//	printf("sigcode=%d\n", info->si_code);
-//}
-//
-//void connect_signal_handler(void)
-//{
-//	struct sigaction sa;
-//
-//	sa.sa_handler = (void (*)(int))alarm_signal_handler;
-//	sigemptyset(&sa.sa_mask);
-//	sa.sa_flags = SA_SIGINFO;
-//	int ret = sigaction(SIGUSR1, &sa, NULL);
-//	if (ret == -1) {
-//		printf("Failed to caught signal!\n");
-//	}
-//}
-//
-//int main()
-//{
-//	int fd;
-//	unsigned char value;
-//
-//	connect_signal_handler();
-//
-//	fd = open("/dev/aradex_gpio", O_RDWR);
-//	if (fd < 0) {
-//		printf("Can't open /dev/aradex_gpio!\n");
-//		return -1;
-//	}
-//
-//	ioctl(fd, SET_NOTIFY_PID, getpid()); //设置通知pid为自己
-//
-//	for (int i=0; i<8; i++) {
-//		ioctl(fd, SET_SECTION8_LED, 1<<i);
-//		sleep(1);
-//	}
-//
-//	ioctl(fd, GET_SECTION8_LED, &value);
-//	printf("Read led is %x\n", value);
-//
-//	ioctl(fd, GET_ALARM_GPIO, &value);
-//	printf("Read alarm is %x\n", value);
-//
-//	close(fd);
-//
-//
-//	printf("start loop\n");
-//
-//	while(1)
-//		usleep(300000);
-//
-//	return 0;
-//}
 
-//#include <stdio.h>
-//		#include <unistd.h>
-//
-//		//906+
-//
-//		int main()
-//		{
-//			FILE * fp;
-//			fp = fopen("/sys/class/gpio/export", "w");
-//			fputs("921", fp);
-//			fclose(fp);
-//			fp = fopen("/sys/class/gpio/gpio921/direction", "w");
-//			fputs("out", fp);
-//			fclose(fp);
-//
-//			int ff = open("/sys/class/gpio/gpio921/value", O_WRONLY);
-//			while (1)
-//		   	{
-//				lseek(ff, 0, SEEK_SET);
-//				write(ff, "1", 2);
-//				fsync(ff);
-//				usleep(500000);
-//				lseek(ff, 0, SEEK_SET);
-//				write(ff, "0", 2);
-//
-//				fsync(ff);
-//				usleep(500000);
-//			}
-//			close(ff);
-//
-//			return 0;
-//		}

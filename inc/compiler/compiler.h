@@ -82,7 +82,6 @@ public://公共接口
 	bool IsBlockListEmpty(){return m_p_block_msg_list->GetLength()==0?true:false;}   //分块队列是否为空
 	bool RefreshBlockMovePos(DPointChn &pos);   //同步起点位置
 
-
 	void SetAxisNameEx(bool flag);   //设置轴名称扩展下标使能
 
     void RefreshPmcAxis();
@@ -97,6 +96,8 @@ public://公共接口
 	double GetFValue(){
 		return m_compiler_status.mode.f_mode;
 	}
+
+	inline int GetCurLine(){return m_ln_cur_line_no;}
 
     // sub_name:子程序号
     // file_only:只搜索实际文件

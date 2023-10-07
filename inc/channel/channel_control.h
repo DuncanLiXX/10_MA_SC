@@ -206,6 +206,9 @@ public:
 	void ProcessHmiSetRefCmd(HMICmdFrame &cmd);			//处理设置参考点命令
 
 	void SetMcCoord(bool flag);  	//设置MC的坐标系原点
+
+	void SetMcToolOffsetReal();
+
 	void SetChnAxisName();		//设置通道轴名称
 
 	void SetChnAxisOn(uint8_t chn_axis);			//设置轴使能，以及插补模式（1--NC轴插补   2--PMC轴插补）

@@ -4269,6 +4269,7 @@ void ChannelEngine::ProcessHmiGetParam(HMICmdFrame &cmd){
             cfg.geometry_wear[2] = pp->geometry_wear[index][2];
             cfg.radius_compensation = pp->radius_compensation[index];
             cfg.radius_wear = pp->radius_wear[index];
+            cfg.length_compensation = pp->length_compensation[index];
             memcpy(cmd.data+1, &cfg, cmd.data_len);
             cmd.data_len += 1;
 
@@ -9449,7 +9450,7 @@ void ChannelEngine::ProcessPmcSignal(){
         }
 
         if((g_reg->ST && g_reg_last->ST == 0) && g_reg->_SP == 1 && f_reg->STL == 0){ //Ñ­»·Æô¶¯
-        	this->Start();
+        	if(!file_receive) this->Start();
         }
 
         if(g_reg->ST_EXT && g_reg_last->ST_EXT == 0){

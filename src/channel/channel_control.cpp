@@ -392,14 +392,12 @@ bool ChannelControl::Initialize(uint8_t chn_index, ChannelEngine *engine, HMICom
 	FILE * fp2;
 
 	// 读取自定义步长
-	fp2 = fopen("../config/custom_step_inc", "rb");
+	fp2 = fopen("/cnc/config/custom_step_inc", "rb");
 
 	if(fp2 != NULL){
-		fread(custom_step_inc, 1, sizeof(double)*8, fp2);
+		fread(custom_step_inc, 1, sizeof(double)*32, fp2);
 		fclose(fp2);
 	}
-
-
 
     ShowSc &showSc = Singleton<ShowSc>::instance();
     showSc.AddComponent(&m_channel_status);
@@ -1857,6 +1855,12 @@ void ChannelControl::StartRunGCode(){
 			m_channel_status.chn_work_mode, m_channel_status.machining_state, m_channel_mc_status.cur_mode);
 
 
+	if(m_p_compiler->IsPreScaning()){
+		printf("===== compiler prescanning !!!\n");
+		return;
+	}
+
+
 	if(m_channel_status.chn_work_mode != AUTO_MODE &&
 			m_channel_status.chn_work_mode != MDA_MODE)
 		return;
@@ -2972,16 +2976,19 @@ void ChannelControl::ProcessHmiSetCustomStepInc(HMICmdFrame &cmd){
 	memcpy(&axis, cmd.data, 4);
 	memcpy(&step_inc, &cmd.data[4], 8);
 
-	if(axis > 0 && axis < 31){
+	if(axis >= 0 && axis < 32){
 		custom_step_inc[axis] = step_inc;
 		cmd.cmd_extension = SUCCEED;
-
-		FILE * fp = fopen("../config/custom_step_inc", "wb");
+		printf("11111111111111111111\n");
+		FILE * fp = fopen("/cnc/config/custom_step_inc", "wb");
 
 		if(fp!= NULL){
-			fwrite(custom_step_inc, sizeof(double)*8, 1, fp);
+			fwrite(custom_step_inc, sizeof(double)*32, 1, fp);
 			fclose(fp);
+			printf("22222222222222222222222\n");
 		}
+
+		printf("333333333333333333\n");
 
 	}else{
 		cmd.cmd_extension = FAILED;
@@ -2998,7 +3005,7 @@ void ChannelControl::ProcessHmiGetCustomStepInc(HMICmdFrame &cmd){
 	int axis;
 	memcpy(&axis, cmd.data, 4);
 
-	if(axis > 0 && axis < 31){
+	if(axis >= 0 && axis < 32){
 		double data = custom_step_inc[axis];
 		memcpy(&cmd.data[4], &data, 8);
 		cmd.data_len = 12;
@@ -4045,10 +4052,10 @@ void ChannelControl::ProcessHmiSetNcFileCmd(HMICmdFrame &cmd){
     Flag_SyncCrcPos = true;
     // @add zk 防止打开过长文件名文件
     if(strlen(cmd.data) > 127) return;
+
     string temp_file_name = m_channel_status.cur_nc_file_name;
-    if(this->m_channel_status.chn_work_mode != AUTO_MODE){   //非自动模式
-        strcpy(m_channel_status.cur_nc_file_name, cmd.data);
-        cmd.cmd_extension = SUCCEED;
+
+    strcpy(m_channel_status.cur_nc_file_name, cmd.data);
 
 #ifdef CARVE_MACHINE
         if(strcmp(brk_file_name, m_channel_status.cur_nc_file_name) != 0){
@@ -4056,18 +4063,22 @@ void ChannelControl::ProcessHmiSetNcFileCmd(HMICmdFrame &cmd){
         }
 #endif
 
+    if(this->m_channel_status.chn_work_mode != AUTO_MODE){   //非自动模式
+
+        cmd.cmd_extension = SUCCEED;
+
         this->m_p_hmi_comm->SendCmd(cmd);
 
         if(m_channel_status.machining_state == MS_PAUSED){//通道复位
             this->Reset();
-
         }
-        g_ptr_parm_manager->SetCurNcFile(m_n_channel_index, m_channel_status.cur_nc_file_name);    //修改当前NC文件
 
+        g_ptr_parm_manager->SetCurNcFile(m_n_channel_index, m_channel_status.cur_nc_file_name);    //修改当前NC文件
         char path[kMaxPathLen] = {0};
         strcpy(path, PATH_NC_FILE);
         strcat(path, m_channel_status.cur_nc_file_name);   //拼接文件绝对路径
         this->m_p_compiler->OpenFileInScene(path);
+
     }else if(m_channel_status.machining_state == MS_RUNNING ||
              m_channel_status.machining_state == MS_OUTLINE_SIMULATING ||
              m_channel_status.machining_state == MS_TOOL_PATH_SIMULATING ||
@@ -4078,13 +4089,6 @@ void ChannelControl::ProcessHmiSetNcFileCmd(HMICmdFrame &cmd){
         this->m_p_hmi_comm->SendCmd(cmd);
     }
     else{
-        strcpy(m_channel_status.cur_nc_file_name, cmd.data);
-
-#ifdef CARVE_MACHINE
-        if(strcmp(brk_file_name, m_channel_status.cur_nc_file_name) != 0){
-        	brk_line_number = 0;
-        }
-#endif
 
         cmd.cmd_extension = SUCCEED;
 
@@ -4107,11 +4111,6 @@ void ChannelControl::ProcessHmiSetNcFileCmd(HMICmdFrame &cmd){
         m_last_filename = temp_file_name;
     }
 
-//    if (strcmp(temp_file_name.c_str(), cmd.data))
-//    {
-//        m_time_remain = 0;
-//        g_ptr_parm_manager->SetRemainTime(m_n_channel_index, 0);
-//    }
 }
 
 /**
@@ -4675,7 +4674,6 @@ void ChannelControl::SetMachineState(uint8_t mach_state){
     {
         //停止伺服监控
         g_ptr_chn_engine->m_serverGuide.ResetRecord();
-
         string msg = "结束加工程序|" + string(this->m_channel_status.cur_nc_file_name);
         g_ptr_tracelog_processor->SendToHmi(kProcessInfo, kCombine, msg);
 
@@ -4688,7 +4686,8 @@ void ChannelControl::SetMachineState(uint8_t mach_state){
 #ifdef CARVE_MACHINE
     if(m_channel_status.chn_work_mode == AUTO_MODE
 		&& m_channel_status.machining_state == MS_RUNNING
-		&& mach_state == MS_PAUSED){
+		&& (mach_state == MS_WARNING ||mach_state == MS_PAUSING
+				||mach_state == MS_PAUSED)){
     	saveBreakPoint();
     }
 #endif
@@ -4822,6 +4821,7 @@ void ChannelControl::SetWorkMode(uint8_t work_mode){
 
         //手动停止
         this->ManualMoveStop();
+        this->PauseMc();
         this->m_p_f_reg->MINC = 0;
         this->m_p_f_reg->MJ = 0;
         break;
@@ -4959,7 +4959,6 @@ void ChannelControl::SetWorkMode(uint8_t work_mode){
     m_channel_status.chn_work_mode = work_mode;
 
     this->SendWorkModeCmdToHmi(work_mode); 	//通知HMI工作模式切换
-
 }
 
 /**
@@ -5202,7 +5201,7 @@ int ChannelControl::Run(){
 					else{
 						if(m_p_compiler->GetErrorCode() != ERR_NONE){
 
-							CreateError(m_p_compiler->GetErrorCode(), ERROR_LEVEL, CLEAR_BY_MCP_RESET, 0, m_n_channel_index);
+							CreateError(m_p_compiler->GetErrorCode(), ERROR_LEVEL, CLEAR_BY_MCP_RESET, m_p_compiler->GetCurLine(), m_n_channel_index);
 							m_n_run_thread_state = ERROR;
 						}else{
 
@@ -6137,12 +6136,12 @@ bool ChannelControl::OutputData(RecordMsg *msg, bool flag_block){
             data_frame.data.ext_type |= 0x02;	//直线定位
         }
 
-        /*
+
         printf("data frame : %lld %lld %lld",
         		data_frame.data.pos0,
 				data_frame.data.pos1,
 				data_frame.data.pos2);
-		*/
+
 
         break;
     default:
@@ -6183,8 +6182,7 @@ bool ChannelControl::OutputData(RecordMsg *msg, bool flag_block){
     }
     if(!res){
         //发送失败
-        m_n_send_mc_data_err++;
-        //		printf("failed to send out data frame: cmd = %d, line = %d\n", data_frame.data.cmd, data_frame.data.line_no);
+        printf("failed to send out data frame: cmd = %d, line = %d\n", data_frame.data.cmd, data_frame.data.line_no);
         return false;
     }
     else{
@@ -8433,21 +8431,21 @@ bool ChannelControl::ExecuteCoordMsg(RecordMsg *msg){
 				offset -= m_p_chn_ex_coord_config[coord_index/10-5401].offset[i];
 			}
 
-			int phy_axis = this->GetPhyAxis(i);
-			if(phy_axis != 0xFF){
-				if(this->m_p_axis_config[phy_axis].axis_linear_type == LINE_AXIS_Z && m_channel_status.cur_h_code > 0){//Z轴需要加上刀长偏置
-					//	origin_pos += m_p_chn_tool_config->geometry_comp_basic[2];   //基准刀偏
-
-					if(g44_active){
-						offset += m_p_chn_tool_config->geometry_compensation[m_channel_status.cur_h_code-1][2];
-					}else{
-						offset -= m_p_chn_tool_config->geometry_compensation[m_channel_status.cur_h_code-1][2];
-					}
-
-					offset -= m_p_chn_tool_config->geometry_wear[m_channel_status.cur_h_code-1][2];   //叠加磨损补偿
-
-				}
+			if(g44_active && i < 3 && m_channel_status.cur_h_code > 0){
+				offset += m_p_chn_tool_config->geometry_compensation[m_channel_status.cur_h_code][i];
+				offset += m_p_chn_tool_config->geometry_wear[m_channel_status.cur_h_code][i];
+			}else if(i < 3 && m_channel_status.cur_h_code > 0){
+				offset -= m_p_chn_tool_config->geometry_compensation[m_channel_status.cur_h_code][i];
+				offset -= m_p_chn_tool_config->geometry_wear[m_channel_status.cur_h_code][i];
 			}
+
+//			int phy_axis = this->GetPhyAxis(i);
+//			if(phy_axis != 0xFF){
+//				if(this->m_p_axis_config[phy_axis].axis_linear_type == LINE_AXIS_Z && m_channel_status.cur_h_code > 0){//Z轴需要加上刀长偏置
+//					//	origin_pos += m_p_chn_tool_config->geometry_comp_basic[2];   //基准刀偏
+//
+//				}
+//			}
 			m_p_chn_g92_offset->offset[i] = offset;
 		}
 		G52Active = false;
@@ -9543,8 +9541,8 @@ bool ChannelControl::ExecuteCompensateMsg(RecordMsg *msg){
             else
                 this->m_p_mc_arm_comm->ReadAxisIntpPos(m_n_channel_index, m_channel_mc_status.intp_pos, m_channel_mc_status.intp_tar_pos);
 
-            //			m_channel_rt_status.cur_pos_work = m_channel_mc_status.intp_pos;
-            //			m_channel_rt_status.tar_pos_work = m_channel_mc_status.intp_tar_pos;
+//            			m_channel_rt_status.cur_pos_work = m_channel_mc_status.intp_pos;
+//            			m_channel_rt_status.tar_pos_work = m_channel_mc_status.intp_tar_pos;
             RefreshAxisIntpPos();
 
             //			printf("compensate: refreshpos[%lf, %lf, %lf]\n", m_channel_rt_status.cur_pos_work.m_df_point[0], m_channel_rt_status.cur_pos_work.m_df_point[1],
@@ -10513,7 +10511,6 @@ static int wait_times = 0;
 static timeval m_time_ret;
 bool ChannelControl::ExecuteRefReturnMsg(RecordMsg *msg){
     RefReturnMsg *refmsg = (RefReturnMsg *)msg;
-
     if(this->m_n_restart_mode != NOT_RESTART &&
     		main_prog_line_number < this->m_n_restart_line-1
         #ifdef USES_ADDITIONAL_PROGRAM
@@ -10529,7 +10526,6 @@ bool ChannelControl::ExecuteRefReturnMsg(RecordMsg *msg){
 			for(int i = 0; i < this->m_p_channel_config->chn_axis_count; i++){
 				if(axis_mask & (0x01<<i)){
 					pos.m_df_point[i] = m_p_axis_config[this->GetPhyAxis(i)].axis_home_pos[0];
-					printf("===== g28 %lf %d\n", pos.m_df_point[i], i);
 				}
 			}
         }else if(gcode == G30_CMD){
@@ -10646,6 +10642,8 @@ bool ChannelControl::ExecuteRefReturnMsg(RecordMsg *msg){
     int gcode = refmsg->GetGCode();
     uint32_t axis_mask = refmsg->GetAxisMask();
     DPointChn &mid_pos = refmsg->GetMiddlePos();
+
+    //this->TransMachCoordToWorkCoord(mid_pos, m_mode_restart.gmode[14], m_mode_restart.cur_h_code, axis_mask);
 
     double *pos = mid_pos.m_df_point;
     //	SCAxisConfig *axis_config = nullptr;
@@ -12779,8 +12777,10 @@ void ChannelControl::ManualMove(uint8_t axis, double pos, double vel, bool workc
  * @param 无
  */
 void ChannelControl::ManualMoveStop(){
-    if(m_channel_status.chn_work_mode == MANUAL_STEP_MODE){  //手动单步模式，不做响应，退出
-        return;
+
+
+	if(m_channel_status.chn_work_mode == MANUAL_STEP_MODE){  //手动单步模式，不做响应，退出
+		return;
     }
 
     m_channel_status.cur_manual_move_dir = DIR_STOP;
@@ -13123,7 +13123,10 @@ void ChannelControl::SetMcAxisToolOffset(uint8_t axis_index){
     }
 
     if(this->m_channel_status.gmode[8] == G44_CMD)	//负向补偿
-        offset *= -1;
+    	offset *= -1;
+
+    // @zk 目前只有刀具长度补偿接口  和刀具偏置接口方向相反
+    // 实现刀具偏置临时处理
 
     cmd.data.data[0] = offset&0xFFFF;
     cmd.data.data[1] = (offset>>16)&0xFFFF;
@@ -13317,6 +13320,49 @@ bool ChannelControl::IsMoveStop(uint8_t phyAxis)
     }
     else
         return true;
+}
+
+void ChannelControl::SetMcToolOffsetReal(){
+
+	for(int i = 0; i < m_p_channel_config->chn_axis_count; i++){
+
+		int64_t origin_pos = 0;
+
+
+		printf("ext offset: %lf\n", m_p_chn_coord_config[0].offset[i]);
+
+		origin_pos += (int64_t)(m_p_chn_coord_config[0].offset[i] * 1e7);  //基本工件坐标系
+
+		printf("g92 offset: %lf\n", m_p_chn_g92_offset->offset[i]);
+
+		// g92 offset
+		origin_pos += (int64_t)(m_p_chn_g92_offset->offset[i] * 1e7);
+
+		// g54xx offset
+		int coord_index = m_channel_status.gmode[14];
+
+		printf("coord_index: %d\n", coord_index);
+
+		if(coord_index <= G59_CMD ){
+			origin_pos += (int64_t)(m_p_chn_coord_config[coord_index/10-53].offset[i] * 1e7);    //单位由mm转换为0.1nm
+
+		}else if(coord_index <= G5499_CMD){
+			origin_pos += (int64_t)(m_p_chn_ex_coord_config[coord_index/10-5401].offset[i] * 1e7);    //单位由mm转换为0.1nm
+		}
+
+		if(G52Active){
+			origin_pos += (int64_t)(G52offset[i] * 1e7);
+		}
+
+		if(i<3){
+
+			origin_pos += m_p_chn_tool_config->geometry_compensation[m_channel_status.cur_h_code-1][i];
+			origin_pos += m_p_chn_tool_config->geometry_wear[m_channel_status.cur_h_code-1][i];
+
+		}
+
+		this->SetMcAxisOrigin(i, origin_pos);
+	}
 }
 
 /**
@@ -17588,6 +17634,8 @@ void ChannelControl::Pause(){
 //#endif
 #ifdef CARVE_MACHINE
 	this->saveBreakPoint();
+
+	if(m_n_restart_step == 1) return;
 #endif
 
     if(m_channel_status.chn_work_mode == AUTO_MODE || m_channel_status.chn_work_mode == MDA_MODE){
@@ -18995,6 +19043,13 @@ void ChannelControl::ResetOPSignal(){
     printf("ChannelControl::ResetOPSignal()\n");
 }
 
+
+#ifndef CARVE_MACHINE
+
+#else
+
+#endif
+
 /**
  * @brief 复位RST信号
  */
@@ -19026,7 +19081,10 @@ void ChannelControl::SetALSignal(bool value){
  * @param axis_mask : 轴掩码
  */
 void ChannelControl::TransMachCoordToWorkCoord(DPointChn &pos, uint16_t coord_idx, uint32_t axis_mask){
-    double origin_pos = 0;
+
+	printf("TransMachCoordToWorkCoord 1\n");
+
+	double origin_pos = 0;
     double *pp = pos.m_df_point;
     uint8_t phy_axis = 0xFF;
 
@@ -19041,21 +19099,19 @@ void ChannelControl::TransMachCoordToWorkCoord(DPointChn &pos, uint16_t coord_id
                 origin_pos += m_p_chn_ex_coord_config[coord_idx/10-5401].offset[i];
             }
 
-            phy_axis = this->GetPhyAxis(i);
+//            phy_axis = this->GetPhyAxis(i);
+//
+//            if(phy_axis != 0xFF){
+				uint16_t g_compensation = this->m_channel_status.gmode[8];
+				if(g_compensation == G43_CMD && i < 3){
+					origin_pos += m_p_chn_tool_config->geometry_compensation[m_channel_status.cur_h_code-1][i];
+					origin_pos += m_p_chn_tool_config->geometry_wear[m_channel_status.cur_h_code-1][i];
+				}else if(g_compensation == G44_CMD && i<3){
+					origin_pos -= m_p_chn_tool_config->geometry_compensation[m_channel_status.cur_h_code-1][i];
+					origin_pos -= m_p_chn_tool_config->geometry_wear[m_channel_status.cur_h_code-1][i];
+				}
 
-            if(phy_axis != 0xFF){
-
-            	if(this->m_p_axis_config[phy_axis].axis_linear_type == LINE_AXIS_Z && m_channel_status.cur_h_code > 0){//Z轴需要加上刀长偏置
-                    //	origin_pos += m_p_chn_tool_config->geometry_comp_basic[2];   //基准刀偏
-                	if(g44_active){
-                		origin_pos -= m_p_chn_tool_config->geometry_compensation[m_channel_status.cur_h_code-1][2];  //
-                	}else{
-                		origin_pos += m_p_chn_tool_config->geometry_compensation[m_channel_status.cur_h_code-1][2];  //
-                	}
-
-                    origin_pos += m_p_chn_tool_config->geometry_wear[m_channel_status.cur_h_code-1][2];   //叠加磨损补偿
-                }
-            }
+            //}
 
             origin_pos += m_p_chn_g92_offset->offset[i];
 
@@ -19082,7 +19138,10 @@ void ChannelControl::TransMachCoordToWorkCoord(DPointChn &pos, uint16_t coord_id
  * @param axis_mask : 轴掩码
  */
 void ChannelControl::TransMachCoordToWorkCoord(DPointChn &pos, uint16_t coord_idx, uint16_t h_code, uint32_t axis_mask){
-    double origin_pos = 0;
+
+	printf("TransMachCoordToWorkCoord 2\n");
+
+	double origin_pos = 0;
     double *pp = pos.m_df_point;
     uint8_t phy_axis = 0xFF;
     //axis_mask &= (~m_mask_pmc_axis);   //去掉PMC轴
@@ -19104,21 +19163,21 @@ void ChannelControl::TransMachCoordToWorkCoord(DPointChn &pos, uint16_t coord_id
               	origin_pos += G52offset[i];
   		    }
 
-            //if(G92Active) origin_pos = m_p_chn_g92_offset->offset[i];
+			uint16_t g_compensation = this->m_channel_status.gmode[8];
+			if(g_compensation == G43_CMD && i < 3){
+				origin_pos += m_p_chn_tool_config->geometry_compensation[m_channel_status.cur_h_code-1][i];
+				origin_pos += m_p_chn_tool_config->geometry_wear[m_channel_status.cur_h_code-1][i];
+			}else if(g_compensation == G44_CMD && i<3){
+				origin_pos -= m_p_chn_tool_config->geometry_compensation[m_channel_status.cur_h_code-1][i];
+				origin_pos -= m_p_chn_tool_config->geometry_wear[m_channel_status.cur_h_code-1][i];
+			}
 
-            phy_axis = this->GetPhyAxis(i);
-            if(phy_axis != 0xFF){
-                if(this->m_p_axis_config[phy_axis].axis_linear_type == LINE_AXIS_Z && h_code > 0){//Z轴需要加上刀长偏置
-                    //	origin_pos += m_p_chn_tool_config->geometry_comp_basic[2];   //基准刀偏
-                    if(g44_active){
-						origin_pos -= m_p_chn_tool_config->geometry_compensation[m_channel_status.cur_h_code-1][2];  //
-					}else{
-						origin_pos += m_p_chn_tool_config->geometry_compensation[m_channel_status.cur_h_code-1][2];  //
-					}
-                    origin_pos += m_p_chn_tool_config->geometry_wear[h_code-1][2];   //叠加磨损补偿
-                }
-            }
-            *pp -= origin_pos;    //机械坐标 - 工件坐标系偏移 = 工件坐标
+    		// @ 轴关系映射以后可能会用到
+            //phy_axis = this->GetPhyAxis(i);
+            //if(phy_axis != 0xFF){
+
+            //}
+            *pp -= origin_pos;    //机械坐标  - 工件坐标系偏移 = 工件坐标
         }
         pp++;
     }
@@ -19131,7 +19190,10 @@ void ChannelControl::TransMachCoordToWorkCoord(DPointChn &pos, uint16_t coord_id
  * @param axis_mask : 轴掩码
  */
 void ChannelControl::TransMachCoordToWorkCoord(DPoint &pos, uint16_t coord_idx, uint32_t axis_mask){
-    double origin_pos = 0;
+
+	printf("TransMachCoordToWorkCoord 3\n");
+
+	double origin_pos = 0;
     double *pp = &pos.x;
     uint8_t phy_axis = 0xFF;
 
@@ -19141,28 +19203,24 @@ void ChannelControl::TransMachCoordToWorkCoord(DPoint &pos, uint16_t coord_idx, 
         if(axis_mask & (0x01<<i)){
             origin_pos = m_p_chn_coord_config[0].offset[i];  //基本工件坐标系
 
-            if(coord_idx >= G54_CMD && coord_idx <= G59_CMD ){
-                origin_pos += m_p_chn_coord_config[coord_idx/10-53].offset[i];
-            }else if(coord_idx >= G5401_CMD && coord_idx <= G5499_CMD){
-                origin_pos += m_p_chn_ex_coord_config[coord_idx/10-5401].offset[i];
-            }
-
-
             origin_pos += m_p_chn_g92_offset->offset[i];
 
-            phy_axis = this->GetPhyAxis(i);
-            if(phy_axis != 0xFF){
-                if(this->m_p_axis_config[phy_axis].axis_linear_type == LINE_AXIS_Z && m_channel_status.cur_h_code > 0){//Z轴需要加上刀长偏置
-                    //		origin_pos += m_p_chn_tool_config->geometry_comp_basic[2];   //基准刀偏
-                    if(g44_active){
-						origin_pos -= m_p_chn_tool_config->geometry_compensation[m_channel_status.cur_h_code-1][2];  //
-					}else{
-						origin_pos += m_p_chn_tool_config->geometry_compensation[m_channel_status.cur_h_code-1][2];  //
-					}
-                    origin_pos += m_p_chn_tool_config->geometry_wear[m_channel_status.cur_h_code-1][2];   //叠加磨损补偿
-                }
+//            phy_axis = this->GetPhyAxis(i);
+//            if(phy_axis != 0xFF){
+//                if(this->m_p_axis_config[phy_axis].axis_linear_type == LINE_AXIS_Z && m_channel_status.cur_h_code > 0){//Z轴需要加上刀长偏置
 
-            }
+				uint16_t g_compensation = this->m_channel_status.gmode[8];
+				if(g_compensation == G43_CMD && i < 3){
+					origin_pos += m_p_chn_tool_config->geometry_compensation[m_channel_status.cur_h_code-1][i];
+					origin_pos += m_p_chn_tool_config->geometry_wear[m_channel_status.cur_h_code-1][i];
+				}else if(g_compensation == G44_CMD && i<3){
+					origin_pos -= m_p_chn_tool_config->geometry_compensation[m_channel_status.cur_h_code-1][i];
+					origin_pos -= m_p_chn_tool_config->geometry_wear[m_channel_status.cur_h_code-1][i];
+				}
+
+                //}
+
+            //}
             if(G52Active){
             	origin_pos += G52offset[i];
 		    }
@@ -19183,7 +19241,8 @@ void ChannelControl::TransMachCoordToWorkCoord(DPoint &pos, uint16_t coord_idx, 
  *  @param axis_mask : 轴掩码
  */
 void ChannelControl::TransWorkCoordToMachCoord(DPointChn &pos, uint16_t coord_idx, uint32_t axis_mask){
-    double origin_pos = 0;
+    printf("TransWorkCoordToMachCoord 1\n");
+	double origin_pos = 0;
     double *pp = pos.m_df_point;
     uint8_t phy_axis = 0xFF;
 
@@ -19207,19 +19266,22 @@ void ChannelControl::TransWorkCoordToMachCoord(DPointChn &pos, uint16_t coord_id
 
             //if(G92Active) origin_pos = m_p_chn_g92_offset->offset[i];
 
-            phy_axis = this->GetPhyAxis(i);
-            if(phy_axis != 0xFF){
-                if(this->m_p_axis_config[phy_axis].axis_linear_type == LINE_AXIS_Z && m_channel_status.cur_h_code > 0){//Z轴需要加上刀长偏置
-                    //		origin_pos += m_p_chn_tool_config->geometry_comp_basic[2];   //基准刀偏
-                    if(g44_active){
-        				origin_pos -= m_p_chn_tool_config->geometry_compensation[m_channel_status.cur_h_code-1][2];  //
-        			}else{
-        				origin_pos += m_p_chn_tool_config->geometry_compensation[m_channel_status.cur_h_code-1][2];  //
-        			}
-                    origin_pos += m_p_chn_tool_config->geometry_wear[m_channel_status.cur_h_code-1][2];   //叠加磨损补偿
-                }
+//            phy_axis = this->GetPhyAxis(i);
+//            if(phy_axis != 0xFF){
 
-            }
+//            	if(this->m_p_axis_config[phy_axis].axis_linear_type == LINE_AXIS_Z && m_channel_status.cur_h_code > 0){//Z轴需要加上刀长偏置
+//
+					uint16_t g_compensation = this->m_channel_status.gmode[8];
+					if(g_compensation == G43_CMD && i < 3){
+						origin_pos += m_p_chn_tool_config->geometry_compensation[m_channel_status.cur_h_code-1][i];
+						origin_pos += m_p_chn_tool_config->geometry_wear[m_channel_status.cur_h_code-1][i];
+					}else if(g_compensation == G44_CMD && i<3){
+						origin_pos -= m_p_chn_tool_config->geometry_compensation[m_channel_status.cur_h_code-1][i];
+						origin_pos -= m_p_chn_tool_config->geometry_wear[m_channel_status.cur_h_code-1][i];
+					}
+//                }
+
+            //}
 
             *pp += origin_pos;    //机械坐标 - 工件坐标系偏移 = 工件坐标
 
@@ -19236,7 +19298,8 @@ void ChannelControl::TransWorkCoordToMachCoord(DPointChn &pos, uint16_t coord_id
  *  @param axis_mask : 轴掩码
  */
 void ChannelControl::TransWorkCoordToMachCoord(DPoint &pos, uint16_t coord_idx, uint32_t axis_mask){
-    double origin_pos = 0;
+    printf("TransWorkCoordToMachCoord 2\n");
+	double origin_pos = 0;
     double *pp = &pos.x;
     uint8_t phy_axis = 0xFF;
 
@@ -19260,21 +19323,23 @@ void ChannelControl::TransWorkCoordToMachCoord(DPoint &pos, uint16_t coord_idx, 
 
             //if(G92Active) origin_pos = m_p_chn_g92_offset->offset[i];
 
-            phy_axis = this->GetPhyAxis(i);
-            if(phy_axis != 0xFF){
-                if(this->m_p_axis_config[phy_axis].axis_linear_type == LINE_AXIS_Z && m_channel_status.cur_h_code > 0){//Z轴需要加上刀长偏置
-                    //		origin_pos += m_p_chn_tool_config->geometry_comp_basic[2];   //基准刀偏
-                    if(g44_active){
-        				origin_pos -= m_p_chn_tool_config->geometry_compensation[m_channel_status.cur_h_code-1][2];  //
-        			}else{
-        				origin_pos += m_p_chn_tool_config->geometry_compensation[m_channel_status.cur_h_code-1][2];  //
-        			}
-                    origin_pos += m_p_chn_tool_config->geometry_wear[m_channel_status.cur_h_code-1][2];   //叠加磨损补偿
-                }
+//            phy_axis = this->GetPhyAxis(i);
+//            if(phy_axis != 0xFF){
+//                if(this->m_p_axis_config[phy_axis].axis_linear_type == LINE_AXIS_Z && m_channel_status.cur_h_code > 0){//Z轴需要加上刀长偏置
 
-            }
+					uint16_t g_compensation = this->m_channel_status.gmode[8];
+					if(g_compensation == G43_CMD && i < 3){
+						origin_pos += m_p_chn_tool_config->geometry_compensation[m_channel_status.cur_h_code-1][i];
+						origin_pos += m_p_chn_tool_config->geometry_wear[m_channel_status.cur_h_code-1][i];
+					}else if(g_compensation == G44_CMD && i<3){
+						origin_pos -= m_p_chn_tool_config->geometry_compensation[m_channel_status.cur_h_code-1][i];
+						origin_pos -= m_p_chn_tool_config->geometry_wear[m_channel_status.cur_h_code-1][i];
+					}
+                //}
 
-            *pp += origin_pos;    //机械坐标 - 工件坐标系偏移 = 工件坐标
+            //}
+
+            *pp += origin_pos;    //机械坐标 + 工件坐标系偏移 = 工件坐标
 
         }
         pp++;
@@ -19288,7 +19353,10 @@ void ChannelControl::TransWorkCoordToMachCoord(DPoint &pos, uint16_t coord_idx, 
  * @param axis ：通道轴号, 从0开始
  */
 void ChannelControl::TransMachCoordToWorkCoord(double &pos, uint16_t coord_idx, uint8_t axis){
-    double origin_pos = 0;
+
+	printf("TransMachCoordToWorkCoord 4\n");
+
+	double origin_pos = 0;
     origin_pos = m_p_chn_coord_config[0].offset[axis];  //基本工件坐标系
     if(coord_idx >= G54_CMD && coord_idx <= G59_CMD ){
         origin_pos += m_p_chn_coord_config[coord_idx/10-53].offset[axis];
@@ -19304,20 +19372,22 @@ void ChannelControl::TransMachCoordToWorkCoord(double &pos, uint16_t coord_idx, 
 
     //if(G92Active) origin_pos = m_p_chn_g92_offset->offset[axis];
 
-    uint8_t phy_axis = this->GetPhyAxis(axis);
-    if(phy_axis != 0xFF){
-        if(this->m_p_axis_config[phy_axis].axis_linear_type == LINE_AXIS_Z && m_channel_status.cur_h_code > 0){//Z轴需要加上刀长偏置
-            //	origin_pos += m_p_chn_tool_config->geometry_comp_basic[2];   //基准刀偏
-            if(g44_active){
-				origin_pos -= m_p_chn_tool_config->geometry_compensation[m_channel_status.cur_h_code-1][2];  //
-			}else{
-				origin_pos += m_p_chn_tool_config->geometry_compensation[m_channel_status.cur_h_code-1][2];  //
+//    uint8_t phy_axis = this->GetPhyAxis(axis);
+//    if(phy_axis != 0xFF){
+//        if(this->m_p_axis_config[phy_axis].axis_linear_type == LINE_AXIS_Z && m_channel_status.cur_h_code > 0){//Z轴需要加上刀长偏置
+
+			uint16_t g_compensation = this->m_channel_status.gmode[8];
+			if(g_compensation == G43_CMD && axis < 3){
+				origin_pos += m_p_chn_tool_config->geometry_compensation[m_channel_status.cur_h_code-1][axis];
+				origin_pos += m_p_chn_tool_config->geometry_wear[m_channel_status.cur_h_code-1][axis];
+			}else if(g_compensation == G44_CMD && axis<3){
+				origin_pos -= m_p_chn_tool_config->geometry_compensation[m_channel_status.cur_h_code-1][axis];
+				origin_pos -= m_p_chn_tool_config->geometry_wear[m_channel_status.cur_h_code-1][axis];
 			}
-            origin_pos += m_p_chn_tool_config->geometry_wear[m_channel_status.cur_h_code-1][2];   //叠加磨损补偿
-        }
 
-    }
+        //}
 
+    //}
 
     pos -= origin_pos;    //机械坐标 - 工件坐标系偏移 = 工件坐标
 }
@@ -19329,7 +19399,11 @@ void ChannelControl::TransMachCoordToWorkCoord(double &pos, uint16_t coord_idx, 
  * @param axis ：通道轴号
  */
 void ChannelControl::TransWorkCoordToMachCoord(double &pos, uint16_t coord_idx, uint8_t axis){
-    double origin_pos = 0;
+
+	printf("TransWorkCoordToMachCoord 3\n");
+	printf("===== start: %lf\n", pos);
+
+	double origin_pos = 0;
     origin_pos = m_p_chn_coord_config[0].offset[axis];  //基本工件坐标系
     if(coord_idx >= G54_CMD && coord_idx <= G59_CMD ){
         origin_pos += m_p_chn_coord_config[coord_idx/10-53].offset[axis];
@@ -19337,19 +19411,22 @@ void ChannelControl::TransWorkCoordToMachCoord(double &pos, uint16_t coord_idx, 
         origin_pos += m_p_chn_ex_coord_config[coord_idx/10-5401].offset[axis];
     }
 
-    uint8_t phy_axis = this->GetPhyAxis(axis);
-    if(phy_axis != 0xFF){
-        if(this->m_p_axis_config[phy_axis].axis_linear_type == LINE_AXIS_Z && m_channel_status.cur_h_code > 0){//Z轴需要加上刀长偏置
-            //	origin_pos += m_p_chn_tool_config->geometry_comp_basic[2];   //基准刀偏
-            if(g44_active){
-				origin_pos -= m_p_chn_tool_config->geometry_compensation[m_channel_status.cur_h_code-1][2];  //
-			}else{
-				origin_pos += m_p_chn_tool_config->geometry_compensation[m_channel_status.cur_h_code-1][2];  //
-			}
-            origin_pos += m_p_chn_tool_config->geometry_wear[m_channel_status.cur_h_code-1][2];   //叠加磨损补偿
-        }
+//    uint8_t phy_axis = this->GetPhyAxis(axis);
+//    if(phy_axis != 0xFF){
+//        if(this->m_p_axis_config[phy_axis].axis_linear_type == LINE_AXIS_Z && m_channel_status.cur_h_code > 0){//Z轴需要加上刀长偏置
 
-    }
+			uint16_t g_compensation = this->m_channel_status.gmode[8];
+			if(g_compensation == G43_CMD && axis < 3){
+				origin_pos += m_p_chn_tool_config->geometry_compensation[m_channel_status.cur_h_code-1][axis];
+				origin_pos += m_p_chn_tool_config->geometry_wear[m_channel_status.cur_h_code-1][axis];
+			}else if(g_compensation == G44_CMD && axis<3){
+				origin_pos -= m_p_chn_tool_config->geometry_compensation[m_channel_status.cur_h_code-1][axis];
+				origin_pos -= m_p_chn_tool_config->geometry_wear[m_channel_status.cur_h_code-1][axis];
+			}
+
+        //}
+
+    //}
     origin_pos += m_p_chn_g92_offset->offset[axis];
 
     if(G52Active){
@@ -19359,6 +19436,8 @@ void ChannelControl::TransWorkCoordToMachCoord(double &pos, uint16_t coord_idx, 
     //if(G92Active) origin_pos = m_p_chn_g92_offset->offset[axis];
 
     pos += origin_pos;
+
+    printf("===== end: %lf\n", pos);
 }
 
 /**
@@ -19369,6 +19448,9 @@ void ChannelControl::TransWorkCoordToMachCoord(double &pos, uint16_t coord_idx, 
  * @param axis ： 通道轴号
  */
 void ChannelControl::TransWorkCoordToMachCoord(double &pos, uint16_t coord_idx, uint16_t h_code, uint8_t axis){
+
+	printf("TransWorkCoordToMachCoord 4\n");
+
     double origin_pos = 0;
     origin_pos = m_p_chn_coord_config[0].offset[axis];  //基本工件坐标系
     if(coord_idx >= G54_CMD && coord_idx <= G59_CMD ){
@@ -19378,18 +19460,21 @@ void ChannelControl::TransWorkCoordToMachCoord(double &pos, uint16_t coord_idx, 
     }
 
     uint8_t phy_axis = this->GetPhyAxis(axis);
-    if(phy_axis != 0xFF){
-        if(this->m_p_axis_config[phy_axis].axis_linear_type == LINE_AXIS_Z && m_channel_status.cur_h_code > 0){//Z轴需要加上刀长偏置
-            //	origin_pos += m_p_chn_tool_config->geometry_comp_basic[2];   //基准刀偏
-            if(g44_active){
-				origin_pos -= m_p_chn_tool_config->geometry_compensation[m_channel_status.cur_h_code-1][2];  //
-			}else{
-				origin_pos += m_p_chn_tool_config->geometry_compensation[m_channel_status.cur_h_code-1][2];  //
-			}
-            origin_pos += m_p_chn_tool_config->geometry_wear[h_code-1][2];   //叠加磨损补偿
-        }
+//    if(phy_axis != 0xFF){
+//        if(this->m_p_axis_config[phy_axis].axis_linear_type == LINE_AXIS_Z && m_channel_status.cur_h_code > 0){//Z轴需要加上刀长偏置
 
-    }
+			uint16_t g_compensation = this->m_channel_status.gmode[8];
+			if(g_compensation == G43_CMD && axis < 3){
+				origin_pos += m_p_chn_tool_config->geometry_compensation[m_channel_status.cur_h_code-1][axis];
+				origin_pos += m_p_chn_tool_config->geometry_wear[m_channel_status.cur_h_code-1][axis];
+			}else if(g_compensation == G44_CMD && axis <3){
+				origin_pos -= m_p_chn_tool_config->geometry_compensation[m_channel_status.cur_h_code-1][axis];
+				origin_pos -= m_p_chn_tool_config->geometry_wear[m_channel_status.cur_h_code-1][axis];
+			}
+
+        //}
+    //}
+
     origin_pos += m_p_chn_g92_offset->offset[axis];
 
     if(G52Active){
@@ -20207,10 +20292,10 @@ void ChannelControl::AddWorkCountPiece(int addNum)
     m_cur_workpiece_count += addNum;
     g_ptr_parm_manager->SetCurFileWorkPieceCnt(m_n_channel_index, m_cur_workpiece_count);
 
-    if (m_channel_status.workpiece_require != 0 && m_channel_status.workpiece_count >= m_channel_status.workpiece_require)
-    {//已到达需求件数
-        CreateError(ERR_REACH_WORK_PIECE, INFO_LEVEL, CLEAR_BY_MCP_RESET);
-    }
+//    if (m_channel_status.workpiece_require != 0 && m_channel_status.workpiece_count >= m_channel_status.workpiece_require)
+//    {//已到达需求件数
+//        CreateError(ERR_REACH_WORK_PIECE, INFO_LEVEL, CLEAR_BY_MCP_RESET);
+//    }
 }
 
 #ifdef USES_SPEED_TORQUE_CTRL
@@ -20755,6 +20840,7 @@ void ChannelControl::GetHmiToolOffset(const uint8_t idx, HmiToolOffsetConfig &cf
     cfg.geometry_wear[2] = this->m_p_chn_tool_config->geometry_wear[index][2];
     cfg.radius_compensation = this->m_p_chn_tool_config->radius_compensation[index];
     cfg.radius_wear = this->m_p_chn_tool_config->radius_wear[index];
+    cfg.length_compensation = this->m_p_chn_tool_config->length_compensation[index];
 }
 
 /**

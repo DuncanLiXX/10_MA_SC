@@ -1469,8 +1469,13 @@ bool Parser::GetExpressionResult(MacroExpression &express, MacroVarValue &res){
 				return false;
 			}
 
-            printf("read var: %d , value: %lf, init: %d\n",
-            		static_cast<int>(value1.value), res_tmp.value, res_tmp.init);
+			 printf("read var: %d , value: %lf, init: %d\n",
+			static_cast<int>(value1.value), res_tmp.value, res_tmp.init);
+
+//			if(!res_tmp.init){
+//				m_error_code = ERR_INVALID_MACRO_EXP;
+//				return false;
+//			}
 
 			stack_value.push(res_tmp);
 		}
@@ -2508,7 +2513,8 @@ bool Parser::CreateArcMsg(const int gcode){
 
 	//读取其它参数
 	if(GetCodeData(R_DATA, radius)){//存在R参数，IJK和R同时存在时R优先，忽略IJK
-		if((g_code->mask_dot & (0x01<<R_DATA)) == 0){
+		if(((g_code->mask_dot & (0x01<<R_DATA)) == 0)&&
+				(g_code->mask_macro & (0x01<<R_DATA) == 0)){
 			radius /= 1000.;   //省略小数点则以um为单位
 		}
 		if(radius < 0 ) major_flag = -1; 	//优弧
@@ -2536,25 +2542,30 @@ bool Parser::CreateArcMsg(const int gcode){
 		double i = 0.0, j = 0.0, k = 0.0;  //I/J/K的值,省略则默认为0
 		bool has_data = false;  //标志是否存在IJK参数
 		if(GetCodeData(I_DATA, i)){//读取I参数
-			if((g_code->mask_dot & (0x01<<I_DATA)) == 0){
+			if(((g_code->mask_dot & (0x01<<I_DATA)) == 0)&&
+					(g_code->mask_macro & (0x01<<I_DATA) == 0)){
 				i /= 1000.;   //省略小数点则以um为单位
 			}
 			has_data = true;
 			i_number = i;
 		}
 		if(GetCodeData(J_DATA, j)){//读取I参数
-			if((g_code->mask_dot & (0x01<<J_DATA)) == 0){
+			if(((g_code->mask_dot & (0x01<<J_DATA)) == 0)&&
+					(g_code->mask_macro & (0x01<<J_DATA) == 0)){
 				j /= 1000.;   //省略小数点则以um为单位
 			}
 			has_data = true;
             j_number = j;
 		}
 		if(GetCodeData(K_DATA, k)){//读取I参数
-			if((g_code->mask_dot & (0x01<<K_DATA)) == 0){
+			if(((g_code->mask_dot & (0x01<<K_DATA)) == 0) &&
+					(g_code->mask_macro & (0x01<<K_DATA) == 0)){
 				k /= 1000.;   //省略小数点则以um为单位
 			}
 			has_data = true;
 		}
+
+		printf("===== I:%lf J:%lf K:%lf\n", i, j, k);
 
 		if(!has_data){//TODO 圆弧数据缺失，告警
 			m_error_code = ERR_ARC_NO_DATA;
@@ -2579,7 +2590,10 @@ bool Parser::CreateArcMsg(const int gcode){
 //		printf("cen[%lf, %lf, %lf], src[%lf, %lf, %lf], vec[%lf, %lf, %lf]\n", center.x, center.y, center.z, source.x,source.y, source.z,
 //				vec.x, vec.y, vec.z);
 //
-//		printf("tar[%lf, %lf, %lf]\n", target.x, target.y, target.z);
+
+		printf("src[%lf, %lf, %lf]\n", source.m_df_point[0], source.m_df_point[1], source.m_df_point[2]);
+
+		printf("tar[%lf, %lf, %lf]\n", target.m_df_point[0], target.m_df_point[1], target.m_df_point[2]);
 
         DPointChn target_pos = target;
 

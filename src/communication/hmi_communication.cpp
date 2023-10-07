@@ -1225,7 +1225,9 @@ int HMICommunication::TransFile(){
 
 			//TODO 传输文件
 			if(this->m_b_recv_file){
+				g_ptr_chn_engine->file_receive = true;
 				res = this->RecvFile();
+				g_ptr_chn_engine->file_receive = false;
 			}
 			else{
 				res = this->SendFile();
@@ -2477,13 +2479,13 @@ void HMICommunication::ProcessGetFileSystemInOnePiece(HMICmdFrame cmd, int id)
     while(cnt < entities.size())
     {
         FS_Entity entity = entities[cnt];
+
         cmd.cmd_extension = 0;
         char time[20] = {0};
-        struct tm *ptm = localtime(&entity.time_);
-        sprintf(time, "%04d/%02d/%02d %02d:%02d:%02d", ptm->tm_year+1900, ptm->tm_mon+1, ptm->tm_mday,
-                ptm->tm_hour, ptm->tm_min, ptm->tm_sec);
+        //struct tm *ptm = localtime(&entity.time_);
+        //sprintf(time, "%04d/%02d/%02d %02d:%02d:%02d", ptm->tm_year+1900, ptm->tm_mon+1, ptm->tm_mday,
+        //.ptm->tm_hour, ptm->tm_min, ptm->tm_sec);
 
-        //std::cout << "cmd" << cmd.cmd <<  " type: " << (int)entity.type_ << " name: " << entity.name_ << " size: " << entity.size_ << " time:" << time  << std::endl;
         memcpy(cmd.data, &(entity), sizeof(FS_Entity));
         cmd.data_len = sizeof(entity);
         this->SendCmd(cmd);
@@ -2771,7 +2773,9 @@ void HMICommunication::ProcessHmiSyncTimeCmd(HMICmdFrame &cmd){
 //	cmd.data[5] = p->tm_min;
 //	cmd.data[6] = p->tm_sec;
 
-    memcpy(cmd.data, &timep, sizeof(time_t));
+	uint64_t timed = static_cast<uint64_t>(timep);
+
+    memcpy(cmd.data, &timed, sizeof(timed));
 
 	//发送响应包
 	cmd.frame_number |= 0x8000;
@@ -5557,7 +5561,7 @@ FS_Entity FileSystemManager::GetInfo(const string &path)
         entity.type_ = FILE_REG;
 
     entity.size_ = statbuf.st_size;
-    entity.time_ = statbuf.st_mtime;
+    entity.time_ = static_cast<uint64_t>(statbuf.st_mtime);
 
     return entity;
 }

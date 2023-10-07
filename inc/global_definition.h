@@ -56,9 +56,9 @@
 
 #define USES_MC_B_BOARD       //支持MC-B主板
 
-#define NEW_WOOD_MACHINE      //0M-B 木工项目定制功能
+//#define NEW_WOOD_MACHINE      //0M-B 木工项目定制功能
 
-//#define CARVE_MACHINE
+#define CARVE_MACHINE
 
 //#define USES_WOOD_MACHINE     //支持木工专机
 

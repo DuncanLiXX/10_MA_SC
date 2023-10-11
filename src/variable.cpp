@@ -255,6 +255,8 @@ bool Variable::GetVarValue(int index, double &value, bool &init){
 	// 屏蔽对未初始化变量的检测
 	init = true;
 
+	if(index == 0) init = false;
+
 	return true;
 }
 

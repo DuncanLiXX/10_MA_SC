@@ -2100,6 +2100,9 @@ bool ParmManager::ReadToolConfig(){
 				sprintf(kname, "length_comp_%d", j);
 				m_sc_tool_config[i].length_compensation[j] = m_ini_tool->GetDoubleValueOrDefault(sname, kname, 0.0);
 
+				sprintf(kname, "length_wear_%d", j);
+				m_sc_tool_config[i].length_wear_comp[j] = m_ini_tool->GetDoubleValueOrDefault(sname, kname, 0.0);
+
 				//刀位信息
 			    //	m_sc_tool_pot_config[i].tool_index = j+1;
 
@@ -2196,6 +2199,10 @@ bool ParmManager::ReadToolConfig(){
 
 				sprintf(kname, "length_comp_%d", j);
 				m_sc_tool_config[i].length_compensation[j] = 0.0;
+				m_ini_tool->AddKeyValuePair(kname, string("0.0"), ns);
+
+				sprintf(kname, "length_wear_%d", j);
+				m_sc_tool_config[i].length_wear_comp[j] = 0.0;
 				m_ini_tool->AddKeyValuePair(kname, string("0.0"), ns);
 
 				//刀位信息
@@ -3446,13 +3453,13 @@ void ParmManager::UpdateToolOffsetConfig(uint16_t chn_index, uint8_t index, HmiT
 		this->m_sc_tool_config[chn_index].radius_compensation[index] = cfg.radius_compensation;
 		this->m_sc_tool_config[chn_index].radius_wear[index] = cfg.radius_wear;
 		this->m_sc_tool_config[chn_index].length_compensation[index] = cfg.length_compensation;
+		this->m_sc_tool_config[chn_index].length_wear_comp[index] = cfg.length_wear_comp;
 	}else{//加入待生效队列
 		ToolOffsetUpdate data;
 		data.chn_index = chn_index;
 		data.tool_offset_index = index;
 		memcpy(&data.value, &cfg, sizeof(HmiToolOffsetConfig));
 		this->m_list_tool_offset->Append(data);
-
 	}
 
 
@@ -3479,6 +3486,9 @@ void ParmManager::UpdateToolOffsetConfig(uint16_t chn_index, uint8_t index, HmiT
 	sprintf(kname, "length_comp_%hhu", index);
 	m_ini_tool->SetDoubleValue(sname, kname, cfg.length_compensation);
 
+	sprintf(kname, "length_wear_%hhu", index);
+	m_ini_tool->SetDoubleValue(sname, kname, cfg.length_wear_comp);
+
     this->m_ini_tool->Save();
 }
 
@@ -3503,6 +3513,7 @@ void ParmManager::UpdateAllToolOffsetConfig(uint16_t chn_index, HmiToolOffsetCon
         this->m_sc_tool_config[chn_index].radius_compensation[index] = cfg.radius_compensation;
         this->m_sc_tool_config[chn_index].radius_wear[index] = cfg.radius_wear;
         this->m_sc_tool_config[chn_index].length_compensation[index] = cfg.length_compensation;
+        this->m_sc_tool_config[chn_index].length_wear_comp[index] = cfg.length_wear_comp;
         sprintf(sname, "channel_%hu", chn_index);
         sprintf(kname, "geo_comp_x_%hhu", index);
         m_ini_tool->SetDoubleValue(sname, kname, cfg.geometry_compensation[0]);
@@ -3523,6 +3534,8 @@ void ParmManager::UpdateAllToolOffsetConfig(uint16_t chn_index, HmiToolOffsetCon
         m_ini_tool->SetDoubleValue(sname, kname, cfg.radius_wear);
         sprintf(kname, "length_comp_%hhu", index);
         m_ini_tool->SetDoubleValue(sname, kname, cfg.length_compensation);
+        sprintf(kname, "length_wear_%hhu", index);
+        m_ini_tool->SetDoubleValue(sname, kname, cfg.length_wear_comp);
     }
 
     this->m_ini_tool->Save();

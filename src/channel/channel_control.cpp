@@ -657,6 +657,8 @@ void ChannelControl::Reset(){
 
 	Flag_SyncCrcPos = true;
 
+	m_b_mc_need_start = true;
+
 
     if(this->m_thread_breakcontinue > 0){//处于断点继续线程执行过程中，则退出断点继续线程
         this->CancelBreakContinueThread();
@@ -1855,10 +1857,10 @@ void ChannelControl::StartRunGCode(){
 			m_channel_status.chn_work_mode, m_channel_status.machining_state, m_channel_mc_status.cur_mode);
 
 
-	if(m_p_compiler->IsPreScaning()){
-		printf("===== compiler prescanning !!!\n");
-		return;
-	}
+//	if(m_p_compiler->IsPreScaning()){
+//		printf("===== compiler prescanning !!!\n");
+//		return;
+//	}
 
 
 	if(m_channel_status.chn_work_mode != AUTO_MODE &&
@@ -2075,7 +2077,8 @@ void ChannelControl::StartRunGCode(){
             if(this->m_mask_run_pmc){
                 this->PausePmcAxis(NO_AXIS, false);  //继续运行PMC轴
             }else if(IsMcNeedStart()){
-                this->StartMcIntepolate();
+                printf("start 11111");
+            	this->StartMcIntepolate();
             }
             else{
 #ifdef USES_GRIND_MACHINE
@@ -6771,6 +6774,7 @@ bool ChannelControl::ExecuteMessage(){
                 ) &&    //运行状态或者手动对刀状态
                     msg->IsMoveMsg() && this->m_b_mc_need_start){
                 //printf("move data send start, msg type = %d lino: %llu\n", msg->GetMsgType(), msg->GetLineNo());
+            	printf("start 22222\n");
             	this->StartMcIntepolate();
             }
 
@@ -9632,6 +9636,7 @@ bool ChannelControl::ExecuteCompensateMsg(RecordMsg *msg){
             if(!OutputData(msg, true))
                 return false;
 
+            printf("start 33333\n");
             this->StartMcIntepolate();  //启动MC
             //			compmsg->SetExecStep(7);  //跳转下一步
             printf("execute g49 mode over\n");
@@ -9707,6 +9712,7 @@ bool ChannelControl::ExecuteCompensateMsg(RecordMsg *msg){
             if(!OutputData(msg, true))
                 return false;
 
+            printf("start 44444\n");
             this->StartMcIntepolate();  //启动MC
 
             printf("execute G43.4 over\n");
@@ -11948,6 +11954,7 @@ bool ChannelControl::ExecuteExactStopMsg(RecordMsg *msg){
 
     m_n_run_thread_state = RUN;
     // @test zk 不知道为何  必须重新启动插补才能继续下面的运动指令
+    printf("start kkkkk\n");
     StartMcIntepolate();
     return true;
 }
@@ -17827,7 +17834,8 @@ int ChannelControl::BreakContinueProcess(){
             if(this->m_mask_run_pmc){
                 this->PausePmcAxis(NO_AXIS, false);  //继续运行PMC轴
             }else if(IsMcNeedStart()){
-                this->StartMcIntepolate();
+                printf("start aaaaa\n");
+            	this->StartMcIntepolate();
             }
             gettimeofday(&m_time_start_maching, nullptr);  //初始化启动时间
             m_time_remain = 0;                             //初始化剩余加工时间
@@ -20841,6 +20849,7 @@ void ChannelControl::GetHmiToolOffset(const uint8_t idx, HmiToolOffsetConfig &cf
     cfg.radius_compensation = this->m_p_chn_tool_config->radius_compensation[index];
     cfg.radius_wear = this->m_p_chn_tool_config->radius_wear[index];
     cfg.length_compensation = this->m_p_chn_tool_config->length_compensation[index];
+    cfg.length_wear_comp = this->m_p_chn_tool_config->length_wear_comp[index];
 }
 
 /**
@@ -21528,7 +21537,7 @@ void ChannelControl::StraightTraverse(int chn, double x, double y, double z)
 }
 
 void ChannelControl::g73_func(){
-    StartMcIntepolate();
+	StartMcIntepolate();
 
     //double data;
 

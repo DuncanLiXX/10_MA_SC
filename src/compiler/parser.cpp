@@ -2511,6 +2511,16 @@ bool Parser::CreateArcMsg(const int gcode){
 		return false;   //产生错误，返回
 	}
 
+    uint32_t tm = 0x01;
+
+    if(m_p_compiler_status->mode.gmode[3] == G91_CMD){
+    	for(int i=0; i<kMaxAxisChn; i++){
+    		if(axis_mask & tm)
+    		target.m_df_point[i] += source.m_df_point[i];
+    		tm = tm << 1;
+    	}
+    }
+
 	//读取其它参数
 	if(GetCodeData(R_DATA, radius)){//存在R参数，IJK和R同时存在时R优先，忽略IJK
 		if(((g_code->mask_dot & (0x01<<R_DATA)) == 0)&&
@@ -2584,7 +2594,9 @@ bool Parser::CreateArcMsg(const int gcode){
 		}else if(m_p_compiler_status->mode.gmode[2] == PLANE_YZ){ //YZ平面
 			radius = sqrt(j * j + k * k);
 		}
+
 		DPointChn vec(i,j,k);
+
 		center = source + vec;  //圆心坐标
 
 //		printf("cen[%lf, %lf, %lf], src[%lf, %lf, %lf], vec[%lf, %lf, %lf]\n", center.x, center.y, center.z, source.x,source.y, source.z,

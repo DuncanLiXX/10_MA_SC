@@ -1488,11 +1488,12 @@ struct HmiAxisConfig{
  * @brief HMI模块刀具偏置配置数据
  */
 struct HmiToolOffsetConfig{
-	double geometry_compensation[3];    //刀具几何偏置，包括长度补偿
-	double geometry_wear[3];				//刀具长度磨损补偿
-	double radius_compensation;			//刀具半径补偿
-	double radius_wear;					//刀具半径磨损补偿
-	double length_compensation;
+	double geometry_compensation[3];    // 刀具几何偏置
+	double geometry_wear[3];			// 刀具几何磨损偏置
+	double radius_compensation;			// 刀具半径补偿
+	double radius_wear;					// 刀具半径磨损补偿
+	double length_compensation;			// 刀具长度补偿
+	double length_wear_comp;			// 刀具长度磨损补偿
 };
 
 /**

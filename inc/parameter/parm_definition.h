@@ -382,11 +382,11 @@ struct SCToolOffsetConfig{
 	double geometry_comp_basic[3];                     //基准刀偏置
 #endif
 	double geometry_compensation[kMaxToolCount][3];    //刀具几何偏置，包括长度补偿
-	//double geometry_wear[kMaxToolCount];				//刀具长度磨损补偿
-	double geometry_wear[kMaxToolCount][3];				//刀具长度磨损补偿
+	double geometry_wear[kMaxToolCount][3];				//刀具几何磨损偏置
 	double radius_compensation[kMaxToolCount];			//刀具半径补偿
 	double radius_wear[kMaxToolCount];					//刀具半径磨损补偿
 	double length_compensation[kMaxToolCount];          //刀具长度补偿
+	double length_wear_comp[kMaxToolCount];				//刀具长度磨损
 };
 
 /**

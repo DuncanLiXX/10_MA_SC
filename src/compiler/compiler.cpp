@@ -2985,19 +2985,19 @@ bool Compiler::RunArcMsg(RecordMsg *msg) {
 
     //处理增量编程指令
     if(m_compiler_status.mode.gmode[3] == G91_CMD){  //增量编程模式
-        double *p_target_pos = tmp->GetTargetPos().m_df_point;
-        double *p_source_pos = m_compiler_status.cur_pos.m_df_point;
-        uint32_t mask = tmp->GetAxisMoveMask();
-        uint32_t tm = 0x01;
-
-        for(int i = 0; i < this->m_p_channel_config->chn_axis_count; i++){
-            if(mask & tm){
-                *p_target_pos += *p_source_pos;
-            }
-            tm = tm<<1;
-            p_target_pos++;
-            p_source_pos++;
-        }
+//        double *p_target_pos = tmp->GetTargetPos().m_df_point;
+//        double *p_source_pos = m_compiler_status.cur_pos.m_df_point;
+//        uint32_t mask = tmp->GetAxisMoveMask();
+//        uint32_t tm = 0x01;
+//
+//        for(int i = 0; i < this->m_p_channel_config->chn_axis_count; i++){
+//            if(mask & tm){
+//                *p_target_pos += *p_source_pos;
+//            }
+//            tm = tm<<1;
+//            p_target_pos++;
+//            p_source_pos++;
+//        }
     }else{
         //将目标位置换算为工件坐标系
         if(tmp->IsMachCoord())

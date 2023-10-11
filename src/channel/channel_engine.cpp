@@ -4270,6 +4270,7 @@ void ChannelEngine::ProcessHmiGetParam(HMICmdFrame &cmd){
             cfg.radius_compensation = pp->radius_compensation[index];
             cfg.radius_wear = pp->radius_wear[index];
             cfg.length_compensation = pp->length_compensation[index];
+            cfg.length_wear_comp = pp->length_wear_comp[index];
             memcpy(cmd.data+1, &cfg, cmd.data_len);
             cmd.data_len += 1;
 

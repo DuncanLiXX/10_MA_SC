@@ -3496,11 +3496,9 @@ void ParmManager::UpdateAllToolOffsetConfig(uint16_t chn_index, HmiToolOffsetCon
 {
     char sname[32];	//section name
     char kname[64];	//key name
-//	char value[32]; //value
 
     memset(sname, 0x00, sizeof(sname));
     memset(kname, 0x00, sizeof(kname));
-//	memset(value, 0x00, sizeof(value));
 
     for (int index = 0; index < kMaxToolCount; ++index)
     {
@@ -3539,6 +3537,72 @@ void ParmManager::UpdateAllToolOffsetConfig(uint16_t chn_index, HmiToolOffsetCon
     }
 
     this->m_ini_tool->Save();
+}
+
+void ParmManager::ClearToolComp(uint16_t chn_index){
+
+	printf("ClearToolComp\n");
+
+	char sname[32];	//section name
+	char kname[64];	//key name
+
+	memset(sname, 0x00, sizeof(sname));
+	memset(kname, 0x00, sizeof(kname));
+
+	for (int index = 0; index < kMaxToolCount; ++index){
+		this->m_sc_tool_config[chn_index].radius_compensation[index] = 0;
+		this->m_sc_tool_config[chn_index].radius_wear[index] = 0;
+		this->m_sc_tool_config[chn_index].length_compensation[index] = 0;
+		this->m_sc_tool_config[chn_index].length_wear_comp[index] = 0;
+
+		sprintf(kname, "radius_comp_%hhu", index);
+		m_ini_tool->SetDoubleValue(sname, kname, 0);
+		sprintf(kname, "radius_wear_%hhu", index);
+		m_ini_tool->SetDoubleValue(sname, kname, 0);
+		sprintf(kname, "length_comp_%hhu", index);
+		m_ini_tool->SetDoubleValue(sname, kname, 0);
+		sprintf(kname, "length_wear_%hhu", index);
+		m_ini_tool->SetDoubleValue(sname, kname, 0);
+	}
+
+	this->m_ini_tool->Save();
+}
+
+void ParmManager::ClearToolOffset(uint16_t chn_index){
+
+	printf("ClearToolOffset\n");
+
+	char sname[32];	//section name
+	char kname[64];	//key name
+
+	memset(sname, 0x00, sizeof(sname));
+	memset(kname, 0x00, sizeof(kname));
+
+	for (int index = 0; index < kMaxToolCount; ++index){
+		this->m_sc_tool_config[chn_index].geometry_compensation[index][0] = 0;
+		this->m_sc_tool_config[chn_index].geometry_compensation[index][1] = 0;
+		this->m_sc_tool_config[chn_index].geometry_compensation[index][2] = 0;
+		this->m_sc_tool_config[chn_index].geometry_wear[index][0] = 0;
+		this->m_sc_tool_config[chn_index].geometry_wear[index][1] = 0;
+		this->m_sc_tool_config[chn_index].geometry_wear[index][2] = 0;
+
+		sprintf(sname, "channel_%hu", chn_index);
+		sprintf(kname, "geo_comp_x_%hhu", index);
+		m_ini_tool->SetDoubleValue(sname, kname, 0);
+		sprintf(kname, "geo_comp_y_%hhu", index);
+		m_ini_tool->SetDoubleValue(sname, kname, 0);
+		sprintf(kname, "geo_comp_z_%hhu", index);
+		m_ini_tool->SetDoubleValue(sname, kname, 0);
+
+		sprintf(kname, "geo_wear_x_%hhu", index);
+		m_ini_tool->SetDoubleValue(sname, kname, 0);
+		sprintf(kname, "geo_wear_y_%hhu", index);
+		m_ini_tool->SetDoubleValue(sname, kname, 0);
+		sprintf(kname, "geo_wear_z_%hhu", index);
+		m_ini_tool->SetDoubleValue(sname, kname, 0);
+	}
+
+	this->m_ini_tool->Save();
 }
 
 /**

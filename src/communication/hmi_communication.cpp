@@ -1065,6 +1065,8 @@ int HMICommunication::ProcessHmiCmd(){
             case CMD_HMI_SET_CUSTOM_STEP_INC:
             case CMD_HMI_GET_CUSTOM_STEP_INC:
             case CMD_HMI_GET_BREAK_POINT:
+            case CMD_HMI_CLEAR_TOOL_OFFSET:
+            case CMD_HMI_CLEAR_TOOL_COMP:
 #ifdef USES_GRIND_MACHINE
 			case CMD_SC_MECH_ARM_ERR:         //HMI响应机械手告警指令
 #endif

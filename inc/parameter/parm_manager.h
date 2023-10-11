@@ -69,6 +69,8 @@ public:
 #endif
 
 
+	void ClearToolComp(uint16_t chn_index);
+	void ClearToolOffset(uint16_t chn_index);
 	void UpdateToolRadiusWear(uint16_t chn_index, uint8_t index, const double &value);  //更新刀具半径磨损值
 	void UpdateToolRadiusGeo(uint16_t chn_index, uint8_t index, const double &value);   //更新刀具半径几何偏执
 	void UpdateToolWear(uint16_t chn_index, uint8_t index, const double &value);   //更新刀长磨损值

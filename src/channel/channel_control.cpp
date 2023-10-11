@@ -2936,6 +2936,12 @@ void ChannelControl::ProcessHmiCmd(HMICmdFrame &cmd){
     case CMD_HMI_GET_BREAK_POINT:
     	this->ProcessHmiGetBreakPoint(cmd);
     	break;
+    case CMD_HMI_CLEAR_TOOL_COMP:        // Çå³ýµ¶¾ß²¹³¥
+    	g_ptr_parm_manager->ClearToolComp(m_n_channel_index);
+    	break;
+    case CMD_HMI_CLEAR_TOOL_OFFSET:      // Çå³ýµ¶¾ßÆ«ÖÃ
+    	g_ptr_parm_manager->ClearToolOffset(m_n_channel_index);
+    	break;
 
 #ifdef NEW_WOOD_MACHINE
     case CMD_HMI_APPEND_ORDER_LIST:

@@ -3152,6 +3152,8 @@ void ChannelEngine::ProcessHmiCmd(HMICmdFrame &cmd){
     case CMD_HMI_SET_CUSTOM_STEP_INC:
     case CMD_HMI_GET_CUSTOM_STEP_INC:
     case CMD_HMI_GET_BREAK_POINT:
+    case CMD_HMI_CLEAR_TOOL_COMP:        // 清除刀具补偿
+    case CMD_HMI_CLEAR_TOOL_OFFSET:      // 清除刀具偏置
 		this->m_p_channel_control[0].ProcessHmiCmd(cmd);
 		// 暂时不考虑多通道
 		/*if(cmd.channel_index < this->m_p_general_config->chn_count)

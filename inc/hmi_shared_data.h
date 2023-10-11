@@ -238,9 +238,11 @@ enum HMICmdCode {
 	CMD_HMI_GET_BREAK_POINT,         // 获取断点信息
 	CMD_HMI_SET_CUSTOM_STEP_INC,    // 设置自定义步长
 	CMD_HMI_GET_CUSTOM_STEP_INC,	// 获取自定义步长
+	CMD_HMI_CLEAR_TOOL_COMP,        // 清除刀具补偿
+	CMD_HMI_CLEAR_TOOL_OFFSET,      // 清除刀具偏置
 
 	//SC-->HMI
-	CMD_SC_NEW_ALARM = 100,			//SC向HMI发送新的告警信息 100
+	CMD_SC_NEW_ALARM = 1000,			//SC向HMI发送新的告警信息 100
 	CMD_SC_CLEAR_ALARM,			    //清除告警
 	CMD_SC_RESET,                   //复位
 	CMD_SC_WORK_STATE,				//通知HMI更新加工状态，加工中、暂停、完成

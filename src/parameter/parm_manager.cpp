@@ -3539,9 +3539,9 @@ void ParmManager::UpdateAllToolOffsetConfig(uint16_t chn_index, HmiToolOffsetCon
     this->m_ini_tool->Save();
 }
 
-void ParmManager::ClearToolComp(uint16_t chn_index){
+void ParmManager::ClearToolComp(uint16_t chn_index, int index, int count){
 
-	printf("ClearToolComp\n");
+    printf("ClearToolComp index: %d count: %d\n", index, count);
 
 	char sname[32];	//section name
 	char kname[64];	//key name
@@ -3549,28 +3549,35 @@ void ParmManager::ClearToolComp(uint16_t chn_index){
 	memset(sname, 0x00, sizeof(sname));
 	memset(kname, 0x00, sizeof(kname));
 
-	for (int index = 0; index < kMaxToolCount; ++index){
-		this->m_sc_tool_config[chn_index].radius_compensation[index] = 0;
-		this->m_sc_tool_config[chn_index].radius_wear[index] = 0;
-		this->m_sc_tool_config[chn_index].length_compensation[index] = 0;
-		this->m_sc_tool_config[chn_index].length_wear_comp[index] = 0;
+    unsigned char i = index - 1;
 
-		sprintf(kname, "radius_comp_%hhu", index);
-		m_ini_tool->SetDoubleValue(sname, kname, 0);
-		sprintf(kname, "radius_wear_%hhu", index);
-		m_ini_tool->SetDoubleValue(sname, kname, 0);
-		sprintf(kname, "length_comp_%hhu", index);
-		m_ini_tool->SetDoubleValue(sname, kname, 0);
-		sprintf(kname, "length_wear_%hhu", index);
-		m_ini_tool->SetDoubleValue(sname, kname, 0);
-	}
+
+    while(count > 0){
+
+        this->m_sc_tool_config[chn_index].radius_compensation[i] = 0;
+        this->m_sc_tool_config[chn_index].radius_wear[i] = 0;
+        this->m_sc_tool_config[chn_index].length_compensation[i] = 0;
+        this->m_sc_tool_config[chn_index].length_wear_comp[i] = 0;
+
+        sprintf(kname, "radius_comp_%hhu", i);
+        m_ini_tool->SetDoubleValue(sname, kname, 0);
+        sprintf(kname, "radius_wear_%hhu", i);
+        m_ini_tool->SetDoubleValue(sname, kname, 0);
+        sprintf(kname, "length_comp_%hhu", i);
+        m_ini_tool->SetDoubleValue(sname, kname, 0);
+        sprintf(kname, "length_wear_%hhu", i);
+        m_ini_tool->SetDoubleValue(sname, kname, 0);
+
+        count --;
+        i++;
+    }
 
 	this->m_ini_tool->Save();
 }
 
-void ParmManager::ClearToolOffset(uint16_t chn_index){
+void ParmManager::ClearToolOffset(uint16_t chn_index, int index, int count){
 
-	printf("ClearToolOffset\n");
+    printf("ClearToolOffset index: %d count: %d\n", index, count);
 
 	char sname[32];	//section name
 	char kname[64];	//key name
@@ -3578,29 +3585,38 @@ void ParmManager::ClearToolOffset(uint16_t chn_index){
 	memset(sname, 0x00, sizeof(sname));
 	memset(kname, 0x00, sizeof(kname));
 
-	for (int index = 0; index < kMaxToolCount; ++index){
-		this->m_sc_tool_config[chn_index].geometry_compensation[index][0] = 0;
-		this->m_sc_tool_config[chn_index].geometry_compensation[index][1] = 0;
-		this->m_sc_tool_config[chn_index].geometry_compensation[index][2] = 0;
-		this->m_sc_tool_config[chn_index].geometry_wear[index][0] = 0;
-		this->m_sc_tool_config[chn_index].geometry_wear[index][1] = 0;
-		this->m_sc_tool_config[chn_index].geometry_wear[index][2] = 0;
 
-		sprintf(sname, "channel_%hu", chn_index);
-		sprintf(kname, "geo_comp_x_%hhu", index);
-		m_ini_tool->SetDoubleValue(sname, kname, 0);
-		sprintf(kname, "geo_comp_y_%hhu", index);
-		m_ini_tool->SetDoubleValue(sname, kname, 0);
-		sprintf(kname, "geo_comp_z_%hhu", index);
-		m_ini_tool->SetDoubleValue(sname, kname, 0);
 
-		sprintf(kname, "geo_wear_x_%hhu", index);
-		m_ini_tool->SetDoubleValue(sname, kname, 0);
-		sprintf(kname, "geo_wear_y_%hhu", index);
-		m_ini_tool->SetDoubleValue(sname, kname, 0);
-		sprintf(kname, "geo_wear_z_%hhu", index);
-		m_ini_tool->SetDoubleValue(sname, kname, 0);
-	}
+    unsigned char i = index -1;
+
+    while(count > 0){
+
+        this->m_sc_tool_config[chn_index].geometry_compensation[i][0] = 0;
+        this->m_sc_tool_config[chn_index].geometry_compensation[i][1] = 0;
+        this->m_sc_tool_config[chn_index].geometry_compensation[i][2] = 0;
+        this->m_sc_tool_config[chn_index].geometry_wear[i][0] = 0;
+        this->m_sc_tool_config[chn_index].geometry_wear[i][1] = 0;
+        this->m_sc_tool_config[chn_index].geometry_wear[i][2] = 0;
+
+        sprintf(sname, "channel_%hu", chn_index);
+        sprintf(kname, "geo_comp_x_%hhu", i);
+        m_ini_tool->SetDoubleValue(sname, kname, 0);
+        sprintf(kname, "geo_comp_y_%hhu", i);
+        m_ini_tool->SetDoubleValue(sname, kname, 0);
+        sprintf(kname, "geo_comp_z_%hhu", i);
+        m_ini_tool->SetDoubleValue(sname, kname, 0);
+
+        sprintf(kname, "geo_wear_x_%hhu", i);
+        m_ini_tool->SetDoubleValue(sname, kname, 0);
+        sprintf(kname, "geo_wear_y_%hhu", i);
+        m_ini_tool->SetDoubleValue(sname, kname, 0);
+        sprintf(kname, "geo_wear_z_%hhu", i);
+        m_ini_tool->SetDoubleValue(sname, kname, 0);
+
+        i++;
+        count --;
+    }
+
 
 	this->m_ini_tool->Save();
 }

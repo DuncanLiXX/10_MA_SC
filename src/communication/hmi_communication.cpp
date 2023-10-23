@@ -1067,6 +1067,7 @@ int HMICommunication::ProcessHmiCmd(){
             case CMD_HMI_GET_BREAK_POINT:
             case CMD_HMI_CLEAR_TOOL_OFFSET:
             case CMD_HMI_CLEAR_TOOL_COMP:
+            case CMD_HMI_SET_EDITING:
 #ifdef USES_GRIND_MACHINE
 			case CMD_SC_MECH_ARM_ERR:         //HMI响应机械手告警指令
 #endif
@@ -1227,9 +1228,9 @@ int HMICommunication::TransFile(){
 
 			//TODO 传输文件
 			if(this->m_b_recv_file){
-				g_ptr_chn_engine->file_receive = true;
+                //g_ptr_chn_engine->file_receive = true;
 				res = this->RecvFile();
-				g_ptr_chn_engine->file_receive = false;
+                //g_ptr_chn_engine->file_receive = false;
 			}
 			else{
 				res = this->SendFile();

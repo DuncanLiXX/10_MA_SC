@@ -211,7 +211,8 @@ int MICommunication::QuitThread(){
 bool MICommunication::InitSharedMemory(){
 	//打开设备文件
 	m_n_mem_file = open("/dev/mem", O_RDWR | O_SYNC);
-	if (m_n_mem_file == -1) {
+
+    if (m_n_mem_file == -1) {
 		g_ptr_trace->PrintLog(LOG_ALARM, "MICommunication::InitSharedMemory() failed to open file! errno = %d", errno);
 		return false;
 	}
@@ -1397,8 +1398,6 @@ bool MICommunication::ReadPmcReg(int sec, uint8_t *reg){
 
 bool MICommunication::ReadPmcPeriod(){
 	// PMC 运行周期寄存器偏移 0x8E000   读写标志偏移  0x8FFF0
-
-
 
 	int64_t * period = (int64_t *)(m_p_shared_base + 0x8E000);
 	int32_t * RWFlag = (int32_t *)(m_p_shared_base + 0x8FFF0);

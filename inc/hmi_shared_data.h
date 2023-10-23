@@ -240,6 +240,7 @@ enum HMICmdCode {
 	CMD_HMI_GET_CUSTOM_STEP_INC,	// 获取自定义步长
 	CMD_HMI_CLEAR_TOOL_COMP,        // 清除刀具补偿
 	CMD_HMI_CLEAR_TOOL_OFFSET,      // 清除刀具偏置
+    CMD_HMI_SET_EDITING,            // 设置编辑模式
 
 	//SC-->HMI
 	CMD_SC_NEW_ALARM = 1000,			//SC向HMI发送新的告警信息 100

@@ -1982,8 +1982,7 @@ bool Parser::CreateCoordMsg(const int gcode){
 		if(!GetTargetPos(pos, axis_mask))
 			return false;
 	}
-
-	if(gcode >= G5401_CMD and gcode <= G5499_CMD){
+    else if(gcode >= G5401_CMD and gcode <= G5499_CMD){
 		// @test
 		int coord = gcode/10 - 5400;
 		SCChannelConfig * pChnConfig = g_ptr_parm_manager->GetChannelConfig(m_n_channel_index);
@@ -1991,8 +1990,13 @@ bool Parser::CreateCoordMsg(const int gcode){
 			CreateError(ERR_NC_FORMAT, ERROR_LEVEL, CLEAR_BY_MCP_RESET,this->m_p_lexer_result->line_no);
 			return false;
 		}
+    }else if(gcode >= G54_CMD and gcode <= G59_CMD){
 
-	}
+    }
+    else{
+        CreateError(ERR_NC_FORMAT, ERROR_LEVEL, CLEAR_BY_MCP_RESET,this->m_p_lexer_result->line_no);
+        return false;
+    }
 
 	RecordMsg *new_msg = new CoordMsg(pos, src, gcode, axis_mask);
 

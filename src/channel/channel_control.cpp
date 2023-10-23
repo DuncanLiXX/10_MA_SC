@@ -890,7 +890,7 @@ void ChannelControl::Reset(){
 		m_order_step = STEP_IDLE;
 		exec_m30_over = false;
 		eliminate_reset_flag = false;
-		m_b_dust_eliminate = false;
+        m_b_dust_eliminate = false;
 		m_p_f_reg->ELIMI1 = 0;
 		m_p_f_reg->ELIMI2 = 0;
 	}
@@ -904,7 +904,7 @@ void ChannelControl::Reset(){
 }
 
 #ifdef CARVE_MACHINE
-void ChannelControl::saveBreakPoint(){
+void ChannelControl::saveBreakPoint(bool force_save){
 
 	if(m_channel_status.chn_work_mode == AUTO_MODE  &&
 		   m_channel_status.machining_state == MS_RUNNING &&
@@ -925,6 +925,15 @@ void ChannelControl::saveBreakPoint(){
 
 		printf("==========  file: %s   lino: %d\n", brk_file_name, brk_line_number);
 	}
+    else if(force_save){
+        memset(brk_file_name, 0, sizeof(brk_file_name));
+        strcpy(brk_file_name, m_channel_status.cur_nc_file_name);
+        FILE * fp = fopen("break_file", "w");
+        fprintf(fp, "%s\n", brk_file_name);
+        fprintf(fp, "%d", brk_line_number);
+        fclose(fp);
+    }
+
 	printf("==========  file: %s   lino: %d machining_state:%d\n",
 			brk_file_name, brk_line_number, m_channel_status.machining_state);
 }
@@ -1922,17 +1931,19 @@ void ChannelControl::StartRunGCode(){
 #ifdef CARVE_MACHINE
     if(m_p_g_reg->BRKC){
 		if(strcmp(m_channel_status.cur_nc_file_name, brk_file_name) != 0){
-			m_error_code = ERR_AXIS_REF_NONE;
-			CreateError(m_error_code, ERROR_LEVEL, CLEAR_BY_MCP_RESET, 0, 0, 0);
-			return;
-		}
-		// 暂停后断点继续 不用程序再起
-		if(m_channel_status.machining_state != MS_PAUSED){
-			this->m_n_restart_line = brk_line_number;
-			this->m_n_restart_step = 1;
-			this->m_n_restart_mode = NORMAL_RESTART;
-			m_channel_rt_status.line_no = m_n_restart_line;
-		}
+//			m_error_code = ERR_AXIS_REF_NONE;
+//			CreateError(m_error_code, ERROR_LEVEL, CLEAR_BY_MCP_RESET, 0, 0, 0);
+//			return;
+        }else{
+            // 暂停后断点继续 不用程序再起
+            if(m_channel_status.machining_state != MS_PAUSED && m_channel_status.chn_work_mode == AUTO_MODE){
+                this->m_n_restart_line = brk_line_number;
+                this->m_n_restart_step = 1;
+                this->m_n_restart_mode = NORMAL_RESTART;
+                m_channel_rt_status.line_no = m_n_restart_line;
+            }
+        }
+
 	}
 #endif
 
@@ -2937,11 +2948,11 @@ void ChannelControl::ProcessHmiCmd(HMICmdFrame &cmd){
     	this->ProcessHmiGetBreakPoint(cmd);
     	break;
     case CMD_HMI_CLEAR_TOOL_COMP:        // 清除刀具补偿
-    	g_ptr_parm_manager->ClearToolComp(m_n_channel_index);
+        this->ProcessHmiClearToolComp(cmd);
     	break;
     case CMD_HMI_CLEAR_TOOL_OFFSET:      // 清除刀具偏置
-    	g_ptr_parm_manager->ClearToolOffset(m_n_channel_index);
-    	break;
+        this->ProcessHmiClearToolOffset(cmd);
+        break;
 
 #ifdef NEW_WOOD_MACHINE
     case CMD_HMI_APPEND_ORDER_LIST:
@@ -3038,7 +3049,51 @@ void ChannelControl::ProcessHmiGetBreakPoint(HMICmdFrame &cmd){
 #endif
 	cmd.data_len = 4;
 	cmd.cmd_extension = SUCCEED;
-	this->m_p_hmi_comm->SendCmd(cmd);
+    this->m_p_hmi_comm->SendCmd(cmd);
+}
+
+void ChannelControl::ProcessHmiClearToolComp(HMICmdFrame &cmd)
+{
+    int index, count;
+
+    memcpy(&index, cmd.data, 4);
+    memcpy(&count, &cmd.data[4], 4);
+
+    cmd.frame_number |= 0x8000;
+
+    if(index > 0 && index < kMaxToolCount &&
+       (index+count) > 0 && (index+count) <= kMaxToolCount+1){
+
+        g_ptr_parm_manager->ClearToolComp(0, index, count);
+
+        cmd.cmd_extension = SUCCEED;
+        this->m_p_hmi_comm->SendCmd(cmd);
+    }else{
+        cmd.cmd_extension = FAILED;
+        this->m_p_hmi_comm->SendCmd(cmd);
+    }
+}
+
+void ChannelControl::ProcessHmiClearToolOffset(HMICmdFrame &cmd)
+{
+    int index, count;
+
+    memcpy(&index, cmd.data, 4);
+    memcpy(&count, &cmd.data[4], 4);
+
+    cmd.frame_number |= 0x8000;
+
+    if(index > 0 && index < kMaxToolCount &&
+       (index+count) > 0 && (index+count) <= kMaxToolCount+1){
+
+        g_ptr_parm_manager->ClearToolOffset(0, index, count);
+
+        cmd.cmd_extension = SUCCEED;
+        this->m_p_hmi_comm->SendCmd(cmd);
+    }else{
+        cmd.cmd_extension = FAILED;
+        this->m_p_hmi_comm->SendCmd(cmd);
+    }
 }
 
 
@@ -5044,6 +5099,11 @@ void ChannelControl::CompileOver(){
 #ifndef USES_SIMULATION_TEST
     m_simulate_mode = SIM_NONE;
 #endif
+
+#ifdef USE_CARVE_MACHINE
+    brk_line_number = 1;
+    saveBreakPoint(true);
+#endif
 }
 
 /**
@@ -5146,10 +5206,8 @@ int ChannelControl::Run(){
     //执行循环
     while(!g_sys_state.system_quit)
     {
-
     	if(m_n_run_thread_state == RUN)
         {
-
             pthread_mutex_lock(&m_mutex_change_state);
             if(m_n_hw_trace_state == REVERSE_TRACE || m_p_last_output_msg != this->m_p_output_msg_list->TailNode())
             {
@@ -5292,7 +5350,7 @@ int ChannelControl::Run(){
                     		strcpy(eliminate_breakfile, m_channel_status.cur_nc_file_name);
                     		eliminate_breakline = m_channel_rt_status.line_no;
                     		SetMcStepMode(false);
-                    		eliminate_reset_flag = true;
+                            eliminate_reset_flag = true;
                     		eliminate_reset_finished = false;
                     		Reset();
                     	}
@@ -5333,13 +5391,15 @@ int ChannelControl::Run(){
         	if(m_b_dust_eliminate &&
 				m_channel_status.machining_state == MS_READY &&
 				m_eliminate_step == 1){
-        		printf("111111111111111111111\n");
+
         		if(eliminate_breakline == -1){   //不是正在加工 跳转除尘
         			strcpy(eliminate_breakfile, m_channel_status.cur_nc_file_name);
         		}else{
         			// 复位没有结束 除尘不能开始
         			if(!eliminate_reset_finished) continue;
         		}
+
+                SetMcStepMode(false);
 
         		char  filename[kMaxFileNameLen];
         		memset(filename, 0x00, kMaxFileNameLen);
@@ -5362,7 +5422,7 @@ int ChannelControl::Run(){
 				m_eliminate_step = 2;
 
         	}else if(m_b_dust_eliminate && m_eliminate_step == 2){
-        		printf("222222222222222222222222\n");
+
         		char path[kMaxPathLen] = {0};
 				strcpy(path, PATH_NC_FILE);
 				strcat(path, eliminate_breakfile);
@@ -5389,10 +5449,16 @@ int ChannelControl::Run(){
         		m_p_f_reg->ELIMI2 = 0;
         		m_b_dust_eliminate = false;
         		m_eliminate_step = 0;
+
+                if (IsStepMode())
+                {
+                    this->SetMcStepMode(true);
+                    m_b_need_delay_step = false;
+                }
         		continue;
         	}
 
-        	if( m_n_order_mode > 0 &&
+            if( m_n_order_mode > 0 &&
 				m_eliminate_step == 0 &&
 				exec_m30_over &&
 				m_channel_status.chn_work_mode == AUTO_MODE){
@@ -6459,9 +6525,9 @@ bool ChannelControl::IsMachinRunning(){
 bool ChannelControl::IsStepMode(){
     if(m_channel_status.func_state_flags.CheckMask(FS_SINGLE_LINE) &&     //单段有效
             (m_channel_status.chn_work_mode == AUTO_MODE) &&               //自动模式
-            (m_simulate_mode == SIM_NONE)    //非仿真状态
-        #ifdef USES_ADDITIONAL_PROGRAM
-            && (m_n_add_prog_type == NONE_ADD)    //非附加程序运行状态
+            (m_simulate_mode == SIM_NONE)   //非仿真状态
+        #ifdef NEW_WOOD_MACHINE
+            && !m_b_dust_eliminate   //非附加程序运行状态
         #endif
             ){
         if((this->m_n_macroprog_count == 0) || m_p_compiler->m_n_cur_dir_sub_prog || this->m_p_general_config->debug_mode > 0) //非宏程序调用或者调试模式打开
@@ -8441,13 +8507,23 @@ bool ChannelControl::ExecuteCoordMsg(RecordMsg *msg){
 				offset -= m_p_chn_ex_coord_config[coord_index/10-5401].offset[i];
 			}
 
-			if(g44_active && i < 3 && m_channel_status.cur_h_code > 0){
-				offset += m_p_chn_tool_config->geometry_compensation[m_channel_status.cur_h_code][i];
-				offset += m_p_chn_tool_config->geometry_wear[m_channel_status.cur_h_code][i];
-			}else if(i < 3 && m_channel_status.cur_h_code > 0){
-				offset -= m_p_chn_tool_config->geometry_compensation[m_channel_status.cur_h_code][i];
-				offset -= m_p_chn_tool_config->geometry_wear[m_channel_status.cur_h_code][i];
-			}
+
+            uint16_t g_compensation = this->m_channel_status.gmode[8];
+            if(g_compensation == G43_CMD && i < 3){
+                offset -= m_p_chn_tool_config->geometry_compensation[m_channel_status.cur_h_code-1][i];
+                offset -= m_p_chn_tool_config->geometry_wear[m_channel_status.cur_h_code-1][i];
+                if(i==2){
+                    offset -= m_p_chn_tool_config->length_compensation[m_channel_status.cur_h_code-1];
+                    offset -= m_p_chn_tool_config->length_wear_comp[m_channel_status.cur_h_code-1];
+                }
+            }else if(g_compensation == G44_CMD && i<3){
+                offset += m_p_chn_tool_config->geometry_compensation[m_channel_status.cur_h_code-1][i];
+                offset += m_p_chn_tool_config->geometry_wear[m_channel_status.cur_h_code-1][i];
+                if(i==2){
+                    offset += m_p_chn_tool_config->length_compensation[m_channel_status.cur_h_code-1];
+                    offset += m_p_chn_tool_config->length_wear_comp[m_channel_status.cur_h_code-1];
+                }
+            }
 
 //			int phy_axis = this->GetPhyAxis(i);
 //			if(phy_axis != 0xFF){
@@ -8457,6 +8533,7 @@ bool ChannelControl::ExecuteCoordMsg(RecordMsg *msg){
 //				}
 //			}
 			m_p_chn_g92_offset->offset[i] = offset;
+            printf("%d = %lf\n",i,  m_p_chn_g92_offset->offset[i]);
 		}
 		G52Active = false;
 		//G92Active = true;
@@ -11765,7 +11842,6 @@ bool ChannelControl::ExecuteInputMsg(RecordMsg * msg){
 		}
     }
 
-
     int input_type = input_msg->LData;
     int tool_number = input_msg->PData;
     int plane = this->m_mc_mode_exec.bits.mode_g17;
@@ -11995,7 +12071,8 @@ bool ChannelControl::ExecuteOpenFileMsg(RecordMsg *msg){
 void ChannelControl::ProcessEliminate(int work_station){
 	printf("===== ChannelControl::ProcessEliminate %d\n", work_station);
 	if(!m_b_dust_eliminate &&
-		m_order_step != STEP_PREPROG &&
+        m_order_step != STEP_WAIT_PREPROG &&
+        m_order_step != STEP_PREPROG &&
 		m_order_step != STEP_ENDPROG &&
 		m_channel_status.chn_work_mode == AUTO_MODE){
 
@@ -12014,7 +12091,21 @@ void ChannelControl::ProcessEliminate(int work_station){
 		if(this->m_n_run_thread_state != IDLE){
 			this->SetMcStepMode(true);
 		}
-	}
+    }
+}
+
+void ChannelControl::resetEliminate()
+{
+    char path[kMaxPathLen] = {0};
+    strcpy(path, PATH_NC_FILE);
+    strcat(path, eliminate_breakfile);
+    strcpy(m_channel_status.cur_nc_file_name, eliminate_breakfile);
+
+    m_p_f_reg->ELIMI1 = 0;
+    m_p_f_reg->ELIMI2 = 0;
+
+    if(this->m_p_compiler->OpenFile(path))
+        this->SendOpenFileCmdToHmi(m_channel_status.cur_nc_file_name);
 }
 #endif
 
@@ -12025,9 +12116,9 @@ void ChannelControl::ProcessEliminate(int work_station){
  */
 void ChannelControl::SetFuncState(int state, uint8_t mode){
 
-//#ifdef NEW_WOOD_MACHINE
-//	if(m_b_in_next_prog) return;
-//#endif
+#ifdef NEW_WOOD_MACHINE
+    if(m_b_dust_eliminate) return;
+#endif
 
 	bool cur_check = m_channel_status.func_state_flags.CheckMask(state);
     if(mode != 10){
@@ -13125,9 +13216,12 @@ void ChannelControl::SetMcAxisToolOffset(uint8_t axis_index){
     	offset = m_p_chn_tool_config->geometry_compensation[m_channel_status.cur_h_code-1][2] * 1e7;  //单位由mm转换为0.1nm
         //	offset += m_p_chn_tool_config->geometry_comp_basic[2] * 1e7;   //基准刀偏
         offset += m_p_chn_tool_config->geometry_wear[m_channel_status.cur_h_code-1][2] * 1e7;   //叠加磨损补偿
+        offset += m_p_chn_tool_config->length_compensation[m_channel_status.cur_h_code-1] * 1e7;
+        offset += m_p_chn_tool_config->length_wear_comp[m_channel_status.cur_h_code-1] * 1e7;
     }
     else if(axis_config.axis_linear_type == LINE_AXIS_X || axis_config.axis_linear_type == LINE_AXIS_Y){
-        offset = m_p_chn_tool_config->geometry_compensation[m_channel_status.cur_h_code-1][axis_config.axis_linear_type-1] * 1e7;  //单位由mm转换为0.1nm
+        offset += m_p_chn_tool_config->geometry_compensation[m_channel_status.cur_h_code-1][axis_config.axis_linear_type-1] * 1e7;  //单位由mm转换为0.1nm
+        offset += m_p_chn_tool_config->geometry_wear[m_channel_status.cur_h_code-1][axis_config.axis_linear_type-1] * 1e7;   //叠加磨损补偿
     }
     else //非XYZ轴没有刀具偏置
     {
@@ -13137,9 +13231,6 @@ void ChannelControl::SetMcAxisToolOffset(uint8_t axis_index){
 
     if(this->m_channel_status.gmode[8] == G44_CMD)	//负向补偿
     	offset *= -1;
-
-    // @zk 目前只有刀具长度补偿接口  和刀具偏置接口方向相反
-    // 实现刀具偏置临时处理
 
     cmd.data.data[0] = offset&0xFFFF;
     cmd.data.data[1] = (offset>>16)&0xFFFF;
@@ -13333,6 +13424,18 @@ bool ChannelControl::IsMoveStop(uint8_t phyAxis)
     }
     else
         return true;
+}
+
+void ChannelControl::SetMCHandleSpeed()
+{
+    McCmdFrame cmd;
+    memset(&cmd, 0x00, sizeof(McCmdFrame));
+
+    cmd.data.channel_index = m_n_channel_index;
+    cmd.data.axis_index = 0xff;
+    //cmd.data.cmd = CMD_MC_SET_MPG_SPEED;
+
+    m_p_mc_comm->WriteCmd(cmd);
 }
 
 void ChannelControl::SetMcToolOffsetReal(){
@@ -13579,7 +13682,7 @@ void ChannelControl::SetChnAxisSpeedParam(uint8_t chn_axis){
     SCAxisConfig &axis_config = this->m_p_axis_config[phy_axis];
     //G00速度，单位：um/s
     uint32_t data = axis_config.rapid_speed * 1000 / 60;  //mm/min -> um/s
-    //	printf("set axis %hhu g00 speed: %u\n", index, data);
+    //printf("set axis %hhu g00 speed: %u\n", chn_axis, data);
     cmd.data.data[0] = (data&0xFFFF);
     cmd.data.data[1] = ((data>>16)&0xFFFF);
     //	printf("set axis %hhu g00 speed: 0x%hx,  0x%hx\n", index, cmd.data.data[0], cmd.data.data[1]);
@@ -15329,6 +15432,8 @@ int ChannelControl::GetCurToolLife(){
 
 void ChannelControl::UpdateAndLogWorkFile()
 {
+    printf("===== ChannelControl::UpdateAndLogWorkFile time: %d\n",m_time_curfile_maching);
+
     if (m_time_curfile_maching)
     {
         NotifyHmiWorkInfoChanged(m_last_filename);
@@ -17640,11 +17745,6 @@ bool ChannelControl::CancelBreakContinueThread(){
  */
 void ChannelControl::Pause(){
 
-
-// 会导致报警无法停止
-//#ifdef NEW_WOOD_MACHINE
-//	if(m_b_in_next_prog) return;
-//#endif
 #ifdef CARVE_MACHINE
 	this->saveBreakPoint();
 
@@ -19120,9 +19220,17 @@ void ChannelControl::TransMachCoordToWorkCoord(DPointChn &pos, uint16_t coord_id
 				if(g_compensation == G43_CMD && i < 3){
 					origin_pos += m_p_chn_tool_config->geometry_compensation[m_channel_status.cur_h_code-1][i];
 					origin_pos += m_p_chn_tool_config->geometry_wear[m_channel_status.cur_h_code-1][i];
+                    if(i==2){
+                        origin_pos += m_p_chn_tool_config->length_compensation[i];
+                        origin_pos += m_p_chn_tool_config->length_wear_comp[i];
+                    }
 				}else if(g_compensation == G44_CMD && i<3){
 					origin_pos -= m_p_chn_tool_config->geometry_compensation[m_channel_status.cur_h_code-1][i];
 					origin_pos -= m_p_chn_tool_config->geometry_wear[m_channel_status.cur_h_code-1][i];
+                    if(i==2){
+                        origin_pos -= m_p_chn_tool_config->length_compensation[i];
+                        origin_pos -= m_p_chn_tool_config->length_wear_comp[i];
+                    }
 				}
 
             //}
@@ -19181,9 +19289,17 @@ void ChannelControl::TransMachCoordToWorkCoord(DPointChn &pos, uint16_t coord_id
 			if(g_compensation == G43_CMD && i < 3){
 				origin_pos += m_p_chn_tool_config->geometry_compensation[m_channel_status.cur_h_code-1][i];
 				origin_pos += m_p_chn_tool_config->geometry_wear[m_channel_status.cur_h_code-1][i];
+                if(i==2){
+                    origin_pos += m_p_chn_tool_config->length_compensation[i];
+                    origin_pos += m_p_chn_tool_config->length_wear_comp[i];
+                }
 			}else if(g_compensation == G44_CMD && i<3){
 				origin_pos -= m_p_chn_tool_config->geometry_compensation[m_channel_status.cur_h_code-1][i];
 				origin_pos -= m_p_chn_tool_config->geometry_wear[m_channel_status.cur_h_code-1][i];
+                if(i==2){
+                    origin_pos -= m_p_chn_tool_config->length_compensation[i];
+                     origin_pos -= m_p_chn_tool_config->length_wear_comp[i];
+                }
 			}
 
     		// @ 轴关系映射以后可能会用到
@@ -19227,9 +19343,18 @@ void ChannelControl::TransMachCoordToWorkCoord(DPoint &pos, uint16_t coord_idx, 
 				if(g_compensation == G43_CMD && i < 3){
 					origin_pos += m_p_chn_tool_config->geometry_compensation[m_channel_status.cur_h_code-1][i];
 					origin_pos += m_p_chn_tool_config->geometry_wear[m_channel_status.cur_h_code-1][i];
+                    if(i==2){
+                        origin_pos += m_p_chn_tool_config->length_compensation[i];
+                        origin_pos += m_p_chn_tool_config->length_wear_comp[i];
+
+                    }
 				}else if(g_compensation == G44_CMD && i<3){
 					origin_pos -= m_p_chn_tool_config->geometry_compensation[m_channel_status.cur_h_code-1][i];
 					origin_pos -= m_p_chn_tool_config->geometry_wear[m_channel_status.cur_h_code-1][i];
+                    if(i==2){
+                        origin_pos -= m_p_chn_tool_config->length_compensation[i];
+                        origin_pos -= m_p_chn_tool_config->length_wear_comp[i];
+                    }
 				}
 
                 //}
@@ -19289,9 +19414,17 @@ void ChannelControl::TransWorkCoordToMachCoord(DPointChn &pos, uint16_t coord_id
 					if(g_compensation == G43_CMD && i < 3){
 						origin_pos += m_p_chn_tool_config->geometry_compensation[m_channel_status.cur_h_code-1][i];
 						origin_pos += m_p_chn_tool_config->geometry_wear[m_channel_status.cur_h_code-1][i];
+                        if(i==2){
+                            origin_pos += m_p_chn_tool_config->length_compensation[i];
+                            origin_pos += m_p_chn_tool_config->length_wear_comp[i];
+                        }
 					}else if(g_compensation == G44_CMD && i<3){
 						origin_pos -= m_p_chn_tool_config->geometry_compensation[m_channel_status.cur_h_code-1][i];
 						origin_pos -= m_p_chn_tool_config->geometry_wear[m_channel_status.cur_h_code-1][i];
+                        if(i==2){
+                            origin_pos -= m_p_chn_tool_config->length_compensation[i];
+                            origin_pos -= m_p_chn_tool_config->length_wear_comp[i];
+                        }
 					}
 //                }
 
@@ -19345,9 +19478,17 @@ void ChannelControl::TransWorkCoordToMachCoord(DPoint &pos, uint16_t coord_idx, 
 					if(g_compensation == G43_CMD && i < 3){
 						origin_pos += m_p_chn_tool_config->geometry_compensation[m_channel_status.cur_h_code-1][i];
 						origin_pos += m_p_chn_tool_config->geometry_wear[m_channel_status.cur_h_code-1][i];
+                        if(i==2){
+                            origin_pos += m_p_chn_tool_config->length_compensation[i];
+                            origin_pos += m_p_chn_tool_config->length_wear_comp[i];
+                        }
 					}else if(g_compensation == G44_CMD && i<3){
 						origin_pos -= m_p_chn_tool_config->geometry_compensation[m_channel_status.cur_h_code-1][i];
 						origin_pos -= m_p_chn_tool_config->geometry_wear[m_channel_status.cur_h_code-1][i];
+                        if(i==2){
+                            origin_pos -= m_p_chn_tool_config->length_compensation[i];
+                            origin_pos -= m_p_chn_tool_config->length_wear_comp[i];
+                        }
 					}
                 //}
 
@@ -19394,9 +19535,17 @@ void ChannelControl::TransMachCoordToWorkCoord(double &pos, uint16_t coord_idx, 
 			if(g_compensation == G43_CMD && axis < 3){
 				origin_pos += m_p_chn_tool_config->geometry_compensation[m_channel_status.cur_h_code-1][axis];
 				origin_pos += m_p_chn_tool_config->geometry_wear[m_channel_status.cur_h_code-1][axis];
+                if(axis==2){
+                    origin_pos += m_p_chn_tool_config->length_compensation[axis];
+                    origin_pos += m_p_chn_tool_config->length_wear_comp[axis];
+                }
 			}else if(g_compensation == G44_CMD && axis<3){
 				origin_pos -= m_p_chn_tool_config->geometry_compensation[m_channel_status.cur_h_code-1][axis];
 				origin_pos -= m_p_chn_tool_config->geometry_wear[m_channel_status.cur_h_code-1][axis];
+                if(axis==2){
+                    origin_pos -= m_p_chn_tool_config->length_compensation[axis];
+                    origin_pos -= m_p_chn_tool_config->length_wear_comp[axis];
+                }
 			}
 
         //}
@@ -19433,9 +19582,17 @@ void ChannelControl::TransWorkCoordToMachCoord(double &pos, uint16_t coord_idx, 
 			if(g_compensation == G43_CMD && axis < 3){
 				origin_pos += m_p_chn_tool_config->geometry_compensation[m_channel_status.cur_h_code-1][axis];
 				origin_pos += m_p_chn_tool_config->geometry_wear[m_channel_status.cur_h_code-1][axis];
+                if(axis==2){
+                    origin_pos += m_p_chn_tool_config->length_compensation[axis];
+                    origin_pos += m_p_chn_tool_config->length_wear_comp[axis];
+                }
 			}else if(g_compensation == G44_CMD && axis<3){
 				origin_pos -= m_p_chn_tool_config->geometry_compensation[m_channel_status.cur_h_code-1][axis];
 				origin_pos -= m_p_chn_tool_config->geometry_wear[m_channel_status.cur_h_code-1][axis];
+                if(axis==2){
+                    origin_pos -= m_p_chn_tool_config->length_compensation[axis];
+                    origin_pos -= m_p_chn_tool_config->length_wear_comp[axis];
+                }
 			}
 
         //}
@@ -19481,10 +19638,19 @@ void ChannelControl::TransWorkCoordToMachCoord(double &pos, uint16_t coord_idx, 
 			if(g_compensation == G43_CMD && axis < 3){
 				origin_pos += m_p_chn_tool_config->geometry_compensation[m_channel_status.cur_h_code-1][axis];
 				origin_pos += m_p_chn_tool_config->geometry_wear[m_channel_status.cur_h_code-1][axis];
+                if(axis==2){
+                    origin_pos += m_p_chn_tool_config->length_compensation[axis];
+                    origin_pos += m_p_chn_tool_config->length_wear_comp[axis];
+                }
 			}else if(g_compensation == G44_CMD && axis <3){
 				origin_pos -= m_p_chn_tool_config->geometry_compensation[m_channel_status.cur_h_code-1][axis];
 				origin_pos -= m_p_chn_tool_config->geometry_wear[m_channel_status.cur_h_code-1][axis];
+                if(axis==2){
+                    origin_pos -= m_p_chn_tool_config->length_compensation[axis];
+                    origin_pos -= m_p_chn_tool_config->length_wear_comp[axis];
+                }
 			}
+
 
         //}
     //}
@@ -20306,10 +20472,12 @@ void ChannelControl::AddWorkCountPiece(int addNum)
     m_cur_workpiece_count += addNum;
     g_ptr_parm_manager->SetCurFileWorkPieceCnt(m_n_channel_index, m_cur_workpiece_count);
 
-//    if (m_channel_status.workpiece_require != 0 && m_channel_status.workpiece_count >= m_channel_status.workpiece_require)
-//    {//已到达需求件数
-//        CreateError(ERR_REACH_WORK_PIECE, INFO_LEVEL, CLEAR_BY_MCP_RESET);
-//    }
+#ifdef CARVE_MACHINE
+    if (m_channel_status.workpiece_require != 0 && m_channel_status.workpiece_count >= m_channel_status.workpiece_require)
+    {//已到达需求件数
+        CreateError(ERR_REACH_WORK_PIECE, INFO_LEVEL, CLEAR_BY_MCP_RESET);
+    }
+#endif
 }
 
 #ifdef USES_SPEED_TORQUE_CTRL

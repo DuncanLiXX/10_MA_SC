@@ -2117,6 +2117,8 @@ void ChannelEngine::ProcessMiCmd(MiCmdFrame &cmd){
     case CMD_MI_HEARTBEAT:	//MI心跳
         cmd.data.cmd |= 0x8000;
         this->m_p_mi_comm->WriteCmd(cmd);
+
+
         if(!m_b_recv_mi_heartbeat){
             m_b_recv_mi_heartbeat = true;
             this->InitMiParam();
@@ -3127,6 +3129,9 @@ void ChannelEngine::ProcessHmiCmd(HMICmdFrame &cmd){
         }
 
         break;
+    case CMD_HMI_SET_EDITING:
+        ProcessHmiSetEditing(cmd);
+        break;
     case CMD_SC_MDA_DATA_REQ:			//MDA代码请求 115
     case CMD_HMI_GET_MACRO_VAR:			//HMI向SC请求宏变量的值   30
     case CMD_HMI_SET_MACRO_VAR:        //HMI向SC设置宏变量寄存器的值   31
@@ -3335,6 +3340,7 @@ void ChannelEngine::ProcessHmiCmd(HMICmdFrame &cmd){
         break;
     case CND_HMI_SET_STATISTICS_LOG:
     {
+        printf("===== CND_HMI_SET_STATISTICS_LOG  chn: %d\n", cmd.channel_index);
         if(cmd.channel_index < this->m_p_general_config->chn_count){
             this->m_p_channel_control[cmd.channel_index].UpdateAndLogWorkFile();
         }
@@ -3965,6 +3971,17 @@ void ChannelEngine::ProcessHmiAbsoluteRefSet(HMICmdFrame &cmd)
         else if(errCode == 1)
             CreateError(ERR_RET_NOT_SUPPORT, WARNING_LEVEL, CLEAR_BY_MCP_RESET, 0, m_n_cur_channle_index, chn_axis);
     }
+    this->m_p_hmi_comm->SendCmd(cmd);
+}
+
+void ChannelEngine::ProcessHmiSetEditing(HMICmdFrame &cmd)
+{
+    cmd.frame_number |= 0x8000;
+    memcpy(&m_editing, cmd.data, 1);
+    cmd.cmd_extension = SUCCEED;
+
+    printf("===== %d\n", m_editing);
+
     this->m_p_hmi_comm->SendCmd(cmd);
 }
 
@@ -5705,13 +5722,10 @@ bool ChannelEngine::Pause(){
 
         //for(uint8_t i = 0; i < m_p_channel_mode_group[m_n_cur_chn_group_index].GetChannelCount(); i++){
 
-/*
+// 会导致报警无法停止
 #ifdef NEW_WOOD_MACHINE
-    	// 前置 程序或后置程序执行时  禁止暂停
-    	if(m_p_channel_control[0].m_order_step == 2 ||
-        	   m_p_channel_control[0].m_order_step == 6	)
-        		return true;
-#endif*/
+    if(m_p_channel_control[0].m_b_dust_eliminate) return true;
+#endif
         	m_p_channel_control[0].Pause();
             //m_p_channel_control[m_p_channel_mode_group[m_n_cur_chn_group_index].GetChannel(i)].Pause();
         //}
@@ -8782,7 +8796,15 @@ void ChannelEngine::SystemReset(){
         }
         */
 
+#ifdef NEW_WOOD_MACHINE
+        if(this->m_p_channel_control[i].m_b_dust_eliminate){
+            this->m_p_channel_control[i].m_b_dust_eliminate = false;
+            this->m_p_channel_control[i].resetEliminate();
+        }
+#endif
+
         this->m_p_pmc_reg->FReg().bits[i].RST = 1;  //复位信号
+
         this->m_p_channel_control[i].Reset();
     }
 
@@ -9453,7 +9475,7 @@ void ChannelEngine::ProcessPmcSignal(){
         }
 
         if((g_reg->ST && g_reg_last->ST == 0) && g_reg->_SP == 1 && f_reg->STL == 0){ //循环启动
-        	if(!file_receive) this->Start();
+            if(!m_editing) this->Start();
         }
 
         if(g_reg->ST_EXT && g_reg_last->ST_EXT == 0){
@@ -9461,7 +9483,7 @@ void ChannelEngine::ProcessPmcSignal(){
         }
 
         if(g_reg->_SP == 0 && g_reg_last->_SP == 1 && f_reg->SPL == 0 && f_reg->STL == 1){ //循环保持
-
+            // 会导致报警无法停止
         	this->Pause();
         }
 

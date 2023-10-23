@@ -385,6 +385,8 @@ public:
     void UpdateModeData(uint16_t mode_type, int value);//由SC直接更新D模态数据
 
     bool IsMoveStop(uint8_t phyAxis);//运动是否停止
+
+    void SetMCHandleSpeed();
 #ifdef USES_ADDITIONAL_PROGRAM
 	bool CallAdditionalProgram(AddProgType type);  //调用附加程序（前置/后置）
 #endif
@@ -448,6 +450,7 @@ public:
     std::vector<string> order_file_vector;  // 排程文件列表
 
     char reset_file[kMaxFileNameLen];
+    void resetEliminate();
 #endif
 
     bool m_b_in_block_prog = false; // 锁块
@@ -468,7 +471,7 @@ public:
 	
 #ifdef CARVE_MACHINE
     // 保存断点
-    void saveBreakPoint();
+    void saveBreakPoint(bool force_save = false);
     char brk_file_name[256];
     uint32_t brk_line_number;
 #endif
@@ -557,6 +560,8 @@ private:
 	void ProcessHmiSetCustomStepInc(HMICmdFrame &cmd);
 	void ProcessHmiGetCustomStepInc(HMICmdFrame &cmd);
 	void ProcessHmiGetBreakPoint(HMICmdFrame &cmd);
+    void ProcessHmiClearToolComp(HMICmdFrame &cmd);
+    void ProcessHmiClearToolOffset(HMICmdFrame &cmd);
 
 #ifdef NEW_WOOD_MACHINE
 	void ProcessHmiAppendOrderListFile(HMICmdFrame &cmd);

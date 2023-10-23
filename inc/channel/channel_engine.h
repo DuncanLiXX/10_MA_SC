@@ -349,8 +349,8 @@ void SetMcArmComm(MCArmCommunication *comm){this->m_p_mc_arm_comm = comm;}   //É
     void NotifyExternalStartToHmi();
     void ProcessSAsingal(bool force = false);    //¼±Í£ĞÅºÅĞÅºÅÏà¹Ø´¦Àí
 
-public:
-    bool file_receive{false};
+//public:
+    //bool file_receive{false};
 
 
 private:	//Ë½ÓĞ³ÉÔ±º¯Êı
@@ -432,9 +432,9 @@ private:	//Ë½ÓĞ³ÉÔ±º¯Êı
 
     void ProcessHmiSetAllCoordCmd(HMICmdFrame &cmd);    //HMIÏòSCÉèÖÃµ±Ç°Í¨µÀµÄËùÓĞ¹¤¼ş×ø±êÏµ
     void ProcessHmiAbsoluteRefSet(HMICmdFrame &cmd);    //´¦ÀíHMIÉèÖÃ¾ø¶ÔÊ½±àÂëÆ÷Ô­µã
+    void ProcessHmiSetEditing(HMICmdFrame &cmd);
 
 	void SendHmiUpdateStatus(uint8_t total_step, uint8_t cur_step);  //¸øHMI·¢ËÍÉı¼¶×´Ì¬
-
 
 
 	void ProcessPmcSignal();		//´¦ÀíPMCµÄG±äÁ¿
@@ -689,6 +689,8 @@ private:  //Ë½ÓĞ³ÉÔ±±äÁ¿
 
     uint8_t m_MLK_mask{0x00};       //»úĞµËø×¡Öámask
     double m_MLK_pos[kMaxAxisChn]; //»úĞµËø×¡×ø±êÖµ
+
+    uint8_t m_editing{false};
 
 #ifdef TAP_TEST
     FILE *m_fd = nullptr;

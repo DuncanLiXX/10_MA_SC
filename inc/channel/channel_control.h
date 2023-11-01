@@ -75,6 +75,9 @@ public:
     const ChannelRealtimeStatus &GetRealtimeStatus(){return m_channel_rt_status;} //获取实时状态结构体
     SCAxisConfig *GetAxisConfig(){return m_p_axis_config;}
 
+    SCChannelConfig *GetChnConfig(){return m_p_channel_config;}
+
+
 	uint8_t GetChnAxisCount(){return this->m_p_channel_config->chn_axis_count;}   //获取通道轴数量
 	uint8_t GetChnAxisName(uint8_t idx){return this->m_p_channel_config->chn_axis_name[idx];}   //获取通道轴名称
 
@@ -178,6 +181,7 @@ public:
     // pos: 目标位置 mm
     // 返回值： 0：没有超限   1：超限
     bool CheckSoftLimit(ManualMoveDir dir, uint8_t phy_axis, double pos);
+
     // 获取限位位置
     bool GetSoftLimt(ManualMoveDir dir, uint8_t phy_axis, double &limit);
 
@@ -417,7 +421,6 @@ public:
     uint32_t m_cur_setfeed = 0;
     int main_prog_line_number = 0;
 
-#ifdef NEW_WOOD_MACHINE
 	enum order_step{
 		STEP_IDLE = 0,            // 排程未启动
 		STEP_WAIT_PREPROG = 1,    // 等待前置程序执行
@@ -432,7 +435,6 @@ public:
 	void SetOrderStep(int step){m_order_step = step;}
 	void ProcessEliminate(int work_station);
 
-    int m_n_order_mode;		   // 排序加工模式·
     int m_order_step = 0;      //
     bool exec_m30_over;
 
@@ -447,11 +449,11 @@ public:
     int current_order_index;   // 当前加载排程列表序号
     char g110_file_name[kMaxPathLen];
     bool m_b_in_common_pre_prog;  // 普通程序调用前置程序
+    bool b_in_end_prog{false};
     std::vector<string> order_file_vector;  // 排程文件列表
 
     char reset_file[kMaxFileNameLen];
     void resetEliminate();
-#endif
 
     bool m_b_in_block_prog = false; // 锁块
 
@@ -469,12 +471,10 @@ public:
 
     void UpdateAndLogWorkFile();    //换程序时，更新当前程序的加工信息
 	
-#ifdef CARVE_MACHINE
     // 保存断点
     void saveBreakPoint(bool force_save = false);
     char brk_file_name[256];
     uint32_t brk_line_number;
-#endif
 
 private:
 	void InitialChannelStatus();		//初始化通道状态
@@ -522,9 +522,7 @@ private:
 	bool ExecuteInputMsg(RecordMsg *msg);		//执行G10 输入指令消息
 	bool ExecuteExactStopMsg(RecordMsg *msg);   // G09
 
-#ifdef NEW_WOOD_MACHINE
 	bool ExecuteOpenFileMsg(RecordMsg *msg);
-#endif
 
 #ifdef USES_SPEED_TORQUE_CTRL	
 	bool ExecuteSpeedCtrlMsg(RecordMsg *msg);   //执行速度控制消息
@@ -563,14 +561,12 @@ private:
     void ProcessHmiClearToolComp(HMICmdFrame &cmd);
     void ProcessHmiClearToolOffset(HMICmdFrame &cmd);
 
-#ifdef NEW_WOOD_MACHINE
 	void ProcessHmiAppendOrderListFile(HMICmdFrame &cmd);
 	void ProcessHmiSetOrderListIndex(HMICmdFrame &cmd);
 	void ProcessClearOrderList();
 	void ProcessHmiSetOrderMode(HMICmdFrame &cmd);
 	void ProcessHmiGetOrderLen(HMICmdFrame &cmd);
 	void ProcessHmiGetOrderFile(HMICmdFrame &cmd);
-#endif
 
 
 #ifdef USES_LASER_MACHINE

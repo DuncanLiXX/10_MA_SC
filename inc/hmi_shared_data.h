@@ -43,8 +43,8 @@ const int kMaxMModeCount = 40;   //M代码模态组
 
 
 //注意: 此处定义与windows的定义不同，windows为256字节
-const int kMaxPathLen = 128;          //路径最大长度
-const int kMaxFileNameLen = 128;      //文件名最大长度
+const int kMaxPathLen = 256;          //路径最大长度
+const int kMaxFileNameLen = 256;      //文件名最大长度
 
 //NC文件签名串长度
 const int kNcFileSignLen = 16;   //签名串长度
@@ -1299,6 +1299,15 @@ struct HmiChnConfig{
 
     uint8_t tool_number;   // 刀号数
 
+    uint16_t order_prog_mode;
+    uint16_t pre_prog_num;
+    uint16_t end_prog_num;
+
+    uint16_t feed_input;                    // 进给速度输入
+    uint16_t feed_input_enable;             // 进给速度输入有效
+    uint16_t spindle_speed_input;           // 主轴速度输入
+    uint16_t spindle_speed_input_enable;    // 主轴速度输入有效
+
 #ifdef USES_WOOD_MACHINE
 	int debug_param_1;             //调试参数1
 	int debug_param_2;             //调试参数2
@@ -1622,6 +1631,7 @@ struct ProcessParamChn{
 	double chn_max_dec;					//通道最大减速度	//单位：mm/s^2
 	double chn_max_corner_acc;          //最大拐角加速度		//单位：mm/s^2
 	double chn_max_arc_acc;				//最大向心加速度	//单位：mm/s^2
+
 #ifdef USES_WOOD_MACHINE
 	int flip_comp_value;            //挑角补偿    -10000~10000    单位：um
 #endif

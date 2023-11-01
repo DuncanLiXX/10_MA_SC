@@ -38,7 +38,7 @@ void AxisStatusCtrl::Init(MICommunication *comm,
     mi = comm;
     channel = channel_config;
     axis = axis_config;
-    F = f_reg;
+    this->f_reg = f_reg;
 
     for(int i=0; i<channel_config->chn_axis_count; i++){
         if(axis[i].axis_type == AXIS_SPINDLE)
@@ -123,7 +123,7 @@ void AxisStatusCtrl::UpdateServoState(bool force){
             thread th(&ChannelEngine::ProcessSAsingal, g_ptr_chn_engine, true);
             th.detach();
         }
-        else if (F->SA == 0 && SA_Processing)
+        else if (f_reg->SA == 0 && SA_Processing)
         {
             for(int i=0; i<channel->chn_axis_count; i++){
                 // 主轴的使能不在这里控制
@@ -188,9 +188,25 @@ void AxisStatusCtrl::UpdateSA(uint64_t srvon_mask){
             srvon_mask &= ~(0x01 << i);
         }
     }
+
     if((line_axis & srvon_mask) == line_axis){
-        F->SA = 1;
+        f_reg->SA = 1;
     }else{
-        F->SA = 0;
+        f_reg->SA = 0;
+    }
+}
+
+void AxisStatusCtrl::AxisReset()
+{
+    printf("===== AxisStatusCtrl::AxisReset()\n");
+
+    if(!_ESP) return;
+
+    printf("1111111111111111\n");
+    for(int i=0; i<channel->chn_axis_count; i++){
+        // 主轴的使能不在这里控制
+        if(axis[i].axis_type == AXIS_SPINDLE)
+            continue;
+        mi->SendAxisEnableCmd(i+1, true);
     }
 }

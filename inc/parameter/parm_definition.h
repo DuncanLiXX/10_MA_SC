@@ -186,6 +186,25 @@ struct SCChannelConfig{
     double G83back;		// G83回退距离
 
     uint8_t tool_number;    // 刀号数
+
+/**
+*程序调度功能参数：
+0：关闭；
+1：前置程序有效，加工启动时执行1次前置程序号内容；
+2：后置程序有效，加工结束时（M30触发）执行1次后置程序号内容；
+3：前/后置程序有效，加工启动时执行1次前置程序号内容 ，加工结束时（M30触发）执行1次后置程序号内容；
+4：排序加工功能有效，当开启排序加工功能后，加工启动时执行1次前置排序程序SYS_MACRO_STRAT，加工结束时（M30触发）执行1次后置排序程序SYS_MACRO_M30；
+（范围：0～4，默认：0 ）
+*/
+    uint16_t order_prog_mode;   // 加工顺序控制
+    uint16_t pre_prog_num;      // 前置程序号
+    uint16_t end_prog_num;      // 后置程序号
+
+    uint16_t feed_input;                    // 进给速度输入
+    uint16_t feed_input_enable;             // 进给速度有效
+    uint16_t spindle_speed_input;           // 主轴速度输入
+    uint16_t spindle_speed_input_enable;    // 主轴速度输入有效
+
 #ifdef USES_WOOD_MACHINE
 	int debug_param_1;             //调试参数1
 	int debug_param_2;             //调试参数2

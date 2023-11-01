@@ -126,6 +126,22 @@ uint32_t Parser::GetPmcAxisMask()
     return m_mask_pmc_axis;
 }
 
+void Parser::addFeedMsg(uint16_t feed)
+{
+    RecordMsg *new_msg = new FeedMsg(feed, m_p_compiler_status->mode.f_mode);
+    if(new_msg == nullptr){
+        //TODO 内存分配失败，告警
+        CreateError(ERR_MEMORY_NEW, FATAL_LEVEL, CLEAR_BY_RESET_POWER);
+    }
+    new_msg->SetLineNo(0);  //设置当前行号
+    if(this->m_p_compiler_status->jump_flag)
+        new_msg->SetFlag(FLAG_JUMP, true);
+
+    m_b_f_code = true;
+    m_p_parser_result->Append(new_msg);
+    ProcessLastBlockRec(new_msg);
+}
+
 /**
  * @brief 对词法分析结果进行语法解析
  * @return true--成功  false--失败
@@ -1991,7 +2007,10 @@ bool Parser::CreateCoordMsg(const int gcode){
 			return false;
 		}
     }else if(gcode >= G54_CMD and gcode <= G59_CMD){
-
+        if(gcode >= 542 && gcode <= 549){
+            CreateError(ERR_NC_FORMAT, ERROR_LEVEL, CLEAR_BY_MCP_RESET,this->m_p_lexer_result->line_no);
+            return false;
+        }
     }
     else{
         CreateError(ERR_NC_FORMAT, ERROR_LEVEL, CLEAR_BY_MCP_RESET,this->m_p_lexer_result->line_no);
@@ -2066,6 +2085,31 @@ bool Parser::CreateAuxMsg(int *mcode, uint8_t total){
 			return false;
 		}
 	}
+
+    if((*mcode == 30 || *mcode == 2) && !m_p_channel_control->b_in_end_prog){
+
+        SCChannelConfig * chn_cfg = m_p_channel_control->GetChnConfig();
+
+        if(chn_cfg->order_prog_mode == 2 || chn_cfg->order_prog_mode == 3){
+
+            RecordMsg * new_msg = new SubProgCallMsg(chn_cfg->end_prog_num, 1);
+
+            if(new_msg == nullptr){
+                //TODO 内存分配失败，告警
+                CreateError(ERR_MEMORY_NEW, FATAL_LEVEL, CLEAR_BY_RESET_POWER);
+                return false;
+            }
+
+            m_p_channel_control->b_in_end_prog = true;
+            new_msg->SetLineNo(this->m_p_lexer_result->line_no);  //设置当前行号
+            if(this->m_p_compiler_status->jump_flag)
+                new_msg->SetFlag(FLAG_JUMP, true);
+            m_p_parser_result->Append(new_msg);
+            ProcessLastBlockRec(new_msg);
+            return true;
+        }
+    }
+
 
 	AuxMsg *new_msg = new AuxMsg(mcode, total);
 	if(new_msg == nullptr){

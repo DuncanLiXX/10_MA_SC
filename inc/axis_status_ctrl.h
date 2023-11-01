@@ -47,6 +47,8 @@ public:
     // 更新SA(F0.6)伺服就绪状态
     void UpdateSA(uint64_t srvon_mask);
 
+    void AxisReset();
+
 private:
     uint8_t _ESP{1};    // 急停状态 低有效
     uint64_t sync_warn{0x00}; // 同步轴警告 每一bit代表一个轴
@@ -55,7 +57,7 @@ private:
     MICommunication *mi{nullptr};
     SCChannelConfig *channel{nullptr};
     SCAxisConfig *axis{nullptr};
-    FRegBits *F{nullptr};
+    FRegBits *f_reg{nullptr};
 
     bool last_enable[kMaxAxisNum]{false};
     bool last_svf[kMaxAxisNum]{false};

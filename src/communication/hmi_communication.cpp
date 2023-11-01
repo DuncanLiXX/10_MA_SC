@@ -516,10 +516,8 @@ bool HMICommunication::SendCmd(HMICmdFrame &cmd){
 			pNode->frame = cmd;
 			pNode->resend_count = kHmiCmdResend;
 			pNode->timeout = kHmiCmdTimeout;
-
 			m_list_send->Append(pNode);  //此处只做添加，可以不用m_mutex_udp_send互斥，因为内部已互斥
-//			if(ListNode<HMICmdResendNode *>::new_count > 0)
-//				printf("HMICmdResendNode new count :%d\n", ListNode<HMICmdResendNode *>::new_count);
+
 		}
 		
 	}
@@ -618,7 +616,6 @@ int HMICommunication::SendMonitorData(char *buf, int size){
 //		printf("warnning: send = %d, res = %d\n", size, res);
 		g_ptr_trace->PrintLog(LOG_ALARM, "HMI监控连接发送数据异常[send=%d, res=%d]！errno=%d", size, res, errno);
 	}
-
 
 	pthread_mutex_unlock(&m_mutex_tcp_monitor);
 	return res;
@@ -1316,7 +1313,7 @@ int HMICommunication::Monitor(){
 	int res = ERR_NONE;
 
     static uint64_t monitor_count = 0;
-//   	static time_t t_last = time(nullptr);
+    //static time_t t_last = time(nullptr);
 
 
    	printf("thread id = %ld\n", syscall(SYS_gettid));
@@ -1329,21 +1326,21 @@ int HMICommunication::Monitor(){
 	}
 
    	//测试刷新时间间隔
-//	struct timeval tvLast;
-//	struct timeval tvNow;
-//	bool first = true;
-//	int nTimeInterval;
+//    struct timeval tvLast;
+//    struct timeval tvNow;
+//    bool first = true;
+//    int nTimeInterval;
 
    	while(!g_sys_state.system_quit){
 
    		monitor_count++;
-//	    if(++monitor_count%20 == 0)
-//		{
-//			time_t t1 = time(nullptr);
-//			if(t1 - t_last != 1)
-//				printf("monitor time %d,%d,%lld\n", (int)t1, (int)t_last,monitor_count );
-//			t_last = t1;
-//		}
+//        if(++monitor_count%20 == 0)
+//        {
+//            time_t t1 = time(nullptr);
+//            if(t1 - t_last != 1)
+//                printf("monitor time %d,%d,%lld\n", (int)t1, (int)t_last,monitor_count );
+//            t_last = t1;
+//        }
 
 	//    printf("monitor process:%lld\n", monitor_count);
 
@@ -1391,16 +1388,16 @@ int HMICommunication::Monitor(){
 		   	}
 
 	   		//测试发送监控数据间隔
-//	   		gettimeofday(&tvNow, NULL);
-//	   		if(first){
-//	   			first = false;
-//	   			tvLast = tvNow;
-//	   		}else{
-//	   			nTimeInterval = (tvNow.tv_sec-tvLast.tv_sec)*1000000+tvNow.tv_usec-tvLast.tv_usec;
-//	   			if(nTimeInterval > 50100)
-//	   				printf("$$$$$$$$$monitor data send time out: %d\n", nTimeInterval);
-//	   			tvLast = tvNow;
-//	   		}
+//            gettimeofday(&tvNow, NULL);
+//            if(first){
+//                first = false;
+//                tvLast = tvNow;
+//            }else{
+//                nTimeInterval = (tvNow.tv_sec-tvLast.tv_sec)*1000000+tvNow.tv_usec-tvLast.tv_usec;
+//                if(nTimeInterval > 50100)
+//                    printf("$$$$$$$$$monitor data send time out: %d\n", nTimeInterval);
+//                tvLast = tvNow;
+//            }
 
 
 
@@ -2595,8 +2592,15 @@ void HMICommunication::ProcessHmiFileOperateCmd(HMICmdRecvNode &cmd_node){
     }
 		break;
 	case FILE_OPT_RENAME:
-		strcpy(name_old, cmd.data);
-		pSplit = strchr(name_old, '?');
+
+        if(strlen(cmd.data) > kMaxPathLen - 10){
+            CreateError(ERR_SAVEAS_FILE, ERROR_LEVEL, CLEAR_BY_MCP_RESET);
+            break;
+        }
+
+        strcpy(name_old, cmd.data);
+
+        pSplit = strchr(name_old, '?');
 		if(pSplit == nullptr){
 			res = false;
 			break;
@@ -2607,7 +2611,13 @@ void HMICommunication::ProcessHmiFileOperateCmd(HMICmdRecvNode &cmd_node){
 		res = this->RenameNcFile(name_old, name_new);
 		break;
 	case FILE_OPT_SAVEAS:
-		strcpy(name_old, cmd.data);
+
+        if(strlen(cmd.data) > kMaxPathLen - 10){
+            CreateError(ERR_SAVEAS_FILE, ERROR_LEVEL, CLEAR_BY_MCP_RESET);
+            break;
+        }
+
+        strcpy(name_old, cmd.data);
 		pSplit = strchr(name_old, '?');
 		if(pSplit == nullptr){
 			res = false;
@@ -5149,11 +5159,9 @@ int HMICommunication::RecvFile(){
     close(fd);
     sync();
 
-#ifdef NEW_WOOD_MACHINE
     if(file_type == FILE_ORDER_LIST){
 		m_p_channel_engine->refreshOrderList();
 	}
-#endif
 
 	if(read_total == file_size){
 		if(file_type == FILE_G_CODE){

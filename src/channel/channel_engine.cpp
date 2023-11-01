@@ -1624,12 +1624,9 @@ void ChannelEngine::SaveDataPoweroff(){
     //保存各轴当前位置
     this->SaveCurPhyAxisEncoder();
 
-#ifdef CARVE_MACHINE
-    for(int i = 0; i < this->m_p_general_config->chn_count; i++){
-    	m_p_channel_control[i].saveBreakPoint();
-    }
-#endif
-
+    //for(int i = 0; i < this->m_p_general_config->chn_count; i++){
+    m_p_channel_control[0].saveBreakPoint();
+    //}
 
     sync();
 
@@ -3790,8 +3787,6 @@ void ChannelEngine::ProcessHmiClearMsgCmd(HMICmdFrame &cmd){
     cmd.frame_number |= 0x8000;
     cmd.data_len = 0;
 
-
-
     if(cmd.cmd_extension == 0xFF){  //清空告警队列
         g_ptr_alarm_processor->Clear();
         cmd.cmd_extension = SUCCEED;
@@ -4522,7 +4517,6 @@ bool ChannelEngine::ProcessPcDataImport(){
         return false;
     }
 
-
     read(fd, &phy_axis, 1);   //读取物理轴编号
     read(fd, &pc_type, 1);    //读取螺补类型，0--单向  1--双向  螺补文件读出
     read(fd, &point_count, 2);  //读取螺补点数
@@ -4876,6 +4870,9 @@ bool ChannelEngine::HasMDIData()
 }
 
 bool ChannelEngine::CheckSoftLimit(ManualMoveDir dir, uint8_t phy_axis, double pos){
+
+    printf("axis:%d pos:%lf\n", phy_axis, pos);
+
     // 如果没回零，认为限位不超限
     if(!(this->m_n_mask_ret_ref_over & (0x01<<phy_axis)))
         return false;
@@ -5692,15 +5689,13 @@ bool ChannelEngine::Start(){
             chn = m_p_channel_mode_group[m_n_cur_chn_group_index].GetChannel(i);
             UpdateHandwheelState(chn);
 
-#ifdef NEW_WOOD_MACHINE
-            printf("====== channel engine m_n_order_mode: %d\n",
-            		m_p_channel_control[chn].m_n_order_mode);
-            if(m_p_channel_control[chn].m_n_order_mode > 0 &&
+
+            if(m_p_channel_config[chn].order_prog_mode == 4 &&
             		m_p_channel_control[chn].m_order_step == 0 &&
 					m_p_channel_control[chn].GetWorkMode() == AUTO_MODE){
             	m_p_channel_control[chn].SetOrderStep(1);
             }
-#endif
+
             m_p_channel_control[chn].StartRunGCode();
         }
 
@@ -5723,9 +5718,8 @@ bool ChannelEngine::Pause(){
         //for(uint8_t i = 0; i < m_p_channel_mode_group[m_n_cur_chn_group_index].GetChannelCount(); i++){
 
 // 会导致报警无法停止
-#ifdef NEW_WOOD_MACHINE
     if(m_p_channel_control[0].m_b_dust_eliminate) return true;
-#endif
+
         	m_p_channel_control[0].Pause();
             //m_p_channel_control[m_p_channel_mode_group[m_n_cur_chn_group_index].GetChannel(i)].Pause();
         //}
@@ -6270,6 +6264,8 @@ void ChannelEngine::SetJPState(uint8_t chn, uint8_t JP, uint8_t last_JP, ChnWork
         if(flag_now == flag_last)
             continue;
 
+        if(m_p_axis_config[i].axis_type == AXIS_SPINDLE) continue;
+
         uint8_t chn_axis;
         GetAxisChannel(m_p_channel_config[chn].chn_axis_phy[i]-1,chn_axis);
         // 轴正向移动按下
@@ -6298,6 +6294,8 @@ void ChannelEngine::SetJNState(uint8_t chn, uint8_t JN, uint8_t last_JN, ChnWork
         bool flag_last = (last_JN & (0x01 << i));
         if(flag_now == flag_last)
             continue;
+
+        if(m_p_axis_config[i].axis_type == AXIS_SPINDLE) continue;
 
         uint8_t chn_axis;
         GetAxisChannel(m_p_channel_config[chn].chn_axis_phy[i]-1,chn_axis);
@@ -8642,7 +8640,8 @@ void ChannelEngine::SetSlaveInfo(){
     {
         ListNode<BdioDevInfo> *node = this->m_list_bdio_dev.HeadNode();
         while(node != nullptr){
-            //参数拼接
+
+
             char16_t data0 = (node->data.device_type << 8) | (node->data.group_index);
             char16_t data1 = 0;
             char16_t data2 = node->data.in_bytes;
@@ -8658,13 +8657,13 @@ void ChannelEngine::SetSlaveInfo(){
             cmd.data.data[5] = data5;
 
             //test
-            //printf("node data0 %d------------------\n", cmd.data.data[0]);
-            //printf("node data1 %d------------------\n", cmd.data.data[1]);
-            //printf("node data2 %d------------------\n", cmd.data.data[2]);
-            //printf("node data3 %d------------------\n", cmd.data.data[3]);
-            //printf("node data4 %d------------------\n", cmd.data.data[4]);
-            //printf("node data5 %d------------------\n", cmd.data.data[5]);
-            //printf("node data6 %d------------------\n", cmd.data.data[6]);
+//            printf("node data0 %d------------------\n", cmd.data.data[0]);
+//            printf("node data1 %d------------------\n", cmd.data.data[1]);
+//            printf("node data2 %d------------------\n", cmd.data.data[2]);
+//            printf("node data3 %d------------------\n", cmd.data.data[3]);
+//            printf("node data4 %d------------------\n", cmd.data.data[4]);
+//            printf("node data5 %d------------------\n", cmd.data.data[5]);
+//            printf("node data6 %d------------------\n", cmd.data.data[6]);
             //printf("\n");
 
             //数据发送
@@ -8796,12 +8795,11 @@ void ChannelEngine::SystemReset(){
         }
         */
 
-#ifdef NEW_WOOD_MACHINE
+
         if(this->m_p_channel_control[i].m_b_dust_eliminate){
             this->m_p_channel_control[i].m_b_dust_eliminate = false;
             this->m_p_channel_control[i].resetEliminate();
         }
-#endif
 
         this->m_p_pmc_reg->FReg().bits[i].RST = 1;  //复位信号
 
@@ -8814,6 +8812,8 @@ void ChannelEngine::SystemReset(){
 
     //通知MI模块复位
     this->SendMiReset();
+
+    m_axis_status_ctrl->AxisReset();
 
     //通知HMI清除告警，复位
     HMICmdFrame cmd;
@@ -9011,10 +9011,12 @@ void ChannelEngine::RefreshPmcNotReady()
         f_reg_last = &m_f_reg_last.bits[i];
         //FRegBits *f_reg_last = nullptr;
         if(g_reg->RRW == 1 && g_reg_last->RRW == 0){
-        	this->SystemReset();
+            m_axis_status_ctrl->InputEsp(g_reg->_ESP);
+            this->SystemReset();
         }
         if(g_reg->ERS == 1 && g_reg_last->ERS == 0){//响应复位操作，让MI未正常初始化时，能响应复位按钮
-        	this->SystemReset();
+            m_axis_status_ctrl->InputEsp(g_reg->_ESP);
+            this->SystemReset();
         }
         //此时伺服还未就绪，MI未正常初始化，不需要处理急停操作
 //        if(g_reg->_ESP == 0 && !m_b_emergency){ //进入急停
@@ -9489,7 +9491,8 @@ void ChannelEngine::ProcessPmcSignal(){
 
         // @test zk
         if(g_reg->RRW == 1 && g_reg_last->RRW == 0){
-        	this->SystemReset();
+            m_axis_status_ctrl->InputEsp(g_reg->_ESP);
+            this->SystemReset();
         }
         // @test
 
@@ -9510,7 +9513,7 @@ void ChannelEngine::ProcessPmcSignal(){
 
         // 攻丝状态()不让复位
         if(g_reg->ERS == 1 && g_reg_last->ERS == 0){
-
+            m_axis_status_ctrl->InputEsp(g_reg->_ESP);
         	this->SystemReset();
         }
 
@@ -9768,7 +9771,7 @@ void ChannelEngine::ProcessPmcSignal(){
             }
         }
         //#endif
-#ifdef NEW_WOOD_MACHINE
+
         if(g_reg_last->ELIMINATE != g_reg->ELIMINATE){
         	if(g_reg->ELIMINATE == 1){
         		m_p_channel_control->ProcessEliminate(1);
@@ -9780,7 +9783,7 @@ void ChannelEngine::ProcessPmcSignal(){
         		m_p_channel_control->ProcessEliminate(2);
         	}
         }
-#endif
+
 
 //处理工艺模式切换
 #ifdef USES_WOOD_MACHINE
@@ -13183,7 +13186,7 @@ void ChannelEngine::ProcessSAsingal(bool force)
         f_reg->SA = 0;
         f_reg->RST = 1;
         this->m_p_mi_comm->WritePmcReg(PMC_REG_F, m_p_pmc_reg->FReg().all);
-        m_axis_status_ctrl->InputEsp(0);
+
         usleep(8000);
         m_axis_status_ctrl->UpdateServoState();
 
@@ -13336,9 +13339,7 @@ void ChannelEngine::ProcessPMCProtect()
     SetProgProtect(level);
 }
 
-#ifdef NEW_WOOD_MACHINE
 void ChannelEngine::refreshOrderList(){
 	m_p_channel_control[0].refreshOrderList();
 }
-#endif
 

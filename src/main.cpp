@@ -361,7 +361,6 @@ int LoadSp6Data_2(){
     close(fp_prog);
     close(fp_init);
 
-
     printf("开始数据传输\n");
 
     gettimeofday(&tvStart, NULL);
@@ -376,7 +375,6 @@ int LoadSp6Data_2(){
         send_size_total += send_size_block;
 
         for(i = 0; i < send_size_block; i++){
-
             TRANS_BIT(0);
             TRANS_BIT(1);
             TRANS_BIT(2);
@@ -561,9 +559,9 @@ int Initialize(){
     InitSysState();
     memset(&g_sys_info, 0x00, sizeof(g_sys_info));  //初始化系统信息结构
     //sprintf(g_sys_info.sw_version_info.sc, "SC-WC-0.0.1");
-    //sprintf(g_sys_info.sw_version_info.sc, "SC-00.00.24");
-    //sprintf(g_sys_info.sw_version_info.sc, "SC-00.02.07C2");
-    sprintf(g_sys_info.sw_version_info.sc, "SC-00.01.15W3");
+    sprintf(g_sys_info.sw_version_info.sc, "SC-00.00.25");
+    //sprintf(g_sys_info.sw_version_info.sc, "SC-00.02.07C3");
+    //sprintf(g_sys_info.sw_version_info.sc, "SC-00.01.16W");
     strcpy(g_sys_info.sw_version_info.mc, "P0.0.0");
     strcpy(g_sys_info.sw_version_info.mi, "P0.0.0");
 

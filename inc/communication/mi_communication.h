@@ -288,10 +288,10 @@ public:
     }
 
 private://私有接口
-	MICommunication();	//构造函数
+    MICommunication();	 //构造函数
 
 	int InitThread();    //初始化线程
-	int QuitThread();		//退出线程
+    int QuitThread();	 //退出线程
 
 	void InitCmdChannel();   //初始化命令通道
 
@@ -302,7 +302,6 @@ private://私有接口
 	bool ReadRegister32(const uint32_t addr, int32_t& value);		//寄存器读取函数
 	bool WriteRegister32(const uint32_t addr, const int32_t value);	//寄存器写函数
 	bool WriteRegister64(const uint32_t addr, const int64_t value);	//寄存器写函数
-
 
 	bool InitSharedMemory();   	//初始化共享内存
 	bool CloseSharedMemory();      //关闭共享内存

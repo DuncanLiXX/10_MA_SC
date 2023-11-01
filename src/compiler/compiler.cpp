@@ -398,7 +398,7 @@ bool Compiler::SetCurGMode(){
 bool Compiler::SaveScene() {
 
     // @test zk
-    printf("save scene !!!\n");
+    printf("===== save scene !!!\n");
     CompilerScene scene;
     //	if(scene == nullptr){
     //		g_ptr_trace->PrintLog(LOG_ALARM, "保存编译器状态，分配内存失败！");
@@ -464,7 +464,7 @@ bool Compiler::ReloadScene(bool bRecPos){
     ModeCollect mode_tmp;
 
     // @test zk
-    printf("reload scene !!!\n");
+    printf("===== reload scene !!!\n");
 
     if (this->m_stack_scene.size() == 0)
         return false;
@@ -1520,11 +1520,6 @@ bool Compiler::OpenFile(const char *file, bool sub_flag) {
     auto func = std::bind(&Compiler::PreScan, this);
     ans = std::async(std::launch::async, func);
 
-#ifdef USES_WOOD_MACHINE
-    m_p_list_spd_start->Clear();
-#endif
-
-
     return true;
 }
 
@@ -1993,6 +1988,13 @@ bool Compiler::GetLineData() {
         return false;
     }
 
+    if(m_ln_cur_line_no == 1){
+
+        if(m_p_channel_config->feed_input_enable){
+            m_p_parser->addFeedMsg(m_p_channel_config->feed_input);
+        }
+    }
+
     this->m_p_lexer->Reset(); //词法分析器复位
     memset(m_line_buf, 0x00, static_cast<size_t>(kMaxLineSize));
 
@@ -2448,6 +2450,7 @@ bool Compiler::RunAuxMsg(RecordMsg *msg) {
                 CreateErrorMsg(ERR_SUB_END, msg->GetLineNo());
                 return false;
             } else {
+
                 this->m_b_compile_over = true;
                 printf("compiler run M30\n");
                 // @add zk  子程序调用标志位复位
@@ -3024,11 +3027,23 @@ bool Compiler::RunArcMsg(RecordMsg *msg) {
 bool Compiler::RunFeedMsg(RecordMsg *msg) {
     if (msg == nullptr)
         return true;
+
+
+
     FeedMsg *tmp = (FeedMsg *) msg;
 
-    m_compiler_status.mode.f_mode = tmp->GetFeed();
+    double feed;
 
-    this->m_p_channel_control->m_cur_setfeed = tmp->GetFeed()*1000/60;//um/s
+    if(m_p_channel_config->feed_input_enable){
+        feed = m_p_channel_config->feed_input;
+    }else{
+        feed = tmp->GetFeed();
+    }
+
+    m_compiler_status.mode.f_mode = feed;
+
+    this->m_p_channel_control->m_cur_setfeed = feed*1000/60;//um/s
+
     //printf("run feed message: %lf~~~~~\n", m_compiler_status.mode.f_mode);
     if( tmp->GetFeed() <= 0){
 		CreateErrorMsg(F_VALUE_ERROR, tmp->GetLineNo());
@@ -3044,6 +3059,9 @@ bool Compiler::RunFeedMsg(RecordMsg *msg) {
 bool Compiler::RunSpeedMsg(RecordMsg *msg) {
     if (msg == nullptr)
         return true;
+
+    if(m_p_channel_config->spindle_speed_input_enable) return true;
+
     SpeedMsg *tmp = (SpeedMsg *) msg;
 
     m_compiler_status.mode.s_mode = tmp->GetSpeed();

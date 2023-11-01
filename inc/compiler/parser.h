@@ -45,6 +45,10 @@ public:
 
     uint32_t GetPmcAxisMask();
 
+    void addFeedMsg(uint16_t feed);
+
+    void setFeedFlag(bool flag){m_b_f_code = flag; }
+
 private:
 	bool CompileMacro();   //±‡“Î∫Í÷∏¡Ó
 	bool CompileGCode();   //±‡“ÎG/M/S/T÷∏¡Ó

@@ -75,7 +75,8 @@ public:
 	void UpdateToolRadiusGeo(uint16_t chn_index, uint8_t index, const double &value);   //更新刀具半径几何偏执
 	void UpdateToolWear(uint16_t chn_index, uint8_t index, const double &value);   //更新刀长磨损值
 	void UpdateToolMeasure(uint16_t chn_index, uint8_t index, const double &value);   //更新刀具长度测量值
-	void UpdateToolOffsetConfig(uint16_t chn_index, uint8_t index, HmiToolOffsetConfig &cfg, bool active);	//更新刀具偏置信息
+    void UpdateGeoComp(uint16_t chn_index, uint8_t index, uint8_t axis, const double &value);
+    void UpdateToolOffsetConfig(uint16_t chn_index, uint8_t index, HmiToolOffsetConfig &cfg, bool active);	//更新刀具偏置信息
     void UpdateAllToolOffsetConfig(uint16_t chn_index, HmiToolOffsetConfig cfg);   //设置所有刀具偏置信息
 	void UpdateToolPotConfig(uint16_t chn_index, SCToolPotConfig &cfg);			//更新刀位信息
 	void UpdateToolPotConfig(uint16_t chn_index, bool save = true);    //更新刀具信息
@@ -128,14 +129,12 @@ public:
 	void SetCurTool(uint8_t chn_index, uint8_t tool);     //设置指定通道的当前刀号
 	uint8_t GetCurProcParamIndex(uint8_t chn_index);    //获取指定通道的当前工艺参数号
 	void SetCurProcParamIndex(uint8_t chn_index, uint8_t proc_index);    //设置指定通道的当前工艺参数组号
-
 	bool NeedRestart(){return this->m_b_poweroff_param;} 	 //是否需要重启
-
 	uint8_t GetPmcAxisCount();  //获取PMC轴个数
-
 	void ChangeChnProcParamIndex(uint8_t chn_index, uint8_t proc_index);     //更改当前工艺相关参数
-
     void UpdateMiLimit(uint8_t axis, uint8_t EXLM, uint8_t RLSOT);
+
+
 private:
 	ParmManager();             //构造函数
 	bool ReadSysConfig();    	//读取系统配置

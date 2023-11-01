@@ -708,18 +708,17 @@ bool ParmManager::ReadChnConfig(){
 
             m_sc_channel_config[i].G73back = m_ini_chn->GetDoubleValueOrDefault(sname, "G73back", 0);
             m_sc_channel_config[i].G83back = m_ini_chn->GetDoubleValueOrDefault(sname, "G83back", 0);
-
             m_sc_channel_config[i].tool_number = m_ini_chn->GetIntValueOrDefault(sname, "tool_number", 128);
 
-#ifdef USES_WOOD_MACHINE
-			m_sc_channel_config[i].debug_param_1 = m_ini_chn->GetIntValueOrDefault(sname, "debug_param_1", 0);  //调试参数1
-			m_sc_channel_config[i].debug_param_2 = m_ini_chn->GetIntValueOrDefault(sname, "debug_param_2", 0);  //调试参数2
-			m_sc_channel_config[i].debug_param_3 = m_ini_chn->GetIntValueOrDefault(sname, "debug_param_3", 0);  //调试参数3
-			m_sc_channel_config[i].debug_param_4 = m_ini_chn->GetIntValueOrDefault(sname, "debug_param_4", 0);  //调试参数4
-			m_sc_channel_config[i].debug_param_5 = m_ini_chn->GetIntValueOrDefault(sname, "debug_param_5", 0);  //调试参数5
-			
-			m_sc_channel_config[i].flip_comp_value = m_ini_chn->GetIntValueOrDefault(sname, "flip_comp_value", 0);  //挑角补偿值
-#endif
+            m_sc_channel_config[i].order_prog_mode = m_ini_chn->GetIntValueOrDefault(sname, "order_prog_mode", 0);
+            m_sc_channel_config[i].pre_prog_num = m_ini_chn->GetIntValueOrDefault(sname, "pre_prog_num", 9000);
+            m_sc_channel_config[i].end_prog_num = m_ini_chn->GetIntValueOrDefault(sname, "end_prog_num", 9030);
+
+            m_sc_channel_config[i].feed_input = m_ini_chn->GetIntValueOrDefault(sname, "feed_input", 1000);
+            m_sc_channel_config[i].feed_input_enable = m_ini_chn->GetIntValueOrDefault(sname, "feed_input_enable", 0);
+            m_sc_channel_config[i].spindle_speed_input = m_ini_chn->GetIntValueOrDefault(sname, "spindle_speed_input", 1000);
+            m_sc_channel_config[i].spindle_speed_input_enable = m_ini_chn->GetIntValueOrDefault(sname, "spindle_speed_input_enable", 0);
+
 
 		}
 		g_ptr_trace->PrintTrace(TRACE_INFO, PARAM_MANAGER, "读取通道配置文件成功！\n");
@@ -811,6 +810,16 @@ bool ParmManager::ReadChnConfig(){
 			m_sc_channel_config[i].G83back = 0;
 
             m_sc_channel_config[i].tool_number = 128;
+
+            m_sc_channel_config[i].order_prog_mode = 0;
+            m_sc_channel_config[i].pre_prog_num = 9000;
+            m_sc_channel_config[i].end_prog_num = 9030;
+
+            m_sc_channel_config[i].feed_input = 1000;
+            m_sc_channel_config[i].feed_input_enable = 0;
+            m_sc_channel_config[i].spindle_speed_input = 1000;
+            m_sc_channel_config[i].spindle_speed_input_enable = 0;
+
 
 
 #ifdef USES_WOOD_MACHINE
@@ -918,22 +927,20 @@ bool ParmManager::ReadChnConfig(){
             m_ini_chn->AddKeyValuePair(string("G83back"), string("0"), ns);
             m_ini_chn->AddKeyValuePair(string("tool_number"), string("128"), ns);
 
-#ifdef USES_WOOD_MACHINE
-			m_ini_chn->AddKeyValuePair(string("debug_param_1"), string("0"), ns);
-			m_ini_chn->AddKeyValuePair(string("debug_param_2"), string("0"), ns);
-			m_ini_chn->AddKeyValuePair(string("debug_param_3"), string("0"), ns);
-			m_ini_chn->AddKeyValuePair(string("debug_param_4"), string("0"), ns);
-			m_ini_chn->AddKeyValuePair(string("debug_param_5"), string("0"), ns);
-			
-			m_ini_chn->AddKeyValuePair(string("flip_comp_value"), string("0"), ns);
-#endif
+            m_ini_chn->AddKeyValuePair(string("order_prog_mode"), string("0"), ns);
+            m_ini_chn->AddKeyValuePair(string("pre_prog_num"), string("9000"), ns);
+            m_ini_chn->AddKeyValuePair(string("end_prog_num"), string("9030"), ns);
+
+            m_ini_chn->AddKeyValuePair(string("feed_input"), string("1000"), ns);
+            m_ini_chn->AddKeyValuePair(string("feed_input_enable"), string("0"), ns);
+            m_ini_chn->AddKeyValuePair(string("spindle_speed_input"), string("1000"), ns);
+            m_ini_chn->AddKeyValuePair(string("spindle_speed_input_enable"), string("0"), ns);
 		}
 
 		m_ini_chn->Save();
 		g_ptr_trace->PrintTrace(TRACE_INFO, PARAM_MANAGER, "创建默认通道配置文件成功！\n");
 
 	}
-
 
 	END:
 	if(err_code != ERR_NONE){
@@ -3382,10 +3389,10 @@ void ParmManager::UpdateToolWear(uint16_t chn_index, uint8_t index, const double
 	memset(sname, 0x00, sizeof(sname));
 	memset(kname, 0x00, sizeof(kname));
 
-	this->m_sc_tool_config[chn_index].geometry_wear[index][2] = value;
+    this->m_sc_tool_config[chn_index].length_wear_comp[index] = value;
 
 	sprintf(sname, "channel_%hu", chn_index);
-	sprintf(kname, "geo_wear_z_%hhu", index);
+    sprintf(kname, "length_wear_%hhu", index);
 
 	m_ini_tool->SetDoubleValue(sname, kname, value);
 
@@ -3406,25 +3413,47 @@ void ParmManager::UpdateToolMeasure(uint16_t chn_index, uint8_t index, const dou
 	memset(sname, 0x00, sizeof(sname));
 	memset(kname, 0x00, sizeof(kname));
 
-	sprintf(sname, "channel_%hu", chn_index);
-
-#ifdef USES_INDEPEND_BASE_TOOL_OFFSET
-	if(index == 0){
-		this->m_sc_tool_config[chn_index].geometry_comp_basic[2] = value;
-		sprintf(kname, "geo_comp_basic_z");
-	}else{
-#else
-	//if(index > 0){
-#endif
-		this->m_sc_tool_config[chn_index].geometry_compensation[index-1][2] = value;
-		//sprintf(kname, "geo_comp_z_%hhu", index);
-		// @modify  为什么 这里 index -1 ?
-		sprintf(kname, "geo_comp_z_%hhu", index-1);
-	//}
+    this->m_sc_tool_config[chn_index].length_compensation[index] = value;
+    sprintf(sname, "channel_%hu", chn_index);
+    sprintf(kname, "length_comp_%hhu", index);
 
 	m_ini_tool->SetDoubleValue(sname, kname, value);
 
-	this->m_ini_tool->Save();
+    this->m_ini_tool->Save();
+}
+
+void ParmManager::UpdateGeoComp(uint16_t chn_index, uint8_t index, uint8_t axis, const double &value)
+{
+    char sname[32];	//section name
+    char kname[64];	//key name
+
+    memset(sname, 0x00, sizeof(sname));
+    memset(kname, 0x00, sizeof(kname));
+
+    printf("chn: %d index: %d axis: %d val: %lf\n",
+           chn_index, index, axis, value);
+
+    this->m_sc_tool_config[chn_index].geometry_compensation[index][axis] = value;
+
+    sprintf(sname, "channel_%hu", chn_index);
+
+    switch (axis) {
+    case 0:
+        sprintf(kname, "geo_comp_x_%hhu", index);
+        break;
+
+    case 1:
+        sprintf(kname, "geo_comp_y_%hhu", index);
+        break;
+
+    case 2:
+        sprintf(kname, "geo_comp_z_%hhu", index);
+        break;
+    }
+
+    m_ini_tool->SetDoubleValue(sname, kname, value);
+
+    this->m_ini_tool->Save();
 }
 
 /**
@@ -3549,6 +3578,8 @@ void ParmManager::ClearToolComp(uint16_t chn_index, int index, int count){
 	memset(sname, 0x00, sizeof(sname));
 	memset(kname, 0x00, sizeof(kname));
 
+    sprintf(sname, "channel_%hu", chn_index);
+
     unsigned char i = index - 1;
 
 
@@ -3585,7 +3616,7 @@ void ParmManager::ClearToolOffset(uint16_t chn_index, int index, int count){
 	memset(sname, 0x00, sizeof(sname));
 	memset(kname, 0x00, sizeof(kname));
 
-
+    sprintf(sname, "channel_%hu", chn_index);
 
     unsigned char i = index -1;
 
@@ -3660,7 +3691,6 @@ void ParmManager::UpdateToolPotConfig(uint16_t chn_index, SCToolPotConfig &cfg){
 
         sprintf(kname, "tool_life_type_%d", i);
         m_ini_tool->SetIntValue(sname, kname, m_sc_tool_pot_config[chn_index].tool_life_type[i]);
-
 	}
 
 	this->m_ini_tool->Save();
@@ -4904,6 +4934,49 @@ bool ParmManager::UpdateChnParam(uint8_t chn_index, uint32_t param_no, ParamValu
         sprintf(kname, "G83back");  //G83回退距离
         m_ini_chn->SetDoubleValue(sname, kname, value.value_double);
 		break;
+
+    case 519:
+        sprintf(kname, "order_prog_mode");  //设置排程模式
+        m_ini_chn->SetIntValue(sname, kname, value.value_uint16);
+        printf("11111 %d\n", value.value_int16);
+        break;
+
+    case 520:
+        sprintf(kname, "pre_prog_num");  // 设置前置程序
+        m_ini_chn->SetIntValue(sname, kname, value.value_uint16);
+        printf("22222 %d\n", value.value_int16);
+        break;
+
+    case 521:
+        sprintf(kname, "end_prog_num");  // 设置后置程序
+        m_ini_chn->SetIntValue(sname, kname, value.value_uint16);
+        printf("33333 %d\n", value.value_int16);
+        break;
+
+    case 522:
+        sprintf(kname, "feed_input");  // 进给速度输入
+        m_ini_chn->SetIntValue(sname, kname, value.value_uint16);
+        printf("4444 %d\n", value.value_int16);
+        break;
+
+    case 523:
+        sprintf(kname, "feed_input_enable");  // 进给速度输入有效
+        m_ini_chn->SetIntValue(sname, kname, value.value_uint16);
+        printf("5555 %d\n", value.value_int16);
+        break;
+
+    case 524:
+        sprintf(kname, "spindle_speed_input");  // 主轴转速输入
+        m_ini_chn->SetIntValue(sname, kname, value.value_uint16);
+        printf("6666 %d\n", value.value_int16);
+        break;
+
+    case 525:
+        sprintf(kname, "spindle_speed_input_enable");  // 主轴转速输入有效
+        m_ini_chn->SetIntValue(sname, kname, value.value_uint16);
+        printf("7777 %d\n", value.value_int16);
+        break;
+
 #ifdef USES_WOOD_MACHINE
 	case 600:  //DSP调试参数1
 		sprintf(kname, "debug_param_1");
@@ -5299,6 +5372,7 @@ bool ParmManager::UpdateAxisParam(uint8_t axis_index, uint32_t param_no, ParamVa
 		sprintf(kname, "pc_count");
 		m_ini_axis->SetIntValue(sname, kname, value.value_uint16);
 		this->m_sc_axis_config[axis_index].pc_count = value.value_uint16;
+        printf("===== %d\n", value.value_uint16);
 		break;
 	case 1404:  //补偿间隔
 		sprintf(kname, "pc_inter_dist");
@@ -5712,7 +5786,7 @@ bool ParmManager::UpdateChnProcParam(uint8_t chn_index, uint8_t group_index, uin
 	case 237:
 		sprintf(kname, "chn_G83back_%hhu", group_index);
 		m_ini_proc_chn->SetIntValue(sname, kname, value.value_double);
-		break;
+        break;
 
 #ifdef USES_WOOD_MACHINE
 	case 240:  //挑角补偿值
@@ -6679,6 +6753,35 @@ void ParmManager::ActiveChnParam(uint8_t chn_index, uint32_t param_no, ParamValu
     case 518:   //G83回退距离
         this->m_sc_channel_config[chn_index].G83back = value.value_double;
         break;
+    case 519:
+        printf("update: 519\n");
+        this->m_sc_channel_config[chn_index].order_prog_mode = value.value_uint16;
+        break;
+    case 520:
+         printf("update: 520\n");
+        this->m_sc_channel_config[chn_index].pre_prog_num = value.value_uint16;
+        break;
+    case 521:
+         printf("update: 521\n");
+        this->m_sc_channel_config[chn_index].end_prog_num = value.value_uint16;
+        break;
+    case 522:
+         printf("update: 522\n");
+        this->m_sc_channel_config[chn_index].feed_input = value.value_int16;
+        break;
+    case 523:
+         printf("update: 523\n");
+        this->m_sc_channel_config[chn_index].feed_input_enable = value.value_int16;
+        break;
+    case 524:
+         printf("update: 524\n");
+        this->m_sc_channel_config[chn_index].spindle_speed_input = value.value_int16;
+        break;
+    case 525:
+         printf("update: 525\n");
+        this->m_sc_channel_config[chn_index].spindle_speed_input_enable = value.value_int16;
+        break;
+
 #ifdef USES_WOOD_MACHINE
 	case 600:  //DSP调试参数1
 		this->m_sc_channel_config[chn_index].debug_param_1 = value.value_int32;

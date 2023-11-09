@@ -9451,7 +9451,7 @@ void ChannelEngine::ProcessPmcSignal(){
             m_b_emergency = true;
             thread th(&ChannelEngine::ProcessSAsingal, this, false);
             th.detach();
-            std::cout << "in esp --------" << std::endl;
+            //std::cout << "in esp --------" << std::endl;
             this->Emergency();
             g_ptr_tracelog_processor->SendToHmi(kProcessInfo, kDebug, "½øÈë¼±Í£");
         }else if(g_reg->_ESP == 1 && m_b_emergency){ // È¡Ïû¼±Í£
@@ -9511,7 +9511,7 @@ void ChannelEngine::ProcessPmcSignal(){
         }
 #endif
 
-        // ¹¥Ë¿×´Ì¬()²»ÈÃ¸´Î»
+
         if(g_reg->ERS == 1 && g_reg_last->ERS == 0){
             m_axis_status_ctrl->InputEsp(g_reg->_ESP);
         	this->SystemReset();
@@ -13191,15 +13191,15 @@ void ChannelEngine::ProcessSAsingal(bool force)
 
     if (m_b_emergency || force)
     {
+        printf("11111111111111\n");
+        m_axis_status_ctrl->InputEsp(0);
         FRegBits *f_reg = &m_p_pmc_reg->FReg().bits[0];
-        printf("111111111111\n");
         f_reg->SA = 0;
         f_reg->RST = 1;
         this->m_p_mi_comm->WritePmcReg(PMC_REG_F, m_p_pmc_reg->FReg().all);
 
         usleep(8000);
         m_axis_status_ctrl->UpdateServoState();
-
     }
 
     return;

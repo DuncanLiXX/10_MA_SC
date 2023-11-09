@@ -2793,6 +2793,7 @@ void HMICommunication::ProcessHmiSyncTimeCmd(HMICmdFrame &cmd){
  */
 void HMICommunication::ProcessHmiSysBackupCmd(HMICmdFrame &cmd)
 {
+
     cmd.frame_number |= 0x8000;
     int val;
     sem_getvalue(&m_sem_background, &val);
@@ -4283,11 +4284,15 @@ void HMICommunication::PackageSysBackupFile()
 
     // 调用系统 zip 命令进行压缩
     string zipCommand = "zip -1 " + BACKUP_DIR + " -r " + pack_arg;
+
+    printf("cmd: %s\n", zipCommand.c_str());
+
     int ret = system(zipCommand.c_str());
     std::cout << "ret: " << ret << std::endl;
 
     if (ret != 0)
     {
+        printf("===== pack failed\n");
         string command = "rm -rf " + BACKUP_DIR;
         system(command.c_str());
         system("sync");

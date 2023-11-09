@@ -470,6 +470,14 @@ public:
     bool NotifyHmiWorkInfoChanged(string file_name);
 
     void UpdateAndLogWorkFile();    //换程序时，更新当前程序的加工信息
+
+
+    void setG92Offset(int axis, double offset){
+
+        if(axis >=0 && axis <8)
+        m_p_chn_g92_offset->offset[axis] = offset;
+    }
+
 	
     // 保存断点
     void saveBreakPoint(bool force_save = false);

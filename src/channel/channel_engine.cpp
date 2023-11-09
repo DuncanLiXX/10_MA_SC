@@ -8934,7 +8934,7 @@ void ChannelEngine::Emergency(uint8_t chn){
     //置位F寄存器
 
     //复位增量式编码器轴的回参考点完成标志
-#ifndef USES_WOOD_MACHINE
+
     for(int i = 0; i < this->m_p_general_config->axis_count; i++){
         if(m_p_axis_config[i].axis_interface != VIRTUAL_AXIS && m_p_axis_config[i].axis_type != AXIS_SPINDLE	//非主轴并且非虚拟轴
                 && m_p_axis_config[i].feedback_mode == INCREMENTAL_ENCODER )
@@ -8943,7 +8943,7 @@ void ChannelEngine::Emergency(uint8_t chn){
             this->SetRetRefFlag(i, false);
         }
     }
-#endif
+
     std::cout << "SetRetRefFlag" << std::endl;
 
     //生成急停错误信息
@@ -10850,6 +10850,10 @@ void ChannelEngine::AxisFindRefNoZeroSignal(uint8_t phy_axis){
         this->m_n_mask_ret_ref &= ~(0x01<<phy_axis);
         m_n_ret_ref_step[phy_axis] = 0;
 
+        m_p_channel_control[0].setG92Offset(phy_axis, 0);
+        m_p_channel_control[0].SetMcCoord(true);
+
+
         if (GetSyncAxisCtrl()->CheckSyncState(phy_axis) == 1)
         {//从动轴建立机械坐标
             SetSubAxisRefPoint(phy_axis, 0);
@@ -11390,6 +11394,8 @@ void ChannelEngine::EcatIncAxisFindRefNoZeroSignal(uint8_t phy_axis){
             this->m_p_mi_comm->WriteCmd(mi_cmd);
         }
         this->SetRetRefFlag(phy_axis, true);
+        m_p_channel_control[0].setG92Offset(phy_axis, 0);
+        m_p_channel_control[0].SetMcCoord(true);
         this->m_p_pmc_reg->FReg().bits[0].in_ref_point |= (0x01<<phy_axis);   //置位到参考点标志
 
         this->m_n_mask_ret_ref &= ~(0x01<<phy_axis);
@@ -12860,6 +12866,9 @@ void ChannelEngine::EcatAxisFindRefNoZeroSignal(uint8_t phy_axis){
 //        }
 
         this->SetRetRefFlag(phy_axis, true);
+        m_p_channel_control[0].setG92Offset(phy_axis, 0);
+        m_p_channel_control[0].SetMcCoord(true);
+
         this->m_p_pmc_reg->FReg().bits[0].in_ref_point |= (0x01<<phy_axis);   //置位到参考点标志
         this->m_n_mask_ret_ref &= ~(0x01<<phy_axis);
 
@@ -13183,6 +13192,7 @@ void ChannelEngine::ProcessSAsingal(bool force)
     if (m_b_emergency || force)
     {
         FRegBits *f_reg = &m_p_pmc_reg->FReg().bits[0];
+        printf("111111111111\n");
         f_reg->SA = 0;
         f_reg->RST = 1;
         this->m_p_mi_comm->WritePmcReg(PMC_REG_F, m_p_pmc_reg->FReg().all);

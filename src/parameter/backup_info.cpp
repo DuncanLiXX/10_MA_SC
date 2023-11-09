@@ -250,8 +250,9 @@ void BackUp_Manager::Init_Pack_Info(int mask)
         int type = Backup_Gcode_Data;
         vector<string> files;
         GetFileName("/cnc/nc_files", files);
-        for(auto itr = files.begin(); itr != files.end(); ++itr)
-            m_backupInfoVec.push_back(new Backup_Info(type, *itr));
+        m_backupInfoVec.push_back(new Backup_Info(type, "/cnc/nc_files"));
+        //for(auto itr = files.begin(); itr != files.end(); ++itr)
+        //    m_backupInfoVec.push_back(new (type, *itr));
     }
 
     if (mask & Backup_IO_Remap)

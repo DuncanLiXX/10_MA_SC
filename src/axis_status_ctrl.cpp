@@ -178,8 +178,10 @@ void AxisStatusCtrl::InitRealPhyAxisMask(){
 }
 
 void AxisStatusCtrl::UpdateSA(uint64_t srvon_mask){
+
     if(is_waiting_enable || !_ESP)
         return;
+
     uint64_t line_axis = real_phy_axis;
     for(int i=0; i<channel->chn_axis_count; i++){
         // 主轴或者伺服关断的轴不影响伺服就绪状态
@@ -199,10 +201,8 @@ void AxisStatusCtrl::UpdateSA(uint64_t srvon_mask){
 void AxisStatusCtrl::AxisReset()
 {
     printf("===== AxisStatusCtrl::AxisReset()\n");
-
     if(!_ESP) return;
 
-    printf("1111111111111111\n");
     for(int i=0; i<channel->chn_axis_count; i++){
         // 主轴的使能不在这里控制
         if(axis[i].axis_type == AXIS_SPINDLE)

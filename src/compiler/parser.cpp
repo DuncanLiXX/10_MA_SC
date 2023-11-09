@@ -716,7 +716,7 @@ bool Parser::AnalyzeGCode(LexerGCode *gcode){
 	//处理01组模态指令：G00/G01/G02/G03/G6.2/G33~G36 切削类指令
 	if(m_mode_mask & GMODE_01 && !has_move_code){
 
-		has_move_code = true;
+        has_move_code = true;
 		switch(m_gmode[1]){
 		case G00_CMD:
 			if(!CreateRapidMsg())
@@ -778,7 +778,8 @@ bool Parser::AnalyzeGCode(LexerGCode *gcode){
 				}
 
 			}else{//09组模态
-				if(!CreateLoopMsg(m_p_compiler_status->mode.gmode[9]))
+
+                if(!CreateLoopMsg(m_p_compiler_status->mode.gmode[9]))
 					return false;
 			}
 		}

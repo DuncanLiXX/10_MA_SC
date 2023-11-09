@@ -1577,10 +1577,6 @@ bool MICommunication::ProcessCmdFun(){
 			continue;
 		}
 
-//		switch(cmd_frame.data.cmd){
-//		case CMD_MI_SHAKEHAND:
-//			break;
-//		}
 		//×ª¸øChannelEngineÖ´ÐÐ
 		m_p_channel_engine->ProcessMiCmd(cmd_frame);
         //printf("get mi cmd : %d \n", cmd_frame.data.cmd);

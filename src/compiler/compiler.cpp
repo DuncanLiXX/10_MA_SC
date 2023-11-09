@@ -707,6 +707,7 @@ void Compiler::PreScan() {
     //int count = 0;
 
     LoopOffsetStack loop_stack;  //循环体堆栈
+    int count = 0;
 
 
     //测试耗时
@@ -763,21 +764,28 @@ void Compiler::PreScan() {
     //	}
     //	total_size = map.ln_file_size;
     //第一遍扫描，识别出子程序号（O****）,以及GOTO指令
+
     while ((read_block = getline(&line, &len, file)) != -1) {
         //	read_size_bak = read_size;
         //	while(this->GetPreScanLine(line, read_size, map) > 0){
         if (m_b_breakout_prescan) //中断退出
             goto END;
         line_no++;
-        this->PreScanLine1(line, read_size, line_no, comment_flag, loop_stack, ptr_scene);
+
+        try {
+               this->PreScanLine1(line, read_size, line_no, comment_flag, loop_stack, ptr_scene);
+        } catch (std::out_of_range a) {
+            CreateError(ERR_COMPILER_INTER, ERROR_LEVEL, CLEAR_BY_MCP_RESET);
+        }
+
 
         //	read_size_bak = read_size;
         read_size += read_block;
 
-//        if(count++ >= 10000){
-//            usleep(1000);
-//            count = 0;
-//        }
+        if(count++ >= 10000){
+            usleep(1000);
+            count = 0;
+        }
     }
 
     // 处理完了配对要检查是否清空
@@ -833,10 +841,10 @@ void Compiler::PreScan() {
             //	read_size_bak = read_size;
             read_size += read_block;
 
-//            if(count++ >= 10000){
-//                usleep(1000);
-//                count = 0;
-//            }
+            if(count++ >= 10000){
+                usleep(1000);
+                count = 0;
+            }
         }
 
         if (total_size != read_size) {	//没有完整读取文件，告警
@@ -897,15 +905,6 @@ void Compiler::PreScanLine1(char *buf, uint64_t offset, uint64_t line_no,
     int digit_count = 0;  //数字计数
     ListNode < LabelOffset > *node = nullptr;
 
-#ifdef USES_WOOD_MACHINE
-
-    bool m_code = false;   //M指令
-    bool s_code = false;   //S指令
-    bool m_msg = false;    //是否存在M指令值对
-    int m_digit = 0;       //M指令值
-    bool s_msg = false;
-    int s_digit = 0;
-#endif
 
     memset(digit_buf, 0, kMaxDigitBufLen+1);
 
@@ -928,23 +927,6 @@ void Compiler::PreScanLine1(char *buf, uint64_t offset, uint64_t line_no,
             }else if(loop_do || loop_end){
                 break;
             }
-#ifdef USES_WOOD_MACHINE
-            else if(m_code && digit_count > 0){   //处理M指令
-                m_digit = atoi(digit_buf);
-                if(m_digit == 3 || m_digit == 4 || m_digit == 5){  //只处理M04和M03
-                    m_msg = true;
-                }
-                m_code = false;
-                digit_count = 0;
-                memset(digit_buf, 0, kMaxDigitBufLen+1);
-            }else if(s_code && digit_count > 0){   //处理S指令
-                s_digit = atoi(digit_buf);
-                s_msg = true;
-                s_code = false;
-                digit_count = 0;
-                memset(digit_buf, 0, kMaxDigitBufLen+1);
-            }
-#endif
             pc++;
             continue;
         }
@@ -1011,43 +993,6 @@ void Compiler::PreScanLine1(char *buf, uint64_t offset, uint64_t line_no,
             }
 
         }
-#ifdef USES_WOOD_MACHINE
-        else if(*pc == 'M' && !isalpha(*(pc+1))){  //M03/M04指令
-            if(s_code && digit_count > 0){//处理S指令
-                s_digit = atoi(digit_buf);
-                s_msg = true;
-                s_code = false;
-                digit_count = 0;
-                memset(digit_buf, 0, kMaxDigitBufLen+1);
-            }
-
-            if(first_alpha || pc == buf || !isalpha(*(pc - 1))){
-                m_code = true;
-                digit_count = 0;
-                memset(digit_buf, 0, kMaxDigitBufLen+1);
-                pc++;
-                continue;
-            }
-        }else if(*pc == 'S' && !isalpha(*(pc+1))){  //S指令
-            if(m_code && digit_count > 0){//处理M指令
-                m_digit = atoi(digit_buf);
-                if(m_digit == 3 || m_digit == 4 || m_digit == 5){  //只处理M04和M03
-                    m_msg = true;
-                }
-                m_code = false;
-                digit_count = 0;
-                memset(digit_buf, 0, kMaxDigitBufLen+1);
-            }
-
-            if(first_alpha || pc == buf || !isalpha(*(pc - 1))){
-                s_code = true;
-                digit_count = 0;
-                memset(digit_buf, 0, kMaxDigitBufLen+1);
-                pc++;
-                continue;
-            }
-        }
-#endif
         else if (isdigit(*pc)) { //数字
             if (sub_prog) {
                 digit_buf[digit_count++] = *pc;
@@ -1071,37 +1016,12 @@ void Compiler::PreScanLine1(char *buf, uint64_t offset, uint64_t line_no,
                     return;
                 }
             }
-#ifdef USES_WOOD_MACHINE
-            else if(m_code){  //处理M指令
-                if(digit_count < kMaxMCodeLen)
-                    digit_buf[digit_count++] = *pc;
-            }else if(s_code){  //处理S指令
-                if(digit_count < kMaxSCodeLen)
-                    digit_buf[digit_count++] = *pc;
-            }
-#endif
+
         } else if ((sub_prog || goto_cmd) && digit_count > 0) { //找到子程序头或者goto指令
             break;
         }else if(loop_do || loop_end){
             break;
         }
-#ifdef USES_WOOD_MACHINE
-        else if(m_code && digit_count > 0){
-            m_digit = atoi(digit_buf);
-            if(m_digit == 3 || m_digit == 4 || m_digit == 5){  //只处理M04和M03
-                m_msg = true;
-            }
-            m_code = false;
-            digit_count = 0;
-            memset(digit_buf, 0, 10);
-        }else if(s_code && digit_count > 0){
-            s_digit = atoi(digit_buf);
-            s_msg = true;
-            s_code = false;
-            digit_count = 0;
-            memset(digit_buf, 0, 10);
-        }
-#endif
 
         if (first_alpha)
             first_alpha = false;
@@ -1207,50 +1127,6 @@ void Compiler::PreScanLine1(char *buf, uint64_t offset, uint64_t line_no,
             //		printf("find loop rec: s[%lld, %lld] e[%lld, %lld]\n", loop_rec.start_line_no, loop_rec.start_offset, line_no, offset);
         }
     }
-#ifdef USES_WOOD_MACHINE
-    else if(m_code && digit_count > 0){
-        m_digit = atoi(digit_buf);
-        if(m_digit == 3 || m_digit == 4){  //只处理M04和M03
-            m_msg = true;
-        }
-        m_code = false;
-        digit_count = 0;
-        memset(digit_buf, 0, 10);
-    }else if(s_code && digit_count > 0){
-        s_digit = atoi(digit_buf);
-        s_msg = true;
-        s_code = false;
-        digit_count = 0;
-        memset(digit_buf, 0, 10);
-    }
-    //处理转速指令
-    if(s_msg){
-        this->m_n_s_code_in_prescan = s_digit;
-    }
-
-    //处理主轴指令
-    if(m_msg){
-        if(m_digit == 5)   //主轴停
-            this->m_n_s_code_in_prescan = 0;
-        else if(m_digit == 3 || m_digit ==4){
-            SpindleStartOffset spd_cmd;
-            spd_cmd.line_no = line_no;
-            spd_cmd.m_code = m_digit;
-            spd_cmd.s_code = m_n_s_code_in_prescan;
-            spd_cmd.jump_line = jump_flag;
-            //	spd_cmd.exec_step = 0;
-            printf("find spindle cmd:%d, spd:%d, line:%llu, jump=%hhu\n", m_digit, m_n_s_code_in_prescan, line_no, spd_cmd.jump_line);
-
-            if(this->m_b_prescan_in_stack){   //堆栈文件预扫描
-                scene->list_spd_start.Append(spd_cmd);
-                printf("append in scene\n");
-            }else{
-                this->m_p_list_spd_start->Append(spd_cmd);
-                printf("append in body\n");
-            }
-        }
-    }
-#endif
 
     // 找到 if 指令
     if(if_cmd){
@@ -1355,8 +1231,6 @@ void Compiler::PreScanLine1(char *buf, uint64_t offset, uint64_t line_no,
         else_cmd = false;
         elseif_cmd = false;
     }
-
-
 }
 
 /**
@@ -1556,99 +1430,27 @@ bool Compiler::OpenFileInScene(const char *file){
     scene.list_label.Clear();
     scene.list_subprog.Clear();
     scene.list_loop.Clear();
-
-#ifdef USES_WOOD_MACHINE
-    scene.list_spd_start.Clear();
-#endif
-
-    //	printf("OpenFileInScene: map_info.ptr=%u, , ")
+    scene.node_vectors_vector.clear();
+    scene.node_stack_run.clear();
+    scene.else_jump_stack_run.clear();
+    scene.else_jump = false;
+    m_stack_vector_index_prescan.clear();
+    m_stack_else_count_prescan.clear();
+    m_node_vector_index = 0;
+    m_node_vector_len = 0;
+    m_else_count_prescan = 0;
 
     this->m_stack_scene.push(scene);   //重新入栈
 
     scene.file_map_info.Clear();//防止后面delete scene时将文件映射关闭
 
-    /*
-    void* thread_result;
-    //创建预扫描线程
-    if (!m_b_prescan_over && m_thread_prescan != 0) {
-        //先退出之前的线程
-        m_b_breakout_prescan = true;
-        int wait_count = 0;
 
-        while (m_b_breakout_prescan && wait_count++ < 200)
-            usleep(1000);  //等待线程退出
-        if (m_b_breakout_prescan) {//等待退出失败，则主动cancel线程
-
-            //退出预扫描运行线程
-            res = pthread_cancel(m_thread_prescan);
-            if (res != 0) {
-                g_ptr_trace->PrintLog(LOG_ALARM, "预扫描线程退出失败1！errno = %d\n",
-                                      res);
-                printf("预扫描线程退出失败4444\n");
-                CreateError(ERR_QUIT_PRESCAN, ERROR_LEVEL, CLEAR_BY_RESET_POWER,
-                            0, m_n_channel_index);
-                return false;
-            }
-
-            usleep(1000);
-        }
-        res = pthread_join(m_thread_prescan, &thread_result);  //等待线程退出完成
-        if (res != 0) {
-            g_ptr_trace->PrintLog(LOG_ALARM, "预扫描线程退出失败2！errno = %d\n",
-                                  res);
-            printf("预扫描线程退出失败5555\n");
-            CreateError(ERR_QUIT_PRESCAN, ERROR_LEVEL, CLEAR_BY_RESET_POWER,
-                        0, m_n_channel_index);
-            return false;
-        }
-        m_thread_prescan = 0;
-
-    }else if(m_b_prescan_over && m_thread_prescan != 0){  //释放预扫描线程资源
-        res = pthread_join(m_thread_prescan, &thread_result);  //等待线程退出完成
-        if (res != 0) {
-            g_ptr_trace->PrintLog(LOG_ALARM, "预扫描线程资源释放失败！errno = %d\n",
-                                  res);
-            printf("预扫描线程退出失败6666\n");
-            CreateError(ERR_QUIT_PRESCAN, ERROR_LEVEL, CLEAR_BY_RESET_POWER,
-                        0, m_n_channel_index);
-        }
-        m_thread_prescan = 0;
-    }*/
     m_b_breakout_prescan = false;
-    //m_b_prescan_over = false;
+
     m_b_prescan_in_stack = true;
-    //	this->m_p_list_label->Clear();
-    //	this->m_p_list_subprog->Clear();
-    //	this->m_p_list_loop->Clear();
 
     m_stack_loop.empty();  //清空循环位置数据
 
-    /*pthread_attr_t attr;
-    struct sched_param param;
-    pthread_attr_init(&attr);
-    pthread_attr_setschedpolicy(&attr, SCHED_RR);
-    pthread_attr_setstacksize(&attr, kThreadStackSize);	//
-
-    param.__sched_priority = 35; //95; //主程序，预扫描线程比编译线程优先级一，因为主程序可能比较大
-    pthread_attr_setschedparam(&attr, &param);
-	*/
-    /* Use scheduling parameters of attr */
-    //	res = pthread_attr_setinheritsched(&attr, PTHREAD_EXPLICIT_SCHED); //不继承父线程调度方式，否则以上的设置不生效
-    //	if (res) {
-    //		printf("pthread setinheritsched failed\n");
-    //	}
-    /*res = pthread_create(&m_thread_prescan, &attr, Compiler::PreScanThread, this);    //开启G代码预编译线程
-    if (res != 0) {
-        g_ptr_trace->PrintLog(LOG_ALARM, "CHN[%d]编译器预扫描线程创建失败! res = %d, errno = %d, errstr=%s",
-                              m_n_channel_index, res, errno, strerror(errno));
-        m_error_code = ERR_PRE_SCAN;
-        CreateError(ERR_PRE_SCAN, ERROR_LEVEL, CLEAR_BY_MCP_RESET, 0,
-                    m_n_channel_index);
-    }
-
-    pthread_attr_destroy(&attr);
-
-    printf("exit OpenFileInScene priority %d\n", param.__sched_priority);*/
     PreScan();
     return true;
 }
@@ -2338,7 +2140,12 @@ bool Compiler::RunMessage() {
                 res = this->RunArcMsg(msg);
                 break;
             case MACRO_MSG:
-                res = this->RunMacroMsg(msg);
+                try {
+                       res = this->RunMacroMsg(msg);
+                }catch(std::out_of_range a){
+                    res = false;
+                    CreateError(ERR_COMPILER_INTER, ERROR_LEVEL, CLEAR_BY_MCP_RESET);
+                }
                 break;
             case ERROR_MSG:
                 res = this->RunErrorMsg(msg);
@@ -2790,8 +2597,8 @@ bool Compiler::RunCoordMsg(RecordMsg *msg) {
             // 解决一键回零中 G53异常问题
 
             //将目标位置换算为工件坐标系
-        	DPointChn &pt = tmp->GetTargetPos();
-        	printf("===== start:    %lf %lf %lf\n", pt.m_df_point[0],pt.m_df_point[1],pt.m_df_point[2]);
+            DPointChn &pt = tmp->GetTargetPos();
+            printf("===== start:    %lf %lf %lf\n", pt.m_df_point[0],pt.m_df_point[1],pt.m_df_point[2]);
             this->m_p_channel_control->TransMachCoordToWorkCoord(tmp->GetTargetPos(), m_compiler_status.mode.gmode[14], m_compiler_status.mode.h_mode, tmp->GetAxisMask());
             printf("===== after:    %lf %lf %lf\n", pt.m_df_point[0],pt.m_df_point[1],pt.m_df_point[2]);
         }
@@ -2896,8 +2703,12 @@ bool Compiler::RunRapidMsg(RecordMsg *msg) {
     if(tmp->GetAxisMoveMask() & m_p_channel_control->GetRotAxisMask())
         ProcessRotateAxisPos(tmp->GetTargetPos(), m_compiler_status.cur_pos, tmp->GetAxisMoveMask());
     m_compiler_status.mode.gmode[1] = G00_CMD;
-    m_compiler_status.mode.gmode[9] = G80_CMD;  //自动取消循环指令
-    //	m_compiler_status.cur_pos = tmp->GetTargetPos(); //更新编译当前位置
+
+
+    if(m_compiler_status.mode.gmode[9] != G80_CMD){
+        m_compiler_status.mode.gmode[9] = G80_CMD;
+    }
+
     this->SetCurPos(tmp->GetTargetPos());
 
     return true;
@@ -2958,7 +2769,11 @@ bool Compiler::RunLineMsg(RecordMsg *msg) {
         ProcessRotateAxisPos(tmp->GetTargetPos(), m_compiler_status.cur_pos, tmp->GetAxisMoveMask());
 
     m_compiler_status.mode.gmode[1] = G01_CMD;
-    m_compiler_status.mode.gmode[9] = G80_CMD;  //自动取消循环指令
+
+    if(m_compiler_status.mode.gmode[9] != G80_CMD){
+        m_compiler_status.mode.gmode[9] = G80_CMD;
+    }
+
     //	m_compiler_status.cur_pos = tmp->GetTargetPos(); //更新编译当前位置
     this->SetCurPos(tmp->GetTargetPos());
     //	printf("run line msg : %lf, %lf, %lf, F=%lf\n", tmp->GetTargetPos().GetAxisValue(0), tmp->GetTargetPos().GetAxisValue(1),
@@ -2988,19 +2803,8 @@ bool Compiler::RunArcMsg(RecordMsg *msg) {
 
     //处理增量编程指令
     if(m_compiler_status.mode.gmode[3] == G91_CMD){  //增量编程模式
-//        double *p_target_pos = tmp->GetTargetPos().m_df_point;
-//        double *p_source_pos = m_compiler_status.cur_pos.m_df_point;
-//        uint32_t mask = tmp->GetAxisMoveMask();
-//        uint32_t tm = 0x01;
-//
-//        for(int i = 0; i < this->m_p_channel_config->chn_axis_count; i++){
-//            if(mask & tm){
-//                *p_target_pos += *p_source_pos;
-//            }
-//            tm = tm<<1;
-//            p_target_pos++;
-//            p_source_pos++;
-//        }
+
+
     }else{
         //将目标位置换算为工件坐标系
         if(tmp->IsMachCoord())
@@ -3013,7 +2817,12 @@ bool Compiler::RunArcMsg(RecordMsg *msg) {
         ProcessRotateAxisPos(tmp->GetTargetPos(), m_compiler_status.cur_pos, tmp->GetAxisMoveMask());
 
     m_compiler_status.mode.gmode[1] = gcode;
-    //  m_compiler_status.mode.gmode[9] = G80_CMD;  //自动取消循环指令
+
+    if(m_compiler_status.mode.gmode[9] != G80_CMD){
+        m_compiler_status.mode.gmode[9] = G80_CMD;
+    }
+
+
     //	m_compiler_status.cur_pos = tmp->GetTargetPos(); //更新编译当前位置
     this->SetCurPos(tmp->GetTargetPos());
     return true;

@@ -476,9 +476,11 @@ public:
 
         if(axis >=0 && axis <8)
         m_p_chn_g92_offset->offset[axis] = offset;
+        G52offset[axis] = offset;
     }
 
-	
+    bool change_g80_flag{false};
+
     // 保存断点
     void saveBreakPoint(bool force_save = false);
     char brk_file_name[256];
@@ -968,7 +970,6 @@ private://私有成员变量
 	bool flag_cancel_g52 = true;
 	bool g43_4_active = false;
 	bool g44_active = false;
-
 	double custom_step_inc[32];        //自定义步长
 };
 

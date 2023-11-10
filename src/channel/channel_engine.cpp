@@ -11548,6 +11548,8 @@ void ChannelEngine::GotoZeroPos(int phy_axis)
             this->m_b_ret_ref_auto = false;
             m_n_ret_ref_auto_cur = 0;
         }
+        m_p_channel_control[0].setG92Offset(phy_axis, 0);
+        m_p_channel_control[0].SetMcCoord(true);
         std::cout << "step 3, home finish" << std::endl;
     }
         break;
@@ -13191,15 +13193,14 @@ void ChannelEngine::ProcessSAsingal(bool force)
 
     if (m_b_emergency || force)
     {
-        printf("11111111111111\n");
-        m_axis_status_ctrl->InputEsp(0);
         FRegBits *f_reg = &m_p_pmc_reg->FReg().bits[0];
         f_reg->SA = 0;
         f_reg->RST = 1;
         this->m_p_mi_comm->WritePmcReg(PMC_REG_F, m_p_pmc_reg->FReg().all);
-
+        m_axis_status_ctrl->InputEsp(0);
         usleep(8000);
         m_axis_status_ctrl->UpdateServoState();
+
     }
 
     return;

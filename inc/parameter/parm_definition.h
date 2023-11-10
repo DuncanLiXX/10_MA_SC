@@ -353,6 +353,7 @@ struct SCAxisConfig{
     int32_t spd_rtnt_distance;                 //攻丝回退的额外回退值 单位：um
 
     double spd_locate_ang;                     //主轴定向角度 单位：度
+    uint16_t mpg_speed;                       //手轮速度
 
 	//旋转轴相关参数
 	uint8_t fast_locate;							//快速定位    0--关闭   1--打开

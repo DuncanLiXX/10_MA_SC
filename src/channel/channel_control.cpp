@@ -1791,6 +1791,8 @@ void ChannelControl::InitRestartMode(){
     m_mode_restart.sub_prog_call = 0;
 
     memcpy(&m_mode_restart.pos_target, &m_channel_rt_status.cur_pos_work, sizeof(DPointChn));
+
+    m_mode_restart.pos_target.SetAxisValue(2, m_p_axis_config[2].axis_home_pos[4]);
 }
 
 /**
@@ -5240,7 +5242,6 @@ int ChannelControl::Run(){
             {
             	//自动模式下，反向引导或者正向引导缓冲数据未发送完，则不进行编译
                 //	printf("@@@@@@, last= %d, tail=%d\n", m_p_last_output_msg, m_p_output_msg_list->TailNode());
-                //printf("11111\n");
             	bf = ExecuteMessage();
 
 				if(!bf){
@@ -8278,7 +8279,12 @@ bool ChannelControl::ExecuteLineMsg(RecordMsg *msg, bool flag_block){
     }else if(!OutputData(msg, flag_block))
         return false;
 
-    std::cout << "LineMsg out put --> " << (int)flag_block << std::endl;
+    if(change_g80_flag){
+        change_g80_flag = false;
+        this->m_channel_status.gmode[9] = G80_CMD;
+        this->SendChnStatusChangeCmdToHmi(G_MODE);
+    }
+
     m_n_run_thread_state = RUN;
 
     if(this->m_simulate_mode == SIM_OUTLINE || this->m_simulate_mode == SIM_TOOLPATH){
@@ -8364,6 +8370,13 @@ bool ChannelControl::ExecuteRapidMsg(RecordMsg *msg, bool flag_block){
     }else if(!OutputData(msg, flag_block))
         return false;
 
+    if(change_g80_flag){
+        change_g80_flag = false;
+        this->m_channel_status.gmode[9] = G80_CMD;
+        this->SendChnStatusChangeCmdToHmi(G_MODE);
+    }
+
+
     if(this->m_simulate_mode == SIM_OUTLINE || this->m_simulate_mode == SIM_TOOLPATH){
         this->m_channel_status.gmode[1] = G00_CMD;    //仿真模式下，立即修改当前模式,不通知HMI
 
@@ -8415,6 +8428,12 @@ bool ChannelControl::ExecuteArcMsg(RecordMsg *msg, bool flag_block){
 
     if(!OutputData(msg, flag_block))
         return false;
+
+    if(change_g80_flag){
+        change_g80_flag = false;
+        this->m_channel_status.gmode[9] = G80_CMD;
+        this->SendChnStatusChangeCmdToHmi(G_MODE);
+    }
 
     if(this->m_simulate_mode == SIM_OUTLINE || this->m_simulate_mode == SIM_TOOLPATH){
         this->m_pos_simulate_cur_work = arc_msg->GetTargetPos();
@@ -13707,6 +13726,7 @@ void ChannelControl::SetChnAxisSpeedParam(uint8_t chn_axis){
     uint8_t phy_axis = this->GetPhyAxis(chn_axis);
 
     cmd.data.axis_index = chn_axis+1;
+
     cmd.data.channel_index = m_n_channel_index;  // cmd.data.channel_index = CHANNEL_ENGINE_INDEX;
 
     cmd.data.cmd = CMD_MC_SET_AXIS_SPEED_LIMIT;
@@ -13728,6 +13748,13 @@ void ChannelControl::SetChnAxisSpeedParam(uint8_t chn_axis){
     data = 100 * 1000 / 60;    //mm/min -> um/s
     cmd.data.data[4] = (data&0xFFFF);
     cmd.data.data[5] = ((data>>16)&0xFFFF);
+
+    cmd.data.data[6] = axis_config.mpg_speed;
+
+    printf("send mc cmd : chn: %d axis: %d mpg: %d\n",
+           cmd.data.channel_index,
+           cmd.data.axis_index,
+           axis_config.mpg_speed);
 
     if(!this->m_b_mc_on_arm)
         m_p_mc_comm->WriteCmd(cmd);
@@ -21505,143 +21532,6 @@ bool ChannelControl::CallMacroProgram(uint16_t macro_index){
     return true;
 }
 
-#ifdef USES_ADDITIONAL_PROGRAM
-/**
- * @brief 调用附加程序（前置/后置）
- * @param type : 调用类型， 1--加工启动前置程序   2--断点继续前置程序   3--加工复位前置程序    11--结束后置程序    12--暂停后置程序    13--复位后置程序
- * @return  true--成功   false--失败
- */
-bool ChannelControl::CallAdditionalProgram(AddProgType type){
-
-    if(this->m_n_add_prog_type != NONE_ADD){
-        g_ptr_trace->PrintTrace(TRACE_WARNING, CHANNEL_CONTROL_SC, "已处于附加程序执行过程！[%hhu:%hhu]", m_n_add_prog_type, type);
-
-        return false;
-    }
-
-    if(this->m_channel_status.chn_work_mode != AUTO_MODE){
-        g_ptr_trace->PrintTrace(TRACE_WARNING, CHANNEL_CONTROL_SC, "非自动模式，拒绝执行附件程序！[当前模式：%hhu]", m_channel_status.chn_work_mode);
-
-        return false;
-    }
-
-    this->m_n_add_prog_type = type;
-    if(type == NORMAL_START_ADD || type == RESET_START_ADD){
-        //		if(this->m_channel_status.machining_state != MS_RUNNING){  //非运行状态，不响应
-        //			return false;
-        //		}
-
-        this->m_n_sub_count_bak = m_n_subprog_count;   //记录子程序嵌套层数
-
-        if(type == NORMAL_START_ADD)
-            this->m_p_compiler->CallMarcoProgWithNoPara(9701, false);
-        else if(type == RESET_START_ADD)
-            this->m_p_compiler->CallMarcoProgWithNoPara(9703, false);
-        m_n_subprog_count++;
-        m_n_macroprog_count++;
-
-
-
-        //		if(this->m_p_general_config->debug_mode == 0){
-        this->SetMcStepMode(false);
-        //		}
-
-    }else if(type == CONTINUE_START_ADD){  //在MDA通道执行
-        char cmd_buf[256];
-        memset (cmd_buf, 0x00, 256);
-        sprintf(cmd_buf, "G65P%hu", 9702);
-
-        //打开MDA对应的NC文件
-        int fp = open(m_str_mda_path, O_CREAT|O_TRUNC|O_WRONLY); //打开文件
-        if(fp < 0){
-            CreateError(ERR_EXEC_FORWARD_PROG, ERROR_LEVEL, CLEAR_BY_MCP_RESET, 1, m_n_channel_index);
-            this->m_error_code = ERR_EXEC_FORWARD_PROG;
-            g_ptr_trace->PrintLog(LOG_ALARM, "打开MDA临时文件[%s]失败！", m_str_mda_path);
-            return false;//文件打开失败
-        }
-
-        int len = strlen(cmd_buf);
-        ssize_t res = write(fp, cmd_buf, len);
-        if(res == -1){//写入失败
-            close(fp);
-            CreateError(ERR_EXEC_FORWARD_PROG, ERROR_LEVEL, CLEAR_BY_MCP_RESET, 2, m_n_channel_index);
-            this->m_error_code = ERR_EXEC_FORWARD_PROG;
-            g_ptr_trace->PrintLog(LOG_ALARM, "写入MDA临时文件[%s]失败！", m_str_mda_path);
-            return false;
-        }else if(res != len){//数据缺失
-            close(fp);
-            CreateError(ERR_EXEC_FORWARD_PROG, ERROR_LEVEL, CLEAR_BY_MCP_RESET, 3, m_n_channel_index);
-            this->m_error_code = ERR_EXEC_FORWARD_PROG;
-            g_ptr_trace->PrintLog(LOG_ALARM, "写入MDA临时文件[%s]失败！[%d:%d]", m_str_mda_path, len, res);
-            return false;
-        }
-
-        close(fp);
-
-        this->SaveAutoScene(false);   //保存
-
-        //编译器切换为MDA模式
-        pthread_mutex_lock(&m_mutex_change_state);  //等待编译运行线程停止
-        m_p_output_msg_list = m_p_output_msg_list_mda;
-        m_n_run_thread_state = IDLE;
-        this->m_p_compiler->SetMode(MDA_COMPILER);	//编译器切换模式
-        this->m_p_compiler->SetOutputMsgList(m_p_output_msg_list);  //切换输出队列
-        pthread_mutex_unlock(&m_mutex_change_state);
-
-        //初始化传递给MC模块的模态组信息
-        this->InitMcModeStatus();
-        this->m_p_compiler->SetCurPos(this->m_channel_rt_status.cur_pos_work);
-
-        if(!m_p_compiler->OpenFile(m_str_mda_path)){		//编译器打开文件失败
-
-            //恢复自动模式
-            pthread_mutex_lock(&m_mutex_change_state);  //等待编译运行线程停止
-            m_p_output_msg_list = m_p_output_msg_list_auto;
-            m_n_run_thread_state = PAUSE;
-            this->m_p_compiler->SetMode(AUTO_COMPILER);	//编译器切换模式
-            this->m_p_compiler->SetOutputMsgList(m_p_output_msg_list);  //切换输出队列
-            pthread_mutex_unlock(&m_mutex_change_state);
-
-            CreateError(ERR_EXEC_FORWARD_PROG, ERROR_LEVEL, CLEAR_BY_MCP_RESET, 4, m_n_channel_index);
-            this->m_error_code = ERR_EXEC_FORWARD_PROG;
-            g_ptr_trace->PrintLog(LOG_ALARM, "编译器打开MDA文件[%s]失败！", m_str_mda_path);
-
-            return false;
-        }
-
-        this->m_n_subprog_count = 0;
-        this->m_n_macroprog_count = 0;
-
-        this->InitMcIntpMdaBuf();   //初始化MC模块的MDA缓冲
-
-        this->SetMcStepMode(false);
-
-        this->SetCurLineNo(this->m_channel_rt_status.line_no);
-        if(m_n_run_thread_state == IDLE || m_n_run_thread_state == PAUSE){
-            pthread_mutex_lock(&m_mutex_change_state);
-            m_n_run_thread_state = RUN;  //置为运行状态
-            pthread_mutex_unlock(&m_mutex_change_state);
-            printf("m_n_run_thread_state = %d\n", m_n_run_thread_state);
-        }
-
-    }else if(type == RESET_START_ADD){
-
-    }else if(type == NORMAL_END_ADD){
-
-    }else if(type == PAUSE_ADD){//在MDA通道执行
-
-    }else if(type == RESET_ADD){
-
-    }else{
-        this->m_n_add_prog_type = NONE_ADD;
-        g_ptr_trace->PrintTrace(TRACE_WARNING, CHANNEL_CONTROL_SC, "不支持的附加程序模式！[%hhu]", type);
-        return false;
-    }
-
-
-    return true;
-}
-#endif
 
 /**
  * @brief 输出调试数据

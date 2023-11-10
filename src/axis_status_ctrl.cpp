@@ -200,7 +200,6 @@ void AxisStatusCtrl::UpdateSA(uint64_t srvon_mask){
 
 void AxisStatusCtrl::AxisReset()
 {
-    printf("===== AxisStatusCtrl::AxisReset()\n");
     if(!_ESP) return;
 
     for(int i=0; i<channel->chn_axis_count; i++){

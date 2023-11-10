@@ -1489,10 +1489,10 @@ bool Parser::GetExpressionResult(MacroExpression &express, MacroVarValue &res){
 			 printf("read var: %d , value: %lf, init: %d\n",
 			static_cast<int>(value1.value), res_tmp.value, res_tmp.init);
 
-//			if(!res_tmp.init){
-//				m_error_code = ERR_INVALID_MACRO_EXP;
-//				return false;
-//			}
+//            if(!res_tmp.init){
+//                m_error_code = ERR_INVALID_MACRO_EXP;
+//                return false;
+//            }
 
 			stack_value.push(res_tmp);
 		}
@@ -1975,7 +1975,7 @@ bool Parser::CreateLoopMsg(const int gcode){
 	m_p_parser_result->Append(new_msg);
 	//@test zk run message时会去修改模态  在这里修改太早了
 	//this->m_p_compiler_status->mode.gmode[GetModeGroup(gcode)] = gcode;
-//	this->m_p_compiler_status->mode.move_mode = 9;
+    //this->m_p_compiler_status->mode.move_mode = 9;
 
 	ProcessLastBlockRec(new_msg);
 
@@ -1998,6 +1998,12 @@ bool Parser::CreateCoordMsg(const int gcode){
 	if(gcode == G52_CMD || gcode == G53_CMD || gcode == G92_CMD){
 		if(!GetTargetPos(pos, axis_mask))
 			return false;
+
+        if(axis_mask == 0){
+            m_error_code = ERR_MACRO_OPT_VALUE;
+            //CreateError(ERR_INVALID_MACRO_EXP, ERROR_LEVEL, CLEAR_BY_MCP_RESET,this->m_p_lexer_result->line_no);
+            return false;
+        }
 	}
     else if(gcode >= G5401_CMD and gcode <= G5499_CMD){
 		// @test
@@ -2046,7 +2052,8 @@ bool Parser::CreateFeedMsg(){
 	double df_feed = 0;  //进给速度，单位：mm/min
 
 	if(!GetCodeData(F_DATA, df_feed)){
-		return false;
+        m_error_code = ERR_MACRO_OPT_VALUE;
+        return false;
 	}
 
 	if(df_feed > 999999){
@@ -3543,7 +3550,7 @@ bool Parser::GetTargetPos(DPointChn &target, uint32_t &axis_mask, uint8_t *count
 		}else{//无扩展下标
 			addr = static_cast<DataAddr>(m_axis_name[i]-'A');
 			 if(GetCodeData(addr, data)){//有此参数，读取成功
-				 has_valid_world = true;
+                 has_valid_world = true;
 				 if(((g_code->mask_dot & (0x01<<addr)) == 0) &&
 						((g_code->mask_macro & (0x01<<addr)) == 0)){  //没有小数点并且非宏表达式
 					data /= 1000.;   //省略小数点则以um为单位

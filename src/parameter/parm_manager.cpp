@@ -1451,7 +1451,8 @@ bool ParmManager::ReadAxisConfig(){
 			m_sc_axis_config[i].ref_encoder = m_ini_axis->GetInt64ValueOrDefault(sname, "ref_encoder", kAxisRefNoDef);
 			m_sc_axis_config[i].manual_speed = m_ini_axis->GetDoubleValueOrDefault(sname, "manual_speed", 3000);
 			m_sc_axis_config[i].rapid_speed = m_ini_axis->GetDoubleValueOrDefault(sname, "rapid_speed", 8000);
-			m_sc_axis_config[i].reset_speed = m_ini_axis->GetDoubleValueOrDefault(sname, "reset_speed", 2000);
+            m_sc_axis_config[i].mpg_speed = m_ini_axis->GetIntValueOrDefault(sname, "mpg_speed", 3000);
+            m_sc_axis_config[i].reset_speed = m_ini_axis->GetDoubleValueOrDefault(sname, "reset_speed", 2000);
 			m_sc_axis_config[i].ret_ref_speed = m_ini_axis->GetDoubleValueOrDefault(sname, "ret_ref_speed", 500);
             m_sc_axis_config[i].ret_ref_speed_second = m_ini_axis->GetDoubleValueOrDefault(sname, "ret_ref_speed_second", 100);
             m_sc_axis_config[i].ref_offset_pos = m_ini_axis->GetDoubleValueOrDefault(sname, "ref_offset_pos", 0);
@@ -1629,6 +1630,7 @@ bool ParmManager::ReadAxisConfig(){
 			m_sc_axis_config[i].ref_base_diff = 0;
 			m_sc_axis_config[i].ref_encoder = kAxisRefNoDef;
 			m_sc_axis_config[i].manual_speed = 3000;
+            m_sc_axis_config[i].mpg_speed = 3000;
 			m_sc_axis_config[i].rapid_speed = 8000;
 			m_sc_axis_config[i].reset_speed = 2000;
 			m_sc_axis_config[i].ret_ref_speed = 500;
@@ -1787,6 +1789,7 @@ bool ParmManager::ReadAxisConfig(){
 			m_ini_axis->AddKeyValuePair(string("ref_base_diff_check"), string("0"), ns);
 			m_ini_axis->AddKeyValuePair(string("ref_base_diff"), string("0"), ns);
 			m_ini_axis->AddKeyValuePair(string("manual_speed"), string("3000"), ns);
+            m_ini_axis->AddKeyValuePair(string("mpg_speed"), string("3000"), ns);
 			m_ini_axis->AddKeyValuePair(string("rapid_speed"), string("8000"), ns);
 			m_ini_axis->AddKeyValuePair(string("reset_speed"), string("2000"), ns);
 			m_ini_axis->AddKeyValuePair(string("ret_ref_speed"), string("500"), ns);
@@ -5666,7 +5669,10 @@ bool ParmManager::UpdateAxisParam(uint8_t axis_index, uint32_t param_no, ParamVa
         sprintf(kname, "spd_locate_ang");
         m_ini_axis->SetDoubleValue(sname, kname,value.value_double);
         break;
-
+    case 1727:
+        sprintf(kname, "mpg_speed");
+        m_ini_axis->SetDoubleValue(sname, kname, value.value_uint16);
+        break;
 	default:
 		g_ptr_trace->PrintLog(LOG_ALARM, "轴参数更新，参数号非法：%d", param_no);
 		res = false;
@@ -7423,15 +7429,12 @@ void ParmManager::ActiveAxisParam(uint8_t axis_index, uint32_t param_no, ParamVa
         this->m_sc_axis_config[axis_index].spd_gear_switch_speed2 = value.value_uint16;
         break;
     case 1716:	//攻丝同步误差增益 @test
-    	printf("===== %lf\n", value.value_double);
         this->m_sc_axis_config[axis_index].spd_sync_error_gain = value.value_double;
         break;
     case 1717:	//攻丝轴速度前馈增益
-    	printf("===== %lf\n", value.value_double);
     	this->m_sc_axis_config[axis_index].spd_speed_feed_gain = value.value_double;
         break;
     case 1718:	//攻丝轴位置比例增益
-        printf("===== %lf\n", value.value_double);
     	this->m_sc_axis_config[axis_index].spd_pos_ratio_gain = value.value_double;
         break;
     case 1719:	//攻丝回退期间，倍率是否有效
@@ -7445,6 +7448,10 @@ void ParmManager::ActiveAxisParam(uint8_t axis_index, uint32_t param_no, ParamVa
         break;
     case 1726:	//主轴定向角度
         this->m_sc_axis_config[axis_index].spd_locate_ang = value.value_double;
+        break;
+    case 1727:
+        this->m_sc_axis_config[axis_index].mpg_speed = value.value_uint16;
+        chn_engine->GetChnControl(chan)->SetChnAxisSpeedParam(axis_index);
         break;
 	default:
 		g_ptr_trace->PrintLog(LOG_ALARM, "轴参数激活，参数号非法：%d", param_no);

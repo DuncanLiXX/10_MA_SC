@@ -445,6 +445,8 @@ bool Compiler::SaveScene() {
         return false;
     }
 
+    this->m_compiler_status.mode.gmode[9] = G80_CMD;
+
     printf("save scene2, m_work_mode:%d, scene.work_mode = %d, scene.cur_file_pos=%llu\n",
            m_work_mode, scene.work_mode, (uint32_t)scene.ptr_cur_file_pos);
     for(IfElseOffset node: scene.node_stack_run){
@@ -2706,7 +2708,9 @@ bool Compiler::RunRapidMsg(RecordMsg *msg) {
 
 
     if(m_compiler_status.mode.gmode[9] != G80_CMD){
+
         m_compiler_status.mode.gmode[9] = G80_CMD;
+        m_p_channel_control->change_g80_flag = true;
     }
 
     this->SetCurPos(tmp->GetTargetPos());
@@ -2772,6 +2776,7 @@ bool Compiler::RunLineMsg(RecordMsg *msg) {
 
     if(m_compiler_status.mode.gmode[9] != G80_CMD){
         m_compiler_status.mode.gmode[9] = G80_CMD;
+        m_p_channel_control->change_g80_flag = true;
     }
 
     //	m_compiler_status.cur_pos = tmp->GetTargetPos(); //更新编译当前位置
@@ -2820,6 +2825,7 @@ bool Compiler::RunArcMsg(RecordMsg *msg) {
 
     if(m_compiler_status.mode.gmode[9] != G80_CMD){
         m_compiler_status.mode.gmode[9] = G80_CMD;
+        m_p_channel_control->change_g80_flag = true;
     }
 
 

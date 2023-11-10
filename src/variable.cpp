@@ -226,12 +226,12 @@ bool Variable::GetVarValue(int index, double &value, bool &init){
 		init = this->m_b_init_common_keep[index-500];
 		value = this->m_df_common_keep[index-500];
 		// 屏蔽对未初始化变量的检测
-		init = true;
+        //init = true;
 	}else if(index >=50000 && index < 55000){    //扩展保持型公共变量
 		init = this->m_b_init_user_macro[index-50000];
 		value = this->m_df_user_macro[index-50000];
 		// 屏蔽对未初始化变量的检测
-		init = true;
+        //init = true;
 		//printf("===== GetVarValue value: %lf init: %d index: %d\n", value, init, index);
 	}else if(index >= 1000){	//系统变量
 		if((index >= 5061 && index <= 5080) ||
@@ -253,7 +253,7 @@ bool Variable::GetVarValue(int index, double &value, bool &init){
 	}
 
 	// 屏蔽对未初始化变量的检测
-	init = true;
+    //init = true;
 
 	if(index == 0) init = false;
 

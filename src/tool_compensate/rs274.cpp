@@ -959,15 +959,6 @@ int Interp::convert_straight_comp1(int move,
 		printf("NCE_BUG_SIDE_NOT_RIGHT_OR_LEFT\n");
 	}
 
-	// @test 不报错 直接不进行刀补 并保留首次刀补状态
-	if(distance <= radius){
-		printf("Length of cutter compensation entry move is not greater than the tool radius\n");
-		//CreateError(MOVE_SMALLER_THAN_CMPRADIUS, ERROR_LEVEL, CLEAR_BY_MCP_RESET);
-		err_code = MOVE_SMALLER_THAN_CMPRADIUS;
-
-		return 0;
-	}
-
 	alpha = atan2(py - cy, px - cx) + (side == LEFT ? M_PIl/2. : -M_PIl/2.);
 
 	end_x = (px + (radius * cos(alpha)));
@@ -978,8 +969,9 @@ int Interp::convert_straight_comp1(int move,
 	// enough.
 
 	set_endpoint(cx, cy);
-
-	if (move == 0) {
+	
+	
+    if (move == 0) {
 		enqueue_STRAIGHT_TRAVERSE(settings, block->line_number,
 								  cos(alpha), sin(alpha), 0,
 								  end_x, end_y, pz,

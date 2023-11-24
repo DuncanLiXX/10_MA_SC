@@ -333,6 +333,8 @@ private://私有成员
 
     // @add zk
     bool compiler_lock = false;  // 防止子程序调用 编译先于与扫描执行
+
+    bool m_in_sys_sub = false;   // 在系统子程序目录种  F S 需要生效
 };
 
 

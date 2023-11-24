@@ -555,9 +555,21 @@ bool Compiler::ReloadScene(bool bRecPos){
     printf("reload scene, m_work_mode:%d, scene.m_work_mode = %d， cur_line = %llu, m_p_cur_file_pos=%u, file=%s\n",
            m_work_mode, scene.work_mode, this->m_ln_cur_line_no, (uint32_t)this->m_p_cur_file_pos, m_p_file_map_info->str_file_name);
 
-    for(IfElseOffset node: m_node_stack_run){
-        printf("---------------------------------->node line no: %llu\n", node.line_no);
+    if(strstr(m_p_file_map_info->str_file_name, "/cnc/nc_files/sys_sub/") != NULL){
+        m_in_sys_sub = true;
+    }else{
+        m_in_sys_sub = false;
+        //  恢复设置值
+        if(m_p_channel_config->feed_input_enable){
+            m_p_parser->addFeedMsg(m_p_channel_config->feed_input);
+        }
+
+        if(m_p_channel_config->spindle_speed_input_enable){
+           m_p_parser->addSpindSpeedMsg(m_p_channel_config->spindle_speed_input);
+        }
     }
+
+
 
     return true;
 }
@@ -1390,6 +1402,14 @@ bool Compiler::OpenFile(const char *file, bool sub_flag) {
     m_stack_vector_index_prescan.clear();
     m_stack_else_count_prescan.clear();
 
+
+
+    if(strstr(file, "/cnc/nc_files/sys_sub/") != NULL){
+        m_in_sys_sub = true;
+    }else{
+        m_in_sys_sub = false;
+    }
+
     //PreScan();
 
     static std::future<void> ans;
@@ -1794,10 +1814,18 @@ bool Compiler::GetLineData() {
 
     if(m_ln_cur_line_no == 1){
 
-        if(m_p_channel_config->feed_input_enable){
+        if(m_p_channel_config->feed_input_enable && !m_in_sys_sub){
+            printf("111111111111111\n");
             m_p_parser->addFeedMsg(m_p_channel_config->feed_input);
         }
+
+        if(m_p_channel_config->spindle_speed_input_enable && !m_in_sys_sub){
+           printf("22222222222222\n");
+           m_p_parser->addSpindSpeedMsg(m_p_channel_config->spindle_speed_input);
+        }
     }
+
+
 
     this->m_p_lexer->Reset(); //词法分析器复位
     memset(m_line_buf, 0x00, static_cast<size_t>(kMaxLineSize));
@@ -2843,13 +2871,11 @@ bool Compiler::RunFeedMsg(RecordMsg *msg) {
     if (msg == nullptr)
         return true;
 
-
-
     FeedMsg *tmp = (FeedMsg *) msg;
 
     double feed;
 
-    if(m_p_channel_config->feed_input_enable){
+    if(m_p_channel_config->feed_input_enable && !m_in_sys_sub){
         feed = m_p_channel_config->feed_input;
     }else{
         feed = tmp->GetFeed();
@@ -2860,7 +2886,7 @@ bool Compiler::RunFeedMsg(RecordMsg *msg) {
     this->m_p_channel_control->m_cur_setfeed = feed*1000/60;//um/s
 
     //printf("run feed message: %lf~~~~~\n", m_compiler_status.mode.f_mode);
-    if( tmp->GetFeed() <= 0){
+    if( feed <= 0){
 		CreateErrorMsg(F_VALUE_ERROR, tmp->GetLineNo());
 	}
     return true;
@@ -2875,11 +2901,18 @@ bool Compiler::RunSpeedMsg(RecordMsg *msg) {
     if (msg == nullptr)
         return true;
 
-    if(m_p_channel_config->spindle_speed_input_enable) return true;
+
 
     SpeedMsg *tmp = (SpeedMsg *) msg;
 
     m_compiler_status.mode.s_mode = tmp->GetSpeed();
+
+     if(m_p_channel_config->spindle_speed_input_enable && !m_in_sys_sub){
+         tmp->SetSpeed(m_p_channel_config->spindle_speed_input);
+         m_compiler_status.mode.s_mode = m_p_channel_config->spindle_speed_input;
+
+     }
+
     return true;
 }
 

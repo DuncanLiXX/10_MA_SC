@@ -282,6 +282,7 @@ public:
 	void ResetOPSignal();   //复位OP信号
 	void ResetRSTSignal();	//复位RST信号
 	void SetALSignal(bool value);  //设置告警信号
+    void ProcessServoPosOver();
 
 	void TransMachCoordToWorkCoord(DPointChn &pos, uint16_t coord_idx, uint16_t h_code, uint32_t axis_mask);   //将坐标由机械坐标系转换为工件坐标系
 	void TransMachCoordToWorkCoord(DPointChn &pos, uint16_t coord_idx, uint32_t axis_mask);   //将坐标由机械坐标系转换为工件坐标系
@@ -436,6 +437,7 @@ public:
 	void ProcessEliminate(int work_station);
 
     int m_order_step = 0;      //
+    bool m_order_alarm = false;
     bool exec_m30_over;
 
     bool m_b_dust_eliminate = false;   // 除尘打开标志

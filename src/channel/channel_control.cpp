@@ -22,6 +22,7 @@
 #include "showsc.h"
 #include "axis_status_ctrl.h"
 #include "sync_axis_ctrl.h"
+#include <functional>
 
 using namespace Spindle;
 
@@ -2003,6 +2004,7 @@ void ChannelControl::StartRunGCode(){
     }
 
     if(!this->m_b_init_compiler_pos){
+
         this->m_p_compiler->SetCurPos(this->m_channel_rt_status.cur_pos_work);
         this->m_p_compiler->SetCurGMode();   //初始化编译器模态
         this->m_b_init_compiler_pos = true;
@@ -2034,7 +2036,12 @@ void ChannelControl::StartRunGCode(){
             //初始化传递给MC模块的模态组信息
             this->InitMcModeStatus();
 
-            this->m_p_compiler->SetCurPos(this->m_channel_rt_status.cur_pos_work);  //设置编译器起始位置
+            if(this->m_n_restart_mode != NOT_RESTART){
+                this->m_p_compiler->SetCurPos( m_mode_restart.pos_target);
+            }else{
+                this->m_p_compiler->SetCurPos(this->m_channel_rt_status.cur_pos_work);  //设置编译器起始位置
+            }
+
             this->m_p_compiler->SetCurGMode();   //初始化编译器模态
 
             if(this->m_simulate_mode != SIM_NONE){
@@ -2112,7 +2119,6 @@ void ChannelControl::StartRunGCode(){
             if(this->m_mask_run_pmc){
                 this->PausePmcAxis(NO_AXIS, false);  //继续运行PMC轴
             }else if(IsMcNeedStart()){
-                printf("start 11111");
             	this->StartMcIntepolate();
             }
             else{
@@ -2210,12 +2216,6 @@ END:
     }
     //@zk 程序再起 单段执行 避免调用前置程序
     m_b_in_common_pre_prog = true;
-
-    if(m_p_channel_config->spindle_speed_input_enable){
-        m_p_spindle->InputSCode(m_p_channel_config->spindle_speed_input);
-        //更新当前S值
-        m_channel_status.rated_spindle_speed = m_p_channel_config->spindle_speed_input;
-    }
 
     printf("exit ChannelControl::StartRunGCode()\n");
 
@@ -5029,7 +5029,7 @@ void ChannelControl::SetWorkMode(uint8_t work_mode){
         this->m_p_compiler->SetOutputMsgList(m_p_output_msg_list);  //切换输出队列
         pthread_mutex_unlock(&m_mutex_change_state);
         //printf("unlocked 7\n");
-        this->SendWorkModeToMc(MC_MODE_MANUAL);
+        this->SendWorkModeToMc(MC_MODE_MPG);
         break;
     case REF_MODE:
         this->m_p_f_reg->MREF = 1;
@@ -5524,16 +5524,22 @@ int ChannelControl::Run(){
                         m_b_need_delay_step = false;
                     }
 
-					char path[kMaxPathLen];
-					strcpy(path, PATH_NC_FILE);
-					strcat(path, g110_file_name);
-					strcpy(m_channel_status.cur_nc_file_name, g110_file_name);
-					g_ptr_parm_manager->SetCurNcFile(m_n_channel_index, m_channel_status.cur_nc_file_name);    //修改当前NC文件
-					this->m_p_compiler->OpenFile(path);
-					this->SendOpenFileCmdToHmi(m_channel_status.cur_nc_file_name);
-					m_b_in_block_prog = false;
-					this->StartRunGCode();
-					m_order_step = STEP_WORKPROG;
+                    if(strlen(g110_file_name) > 0){
+                        char path[kMaxPathLen];
+                        strcpy(path, PATH_NC_FILE);
+                        strcat(path, g110_file_name);
+                        strcpy(m_channel_status.cur_nc_file_name, g110_file_name);
+                        g_ptr_parm_manager->SetCurNcFile(m_n_channel_index, m_channel_status.cur_nc_file_name);    //修改当前NC文件
+                        this->m_p_compiler->OpenFile(path);
+                        this->SendOpenFileCmdToHmi(m_channel_status.cur_nc_file_name);
+                        m_b_in_block_prog = false;
+                        memset(g110_file_name, 0, kMaxPathLen);
+                        this->StartRunGCode();
+                        m_order_step = STEP_WORKPROG;
+                    }else{
+                        m_order_step = STEP_IDLE;
+                    }
+
         		}else if(m_order_step == STEP_ORDERFINISH){
 					char path[kMaxPathLen];
 					strcpy(path, PATH_NC_FILE);
@@ -5543,7 +5549,8 @@ int ChannelControl::Run(){
 					this->m_p_compiler->OpenFile(path);
 					this->SendOpenFileCmdToHmi(m_channel_status.cur_nc_file_name);
 					m_n_run_thread_state = ERROR;
-					CreateError(ERR_ORDER_FINISH, ERROR_LEVEL, CLEAR_BY_MCP_RESET, 0, m_n_channel_index);
+                    if(m_order_alarm)
+                        CreateError(ERR_ORDER_FINISH, ERROR_LEVEL, CLEAR_BY_MCP_RESET, 0, m_n_channel_index);
 					m_order_step = STEP_IDLE;
         		}
         	}
@@ -5834,7 +5841,10 @@ bool ChannelControl::RefreshStatusFun(){
 			else
 				this->m_p_mc_arm_comm->ReadChnPosErrMask(m_n_channel_index, m_channel_mc_status.pos_error_mask);
 
-			//printf("============ ERR_POS_ERR ===============\n");
+            static std::future<void> ans;
+            auto func = std::bind(&ChannelControl::ProcessServoPosOver, this);
+            ans = std::async(std::launch::async, func);
+
             CreateError(ERR_POS_ERR, ERROR_LEVEL, CLEAR_BY_MCP_RESET, m_channel_mc_status.pos_error_mask, m_n_channel_index);
 		}
 
@@ -8208,6 +8218,8 @@ bool ChannelControl::ExecuteLineMsg(RecordMsg *msg, bool flag_block){
             && this->m_n_add_prog_type == NONE_ADD      //非附加程序运行状态
         #endif
             ){//加工复位
+
+        uint32_t axis_mask = linemsg->GetAxisMoveMask();
         this->m_mode_restart.pos_target = linemsg->GetTargetPos();  //更新目标位置
         this->m_mode_restart.gmode[1] = linemsg->GetGCode();   //更新模态
 
@@ -8218,7 +8230,7 @@ bool ChannelControl::ExecuteLineMsg(RecordMsg *msg, bool flag_block){
     if(m_p_spindle->isTapEnable()){
         uint8_t z_axis =  this->GetPhyAxisFromName(AXIS_NAME_Z);
 
-        if(fabs(this->m_channel_rt_status.cur_pos_work.GetAxisValue(z_axis)
+        if(fabs(linemsg->GetSourcePos().GetAxisValue(z_axis)
                 - linemsg->GetTargetPos().GetAxisValue(z_axis)) < 0.005){
             m_error_code = ERR_SPD_TAP_POS_ERROR;
             CreateError(ERR_SPD_TAP_POS_ERROR, ERROR_LEVEL, CLEAR_BY_MCP_RESET, 0, m_n_channel_index);
@@ -9220,7 +9232,7 @@ bool ChannelControl::ExecuteSpeedMsg(RecordMsg *msg){
     //	}
 
     // 主轴速度由参数指定 不受S代码影响
-    if(m_p_channel_config->spindle_speed_input_enable) return true;
+    //if(m_p_channel_config->spindle_speed_input_enable) return true;
 
     SpeedMsg *speed = (SpeedMsg *)msg;
 
@@ -12110,6 +12122,8 @@ bool ChannelControl::ExecuteOpenFileMsg(RecordMsg *msg){
 		m_order_step = STEP_ORDERFINISH;
 	}
 
+    m_order_alarm = openfile_msg->alarm_enable;
+
 	return true;
 }
 
@@ -13793,6 +13807,11 @@ void ChannelControl::SetChnAxisAccParam(uint8_t chn_axis){
 
     //G00 S型时间常数
     cmd.data.data[3] = m_p_axis_config[phy_axis].rapid_s_plan_filter_time;
+    cmd.data.data[5] = m_p_axis_config[phy_axis].mpg_acc_time;
+    cmd.data.data[6] = m_p_axis_config[phy_axis].mpg_deacc_time;
+
+    printf("acc_time: %d   dec_time: %d\n", m_p_axis_config[phy_axis].mpg_acc_time,
+           m_p_axis_config[phy_axis].mpg_deacc_time);
 
     if(!this->m_b_mc_on_arm)
         m_p_mc_comm->WriteCmd(cmd);
@@ -19236,7 +19255,12 @@ void ChannelControl::SetALSignal(bool value){
 		this->m_p_f_reg->AL = 1;
 	}else{
 		this->m_p_f_reg->AL = 0;
-	}
+    }
+}
+
+void ChannelControl::ProcessServoPosOver()
+{
+   m_p_channel_engine->ProcessAxisDownSafe();
 }
 
 /**
@@ -21575,15 +21599,21 @@ void ChannelControl::PrintDebugInfo1(){
 
 // @test zk
 void ChannelControl::test(){
-	//CreateError(33002, INFO_LEVEL, CLEAR_BY_MCP_RESET, 0, m_n_channel_index);
-	//printf("enter in test()\n");
-	//order_file_vector.push_back("O0002.NC");
-	//printf("order_file_vector.size(): %d\n", order_file_vector.size());
-
-	//m_b_dust_eliminate = true;
-	// 设置单段运行
-	//SetMcStepMode(true);
-
+//    StartMcIntepolate();
+//    GCodeFrame frame;
+//    memset(&frame, 0x0, sizeof(frame));
+//    frame.data.frame_index = 0;
+//    frame.data.cmd = 2;
+//    frame.data.ext_type = 0x21;
+//    frame.data.feed = FEED_TRANS(1000);
+//    frame.data.pos0 = MM2NM0_1(100);
+//    frame.data.pos1 = MM2NM0_1(0);
+//    frame.data.pos2 = MM2NM0_1(100);
+//    frame.data.arc_center0 = MM2NM0_1(50);
+//    frame.data.arc_center1 = MM2NM0_1(0);
+//    frame.data.arc_center2 = MM2NM0_1(50);
+//    frame.data.arc_radius = MM2NM0_1(50);
+//    m_p_mc_comm->WriteGCodeData(0, frame);
 }
 
 

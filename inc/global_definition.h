@@ -391,7 +391,8 @@ enum CoordId {
 enum MCWorkMode{
 	MC_MODE_MANUAL = 0, 	//手动模式
 	MC_MODE_AUTO,			//自动模式
-	MC_MODE_MDA				//MDA模式
+    MC_MODE_MDA,		    //MDA模式
+    MC_MODE_MPG,
 };
 
 enum ManualMoveDir{

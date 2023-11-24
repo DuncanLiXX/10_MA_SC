@@ -300,6 +300,8 @@ public:
 
 	double GetSpeed(){return m_df_speed;}   //返回主轴转速
 
+    void SetSpeed(double speed){m_df_speed = speed;}
+
 	SpeedMsg& operator=( const SpeedMsg& msg);  //赋值运算符
 	friend bool operator ==( const SpeedMsg &one, SpeedMsg &two);  //判断运算符
 protected:
@@ -1145,6 +1147,7 @@ public:
 	OpenFileMsg& operator=( const OpenFileMsg& msg);  //赋值运算符
 	double OData;
 	bool order_end;
+    bool alarm_enable{false};
 };
 
 

@@ -16,9 +16,6 @@
 
 using namespace Spindle;
 
-static struct timeval time_start;
-static struct timeval time_end;
-
 
 SpindleControl::SpindleControl()
 {
@@ -83,13 +80,18 @@ void SpindleControl::InputSCode(uint32_t s_code)
     if(cnc_speed < spindle->spd_min_speed)
         cnc_speed = spindle->spd_min_speed;
 
+
     F->scode_0 = (cnc_speed&0xFF);
     F->scode_1 = ((cnc_speed>>8)&0xFF);
     F->scode_2 = ((cnc_speed>>16)&0xFF);
     F->scode_3 = ((cnc_speed>>24)&0xFF);
 
-    if(CalPolar() == Stop)
+    if(CalPolar() == Stop){
+
+        printf("===== CalPolar Stop\n");
         return;
+    }
+
     UpdateSpindleState();
 }
 
@@ -151,7 +153,7 @@ void SpindleControl::InputPolar(Spindle::Polar polar)
     }
 }
 
-// M26 M27
+// M28 M29
 
 void SpindleControl::SetMode(Mode mode)
 {
@@ -253,11 +255,6 @@ void SpindleControl::StartRigidTap(double feed)
     }
 
 
-    ScPrintf("=====================================\n");
-    ScPrintf("running_rtnt=%u S=%u  F=%lf ratio=%lf\n",
-    		running_rtnt,tap_state.S,tap_state.F, tap_ratio);
-    //if(TSO)
-    //    ratio *= SOV/100.0;
 
     //发送攻丝轴号
     mi->SendTapAxisCmd(chn, phy_axis+1, z_axis+1);
@@ -290,6 +287,7 @@ void SpindleControl::StartRigidTap(double feed)
     }else{
         return;
     }
+
     SaveTapState();
 }
 
@@ -436,6 +434,7 @@ void SpindleControl::InputORCMA(bool ORCMA)
     if(!spindle)
         return;
     ScPrintf("SpindleControl::InputORCMA ORCMA = %d\n", ORCMA);
+
     auto func = std::bind(&SpindleControl::ProcessORCMA,
                           this, std::placeholders::_1);
     ans = std::async(std::launch::async, func, ORCMA);
@@ -449,6 +448,9 @@ void SpindleControl::InputRGTAP(bool RGTAP)
     ScPrintf("SpindleControl::InputRGTAP RGTAP = %d\n", RGTAP);
 
     this->RGTAP = RGTAP;
+
+
+
     if(RGTAP){
         // 如果主轴不在使能状态，先上使能
     	if(!motor_enable){
@@ -471,7 +473,7 @@ void SpindleControl::InputRGTAP(bool RGTAP)
     	StartRigidTap(tap_feed);
     }
     else{
-    	CancelRigidTap();
+        CancelRigidTap();
     }
 }
 
@@ -483,6 +485,7 @@ void SpindleControl::InputRGMD(bool RGMD)
     ScPrintf("SpindleControl::InputRGMD RGMD = %d\n", RGMD);
 
     this->RGMD = RGMD;
+
 
     if(RGMD)
         SetMode(Position);
@@ -532,11 +535,6 @@ void SpindleControl::RspORCMA(bool success)
     if(!spindle)
         return;
 
-	// @test zk
-	gettimeofday(&time_end, NULL);
-
-	//printf("=============== time elapse %d sec\n", time_end.tv_sec - time_start.tv_sec);
-	//printf("=============== time elapse %d usec\n", time_end.tv_usec - time_start.tv_usec);
 
     ScPrintf("SpindleControl::RspORCMA : success = %d\n",success);
     // 定位成功，将ORAR置为1，通知PMC定位动作完成
@@ -666,7 +664,8 @@ void SpindleControl::UpdateSpindleState()
     // 1：需要换挡，转速的输出由SendGearLevel内部处理，先返回
     if(UpdateSpindleLevel(cnc_speed))
     {
-    	return;
+        printf("===== UpdateSpindleLevel\n");
+        return;
     }
 
     SendSpdSpeedToMi();
@@ -951,7 +950,6 @@ void SpindleControl::SendSpdSpeedToMi(int16_t speed){
 void SpindleControl::ProcessORCMA(bool ORCMA)
 {
 
-	//std::this_thread::sleep_for(std::chrono::microseconds(100 * 1000));
 	printf("===== ProcessORCMA %d\n", ORCMA);
 
 	this->ORCMA = ORCMA;
@@ -998,7 +996,6 @@ void SpindleControl::ProcessORCMA(bool ORCMA)
     		count = 0;
     	}
     	// @test zk
-    	gettimeofday(&time_start, NULL);
         mi->SendSpdLocateCmd(chn, phy_axis+1,true);
     }else{
         //Polar polar = CalPolar();

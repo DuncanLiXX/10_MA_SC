@@ -1452,6 +1452,8 @@ bool ParmManager::ReadAxisConfig(){
 			m_sc_axis_config[i].manual_speed = m_ini_axis->GetDoubleValueOrDefault(sname, "manual_speed", 3000);
 			m_sc_axis_config[i].rapid_speed = m_ini_axis->GetDoubleValueOrDefault(sname, "rapid_speed", 8000);
             m_sc_axis_config[i].mpg_speed = m_ini_axis->GetIntValueOrDefault(sname, "mpg_speed", 3000);
+            m_sc_axis_config[i].mpg_acc_time = m_ini_axis->GetIntValueOrDefault(sname, "mpg_acc_time", 200);
+            m_sc_axis_config[i].mpg_deacc_time = m_ini_axis->GetIntValueOrDefault(sname, "mpg_deacc_time", 200);
             m_sc_axis_config[i].reset_speed = m_ini_axis->GetDoubleValueOrDefault(sname, "reset_speed", 2000);
 			m_sc_axis_config[i].ret_ref_speed = m_ini_axis->GetDoubleValueOrDefault(sname, "ret_ref_speed", 500);
             m_sc_axis_config[i].ret_ref_speed_second = m_ini_axis->GetDoubleValueOrDefault(sname, "ret_ref_speed_second", 100);
@@ -1631,6 +1633,8 @@ bool ParmManager::ReadAxisConfig(){
 			m_sc_axis_config[i].ref_encoder = kAxisRefNoDef;
 			m_sc_axis_config[i].manual_speed = 3000;
             m_sc_axis_config[i].mpg_speed = 3000;
+            m_sc_axis_config[i].mpg_acc_time = 200;
+            m_sc_axis_config[i].mpg_deacc_time = 200;
 			m_sc_axis_config[i].rapid_speed = 8000;
 			m_sc_axis_config[i].reset_speed = 2000;
 			m_sc_axis_config[i].ret_ref_speed = 500;
@@ -1790,6 +1794,8 @@ bool ParmManager::ReadAxisConfig(){
 			m_ini_axis->AddKeyValuePair(string("ref_base_diff"), string("0"), ns);
 			m_ini_axis->AddKeyValuePair(string("manual_speed"), string("3000"), ns);
             m_ini_axis->AddKeyValuePair(string("mpg_speed"), string("3000"), ns);
+            m_ini_axis->AddKeyValuePair(string("mpg_acc_time"), string("200"), ns);
+            m_ini_axis->AddKeyValuePair(string("mpg_deacc_time"), string("200"), ns);
 			m_ini_axis->AddKeyValuePair(string("rapid_speed"), string("8000"), ns);
 			m_ini_axis->AddKeyValuePair(string("reset_speed"), string("2000"), ns);
 			m_ini_axis->AddKeyValuePair(string("ret_ref_speed"), string("500"), ns);
@@ -4787,9 +4793,6 @@ bool ParmManager::UpdateChnParam(uint8_t chn_index, uint32_t param_no, ParamValu
         m_ini_chn->SetIntValue(sname, kname, value.value_uint16);
         break;
 
-
-
-
 	case 221:	//前瞻功能
 		sprintf(kname, "chn_look_ahead");
 		m_ini_chn->SetIntValue(sname, kname, value.value_uint8);
@@ -4941,43 +4944,36 @@ bool ParmManager::UpdateChnParam(uint8_t chn_index, uint32_t param_no, ParamValu
     case 519:
         sprintf(kname, "order_prog_mode");  //设置排程模式
         m_ini_chn->SetIntValue(sname, kname, value.value_uint16);
-        printf("11111 %d\n", value.value_int16);
         break;
 
     case 520:
         sprintf(kname, "pre_prog_num");  // 设置前置程序
         m_ini_chn->SetIntValue(sname, kname, value.value_uint16);
-        printf("22222 %d\n", value.value_int16);
         break;
 
     case 521:
         sprintf(kname, "end_prog_num");  // 设置后置程序
         m_ini_chn->SetIntValue(sname, kname, value.value_uint16);
-        printf("33333 %d\n", value.value_int16);
         break;
 
     case 522:
         sprintf(kname, "feed_input");  // 进给速度输入
         m_ini_chn->SetIntValue(sname, kname, value.value_uint16);
-        printf("4444 %d\n", value.value_int16);
         break;
 
     case 523:
         sprintf(kname, "feed_input_enable");  // 进给速度输入有效
         m_ini_chn->SetIntValue(sname, kname, value.value_uint16);
-        printf("5555 %d\n", value.value_int16);
         break;
 
     case 524:
         sprintf(kname, "spindle_speed_input");  // 主轴转速输入
         m_ini_chn->SetIntValue(sname, kname, value.value_uint16);
-        printf("6666 %d\n", value.value_int16);
         break;
 
     case 525:
         sprintf(kname, "spindle_speed_input_enable");  // 主轴转速输入有效
         m_ini_chn->SetIntValue(sname, kname, value.value_uint16);
-        printf("7777 %d\n", value.value_int16);
         break;
 
 #ifdef USES_WOOD_MACHINE
@@ -5671,6 +5667,14 @@ bool ParmManager::UpdateAxisParam(uint8_t axis_index, uint32_t param_no, ParamVa
         break;
     case 1727:
         sprintf(kname, "mpg_speed");
+        m_ini_axis->SetDoubleValue(sname, kname, value.value_uint16);
+        break;
+    case 1728:
+        sprintf(kname, "mpg_acc_time");
+        m_ini_axis->SetDoubleValue(sname, kname, value.value_uint16);
+        break;
+    case 1729:
+        sprintf(kname, "mpg_deacc_time");
         m_ini_axis->SetDoubleValue(sname, kname, value.value_uint16);
         break;
 	default:
@@ -7452,6 +7456,14 @@ void ParmManager::ActiveAxisParam(uint8_t axis_index, uint32_t param_no, ParamVa
     case 1727:
         this->m_sc_axis_config[axis_index].mpg_speed = value.value_uint16;
         chn_engine->GetChnControl(chan)->SetChnAxisSpeedParam(axis_index);
+        break;
+    case 1728:
+        this->m_sc_axis_config[axis_index].mpg_acc_time = value.value_uint16;
+        chn_engine->GetChnControl(chan)->SetChnAxisAccParam(axis_index);
+        break;
+    case 1729:
+        this->m_sc_axis_config[axis_index].mpg_deacc_time = value.value_uint16;
+        chn_engine->GetChnControl(chan)->SetChnAxisAccParam(axis_index);
         break;
 	default:
 		g_ptr_trace->PrintLog(LOG_ALARM, "轴参数激活，参数号非法：%d", param_no);

@@ -124,7 +124,7 @@ enum McCmdCode{
     //CMD_MC_SET_MPG_SPEED = 0x002E,          //设置轴手摇最大速度
 
 
-	CMD_MC_SET_MULTI_AXIS_MODE = 0x0030,	//设置多轴联动模式
+    CMD_MC_SET_MULTI_AXIS_MODE = 0x0030,	 //设置多轴联动模式
 	CMD_MC_SET_CHN_FIVE_AXIS_PARAM = 0x0031,	//设置五轴联动加工相关参数
 	CMD_MC_SET_CHN_TILT_AXIS_PARAM = 0x0032,	//设置倾斜轴加工相关参数
 

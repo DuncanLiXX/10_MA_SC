@@ -1457,6 +1457,8 @@ struct HmiAxisConfig{
 
     double spd_locate_ang;                     //主轴定向角度 单位：度
     uint16_t mpg_speed;                       //手轮速度
+    uint16_t mpg_acc_time;                     //手轮加速时间常数
+    uint16_t mpg_deacc_time;                   //手轮减速时间常数
 
     //旋转轴相关参数
     uint8_t fast_locate;						//快速定位    0--关闭   1--打开

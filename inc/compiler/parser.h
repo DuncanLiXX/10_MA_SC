@@ -49,6 +49,8 @@ public:
 
     void setFeedFlag(bool flag){m_b_f_code = flag; }
 
+    void addSpindSpeedMsg(double speed);
+
 private:
 	bool CompileMacro();   //编译宏指令
 	bool CompileGCode();   //编译G/M/S/T指令
@@ -153,6 +155,7 @@ private:
 
 	uint32_t m_mask_pmc_axis;    //通道内PMC轴mask
 	uint8_t m_n_pmc_axis_count;  //PMC轴数量
+    bool flag_end_prog_call = false;
 };
 
 #endif /* INC_COMPILER_PARSER_H_ */

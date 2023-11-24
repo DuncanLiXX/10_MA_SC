@@ -353,7 +353,9 @@ struct SCAxisConfig{
     int32_t spd_rtnt_distance;                 //攻丝回退的额外回退值 单位：um
 
     double spd_locate_ang;                     //主轴定向角度 单位：度
-    uint16_t mpg_speed;                       //手轮速度
+    uint16_t mpg_speed;                        //手轮速度
+    uint16_t mpg_acc_time;                     //手轮加速时间常数
+    uint16_t mpg_deacc_time;                   //手轮减速时间常数
 
 	//旋转轴相关参数
 	uint8_t fast_locate;							//快速定位    0--关闭   1--打开
@@ -398,9 +400,6 @@ struct SCAxisConfig{
  * @brief SC模块刀具偏置配置数据
  */
 struct SCToolOffsetConfig{
-#ifdef USES_INDEPEND_BASE_TOOL_OFFSET
-	double geometry_comp_basic[3];                     //基准刀偏置
-#endif
 	double geometry_compensation[kMaxToolCount][3];    //刀具几何偏置，包括长度补偿
 	double geometry_wear[kMaxToolCount][3];				//刀具几何磨损偏置
 	double radius_compensation[kMaxToolCount];			//刀具半径补偿

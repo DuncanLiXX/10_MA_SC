@@ -142,6 +142,30 @@ void Parser::addFeedMsg(uint16_t feed)
     ProcessLastBlockRec(new_msg);
 }
 
+void Parser::addSpindSpeedMsg(double speed)
+{
+    if(speed <-99999 || speed > 99999){
+        CreateError(ERR_INVALID_CODE, ERROR_LEVEL, CLEAR_BY_MCP_RESET, m_p_lexer_result->line_no);
+        return;
+    }
+
+    RecordMsg *new_msg = new SpeedMsg(speed);
+    if(new_msg == nullptr){
+        //TODO 内存分配失败，告警
+        CreateError(ERR_MEMORY_NEW, FATAL_LEVEL, CLEAR_BY_RESET_POWER);
+        return;
+    }
+    new_msg->SetLineNo(this->m_p_lexer_result->line_no);  //设置当前行号
+    if(this->m_p_compiler_status->jump_flag)
+        new_msg->SetFlag(FLAG_JUMP, true);
+    m_p_parser_result->Append(new_msg);
+
+    ProcessLastBlockRec(new_msg);
+    return;
+}
+
+
+
 /**
  * @brief 对词法分析结果进行语法解析
  * @return true--成功  false--失败
@@ -2108,14 +2132,29 @@ bool Parser::CreateAuxMsg(int *mcode, uint8_t total){
                 return false;
             }
 
-            m_p_channel_control->b_in_end_prog = true;
+
             new_msg->SetLineNo(this->m_p_lexer_result->line_no);  //设置当前行号
             if(this->m_p_compiler_status->jump_flag)
                 new_msg->SetFlag(FLAG_JUMP, true);
             m_p_parser_result->Append(new_msg);
             ProcessLastBlockRec(new_msg);
+            flag_end_prog_call = true;
             return true;
         }
+    }
+
+    if(*mcode == 99 && flag_end_prog_call){
+        flag_end_prog_call = false;
+
+        AuxMsg *new_msg = new AuxMsg(99);
+        new_msg->SetLineNo(this->m_p_lexer_result->line_no);
+        m_p_parser_result->Append(new_msg);
+
+        new_msg = new AuxMsg(30);
+        new_msg->SetLineNo(this->m_p_lexer_result->line_no);
+        m_p_parser_result->Append(new_msg);
+
+        return true;
     }
 
 
@@ -2130,6 +2169,8 @@ bool Parser::CreateAuxMsg(int *mcode, uint8_t total){
 		new_msg->SetFlag(FLAG_JUMP, true);
 	m_p_parser_result->Append(new_msg);
 	ProcessLastBlockRec(new_msg);
+
+
 
 	return true;
 }
@@ -2668,6 +2709,7 @@ bool Parser::CreateArcMsg(const int gcode){
         if(source != target_pos){
 			DPlane cen = Point2Plane(center, m_p_compiler_status->mode.gmode[2]);
             DPlane tar = Point2Plane(target_pos, m_p_compiler_status->mode.gmode[2]);
+            printf("===== cen: %lf %lf, tar: %lf %lf\n",cen.x, cen.y, tar.x, tar.y);
             double dr2 = GetVectLength(cen, tar);
 
 			if(fabs(dr2-radius) > 2e-3){  //起点和终点到圆心距离差超过2um则告警
@@ -3351,6 +3393,18 @@ bool Parser::CreateOpenFileMsg(bool flag_end){
 	GetCodeData(O_DATA, new_msg->OData);
 	//new_msg->SetFlag(FLAG_WAIT_MOVE_OVER, true);
 	new_msg->SetLineNo(this->m_p_lexer_result->line_no);
+    double p_data;
+    if(GetCodeData(P_DATA, p_data)){
+        if(p_data > 0.5){
+            new_msg->alarm_enable =  true;
+        }else{
+            new_msg->alarm_enable = false;
+        }
+    }else{
+        new_msg->alarm_enable = false;
+    }
+
+
 	m_p_parser_result->Append(new_msg);
 	ProcessLastBlockRec(new_msg);
 	return true;

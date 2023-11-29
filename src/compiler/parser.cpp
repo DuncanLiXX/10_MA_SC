@@ -75,6 +75,7 @@ void Parser::Reset(){
 	this->m_p_compiler_status->mode.Reset();
 	this->m_mode_mask = GMODE_NONE;
 	this->m_b_has_g53 = false;
+    flag_end_prog_call = false;
 }
 
 /**
@@ -2153,6 +2154,8 @@ bool Parser::CreateAuxMsg(int *mcode, uint8_t total){
         new_msg = new AuxMsg(30);
         new_msg->SetLineNo(this->m_p_lexer_result->line_no);
         m_p_parser_result->Append(new_msg);
+
+        ProcessLastBlockRec(new_msg);
 
         return true;
     }

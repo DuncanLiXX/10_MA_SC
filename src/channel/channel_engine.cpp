@@ -1032,6 +1032,15 @@ void ChannelEngine::SendMiPhyAxisEncoder(){
 
     size_t count  = fread(data, 8, m_p_general_config->axis_count, fp);
 
+    uint16_t flag = 0;
+
+    fread(&flag, 1, 2, fp);
+
+    if(flag != 0xffff){
+        printf("error in read phy axis encoder flag! %X\n", flag);
+        return;
+    }
+
     if(count != m_p_general_config->axis_count)
         printf("error in read phy axis encoder value!%d, %d\n", count, m_p_general_config->axis_count);
 
@@ -1690,6 +1699,9 @@ void ChannelEngine::SaveCurPhyAxisEncoder(){
     this->m_p_mi_comm->ReadPhyAxisEncoder(data, m_p_general_config->axis_count);
 
     size_t count  = fwrite(data, 8, m_p_general_config->axis_count, fp);
+
+    uint16_t flag = 0xffff;
+    fwrite(&flag, 1, 2, fp);
 
     if(count != m_p_general_config->axis_count)
         printf("error in save phy axis encoder value!\n");

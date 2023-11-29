@@ -5597,6 +5597,10 @@ bool ChannelControl::RefreshStatusFun(){
 	int check_count = 1;           //状态确认次数
 	uint32_t data = 0;
 	uint64_t count = 0;           //循环计数
+
+    uint32_t pos_limit_flag = 0;
+    uint32_t neg_limit_flag = 0;
+
 	while(!g_sys_state.system_quit){
 
 		if(!this->m_b_mc_on_arm){
@@ -5819,21 +5823,27 @@ bool ChannelControl::RefreshStatusFun(){
 				this->m_channel_mc_status.axis_soft_negative_limit = data;
 			}
 
-			if(m_channel_mc_status.mc_error.bits.err_soft_limit_neg){
+            if(m_channel_mc_status.mc_error.bits.err_soft_limit_neg != neg_limit_flag){
                 for(int i = 0; i < 16; ++i)
                 {
+                    //printf("11111\n");
                     if(this->m_channel_mc_status.axis_soft_negative_limit & (0x01<<i))
                         CreateError(ERR_SOFT_LIMIT_NEG, ERROR_LEVEL, CLEAR_BY_MCP_RESET, data, m_n_channel_index, i);
                 }
 			}
-			if(m_channel_mc_status.mc_error.bits.err_soft_limit_pos){
+            if(m_channel_mc_status.mc_error.bits.err_soft_limit_pos != pos_limit_flag){
                 for(int i = 0; i < 16; ++i)
                 {
+                    //printf("22222\n");
                     if(this->m_channel_mc_status.axis_soft_postive_limit & (0x01<<i))
                         CreateError(ERR_SOFT_LIMIT_POS, ERROR_LEVEL, CLEAR_BY_MCP_RESET, data, m_n_channel_index, i);
                 }
 			}
+
 		}
+
+        neg_limit_flag = m_channel_mc_status.mc_error.bits.err_soft_limit_neg;
+        pos_limit_flag = m_channel_mc_status.mc_error.bits.err_soft_limit_pos;
 
 		if(m_channel_mc_status.mc_error.bits.err_pos_over){//位置指令过大
 			if(!this->m_b_mc_on_arm)
@@ -12434,9 +12444,9 @@ bool ChannelControl::GetLimitTargetPos(ManualMoveDir dir, uint8_t chn_axis, int6
     }
 
 
-    if(CheckSoftLimit(dir, phy_axis, curPos)){
+    /*if(CheckSoftLimit(dir, phy_axis, curPos)){
         return false;
-    }else if(GetSoftLimt((ManualMoveDir)dir, phy_axis, limit) && dir == DIR_POSITIVE && tar_pos > limit*1e7){
+    }else*/ if(GetSoftLimt((ManualMoveDir)dir, phy_axis, limit) && dir == DIR_POSITIVE && tar_pos > limit*1e7){
         tar_pos = (limit - offset) * 1e7;
     }else if(GetSoftLimt((ManualMoveDir)dir, phy_axis, limit) && dir == DIR_NEGATIVE && tar_pos < limit*1e7){
         tar_pos = (limit - offset) * 1e7;
@@ -12457,9 +12467,9 @@ bool ChannelControl::GetLimitTargetPos(ManualMoveDir dir, uint8_t chn_axis, int6
                     double dif = curPos - subPos;
                     std::cout << "dif--->: " << dif << std::endl;
 
-                    if(CheckSoftLimit(dir, i, subPos)){
+                    /*if(CheckSoftLimit(dir, i, subPos)){
                         return false;
-                    }else if(GetSoftLimt((ManualMoveDir)dir, i, limit) && dir == DIR_POSITIVE && tar_pos > limit*1e7){
+                    }else*/ if(GetSoftLimt((ManualMoveDir)dir, i, limit) && dir == DIR_POSITIVE && tar_pos > limit*1e7){
                         tar_pos = (limit+dif) * 1e7;
                     }else if(GetSoftLimt((ManualMoveDir)dir, i, limit) && dir == DIR_NEGATIVE && tar_pos < limit*1e7){
                         tar_pos = (limit+dif) * 1e7;

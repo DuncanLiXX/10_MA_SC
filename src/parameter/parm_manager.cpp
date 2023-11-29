@@ -46,7 +46,6 @@ ParmManager::ParmManager(){
 
 	this->m_p_chn_process_param = nullptr;
 	this->m_p_axis_process_param = nullptr;
-
 	this->m_sc_io_remap_list.Clear();
 
 

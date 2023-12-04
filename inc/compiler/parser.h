@@ -45,11 +45,13 @@ public:
 
     uint32_t GetPmcAxisMask();
 
-    void addFeedMsg(uint16_t feed);
+    void addFeedMsg(uint16_t feed, uint64_t lino);
 
     void setFeedFlag(bool flag){m_b_f_code = flag; }
 
-    void addSpindSpeedMsg(double speed);
+    void addSpindSpeedMsg(double speed, uint64_t lino);
+
+    bool flag_end_prog_call = false;
 
 private:
 	bool CompileMacro();   //编译宏指令
@@ -155,7 +157,7 @@ private:
 
 	uint32_t m_mask_pmc_axis;    //通道内PMC轴mask
 	uint8_t m_n_pmc_axis_count;  //PMC轴数量
-    bool flag_end_prog_call = false;
+
 };
 
 #endif /* INC_COMPILER_PARSER_H_ */

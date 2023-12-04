@@ -3087,6 +3087,7 @@ void ChannelEngine::ProcessHmiIOCmd(HMICmdFrame &cmd){
 void ChannelEngine::ProcessHmiCmd(HMICmdFrame &cmd){
 
     int i = 0;
+
     switch(cmd.cmd){
     case CMD_HMI_GET_CHN_STATE:   //HMI获取通道当前状态
         if(cmd.channel_index >= this->m_p_general_config->chn_count){
@@ -3218,7 +3219,6 @@ void ChannelEngine::ProcessHmiCmd(HMICmdFrame &cmd){
 
         break;
     case CMD_HMI_GET_IO_REMAP:			//HMI向SC获取IO重定向数据  0x2C
-        printf("11111111111111111111\n");
         this->ProcessHmiGetIoRemapInfoCmd(cmd);
         break;
     case CMD_HMI_SET_IO_REMAP:         //HMI向SC设置IO重定向数据  0x2D
@@ -3919,11 +3919,16 @@ void ChannelEngine::ProcessHmiAbsoluteRefSet(HMICmdFrame &cmd)
     GetChnStatus(m_n_cur_channle_index, status);
 
     cmd.cmd_extension = 1;
+    printf("ChannelEngine::ProcessHmiAbsoluteRefSet\n");
     std::cout << "chn_axis: " << (int)chn_axis << " phy_axis: " << (int)phy_axis << std::endl;
+    // 新需求 绝对方式回零 需要在急停方式下进行 不考虑模式
+
+    if(!m_b_emergency) return;
+
     if (((phy_axis >= 0 && phy_axis < m_p_general_config->axis_count) || chn_axis == 0xFF)   //轴在合理范围
-            && status.chn_work_mode == REF_MODE)                                             //回零模式
+            /*&& m_b_emergency*/ /*status.chn_work_mode == REF_MODE*/)                                             //回零模式
     {
-        if (!m_b_emergency && !m_b_ret_ref)//不在急停和当前不处于回零动作中
+        if (!m_b_ret_ref)//不在急停和当前不处于回零动作中
         {
             if (chn_axis == 0xFF)//所有绝对式编码器回零
             {
@@ -3940,6 +3945,7 @@ void ChannelEngine::ProcessHmiAbsoluteRefSet(HMICmdFrame &cmd)
                             this->m_p_axis_config[i].ref_complete = 0;
                             g_ptr_parm_manager->UpdateAxisComplete(i, 0);
                             ClearAxisRefEncoder(i);
+                            printf("ClearAxisRefEncoder %d\n", i);
                         }
                         else
                         {
@@ -6344,6 +6350,11 @@ void ChannelEngine::SetJNState(uint8_t chn, uint8_t JN, uint8_t last_JN, ChnWork
  * @param dir : 运动方向
  */
 void ChannelEngine::ManualMove(int8_t dir){
+
+    if(m_p_pmc_reg->FReg().bits->SA == 0){
+        return;
+    }
+
     if(this->m_b_emergency)
         return;
 //    if(this->m_n_cur_pmc_axis != 0xFF){  //移动PMC轴
@@ -6359,6 +6370,11 @@ void ChannelEngine::ManualMove(int8_t dir){
  * @param pos : 绝对位置
  */
 void ChannelEngine::ManualMoveAbs(uint8_t phy_axis, double vel, double pos){
+    if(m_p_pmc_reg->FReg().bits->SA == 0){
+        return;
+    }
+
+
     int64_t cur_pos = this->m_df_phy_axis_pos_feedback[phy_axis]*1e7;  //当前位置
     //设置目标位置
     int64_t tar_pos = pos * 1e7;   //单位转换：mm-->0.1nms
@@ -6465,6 +6481,10 @@ void ChannelEngine::ManualMoveAbs(uint8_t phy_axis, double vel, double pos){
  */
 bool ChannelEngine::ManualMoveAbs(uint8_t phy_axis, double vel, double pos, double &real_pos)
 {
+    if(m_p_pmc_reg->FReg().bits->SA == 0){
+        return 0;
+    }
+
     double pos_cur = this->m_df_phy_axis_pos_feedback[phy_axis];        //当前位置
     //double pos_tar = pos_cur + pos;                                     //目标位置
     ManualMoveDir dir = (pos > pos_cur)?DIR_POSITIVE:DIR_NEGATIVE;  //移动方向
@@ -6496,6 +6516,12 @@ bool ChannelEngine::ManualMoveAbs(uint8_t phy_axis, double vel, double pos, doub
  * @param inc_dis ： 增量位置, 不管正负，在函数内部根据dir决定正负
  */
 void ChannelEngine::ManualMove(uint8_t phy_axis, int8_t dir, double vel, double inc_dis){
+
+    if(m_p_pmc_reg->FReg().bits->SA == 0){
+        return;
+    }
+
+
     uint8_t chn_axis = 0, chn = 0;
     chn = this->GetAxisChannel(phy_axis, chn_axis);
     //检查硬限位
@@ -9307,8 +9333,8 @@ bool ChannelEngine::RefreshMiStatusFun(){
                 this->CheckBattery();
             }
 #endif
-
-            if(this->m_b_ret_ref && this->m_p_pmc_reg->FReg().bits[0].SA ==1){//回参考点操作
+            // modify: 把当前点设为原点 需要在急停模式下设置 (对其他方式回原点影响未知)
+            if(this->m_b_ret_ref /*&& this->m_p_pmc_reg->FReg().bits[0].SA == 1*/){//回参考点操作
                 this->ReturnRefPoint();
             }
         }
@@ -10829,6 +10855,8 @@ void ChannelEngine::SetAxisNameEx(bool flag){
  */
 void ChannelEngine::AxisFindRefNoZeroSignal(uint8_t phy_axis){
 
+    printf("AxisFindRefNoZeroSignal %d\n", phy_axis);
+
     switch(this->m_n_ret_ref_step[phy_axis]){
     case 0: {// 设置原点
         std::cout << "ChannelEngine::AxisFindRefNoZeroSignal " << (int)phy_axis << std::endl;
@@ -11246,7 +11274,7 @@ void ChannelEngine::EcatIncAxisFindRefWithZeroSignal(uint8_t phy_axis){
                 int errcode = (real_pos < m_p_axis_config[phy_axis].axis_home_pos[0] ? ERR_SOFTLIMIT_POS : ERR_SOFTLIMIT_NEG);
                 uint8_t chan_id = CHANNEL_ENGINE_INDEX, axis_id = NO_AXIS;
                 GetPhyAxistoChanAxis(phy_axis, chan_id, axis_id);
-                CreateError(errcode, WARNING_LEVEL, CLEAR_BY_MCP_RESET, 0, chan_id, axis_id);
+                //CreateError(errcode, WARNING_LEVEL, CLEAR_BY_MCP_RESET, 0, chan_id, axis_id);
             }
         }
         break;
@@ -11554,7 +11582,7 @@ void ChannelEngine::GotoZeroPos(int phy_axis)
                 int errcode = (real_pos < m_p_axis_config[phy_axis].axis_home_pos[0] ? ERR_SOFTLIMIT_POS : ERR_SOFTLIMIT_NEG);
                 uint8_t chan_id = CHANNEL_ENGINE_INDEX, axis_id = NO_AXIS;
                 GetPhyAxistoChanAxis(phy_axis, chan_id, axis_id);
-                CreateError(errcode, WARNING_LEVEL, CLEAR_BY_MCP_RESET, 0, chan_id, axis_id);
+                //CreateError(errcode, WARNING_LEVEL, CLEAR_BY_MCP_RESET, 0, chan_id, axis_id);
             }
         }
     }
@@ -12451,7 +12479,7 @@ void ChannelEngine::EcatAxisFindRefWithZeroSignal(uint8_t phy_axis){
                 int errcode = (real_pos < m_p_axis_config[phy_axis].axis_home_pos[0] ? ERR_SOFTLIMIT_POS : ERR_SOFTLIMIT_NEG);
                 uint8_t chan_id = CHANNEL_ENGINE_INDEX, axis_id = NO_AXIS;
                 GetPhyAxistoChanAxis(phy_axis, chan_id, axis_id);
-                CreateError(errcode, WARNING_LEVEL, CLEAR_BY_MCP_RESET, 0, chan_id, axis_id);
+                //CreateError(errcode, WARNING_LEVEL, CLEAR_BY_MCP_RESET, 0, chan_id, axis_id);
             }
         }
         break;
@@ -12883,7 +12911,7 @@ void ChannelEngine::EcatAxisFindRefNoZeroSignal(uint8_t phy_axis){
                 int errcode = (real_pos < m_p_axis_config[phy_axis].axis_home_pos[0] ? ERR_SOFTLIMIT_POS : ERR_SOFTLIMIT_NEG);
                 uint8_t chan_id = CHANNEL_ENGINE_INDEX, axis_id = NO_AXIS;
                 GetPhyAxistoChanAxis(phy_axis, chan_id, axis_id);
-                CreateError(errcode, WARNING_LEVEL, CLEAR_BY_MCP_RESET, 0, chan_id, axis_id);
+               //CreateError(errcode, WARNING_LEVEL, CLEAR_BY_MCP_RESET, 0, chan_id, axis_id);
                 std::cout << "chan-id: " << (int)chan_id << "axis_id: " << (int)axis_id << std::endl;
             }
         }

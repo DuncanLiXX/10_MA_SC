@@ -560,16 +560,20 @@ bool Compiler::ReloadScene(bool bRecPos){
     }else{
         m_in_sys_sub = false;
         //  »Ö¸´ÉèÖÃÖµ
-        if(m_p_channel_config->feed_input_enable){
-            m_p_parser->addFeedMsg(m_p_channel_config->feed_input);
-        }
 
-        if(m_p_channel_config->spindle_speed_input_enable){
-           m_p_parser->addSpindSpeedMsg(m_p_channel_config->spindle_speed_input);
+        if(!m_p_parser->flag_end_prog_call){
+
+            if(m_p_channel_config->feed_input_enable){
+                m_p_parser->addFeedMsg(m_p_channel_config->feed_input, m_ln_cur_line_no);
+            }
+
+            if(m_p_channel_config->spindle_speed_input_enable){
+               m_p_parser->addSpindSpeedMsg(m_p_channel_config->spindle_speed_input, m_ln_cur_line_no);
+            }
+        }else{
+            m_p_parser->flag_end_prog_call = false;
         }
     }
-
-
 
     return true;
 }
@@ -1815,13 +1819,11 @@ bool Compiler::GetLineData() {
     if(m_ln_cur_line_no == 1){
 
         if(m_p_channel_config->feed_input_enable && !m_in_sys_sub){
-            printf("111111111111111\n");
-            m_p_parser->addFeedMsg(m_p_channel_config->feed_input);
+            m_p_parser->addFeedMsg(m_p_channel_config->feed_input, 1);
         }
 
         if(m_p_channel_config->spindle_speed_input_enable && !m_in_sys_sub){
-           printf("22222222222222\n");
-           m_p_parser->addSpindSpeedMsg(m_p_channel_config->spindle_speed_input);
+           m_p_parser->addSpindSpeedMsg(m_p_channel_config->spindle_speed_input, 1);
         }
     }
 

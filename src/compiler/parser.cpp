@@ -127,14 +127,14 @@ uint32_t Parser::GetPmcAxisMask()
     return m_mask_pmc_axis;
 }
 
-void Parser::addFeedMsg(uint16_t feed)
+void Parser::addFeedMsg(uint16_t feed, uint64_t lino)
 {
     RecordMsg *new_msg = new FeedMsg(feed, m_p_compiler_status->mode.f_mode);
     if(new_msg == nullptr){
         //TODO 内存分配失败，告警
         CreateError(ERR_MEMORY_NEW, FATAL_LEVEL, CLEAR_BY_RESET_POWER);
     }
-    new_msg->SetLineNo(0);  //设置当前行号
+    new_msg->SetLineNo(lino);  //设置当前行号
     if(this->m_p_compiler_status->jump_flag)
         new_msg->SetFlag(FLAG_JUMP, true);
 
@@ -143,7 +143,7 @@ void Parser::addFeedMsg(uint16_t feed)
     ProcessLastBlockRec(new_msg);
 }
 
-void Parser::addSpindSpeedMsg(double speed)
+void Parser::addSpindSpeedMsg(double speed, uint64_t lino)
 {
     if(speed <-99999 || speed > 99999){
         CreateError(ERR_INVALID_CODE, ERROR_LEVEL, CLEAR_BY_MCP_RESET, m_p_lexer_result->line_no);
@@ -156,7 +156,7 @@ void Parser::addSpindSpeedMsg(double speed)
         CreateError(ERR_MEMORY_NEW, FATAL_LEVEL, CLEAR_BY_RESET_POWER);
         return;
     }
-    new_msg->SetLineNo(this->m_p_lexer_result->line_no);  //设置当前行号
+    new_msg->SetLineNo(lino);  //设置当前行号
     if(this->m_p_compiler_status->jump_flag)
         new_msg->SetFlag(FLAG_JUMP, true);
     m_p_parser_result->Append(new_msg);
@@ -2145,7 +2145,6 @@ bool Parser::CreateAuxMsg(int *mcode, uint8_t total){
     }
 
     if(*mcode == 99 && flag_end_prog_call){
-        flag_end_prog_call = false;
 
         AuxMsg *new_msg = new AuxMsg(99);
         new_msg->SetLineNo(this->m_p_lexer_result->line_no);

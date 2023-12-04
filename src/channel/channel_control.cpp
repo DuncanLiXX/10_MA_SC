@@ -606,8 +606,8 @@ void ChannelControl::InitialChannelStatus(){
 #endif
     m_channel_status.machining_state = MS_READY;
     m_channel_status.manual_step = 1;	//默认为1um步长
-    m_channel_status.spindle_mode = 0;  	//默认速度控制
-    m_channel_status.cur_axis = 0;    //默认轴号为0
+    m_channel_status.spindle_mode = 0;  //默认速度控制
+    m_channel_status.cur_axis = 0;      //默认轴号为0
     m_channel_status.func_state_flags.Init();	//默认均为0
     m_channel_status.auto_ratio = 100;
     m_channel_status.rapid_ratio = 100;
@@ -5598,8 +5598,8 @@ bool ChannelControl::RefreshStatusFun(){
 	uint32_t data = 0;
 	uint64_t count = 0;           //循环计数
 
-    uint32_t pos_limit_flag = 0;
-    uint32_t neg_limit_flag = 0;
+    uint16_t pos_limit_flag = 0;
+    uint16_t neg_limit_flag = 0;
 
 	while(!g_sys_state.system_quit){
 
@@ -5811,7 +5811,35 @@ bool ChannelControl::RefreshStatusFun(){
 //				this->SetMachineState(MS_READY);
 //		}
 
-		if(m_channel_mc_status.mc_error.bits.err_soft_limit_neg || m_channel_mc_status.mc_error.bits.err_soft_limit_pos){//软限位告警
+        this->m_p_mc_comm->ReadChnSoftLimtMask(m_n_channel_index, data);
+        this->m_channel_mc_status.axis_soft_negative_limit = data&0xFFFF;
+        this->m_channel_mc_status.axis_soft_postive_limit = (data>>16)&0xFFFF;
+
+        if(m_channel_mc_status.axis_soft_postive_limit != pos_limit_flag){
+            for(int i = 0; i < 16; ++i)
+            {
+                if(((m_channel_mc_status.axis_soft_postive_limit & (0x01<<i)) > 0) && ((pos_limit_flag & (0x01<<i)) == 0)){
+                    printf("===== axis %d postive\n", i);
+                    CreateError(ERR_SOFT_LIMIT_POS, ERROR_LEVEL, CLEAR_BY_MCP_RESET, 0/*data*/, m_n_channel_index, i);
+                }
+            }
+        }
+
+        if(m_channel_mc_status.axis_soft_negative_limit != neg_limit_flag){
+            for(int i = 0; i < 16; ++i)
+            {
+                if(((m_channel_mc_status.axis_soft_negative_limit & (0x01<<i)) > 0) && ((neg_limit_flag & (0x01<<i)) == 0)){
+                    printf("===== axis %d negative\n", i);
+                    CreateError(ERR_SOFT_LIMIT_NEG, ERROR_LEVEL, CLEAR_BY_MCP_RESET, 0/*data*/, m_n_channel_index, i);
+                }
+            }
+        }
+
+        neg_limit_flag = m_channel_mc_status.axis_soft_negative_limit;
+        pos_limit_flag = m_channel_mc_status.axis_soft_postive_limit;
+
+        /*
+        if(m_channel_mc_status.mc_error.bits.err_soft_limit_neg || m_channel_mc_status.mc_error.bits.err_soft_limit_pos){//软限位告警
 			if(!this->m_b_mc_on_arm){
 				this->m_p_mc_comm->ReadChnSoftLimtMask(m_n_channel_index, data);
 				this->m_channel_mc_status.axis_soft_negative_limit = data&0xFFFF;
@@ -5842,8 +5870,9 @@ bool ChannelControl::RefreshStatusFun(){
 
 		}
 
-        neg_limit_flag = m_channel_mc_status.mc_error.bits.err_soft_limit_neg;
-        pos_limit_flag = m_channel_mc_status.mc_error.bits.err_soft_limit_pos;
+        */
+
+
 
 		if(m_channel_mc_status.mc_error.bits.err_pos_over){//位置指令过大
 			if(!this->m_b_mc_on_arm)
@@ -12685,6 +12714,8 @@ uint8_t ChannelControl::GetSpdChnAxis(uint8_t spd_idx){
  * @param dir : 运动方向
  */
 void ChannelControl::ManualMove(int8_t dir){
+
+
     if(m_channel_status.chn_work_mode != MANUAL_MODE &&
             m_channel_status.chn_work_mode != MANUAL_STEP_MODE){  //非手动模式，不做响应，退出
     	return;
@@ -12700,7 +12731,6 @@ void ChannelControl::ManualMove(int8_t dir){
         }
     }
     //设置目标位置
-
     //int64_t cur_pos = GetAxisCurMachPos(m_channel_status.cur_axis)*1e7;  //当前位置
     //int64_t cur_pos = GetAxisCurIntpTarPos(m_channel_status.cur_axis, true)*1e7;
     int64_t cur_pos = GetAxisCurInptTarPosWithCompensation(m_channel_status.cur_axis, true)*1e7;
@@ -12711,8 +12741,8 @@ void ChannelControl::ManualMove(int8_t dir){
         tar_pos = cur_pos + 99999*1e7*dir;    //手动连续模式，将目标位置设置的很远
     }
     //检查软限位
-    if (!GetLimitTargetPos((ManualMoveDir)dir, m_channel_status.cur_axis, tar_pos))
-        return ;
+//    if (!GetLimitTargetPos((ManualMoveDir)dir, m_channel_status.cur_axis, tar_pos))
+//        return ;
     /*
     double limit = 0;
     if(CheckSoftLimit((ManualMoveDir)dir, phy_axis,

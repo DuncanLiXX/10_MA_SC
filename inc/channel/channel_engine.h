@@ -189,7 +189,7 @@ void SetMcArmComm(MCArmCommunication *comm){this->m_p_mc_arm_comm = comm;}   //É
 
 //	void SetAxisSoftLimit(uint8_t axis);   //ÉèÖÃÖ¸¶¨ÖáµÄÈíÏŞÎ»¿ª¹Ø
 //	void SetAxisSoftLimitValue(uint8_t axis, uint8_t index);   //ÉèÖÃÖ¸¶¨ÖáµÄÈíÏŞÎ»Öµ
-    void UpdateMiLimitValue(uint8_t EXLM, uint8_t RLSOT);
+    void UpdateMiLimitValue(uint8_t EXLM, uint8_t RLSOT = 0);
 
 	uint32_t GetDaPrecision(){return this->m_n_da_prec;}  //·µ»ØDA¾«¶ÈÖµ
 
@@ -492,7 +492,7 @@ private:	//Ë½ÓĞ³ÉÔ±º¯Êı
 
     // EXLM: 0:ÈíÏŞÎ»1  1:ÈíÏŞÎ»2
     // RLSOT: 0:ÏŞÎ»¿ªÆô 1:ÏŞÎ»¹Ø±Õ
-    void SetSoftLimitSignal(uint8_t EXLM, uint8_t RLSOT);
+    void SetSoftLimitSignal(uint8_t EXLM, uint8_t RLSOT = 0);
 
     void SaveCurPhyAxisEncoder();  //µôµç±£´æµ±Ç°ËùÓĞÎïÀíÖáµÄ±àÂëÆ÷·´À¡
     void SaveKeepMacroVar();		//µôµç±£´æ·ÇÒ×Ê§ĞÔºê±äÁ¿

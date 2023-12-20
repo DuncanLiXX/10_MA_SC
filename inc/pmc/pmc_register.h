@@ -740,7 +740,9 @@ struct GRegBits{
     uint8_t ST_EXT:1;               //外部启动  G7.3(排序加工特殊定制)
     uint8_t :2;
     uint8_t EXLM:1;                 //软限位选择信号 G7.6  0:软限位1  1:软限位2
-    uint8_t RLSOT:1;                //解除软限位限制信号 G7.7（为1时软限位失效）
+    uint8_t : 1;
+    // 新需求 软限位一直生效 取消开关选择
+    //uint8_t RLSOT:1;                //解除软限位限制信号 G7.7（为1时软限位失效）
 	//G8
 	uint8_t :4;
 	uint8_t _ESP:1;					//急停信号  G8.4

@@ -132,7 +132,7 @@ public:
 	bool NeedRestart(){return this->m_b_poweroff_param;} 	 //是否需要重启
 	uint8_t GetPmcAxisCount();  //获取PMC轴个数
 	void ChangeChnProcParamIndex(uint8_t chn_index, uint8_t proc_index);     //更改当前工艺相关参数
-    void UpdateMiLimit(uint8_t axis, uint8_t EXLM, uint8_t RLSOT);
+    void UpdateMiLimit(uint8_t axis, uint8_t EXLM, uint8_t RLSOT = 0);
 
 
 private:

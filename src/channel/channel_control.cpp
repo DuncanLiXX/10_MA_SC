@@ -583,7 +583,6 @@ END:
  */
 void ChannelControl::InitialChannelStatus(){
 
-
 	printf("===== ChannelControl::InitialChannelStatus\n");
 
 	memset(&m_channel_status, 0x00, sizeof(m_channel_status));
@@ -1486,6 +1485,7 @@ bool ChannelControl::SetSysVarValue(const int index, const double &value){
     	pthread_mutex_unlock(&m_mutex_change_state);
     	uint16_t err_id = value;
         if(err_id > 0){
+            m_n_run_thread_state = ERROR; //编译出错
             CreateError(err_id, ERROR_LEVEL, CLEAR_BY_MCP_RESET, 0, m_n_channel_index);
             printf("3006 err_id: %d\n", err_id);
         }
@@ -2809,6 +2809,7 @@ void ChannelControl::SendMonitorData(bool bAxis, bool btime){
     uint8_t data_type = MDT_CHN_RT_STATUS;
     uint8_t chn_index = this->m_n_channel_index;
     uint16_t data_len = sizeof(HmiChannelRealtimeStatus);
+
     memcpy(&hmi_rt_status, &m_channel_rt_status, data_len);
     for(int i = 0; i < m_p_channel_config->chn_axis_count; i++){
         if(m_mask_rot_axis & (0x01 << i) && m_p_axis_config[i].pos_disp_mode == 0){
@@ -5617,6 +5618,7 @@ bool ChannelControl::RefreshStatusFun(){
 			//更新当前给定进给速度
 			this->m_p_mc_comm->ReadRatedFeed(m_n_channel_index, m_channel_mc_status.rated_feed);
 
+
             //更新当前运行指令
 			this->m_p_mc_comm->ReadCurCmd(m_n_channel_index, m_channel_mc_status.cur_cmd);
 
@@ -5694,10 +5696,9 @@ bool ChannelControl::RefreshStatusFun(){
 			//更新当前MC告警标志
 			this->m_p_mc_arm_comm->ReadMcErrFlag(m_n_channel_index, m_channel_mc_status.mc_error.all);
 
-
 			if(m_channel_mc_status.cur_mode == MC_MODE_AUTO &&
 				m_b_lineno_from_mc && m_channel_mc_status.cur_line_no > 0){  //即刻更新实时状态行号
-			m_channel_rt_status.line_no = m_channel_mc_status.cur_line_no;
+                m_channel_rt_status.line_no = m_channel_mc_status.cur_line_no;
 		    }
 
 		}
@@ -5761,7 +5762,6 @@ bool ChannelControl::RefreshStatusFun(){
 		}else{
 			m_n_step_change_mode_count = 0;
 
-
 			//更新模态, 只有MC处于AUTO模式时才从MC中读取模态
 			//更新MC模态信息
 			if(!this->m_b_mc_on_arm)
@@ -5789,7 +5789,6 @@ bool ChannelControl::RefreshStatusFun(){
 
 				m_b_change_hw_trace_state = false;
 			}
-
 		}
 
 
@@ -5819,7 +5818,6 @@ bool ChannelControl::RefreshStatusFun(){
             for(int i = 0; i < 16; ++i)
             {
                 if(((m_channel_mc_status.axis_soft_postive_limit & (0x01<<i)) > 0) && ((pos_limit_flag & (0x01<<i)) == 0)){
-                    printf("===== axis %d postive\n", i);
                     CreateError(ERR_SOFT_LIMIT_POS, ERROR_LEVEL, CLEAR_BY_MCP_RESET, 0/*data*/, m_n_channel_index, i);
                 }
             }
@@ -5829,7 +5827,6 @@ bool ChannelControl::RefreshStatusFun(){
             for(int i = 0; i < 16; ++i)
             {
                 if(((m_channel_mc_status.axis_soft_negative_limit & (0x01<<i)) > 0) && ((neg_limit_flag & (0x01<<i)) == 0)){
-                    printf("===== axis %d negative\n", i);
                     CreateError(ERR_SOFT_LIMIT_NEG, ERROR_LEVEL, CLEAR_BY_MCP_RESET, 0/*data*/, m_n_channel_index, i);
                 }
             }
@@ -5869,10 +5866,7 @@ bool ChannelControl::RefreshStatusFun(){
 			}
 
 		}
-
         */
-
-
 
 		if(m_channel_mc_status.mc_error.bits.err_pos_over){//位置指令过大
 			if(!this->m_b_mc_on_arm)
@@ -6313,12 +6307,11 @@ bool ChannelControl::OutputData(RecordMsg *msg, bool flag_block){
     //				data_frame.data.line_no);
     //	}
 
-
     //发送数据至MC
     bool res = false;
     if(!this->m_b_mc_on_arm){
         // 查看 msg的 ext type mc会因ext的值对不上而空执行
-        ///printf("ext_type: %d\n", data_frame.data.ext_type);
+        // printf("ext_type: %d\n", data_frame.data.ext_type);
     	res = m_p_mc_comm->WriteGCodeData(m_n_channel_index, data_frame);
     }else{
 
@@ -18632,7 +18625,7 @@ void ChannelControl::SetRefPointFlag(uint8_t chn_axis, bool flag){
     if(flag){
         this->SetChnAxisSoftLimit(chn_axis);
     }else{
-        this->CloseChnAxisSoftLimit(chn_axis);   //未回参考点状态，则强制关闭软限位
+        //this->CloseChnAxisSoftLimit(chn_axis);   //未回参考点状态，则强制关闭软限位
     }
 }
 
@@ -21654,6 +21647,19 @@ void ChannelControl::test(){
 //    frame.data.arc_center2 = MM2NM0_1(50);
 //    frame.data.arc_radius = MM2NM0_1(50);
 //    m_p_mc_comm->WriteGCodeData(0, frame);
+
+
+    MiCmdFrame cmd;
+    memset(&cmd, 0x00, sizeof(cmd));
+    cmd.data.cmd = CMD_MI_SET_PMC_REG_BIT;
+    cmd.data.axis_index = 0xFF;
+    cmd.data.data[0] = 2;
+    cmd.data.data[1] = 72;
+    cmd.data.data[2] = 2;
+    cmd.data.data[3] = 1;
+    cmd.data.data[4] = 1;
+    cmd.data.data[5] = 0;
+    this->m_p_mi_comm->WriteCmd(cmd);
 }
 
 

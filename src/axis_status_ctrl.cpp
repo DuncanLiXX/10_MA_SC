@@ -25,8 +25,6 @@ const std::vector<int> CRITS =
     20192,20193,20194,20195,20196,20197,20198,20199,
 };
 
-
-
 AxisStatusCtrl::AxisStatusCtrl(){
 
 }

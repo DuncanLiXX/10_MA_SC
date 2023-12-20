@@ -846,6 +846,8 @@ int main()
             sizeof(ErrorInfo), sizeof(HmiToolPotConfig));
     g_ptr_trace->PrintTrace(TRACE_INFO, MAIN_ENTRANCE_SC, "@#@#@Start SC Module!");
 
+    system("echo 967 > /sys/class/gpio/export");
+    system("echo 1 > /sys/class/gpio/gpio967/value");
 
     while (1) {
         if (g_sys_state.system_quit) {

@@ -910,6 +910,8 @@ void SpindleControl::SendSpdSpeedToMi()
 
         output += da_prec*(1.0*spindle->zero_compensation/spindle->spd_max_speed);
 
+        output *= spindle->spd_analog_gain/1000.0;     // 乘以增益
+
         if(output >= 2048) output = 2047;
         if(output < -2048) output = -2048;
 
@@ -921,8 +923,6 @@ void SpindleControl::SendSpdSpeedToMi()
 
         printf("F->RO: %d  output: %d\n", F->RO, output);
     }
-
-    output *= spindle->spd_analog_gain/1000.0;     // 乘以增益
 
     if(output >= 2048) output = 2047;
     if(output < -2048) output = -2048;

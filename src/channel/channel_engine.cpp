@@ -28,6 +28,8 @@
 #include <functional>
 
 
+
+
 using namespace Spindle;
 
 static int debug_flag = 0;
@@ -1003,8 +1005,13 @@ void ChannelEngine::SetSoftLimitSignal(uint8_t EXLM, uint8_t RLSOT){
     bool check1 = true;
     bool check2 = false;
     for(int i=0; i<m_p_channel_config->chn_axis_count; i++){
-        check1 = (!EXLM && !RLSOT);
-        check2 = (EXLM && !RLSOT);
+        if(EXLM != 0){
+            check1 = false;
+            check2 = true;
+        }
+
+        //check1 = (!EXLM && !RLSOT);
+        //check2 = (EXLM && !RLSOT);
         if(m_p_axis_config[i].axis_type == AXIS_SPINDLE ||
                 m_p_axis_config[i].axis_type ==  AXIS_ROTATE){ // 主轴/旋转轴不需软限位
             m_p_axis_config[i].soft_limit_check_1 = 0;
@@ -1618,6 +1625,8 @@ void ChannelEngine::SaveDataPoweroff(){
     //system("date >> /cnc/bin/save.txt");
     //system("echo \"start\" >> /cnc/bin/save.txt");
 
+    system("echo 0 > /sys/class/gpio/gpio967/value");
+
     //保存PMC寄存器数据
     if((this->m_mask_import_param & (0x01<<CONFIG_PMC_REG)) == 0)
         this->m_p_pmc_reg->SaveRegData();
@@ -1642,6 +1651,7 @@ void ChannelEngine::SaveDataPoweroff(){
     delete g_ptr_trace;
     g_ptr_trace = nullptr;
 
+    system("echo 1 > /sys/class/gpio/gpio967/value");
     //system("date >> /cnc/bin/save.txt");
     //system("echo \"end\" >> /cnc/bin/save.txt");
     //system("sync");
@@ -2028,7 +2038,6 @@ void ChannelEngine::ProcessMcCmdRsp(McCmdFrame &rsp){
             g_sys_state.module_ready_mask &= (~MC_READY);  //MC模块启动失败
             m_error_code = ERR_MC_INIT;
             CreateError(ERR_MC_INIT, FATAL_LEVEL, CLEAR_BY_RESET_POWER);
-
         }
         break;
     case CMD_MC_GET_UPDATE_STATE:
@@ -3935,7 +3944,7 @@ void ChannelEngine::ProcessHmiAbsoluteRefSet(HMICmdFrame &cmd)
                 int index = 0;
                 for(int i = 0; i < m_p_general_config->axis_count; ++i)
                 {
-                    if ((m_p_axis_config[i].absolute_ref_mode == 0 && m_p_axis_config[i].feedback_mode == 1)
+                    if ((m_p_axis_config[i].absolute_ref_mode == 0 && m_p_axis_config[i].feedback_mode == ABSOLUTE_ENCODER)
                         || m_p_axis_config[i].axis_interface == 0)
                     {
                         if (GetSyncAxisCtrl()->CheckSyncState(i) != 2 && !GetPmcActive(i))
@@ -3963,7 +3972,7 @@ void ChannelEngine::ProcessHmiAbsoluteRefSet(HMICmdFrame &cmd)
             }
             else
             {
-                if ((m_p_axis_config[phy_axis].absolute_ref_mode == 0 && m_p_axis_config[phy_axis].feedback_mode == 1)         //绝对式
+                if ((m_p_axis_config[phy_axis].absolute_ref_mode == 0 && m_p_axis_config[phy_axis].feedback_mode == ABSOLUTE_ENCODER)         //绝对式
                     || m_p_axis_config[phy_axis].axis_interface == 0)
                 {
                     if (GetSyncAxisCtrl()->CheckSyncState(phy_axis) != 2 && !GetPmcActive(phy_axis))
@@ -5453,6 +5462,7 @@ void ChannelEngine::ProcessHmiFindRefCmd(HMICmdFrame &cmd){
  */
 void ChannelEngine::ProcessPmcRefRet(uint8_t phy_axis){
     printf("ChannelEngine::ProcessPmcRefRet, phy_axis=0x%hhx\n", phy_axis);
+
     if(phy_axis >= this->m_p_general_config->axis_count){
         printf("phy_axis %hhu over count %hhu, return\n", phy_axis, m_p_general_config->axis_count);
         return;
@@ -5461,6 +5471,14 @@ void ChannelEngine::ProcessPmcRefRet(uint8_t phy_axis){
     if(m_b_ret_ref || this->IsRefReturnning(phy_axis)){
         printf("axis %hhu is returnning ref, return\n", phy_axis);
         return;   //已在回参考点过程中，返回
+    }
+
+    if(this->m_p_axis_config[phy_axis].feedback_mode == ABSOLUTE_ENCODER &&
+            this->m_p_axis_config[phy_axis].ret_ref_mode == 0 &&
+            this->m_p_axis_config[phy_axis].absolute_ref_mode == 0 &&
+            this->m_p_axis_config[phy_axis].ref_complete == 0
+            ){
+        return;
     }
 
     HmiChannelStatus chn_status;
@@ -8349,14 +8367,18 @@ void ChannelEngine::InitMiParam(){
        m_p_mi_comm->SendMiParam<uint8_t>(index, 1210, axis_config->decelerate_numerator);   //减速比例分子
        m_p_mi_comm->SendMiParam<uint8_t>(index, 1211, axis_config->decelerate_denominator);   //减速比例分母
 
-        if(axis_config->axis_interface != VIRTUAL_AXIS &&
-                axis_config->feedback_mode != NO_ENCODER &&
-                axis_config->feedback_mode != INCREMENTAL_ENCODER &&
-                axis_config->ref_encoder != kAxisRefNoDef /*&&
-                axis_config->ref_complete == 1*/){ //写入参考点数据
-            this->m_p_mi_comm->SetAxisRef(index, axis_config->ref_encoder);
-            //printf("send mi ref encoder : %lld\n", axis_config->ref_encoder);
-        }
+
+// 增量编码器回零 与 软限位冲突
+//        if(axis_config->axis_interface != VIRTUAL_AXIS &&
+//                axis_config->feedback_mode != NO_ENCODER &&
+//                axis_config->feedback_mode != INCREMENTAL_ENCODER &&
+//                axis_config->ref_encoder != kAxisRefNoDef /*&&
+//                axis_config->ref_complete == 1*/){ //写入参考点数据
+//            this->m_p_mi_comm->SetAxisRef(index, axis_config->ref_encoder);
+//            //printf("send mi ref encoder : %lld\n", axis_config->ref_encoder);
+//        }
+        //printf("========******============ axis: %d ref_encoder: %ll\n",index, axis_config->ref_encoder);
+        this->m_p_mi_comm->SetAxisRef(index, axis_config->ref_encoder);
 
         //软限位
        m_p_mi_comm->SendMiParam<double>(index, 1500, axis_config->soft_limit_max_1);
@@ -9591,9 +9613,9 @@ void ChannelEngine::ProcessPmcSignal(){
         }
 
         // 限位开关选择信号
-        if(g_reg->EXLM != g_reg_last->EXLM || g_reg->RLSOT != g_reg_last->RLSOT || !inited){
-            SetSoftLimitSignal(g_reg->EXLM, g_reg->RLSOT);
-            UpdateMiLimitValue(g_reg->EXLM, g_reg->RLSOT);
+        if(g_reg->EXLM != g_reg_last->EXLM || /*g_reg->RLSOT != g_reg_last->RLSOT ||*/ !inited){
+            SetSoftLimitSignal(g_reg->EXLM); //, g_reg->RLSOT);
+            UpdateMiLimitValue(g_reg->EXLM); //, g_reg->RLSOT);
         }
 
         if(g_reg->SYNC != g_reg_last->SYNC || (!inited && g_reg->SYNC)){
@@ -12989,6 +13011,7 @@ void ChannelEngine::ReturnRefPoint(){
             CreateError(ERR_RET_SYNC_ERR, WARNING_LEVEL, CLEAR_BY_MCP_RESET, 0, m_n_cur_channle_index, i);
             continue;
         }
+
         if(this->m_b_ret_ref_auto){
             if(m_p_axis_config[i].ret_ref_index > m_n_ret_ref_auto_cur)
                 continue;

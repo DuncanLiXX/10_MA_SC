@@ -996,7 +996,6 @@ bool MCCommunication::ReadSp6Ver(){
 bool MCCommunication::ReadUnderVoltWarn(){
 	uint32_t data = 0;
 	ReadRegister(UNDER_VOLTAGE_ALARM, data);
-
 	return (data&0x01)?true:false;
 }
 

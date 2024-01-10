@@ -1454,6 +1454,7 @@ struct HmiAxisConfig{
     uint8_t spd_rtnt_rate_on;                   //攻丝回退期间，倍率是否有效 0：强制100%  1：有效
     uint8_t spd_rtnt_rate;                      //攻丝回退倍率 单位：1%
     int32_t spd_rtnt_distance;                 //攻丝回退的额外回退值 单位：um
+    uint8_t io_output_type;                     // IO 输出类型 0： +-10V  1： +-12V
 
     double spd_locate_ang;                     //主轴定向角度 单位：度
     uint16_t mpg_speed;                       //手轮速度

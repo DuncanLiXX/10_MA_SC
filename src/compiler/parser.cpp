@@ -1511,8 +1511,8 @@ bool Parser::GetExpressionResult(MacroExpression &express, MacroVarValue &res){
 				return false;
 			}
 
-			 printf("read var: %d , value: %lf, init: %d\n",
-			static_cast<int>(value1.value), res_tmp.value, res_tmp.init);
+            //printf("read var: %d , value: %lf, init: %d\n", static_cast<int>(value1.value), res_tmp.value, res_tmp.init);
+
 
 //            if(!res_tmp.init){
 //                m_error_code = ERR_INVALID_MACRO_EXP;
@@ -1546,7 +1546,7 @@ bool Parser::GetExpressionResult(MacroExpression &express, MacroVarValue &res){
 				m_error_code = ERR_INVALID_MACRO_EXP;
 				return false;
 			}else{
-				printf("MACRO_OPT_WR succeed\n");
+                //printf("MACRO_OPT_WR succeed\n");
 			}
 		}
 		else if(rec.opt == MACRO_OPT_ADD){//加法
@@ -2494,10 +2494,12 @@ bool Parser::CreateLineMsg(){
 //	printf("line msg get target : (%lf, %lf, %lf, %lf, %lf, %lf), mask = 0x%x\n",target.x, target.y, target.z, target.a4,
 //			target.a5, target.a6, axis_mask);
 
+    // @modify zk 新需求 没有F用系统设置默认F  有F用代码F
 	if(!m_b_f_code){//未指定F值
 		printf("ERR_NO_F_DATA\n");
-		m_error_code = ERR_NO_F_DATA;
-		return false;
+        //m_error_code = ERR_NO_F_DATA;
+        //return false;
+        m_p_compiler_status->mode.f_mode = m_p_channel_control->GetDefaultSpeed();
 	}
 
 //    // 如果在攻丝状态移动z轴，同时也指定主轴
@@ -3900,7 +3902,7 @@ bool Parser::CreateMacroMsg(LexerMacroCmd *macro){
 		return false;
 	}
 
-	printf("create macro message   %llu\n", this->m_p_lexer_result->line_no);
+    //printf("create macro message   %llu\n", this->m_p_lexer_result->line_no);
 	new_msg->SetLineNo(this->m_p_lexer_result->line_no);  //设置当前行号
 	(static_cast<MacroCmdMsg *>(new_msg))->SetOffset(this->m_p_lexer_result->offset);
 

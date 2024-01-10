@@ -305,15 +305,12 @@ struct SCAxisConfig{
 	double soft_limit_min_3;					//负向软限位3
 	uint8_t soft_limit_check_3;					//软限位3有效
 
-
-
 	uint8_t off_line_check;						//轴断线检测       0--关闭   1--打开
 
 	uint8_t ctrl_mode;							//轴控制方式	   0--脉冲方向    1--正交脉冲    2--CW/CCW    3--模拟量
 	uint32_t pulse_count_pr;					//每转输出脉冲数
 	uint8_t encoder_lines;						//编码器单圈线数   10~31
 	uint16_t encoder_max_cycle;					//编码器整圈最大值
-
 
 	//主轴相关参数
     int16_t zero_compensation;					//零漂补偿(DA电平值) 0~4095
@@ -351,6 +348,7 @@ struct SCAxisConfig{
     uint8_t spd_rtnt_rate_on;                   //攻丝回退期间，倍率是否有效 0：强制100%  1：有效
     uint8_t spd_rtnt_rate;                      //攻丝回退倍率 单位：1%
     int32_t spd_rtnt_distance;                 //攻丝回退的额外回退值 单位：um
+    uint8_t io_output_type;                     // IO 输出类型 0： +-10V  1： +-12V
 
     double spd_locate_ang;                     //主轴定向角度 单位：度
     uint16_t mpg_speed;                        //手轮速度

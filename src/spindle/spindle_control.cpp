@@ -910,6 +910,10 @@ void SpindleControl::SendSpdSpeedToMi()
 
         output += da_prec*(1.0*spindle->zero_compensation/spindle->spd_max_speed);
 
+        if(spindle->io_output_type == 1){
+            output *= 0.8;
+        }
+
         output *= spindle->spd_analog_gain/1000.0;     // ³ËÒÔÔöÒæ
 
         if(output >= 2048) output = 2047;

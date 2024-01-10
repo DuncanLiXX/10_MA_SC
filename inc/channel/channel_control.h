@@ -121,6 +121,10 @@ public:
     void SetCurLineNo(uint32_t line_no);   	//设置当前行号
     void SetCurLineNoFromMc();   //设置当前行号从MC模块获取
 
+    double GetDefaultSpeed(){
+        return m_p_channel_config->feed_input;
+    }
+
 
     CompilerState GetCompileState(){return m_n_run_thread_state;}    //获取G代码编译运行状态，编译/暂停/停止
 
@@ -165,7 +169,7 @@ public:
 	void ManualMoveStop();			//停止当前轴手动移动
 	void ManualMoveStop(uint16_t axis_mask);   //停止轴的手动移动
 
-	void ManualMove(uint8_t axis, double pos, double vel, bool workcoord_flag = false);   //手动指令某个轴以指定速度运动到指定位置
+    void ManualMove(uint8_t axis, double pos, double vel, bool workcoord_flag = false, bool ratio = true);   //手动指令某个轴以指定速度运动到指定位置
 
 	void ManualMovePmc(int8_t dir);		//手动移动PMC轴
 	void ManualMovePmc2(uint8_t axis, int8_t dir, double vel, double inc_dis);   //指定PMC轴手动移动

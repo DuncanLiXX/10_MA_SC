@@ -37,10 +37,13 @@ public://公共接口
 	void ResetState();    //复位编译器状态
 
 	void DoIdle();     //空闲处理函数
-
-
 	void SetMode(CompilerWorkMode mode);   	//设置编译工作模式
 	CompilerWorkMode GetMode(){return m_work_mode;}     //返回编译模式
+
+        // M代码映射表
+        int16_t src_mcode[100];
+        // 原M
+        int16_t tar_mcode[100];
 
     ErrorType GetErrorCode(){return m_error_code;}   //返回错误码
 

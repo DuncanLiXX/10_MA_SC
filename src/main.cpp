@@ -559,7 +559,7 @@ int Initialize(){
     InitSysState();
     memset(&g_sys_info, 0x00, sizeof(g_sys_info));  //初始化系统信息结构
     //sprintf(g_sys_info.sw_version_info.sc, "SC-WC-0.0.1");
-    sprintf(g_sys_info.sw_version_info.sc, "SC-00.00.30");
+    sprintf(g_sys_info.sw_version_info.sc, "SC-00.00.31A6");
     //sprintf(g_sys_info.sw_version_info.sc, "SC-00.02.07C3");
     //sprintf(g_sys_info.sw_version_info.sc, "SC-00.01.16W");
     strcpy(g_sys_info.sw_version_info.mc, "P0.0.0");

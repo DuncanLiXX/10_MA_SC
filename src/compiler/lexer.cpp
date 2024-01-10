@@ -385,7 +385,7 @@ bool Lexer::Compile(){
 		return false;
 	}
 
-    printf("compile line:%s\n", m_comp_buf);
+    //printf("compile line:%s\n", m_comp_buf);
 	while(*comp_buf != '\0'){
 //		printf("lexer::compile char [%c]\n", *comp_buf);
 		if(isalpha(*comp_buf)){//×ÖÄ¸

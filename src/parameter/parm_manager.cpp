@@ -1547,6 +1547,7 @@ bool ParmManager::ReadAxisConfig(){
             m_sc_axis_config[i].spd_rtnt_rate_on = m_ini_axis->GetIntValueOrDefault(sname, "spd_rtnt_rate_on", 0);
             m_sc_axis_config[i].spd_rtnt_rate = m_ini_axis->GetIntValueOrDefault(sname, "spd_rtnt_rate", 100);
             m_sc_axis_config[i].spd_rtnt_distance = m_ini_axis->GetIntValueOrDefault(sname, "spd_rtnt_distance", 0);
+            m_sc_axis_config[i].io_output_type = m_ini_axis->GetIntValueOrDefault(sname, "io_output_type", 1);
             m_sc_axis_config[i].spd_locate_ang = m_ini_axis->GetDoubleValueOrDefault(sname, "spd_locate_ang", 0.0);
 
             m_sc_axis_config[i].fast_locate = m_ini_axis->GetIntValueOrDefault(sname, "fast_locate", 1);
@@ -1718,6 +1719,7 @@ bool ParmManager::ReadAxisConfig(){
             m_sc_axis_config[i].spd_rtnt_rate_on = 0;
             m_sc_axis_config[i].spd_rtnt_rate = 100;
             m_sc_axis_config[i].spd_rtnt_distance = 0;
+            m_sc_axis_config[i].io_output_type = 1;
             m_sc_axis_config[i].spd_locate_ang = 0.0;
 
 			m_sc_axis_config[i].fast_locate = 1;
@@ -1877,6 +1879,7 @@ bool ParmManager::ReadAxisConfig(){
             m_ini_axis->AddKeyValuePair(string("spd_pos_ratio_gain"), string("100000"), ns);
             m_ini_axis->AddKeyValuePair(string("spd_rtnt_rate_on"), string("0"), ns);
             m_ini_axis->AddKeyValuePair(string("spd_rtnt_rate"), string("100"), ns);
+            m_ini_axis->AddKeyValuePair(string("io_output_type"), string("1"), ns);
             m_ini_axis->AddKeyValuePair(string("spd_rtnt_distance"), string("0"), ns);
             m_ini_axis->AddKeyValuePair(string("spd_locate_ang"), string("0.0"), ns);
 
@@ -4246,8 +4249,10 @@ bool ParmManager::UpdateParameter(ParamUpdate *data, uint8_t active_type){
 		res = false;
 		break;
 	}
-	if(res)
-		this->ActiveParam(data, active_type);
+    if(res){
+        printf("===== para no: %d val: %d\n", data->param_no, data->value.value_uint8);
+        this->ActiveParam(data, active_type);
+    }
 
 //	printf("exit UpdateParameter\n");
 	return res;
@@ -5505,6 +5510,10 @@ bool ParmManager::UpdateAxisParam(uint8_t axis_index, uint32_t param_no, ParamVa
 		sprintf(kname, "spd_vctrl_mode");
 		m_ini_axis->SetIntValue(sname, kname, value.value_uint8);
 		break;
+    case 1611:
+        sprintf(kname, "io_output_type");
+        m_ini_axis->SetIntValue(sname, kname, value.value_uint8);
+        break;
 	case 1612:	//主轴设置转速(rpm)
 		sprintf(kname, "spd_set_speed");
 		m_ini_axis->SetIntValue(sname, kname, value.value_uint32);
@@ -5945,7 +5954,7 @@ void ParmManager::ActiveParam(ParamUpdate *data, uint8_t active_type){
 	if(active_type == 0){	//重启生效
 		this->m_b_poweroff_param = true;
 	}else if(active_type == 1){		//复位生效
-		printf("add reset valid param:%hhu, %u \n", data->param_type, data->param_no);
+        printf("add reset valid param:%hhu, %u %d\n", data->param_type, data->param_no, data->value.value_uint8);
 		this->m_list_reset->Append(*data);
 	}else if(active_type == 2){		//新一次加工生效
 		this->m_list_new_start->Append(*data);
@@ -5961,7 +5970,7 @@ void ParmManager::ActiveParam(ParamUpdate *data, uint8_t active_type){
  * @param data
  */
 void ParmManager::ActiveParam(ParamUpdate *data){
-	printf("active param : type = %hhu, param_no = %u\n", data->param_type, data->param_no);
+    printf("active param : type = %hhu, param_no = %u val: %d\n", data->param_type, data->param_no, data->value.value_uint8);
 	switch(data->param_type){
 	case SYS_CONFIG:
 		this->ActiveSystemParam(data->param_no, data->value);
@@ -7320,8 +7329,10 @@ void ParmManager::ActiveAxisParam(uint8_t axis_index, uint32_t param_no, ParamVa
 		break;
 	case 1610:	//主轴电压控制方式
 		this->m_sc_axis_config[axis_index].spd_vctrl_mode = value.value_uint8;
-
 		break;
+    case 1611:
+        this->m_sc_axis_config[axis_index].io_output_type = value.value_uint8;
+        break;
 	case 1612:	//主轴设置转速(rpm)
 		this->m_sc_axis_config[axis_index].spd_set_speed = value.value_uint32;
 		break;

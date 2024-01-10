@@ -438,7 +438,7 @@ bool PmcAxisCtrl::ReadCmd(PmcAxisCtrlCmd &cmd)
     bool eabuf = (m_pmc_cmd_buffer.size() >= 3);
     switch(this->m_n_group_index%4){
     case 0:
-        //提前至零，防止流程错乱
+        //提前至零，防止流程错乱  // @add zk PMC读的太快 这里清零没用  用FIN信号清零
         //this->m_p_f_reg->EINPA = 0;
         this->m_p_f_reg->EBSYA = m_p_f_reg->EBSYA?0:1;
         this->m_p_f_reg->EABUFA = eabuf;

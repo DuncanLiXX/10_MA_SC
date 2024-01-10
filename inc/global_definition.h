@@ -393,6 +393,7 @@ enum MCWorkMode{
 	MC_MODE_AUTO,			//自动模式
     MC_MODE_MDA,		    //MDA模式
     MC_MODE_MPG,
+    MC_MODE_REF,
 };
 
 enum ManualMoveDir{

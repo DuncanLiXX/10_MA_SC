@@ -528,7 +528,7 @@ SG_DATA SG_RecCir_Type::GenData()
     double delta_y = 0;
 
     quadrant = GetQuadrant(interp_pos);
-    //std::cout << "-->" << "X: " << interp_pos.x << " Y: " << interp_pos.y << " Q:" << (int)quadrant << std::endl;
+    std::cout << "-->" << "X: " << interp_pos.x << " Y: " << interp_pos.y << " Q:" << (int)quadrant << std::endl;
     SG_DATA data = std::make_tuple(-1, -1, -1, -1);
     switch (quadrant) {
     case 1:

@@ -727,7 +727,6 @@ void Compiler::PreScan() {
     LoopOffsetStack loop_stack;  //Ñ­»·Ìå¶ÑÕ»
     int count = 0;
 
-
     //²âÊÔºÄÊ±
     struct timeval tvStart;
     struct timeval tvNow;
@@ -2126,7 +2125,7 @@ bool Compiler::RunMessage() {
             if(cur_line != msg->GetLineNo() || type != msg->GetMsgType()){
                 cur_line = msg->GetLineNo();
                 type = msg->GetMsgType();
-                printf("compiler run message  line no: %llu,  type: %d flag: %d\n ", cur_line, msg_type, msg->GetFlags().all);
+                //printf("compiler run message  line no: %llu,  type: %d flag: %d\n ", cur_line, msg_type, msg->GetFlags().all);
             }
             // @test zk
             //std::cout << "RunMessage: " << (int)msg_type << std::endl;
@@ -2760,7 +2759,6 @@ bool Compiler::RunLineMsg(RecordMsg *msg) {
 
     double feed = m_compiler_status.mode.f_mode;
 
-    printf("===== RunLineMsg F: %lf\n", feed);
     if(feed < 0.00001){
     	m_error_code = ERR_NO_F_DATA;
 		return false;

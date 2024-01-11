@@ -122,7 +122,7 @@ public:
 private:
     void UpdateParams();        // 更新常用主轴参数到成员变量中
     void UpdateSpindleState();  // 根据当前状态更新转速
-    uint16_t GetMaxSpeed();     // 获取当前档位最大转速
+    uint32_t GetMaxSpeed();     // 获取当前档位最大转速
     int32_t CalDaOutput();     // 根据当前状态获取DA电平值
 
     // 根据当前速度更新档位输出

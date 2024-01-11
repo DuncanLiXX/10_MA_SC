@@ -576,14 +576,14 @@ private:
 	void ProcessHmiGetBreakPoint(HMICmdFrame &cmd);
     void ProcessHmiClearToolComp(HMICmdFrame &cmd);
     void ProcessHmiClearToolOffset(HMICmdFrame &cmd);
-
 	void ProcessHmiAppendOrderListFile(HMICmdFrame &cmd);
 	void ProcessHmiSetOrderListIndex(HMICmdFrame &cmd);
 	void ProcessClearOrderList();
 	void ProcessHmiSetOrderMode(HMICmdFrame &cmd);
 	void ProcessHmiGetOrderLen(HMICmdFrame &cmd);
 	void ProcessHmiGetOrderFile(HMICmdFrame &cmd);
-
+    void ProcessHmiSetMcodeMap(HMICmdFrame &cmd);
+    void ProcessHmiGetMcodeMap(HMICmdFrame &cmd);
 
 #ifdef USES_LASER_MACHINE
 	void ProcessLaserCalibration();        //处理激光调高器标定
@@ -932,6 +932,9 @@ private://私有成员变量
     int m_preselect_tool_arr[kMaxTCodeInLine];
 
     string m_last_filename;     //上一次加工程序名
+
+    int16_t custom_mcode[300];
+    int16_t system_mcode[300];
 
 #ifdef USES_SPEED_TORQUE_CTRL
     uint8_t m_n_need_reset_axis_ctrlmode;				// 各轴复位计数值，当为0时，标识不需要复位，从某个数递减，减为0，标识复位成功

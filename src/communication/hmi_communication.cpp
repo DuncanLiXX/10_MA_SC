@@ -1061,6 +1061,8 @@ int HMICommunication::ProcessHmiCmd(){
             case CND_HMI_SET_STATISTICS_LOG:
             case CMD_HMI_SET_CUSTOM_STEP_INC:
             case CMD_HMI_GET_CUSTOM_STEP_INC:
+            case CMD_HMI_SET_MCODE_MAP:
+            case CMD_HMI_GET_MCODE_MAP:
             case CMD_HMI_GET_BREAK_POINT:
             case CMD_HMI_CLEAR_TOOL_OFFSET:
             case CMD_HMI_CLEAR_TOOL_COMP:

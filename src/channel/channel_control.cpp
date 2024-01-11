@@ -132,6 +132,14 @@ ChannelControl::ChannelControl() {
 
     gettimeofday(&m_time_start_mc, nullptr);  //初始化MC启动时间
 
+
+    // 启动时 读取M代码映射表
+    FILE * fp = NULL;
+    fp = fopen("/cnc/config/mcode_map", "rb");
+    fread(system_mcode, sizeof(int16_t), 300, fp);
+    fread(custom_mcode, sizeof(int16_t), 300, fp);
+    fclose(fp);
+
 #ifdef USES_WUXI_BLOOD_CHECK
     this->m_b_returnning_home = false;
     this->m_n_ret_home_step = 0;
@@ -3002,7 +3010,12 @@ void ChannelControl::ProcessHmiCmd(HMICmdFrame &cmd){
 	case CMD_HMI_POP_MACRO_VALUE:
 		this->ProcessHmiPopMacroValue(cmd);
 		break;
-
+    case CMD_HMI_SET_MCODE_MAP:
+        this->ProcessHmiSetMcodeMap(cmd);
+        break;
+    case CMD_HMI_GET_MCODE_MAP:
+        this->ProcessHmiGetMcodeMap(cmd);
+        break;
     default:
         break;
 
@@ -4427,7 +4440,70 @@ void ChannelControl::ProcessHmiGetOrderFile(HMICmdFrame &cmd){
 		printf("order index invalid\n");
 	}
 
-	m_p_hmi_comm->SendCmd(cmd);
+    m_p_hmi_comm->SendCmd(cmd);
+}
+
+void ChannelControl::ProcessHmiSetMcodeMap(HMICmdFrame &cmd)
+{
+    cmd.frame_number |= 0x8000;
+
+    // 更新本地数据
+    if(cmd.data_len == 600){
+        memcpy(custom_mcode, cmd.data, 600);
+    }
+
+
+    // 记录到文件
+    FILE *fp = NULL;
+
+    fp = fopen("/cnc/config/mcode_map", "wb+");
+
+    if(fp == NULL){
+        printf("mcode_map file open failed\n");
+        return;
+    }
+
+
+    fseek(fp, 600, SEEK_SET);
+    fwrite(custom_mcode, sizeof(int16_t), 300, fp);
+    fflush(fp);
+    fclose(fp);
+
+    // 重新生成map
+
+
+    m_p_hmi_comm->SendCmd(cmd);
+}
+
+void ChannelControl::ProcessHmiGetMcodeMap(HMICmdFrame &cmd)
+{
+    cmd.frame_number |= 0x8000;
+
+    FILE *fp = NULL;
+
+    fp = fopen("/cnc/config/mcode_map", "rb");
+
+    fread(system_mcode, sizeof(int16_t), 300, fp);
+    fread(custom_mcode, sizeof(int16_t), 300, fp);
+
+    fclose(fp);
+
+    printf("=================== system mcode\n");
+    for(int i=0; i<300; i++){
+        printf("%d ", system_mcode[i]);
+    }
+    printf("\n===========================\n");
+
+    printf("=================== custom mcode\n");
+    for(int i=0; i<300; i++){
+        printf("%d ", custom_mcode[i]);
+    }
+    printf("\n===========================\n");
+
+    cmd.data_len = 600;
+
+    memcpy(cmd.data, custom_mcode, 600);
+    m_p_hmi_comm->SendCmd(cmd);
 }
 
 /**

@@ -671,7 +671,7 @@ void SpindleControl::UpdateSpindleState()
     SendSpdSpeedToMi();
 }
 
-uint16_t SpindleControl::GetMaxSpeed()
+uint32_t SpindleControl::GetMaxSpeed()
 {
     if(!spindle)
         return 0;
@@ -734,7 +734,7 @@ int32_t SpindleControl::CalDaOutput()
     if(!spindle)
         return 0;
     int32_t output = 0; // 转速
-    uint16_t max_spd = GetMaxSpeed();
+    uint32_t max_spd = GetMaxSpeed();
 
     // @modify zk 不能以换挡最大速度作为分母算比例
     if(max_spd > spindle->spd_max_speed){

@@ -3182,6 +3182,8 @@ void ChannelEngine::ProcessHmiCmd(HMICmdFrame &cmd){
     case CMD_HMI_GET_BREAK_POINT:
     case CMD_HMI_CLEAR_TOOL_COMP:        // 清除刀具补偿
     case CMD_HMI_CLEAR_TOOL_OFFSET:      // 清除刀具偏置
+    case CMD_HMI_SET_MCODE_MAP:
+    case CMD_HMI_GET_MCODE_MAP:
 		this->m_p_channel_control[0].ProcessHmiCmd(cmd);
 		// 暂时不考虑多通道
 		/*if(cmd.channel_index < this->m_p_general_config->chn_count)
@@ -5293,8 +5295,6 @@ void ChannelEngine::ProcessHmiSetPmcReg(HMICmdFrame &cmd){
             // @test zk
             if(reg_sec == 2 and reg_index == 82 and bit_index == 1 and bit_value32 == 1){
                 printf("冷却！！！\n");
-
-
             }
             // @test zk
         }

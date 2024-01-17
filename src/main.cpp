@@ -559,7 +559,7 @@ int Initialize(){
     InitSysState();
     memset(&g_sys_info, 0x00, sizeof(g_sys_info));  //初始化系统信息结构
     //sprintf(g_sys_info.sw_version_info.sc, "SC-WC-0.0.1");
-    sprintf(g_sys_info.sw_version_info.sc, "SC-00.00.31A6");
+    sprintf(g_sys_info.sw_version_info.sc, "SC-00.00.32A");
     //sprintf(g_sys_info.sw_version_info.sc, "SC-00.02.07C3");
     //sprintf(g_sys_info.sw_version_info.sc, "SC-00.01.16W");
     strcpy(g_sys_info.sw_version_info.mc, "P0.0.0");
@@ -846,8 +846,8 @@ int main()
             sizeof(ErrorInfo), sizeof(HmiToolPotConfig));
     g_ptr_trace->PrintTrace(TRACE_INFO, MAIN_ENTRANCE_SC, "@#@#@Start SC Module!");
 
-    system("echo 967 > /sys/class/gpio/export");
-    system("echo 1 > /sys/class/gpio/gpio967/value");
+    //system("echo 967 > /sys/class/gpio/export");
+    //system("echo 1 > /sys/class/gpio/gpio967/value");
 
     while (1) {
         if (g_sys_state.system_quit) {

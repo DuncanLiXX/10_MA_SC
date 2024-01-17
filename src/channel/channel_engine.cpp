@@ -1122,6 +1122,7 @@ void ChannelEngine::UpdateHandwheelState(uint8_t chn){
             last_enable = insert_enable;
             g_ptr_tracelog_processor->SendToHmi(kPanelOper, kDebug, "开启[手轮插入]");
         }
+
     }
     if(trace_enable){
         insert_enable = false;
@@ -1625,7 +1626,7 @@ void ChannelEngine::SaveDataPoweroff(){
     //system("date >> /cnc/bin/save.txt");
     //system("echo \"start\" >> /cnc/bin/save.txt");
 
-    system("echo 0 > /sys/class/gpio/gpio967/value");
+    //system("echo 0 > /sys/class/gpio/gpio967/value");
 
     //保存PMC寄存器数据
     if((this->m_mask_import_param & (0x01<<CONFIG_PMC_REG)) == 0)
@@ -1651,7 +1652,7 @@ void ChannelEngine::SaveDataPoweroff(){
     delete g_ptr_trace;
     g_ptr_trace = nullptr;
 
-    system("echo 1 > /sys/class/gpio/gpio967/value");
+    //system("echo 1 > /sys/class/gpio/gpio967/value");
     //system("date >> /cnc/bin/save.txt");
     //system("echo \"end\" >> /cnc/bin/save.txt");
     //system("sync");
@@ -3182,8 +3183,10 @@ void ChannelEngine::ProcessHmiCmd(HMICmdFrame &cmd){
     case CMD_HMI_GET_BREAK_POINT:
     case CMD_HMI_CLEAR_TOOL_COMP:        // 清除刀具补偿
     case CMD_HMI_CLEAR_TOOL_OFFSET:      // 清除刀具偏置
-    case CMD_HMI_SET_MCODE_MAP:
-    case CMD_HMI_GET_MCODE_MAP:
+    case CMD_HMI_SET_USER_MCODE:
+    case CMD_HMI_GET_USER_MCODE:
+    case CMD_HMI_SET_SYSTEM_MCODE:
+    case CMD_HMI_GET_SYSTEM_MCODE:
 		this->m_p_channel_control[0].ProcessHmiCmd(cmd);
 		// 暂时不考虑多通道
 		/*if(cmd.channel_index < this->m_p_general_config->chn_count)
@@ -8959,6 +8962,8 @@ void ChannelEngine::SystemReset(){
 
     //清空告警队列
     ClearAlarm();
+
+    m_sync_axis_ctrl->InputSync(m_p_pmc_reg->GReg().bits[0].SYNC);
 
     printf("channel engine reset finished !!!\n");
 }

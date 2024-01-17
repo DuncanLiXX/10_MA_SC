@@ -741,6 +741,8 @@ int32_t SpindleControl::CalDaOutput()
     	max_spd = spindle->spd_max_speed;
     }
 
+    printf("===== gear max spd: %d spindle->spd_max_speed: %d\n", max_spd, spindle->spd_max_speed);
+
     if(SIND == 0) // 速度由cnc来确定
     {
     	int32_t rpm = 0;
@@ -925,7 +927,6 @@ void SpindleControl::SendSpdSpeedToMi()
         	F->RO = output;
         }
 
-        printf("F->RO: %d  output: %d\n", F->RO, output);
     }
 
     if(output >= 2048) output = 2047;

@@ -26,7 +26,6 @@
 //template<> int ListNode<CoordUpdate>::new_count = 0;
 
 
-
 ParmManager* ParmManager::m_p_instance = nullptr;  //初始化单例对象指正为空
 
 /**
@@ -717,7 +716,7 @@ bool ParmManager::ReadChnConfig(){
             m_sc_channel_config[i].feed_input_enable = m_ini_chn->GetIntValueOrDefault(sname, "feed_input_enable", 0);
             m_sc_channel_config[i].spindle_speed_input = m_ini_chn->GetIntValueOrDefault(sname, "spindle_speed_input", 1000);
             m_sc_channel_config[i].spindle_speed_input_enable = m_ini_chn->GetIntValueOrDefault(sname, "spindle_speed_input_enable", 0);
-
+            m_sc_channel_config[i].handle_sim_speed = m_ini_chn->GetIntValueOrDefault(sname, "handle_sim_speed", 3000);
 
 		}
 		g_ptr_trace->PrintTrace(TRACE_INFO, PARAM_MANAGER, "读取通道配置文件成功！\n");
@@ -818,7 +817,7 @@ bool ParmManager::ReadChnConfig(){
             m_sc_channel_config[i].feed_input_enable = 0;
             m_sc_channel_config[i].spindle_speed_input = 1000;
             m_sc_channel_config[i].spindle_speed_input_enable = 0;
-
+            m_sc_channel_config[i].handle_sim_speed = 3000;
 
 
 #ifdef USES_WOOD_MACHINE
@@ -925,15 +924,14 @@ bool ParmManager::ReadChnConfig(){
             m_ini_chn->AddKeyValuePair(string("G73back"), string("0"), ns);
             m_ini_chn->AddKeyValuePair(string("G83back"), string("0"), ns);
             m_ini_chn->AddKeyValuePair(string("tool_number"), string("128"), ns);
-
             m_ini_chn->AddKeyValuePair(string("order_prog_mode"), string("0"), ns);
             m_ini_chn->AddKeyValuePair(string("pre_prog_num"), string("9000"), ns);
             m_ini_chn->AddKeyValuePair(string("end_prog_num"), string("9030"), ns);
-
             m_ini_chn->AddKeyValuePair(string("feed_input"), string("1000"), ns);
             m_ini_chn->AddKeyValuePair(string("feed_input_enable"), string("0"), ns);
             m_ini_chn->AddKeyValuePair(string("spindle_speed_input"), string("1000"), ns);
             m_ini_chn->AddKeyValuePair(string("spindle_speed_input_enable"), string("0"), ns);
+            m_ini_chn->AddKeyValuePair(string("handle_sim_speed"), string("3000"), ns);
 		}
 
 		m_ini_chn->Save();
@@ -4980,6 +4978,11 @@ bool ParmManager::UpdateChnParam(uint8_t chn_index, uint32_t param_no, ParamValu
         m_ini_chn->SetIntValue(sname, kname, value.value_uint16);
         break;
 
+   case 526:
+        sprintf(kname, "handle_sim_speed");
+        m_ini_chn->SetIntValue(sname, kname, value.value_uint32);
+        break;
+
 #ifdef USES_WOOD_MACHINE
 	case 600:  //DSP调试参数1
 		sprintf(kname, "debug_param_1");
@@ -6798,6 +6801,10 @@ void ParmManager::ActiveChnParam(uint8_t chn_index, uint32_t param_no, ParamValu
     case 525:
          printf("update: 525\n");
         this->m_sc_channel_config[chn_index].spindle_speed_input_enable = value.value_int16;
+        break;
+    case 526:
+        printf("update 526\n");
+        this->m_sc_channel_config[chn_index].handle_sim_speed = value.value_uint32;
         break;
 
 #ifdef USES_WOOD_MACHINE

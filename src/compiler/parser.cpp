@@ -2112,11 +2112,25 @@ bool Parser::CreateFeedMsg(){
  * @return
  */
 bool Parser::CreateAuxMsg(int *mcode, uint8_t total){
-	for(int i=0; i<total; i++){
+
+    for(int i=0; i<total; i++){
 		if(*(mcode + i) > 99999999){
-			m_error_code = ERR_INVALID_CODE;
+            m_error_code = ERR_INVALID_CODE;
 			return false;
 		}
+
+        // M代码重映射处理
+        int16_t tmp = *(mcode + i);
+
+        printf("===== Parser::CreateAuxMsg %d\n", tmp);
+
+        map<int16_t, int16_t>::iterator iter;
+        iter = m_p_channel_control->mcode_map.find(tmp);
+
+        if(iter != m_p_channel_control->mcode_map.end()){
+            tmp = iter->second;
+            *(mcode + i) = tmp;
+        }
 	}
 
     if((*mcode == 30 || *mcode == 2) && !m_p_channel_control->b_in_end_prog){

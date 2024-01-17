@@ -222,7 +222,6 @@ int HMICommunication::Initialize(){
 		goto END;
 	}
 
-
 	//初始化信号量
 	sem_init(&m_sem_udp_recv, 0, 0);
 	sem_init(&m_sem_tcp_file, 0, 0);
@@ -1061,8 +1060,10 @@ int HMICommunication::ProcessHmiCmd(){
             case CND_HMI_SET_STATISTICS_LOG:
             case CMD_HMI_SET_CUSTOM_STEP_INC:
             case CMD_HMI_GET_CUSTOM_STEP_INC:
-            case CMD_HMI_SET_MCODE_MAP:
-            case CMD_HMI_GET_MCODE_MAP:
+            case CMD_HMI_SET_USER_MCODE:
+            case CMD_HMI_GET_USER_MCODE:
+            case CMD_HMI_SET_SYSTEM_MCODE:
+            case CMD_HMI_GET_SYSTEM_MCODE:
             case CMD_HMI_GET_BREAK_POINT:
             case CMD_HMI_CLEAR_TOOL_OFFSET:
             case CMD_HMI_CLEAR_TOOL_COMP:

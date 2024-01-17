@@ -204,6 +204,7 @@ struct SCChannelConfig{
     uint16_t feed_input_enable;             // 进给速度有效
     uint16_t spindle_speed_input;           // 主轴速度输入
     uint16_t spindle_speed_input_enable;    // 主轴速度输入有效
+    uint32_t handle_sim_speed;              // 手轮模拟限速
 
 #ifdef USES_WOOD_MACHINE
 	int debug_param_1;             //调试参数1

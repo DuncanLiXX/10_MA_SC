@@ -223,8 +223,10 @@ enum HMICmdCode {
 	CMD_HMI_INSERT_MACRO_VALUE,      //插入宏变量 并把元素循环右移
 	CMD_HMI_POP_MACRO_VALUE,         //删除宏变量 并把元素循环左移
 	CMD_HMI_SET_MACRO_ARRAY,		 //设置宏变量数组 一次最多1000个宏变量
-    CMD_HMI_SET_MCODE_MAP,
-    CMD_HMI_GET_MCODE_MAP,
+    CMD_HMI_SET_USER_MCODE,          //M代码 重映射 用户定义M代码
+    CMD_HMI_GET_USER_MCODE,
+    CMD_HMI_SET_SYSTEM_MCODE,        //M代码 重映射 系统M代码
+    CMD_HMI_GET_SYSTEM_MCODE,
      // 木工专用 begin
 	CMD_HMI_APPEND_ORDER_LIST,	     //HMI添加排程加工文件
 	CMD_HMI_CLEAR_ORDER_LIST,		 //HMI清空排程文件列表
@@ -1309,7 +1311,7 @@ struct HmiChnConfig{
     uint16_t feed_input_enable;             // 进给速度输入有效
     uint16_t spindle_speed_input;           // 主轴速度输入
     uint16_t spindle_speed_input_enable;    // 主轴速度输入有效
-
+    uint32_t handle_sim_speed;              // 手轮模拟限速
 #ifdef USES_WOOD_MACHINE
 	int debug_param_1;             //调试参数1
 	int debug_param_2;             //调试参数2

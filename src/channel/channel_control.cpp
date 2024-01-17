@@ -140,6 +140,12 @@ ChannelControl::ChannelControl() {
     fread(custom_mcode, sizeof(int16_t), 300, fp);
     fclose(fp);
 
+    for(int i=0; i<300; i++){
+        if(custom_mcode[i] > 0 && system_mcode[i] > 0){
+            mcode_map.insert(pair<int16_t, int16_t>(custom_mcode[i], system_mcode[i]));
+        }
+    }
+
 #ifdef USES_WUXI_BLOOD_CHECK
     this->m_b_returnning_home = false;
     this->m_n_ret_home_step = 0;
@@ -2158,24 +2164,43 @@ void ChannelControl::StartRunGCode(){
     }
     else if(m_channel_status.chn_work_mode == MDA_MODE){
 
-        string msg = "开始执行MDA程序";
-        g_ptr_tracelog_processor->SendToHmi(kProcessInfo, kDebug, msg);
 
-        this->m_p_output_msg_list->Clear();	//清空缓冲数据
-        this->InitMcIntpMdaBuf();  //清空MC中的MDA数据缓冲
 
-        //初始化传递给MC模块的模态组信息
-        this->InitMcModeStatus();
+        if(m_channel_status.machining_state == MS_PAUSED){
 
-        this->m_p_compiler->SetCurPos(this->m_channel_rt_status.cur_pos_work);
+//            if(this->m_mask_run_pmc){
+//                this->PausePmcAxis(NO_AXIS, false);  //继续运行PMC轴
+//            }else if(IsMcNeedStart()){
+//                this->StartMcIntepolate();
+//            }
+            this->StartMcIntepolate();
 
-        this->m_p_compiler->SetCurGMode();   //初始化编译器模态
+            if(m_n_run_thread_state == IDLE || m_n_run_thread_state == PAUSE){
+                m_n_run_thread_state = RUN;  //置为运行状态
+            }
 
-        m_channel_rt_status.machining_time = 0;        //重置加工时间
-        gettimeofday(&m_time_start_maching, nullptr);  //初始化启动时间
+            this->m_p_f_reg->OP = 1;   //自动运行状态
+        }else{
 
-        this->SendMdaDataReqToHmi();  //发送MDA数据请求
-        printf("send mda data req cmd to hmi, chn=%hhu\n", this->m_n_channel_index);
+            string msg = "开始执行MDA程序";
+            g_ptr_tracelog_processor->SendToHmi(kProcessInfo, kDebug, msg);
+
+            this->m_p_output_msg_list->Clear();	//清空缓冲数据
+            this->InitMcIntpMdaBuf();  //清空MC中的MDA数据缓冲
+
+            //初始化传递给MC模块的模态组信息
+            this->InitMcModeStatus();
+
+            this->m_p_compiler->SetCurPos(this->m_channel_rt_status.cur_pos_work);
+
+            this->m_p_compiler->SetCurGMode();   //初始化编译器模态
+
+            m_channel_rt_status.machining_time = 0;        //重置加工时间
+            gettimeofday(&m_time_start_maching, nullptr);  //初始化启动时间
+
+            this->SendMdaDataReqToHmi();  //发送MDA数据请求
+            printf("send mda data req cmd to hmi, chn=%hhu\n", this->m_n_channel_index);
+        }
     }
 
 END:
@@ -2345,7 +2370,11 @@ void ChannelControl::PauseRunGCode(){
         m_n_run_thread_state = STOP;
         this->m_p_compiler->Reset();
 
-        state = MS_STOPPING;	//停止过程中，在判断MC模块各轴停下来后置为MS_STOP状态
+        //@old 停止过程中，在判断MC模块各轴停下来后置为MS_STOP状态
+        // state = MS_STOPPING;
+
+        //@new 不希望MDI直接清缓冲区 不要设置为 STOPPING状态 希望与Auto一致
+        state = MS_PAUSING;
 
         if(this->m_mask_run_pmc){   //停止PMC轴
             this->StopPmcAxis(NO_AXIS);
@@ -2355,7 +2384,8 @@ void ChannelControl::PauseRunGCode(){
         	this->PauseMc();
         }
 
-        this->m_p_output_msg_list->Clear();
+        // @modify 20240117
+        //this->m_p_output_msg_list->Clear();
 
         this->m_p_f_reg->STL = 0;
         this->m_p_f_reg->SPL = 0;
@@ -3010,10 +3040,16 @@ void ChannelControl::ProcessHmiCmd(HMICmdFrame &cmd){
 	case CMD_HMI_POP_MACRO_VALUE:
 		this->ProcessHmiPopMacroValue(cmd);
 		break;
-    case CMD_HMI_SET_MCODE_MAP:
+    case CMD_HMI_SET_USER_MCODE:
         this->ProcessHmiSetMcodeMap(cmd);
         break;
-    case CMD_HMI_GET_MCODE_MAP:
+    case CMD_HMI_GET_USER_MCODE:
+        this->ProcessHmiGetMcodeMap(cmd);
+        break;
+    case CMD_HMI_SET_SYSTEM_MCODE:
+        this->ProcessHmiSetMcodeMap(cmd);
+        break;
+    case CMD_HMI_GET_SYSTEM_MCODE:
         this->ProcessHmiGetMcodeMap(cmd);
         break;
     default:
@@ -4456,21 +4492,25 @@ void ChannelControl::ProcessHmiSetMcodeMap(HMICmdFrame &cmd)
     // 记录到文件
     FILE *fp = NULL;
 
-    fp = fopen("/cnc/config/mcode_map", "wb+");
+    fp = fopen("/cnc/config/mcode_map", "rb+");
 
     if(fp == NULL){
         printf("mcode_map file open failed\n");
         return;
     }
 
-
     fseek(fp, 600, SEEK_SET);
     fwrite(custom_mcode, sizeof(int16_t), 300, fp);
     fflush(fp);
     fclose(fp);
 
-    // 重新生成map
-
+    // 更新映射   重新生成map
+    mcode_map.clear();
+    for(int i=0; i<300; i++){
+        if(custom_mcode[i] > 0 && system_mcode[i] > 0){
+            mcode_map.insert(pair<int16_t, int16_t>(custom_mcode[i], system_mcode[i]));
+        }
+    }
 
     m_p_hmi_comm->SendCmd(cmd);
 }
@@ -4478,31 +4518,52 @@ void ChannelControl::ProcessHmiSetMcodeMap(HMICmdFrame &cmd)
 void ChannelControl::ProcessHmiGetMcodeMap(HMICmdFrame &cmd)
 {
     cmd.frame_number |= 0x8000;
+    cmd.data_len = 600;
+    memcpy(cmd.data, custom_mcode, 600);
+    m_p_hmi_comm->SendCmd(cmd);
+}
 
+void ChannelControl::ProcessHmiSetMcodeSystem(HMICmdFrame &cmd)
+{
+    cmd.frame_number |= 0x8000;
+
+    // 更新本地数据
+    if(cmd.data_len == 600){
+        memcpy(system_mcode, cmd.data, 600);
+    }
+
+
+    // 记录到文件
     FILE *fp = NULL;
 
-    fp = fopen("/cnc/config/mcode_map", "rb");
+    fp = fopen("/cnc/config/mcode_map", "rb+");
 
-    fread(system_mcode, sizeof(int16_t), 300, fp);
-    fread(custom_mcode, sizeof(int16_t), 300, fp);
+    if(fp == NULL){
+        printf("mcode_map file open failed\n");
+        return;
+    }
 
+    fseek(fp, 0, SEEK_SET);
+    fwrite(system_mcode, sizeof(int16_t), 300, fp);
+    fflush(fp);
     fclose(fp);
 
-    printf("=================== system mcode\n");
+    // 更新映射   重新生成map
+    mcode_map.clear();
     for(int i=0; i<300; i++){
-        printf("%d ", system_mcode[i]);
+        if(custom_mcode[i] > 0 && system_mcode[i] > 0){
+            mcode_map.insert(pair<int16_t, int16_t>(custom_mcode[i], system_mcode[i]));
+        }
     }
-    printf("\n===========================\n");
 
-    printf("=================== custom mcode\n");
-    for(int i=0; i<300; i++){
-        printf("%d ", custom_mcode[i]);
-    }
-    printf("\n===========================\n");
+    m_p_hmi_comm->SendCmd(cmd);
+}
 
+void ChannelControl::ProcessHmiGetMcodeSystem(HMICmdFrame &cmd)
+{
+    cmd.frame_number |= 0x8000;
     cmd.data_len = 600;
-
-    memcpy(cmd.data, custom_mcode, 600);
+    memcpy(cmd.data, system_mcode, 600);
     m_p_hmi_comm->SendCmd(cmd);
 }
 
@@ -5786,11 +5847,13 @@ bool ChannelControl::RefreshStatusFun(){
 
 				if(++m_n_step_change_mode_count > check_count){
 					if(m_channel_status.machining_state == MS_STOPPING){
-						if(g_ptr_alarm_processor->HasErrorInfo()){
+
+                        if(g_ptr_alarm_processor->HasErrorInfo()){
 							this->SetMachineState(MS_WARNING);
 						}else{
 							SetMachineState(MS_READY);
 						}
+
 						if(this->m_channel_status.chn_work_mode == AUTO_MODE)
 						{
 							this->SetCurLineNo(1);
@@ -12351,6 +12414,8 @@ void ChannelControl::SetFuncState(int state, uint8_t mode){
         	this->m_p_f_reg->MSBK = 1;
         }else if(state == FS_BLOCK_SKIP){
             this->m_p_f_reg->MBDT1 = 1;
+        }else if(state == FS_HANDWHEEL_CONTOUR){
+            SendMcHandleSimSpeed();
         }
     }
 
@@ -15656,6 +15721,27 @@ void ChannelControl::UpdateAndLogWorkFile()
             this->SendWorkCountToHmi(m_channel_status.workpiece_count, m_channel_status.workpiece_count_total);   //通知HMI加工计数变更
         }
     }
+}
+
+void ChannelControl::SendMcHandleSimSpeed()
+{
+    McCmdFrame cmd;
+    memset(&cmd, 0x00, sizeof(McCmdFrame));
+    cmd.data.axis_index = NO_AXIS;
+    cmd.data.channel_index = this->m_n_channel_index;
+
+    cmd.data.cmd = CMD_MC_SET_CHN_PARAM;
+
+    cmd.data.data[0] = 0x2;
+
+    cmd.data.data[1] = m_p_channel_config->handle_sim_speed;
+
+    printf("m_p_channel_config->handle_sim_speed : %d\n", m_p_channel_config->handle_sim_speed);
+
+    if(!this->m_b_mc_on_arm)
+        m_p_mc_comm->WriteCmd(cmd);
+    else
+        m_p_mc_arm_comm->WriteCmd(cmd);
 }
 
 HmiToolPotOneConfig ChannelControl::GenPotValue(int toolId, const SCToolPotConfig *toolConfig)

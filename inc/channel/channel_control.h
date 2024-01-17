@@ -487,10 +487,15 @@ public:
 
     bool change_g80_flag{false};
 
+
+    void SendMcHandleSimSpeed();
+
     // 保存断点
     void saveBreakPoint(bool force_save = false);
     char brk_file_name[256];
     uint32_t brk_line_number;
+    // M 代码映射表
+    std::map<int16_t, int16_t> mcode_map;
 
 private:
 	void InitialChannelStatus();		//初始化通道状态
@@ -584,6 +589,8 @@ private:
 	void ProcessHmiGetOrderFile(HMICmdFrame &cmd);
     void ProcessHmiSetMcodeMap(HMICmdFrame &cmd);
     void ProcessHmiGetMcodeMap(HMICmdFrame &cmd);
+    void ProcessHmiSetMcodeSystem(HMICmdFrame &cmd);
+    void ProcessHmiGetMcodeSystem(HMICmdFrame &cmd);
 
 #ifdef USES_LASER_MACHINE
 	void ProcessLaserCalibration();        //处理激光调高器标定

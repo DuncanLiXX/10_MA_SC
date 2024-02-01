@@ -1462,7 +1462,7 @@ AutoToolMeasureMsg::AutoToolMeasureMsg(const DPointChn &target, const uint32_t a
 
 	this->SetMsgType(AUTO_TOOL_MEASURE_MSG);
 
-	SetFlag(FLAG_AXIS_MOVE, true);   //轴移动指令
+    //SetFlag(FLAG_AXIS_MOVE, true);   //轴移动指令
 	SetFlag(FLAG_WAIT_MOVE_OVER, true);   //需要等待运动到位
 	SetFlag(FLAG_BLOCK_OVER, true);		//块结束
 }

@@ -1335,7 +1335,6 @@ struct HmiAxisConfig{
     uint8_t axis_linear_type;				//直线轴类型
     uint8_t axis_pmc;						//是否PMC轴
 
-
     double kp1;								//自动比例参数
     double kp2;								//手动比例参数
     double ki;								//积分参数

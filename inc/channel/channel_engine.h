@@ -66,7 +66,7 @@ public:
 	void Initialize(HMICommunication *hmi_comm, MICommunication *mi_comm,
 			MCCommunication *mc_comm, ParmManager *parm);   //设置接口
 
-void SetMcArmComm(MCArmCommunication *comm){this->m_p_mc_arm_comm = comm;}   //设置MC-ARM通讯接口
+    void SetMcArmComm(MCArmCommunication *comm){this->m_p_mc_arm_comm = comm;}   //设置MC-ARM通讯接口
 	bool IsMcArmChn(uint8_t chn){return this->m_mc_run_on_arm[chn];}   //是否通道MC运行于ARM上
 	void InitBdioDev();   //初始化SD-LINK从站设备配置
 

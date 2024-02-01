@@ -821,7 +821,6 @@ bool ChannelEngine::RecordingServerGuide()
 
     //g_ptr_chn_engine->m_serverGuide.StartRecord();
 
-
     while(!g_sys_state.system_quit)
     {
         if (m_serverGuide.RefreshRecording())//判断系统是否处于Recording状态，并刷新状态
@@ -832,6 +831,7 @@ bool ChannelEngine::RecordingServerGuide()
                     m_df_phy_axis_torque_feedback, m_df_spd_angle, m_p_general_config->axis_count);
 
                 m_serverGuide.RecordData(m_df_phy_axis_pos_feedback, m_df_phy_axis_pos_intp);
+
             }
         }
         else if (m_serverGuide.IsEmpty() && m_serverGuide.IsIdle())
@@ -883,7 +883,7 @@ void ChannelEngine::NotifyResetGatherToHmi()
     hmi_cmd.data_len = sizeof(status);
     memcpy(&hmi_cmd.data[0], &status, hmi_cmd.data_len);
 
-    std::cout << "NotifyResetGatherToHmi: " << status << std::endl;
+    //std::cout << "NotifyResetGatherToHmi: " << status << std::endl;
     m_p_hmi_comm->SendCmd(hmi_cmd);
 }
 
@@ -1626,7 +1626,7 @@ void ChannelEngine::SaveDataPoweroff(){
     //system("date >> /cnc/bin/save.txt");
     //system("echo \"start\" >> /cnc/bin/save.txt");
 
-    //system("echo 0 > /sys/class/gpio/gpio967/value");
+    system("echo 0 > /sys/class/gpio/gpio968/value");
 
     //保存PMC寄存器数据
     if((this->m_mask_import_param & (0x01<<CONFIG_PMC_REG)) == 0)
@@ -1652,7 +1652,7 @@ void ChannelEngine::SaveDataPoweroff(){
     delete g_ptr_trace;
     g_ptr_trace = nullptr;
 
-    //system("echo 1 > /sys/class/gpio/gpio967/value");
+    system("echo 1 > /sys/class/gpio/gpio968/value");
     //system("date >> /cnc/bin/save.txt");
     //system("echo \"end\" >> /cnc/bin/save.txt");
     //system("sync");
@@ -1855,6 +1855,7 @@ void ChannelEngine::InitMcParam(){
         this->m_p_channel_control[i].SetMcChnPlanFun();
         this->m_p_channel_control[i].SetMcChnCornerStopParam();
         this->m_p_channel_control[i].SetChnAxisName();
+        this->m_p_channel_control[i].SendMcHandleSimSpeed();
 
         this->m_p_channel_control[i].SetMcCoord(true);  //初始化工件坐标系偏移
 
@@ -1971,7 +1972,7 @@ void ChannelEngine::SendPmcAxisToHmi(){
  */
 void ChannelEngine::SendMonitorData(bool bAxis, bool btime){
     //从MI读取所有轴的位置
-    this->m_p_mi_comm->ReadPhyAxisCurFedBckPos(m_df_phy_axis_pos_feedback, m_df_phy_axis_pos_intp,m_df_phy_axis_speed_feedback,
+    this->m_p_mi_comm->ReadPhyAxisCurFedBckPos(m_df_phy_axis_pos_feedback, m_df_phy_axis_pos_intp, m_df_phy_axis_speed_feedback,
                                                m_df_phy_axis_torque_feedback,m_df_spd_angle, m_p_general_config->axis_count);
 
     //#ifdef USES_SPEED_TORQUE_CTRL
@@ -3649,10 +3650,14 @@ void ChannelEngine::ProcessHmiMdiInfo(HMICmdFrame &cmd)
 
     bool hasData = cmd.cmd_extension;
 
-    if (hasData)
+    if (hasData){
         m_mdi_mode_ready = true;
-    else
+    }
+    else{
         m_mdi_mode_ready = false;
+        // 载入前 清空mda缓冲区
+        m_p_channel_control->clear_mda_data();
+    }
 
     //std::cout << "ProcessHmiInfo: " << (int)hasData << std::endl;
     this->m_p_hmi_comm->SendCmd(cmd);
@@ -5248,7 +5253,7 @@ void ChannelEngine::ProcessHmiGetPmcUuid(HMICmdFrame &cmd){
  */
 void ChannelEngine::ProcessHmiSetPmcReg(HMICmdFrame &cmd){
 
-    uint16_t reg_sec = 0, reg_index = 0;
+    uint16_t reg_sec = 0, reg_index = 0, count = 0;
     uint8_t reg_value8 = 0;
     uint8_t bit_index = 0;
     uint8_t bit_count = 0;
@@ -5261,6 +5266,9 @@ void ChannelEngine::ProcessHmiSetPmcReg(HMICmdFrame &cmd){
 
     memcpy(&reg_sec, cmd.data, 2);   		//寄存器段
     memcpy(&reg_index, &cmd.data[2], 2);   	//寄存器段内索引号
+    memcpy(&count, &cmd.data[4], 2);
+
+    printf("reg: %d index: %d count: %d\n", reg_sec, reg_index, count);
 
     cmd.cmd_extension = SUCCEED;
     switch(reg_sec){
@@ -5278,15 +5286,23 @@ void ChannelEngine::ProcessHmiSetPmcReg(HMICmdFrame &cmd){
     case PMC_REG_E:
 #endif
         if(!bit_opt){
-            memcpy(&reg_value8, &cmd.data[4], 1);
-            if(!this->m_p_pmc_reg->SetRegValue(static_cast<PmcRegSection>(reg_sec), reg_index, reg_value8)){
-                printf("failed to set pmc register\n");
-                cmd.cmd_extension = FAILED;
+
+            uint8_t reg_data[count];
+
+            memcpy(reg_data, &cmd.data[6], count);
+            printf("sec %d, index: %d, count: %d\n", reg_sec, reg_index, count);
+            for(int i=0; i<count; i++){
+                if(!this->m_p_pmc_reg->SetRegValue(static_cast<PmcRegSection>(reg_sec), reg_index+i, reg_data[i])){
+                    printf("failed to set pmc register\n");
+                    cmd.cmd_extension = FAILED;
+                }
             }
             //printf("set pmc reg: sec = %hu, index = %hu, value = %hhu\n", reg_sec, reg_index, reg_value8);
         }else{
+
             bit_index = cmd.data[4];
             bit_count = cmd.data[5];
+
             memcpy(&bit_value32, &cmd.data[6], 4);
 
             if(!this->m_p_pmc_reg->SetRegBitValue(static_cast<PmcRegSection>(reg_sec), reg_index, bit_index, bit_count, bit_value32)){
@@ -5764,7 +5780,7 @@ bool ChannelEngine::Pause(){
         //for(uint8_t i = 0; i < m_p_channel_mode_group[m_n_cur_chn_group_index].GetChannelCount(); i++){
 
 // 会导致报警无法停止
-    if(m_p_channel_control[0].m_b_dust_eliminate) return true;
+            if(m_p_channel_control[0].m_b_dust_eliminate) return true;
 
         	m_p_channel_control[0].Pause();
             //m_p_channel_control[m_p_channel_mode_group[m_n_cur_chn_group_index].GetChannel(i)].Pause();
@@ -9205,7 +9221,7 @@ bool ChannelEngine::RefreshMiStatusFun(){
 
         if(!this->m_b_power_off){  //掉电后不处理
         	debug_flag = 1;
-        	this->ProcessPmcSignal();
+            this->ProcessPmcSignal();
 
             //首先读取轴告警标志
             this->m_p_mi_comm->ReadAxisWarnFlag(warn_flag);

@@ -2133,6 +2133,13 @@ bool Parser::CreateAuxMsg(int *mcode, uint8_t total){
         }
 	}
 
+    map<int16_t, int16_t>::iterator iter = m_p_channel_control->mcode_map.begin();
+
+    while (iter != m_p_channel_control->mcode_map.end()) {
+        printf("%d ---> %d\n", iter->first, iter->second);
+        iter ++;
+    }
+
     if((*mcode == 30 || *mcode == 2) && !m_p_channel_control->b_in_end_prog){
 
         SCChannelConfig * chn_cfg = m_p_channel_control->GetChnConfig();

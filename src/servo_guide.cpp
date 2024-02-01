@@ -42,10 +42,8 @@ bool ServeGuide::StartRecord()
 {
     if (state_ != E_SG_RunState::READY)
     {
-        ScPrintf("StartRecord in error state: %d", (int)state_);
         return false;
     }
-    ScPrintf("-----------ServeGuide::StartRecord()-----------");
 
     RstOriginPoint();
 
@@ -60,7 +58,6 @@ void ServeGuide::PauseRecord()
 {
     if (state_ == E_SG_RunState::RECORDING)
     {
-        ScPrintf("-----------ServeGuide::PauseRecord()-----------");
         RstOriginPoint();
         state_ = E_SG_RunState::READY;
     }
@@ -71,7 +68,6 @@ void ServeGuide::PauseRecord()
  */
 void ServeGuide::ResetRecord()
 {
-    ScPrintf("ServeGuide::ResetRecord");
 
     if (state_ != E_SG_RunState::IDLE)
         state_ = E_SG_RunState::STOPPING;
@@ -90,7 +86,6 @@ bool ServeGuide::RefreshRecording()
     {
         if (IsEmpty())
         {
-            std::cout << "RunState::IDLE" << std::endl;
             state_ = E_SG_RunState::IDLE;
         }
     }
@@ -221,7 +216,6 @@ void ServeGuide::SendData()
     }
 
     if(-1 == send(data_send_fd, &data, sizeof(data), MSG_NOSIGNAL)){
-        ScPrintf("ServeGuide: data send error");
     }
 }
 
@@ -422,7 +416,7 @@ bool SG_Type::Verify() const
 
 SG_DATA SG_Rect_Type::GenData()
 {
-    SG_DATA data = std::make_tuple(feedback_pos_[axis_one_] - origin_point_.x, feedback_pos_[axis_two_] - origin_point_.y, -1, -1);
+    SG_DATA data = std::make_tuple(feedback_pos_[axis_one_] - origin_point_.x, feedback_pos_[axis_two_] - origin_point_.y, -1, -1, -1);
     return data;
 }
 
@@ -471,7 +465,7 @@ SG_DATA CircleDletaCalc(DPlane point, DPlane pole, double radius)
     delta_pt.x = delta*cos(radian);
     delta_pt.y = delta*sin(radian);
 
-    SG_DATA data = std::make_tuple(standard_pt.x, standard_pt.y, delta_pt.x, delta_pt.y);
+    SG_DATA data = std::make_tuple(standard_pt.x, standard_pt.y, delta_pt.x, delta_pt.y, -1);
     return data;
 }
 
@@ -529,13 +523,13 @@ SG_DATA SG_RecCir_Type::GenData()
 
     quadrant = GetQuadrant(interp_pos);
     std::cout << "-->" << "X: " << interp_pos.x << " Y: " << interp_pos.y << " Q:" << (int)quadrant << std::endl;
-    SG_DATA data = std::make_tuple(-1, -1, -1, -1);
+    SG_DATA data = std::make_tuple(-1, -1, -1, -1, -1);
     switch (quadrant) {
     case 1:
     {//第一象限，横直线
         delta_x = 0;
         delta_y = pos_2 + center_y;
-        data = std::make_tuple(pos.x, (height_ + 2 * radius_) / 2, delta_x, delta_y);
+        data = std::make_tuple(pos.x, (height_ + 2 * radius_) / 2, delta_x, delta_y, -1);
         //std::cout << "quan: " << quadrant << "   >> 0: " << get<0>(data) << " 1: " << get<1>(data) << " 2: " << get<2>(data) << " 3: " << get<3>(data) << std::endl;
     }
         break;
@@ -552,7 +546,7 @@ SG_DATA SG_RecCir_Type::GenData()
     {//第三象限，竖直线
         delta_x = pos_1 - (width_/2 + radius_);
         delta_y = 0;
-        data = std::make_tuple(width_/2 + radius_, pos.y, delta_x, delta_y);
+        data = std::make_tuple(width_/2 + radius_, pos.y, delta_x, delta_y, -1);
         //std::cout << "quan: " << quadrant << "   >> 0: " << get<0>(data) << " 1: " << get<1>(data) << " 2: " << get<2>(data) << " 3: " << get<3>(data) << std::endl;
     }
         break;
@@ -568,7 +562,7 @@ SG_DATA SG_RecCir_Type::GenData()
     {//第五象限，横直线
         delta_x = 0;
         delta_y = pos_2 + (height_/2 + radius_);
-        data = std::make_tuple(pos.x, -(height_ + 2 * radius_)/2, delta_x, delta_y);
+        data = std::make_tuple(pos.x, -(height_ + 2 * radius_)/2, delta_x, delta_y, -1);
         //std::cout << "quan: " << quadrant << "   >> 0: " << get<0>(data) << " 1: " << get<1>(data) << " 2: " << get<2>(data) << " 3: " << get<3>(data) << std::endl;
     }
         break;
@@ -584,7 +578,7 @@ SG_DATA SG_RecCir_Type::GenData()
     {//第七象限，竖直线
         delta_x = pos_1 + (radius_ + width_/2);
         delta_y = 0;
-        data = std::make_tuple(-(radius_+width_/2), pos.y, delta_x, delta_y);
+        data = std::make_tuple(-(radius_+width_/2), pos.y, delta_x, delta_y, -1);
         //std::cout << "quan: " << quadrant << "   >> 0: " << get<0>(data) << " 1: " << get<1>(data) << " 2: " << get<2>(data) << " 3: " << get<3>(data) << std::endl;
     }
         break;
@@ -716,8 +710,17 @@ SG_DATA SG_Tapping_Type::GenData()
 
         spd_trans = spd_feedback/radio;
     }
+
+    SCAxisConfig * p_axis_config = g_ptr_parm_manager->GetAxisConfig();
+
+    double speed_z_axis = feedback_speed_[axis_two_]/1000*60;
+    speed_z_axis /= p_axis_config[axis_two_].move_pr;
+
+    double speed_spindle = feedback_speed_[axis_one_]/1000*60;
+    speed_spindle = (-speed_spindle)/ p_axis_config[axis_one_].move_pr;
+
     //转化为mm每分钟
-    SG_DATA data = std::make_tuple(spd_trans, z_axis_feedback, z_axis_inp, feedback_speed_[axis_two_]/1000*60);
+    SG_DATA data = std::make_tuple(spd_trans, z_axis_feedback, z_axis_inp, speed_z_axis, speed_spindle);
     return data;
 }
 

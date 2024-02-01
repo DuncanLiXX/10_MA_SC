@@ -217,7 +217,8 @@ bool MCCommunication::CanWriteGCode(uint8_t chn){
  * @return true--成功   false--失败,缓冲满
  */
 bool MCCommunication::WriteGCodeData(uint8_t chn, GCodeFrame &data){
-	CalMcGCodeFrameCrc(data);
+
+    CalMcGCodeFrameCrc(data);
 
 	//读取FIFO数量，判断能否写入
 	uint32_t count = 0;
@@ -225,7 +226,9 @@ bool MCCommunication::WriteGCodeData(uint8_t chn, GCodeFrame &data){
 	if(count >= kMaxGCodeFifoCount)
 		return false;   //FIFO数据满，无法写入
 
-    //printf("WriteGCodeData: %lld-%lld-%lld-%d-%d-%d\n", data.data.pos0, data.data.pos1, data.data.pos2, data.data.ext_type, data.data.cmd, data.data.mode);
+
+    printf("WriteGCodeData: %lld-%lld-%lld-ext:%d-cmd:%d-mode:%d\n",
+           data.data.pos0, data.data.pos1, data.data.pos2, data.data.ext_type, data.data.cmd, data.data.mode);
 	//printf("arc radius: %lld\n", data.data.arc_radius);
 	WriteRegister(MC_GCODE_WRITE_OVER(chn), 0);  //写入前置零
 
@@ -614,7 +617,7 @@ bool MCCommunication::ReadAutoBlockRunOverFlag(const uint8_t chn_index){
 	if((value & 0xFFFF0000) & (0x00010000<<chn_index))
 		flag = true;
 
-	//printf("ReadAutoBlockRunOverFlag ---> %d\n", flag);
+    //printf("ReadAutoBlockRunOverFlag ---> %d\n", flag);
 	return flag;
 }
 

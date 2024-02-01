@@ -118,6 +118,7 @@
 
 #define CHN_PROC_PARAM_FILE "/cnc/config/chn_proc_param.ini"   //工艺相关通道参数文件
 #define AXIS_PROC_PARAM_FILE "/cnc/config/axis_proc_param.ini"   //工艺相关通道参数文件
+#define MCODE_MAP "/cnc/config/mcode_map"          // M代码映射文件
 
 #ifdef USES_FIVE_AXIS_FUNC
 #define FIVE_AXIS_CONFIG_FILE "/cnc/config/five_axis_config.ini"    //五轴配置文件

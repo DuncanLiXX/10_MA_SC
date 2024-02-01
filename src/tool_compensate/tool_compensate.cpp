@@ -60,6 +60,7 @@ void ToolCompensate::clearError(){
 
 
 void ToolCompensate::Reset(){
+    plane = PLANE_XY;
 	interp.reset();
 	clearError();
 }

@@ -204,6 +204,7 @@ void BackUp_Manager::Init_Pack_Info(int mask)
         m_backupInfoVec.push_back(new Backup_Info(type, FIVE_AXIS_CONFIG_FILE_V2));
         m_backupInfoVec.push_back(new Backup_Info(type, CHN_PROC_PARAM_FILE));
         m_backupInfoVec.push_back(new Backup_Info(type, AXIS_PROC_PARAM_FILE));
+        m_backupInfoVec.push_back(new Backup_Info(type, MCODE_MAP));
     }
 
     if (mask & Backup_Tool_Param)
@@ -327,6 +328,7 @@ void BackUp_Manager::Init_UnPack_Info(int mask, zip_t *zip)
         m_backupInfoVec.push_back(new Backup_Info(type, FIVE_AXIS_CONFIG_FILE_V2));
         m_backupInfoVec.push_back(new Backup_Info(type, CHN_PROC_PARAM_FILE));
         m_backupInfoVec.push_back(new Backup_Info(type, AXIS_PROC_PARAM_FILE));
+        m_backupInfoVec.push_back(new Backup_Info(type, MCODE_MAP));
     }
 
     if (mask & Backup_Tool_Param)

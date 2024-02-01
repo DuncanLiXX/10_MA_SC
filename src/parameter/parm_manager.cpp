@@ -6805,6 +6805,7 @@ void ParmManager::ActiveChnParam(uint8_t chn_index, uint32_t param_no, ParamValu
     case 526:
         printf("update 526\n");
         this->m_sc_channel_config[chn_index].handle_sim_speed = value.value_uint32;
+        chn_engine->GetChnControl(chn_index)->SendMcHandleSimSpeed();
         break;
 
 #ifdef USES_WOOD_MACHINE

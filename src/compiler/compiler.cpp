@@ -158,7 +158,7 @@ Compiler::~Compiler() {
 void Compiler::InitCompiler() {
     printf("Enter Compiler::InitCompiler\n");
 
-    m_b_check = false;   //默认进行语法检查
+    m_b_check = true;   //默认进行语法检查
     m_b_has_over_code = false;  //默认没有结束指令
 
     m_n_sub_program = MAIN_PROG;  //默认在主程序状态
@@ -1810,6 +1810,7 @@ bool Compiler::GetLineData() {
     //	gettimeofday(&tvStart, NULL);
     //  printf("enter getlinedata\n");
 
+
     bool res = true;
     if(m_p_file_map_info == nullptr || m_b_compile_over) {  //编译结束
         return false;
@@ -1831,10 +1832,12 @@ bool Compiler::GetLineData() {
     this->m_p_lexer->Reset(); //词法分析器复位
     memset(m_line_buf, 0x00, static_cast<size_t>(kMaxLineSize));
 
+
     if (m_b_eof || m_p_file_map_info->ln_file_size == 0) {
         m_b_eof = true;
         if(this->m_work_mode == MDA_COMPILER){  //MDA模式下，到文件尾结束编译
             //lidianqiang:MDA自动加上M30临时改为M300
+            m_b_compile_over = true;
             strcpy(m_line_buf, "M300");
             this->m_lexer_result.line_no = this->m_ln_cur_line_no;   //更新行号
             g_ptr_trace->PrintTrace(TRACE_DETAIL, COMPILER_CHN, "MDA insert M30-2\n");
@@ -1842,19 +1845,21 @@ bool Compiler::GetLineData() {
         }
 
         if(m_b_check && m_n_sub_program == MAIN_PROG){
-        	return false;
-        }else{
-            if(m_n_sub_program == MAIN_PROG){//主程序
-            	strcpy(m_line_buf, "M30");   //木工专机可以没有M30指令，系统自动添加
-                this->m_lexer_result.line_no = this->m_ln_cur_line_no;   //更新行号
-                g_ptr_trace->PrintTrace(TRACE_DETAIL, COMPILER_CHN, "Insert M30-2\n");
-            }else{//子程序/宏程序
-            	strcpy(m_line_buf, "M99");   //木工专机可以没有M99指令，系统自动添加
-                this->m_lexer_result.line_no = this->m_ln_cur_line_no;   //更新行号
-                g_ptr_trace->PrintTrace(TRACE_DETAIL, COMPILER_CHN, "Insert M99-2\n");
-            }
-            return true;
+            //m_error_code = ERR_NO_END;
+            return false;
         }
+
+        if(m_n_sub_program == MAIN_PROG){//主程序
+            strcpy(m_line_buf, "M30");   //木工专机可以没有M30指令，系统自动添加
+            this->m_lexer_result.line_no = this->m_ln_cur_line_no;   //更新行号
+            printf("Insert M30-2\n");
+        }else{//子程序/宏程序
+            strcpy(m_line_buf, "M99");   //木工专机可以没有M99指令，系统自动添加
+            this->m_lexer_result.line_no = this->m_ln_cur_line_no;   //更新行号
+            printf("Insert M99-2\n");
+        }
+
+        return true;
     }
 
     if(m_p_cur_file_pos == nullptr){
@@ -2028,20 +2033,23 @@ REDO:
             g_ptr_trace->PrintTrace(TRACE_DETAIL, COMPILER_CHN, "MDA insert M30-1\n");
         } else {
 
-            if(!m_b_check){
-            	if(m_n_sub_program == MAIN_PROG){//主程序
-					strcpy(m_line_buf, "M30");   //木工专机可以没有M30指令，系统自动添加
-					this->m_lexer_result.line_no = this->m_ln_cur_line_no;   //更新行号
-					g_ptr_trace->PrintTrace(TRACE_DETAIL, COMPILER_CHN, "Insert M30-1\n");
-				}else{//子程序/宏程序
-					strcpy(m_line_buf, "M99");   //木工专机可以没有M99指令，系统自动添加
-					this->m_lexer_result.line_no = this->m_ln_cur_line_no;   //更新行号
-					g_ptr_trace->PrintTrace(TRACE_DETAIL, COMPILER_CHN, "Insert M99-1\n");
-				}
-				return true;
-            }else{
-            	return false;
+            if(m_b_check && m_n_sub_program == MAIN_PROG){
+                //m_error_code = ERR_NO_END;
+                return false;
             }
+
+            if(m_n_sub_program == MAIN_PROG){//主程序
+                strcpy(m_line_buf, "M30");   //木工专机可以没有M30指令，系统自动添加
+                this->m_lexer_result.line_no = this->m_ln_cur_line_no;   //更新行号
+                printf("Insert M30-1\n");
+            }else{//子程序/宏程序
+                strcpy(m_line_buf, "M99");   //木工专机可以没有M99指令，系统自动添加
+                this->m_lexer_result.line_no = this->m_ln_cur_line_no;   //更新行号
+                printf("Insert M99-1\n");
+            }
+
+            return true;
+
         }
     }
     return res;
@@ -4019,9 +4027,10 @@ bool Compiler::CheckHead() {
         res = this->ProcessMain(); //
     }else {
 
+        /*
         if (m_b_check) {
             m_error_code = ERR_NO_START;   //无起始%
-        }
+        }*/
 
 		res = this->ProcessMain();
 

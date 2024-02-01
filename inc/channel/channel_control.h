@@ -487,6 +487,7 @@ public:
 
     bool change_g80_flag{false};
 
+    void clear_mda_data();
 
     void SendMcHandleSimSpeed();
 

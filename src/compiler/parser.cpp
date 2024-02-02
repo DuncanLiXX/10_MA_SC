@@ -429,7 +429,6 @@ bool Parser::CheckGCode(LexerGCode *gcode){
 				m_error_code = ERR_M_EXP_NULL;   //
 				return false;
 			}
-
 		}
 	}
 
@@ -598,7 +597,6 @@ bool Parser::AnalyzeGCode(LexerGCode *gcode){
 #endif
 	}
 
-
 	//处理21组模态指令：G12.1/G12.2/G12.3/G13.1  极坐标插补及磨床相关指令
 	if(m_mode_mask & GMODE_21){
 		if(!this->CreatePolarIntpMsg(m_gmode[21])){
@@ -632,14 +630,11 @@ bool Parser::AnalyzeGCode(LexerGCode *gcode){
 			return false;
 	}
 
-
-
 	//处理05组模态指令：G94/G95 每分钟进给，每转进给
 	if(m_mode_mask & GMODE_05){
 		if(!CreateModeMsg(m_gmode[5]))
 			return false;
 	}
-
 
 	//处理00组非模态指令
 	if(m_mode_mask & GMODE_00){//TODO 处理00组非模态指令：G04/G10/G28/G29/G71/G72/G92/G52等等, G53指令不在此处理
@@ -2192,8 +2187,6 @@ bool Parser::CreateAuxMsg(int *mcode, uint8_t total){
 		new_msg->SetFlag(FLAG_JUMP, true);
 	m_p_parser_result->Append(new_msg);
 	ProcessLastBlockRec(new_msg);
-
-
 
 	return true;
 }

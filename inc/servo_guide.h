@@ -170,7 +170,7 @@ private:
 
     constexpr static int MAX_INTERVAL = 10000;
     std::chrono::time_point<std::chrono::steady_clock> scan_cycle_;     // 扫描周期
-    int scan_interval_ = 8;                                             // 扫描周期间隔
+    int scan_interval_ = 16;                                             // 扫描周期间隔
 
     E_SG_RunState state_ = E_SG_RunState::IDLE;
 

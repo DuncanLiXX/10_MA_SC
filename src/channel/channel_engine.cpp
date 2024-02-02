@@ -1625,7 +1625,6 @@ void ChannelEngine::PoweroffHandler(int signo, siginfo_t *info, void *context){
 void ChannelEngine::SaveDataPoweroff(){
     //system("date >> /cnc/bin/save.txt");
     //system("echo \"start\" >> /cnc/bin/save.txt");
-
     system("echo 0 > /sys/class/gpio/gpio968/value");
 
     //保存PMC寄存器数据
@@ -8873,6 +8872,7 @@ void ChannelEngine::SystemReset(){
     printf("system reset\n");
     this->m_p_pmc_reg->SaveRegData();
     //各通道复位
+
     for(int i = 0; i < this->m_p_general_config->chn_count; i++){
         // 攻丝状态禁止复位
         /*  复位流程由梯图控制
@@ -8894,6 +8894,7 @@ void ChannelEngine::SystemReset(){
 
         this->m_p_channel_control[i].Reset();
     }
+
 
     //通知MC模块复位
     //	SendMcResetCmd();    //修改为按通道复位
@@ -9166,6 +9167,8 @@ bool ChannelEngine::RefreshMiStatusFun(){
             continue;
         }
         //读取欠压信号
+        //printf("%d %d %d\n", m_b_power_off, g_sys_state.system_ready, this->m_p_mc_comm->ReadUnderVoltWarn());
+
         if(!m_b_power_off && g_sys_state.system_ready && this->m_p_mc_comm->ReadUnderVoltWarn()){
             printf("OFF\n");
             m_b_power_off = true;
@@ -9584,6 +9587,7 @@ void ChannelEngine::ProcessPmcSignal(){
         if(g_reg->RRW == 1 && g_reg_last->RRW == 0){
             m_axis_status_ctrl->InputEsp(g_reg->_ESP);
             this->SystemReset();
+
         }
         // @test
 

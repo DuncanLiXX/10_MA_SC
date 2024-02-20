@@ -825,7 +825,7 @@ bool ChannelEngine::RecordingServerGuide()
     {
         if (m_serverGuide.RefreshRecording())//判断系统是否处于Recording状态，并刷新状态
         {
-            if (m_serverGuide.IsTimeout())
+            //if (m_serverGuide.IsTimeout())
             {
                 this->m_p_mi_comm->ReadPhyAxisCurFedBckPos(m_df_phy_axis_pos_feedback, m_df_phy_axis_pos_intp, m_df_phy_axis_speed_feedback,
                     m_df_phy_axis_torque_feedback, m_df_spd_angle, m_p_general_config->axis_count);
@@ -838,6 +838,8 @@ bool ChannelEngine::RecordingServerGuide()
         {//退出循环
             break;
         }
+
+        usleep(m_serverGuide.scan_interval_ * 1000);
     }
 
     th.join();

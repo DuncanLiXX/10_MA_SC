@@ -606,6 +606,7 @@ enum ErrorType {
 	ORDER_INDEX_ERROR       = 2061,   // G110 指定程序号不存在
 	ERR_ORDER_FINISH        = 2602,
 	ERR_RESTART_G92_G52     = 2603,  // 程序再起 不支持G92 G52
+    SET_SYNC_MASTER_AXIS_ERROR     = 2064,  // 设置主动轴失败 主动轴不能为另一个轴的同步轴
 
 	//刀补告警	5000~6999
     ERR_CANCEL_R_COMP_WITHOUT_MOVE      = 5000, //取消刀具半径补偿时没有轴移动

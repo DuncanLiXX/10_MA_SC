@@ -154,7 +154,6 @@ void SpindleControl::InputPolar(Spindle::Polar polar)
 }
 
 // M28 M29
-
 void SpindleControl::SetMode(Mode mode)
 {
     if(!spindle)
@@ -319,7 +318,6 @@ void SpindleControl::CancelRigidTap()
 
     	F->RGSPP = 0;
     }
-
 }
 
 void SpindleControl::ResetTapFlag()

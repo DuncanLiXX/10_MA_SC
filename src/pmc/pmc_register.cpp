@@ -635,7 +635,10 @@ uint16_t *PmcRegister::GetRegPtr16(PmcRegSection sec){
  * @return
  */
 bool PmcRegister::SetRegValue(PmcRegSection sec, uint16_t index, uint8_t value){
-	switch(sec){
+
+    printf("PmcRegister::SetRegValue sec:%d index:%d value:%d \n", sec, index, value);
+
+    switch(sec){
 	case PMC_REG_X:
 #ifdef USES_PMC_2_0
 		if(index < 128)   //IO-LINK Í¨µÀ1
@@ -745,7 +748,10 @@ bool PmcRegister::SetRegValue(PmcRegSection sec, uint16_t index, uint8_t value){
  * @return
  */
 bool PmcRegister::SetRegValue(PmcRegSection sec, uint16_t index, uint16_t value){
-	switch(sec){
+
+    printf("PmcRegister::SetRegValue2 sec:%d index:%d value:%d \n", sec, index, value);
+
+    switch(sec){
 
 #ifndef USES_PMC_2_0
 	case PMC_REG_D:

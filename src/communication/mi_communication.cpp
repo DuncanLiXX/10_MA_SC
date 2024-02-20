@@ -9,13 +9,11 @@
  *@version
  */
 
-
 #include "global_include.h"
 #include "mi_communication.h"
 #include "channel_engine.h"
 #include "pmc_register.h"
 #include "showsc.h"
-
 
 const uint32_t kSharedMemMapSize = (uint32_t) 1024*1024;   	//映射区大小 1M
 const uint32_t kSharedMemMapMask = (kSharedMemMapSize - 1);	 	//地址掩码 0x0FFFFF
@@ -750,26 +748,25 @@ bool MICommunication::ReadSyncMachErr(uint64_t &value)
  * @param pos_intp[out] : 数组，返回轴位置插补
  * @param count ：轴个数
  */ 
-void MICommunication::ReadPhyAxisCurFedBckPos(double *pos_fb, double *pos_intp,
+bool MICommunication::ReadPhyAxisCurFedBckPos(double *pos_fb, double *pos_intp,
                                               double *speed,double *torque,
                                               double *angle,uint8_t count){
 	if(pos_fb == nullptr || pos_intp == nullptr)
-		return;
+        return false;
 
 	//判断写完成标志
 	int32_t flag = 0;
 	ReadRegister32_M(SHARED_MEM_AXIS_WRITE_OVER, flag);
 	if(flag == 0){
-	//	printf("$$$$ReadPhyAxisPos : write flag = 0, return \n");
-		return;   //MI未更新，直接返回
+        //("$$$$ReadPhyAxisPos : write flag = 0, return \n");
+        return false;   //MI未更新，直接返回
 	}
 
 	ReadRegister32_M(SHARED_MEM_AXIS_READ_OVER, flag);
 	if(flag == 1){
-	//	printf("$$$$ReadPhyAxisPos : read flag = 1, return \n");
-		return;		//已读取，直接返回
+        //printf("$$$$ReadPhyAxisPos : read flag = 1, return \n");
+        return false;		//已读取，直接返回
 	}
-
 
 	double df = 0;
 	int64_t pos_tmp;
@@ -800,10 +797,11 @@ void MICommunication::ReadPhyAxisCurFedBckPos(double *pos_fb, double *pos_intp,
             ReadRegister16U_M(SHARED_MEM_AXIS_SPD_ANGLE(i), angle_tmp); //读主轴角度
             angle[i] = angle_tmp/100.0;
         }
-
 	}
 
 	WriteRegister32_M(SHARED_MEM_AXIS_READ_OVER, 1);  //置位读取完成标志
+
+    return true;
 }
 
 /**

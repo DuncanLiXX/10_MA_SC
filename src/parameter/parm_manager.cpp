@@ -4248,7 +4248,7 @@ bool ParmManager::UpdateParameter(ParamUpdate *data, uint8_t active_type){
 		break;
 	}
     if(res){
-        printf("===== para no: %d val: %d\n", data->param_no, data->value.value_uint8);
+        //printf("===== para no: %d val: %d\n", data->param_no, data->value.value_uint8);
         this->ActiveParam(data, active_type);
     }
 
@@ -5123,6 +5123,14 @@ bool ParmManager::UpdateAxisParam(uint8_t axis_index, uint32_t param_no, ParamVa
 		g_ptr_trace->PrintLog(LOG_ALARM, "轴参数更新，轴号非法：%hhu", axis_index);
 		return false;
 	}
+
+    if(param_no == 1651){
+        int master_axis = value.value_int8;
+        if(m_sc_axis_config[master_axis-1].sync_axis == 1){
+            CreateError(SET_SYNC_MASTER_AXIS_ERROR, ERROR_LEVEL, CLEAR_BY_MCP_RESET);
+            return false;
+        }
+    }
 
 	char sname[32];	//section name
 	char kname[64];	//key name

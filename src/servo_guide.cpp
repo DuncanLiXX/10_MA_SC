@@ -703,11 +703,11 @@ SG_DATA SG_Tapping_Type::GenData()
     double z_axis_inp = intp_pos_[axis_two_] - origin_point_.y;
 
     double spd_trans = 0;
+    double radio = control->GetSpdCtrl()->Get_TapRatio();
     if (control->CheckFRegState(65, 0))//RGSPP(F65.0)
     {// RGSPP 信号导通后，才开始采集主轴数据
-        double radio = control->GetSpdCtrl()->Get_TapRatio();
-        if (radio != 1) radio = radio / 10000;//radio 是传给MI的参数，需要10000转换
 
+        if (radio != 1) radio = radio / 10000;               //radio 是传给MI的参数，需要10000转换
         spd_trans = spd_feedback/radio;
     }
 
@@ -717,7 +717,7 @@ SG_DATA SG_Tapping_Type::GenData()
     speed_z_axis /= p_axis_config[axis_two_].move_pr;
 
     double speed_spindle = feedback_speed_[axis_one_]/1000*60;
-    speed_spindle = (-speed_spindle)/ p_axis_config[axis_one_].move_pr;
+    speed_spindle = ((speed_spindle)/radio)/p_axis_config[axis_two_].move_pr;
 
     //转化为mm每分钟
     SG_DATA data = std::make_tuple(spd_trans, z_axis_feedback, z_axis_inp, speed_z_axis, speed_spindle);

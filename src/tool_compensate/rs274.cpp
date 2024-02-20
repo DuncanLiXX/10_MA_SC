@@ -716,7 +716,6 @@ int Interp::convert_arc_comp2(int move,
 					midy = opy - settings->cutter_comp_radius*(vecy/sqrt(vecx*vecx + vecy*vecy));
             	}
 
-            	printf("============  convert arc comp2 midx: %lf midy: %lf\n", midx, midy);
             }
 
             move_endpoint_and_flush(settings, midx, midy);

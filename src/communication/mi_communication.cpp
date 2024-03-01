@@ -758,13 +758,13 @@ bool MICommunication::ReadPhyAxisCurFedBckPos(double *pos_fb, double *pos_intp,
 	int32_t flag = 0;
 	ReadRegister32_M(SHARED_MEM_AXIS_WRITE_OVER, flag);
 	if(flag == 0){
-        //("$$$$ReadPhyAxisPos : write flag = 0, return \n");
+        printf("$$$$ReadPhyAxisPos : write flag = 0, return \n");
         return false;   //MI未更新，直接返回
 	}
 
 	ReadRegister32_M(SHARED_MEM_AXIS_READ_OVER, flag);
 	if(flag == 1){
-        //printf("$$$$ReadPhyAxisPos : read flag = 1, return \n");
+        printf("$$$$ReadPhyAxisPos : read flag = 1, return \n");
         return false;		//已读取，直接返回
 	}
 
@@ -1030,8 +1030,6 @@ bool MICommunication::ReadCmd(MiCmdFrame &data){
 	int16_t flag1 = 0, flag2 = 0;
 	ReadRegister16_M(SHARED_MEM_CMD_RECV_WF(m_n_cur_recv_cmd_index), flag1);
 	ReadRegister16_M(SHARED_MEM_CMD_RECV_RF(m_n_cur_recv_cmd_index), flag2);
-
-
 
 	if(flag1 == 1 && flag2 == 0){//有数据待读取
 		//读取数据

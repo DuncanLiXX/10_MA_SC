@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="CMakeRunConfigurationManager" shouldGenerate="true" shouldDeleteObsolete="true">
+    <generated />
+  </component>
+  <component name="CMakeSettings">
+    <configurations>
+      <configuration PROFILE_NAME="Debug" CONFIG_NAME="Debug" />
+    </configurations>
+  </component>
+  <component name="ChangeListManager">
+    <list default="true" id="a420393b-6edd-4fe0-bf6a-57e4bec7ba13" name="Default Changelist" comment="">
+      <change beforePath="$PROJECT_DIR$/inc/channel/channel_control.h" beforeDir="false" afterPath="$PROJECT_DIR$/inc/channel/channel_control.h" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/inc/channel/channel_engine.h" beforeDir="false" afterPath="$PROJECT_DIR$/inc/channel/channel_engine.h" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/inc/hmi_shared_data.h" beforeDir="false" afterPath="$PROJECT_DIR$/inc/hmi_shared_data.h" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/inc/pmc/pmc_register.h" beforeDir="false" afterPath="$PROJECT_DIR$/inc/pmc/pmc_register.h" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/channel/channel_control.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/src/channel/channel_control.cpp" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/channel/channel_engine.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/src/channel/channel_engine.cpp" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/compiler/compiler.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/src/compiler/compiler.cpp" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/compiler/parser.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/src/compiler/parser.cpp" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/src/main.cpp" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/parameter/parm_manager.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/src/parameter/parm_manager.cpp" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/servo_guide.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/src/servo_guide.cpp" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/sync_axis_ctrl.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/src/sync_axis_ctrl.cpp" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/tool_compensate/rs274.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/src/tool_compensate/rs274.cpp" afterDir="false" />
+    </list>
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="ClangdSettings">
+    <option name="formatViaClangd" value="false" />
+  </component>
+  <component name="Git.Settings">
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+  </component>
+  <component name="ProjectId" id="2cwWTBinrGkcxzHMHwocHfgDhsr" />
+  <component name="ProjectViewState">
+    <option name="hideEmptyMiddlePackages" value="true" />
+    <option name="showLibraryContents" value="true" />
+  </component>
+  <component name="PropertiesComponent">
+    <property name="RunOnceActivity.OpenProjectViewOnStart" value="true" />
+    <property name="RunOnceActivity.ShowReadmeOnStart" value="true" />
+    <property name="WebServerToolWindowFactoryState" value="false" />
+    <property name="cf.first.check.clang-format" value="false" />
+    <property name="settings.editor.selected.configurable" value="com.jetbrains.cidr.embedded.config" />
+  </component>
+  <component name="SvnConfiguration">
+    <configuration />
+  </component>
+  <component name="TaskManager">
+    <task active="true" id="Default" summary="Default task">
+      <changelist id="a420393b-6edd-4fe0-bf6a-57e4bec7ba13" name="Default Changelist" comment="" />
+      <created>1709023126863</created>
+      <option name="number" value="Default" />
+      <option name="presentableId" value="Default" />
+      <updated>1709023126863</updated>
+      <workItem from="1709023130981" duration="4000" />
+    </task>
+    <servers />
+  </component>
+</project>

@@ -5130,6 +5130,11 @@ bool ParmManager::UpdateAxisParam(uint8_t axis_index, uint32_t param_no, ParamVa
             CreateError(SET_SYNC_MASTER_AXIS_ERROR, ERROR_LEVEL, CLEAR_BY_MCP_RESET);
             return false;
         }
+
+        if(axis_index == master_axis-1){
+            CreateError(SET_SELF_AS_MASTER_AXIS_ERROR, ERROR_LEVEL, CLEAR_BY_MCP_RESET);
+            return false;
+        }
     }
 
 	char sname[32];	//section name

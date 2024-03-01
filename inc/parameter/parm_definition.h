@@ -284,7 +284,7 @@ struct SCAxisConfig{
 
 	uint8_t backlash_enable;					//反向间隙是否生效
     //int16_t backlash_forward;					//正向反向间隙，单位：um(deg)->mm(deg)
-    //int16_t backlash_negative;					//负向反向间隙，单位：um(deg)->mm(deg)
+    //int16_t backlash_negative;				//负向反向间隙，单位：um(deg)->mm(deg)
     double backlash_forward;					//正向反向间隙，单位：mm(deg)
     double backlash_negative;					//负向反向间隙，单位：mm(deg)     --未使用
     int16_t backlash_step;                      //反向间隙步长，单位：um(20-300)

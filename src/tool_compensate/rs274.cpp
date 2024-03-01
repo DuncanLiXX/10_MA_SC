@@ -824,7 +824,7 @@ int Interp::convert_cutter_compensation_on(int side, double radius,
 
 	// 暂时禁用 G41 G42 直接切换  需要G40 然后重新建立新刀补
 	if(isCompOn && side != settings->cutter_comp_side){
-		err_code = G41_G42_CHANGE;
+        err_code = G41_G42_CHANGE;
 		return 0;
 	}
 

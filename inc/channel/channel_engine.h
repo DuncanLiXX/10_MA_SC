@@ -88,6 +88,8 @@ public:
 	void ProcessMcCmdRsp(McCmdFrame &rsp);	//处理MC模块的指令回复
 	void ProcessMiCmd(MiCmdFrame &cmd);		//处理MI模块的指令
 
+    vector<vector<uint8_t>> & GetSyncAxis(){return m_sync_axis_list;}
+
 
 	int GetChnCount(){return this->m_p_general_config->chn_count;}     //返回当前通道数量
 	ChannelControl *GetChnControl(){return this->m_p_channel_control;}   //获取所有通道控制对象数组的的指针
@@ -482,6 +484,7 @@ private:	//私有成员函数
     void CheckBattery();		//电压相关告警检查
 
     void InitPhyAxisChn();		//初始化物理轴与通道的映射
+    void InitSyncAxisData();    // 初始化同步轴信息
     void SendMiPhyAxisEncoder();     //向MI发送物理轴的反馈
     void SetAxisRetRefFlag();    //向MI发送各轴回参考点结束标志
 
@@ -700,6 +703,8 @@ private:  //私有成员变量
     std::mutex                  m_task_consume_mtx;
     std::condition_variable     m_task_consume_cond;
     TASK_CONSUME_TYPE           m_task_consume_type = CONSUME_TYPE_NONE;
+
+    vector<vector<uint8_t>> m_sync_axis_list;
 };
 
 #endif /* INC_CHANNEL_CHANNEL_ENGINE_H_ */

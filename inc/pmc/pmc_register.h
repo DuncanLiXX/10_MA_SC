@@ -1053,7 +1053,7 @@ struct GRegBits{
 	//G137
 	uint8_t :8;
 	//G138
-    uint8_t SYNC:8;                //同步控制功能可在自动和MDI方式下运行
+    uint8_t SYNC:8;                //同步控制功能可在自动和MDI方式下运行 //new 不区分自动手动 统一用一个信号控制同步
     //G139
 	uint8_t :8;
 	//G140

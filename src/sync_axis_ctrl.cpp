@@ -34,9 +34,13 @@ void SyncAxisCtrl::SendMiSyncParams()
 
 void SyncAxisCtrl::InputSync(uint8_t SYNC)
 {
+
+    mi->SendSyncAxis(SYNC);
+
+    /*
     if(mode == AUTO_MODE || mode == MDA_MODE){
         UpdateMask(SYNC);
-    }
+    }*/
     this->SYNC = SYNC;
 }
 
@@ -51,15 +55,18 @@ void SyncAxisCtrl::InputSyncJ(uint8_t SYNCJ)
 
 void SyncAxisCtrl::InputMode(ChnWorkMode mode)
 {
-    if(mode == AUTO_MODE || mode == MDA_MODE){
-        UpdateMask(SYNC);
-    }else{
-        UpdateMask(SYNCJ);
-    }
+      UpdateMask(SYNC);
+
+//    if(mode == AUTO_MODE || mode == MDA_MODE){
+//        UpdateMask(SYNC);
+//    }else{
+//        UpdateMask(SYNCJ);
+//    }
     this->mode = mode;
 }
 
 void SyncAxisCtrl::UpdateMask(int64_t mask){
+
 
     if (mask == sync_mask)
     {
@@ -72,11 +79,13 @@ void SyncAxisCtrl::UpdateMask(int64_t mask){
         bool is_sync = axis_config[i].sync_axis;
 
         // 对一个非同步轴进行同步，报警
+        /*
         if(!is_sync && need_sync){
             CreateError(ERR_SYNC_INVALID_OPT, ERROR_LEVEL, CLEAR_BY_MCP_RESET,
                         0, CHANNEL_ENGINE_INDEX, i);
             return;
         }
+        */
 
         int masterId = axis_config[i].master_axis_no;
         bool in_wait = wait_en_index & (0x01 << masterId);

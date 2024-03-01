@@ -404,6 +404,7 @@ public:
 	// @ add zk
 	void StraightFeed(int chn, double x, double y, double z, int feed);
 	void StraightTraverse(int chn, double x, double y, double z);
+    void StraightTraverse(int chn, DPointChn point);
 	void g73_func();
 	// @ add zk
 

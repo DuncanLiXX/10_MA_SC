@@ -782,11 +782,13 @@ void Compiler::PreScan() {
     //	total_size = map.ln_file_size;
     //第一遍扫描，识别出子程序号（O****）,以及GOTO指令
 
+
     while ((read_block = getline(&line, &len, file)) != -1) {
         //	read_size_bak = read_size;
         //	while(this->GetPreScanLine(line, read_size, map) > 0){
-        if (m_b_breakout_prescan) //中断退出
+        if (m_b_breakout_prescan){ //中断退出
             goto END;
+        }
         line_no++;
 
         try {
@@ -805,6 +807,7 @@ void Compiler::PreScan() {
         }
     }
 
+
     // 处理完了配对要检查是否清空
 	if(m_stack_vector_index_prescan.size()>0){
 		CreateError(IF_ELSE_MATCH_FAILED, ERROR_LEVEL, CLEAR_BY_MCP_RESET,
@@ -813,7 +816,7 @@ void Compiler::PreScan() {
 	}
 
     /*** test if else */
-    printf("*********************************************\n");
+    printf("******************************************\n");
     for(unsigned int i=0; i<m_node_vectors_vector.size(); i++){
         vector<IfElseOffset> node_vector = m_node_vectors_vector.at(i);
         printf("node number: %d\n", i+1);
@@ -838,7 +841,7 @@ void Compiler::PreScan() {
             - tvStart.tv_usec;
 
     //第二遍扫描，找到所有GOTO指令跳转行号的偏移
-    if (this->m_p_list_label->GetLength() > 0) {
+    //if (this->m_p_list_label->GetLength() > 0) {
         fseek(file, 0L, SEEK_SET);   //回到文件头
         read_size = 0;
         comment_flag = false;
@@ -848,9 +851,9 @@ void Compiler::PreScan() {
         //	map.ResetFile();
         while ((read_block = getline(&line, &len, file)) != -1) {
             //	while(this->GetPreScanLine(line, read_size, map) > 0){
-
-            if (m_b_breakout_prescan)	//中断退出
+            if (m_b_breakout_prescan){	//中断退出
                 goto END;
+            }
 
             line_no++;
             this->PreScanLine2(line, read_size, line_no, comment_flag, ptr_scene);
@@ -871,7 +874,7 @@ void Compiler::PreScan() {
                         m_n_channel_index);
             goto END;
         }
-    }
+    //}
 
     //m_b_prescan_over = true;  //成功结束
 
@@ -905,6 +908,7 @@ void Compiler::PreScanLine1(char *buf, uint64_t offset, uint64_t line_no,
 
     if (buf == nullptr)
         return;
+
     char *pc = buf;
     char digit_buf[kMaxDigitBufLen+1];
     bool jump_flag = false;    //是否包含跳段符
@@ -1079,7 +1083,7 @@ void Compiler::PreScanLine1(char *buf, uint64_t offset, uint64_t line_no,
         label_offset.line_no = 0;
         label_offset.label = atoi(digit_buf);
 
-        //	printf("find goto label %d\n", label_offset.label);
+        printf("find goto label %d\n", label_offset.label);
 
         if(this->m_b_prescan_in_stack){   //堆栈文件预扫描
             if (!scene->list_label.HasData(label_offset)){
@@ -1263,6 +1267,7 @@ void Compiler::PreScanLine2(char *buf, uint64_t offset, uint64_t line_no,
 
     if (buf == nullptr)
         return;
+
     char *pc = buf;
     char digit_buf[10];
     bool line_serial = false;   //顺序号
@@ -1318,6 +1323,7 @@ void Compiler::PreScanLine2(char *buf, uint64_t offset, uint64_t line_no,
         pc++;
     }
 
+
     if (line_serial) {
         int label = atoi(digit_buf);
         ListNode < LabelOffset > *node = nullptr;
@@ -1338,7 +1344,7 @@ void Compiler::PreScanLine2(char *buf, uint64_t offset, uint64_t line_no,
                 }
                 node->data.offset = offset;
                 node->data.line_no = line_no;
-                //printf("pre scan 2, find label %d , offset %llu\n", label, offset);
+                printf("pre scan 2, find label %d , lino: %llu offset %llu\n", label, line_no,offset);
                 break;
             } else if (label < node->data.label)
                 break;
@@ -1844,8 +1850,7 @@ bool Compiler::GetLineData() {
             return true;
         }
 
-        if(m_b_check && m_n_sub_program == MAIN_PROG){
-            //m_error_code = ERR_NO_END;
+        if(m_b_check /*&& m_n_sub_program == MAIN_PROG*/){
             return false;
         }
 
@@ -2033,7 +2038,7 @@ REDO:
             g_ptr_trace->PrintTrace(TRACE_DETAIL, COMPILER_CHN, "MDA insert M30-1\n");
         } else {
 
-            if(m_b_check && m_n_sub_program == MAIN_PROG){
+            if(m_b_check /*&& m_n_sub_program == MAIN_PROG*/){
                 //m_error_code = ERR_NO_END;
                 return false;
             }
@@ -2133,7 +2138,7 @@ bool Compiler::RunMessage() {
             if(cur_line != msg->GetLineNo() || type != msg->GetMsgType()){
                 cur_line = msg->GetLineNo();
                 type = msg->GetMsgType();
-                //printf("compiler run message  line no: %llu,  type: %d flag: %d\n ", cur_line, msg_type, msg->GetFlags().all);
+                printf("compiler run message  line no: %llu,  type: %d flag: %d\n ", cur_line, msg_type, msg->GetFlags().all);
             }
             // @test zk
             //std::cout << "RunMessage: " << (int)msg_type << std::endl;
@@ -2259,8 +2264,8 @@ bool Compiler::RunMessage() {
             if(m_p_tool_compensate->err_code != ERR_NONE){
                 m_error_code = m_p_tool_compensate->err_code;
 
-                CreateError(m_p_tool_compensate->err_code, ERROR_LEVEL, CLEAR_BY_MCP_RESET,
-                        m_p_tool_compensate->err_lino, m_n_channel_index);
+                /*CreateError(m_p_tool_compensate->err_code, ERROR_LEVEL, CLEAR_BY_MCP_RESET,
+                        m_p_tool_compensate->err_lino, m_n_channel_index);*/
                 //m_p_tool_compensate->clearError();
 
                 res = false;
@@ -4585,6 +4590,7 @@ int Compiler::FindJumpLabel(int label, uint64_t &offset, uint64_t &line_no) {
             offset = node->data.offset;
             line_no = node->data.line_no;
             res = 1;
+            printf("offset: %llu line_no: %llu\n", offset, line_no);
             break;
         }
         node = node->next;

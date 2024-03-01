@@ -33,6 +33,8 @@
 using namespace Spindle;
 
 static int debug_flag = 0;
+static bool need_sync_reset = false;
+static bool sync_axis_ready = true;
 
 ChannelEngine* ChannelEngine::m_p_instance = nullptr;  //初始化单例对象指正为空
 const map<int, SDLINK_SPEC> ChannelEngine::m_SDLINK_MAP =
@@ -227,6 +229,46 @@ void ChannelEngine::InitPhyAxisChn(){
             this->m_map_phy_axis_chn[m_p_channel_config[i].chn_axis_phy[j]-1] = i;
         }
     }
+}
+
+void ChannelEngine::InitSyncAxisData()
+{
+    for(int i=0; i< m_p_channel_config[0].chn_axis_count; i++){
+
+        //是同步轴
+        if(m_p_axis_config[i].sync_axis == 1){
+
+            bool flag_find = false;
+
+            for(vector<uint8_t> &list : m_sync_axis_list){
+                if(list.front() == m_p_axis_config[i].master_axis_no-1){
+                    list.push_back(i);
+                    flag_find = true;
+                    continue;
+                }
+            }
+
+            if(flag_find == false){
+                vector<uint8_t> l;
+                l.push_back(m_p_axis_config[i].master_axis_no-1);
+                l.push_back(i);
+                m_sync_axis_list.push_back(l);
+            }
+
+        }
+    }
+
+    /*
+    printf("=================== sync axis data ===================\n");
+    for(vector<uint8_t> &list: m_sync_axis_list){
+
+        for(uint8_t item: list){
+            printf(" %d - ", item);
+        }
+        printf("\n");
+    }
+    printf("=================== sync axis data ===================\n");
+    */
 }
 
 #ifdef USES_PMC_2_0
@@ -825,14 +867,12 @@ bool ChannelEngine::RecordingServerGuide()
     {
         if (m_serverGuide.RefreshRecording())//判断系统是否处于Recording状态，并刷新状态
         {
-            //if (m_serverGuide.IsTimeout())
-            {
-                this->m_p_mi_comm->ReadPhyAxisCurFedBckPos(m_df_phy_axis_pos_feedback, m_df_phy_axis_pos_intp, m_df_phy_axis_speed_feedback,
-                    m_df_phy_axis_torque_feedback, m_df_spd_angle, m_p_general_config->axis_count);
 
-                m_serverGuide.RecordData(m_df_phy_axis_pos_feedback, m_df_phy_axis_pos_intp);
+            this->m_p_mi_comm->ReadPhyAxisCurFedBckPos(m_df_phy_axis_pos_feedback, m_df_phy_axis_pos_intp, m_df_phy_axis_speed_feedback,
+                m_df_phy_axis_torque_feedback, m_df_spd_angle, m_p_general_config->axis_count);
 
-            }
+            m_serverGuide.RecordData(m_df_phy_axis_pos_feedback, m_df_phy_axis_pos_intp);
+
         }
         else if (m_serverGuide.IsEmpty() && m_serverGuide.IsIdle())
         {//退出循环
@@ -1258,6 +1298,8 @@ void ChannelEngine::Initialize(HMICommunication *hmi_comm, MICommunication *mi_c
 
     this->InitPhyAxisChn();
 
+    this->InitSyncAxisData();
+
     this->InitPcAllocList();
 
     this->m_n_da_prec = 2048; //pow(2, this->m_p_general_config->da_prec-1);
@@ -1404,6 +1446,8 @@ void ChannelEngine::Initialize(HMICommunication *hmi_comm, MICommunication *mi_c
 
     this->InitPoweroffHandler();
     printf("succeed to initialize channel engine\n");
+
+
 
 }
 
@@ -2846,6 +2890,9 @@ void ChannelEngine::ProcessMiClearPosRsp(MiCmdFrame &cmd){
  * @param cmd
  */
 void ChannelEngine::ProcessMiSyncAxis(MiCmdFrame &cmd){
+
+    sync_axis_ready = true;
+    printf("===== sync axis ready\n");
     //int64_t mask = 0;
     //memcpy(&mask, cmd.data.data, 8);
     //m_sync_axis_ctrl->RspSyncAxis(mask);
@@ -6567,6 +6614,32 @@ void ChannelEngine::ManualMove(uint8_t phy_axis, int8_t dir, double vel, double 
 
     uint8_t chn_axis = 0, chn = 0;
     chn = this->GetAxisChannel(phy_axis, chn_axis);
+
+
+    // 同步轴检测
+    if(m_p_axis_config[phy_axis].sync_axis){
+        int grp_index = 0;
+        bool flag_find =  false;
+        for(vector<uint8_t> l : m_sync_axis_list){
+
+            for(uint8_t axis: l){
+                if(axis == l.front()) continue;
+                if(axis == phy_axis){
+                    flag_find = true;
+                    break;
+                }
+            }
+            grp_index ++;
+        }
+
+        const GRegBits *g_reg = &m_p_pmc_reg->GReg().bits[0];
+
+        // 从轴所属组 正在建立同步控制
+        if(flag_find && (g_reg->SYNC & (1 << grp_index))){
+            return;
+        }
+    }
+
     //检查硬限位
     if(CheckAxisHardLimit(phy_axis, dir)){   //硬限位告警，直接返回
         printf("hard limit active, manual move return 3 \n");
@@ -7002,7 +7075,35 @@ bool ChannelEngine::CheckAxisHardLimit(uint8_t phy_axis, int8_t dir){
         return true;
     }
 
+
+    const GRegBits *g_reg = &m_p_pmc_reg->GReg().bits[0];
+
+    int grp_index = 0;
+
     // 同步轴也要判断丛轴状态
+    for(vector<uint8_t> l: m_sync_axis_list){
+
+        if((g_reg->SYNC & (1<<grp_index)) == 0) continue;
+
+        grp_index ++;
+
+        if(l.front() == phy_axis){
+
+            for(uint8_t axis: l){
+                if(axis == phy_axis) continue;
+
+                if(dir == DIR_POSITIVE){
+                    if(this->m_hard_limit_postive & (1<<axis))
+                        return true;
+                }else if(dir == DIR_NEGATIVE){
+                    if(this->m_hard_limit_negative & (1 << axis))
+                        return true;
+                }
+            }
+        }
+    }
+
+    /*
     int axisMask = GetSyncAxisCtrl()->GetSlaveAxis(phy_axis);
     for (int i = 0; i < this->m_p_general_config->axis_count; ++i) {
         if(axisMask & (0x01<<i)){
@@ -7014,7 +7115,7 @@ bool ChannelEngine::CheckAxisHardLimit(uint8_t phy_axis, int8_t dir){
                     return true;
             }
         }
-    }
+    }*/
 
     return false;
 }
@@ -8887,6 +8988,7 @@ void ChannelEngine::SystemReset(){
         */
 
 
+        // 复位除尘处理
         if(this->m_p_channel_control[i].m_b_dust_eliminate){
             this->m_p_channel_control[i].m_b_dust_eliminate = false;
             this->m_p_channel_control[i].resetEliminate();
@@ -8982,7 +9084,13 @@ void ChannelEngine::SystemReset(){
     //清空告警队列
     ClearAlarm();
 
-    m_sync_axis_ctrl->InputSync(m_p_pmc_reg->GReg().bits[0].SYNC);
+    if(need_sync_reset){
+        need_sync_reset = false;
+        sync_axis_ready = false;
+        printf("===== sync axis not ready\n");
+
+        m_sync_axis_ctrl->InputSync(m_p_pmc_reg->GReg().bits[0].SYNC);
+    }
 
     printf("channel engine reset finished !!!\n");
 }
@@ -9043,7 +9151,6 @@ void ChannelEngine::Emergency(uint8_t chn){
     //生成急停错误信息
     m_error_code = ERR_EMERGENCY;
     //CreateError(ERR_EMERGENCY, ERROR_LEVEL, CLEAR_BY_MCP_RESET, 0, chn);//梯图有报警
-
 }
 
 /**
@@ -9367,6 +9474,7 @@ bool ChannelEngine::RefreshMiStatusFun(){
                 }
                 if(warn_flag & (0x01 << 8)){  //同步轴机床坐标偏差过大告警
                     this->m_p_mi_comm->ReadSyncMachErr(value64);
+
                     if(value64 != 0){
                         uint64_t flag = 0x01;
                         for(uint8_t i = 0; i < this->m_p_general_config->axis_count; i++){
@@ -9374,7 +9482,7 @@ bool ChannelEngine::RefreshMiStatusFun(){
                             {
                                 uint8_t chan_id = CHANNEL_ENGINE_INDEX, axis_id = NO_AXIS;
                                 GetPhyAxistoChanAxis(i, chan_id, axis_id);
-                                CreateError(ERR_SYNC_MACH, FATAL_LEVEL, CLEAR_BY_RESET_POWER, 0, chan_id, axis_id);
+                                CreateError(ERR_SYNC_MACH, ERROR_LEVEL, CLEAR_BY_MCP_RESET, 0, chan_id, axis_id);
                             }
                             flag = flag << 1;
                         }
@@ -9469,14 +9577,17 @@ void ChannelEngine::CheckBattery(){
         CreateError(ERR_VOLTAGE_UNDER, WARNING_LEVEL, CLEAR_BY_MCP_RESET, 0, CHANNEL_ENGINE_INDEX, NO_AXIS);
 
     }
+
     if(value & 0x04){ //电池电压低
         CreateError(ERR_BATTERY_VOL_UNDER, WARNING_LEVEL, CLEAR_BY_MCP_RESET, 0, CHANNEL_ENGINE_INDEX, NO_AXIS);
 
     }
+
     if((value & 0x08) == 0x00){//轴过流,低有效
         CreateError(ERR_AXIS_CURRENT_OVER, WARNING_LEVEL, CLEAR_BY_MCP_RESET, 0, CHANNEL_ENGINE_INDEX, NO_AXIS);
 
     }
+
     if((value & 0x10) == 0x00){ //USB过流,低有效
         CreateError(ERR_USB_CURRENT_OVER, WARNING_LEVEL, CLEAR_BY_MCP_RESET, 0, CHANNEL_ENGINE_INDEX, NO_AXIS);
     }
@@ -9557,6 +9668,7 @@ void ChannelEngine::ProcessPmcSignal(){
 
             f_reg->RST = 0;
             m_axis_status_ctrl->InputEsp(g_reg->_ESP);//更新axis_status的急停状态
+            need_sync_reset = true;
             this->SystemReset();// @test zk 解除急停也要进行一次复位？
         }
 
@@ -9573,7 +9685,9 @@ void ChannelEngine::ProcessPmcSignal(){
         }
 
         if((g_reg->ST && g_reg_last->ST == 0) && g_reg->_SP == 1 && f_reg->STL == 0){ //循环启动
-            if(!m_editing) this->Start();
+
+            if(sync_axis_ready && !m_editing)
+                this->Start();
         }
 
         if(g_reg->ST_EXT && g_reg_last->ST_EXT == 0){
@@ -9654,10 +9768,15 @@ void ChannelEngine::ProcessPmcSignal(){
 
         if(g_reg->SYNC != g_reg_last->SYNC || (!inited && g_reg->SYNC)){
             m_sync_axis_ctrl->InputSync(g_reg->SYNC);
+            sync_axis_ready = false;
+            printf("===== sync axis not ready\n");
         }
+
+        /*
         if(g_reg->SYNCJ != g_reg_last->SYNCJ || (!inited && g_reg->SYNCJ)){
             m_sync_axis_ctrl->InputSyncJ(g_reg->SYNCJ);
         }
+        */
 
         // 主轴正转，主轴反转信号
         if(g_reg->SRV != g_reg_last->SRV || g_reg->SFR != g_reg_last->SFR){
@@ -9849,21 +9968,30 @@ void ChannelEngine::ProcessPmcSignal(){
             // 如果在增量模式下并且手动倍率为0，则不发指令
             bool valid = !(mode == MANUAL_STEP_MODE && ctrl[i].GetManualRatio() == 0);
             if(valid){
-                SetJPState(i, g_reg->JP, g_reg_last->JP, mode);
+
+                if(sync_axis_ready)
+
+                    SetJPState(i, g_reg->JP, g_reg_last->JP, mode);
             }
         }
         if(g_reg->JN != g_reg_last->JN){
             // 如果在增量模式下并且手动倍率为0，则不发指令
             bool valid = !(mode == MANUAL_STEP_MODE && ctrl[i].GetManualRatio() == 0);
             if(valid){
-                SetJNState(i, g_reg->JN, g_reg_last->JN, mode);
+
+                if(sync_axis_ready)
+
+                    SetJNState(i, g_reg->JN, g_reg_last->JN, mode);
             }
         }
 
         if(g_reg->MD == 6){  //原点模式
             for(int j = 0; j < 16; j++){
                 if((g_reg->REFE & (0x01<<j)) != 0 && (g_reg_last->REFE & (0x01<<j)) == 0){// 启动轴回零
-                    this->ProcessPmcRefRet(j+16*i);
+
+                    if(sync_axis_ready)
+
+                        this->ProcessPmcRefRet(j+16*i);
                 }
             }
         }
@@ -9895,8 +10023,10 @@ void ChannelEngine::ProcessPmcSignal(){
             // @test zk 复位信号发生后 pmc有可能调用子程序 要禁止这种情况
         	if(m_p_pmc_reg->FReg().bits[i].RST != 1)
         	{
-        		this->m_p_channel_control[0].CallMacroProgram(g_reg->MPCS);
-        		f_reg->MPCO = 1;   //调用结束
+                if(sync_axis_ready){
+                    this->m_p_channel_control[0].CallMacroProgram(g_reg->MPCS);
+                    f_reg->MPCO = 1;   //调用结束
+                }
         	}
         }else if(g_reg_last->EMPC == 1 && g_reg->EMPC == 0){
             f_reg->MPCO = 0;   //信号复位
@@ -10003,10 +10133,12 @@ void ChannelEngine::ProcessPmcSignal(){
                     this->ProcessAxisHardLimit(1, this->m_hard_limit_negative);
                 }
             }
+
             if(m_pos_hard_limit_last != m_hard_limit_postive){
                 m_pos_hard_limit_last = m_hard_limit_postive;
                 m_p_mi_comm->SendHardLimitState(true,m_pos_hard_limit_last);
             }
+
             if(m_neg_hard_limit_last != m_hard_limit_negative){
                 m_neg_hard_limit_last = m_hard_limit_negative;
                 m_p_mi_comm->SendHardLimitState(false,m_neg_hard_limit_last);
@@ -10925,7 +11057,7 @@ void ChannelEngine::AxisFindRefNoZeroSignal(uint8_t phy_axis){
         this->m_p_mi_comm->WriteCmd(cmd);
         gettimeofday(&this->m_time_ret_ref[phy_axis], NULL);   //记录起始时间，延时300ms
 
-        if (GetSyncAxisCtrl()->CheckSyncState(phy_axis) == 1)
+        //if (GetSyncAxisCtrl()->CheckSyncState(phy_axis) == 1)
         {//主动轴相应的从动轴也需要清除回零标志
             ClearSubAxisRefFlag(phy_axis);
             m_sync_axis_homing[phy_axis] = 1;
@@ -10954,10 +11086,12 @@ void ChannelEngine::AxisFindRefNoZeroSignal(uint8_t phy_axis){
         this->m_n_mask_ret_ref &= ~(0x01<<phy_axis);
         m_n_ret_ref_step[phy_axis] = 0;
 
-        if (GetSyncAxisCtrl()->CheckSyncState(phy_axis) == 1)
+
+        //if (GetSyncAxisCtrl()->CheckSyncState(phy_axis) == 1)
         {//从动轴建立机械坐标
             SetSubAxisRefPoint(phy_axis, 0);
         }
+
 
         /*if(m_n_mask_ret_ref == 0){
             m_n_ret_ref_auto_cur = 0;
@@ -11011,10 +11145,12 @@ void ChannelEngine::EcatIncAxisFindRefWithZeroSignal(uint8_t phy_axis){
         this->SetRetRefFlag(phy_axis, false);//清除建立参考点标志
         this->m_p_pmc_reg->FReg().bits[0].in_ref_point &= ~(0x01<<phy_axis);
 
-        if (GetSyncAxisCtrl()->CheckSyncState(phy_axis) == 1)
+
+        //if (GetSyncAxisCtrl()->CheckSyncState(phy_axis) == 1)
         {//主动轴相应的从动轴也需要清除回零标志
             ClearSubAxisRefFlag(phy_axis);
         }
+
 
         if(this->CheckAxisRefBaseSignal(phy_axis, dir))
         {// 已经触发粗基准信号
@@ -11193,25 +11329,27 @@ void ChannelEngine::EcatIncAxisFindRefWithZeroSignal(uint8_t phy_axis){
     }
 
     case 11:{
-        if (GetSyncAxisCtrl()->CheckSyncState(phy_axis) == 1)
+        //if (GetSyncAxisCtrl()->CheckSyncState(phy_axis) == 1)
         {
             struct timeval time_now;
             gettimeofday(&time_now, NULL);
             unsigned int time_elpase = (time_now.tv_sec-m_time_ret_ref[phy_axis].tv_sec)*1000000+time_now.tv_usec-m_time_ret_ref[phy_axis].tv_usec;
             if (time_elpase >= 1000000) //延时1000ms,等待轴停稳
             {
+
                 SetSubAxisRefPoint(phy_axis, 0);
                 gettimeofday(&this->m_time_ret_ref[phy_axis], NULL);
                 m_n_ret_ref_step[phy_axis]++;
                 std::cout << "step 11, wait for 1000ms" << std::endl;
             }
         }
+        /*
         else
         {
             gettimeofday(&this->m_time_ret_ref[phy_axis], NULL);
             m_n_ret_ref_step[phy_axis]++;
             std::cout << "step 11" << std::endl;
-        }
+        }*/
     }
         break;
 
@@ -11272,7 +11410,7 @@ void ChannelEngine::EcatIncAxisFindRefWithZeroSignal(uint8_t phy_axis){
         gettimeofday(&time_now, NULL);
         unsigned int time_elpase = (time_now.tv_sec-m_time_ret_ref[phy_axis].tv_sec)*1000000+time_now.tv_usec-m_time_ret_ref[phy_axis].tv_usec;
         if(time_elpase >= 200000) {//延时200ms,等待MI处理
-            if (GetSyncAxisCtrl()->CheckSyncState(phy_axis) == 1)
+            //if (GetSyncAxisCtrl()->CheckSyncState(phy_axis) == 1)
             {//从动轴建立机械坐标
                 SetSubAxisRefPoint(phy_axis, 0);
             }
@@ -11346,7 +11484,7 @@ void ChannelEngine::EcatIncAxisFindRefWithZeroSignal(uint8_t phy_axis){
 
             m_n_ret_ref_step[phy_axis] = 0;
 
-            if (GetSyncAxisCtrl()->CheckSyncState(phy_axis) == 1)//处理坐标有差异问题
+            //if (GetSyncAxisCtrl()->CheckSyncState(phy_axis) == 1)//处理坐标有差异问题
             {//从动轴建立机械坐标
                 SetSubAxisRefPoint(phy_axis, this->GetPhyAxisMachPosFeedback(phy_axis));
             }
@@ -11530,6 +11668,42 @@ void ChannelEngine::EcatIncAxisFindRefNoZeroSignal(uint8_t phy_axis){
  */
 void ChannelEngine::SetSubAxisRefPoint(int axisID, double refPos)
 {
+
+
+    int sync_grp_index = 0;
+
+    for(vector<uint8_t> l : m_sync_axis_list){
+
+        const GRegBits *g_reg = &m_p_pmc_reg->GReg().bits[0];
+
+        if((g_reg->SYNC & (1<<sync_grp_index)) == 0) return;
+
+        sync_grp_index ++;
+
+        if(l.front() == axisID){
+
+            for(uint8_t axis: l){
+                if(axis == axisID) continue;
+
+                MiCmdFrame mi_cmd;//主动轴相应的从动轴也需要设置当前位置为零点
+                memset(&mi_cmd, 0x00, sizeof(mi_cmd));
+                mi_cmd.data.cmd = CMD_MI_SET_AXIS_MACH_POS;
+                mi_cmd.data.axis_index = axis+1;
+
+                int64_t pos = (refPos) * 1000;
+                mi_cmd.data.data[0] = pos&0xFFFF;
+                mi_cmd.data.data[1] = (pos>>16)&0xFFFF;
+
+                this->m_p_mi_comm->WriteCmd(mi_cmd);
+
+                this->SetRetRefFlag(axis, true);
+                this->m_p_pmc_reg->FReg().bits[0].in_ref_point |= (0x01<<axis);   //置位到参考点标志
+                m_sync_axis_homing[axisID] = 0;
+            }
+        }
+    }
+
+    /*
     int axisMask = GetSyncAxisCtrl()->GetSlaveAxis(axisID);
     for (int i = 0; i < this->m_p_general_config->axis_count; ++i) {
         if(axisMask & (0x01<<i)){
@@ -11551,6 +11725,7 @@ void ChannelEngine::SetSubAxisRefPoint(int axisID, double refPos)
             m_sync_axis_homing[axisID] = 0;
         }
     }
+    */
 }
 
 /**
@@ -11559,12 +11734,33 @@ void ChannelEngine::SetSubAxisRefPoint(int axisID, double refPos)
  */
 void ChannelEngine::ClearSubAxisRefFlag(int axisID)
 {
+    int sync_grp_index = 0;
+
+    const GRegBits *g_reg = &m_p_pmc_reg->GReg().bits[0];
+
+    for(vector<uint8_t> l : m_sync_axis_list){
+
+
+        if((g_reg->SYNC & (1<<sync_grp_index)) == 0) return;
+
+        sync_grp_index ++;
+
+        if(l.front() == axisID){
+            for(uint8_t axis: l){
+                if(axis == axisID) continue;
+                this->SetRetRefFlag(axis, false);
+            }
+        }
+    }
+
+    /*
     int axisMask = GetSyncAxisCtrl()->GetSlaveAxis(axisID);
     for (int i = 0; i < this->m_p_general_config->axis_count; ++i) {
         if(axisMask & (0x01<<i)){
             this->SetRetRefFlag(i, false);
         }
     }
+    */
 }
 
 /**
@@ -12231,10 +12427,12 @@ void ChannelEngine::EcatAxisFindRefWithZeroSignal(uint8_t phy_axis){
         this->SetRetRefFlag(phy_axis, false);   //复位回参考点完成标志
         this->m_p_pmc_reg->FReg().bits[0].in_ref_point &= ~(0x01<<phy_axis);
 
-        if (GetSyncAxisCtrl()->CheckSyncState(phy_axis) == 1)
+
+        //if (GetSyncAxisCtrl()->CheckSyncState(phy_axis) == 1)
         {//主动轴相应的从动轴也需要清除回零标志
             ClearSubAxisRefFlag(phy_axis);
         }
+
 
         if(this->CheckAxisRefBaseSignal(phy_axis, dir)){  // 已经触发粗基准信号，直接开开始回退
             double move_length = this->m_p_axis_config[phy_axis].move_pr*1.2;
@@ -12398,7 +12596,7 @@ void ChannelEngine::EcatAxisFindRefWithZeroSignal(uint8_t phy_axis){
         {
             this->m_p_mi_comm->ReadPhyAxisCurFedBckPos(m_df_phy_axis_pos_feedback, m_df_phy_axis_pos_intp,m_df_phy_axis_speed_feedback,
                                                        m_df_phy_axis_torque_feedback, m_df_spd_angle, m_p_general_config->axis_count);
-            if (GetSyncAxisCtrl()->CheckSyncState(phy_axis) == 1)
+            //if (GetSyncAxisCtrl()->CheckSyncState(phy_axis) == 1)
             {//重新建立主从轴关系
                 double machPos = this->GetPhyAxisMachPosFeedback(phy_axis);
                 std::cout << "machPos:" << machPos << std::endl;
@@ -12470,7 +12668,7 @@ void ChannelEngine::EcatAxisFindRefWithZeroSignal(uint8_t phy_axis){
         gettimeofday(&time_now, NULL);
         unsigned int time_elpase = (time_now.tv_sec-m_time_ret_ref[phy_axis].tv_sec)*1000000+time_now.tv_usec-m_time_ret_ref[phy_axis].tv_usec;
         if(time_elpase >= 200000){ //延时200ms
-            if (GetSyncAxisCtrl()->CheckSyncState(phy_axis) == 1)
+            //if (GetSyncAxisCtrl()->CheckSyncState(phy_axis) == 1)
             {
                 SetSubAxisRefPoint(phy_axis, 0);
             }
@@ -12776,7 +12974,8 @@ void ChannelEngine::EcatAxisFindRefNoZeroSignal(uint8_t phy_axis){
     case 0: {// 计算原点偏移，设置原点
         std::cout << "ChannelEngine::EcatAxisFindRefNoZeroSignal" << std::endl;
 
-        if (GetSyncAxisCtrl()->CheckSyncState(phy_axis) == 1)
+
+        //if (GetSyncAxisCtrl()->CheckSyncState(phy_axis) == 1)
         {//主动轴相应的从动轴也需要清除回零标志
             ClearSubAxisRefFlag(phy_axis);
         }
@@ -12817,7 +13016,7 @@ void ChannelEngine::EcatAxisFindRefNoZeroSignal(uint8_t phy_axis){
         {
             this->m_p_mi_comm->ReadPhyAxisCurFedBckPos(m_df_phy_axis_pos_feedback, m_df_phy_axis_pos_intp,m_df_phy_axis_speed_feedback,
                                                        m_df_phy_axis_torque_feedback, m_df_spd_angle, m_p_general_config->axis_count);
-            if (GetSyncAxisCtrl()->CheckSyncState(phy_axis) == 1)
+            //if (GetSyncAxisCtrl()->CheckSyncState(phy_axis) == 1)
             {//重新建立主从关系
                 double machPos = this->GetPhyAxisMachPosFeedback(phy_axis);
                 std::cout << "machPos:" << machPos << std::endl;
@@ -12889,7 +13088,7 @@ void ChannelEngine::EcatAxisFindRefNoZeroSignal(uint8_t phy_axis){
         gettimeofday(&time_now, NULL);
         unsigned int time_elpase = (time_now.tv_sec-m_time_ret_ref[phy_axis].tv_sec)*1000000+time_now.tv_usec-m_time_ret_ref[phy_axis].tv_usec;
         if(time_elpase >= 200000){ //延时200ms
-            if (GetSyncAxisCtrl()->CheckSyncState(phy_axis) == 1)
+            //if (GetSyncAxisCtrl()->CheckSyncState(phy_axis) == 1)
             {
                 SetSubAxisRefPoint(phy_axis, 0);
             }
@@ -13029,16 +13228,39 @@ void ChannelEngine::ReturnRefPoint(){
 
     int count = 0;
     for(uint i = 0; i < this->m_p_general_config->axis_count; i++){
+
         if((m_n_mask_ret_ref & (0x01<<i)) == 0 /*||
                 (m_p_axis_config[i].ret_ref_mode == 0 && m_p_axis_config[i].feedback_mode == INCREMENTAL_ENCODER) 为什么增量式要禁止回参考点*/){  //禁止回参考点
 
             continue;
         }
 
-        if (GetSyncAxisCtrl()->CheckSyncState(i) == 2)
-        {//从动轴不能回零
-            CreateError(ERR_RET_SYNC_ERR, WARNING_LEVEL, CLEAR_BY_MCP_RESET, 0, m_n_cur_channle_index, i);
-            continue;
+
+        // 同步轴检测
+        if(m_p_axis_config[i].sync_axis){
+            int grp_index = 0;
+            bool flag_find =  false;
+
+            for(vector<uint8_t> l : m_sync_axis_list){
+                for(uint8_t axis: l){
+                    if(axis == l.front()) continue;
+                    if(axis == i){
+                        flag_find = true;
+                        break;
+                    }
+                }
+
+                if(flag_find) break;
+                grp_index ++;
+            }
+
+            const GRegBits *g_reg = &m_p_pmc_reg->GReg().bits[0];
+
+            // 从轴所属组 正在建立同步控制
+            if(flag_find && (g_reg->SYNC & (1 << grp_index))){
+                CreateError(ERR_RET_SYNC_ERR, WARNING_LEVEL, CLEAR_BY_MCP_RESET, 0, m_n_cur_channle_index, i);
+                return;
+            }
         }
 
         if(this->m_b_ret_ref_auto){
@@ -13099,7 +13321,6 @@ void ChannelEngine::ReturnRefPoint(){
     }
 
     if(m_n_mask_ret_ref == 0){
-
         printf("all axis home finished!!!\n");
         this->m_b_ret_ref = false;
         this->m_b_ret_ref_auto = false;
@@ -13315,7 +13536,9 @@ void ChannelEngine::ProcessAxisDownSafe(){
 
 void ChannelEngine::ProcessSAsingal(bool force)
 {
-    std::cout << "ProcessSA Signal" << std::endl;
+
+    printf("ProcessSA Signal emergency: %d\n", m_b_emergency);
+
     while (m_b_emergency || force)
     {
         this->m_p_mi_comm->ReadPhyAxisCurFedBckPos(m_df_phy_axis_pos_feedback, m_df_phy_axis_pos_intp, m_df_phy_axis_speed_feedback,
@@ -13324,7 +13547,7 @@ void ChannelEngine::ProcessSAsingal(bool force)
         //所有轴的速度小于某个值 100rpm
         for(uint8_t i = 0; i < this->m_p_general_config->axis_count; i++){
 
-            if (m_df_phy_axis_speed_feedback[i] > this->m_p_axis_config[i].move_pr * 1000 * 100 / 60)
+            if (fabs(m_df_phy_axis_speed_feedback[i]) > this->m_p_axis_config[i].move_pr * 1000 * 100 / 60)
             {
                 bReady = false;
                 break;
@@ -13356,7 +13579,7 @@ void ChannelEngine::RefErrorProcess(uint8_t phy_axis)
     {
         m_pmc_axis_ctrl[m_p_axis_config[phy_axis].axis_pmc-1].ExecCmdOver(true);
     }
-    if (GetSyncAxisCtrl()->CheckSyncState(phy_axis) == 1 && m_sync_axis_homing[phy_axis] == 1)
+    //if (GetSyncAxisCtrl()->CheckSyncState(phy_axis) == 1 && m_sync_axis_homing[phy_axis] == 1)
     {
         double machPos = this->GetPhyAxisMachPosFeedback(phy_axis);
         SetSubAxisRefPoint(phy_axis, machPos);

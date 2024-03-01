@@ -707,9 +707,13 @@ SG_DATA SG_Tapping_Type::GenData()
     if (control->CheckFRegState(65, 0))//RGSPP(F65.0)
     {// RGSPP 信号导通后，才开始采集主轴数据
 
-        if (radio != 1) radio = radio / 10000;               //radio 是传给MI的参数，需要10000转换
+        if (radio != 1){
+            radio = radio / 10000;               //radio 是传给MI的参数，需要10000转换
+        }
         spd_trans = spd_feedback/radio;
     }
+
+    if(fabs(radio - 1) < 0.0001) radio = 1000.0;
 
     SCAxisConfig * p_axis_config = g_ptr_parm_manager->GetAxisConfig();
 
@@ -717,6 +721,7 @@ SG_DATA SG_Tapping_Type::GenData()
     speed_z_axis /= p_axis_config[axis_two_].move_pr;
 
     double speed_spindle = feedback_speed_[axis_one_]/1000*60;
+    //printf("radio %lf  z_pr: %lf\n", radio, p_axis_config[axis_two_].move_pr);
     speed_spindle = ((speed_spindle)/radio)/p_axis_config[axis_two_].move_pr;
 
     //转化为mm每分钟

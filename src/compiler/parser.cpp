@@ -3622,6 +3622,17 @@ bool Parser::GetTargetPos(DPointChn &target, uint32_t &axis_mask, uint8_t *count
 		}else{//无扩展下标
 			addr = static_cast<DataAddr>(m_axis_name[i]-'A');
 			 if(GetCodeData(addr, data)){//有此参数，读取成功
+
+                 SCAxisConfig *cfg = m_p_channel_control->GetAxisConfig();
+
+                 /*
+                 if(cfg[i].sync_axis){
+                     CreateError(ERR_SYNC_INVALID_OPT, ERROR_LEVEL, CLEAR_BY_MCP_RESET);
+                     //this->m_p_lexer_result->error_code = SET_SYNC_MASTER_AXIS_ERROR;
+                     return false;
+                 }
+                 */
+
                  has_valid_world = true;
 				 if(((g_code->mask_dot & (0x01<<addr)) == 0) &&
 						((g_code->mask_macro & (0x01<<addr)) == 0)){  //没有小数点并且非宏表达式

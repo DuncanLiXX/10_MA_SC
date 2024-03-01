@@ -220,6 +220,8 @@ bool MCCommunication::WriteGCodeData(uint8_t chn, GCodeFrame &data){
 
     CalMcGCodeFrameCrc(data);
 
+    printf("WriteGCodeData ext type: %d\n", data.data.ext_type);
+
 	//读取FIFO数量，判断能否写入
 	uint32_t count = 0;
 	ReadRegister(MC_GCODE_FIFO_COUNT(chn), count);

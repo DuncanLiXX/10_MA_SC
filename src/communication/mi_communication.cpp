@@ -686,8 +686,8 @@ bool MICommunication::ReadServoOnState(uint64_t &value){
  * @return
  */
 bool MICommunication::ReadTrackErr(uint64_t &value){
-	bool res = true;
 
+    bool res = true;
 	ReadRegister64_M(SHARED_MEM_MI_STATUS_SVO_TRACK_ERR, value);
 
 	return res;
@@ -758,13 +758,13 @@ bool MICommunication::ReadPhyAxisCurFedBckPos(double *pos_fb, double *pos_intp,
 	int32_t flag = 0;
 	ReadRegister32_M(SHARED_MEM_AXIS_WRITE_OVER, flag);
 	if(flag == 0){
-        printf("$$$$ReadPhyAxisPos : write flag = 0, return \n");
+        //printf("$$$$ReadPhyAxisPos : write flag = 0, return \n");
         return false;   //MI未更新，直接返回
 	}
 
 	ReadRegister32_M(SHARED_MEM_AXIS_READ_OVER, flag);
 	if(flag == 1){
-        printf("$$$$ReadPhyAxisPos : read flag = 1, return \n");
+        //printf("$$$$ReadPhyAxisPos : read flag = 1, return \n");
         return false;		//已读取，直接返回
 	}
 
@@ -1238,8 +1238,8 @@ bool MICommunication::SetAxisRef(uint8_t axis, int64_t encoder){
     memcpy(&cmd.data.data, &encoder, sizeof(int64_t));
 
 	return this->WriteCmd(cmd);
-
 }
+
 
 void MICommunication::SetAxisRefCur(uint8_t axis, double mach_pos)
 {

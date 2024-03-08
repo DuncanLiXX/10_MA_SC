@@ -2339,6 +2339,7 @@ void ChannelControl::PauseRunGCode(){
             return;
         }
 
+
         if(this->m_channel_status.machining_state != MS_RUNNING
         #ifdef USES_ADDITIONAL_PROGRAM
                 || this->m_n_add_prog_type != NONE_ADD
@@ -2350,6 +2351,8 @@ void ChannelControl::PauseRunGCode(){
         if(m_n_run_thread_state == RUN ){	//只有RUN状态，运行线程才需要PAUSE
         	m_n_run_thread_state = PAUSE;
         }
+
+
 
         if(this->m_mask_run_pmc){   //暂停PMC轴
             this->PausePmcAxis(NO_AXIS, true);
@@ -4895,6 +4898,8 @@ bool ChannelControl::SendMDIOpenFileCmdToHmi(char *filename)
  */
 void ChannelControl::SetMachineState(uint8_t mach_state){
 
+    printf("===== ChannelControl::SetMachineState: %d\n", mach_state);
+
 	// @modify zk 记录之前状态
 	uint8_t old_stat = m_channel_status.machining_state;
 
@@ -4939,6 +4944,11 @@ void ChannelControl::SetMachineState(uint8_t mach_state){
     SendMachineStateCmdToHmi(mach_state);   //通知HMI
     SendMachineStateToMc(mach_state);       //通知mc
 
+    // @add zk  解决channelEngine 报警不暂停
+    if(mach_state == MS_WARNING){
+        PauseMc();
+    }
+
     //printf("========== old_stat %d, cur_stat %d\n", old_stat, mach_state);
     //ScPrintf("aaa 5 mach_state: %d\n", mach_state);
     // @modify zk 修改之后处理
@@ -4952,7 +4962,6 @@ void ChannelControl::SetMachineState(uint8_t mach_state){
     	this->m_p_f_reg->STL = 0;
 		this->m_p_f_reg->SPL = 0;
     }else if(mach_state == MS_RUNNING){
-
         this->m_p_f_reg->STL = 1;
     	this->m_p_f_reg->SPL = 0;
     }
@@ -5370,7 +5379,6 @@ int ChannelControl::Run(){
     //执行循环
     while(!g_sys_state.system_quit)
     {
-
 
         if(m_n_run_thread_state == RUN)
         {
@@ -6871,6 +6879,7 @@ bool ChannelControl::ExecuteMessage(){
 
 
         // @test zk
+        /*
         static uint64_t line_no = 0;
         static int type = 0;
         if(line_no != msg->GetLineNo() || type != msg->GetMsgType()){
@@ -6878,6 +6887,7 @@ bool ChannelControl::ExecuteMessage(){
             type = msg->GetMsgType();
             printf("---------->excute message line no %llu  msg type: %d flags: %d addr: %p\n", line_no, msg_type, msg->GetFlags().all, msg);
         }
+        */
         // @test zk
         //printf("---------->excute message line no %llu  msg type: %d flag: %d\n", line_no, msg_type, msg->GetFlags().all);
 
@@ -11303,14 +11313,14 @@ bool ChannelControl::ExecuteSkipMsg(RecordMsg *msg){
         memset(&cmd, 0x00, sizeof(cmd));
         cmd.data.cmd = CMD_MI_ACTIVE_SKIP;
         cmd.data.reserved = 0;   //激活
-        cmd.data.data[0] = this->m_p_channel_config->g31_skip_signal/10;  //跳转信号段号
-        cmd.data.data[1] = this->m_p_channel_config->g31_skip_signal%10;  // 跳转信号位号
+        cmd.data.data[0] = this->m_p_channel_config->g31_skip_signal1/10;  //跳转信号段号
+        cmd.data.data[1] = this->m_p_channel_config->g31_skip_signal1%10;  // 跳转信号位号
         memcpy(&cmd.data.data[2], &axis_mask, sizeof(uint32_t));           //轴mask
         cmd.data.data[4] = this->m_n_channel_index+1;   //MI中通道号从1开始
         cmd.data.data[5] = this->m_p_channel_config->g31_sig_level;    //跳转信号有效电平
         this->m_p_mi_comm->WriteCmd(cmd);
 
-        printf("send skip cmd to mi, signal:%u, data[0]=%hu, data1=%hu, level=%hu\n", m_p_channel_config->g31_skip_signal, cmd.data.data[0], cmd.data.data[1], cmd.data.data[5]);
+        printf("send skip cmd to mi, signal:%u, data[0]=%hu, data1=%hu, level=%hu\n", m_p_channel_config->g31_skip_signal1, cmd.data.data[0], cmd.data.data[1], cmd.data.data[5]);
 
         skipmsg->SetExecStep(1);	//跳转下一步
         return false;
@@ -11346,8 +11356,8 @@ bool ChannelControl::ExecuteSkipMsg(RecordMsg *msg){
             memset(&cmd, 0x00, sizeof(cmd));
             cmd.data.cmd = CMD_MI_ACTIVE_SKIP;
             cmd.data.reserved = 1;   //关闭
-            cmd.data.data[0] = this->m_p_channel_config->g31_skip_signal/10;  //跳转信号段号
-            cmd.data.data[1] = this->m_p_channel_config->g31_skip_signal%10;  // 跳转信号位号
+            cmd.data.data[0] = this->m_p_channel_config->g31_skip_signal1/10;  //跳转信号段号
+            cmd.data.data[1] = this->m_p_channel_config->g31_skip_signal1%10;  // 跳转信号位号
             memcpy(&cmd.data.data[2], &axis_mask, sizeof(uint32_t));           //轴mask
             cmd.data.data[4] = this->m_n_channel_index+1;   //MI中通道号从1开始
             cmd.data.data[5] = this->m_p_channel_config->g31_sig_level;    //跳转信号有效电平
@@ -19333,9 +19343,9 @@ void ChannelControl::SpindleOut(int dir, int speed){
     this->m_channel_status.spindle_dir = dir;
     if(dir == SPD_DIR_STOP)
         this->m_channel_status.rated_spindle_speed = 0;
-    else if(speed == 0){
+    /*else if(speed == 0){
         this->m_channel_status.rated_spindle_speed = this->m_p_axis_config[m_spd_axis_phy[0]-1].spd_set_speed;
-    }else
+    }*/else
         this->m_channel_status.rated_spindle_speed = speed;
 
     this->SendModeChangToHmi(S_MODE);
@@ -20023,6 +20033,7 @@ double ChannelControl::GetAxisCurInptTarPosWithCompensation(uint8_t axis_index, 
 
         for(uint8_t i = 0; i < this->m_p_channel_config->chn_axis_count; i++){
             if(axis_mask & (0x01<<i)){
+
                 origin_pos = m_p_chn_coord_config[0].offset[i];  //基本工件坐标系
 
                 if(coord_idx >= G54_CMD && coord_idx <= G59_CMD ){
@@ -20059,7 +20070,6 @@ double ChannelControl::GetAxisCurInptTarPosWithCompensation(uint8_t axis_index, 
                 */
 
                 *pp += origin_pos;    //机械坐标 - 工件坐标系偏移 = 工件坐标
-
             }
             pp++;
         }

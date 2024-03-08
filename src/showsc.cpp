@@ -238,8 +238,8 @@ void ShowSc::PrintChnStatus()
         AddPair(s,"work mode","MANUAL_MODE");
     else if(chn_status->chn_work_mode == MPG_MODE)
         AddPair(s,"work mode","MPG_MODE");
-    else if(chn_status->chn_work_mode == EDIT_MODE)
-        AddPair(s,"work mode","EDIT_MODE");
+    //else if(chn_status->chn_work_mode == EDIT_MODE)
+    //    AddPair(s,"work mode","EDIT_MODE");
     else if(chn_status->chn_work_mode == REF_MODE)
         AddPair(s,"work mode","REF_MODE");
     else
@@ -654,7 +654,7 @@ void ShowSc::PrintChnConfig()
 
     AddPair(s,"chn_small_line_time",cfg->chn_small_line_time);
 
-    AddPair(s,"g31_skip_signal",cfg->g31_skip_signal);
+    AddPair(s,"g31_skip_signal",cfg->g31_skip_signal1);
     AddPair(s,"g31_sig_level",cfg->g31_sig_level);
     AddPair(s,"rst_hold_time",cfg->rst_hold_time);
     AddPair(s,"rst_mode",cfg->rst_mode);
@@ -1030,8 +1030,8 @@ void ShowSc::PrintSyncAxisCtrl()
         AddPair(s,"work mode","MANUAL_MODE");
     else if(sync_axis_ctrl->mode == MPG_MODE)
         AddPair(s,"work mode","MPG_MODE");
-    else if(sync_axis_ctrl->mode == EDIT_MODE)
-        AddPair(s,"work mode","EDIT_MODE");
+    //else if(sync_axis_ctrl->mode == EDIT_MODE)
+    //    AddPair(s,"work mode","EDIT_MODE");
     else if(sync_axis_ctrl->mode == REF_MODE)
         AddPair(s,"work mode","REF_MODE");
     else

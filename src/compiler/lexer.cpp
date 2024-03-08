@@ -954,12 +954,12 @@ bool Lexer::GetOneMacroExp(){
 		m_p_lexer_result->error_code = ERR_NC_FORMAT;
 		goto END;
 	}
+
 	if((m_p_lexer_result->nc_code.gcode.mask_value & (~(0x01<<N_DATA))) != 0 ){  //除了‘N’不能有别的代码
 		printf("@@@@@@ERR_NC_FORMAT_14\n");
 		m_p_lexer_result->error_code = ERR_NC_FORMAT;
 		goto END;
 	}
-
 
 	if(!m_macro_exp.GetExpression(macro_code->macro_expression[0])){//表示式非法
 		m_p_lexer_result->error_code = ERR_INVALID_MACRO_EXP;

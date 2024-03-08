@@ -1669,9 +1669,9 @@ void ChannelEngine::PoweroffHandler(int signo, siginfo_t *info, void *context){
  * @brief 掉电时保存数据
  */
 void ChannelEngine::SaveDataPoweroff(){
-    //system("date >> /cnc/bin/save.txt");
-    //system("echo \"start\" >> /cnc/bin/save.txt");
-    system("echo 0 > /sys/class/gpio/gpio968/value");
+    system("date >> /cnc/bin/save.txt");
+    system("echo \"start\" >> /cnc/bin/save.txt");
+    //system("echo 0 > /sys/class/gpio/gpio968/value");
 
     //保存PMC寄存器数据
     if((this->m_mask_import_param & (0x01<<CONFIG_PMC_REG)) == 0)
@@ -1697,10 +1697,10 @@ void ChannelEngine::SaveDataPoweroff(){
     delete g_ptr_trace;
     g_ptr_trace = nullptr;
 
-    system("echo 1 > /sys/class/gpio/gpio968/value");
-    //system("date >> /cnc/bin/save.txt");
-    //system("echo \"end\" >> /cnc/bin/save.txt");
-    //system("sync");
+    //system("echo 1 > /sys/class/gpio/gpio968/value");
+    system("date >> /cnc/bin/save.txt");
+    system("echo \"end\" >> /cnc/bin/save.txt");
+    system("sync");
 }
 
 /**
@@ -8746,7 +8746,7 @@ void ChannelEngine::SendMiBacklash(uint8_t axis){
     if(m_p_axis_config[axis].backlash_enable){
         int32_t data = m_p_axis_config[axis].backlash_forward * 1000;
         memcpy(cmd.data.data, &data, 4);
-        data = m_p_axis_config[axis].backlash_negative * 1000;
+        data = 0;
         memcpy(&cmd.data.data[2], &data, 4);
         data = m_p_axis_config[axis].backlash_step;
         memcpy(&cmd.data.data[4], &data, 4);
@@ -9239,6 +9239,7 @@ void ChannelEngine::RefreshPmcNotReady()
     usleep(8000);  //8ms周期，比PMC周期相同
 }
 
+
 /**
  * @brief 更新MI的状态
  * @return
@@ -9483,10 +9484,12 @@ bool ChannelEngine::RefreshMiStatusFun(){
                                 uint8_t chan_id = CHANNEL_ENGINE_INDEX, axis_id = NO_AXIS;
                                 GetPhyAxistoChanAxis(i, chan_id, axis_id);
                                 CreateError(ERR_SYNC_MACH, ERROR_LEVEL, CLEAR_BY_MCP_RESET, 0, chan_id, axis_id);
+
                             }
                             flag = flag << 1;
                         }
                     }
+
                 }
             }
 
@@ -9626,7 +9629,7 @@ void ChannelEngine::ProcessPmcSignal(){
         }else if(g_reg->MD == 2){   //手轮
             mode = MPG_MODE;
         }else if(g_reg->MD == 3){   //编辑
-            mode = EDIT_MODE;
+            //mode = EDIT_MODE;
         }else if(g_reg->MD == 4){   //步进
             mode = MANUAL_STEP_MODE;
         }else if(g_reg->MD == 5){   //JOG
@@ -11676,7 +11679,9 @@ void ChannelEngine::SetSubAxisRefPoint(int axisID, double refPos)
 
         const GRegBits *g_reg = &m_p_pmc_reg->GReg().bits[0];
 
-        if((g_reg->SYNC & (1<<sync_grp_index)) == 0) return;
+        if((g_reg->SYNC & (1<<sync_grp_index)) == 0){
+            return;
+        }
 
         sync_grp_index ++;
 
@@ -11696,9 +11701,11 @@ void ChannelEngine::SetSubAxisRefPoint(int axisID, double refPos)
 
                 this->m_p_mi_comm->WriteCmd(mi_cmd);
 
-                this->SetRetRefFlag(axis, true);
+                //this->SetRetRefFlag(axis, true);
                 this->m_p_pmc_reg->FReg().bits[0].in_ref_point |= (0x01<<axis);   //置位到参考点标志
                 m_sync_axis_homing[axisID] = 0;
+
+                //m_n_mask_ret_ref_over &= ~(1 << axis);
             }
         }
     }
@@ -13258,6 +13265,7 @@ void ChannelEngine::ReturnRefPoint(){
 
             // 从轴所属组 正在建立同步控制
             if(flag_find && (g_reg->SYNC & (1 << grp_index))){
+                m_p_channel_control->SetRefPointFlag(i, true);
                 CreateError(ERR_RET_SYNC_ERR, WARNING_LEVEL, CLEAR_BY_MCP_RESET, 0, m_n_cur_channle_index, i);
                 return;
             }

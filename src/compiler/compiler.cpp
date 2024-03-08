@@ -435,6 +435,8 @@ bool Compiler::SaveScene() {
     scene.else_jump = m_b_else_jump;
     /***************************************/
 
+    m_node_stack_run.clear();
+
 #ifdef USES_WOOD_MACHINE
     scene.list_spd_start = *m_p_list_spd_start;
     //	printf("Compiler::SaveScene(), spd_count=%d, scene=%d\n", m_p_list_spd_start->GetLength(), scene.list_spd_start.GetLength());
@@ -2135,11 +2137,12 @@ bool Compiler::RunMessage() {
             static uint64_t cur_line = 0;
             static int type = 0;
 
+            /*
             if(cur_line != msg->GetLineNo() || type != msg->GetMsgType()){
                 cur_line = msg->GetLineNo();
                 type = msg->GetMsgType();
                 printf("compiler run message  line no: %llu,  type: %d flag: %d\n ", cur_line, msg_type, msg->GetFlags().all);
-            }
+            }*/
             // @test zk
             //std::cout << "RunMessage: " << (int)msg_type << std::endl;
 
@@ -2188,6 +2191,7 @@ bool Compiler::RunMessage() {
                        res = this->RunMacroMsg(msg);
                 }catch(std::out_of_range a){
                     res = false;
+                    printf("22222222222222222\n");
                     CreateError(ERR_COMPILER_INTER, ERROR_LEVEL, CLEAR_BY_MCP_RESET);
                 }
                 break;
@@ -3194,7 +3198,7 @@ bool Compiler::RunMacroMsg(RecordMsg *msg) {
 
     switch (macro_cmd) {
     case MACRO_CMD_GOTO:	//跳转指令则跳转到相应代码处
-        //printf("---------------- goto cmd -------> %llu\n", tmp->GetLineNo());
+        printf("---------------- goto cmd -------> %llu\n", tmp->GetLineNo());
         if(!tmp->GetMacroExpCalFlag(0)){
             if(!m_p_parser->GetExpressionResult(tmp->GetMacroExp(0), tmp->GetMacroExpResult(0))) {//表达式运算失败
                 m_error_code = m_p_parser->GetErrorCode();
@@ -3238,6 +3242,7 @@ bool Compiler::RunMacroMsg(RecordMsg *msg) {
 
         break;
     case MACRO_CMD_IF_GOTO: //条件跳转指令需要在此处等待
+        //printf("-------------- IF GOTO ---------------\n");
         if (tmp->GetRunStep() == 0) {
             if (!m_p_parser->GetExpressionResult(tmp->GetMacroExp(0),
                                                  tmp->GetMacroExpResult(0))) { //表达式运算失败
@@ -3255,6 +3260,7 @@ bool Compiler::RunMacroMsg(RecordMsg *msg) {
                 break;
             }
         }
+
         if (tmp->GetRunStep() == 1) {
             if(!tmp->GetMacroExpCalFlag(1)){
                 if (!m_p_parser->GetExpressionResult(tmp->GetMacroExp(1),
@@ -3287,6 +3293,7 @@ bool Compiler::RunMacroMsg(RecordMsg *msg) {
                 CreateErrorMsg(ERR_JUMP_GOTO_ILLIGAL, tmp->GetLineNo());
                 return false;
             }
+
 
             if (!this->m_p_file_map_info->JumpTo(offset)) {  //映射失败
                 CreateErrorMsg(ERR_JUMP_GOTO, tmp->GetLineNo());  //子程序跳转失败
@@ -3473,7 +3480,7 @@ bool Compiler::RunMacroMsg(RecordMsg *msg) {
         break;
     case MACRO_CMD_IF:{
         //@test
-        //printf("===== IF CMD %llu\n", tmp->GetLineNo());
+        printf("===== IF CMD %llu\n", tmp->GetLineNo());
         if(!tmp->GetMacroExpCalFlag(0)){
             if(!m_p_parser->GetExpressionResult(tmp->GetMacroExp(0), tmp->GetMacroExpResult(0))) {//表达式运算失败
                 m_error_code = m_p_parser->GetErrorCode();
@@ -3547,7 +3554,7 @@ bool Compiler::RunMacroMsg(RecordMsg *msg) {
     case MACRO_CMD_ELSEIF:{
 
         //@test
-        //printf("===== ELSEIF CMD %llu\n", tmp->GetLineNo());
+        printf("===== ELSEIF CMD %llu\n", tmp->GetLineNo());
 
         if(m_node_stack_run.size() == 0){
             printf("IF ELSE 不匹配, 没有if入栈但遇到  else/ elseif\n");
@@ -3612,7 +3619,7 @@ bool Compiler::RunMacroMsg(RecordMsg *msg) {
     case MACRO_CMD_ELSE:{
 
         //@test
-        //printf("===== ELSE CMD %llu\n", tmp->GetLineNo());
+        printf("===== ELSE CMD %llu\n", tmp->GetLineNo());
 
         if(m_node_stack_run.size() == 0){
             printf("IF ELSE 不匹配, 没有if入栈但遇到  else/ elseif 222\n");
@@ -3638,7 +3645,7 @@ bool Compiler::RunMacroMsg(RecordMsg *msg) {
     case MACRO_CMD_ENDIF:{
 
         //@test
-        //printf("===== ENDIF CMD %llu\n", tmp->GetLineNo());
+        printf("===== ENDIF CMD %llu\n", tmp->GetLineNo());
 
         if(m_node_stack_run.size() == 0){
             printf("IF ELSE 不匹配, 没有if入栈但遇到  endif \n");
@@ -4702,6 +4709,8 @@ bool Compiler::CheckJumpGoto(uint64_t line_src, uint64_t line_des){
     bool res = true;
     ListNode <LoopRec> *node = m_p_list_loop->HeadNode();
     LoopOffset loop;
+
+
     while (node != nullptr) {
         if (line_des > node->data.start_line_no && line_des < node->data.end_line_no) {  //目的行在循环体内
             if(line_src < node->data.start_line_no || line_src > node->data.end_line_no ){ //跳转起点在循环体外
@@ -4724,6 +4733,8 @@ bool Compiler::CheckJumpGoto(uint64_t line_src, uint64_t line_des){
 
         node = node->next;
     }
+
+
 
     //  处理 if 中 goto
     for(vector<IfElseOffset> node_vector: m_node_vectors_vector){

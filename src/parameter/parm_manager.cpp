@@ -664,7 +664,7 @@ bool ParmManager::ReadChnConfig(){
 			m_sc_channel_config[i].chn_spd_limit_on_curvity = m_ini_chn->GetIntValueOrDefault(sname, "chn_spd_limit_on_curvity", 1);
 			m_sc_channel_config[i].chn_rapid_overlap_level = m_ini_chn->GetIntValueOrDefault(sname, "chn_rapid_overlap_level", 1);
 //			printf("on_axis[%hhu]  on_acc[%hhu]  oncur[%hhu]  level[%hhu]\n", m_sc_channel_config[i].chn_spd_limit_on_acc,
-//					m_sc_channel_config[i].chn_spd_limit_on_curvity, m_sc_channel_config[i].chn_rapid_overlap_level);
+//			m_sc_channel_config[i].chn_spd_limit_on_curvity, m_sc_channel_config[i].chn_rapid_overlap_level);
 
 
 			m_sc_channel_config[i].chn_precision = m_ini_chn->GetIntValueOrDefault(sname, "chn_precision", 10);
@@ -696,7 +696,15 @@ bool ParmManager::ReadChnConfig(){
 
 			m_sc_channel_config[i].chn_small_line_time = m_ini_chn->GetIntValueOrDefault(sname, "chn_small_line_time", 30);
 
-			m_sc_channel_config[i].g31_skip_signal = m_ini_chn->GetIntValueOrDefault(sname, "g31_skip_signal", 0);
+            m_sc_channel_config[i].g31_skip_signal1 = m_ini_chn->GetIntValueOrDefault(sname, "g31_skip_signal1", 0);
+            m_sc_channel_config[i].g31_skip_signal2 = m_ini_chn->GetIntValueOrDefault(sname, "g31_skip_signal2", 0);
+            m_sc_channel_config[i].g31_skip_signal3 = m_ini_chn->GetIntValueOrDefault(sname, "g31_skip_signal3", 0);
+            m_sc_channel_config[i].g31_skip_signal4 = m_ini_chn->GetIntValueOrDefault(sname, "g31_skip_signal4", 0);
+            m_sc_channel_config[i].g31_skip_signal5 = m_ini_chn->GetIntValueOrDefault(sname, "g31_skip_signal5", 0);
+            m_sc_channel_config[i].g31_skip_signal6 = m_ini_chn->GetIntValueOrDefault(sname, "g31_skip_signal6", 0);
+            m_sc_channel_config[i].g31_skip_signal7 = m_ini_chn->GetIntValueOrDefault(sname, "g31_skip_signal7", 0);
+            m_sc_channel_config[i].g31_skip_signal8 = m_ini_chn->GetIntValueOrDefault(sname, "g31_skip_signal8", 0);
+            m_sc_channel_config[i].g31_skip_signal_type = m_ini_chn->GetIntValueOrDefault(sname, "g31_skip_signal_type", 0);
             m_sc_channel_config[i].g31_sig_level = m_ini_chn->GetIntValueOrDefault(sname, "g31_sig_level", 0);
             m_sc_channel_config[i].rst_hold_time = m_ini_chn->GetIntValueOrDefault(sname, "rst_hold_time", 16);
             m_sc_channel_config[i].rst_mode = m_ini_chn->GetIntValueOrDefault(sname, "rst_mode", 0);
@@ -797,7 +805,15 @@ bool ParmManager::ReadChnConfig(){
 
 			m_sc_channel_config[i].chn_small_line_time = 30;
 
-			m_sc_channel_config[i].g31_skip_signal = 0;
+            m_sc_channel_config[i].g31_skip_signal1 = 0;
+            m_sc_channel_config[i].g31_skip_signal2 = 0;
+            m_sc_channel_config[i].g31_skip_signal3 = 0;
+            m_sc_channel_config[i].g31_skip_signal4 = 0;
+            m_sc_channel_config[i].g31_skip_signal5 = 0;
+            m_sc_channel_config[i].g31_skip_signal6 = 0;
+            m_sc_channel_config[i].g31_skip_signal7 = 0;
+            m_sc_channel_config[i].g31_skip_signal8 = 0;
+            m_sc_channel_config[i].g31_skip_signal_type = 0;
             m_sc_channel_config[i].g31_sig_level = 0;
             m_sc_channel_config[i].rst_hold_time = 16;
             m_sc_channel_config[i].rst_mode = 0;
@@ -866,25 +882,20 @@ bool ParmManager::ReadChnConfig(){
 			}
 			m_ini_chn->AddKeyValuePair(string("intep_mode"), string("0"), ns);
 			m_ini_chn->AddKeyValuePair(string("intep_cycle"), string("1"), ns);
-
 			m_ini_chn->AddKeyValuePair(string("chn_max_vel"), string("40000"), ns);
 			m_ini_chn->AddKeyValuePair(string("chn_max_acc"), string("2000"), ns);
 			m_ini_chn->AddKeyValuePair(string("chn_max_dec"), string("2000"), ns);
 			m_ini_chn->AddKeyValuePair(string("chn_max_corner_acc"), string("800"), ns);
 			m_ini_chn->AddKeyValuePair(string("chn_max_arc_acc"), string("1000"), ns);
 			m_ini_chn->AddKeyValuePair(string("chn_s_cut_filter_time"), string("5"), ns);
-
             m_ini_chn->AddKeyValuePair(string("tap_max_acc"), string("2000"), ns);
             m_ini_chn->AddKeyValuePair(string("tap_max_dec"), string("2000"), ns);
             m_ini_chn->AddKeyValuePair(string("tap_plan_mode"), string("1"), ns);
             m_ini_chn->AddKeyValuePair(string("tap_s_cut_filter_time"), string("5"), ns);
-
-
 			m_ini_chn->AddKeyValuePair(string("chn_spd_limit_on_axis"), string("1"), ns);
 			m_ini_chn->AddKeyValuePair(string("chn_spd_limit_on_acc"), string("1"), ns);
 			m_ini_chn->AddKeyValuePair(string("chn_spd_limit_on_curvity"), string("1"), ns);
 			m_ini_chn->AddKeyValuePair(string("chn_rapid_overlap_level"), string("1"), ns);
-
 			m_ini_chn->AddKeyValuePair(string("chn_precision"), string("10"), ns);
 			m_ini_chn->AddKeyValuePair(string("chn_look_ahead"), string("1"), ns);
 			m_ini_chn->AddKeyValuePair(string("chn_feed_limit_level"), string("0"), ns);
@@ -894,16 +905,13 @@ bool ParmManager::ReadChnConfig(){
 			m_ini_chn->AddKeyValuePair(string("corner_stop_angle_min"), string("1"), ns);
 			m_ini_chn->AddKeyValuePair(string("corner_acc_limit"), string("1"), ns);
 			m_ini_chn->AddKeyValuePair(string("long_line_acc"), string("1"), ns);
-
 			m_ini_chn->AddKeyValuePair(string("arc_err_limit"), string("3"), ns);
 			m_ini_chn->AddKeyValuePair(string("default_plane"), string("0"), ns);
             m_ini_chn->AddKeyValuePair(string("default_cmd_mode"), string("0"), ns);
             m_ini_chn->AddKeyValuePair(string("default_feed_mode"), string("1"), ns);
             m_ini_chn->AddKeyValuePair(string("rapid_mode"), string("0"), ns);
-
 			m_ini_chn->AddKeyValuePair(string("cut_plan_mode"), string("1"), ns);
 			m_ini_chn->AddKeyValuePair(string("rapid_plan_mode"), string("1"), ns);
-
 			m_ini_chn->AddKeyValuePair(string("ex_coord_count"), string("0"), ns);
 			m_ini_chn->AddKeyValuePair(string("change_tool_mode"), string("1"), ns);
 			m_ini_chn->AddKeyValuePair(string("tool_live_check"), string("0"), ns);
@@ -911,9 +919,7 @@ bool ParmManager::ReadChnConfig(){
 			m_ini_chn->AddKeyValuePair(string("gcode_trace"), string("1"), ns);
 			m_ini_chn->AddKeyValuePair(string("gcode_unit"), string("0"), ns);
 			m_ini_chn->AddKeyValuePair(string("timing_mode"), string("0"), ns);
-
 			m_ini_chn->AddKeyValuePair(string("chn_small_line_time"), string("30"), ns);
-
 			m_ini_chn->AddKeyValuePair(string("g31_skip_signal"), string("0"), ns);
             m_ini_chn->AddKeyValuePair(string("g31_sig_level"), string("0"), ns);
             m_ini_chn->AddKeyValuePair(string("rst_hold_time"), string("16"), ns);
@@ -3924,7 +3930,8 @@ bool ParmManager::ActiveCoordParam(uint8_t chn_index){
 	ListNode<CoordUpdate> *node_next = nullptr;
 
 	while(node != nullptr){
-		coord = &node->data;
+
+        coord = &node->data;
 
 		if(coord->chn_index == chn_index || chn_index == 0xFF){//更新当前参数
 			if(coord->coord_index < kWorkCoordCount){  //工件坐标系
@@ -4303,26 +4310,26 @@ bool ParmManager::UpdateSystemParam(uint32_t param_no, ParamValue &value){
 
 	sprintf(sname, "system");
 	switch(param_no){
-	case 3: 	//通道数
+    case 2: 	//通道数
 		if(value.value_uint8 > kMaxChnCount){
 			return false;
 		}
 		sprintf(kname, "chn_count");
 		m_ini_system->SetIntValue(sname, kname, value.value_uint8);
 		break;
-	case 5:		//物理轴数
+    case 4:		//物理轴数
 		if(value.value_uint8 > kMaxAxisNum){
 			return false;
 		}
 		sprintf(kname, "axis_count");
 		m_ini_system->SetIntValue(sname, kname, value.value_uint8);
 		break;
-	case 6:		//总线通讯周期
+    case 5:		//总线通讯周期
 		sprintf(kname, "bus_cycle");
 		m_ini_system->SetIntValue(sname, kname, value.value_uint8);
 		break;
 
-	case 10:  //手轮编码格式
+    case 10:  //手轮编码格式
 		sprintf(kname, "hw_code_type");
 		m_ini_system->SetIntValue(sname, kname, value.value_uint8);
 		break;
@@ -4343,11 +4350,13 @@ bool ParmManager::UpdateSystemParam(uint32_t param_no, ParamValue &value){
 		sprintf(kname, "max_cent_acc");
 		m_ini_system->SetDoubleValue(sname, kname, value.value_double);
 		break;
-	case 30:	//轴名称下标
+    case 100:	//轴名称下标
 		sprintf(kname, "axis_name_ex");
 		m_ini_system->SetIntValue(sname, kname, value.value_uint8);
 		break;
-	case 31:	//回参考点时倍率固定
+
+    /*
+    case 31:	//回参考点时倍率固定
 		sprintf(kname, "fix_ratio_find_ref");
 		m_ini_system->SetIntValue(sname, kname, value.value_uint8);
 		break;
@@ -4380,10 +4389,7 @@ bool ParmManager::UpdateSystemParam(uint32_t param_no, ParamValue &value){
 		sprintf(kname, "fast_io_filter_time");
 		m_ini_system->SetIntValue(sname, kname, value.value_uint32);
 		break;
-	case 90:	//背光延时时间
-		sprintf(kname, "backlight_delay_time");
-		m_ini_system->SetIntValue(sname, kname, value.value_uint16);
-		break;
+
 	case 91:	//蜂鸣时间限制
 		sprintf(kname, "beep_time");
 		m_ini_system->SetIntValue(sname, kname, value.value_uint8);
@@ -4396,7 +4402,21 @@ bool ParmManager::UpdateSystemParam(uint32_t param_no, ParamValue &value){
 		sprintf(kname, "alarm_temperature");
 		m_ini_system->SetIntValue(sname, kname, value.value_uint8);
 		break;
-    case 94:
+
+    */
+    case 101:	//调试信息级别
+		sprintf(kname, "trace_level");
+		m_ini_system->SetIntValue(sname, kname, value.value_uint8);
+		break;
+    case 102:	//调试模式
+		sprintf(kname, "debug_mode");
+		m_ini_system->SetIntValue(sname, kname, value.value_uint8);
+		break;
+    case 200:	//背光延时时间
+        sprintf(kname, "backlight_delay_time");
+        m_ini_system->SetIntValue(sname, kname, value.value_uint16);
+        break;
+    case 201:
         sprintf(kname, "statistics_mode");
         m_ini_system->SetIntValue(sname, kname, value.value_uint8);
     {
@@ -4412,109 +4432,102 @@ bool ParmManager::UpdateSystemParam(uint32_t param_no, ParamValue &value){
         }
     }
         break;
-	case 99:	//调试信息级别
-		sprintf(kname, "trace_level");
-		m_ini_system->SetIntValue(sname, kname, value.value_uint8);
-		break;
-	case 100:	//调试模式
-		sprintf(kname, "debug_mode");
-		m_ini_system->SetIntValue(sname, kname, value.value_uint8);
-		break;
-    case 65:  //位置开关
+
+    case 300:  //位置开关
         sprintf(kname, "pos_check_id_1");
         m_ini_system->SetIntValue(sname, kname, value.value_uint8);
         break;
-    case 66:
+    case 301:
         sprintf(kname, "pos_check_id_2");
         m_ini_system->SetIntValue(sname, kname, value.value_uint8);
         break;
-    case 67:
+    case 302:
         sprintf(kname, "pos_check_id_3");
         m_ini_system->SetIntValue(sname, kname, value.value_uint8);
         break;
-    case 68:
+    case 303:
         sprintf(kname, "pos_check_id_4");
         m_ini_system->SetIntValue(sname, kname, value.value_uint8);
         break;
-    case 69:
+    case 304:
         sprintf(kname, "pos_check_id_5");
         m_ini_system->SetIntValue(sname, kname, value.value_uint8);
         break;
-    case 70:
+    case 305:
         sprintf(kname, "pos_check_id_6");
         m_ini_system->SetIntValue(sname, kname, value.value_uint8);
         break;
-    case 71:
+    case 306:
         sprintf(kname, "pos_check_id_7");
         m_ini_system->SetIntValue(sname, kname, value.value_uint8);
         break;
-    case 72:
+    case 307:
         sprintf(kname, "pos_check_id_8");
         m_ini_system->SetIntValue(sname, kname, value.value_uint8);
         break;
 
-    case 73:
+    case 308:
         sprintf(kname, "pos_check_min_1");
         m_ini_system->SetDoubleValue(sname, kname, value.value_double);
         break;
-    case 74:
+    case 309:
         sprintf(kname, "pos_check_min_2");
         m_ini_system->SetDoubleValue(sname, kname, value.value_double);
         break;
-    case 75:
+    case 310:
         sprintf(kname, "pos_check_min_3");
         m_ini_system->SetDoubleValue(sname, kname, value.value_double);
         break;
-    case 76:
+    case 311:
         sprintf(kname, "pos_check_min_4");
         m_ini_system->SetDoubleValue(sname, kname, value.value_double);
         break;
-    case 77:
+    case 312:
         sprintf(kname, "pos_check_min_5");
         m_ini_system->SetDoubleValue(sname, kname, value.value_double);
         break;
-    case 78:
+    case 313:
         sprintf(kname, "pos_check_min_6");
         m_ini_system->SetDoubleValue(sname, kname, value.value_double);
         break;
-    case 79:
+    case 314:
         sprintf(kname, "pos_check_min_7");
         m_ini_system->SetDoubleValue(sname, kname, value.value_double);
         break;
-    case 80:
+    case 315:
         sprintf(kname, "pos_check_min_8");
         m_ini_system->SetDoubleValue(sname, kname, value.value_double);
         break;
 
-    case 81:
+    case 316:
         sprintf(kname, "pos_check_max_1");
         m_ini_system->SetDoubleValue(sname, kname, value.value_double);
         break;
-    case 82:
+    case 317:
         sprintf(kname, "pos_check_max_2");
         m_ini_system->SetDoubleValue(sname, kname, value.value_double);
         break;
-    case 83:
+    case 318:
         sprintf(kname, "pos_check_max_3");
         m_ini_system->SetDoubleValue(sname, kname, value.value_double);
         break;
-    case 84:
+    case 319:
         sprintf(kname, "pos_check_max_4");
         m_ini_system->SetDoubleValue(sname, kname, value.value_double);
         break;
-    case 85:
+    case 320:
         sprintf(kname, "pos_check_max_5");
         m_ini_system->SetDoubleValue(sname, kname, value.value_double);
         break;
-    case 86:
+    case 321:
         sprintf(kname, "pos_check_max_6");
         m_ini_system->SetDoubleValue(sname, kname, value.value_double);
         break;
-    case 87:
+    case 322:
         sprintf(kname, "pos_check_max_7");
         m_ini_system->SetDoubleValue(sname, kname, value.value_double);
         break;
-    case 88:
+    case 323:
         sprintf(kname, "pos_check_max_8");
         m_ini_system->SetDoubleValue(sname, kname, value.value_double);
         break;
@@ -4669,347 +4682,281 @@ bool ParmManager::UpdateChnParam(uint8_t chn_index, uint32_t param_no, ParamValu
 	memset(kname, 0x00, sizeof(kname));
 
 	sprintf(sname, "channel_%hhu", chn_index);
-	switch(param_no){
-	case 102:	//轴数量
-		sprintf(kname, "chn_axis_count");
-		m_ini_chn->SetIntValue(sname, kname, value.value_uint8);
-		break;
-	case 103:   //通道所属方式组
-		sprintf(kname, "chn_group_index");
-		m_ini_chn->SetIntValue(sname, kname, value.value_uint8);
-		break;
-	case 104:	//基本轴X
-//		sprintf(kname, "chn_axis_x");
-//		m_ini_chn->SetIntValue(sname, kname, value.value_uint8);
-//		break;
-	case 105:	//基本轴Y
-//		sprintf(kname, "chn_axis_y");
-//		m_ini_chn->SetIntValue(sname, kname, value.value_uint8);
-//		break;
-	case 106:	//基本轴Z
-//		sprintf(kname, "chn_axis_z");
-//		m_ini_chn->SetIntValue(sname, kname, value.value_uint8);
-//		break;
-	case 107:	//轴4
-	case 108:	//轴5
-	case 109:	//轴6
-	case 110:	//轴7
-	case 111:	//轴8
-		sprintf(kname, "chn_axis_%d", param_no-103);
-		m_ini_chn->SetIntValue(sname, kname, value.value_uint8);
-		break;
-	case 136:  //轴名称
-	case 137:
-	case 138:
-	case 139:
-	case 140:
-	case 141:
-	case 142:
-	case 143:
-		sprintf(kname, "chn_axis_name_%d", param_no-135);
-		m_ini_chn->SetIntValue(sname, kname, value.value_uint8);
-		break;
-    case 144:
-    case 145:
-    case 146:
-    case 147:
-    case 148:
-    case 149:
-    case 150:
-    case 151:
-        sprintf(kname, "chn_axis_order_%d", param_no-143);
-        m_ini_chn->SetIntValue(sname, kname, value.value_uint8);
-        break;
-	case 168:  //轴名称扩展下标
-	case 169:
-	case 170:
-	case 171:
-	case 172:
-	case 173:
-	case 174:
-	case 175:
-		sprintf(kname, "chn_axis_name_ex_%d", param_no-167);
-		m_ini_chn->SetIntValue(sname, kname, value.value_uint8);
-		break;
-	case 200:	//插补模式
-		sprintf(kname, "intep_mode");
-		m_ini_chn->SetIntValue(sname, kname, value.value_uint8);
-		break;
-	case 201:	//插补周期
-		sprintf(kname, "intep_cycle");
-		m_ini_chn->SetIntValue(sname, kname, value.value_uint8);
-		break;
-	case 202:	//G00运行模式
-		sprintf(kname, "rapid_mode");
-		m_ini_chn->SetIntValue(sname, kname, value.value_uint8);
-		break;
+    switch(param_no){
+        case 10001:	//轴数量
+            sprintf(kname, "chn_axis_count");
+            m_ini_chn->SetIntValue(sname, kname, value.value_uint8);
+            break;
+        case 10002:   //通道所属方式组
+            sprintf(kname, "chn_group_index");
+            m_ini_chn->SetIntValue(sname, kname, value.value_uint8);
+            break;
+        case 10003:	//基本轴X
+        case 10004:	//基本轴Y
+        case 10005:	//基本轴Z
+        case 10006:	//轴4
+        case 10007:	//轴5
+        case 10008:	//轴6
+        case 10009:	//轴7
+        case 10010:	//轴8
+            sprintf(kname, "chn_axis_%d", param_no-10002);
+            m_ini_chn->SetIntValue(sname, kname, value.value_uint8);
+            break;
+        case 10011:  //轴名称
+        case 10012:
+        case 10013:
+        case 10014:
+        case 10015:
+        case 10016:
+        case 10017:
+        case 10018:
+            sprintf(kname, "chn_axis_name_%d", param_no-10010);
+            m_ini_chn->SetIntValue(sname, kname, value.value_uint8);
+            break;
+        case 10019:
+        case 10020:
+        case 10021:
+        case 10022:
+        case 10023:
+        case 10024:
+        case 10025:
+        case 10026:
+            sprintf(kname, "chn_axis_order_%d", param_no-10018);
+            m_ini_chn->SetIntValue(sname, kname, value.value_uint8);
+            break;
+        case 10027:  //轴名称扩展下标
+        case 10028:
+        case 10029:
+        case 10030:
+        case 10031:
+        case 10032:
+        case 10033:
+        case 10034:
+            sprintf(kname, "chn_axis_name_ex_%d", param_no-10026);
+            m_ini_chn->SetIntValue(sname, kname, value.value_uint8);
+            break;
+        case 10100:	//扩展工件坐标系数量
+            sprintf(kname, "ex_coord_count");
+            m_ini_chn->SetIntValue(sname, kname, value.value_uint8);
+            break;
+        case 10200:	//默认平面
+            sprintf(kname, "default_plane");
+            m_ini_chn->SetIntValue(sname, kname, value.value_uint8);
+            break;
+        case 10201:	//默认编程模式
+            sprintf(kname, "default_cmd_mode");
+            m_ini_chn->SetIntValue(sname, kname, value.value_uint8);
+            break;
+        case 10202:   //默认进给方式
+            sprintf(kname, "default_feed_mode");
+            m_ini_chn->SetIntValue(sname, kname, value.value_uint8);
+            break;
+        case 10300:   //手轮3档的自定义步长
+            sprintf(kname, "mpg_level3_step");
+            m_ini_chn->SetIntValue(sname, kname, value.value_uint16);
+            break;
+        case 10301:   //手轮4档的自定义步长
+            sprintf(kname, "mpg_level4_step");
+            m_ini_chn->SetIntValue(sname, kname, value.value_uint16);
+            break;
+        case 10400:
+            sprintf(kname, "tool_number");
+            m_ini_chn->SetIntValue(sname, kname, value.value_uint8);
+            break;
+        case 10500:   //G31跳转信号有效电平
+            sprintf(kname, "g31_sig_level");
+            m_ini_chn->SetIntValue(sname, kname, value.value_uint8);
+            break;
+        case 10501:   //G31跳转信号
+            sprintf(kname, "g31_skip_signal1");
+            m_ini_chn->SetIntValue(sname, kname, value.value_uint32);
+            break;
+        case 10502:   //G31跳转信号
+            sprintf(kname, "g31_skip_signal2");
+            m_ini_chn->SetIntValue(sname, kname, value.value_uint32);
+            break;
+        case 10503:   //G31跳转信号
+            sprintf(kname, "g31_skip_signal3");
+            m_ini_chn->SetIntValue(sname, kname, value.value_uint32);
+            break;
+        case 10504:   //G31跳转信号
+            sprintf(kname, "g31_skip_signal4");
+            m_ini_chn->SetIntValue(sname, kname, value.value_uint32);
+            break;
+        case 10505:   //G31跳转信号
+            sprintf(kname, "g31_skip_signal5");
+            m_ini_chn->SetIntValue(sname, kname, value.value_uint32);
+            break;
+        case 10506:   //G31跳转信号
+            sprintf(kname, "g31_skip_signal6");
+            m_ini_chn->SetIntValue(sname, kname, value.value_uint32);
+            break;
+        case 10507:   //G31跳转信号
+            sprintf(kname, "g31_skip_signal7");
+            m_ini_chn->SetIntValue(sname, kname, value.value_uint32);
+            break;
+        case 10508:   //G31跳转信号
+            sprintf(kname, "g31_skip_signal8");
+            m_ini_chn->SetIntValue(sname, kname, value.value_uint32);
+            break;
+        case 10509:   //G31 信号类型
+            sprintf(kname, "g31_skip_signal_type");
+            m_ini_chn->SetIntValue(sname, kname, value.value_uint32);
+            break;
+        case 10600:
+            sprintf(kname, "order_prog_mode");  //设置排程模式
+            m_ini_chn->SetIntValue(sname, kname, value.value_uint16);
+            break;
+        case 10601:
+            sprintf(kname, "pre_prog_num");  // 设置前置程序
+            m_ini_chn->SetIntValue(sname, kname, value.value_uint16);
+            break;
+        case 10602:
+            sprintf(kname, "end_prog_num");  // 设置后置程序
+            m_ini_chn->SetIntValue(sname, kname, value.value_uint16);
+            break;
+        case 10620:
+            sprintf(kname, "feed_input_enable");  // 进给速度输入有效
+            m_ini_chn->SetIntValue(sname, kname, value.value_uint16);
+            break;
+        case 10621:
+            sprintf(kname, "feed_input");  // 进给速度输入
+            m_ini_chn->SetIntValue(sname, kname, value.value_uint16);
+            break;
+        case 10622:
+            sprintf(kname, "spindle_speed_input_enable");  // 主轴转速输入有效
+            m_ini_chn->SetIntValue(sname, kname, value.value_uint16);
+            break;
+        case 10623:
+            sprintf(kname, "spindle_speed_input");  // 主轴转速输入
+            m_ini_chn->SetIntValue(sname, kname, value.value_uint16);
+            break;
+        case 10900:	//插补模式
+            sprintf(kname, "intep_mode");
+            m_ini_chn->SetIntValue(sname, kname, value.value_uint8);
+            break;
+        case 10901:	//G00运行模式
+            sprintf(kname, "rapid_mode");
+            m_ini_chn->SetIntValue(sname, kname, value.value_uint8);
+            break;
+        case 10902:	//切削速度规划方式
+            sprintf(kname, "cut_plan_mode");
+            m_ini_chn->SetIntValue(sname, kname, value.value_uint8);
+            break;
+        case 10903:	//定位速度规划方式
+            sprintf(kname, "rapid_plan_mode");
+            m_ini_chn->SetIntValue(sname, kname, value.value_uint8);
+            break;
+        case 10904:	//刚性攻丝规划模式
+            sprintf(kname, "tap_plan_mode");
+            m_ini_chn->SetIntValue(sname, kname, value.value_int8);
+            break;
+        case 10905:	//通道最大限制速度
+            sprintf(kname, "chn_max_vel");
+            m_ini_chn->SetDoubleValue(sname, kname, value.value_double);
+            break;
+        case 10906:   //G01最高进给速度
+            sprintf(kname, "g01_max_speed");
+            m_ini_chn->SetIntValue(sname, kname, value.value_uint32);
+            break;
+        case 10907:
+            sprintf(kname, "handle_sim_speed");
+            m_ini_chn->SetIntValue(sname, kname, value.value_uint32);
+            break;
+        case 10920:	//通道最大加速度
+            sprintf(kname, "chn_max_acc");
+            m_ini_chn->SetDoubleValue(sname, kname, value.value_double);
+            break;
+        case 10921:	//通道最大减速度
+            sprintf(kname, "chn_max_dec");
+            m_ini_chn->SetDoubleValue(sname, kname, value.value_double);
+            break;
+        case 10922:	//拐角加速度
+            sprintf(kname, "chn_max_corner_acc");
+            m_ini_chn->SetDoubleValue(sname, kname, value.value_double);
+            break;
+        case 10923:	//最大向心加速度
+            sprintf(kname, "chn_max_arc_acc");
+            m_ini_chn->SetDoubleValue(sname, kname, value.value_double);
+            break;
+        case 10924:	//刚性攻丝最大加速度
+            sprintf(kname, "tap_max_acc");
+            m_ini_chn->SetDoubleValue(sname, kname, value.value_double);
+            break;
+        case 10925:	//刚性攻丝最大减速度
+            sprintf(kname, "tap_max_dec");
+            m_ini_chn->SetDoubleValue(sname, kname, value.value_double);
+            break;
+        case 10926:	//切削进给S型规划时间常数
+            sprintf(kname, "chn_s_cut_filter_time");
+            m_ini_chn->SetIntValue(sname, kname, value.value_uint16);
+            break;
+        case 10940:	//前瞻功能
+            sprintf(kname, "chn_look_ahead");
+            m_ini_chn->SetIntValue(sname, kname, value.value_uint8);
+            break;
+        case 10941:	//加工速度调整等级
+            sprintf(kname, "chn_feed_limit_level");
+            m_ini_chn->SetIntValue(sname, kname, value.value_uint8);
+            break;
+        case 10942:  //拐角准停使能
+            sprintf(kname, "corner_stop_enable");
+            m_ini_chn->SetIntValue(sname, kname, value.value_uint8);
+            break;
+        case 10943:	//拐角准停控制
+            sprintf(kname, "corner_stop");
+            m_ini_chn->SetIntValue(sname, kname, value.value_uint8);
+            break;
+        case 10944:  //拐角准停下限角度
+            sprintf(kname, "corner_stop_angle_min");
+            m_ini_chn->SetIntValue(sname, kname, value.value_uint8);
+            break;
+        case 10945:	//转角加速度限制
+            sprintf(kname, "corner_acc_limit");
+            m_ini_chn->SetIntValue(sname, kname, value.value_uint8);
+            break;
+        case 10946:	//基于轴速度差的转角速度钳制
+            sprintf(kname, "chn_spd_limit_on_axis");
+            m_ini_chn->SetIntValue(sname, kname, value.value_uint8);
+            break;
+        case 10947:	//圆弧误差限制
+            sprintf(kname, "arc_err_limit");
+            m_ini_chn->SetIntValue(sname, kname, value.value_uint8);
+            break;
+        case 10948:	//基于加速度的小线段进给速度钳制
+            sprintf(kname, "chn_spd_limit_on_acc");
+            m_ini_chn->SetIntValue(sname, kname, value.value_uint8);
+            break;
+        case 10949:	//基于曲率及向心加速的小线段进给速度钳制
+            sprintf(kname, "chn_spd_limit_on_curvity");
+            m_ini_chn->SetIntValue(sname, kname, value.value_uint8);
+            break;
+        case 10950:	//G00重叠等级
+            sprintf(kname, "chn_rapid_overlap_level");
+            m_ini_chn->SetIntValue(sname, kname, value.value_uint8);
+            break;
+        case 10951:
+            sprintf(kname, "chn_small_line_time");
+            m_ini_chn->SetIntValue(sname, kname, value.value_uint16);
+            break;
+        case 10952:   //复位时间
+            sprintf(kname, "rst_hold_time");
+            m_ini_chn->SetIntValue(sname, kname, value.value_uint16);
+            break;
 
-	case 203:	//切削速度规划方式
-		sprintf(kname, "cut_plan_mode");
-		m_ini_chn->SetIntValue(sname, kname, value.value_uint8);
-		break;
-	case 204:	//定位速度规划方式
-		sprintf(kname, "rapid_plan_mode");
-		m_ini_chn->SetIntValue(sname, kname, value.value_uint8);
-		break;
-	case 210:	//通道最大限制速度
-		sprintf(kname, "chn_max_vel");
-		m_ini_chn->SetDoubleValue(sname, kname, value.value_double);
-		break;
-	case 211:	//通道最大加速度
-		sprintf(kname, "chn_max_acc");
-		m_ini_chn->SetDoubleValue(sname, kname, value.value_double);
-		break;
-	case 212:	//通道最大减速度
-		sprintf(kname, "chn_max_dec");
-		m_ini_chn->SetDoubleValue(sname, kname, value.value_double);
-		break;
-	case 213:	//
-		break;
-	case 214:	//拐角加速度
-		sprintf(kname, "chn_max_corner_acc");
-		m_ini_chn->SetDoubleValue(sname, kname, value.value_double);
-		break;
-	case 215:	//最大向心加速度
-		sprintf(kname, "chn_max_arc_acc");
-		m_ini_chn->SetDoubleValue(sname, kname, value.value_double);
-		break;
-	case 216:	//切削进给S型规划时间常数
-		sprintf(kname, "chn_s_cut_filter_time");
-		m_ini_chn->SetIntValue(sname, kname, value.value_uint16);
-        break;
-    case 217:	//刚性攻丝最大加速度
-        sprintf(kname, "tap_max_acc");
-        m_ini_chn->SetDoubleValue(sname, kname, value.value_double);
-        break;
-    case 218:	//刚性攻丝最大减速度
-        sprintf(kname, "tap_max_dec");
-        m_ini_chn->SetDoubleValue(sname, kname, value.value_double);
-        break;
-    case 219:	//刚性攻丝规划模式
-        sprintf(kname, "tap_plan_mode");
-        m_ini_chn->SetIntValue(sname, kname, value.value_int8);
-        break;
-    case 220:	//刚性攻丝S型规划时间常数
-        sprintf(kname, "tap_s_cut_filter_time");
-        m_ini_chn->SetIntValue(sname, kname, value.value_uint16);
-        break;
-
-	case 221:	//前瞻功能
-		sprintf(kname, "chn_look_ahead");
-		m_ini_chn->SetIntValue(sname, kname, value.value_uint8);
-		break;
-	case 222:	//加工速度调整等级
-		sprintf(kname, "chn_feed_limit_level");
-		m_ini_chn->SetIntValue(sname, kname, value.value_uint8);
-		break;
-	case 223:	//拐角准停控制
-		sprintf(kname, "corner_stop");
-		m_ini_chn->SetIntValue(sname, kname, value.value_uint8);
-		break;
-	case 229:  //拐角准停下限角度
-		sprintf(kname, "corner_stop_angle_min");
-		m_ini_chn->SetIntValue(sname, kname, value.value_uint8);
-		break;
-	case 224:	//下刀准停
-		sprintf(kname, "zmove_stop");
-		m_ini_chn->SetIntValue(sname, kname, value.value_uint8);
-		break;
-	case 225:	//转角加速度限制
-		sprintf(kname, "corner_acc_limit");
-		m_ini_chn->SetIntValue(sname, kname, value.value_uint8);
-		break;
-	case 226:	//长直线段运行加速
-		sprintf(kname, "long_line_acc");
-		m_ini_chn->SetIntValue(sname, kname, value.value_uint8);
-		break;
-    case 227:	//加工精度
-        sprintf(kname, "chn_precision");
-        m_ini_chn->SetIntValue(sname, kname, value.value_uint16);
-        break;
-	case 228:  //拐角准停使能
-		sprintf(kname, "corner_stop_enable");
-		m_ini_chn->SetIntValue(sname, kname, value.value_uint8);
-		break;
-	case 230:	//圆弧误差限制
-		sprintf(kname, "arc_err_limit");
-		m_ini_chn->SetIntValue(sname, kname, value.value_uint8);
-		break;
-	case 231:	//基于轴速度差的转角速度钳制
-		sprintf(kname, "chn_spd_limit_on_axis");
-		m_ini_chn->SetIntValue(sname, kname, value.value_uint8);
-		break;
-	case 232:	//基于加速度的小线段进给速度钳制
-		sprintf(kname, "chn_spd_limit_on_acc");
-		m_ini_chn->SetIntValue(sname, kname, value.value_uint8);
-		break;
-	case 233:	//基于曲率及向心加速的小线段进给速度钳制
-		sprintf(kname, "chn_spd_limit_on_curvity");
-		m_ini_chn->SetIntValue(sname, kname, value.value_uint8);
-		break;
-	case 234:	//G00重叠等级
-		sprintf(kname, "chn_rapid_overlap_level");
-		m_ini_chn->SetIntValue(sname, kname, value.value_uint8);
-		break;
-	case 235:
-		sprintf(kname, "chn_small_line_time");
-		m_ini_chn->SetIntValue(sname, kname, value.value_uint16);
-		break;
-#ifdef USES_WOOD_MACHINE
-	case 240:
-		sprintf(kname, "flip_comp_value");
-		m_ini_chn->SetIntValue(sname, kname, value.value_int32);
-		break;
-#endif
-	case 350:	//换刀方式
-		sprintf(kname, "change_tool_mode");
-		m_ini_chn->SetIntValue(sname, kname, value.value_uint8);
-		break;
-	case 351:	//刀具寿命检测
-		sprintf(kname, "tool_live_check");
-		m_ini_chn->SetIntValue(sname, kname, value.value_uint8);
-		break;
-	case 352:	//对刀仪自动对刀功能
-		sprintf(kname, "auto_tool_measure");
-		m_ini_chn->SetIntValue(sname, kname, value.value_uint8);
-		break;
-    case 353:
-        sprintf(kname, "tool_number");
-        m_ini_chn->SetIntValue(sname, kname, value.value_uint8);
-        break;
-
-	case 400:	//加工代码跟踪
-		sprintf(kname, "gcode_trace");
-		m_ini_chn->SetIntValue(sname, kname, value.value_uint8);
-		break;
-	case 401:	//编程坐标单位
-		sprintf(kname, "gcode_unit");
-		m_ini_chn->SetIntValue(sname, kname, value.value_uint8);
-		break;
-	case 402:	//默认平面
-		sprintf(kname, "default_plane");
-		m_ini_chn->SetIntValue(sname, kname, value.value_uint8);
-		break;
-	case 403:	//默认编程模式
-		sprintf(kname, "default_cmd_mode");
-		m_ini_chn->SetIntValue(sname, kname, value.value_uint8);
-		break;
-	case 404:	//扩展工件坐标系数量
-		sprintf(kname, "ex_coord_count");
-		m_ini_chn->SetIntValue(sname, kname, value.value_uint8);
-		break;
-    case 405:   //默认进给方式
-        sprintf(kname, "default_feed_mode");
-        m_ini_chn->SetIntValue(sname, kname, value.value_uint8);
-        break;
-	case 506:	//加工计时方式
-		sprintf(kname, "timing_mode");
-		m_ini_chn->SetIntValue(sname, kname, value.value_uint8);
-		break;
-	case 510:   //G31跳转信号
-		sprintf(kname, "g31_skip_signal");
-		m_ini_chn->SetIntValue(sname, kname, value.value_uint32);
-		break;
-	case 511:   //G31跳转信号有效电平
-		sprintf(kname, "g31_sig_level");
-		m_ini_chn->SetIntValue(sname, kname, value.value_uint8);
-		break;
-    case 512:   //复位时间
-        sprintf(kname, "rst_hold_time");
-        m_ini_chn->SetIntValue(sname, kname, value.value_uint16);
-        break;
-    case 513:   //复位是否保留运行数据
-        sprintf(kname, "rst_mode");
-        m_ini_chn->SetIntValue(sname, kname, value.value_uint8);
-        break;
-    case 514:   //G01最高进给速度
-        sprintf(kname, "g01_max_speed");
-        m_ini_chn->SetIntValue(sname, kname, value.value_uint32);
-        break;
-    case 515:   //手轮3档的自定义步长
-        sprintf(kname, "mpg_level3_step");
-        m_ini_chn->SetIntValue(sname, kname, value.value_uint16);
-        break;
-    case 516:   //手轮4档的自定义步长
-        sprintf(kname, "mpg_level4_step");
-        m_ini_chn->SetIntValue(sname, kname, value.value_uint16);
-        break;
-    case 517:
-        sprintf(kname, "G73back");  //G73回退距离
-        m_ini_chn->SetDoubleValue(sname, kname, value.value_double);
-		break;
-    case 518:
-        sprintf(kname, "G83back");  //G83回退距离
-        m_ini_chn->SetDoubleValue(sname, kname, value.value_double);
-		break;
-
-    case 519:
-        sprintf(kname, "order_prog_mode");  //设置排程模式
-        m_ini_chn->SetIntValue(sname, kname, value.value_uint16);
-        break;
-
-    case 520:
-        sprintf(kname, "pre_prog_num");  // 设置前置程序
-        m_ini_chn->SetIntValue(sname, kname, value.value_uint16);
-        break;
-
-    case 521:
-        sprintf(kname, "end_prog_num");  // 设置后置程序
-        m_ini_chn->SetIntValue(sname, kname, value.value_uint16);
-        break;
-
-    case 522:
-        sprintf(kname, "feed_input");  // 进给速度输入
-        m_ini_chn->SetIntValue(sname, kname, value.value_uint16);
-        break;
-
-    case 523:
-        sprintf(kname, "feed_input_enable");  // 进给速度输入有效
-        m_ini_chn->SetIntValue(sname, kname, value.value_uint16);
-        break;
-
-    case 524:
-        sprintf(kname, "spindle_speed_input");  // 主轴转速输入
-        m_ini_chn->SetIntValue(sname, kname, value.value_uint16);
-        break;
-
-    case 525:
-        sprintf(kname, "spindle_speed_input_enable");  // 主轴转速输入有效
-        m_ini_chn->SetIntValue(sname, kname, value.value_uint16);
-        break;
-
-   case 526:
-        sprintf(kname, "handle_sim_speed");
-        m_ini_chn->SetIntValue(sname, kname, value.value_uint32);
-        break;
-
-#ifdef USES_WOOD_MACHINE
-	case 600:  //DSP调试参数1
-		sprintf(kname, "debug_param_1");
-		m_ini_chn->SetIntValue(sname, kname, value.value_int32);
-		break;
-	case 601:  //DSP调试参数2
-		sprintf(kname, "debug_param_2");
-		m_ini_chn->SetIntValue(sname, kname, value.value_int32);
-		break;
-	case 602:  //DSP调试参数3
-		sprintf(kname, "debug_param_3");
-		m_ini_chn->SetIntValue(sname, kname, value.value_int32);
-		break;
-	case 603:  //DSP调试参数4
-		sprintf(kname, "debug_param_4");
-		m_ini_chn->SetIntValue(sname, kname, value.value_int32);
-		break;
-	case 604:  //DSP调试参数5
-		sprintf(kname, "debug_param_5");
-		m_ini_chn->SetIntValue(sname, kname, value.value_int32);
-		break;
-#endif
-	default:	//
-		g_ptr_trace->PrintLog(LOG_ALARM, "通道参数更新，参数号非法：%d", param_no);
-		res = false;
-		return res;
-	}
+        case 11001:
+            sprintf(kname, "G73back");  //G73回退距离
+            m_ini_chn->SetDoubleValue(sname, kname, value.value_double);
+            break;
+        case 11002:
+            sprintf(kname, "G83back");  //G83回退距离
+            m_ini_chn->SetDoubleValue(sname, kname, value.value_double);
+            break;
+        default:	//
+            g_ptr_trace->PrintLog(LOG_ALARM, "通道参数更新，参数号非法：%d", param_no);
+            res = false;
+            return res;
+    }
 	m_ini_chn->Save();
 	return res;
 }
@@ -5146,38 +5093,475 @@ bool ParmManager::UpdateAxisParam(uint8_t axis_index, uint32_t param_no, ParamVa
 
 	sprintf(sname, "axis_%hhu", axis_index+1);
 	switch(param_no){
-	case 1001:	//轴类型
+    case 20001:	//轴类型
 		sprintf(kname, "axis_type");
 		m_ini_axis->SetIntValue(sname, kname, value.value_uint8);
 		break;
-	case 1002:	//轴接口类型
+    case 20002:	//轴接口类型
 		sprintf(kname, "axis_interface");
 		m_ini_axis->SetIntValue(sname, kname, value.value_uint8);
 		break;
-	case 1003:	//从站号（总线轴）/对应轴口号（非总线轴）
+    case 20003:	//从站号（总线轴）/对应轴口号（非总线轴）
 		sprintf(kname, "axis_port");
 		m_ini_axis->SetIntValue(sname, kname, value.value_uint8);
 		break;
-	case 1004:	//直线轴类型
+    case 20004:	//直线轴类型
 		sprintf(kname, "axis_linear_type");
 		m_ini_axis->SetIntValue(sname, kname, value.value_uint8);
 		break;
-	case 1006:	//是否PMC轴
+    case 20005:	//反馈类型
+        sprintf(kname, "feedback_mode");
+        m_ini_axis->SetIntValue(sname, kname, value.value_uint8);
+        break;
+    case 20006:	//轴控制方式
+        sprintf(kname, "ctrl_mode");
+        m_ini_axis->SetIntValue(sname, kname, value.value_uint8);
+        break;
+    case 20007:	//电机旋转方向
+        sprintf(kname, "motor_dir");
+        m_ini_axis->SetIntValue(sname, kname, value.value_uint8);
+        break;
+    case 20008:	//电机每转计数
+        sprintf(kname, "motor_count_pr");
+        m_ini_axis->SetIntValue(sname, kname, value.value_uint32);
+        break;
+    case 20009:	//电机最大转速
+        sprintf(kname, "motor_speed_max");
+        m_ini_axis->SetIntValue(sname, kname, value.value_uint32);
+        break;
+    case 20010:	//每转移动量，即丝杆螺距
+        sprintf(kname, "move_pr");
+        m_ini_axis->SetDoubleValue(sname, kname, value.value_double);
+        break;
+    case 20011:	//每转输出脉冲数
+        sprintf(kname, "pulse_count_pr");
+        m_ini_axis->SetIntValue(sname, kname, value.value_uint32);
+        break;
+    case 20012:	//编码器单圈线数
+        sprintf(kname, "encoder_lines");
+        m_ini_axis->SetIntValue(sname, kname, value.value_uint8);
+        break;
+    case 20013:	//编码器整圈最大值
+        sprintf(kname, "encoder_max_cycle");
+        m_ini_axis->SetIntValue(sname, kname, value.value_uint16);
+        break;
+    case 20014:  //减速比例分子
+        sprintf(kname, "decelerate_numerator");
+        m_ini_axis->SetIntValue(sname, kname, value.value_uint8);
+        break;
+    case 20015:  //减速比例分母
+        sprintf(kname, "decelerate_denominator");
+        m_ini_axis->SetIntValue(sname, kname, value.value_uint8);
+        break;
+    case 20100:  //回参考点方式
+        sprintf(kname, "ret_ref_mode");
+        m_ini_axis->SetIntValue(sname, kname, value.value_uint8);
+        break;
+    case 20101:
+        sprintf(kname, "absolute_ref_mode");
+        m_ini_axis->SetIntValue(sname, kname, value.value_int8);
+        break;
+    case 20102:  //回参考点方向
+        sprintf(kname, "ret_ref_dir");
+        m_ini_axis->SetIntValue(sname, kname, value.value_uint8);
+        break;
+    case 20103:  //回参考点换向
+        sprintf(kname, "ret_ref_change_dir");
+        m_ini_axis->SetIntValue(sname, kname, value.value_uint8);
+        break;
+    case 20104:  //回参考点速度
+        sprintf(kname, "ret_ref_speed");
+        m_ini_axis->SetDoubleValue(sname, kname, value.value_double);
+        break;
+    case 20105:  //回参考点低速
+        sprintf(kname, "ret_ref_speed_second");
+        m_ini_axis->SetDoubleValue(sname, kname, value.value_double);
+        break;
+    case 20106:  //回参考点后的偏移量
+        sprintf(kname, "ref_offset_pos");
+        m_ini_axis->SetDoubleValue(sname, kname, value.value_double);
+        break;
+    case 20107:  //搜索Z脉冲最大移动距离
+        sprintf(kname, "ref_z_distance_max");
+        m_ini_axis->SetDoubleValue(sname, kname, value.value_double);
+        break;
+    case 20108:
+        sprintf(kname, "ref_complete");
+        if (!value.value_int32)//只接收0值
+            m_ini_axis->SetIntValue(sname, kname, value.value_int32);
+        break;
+    case 20109: 	//参考点编码器值
+        sprintf(kname, "ref_encoder");
+        m_ini_axis->SetInt64Value(sname, kname, value.value_int64);  //64位整型
+        break;
+    case 20200: 	//软限位1
+        sprintf(kname, "soft_limit_max_1");
+        m_ini_axis->SetDoubleValue(sname, kname, value.value_double);
+        break;
+    case 20201:
+        sprintf(kname, "soft_limit_min_1");
+        m_ini_axis->SetDoubleValue(sname, kname, value.value_double);
+        break;
+    case 20202: 	//软限位2
+        sprintf(kname, "soft_limit_max_2");
+        m_ini_axis->SetDoubleValue(sname, kname, value.value_double);
+        break;
+    case 20203:
+        sprintf(kname, "soft_limit_min_2");
+        m_ini_axis->SetDoubleValue(sname, kname, value.value_double);
+        break;
+    case 20210:
+    case 20211:
+    case 20212:
+    case 20213:
+    case 20214:
+    case 20215:
+    case 20216:
+    case 20217:
+    case 20218:
+    case 20219:  //参考点
+        sprintf(kname, "axis_home_pos_%d", param_no-20209);
+        m_ini_axis->SetDoubleValue(sname, kname, value.value_double);
+        break;
+    case 20300:	//定位速度
+        sprintf(kname, "rapid_speed");
+        m_ini_axis->SetDoubleValue(sname, kname, value.value_double);
+        break;
+    case 20301:	//手动速度
+        sprintf(kname, "manual_speed");
+        m_ini_axis->SetDoubleValue(sname, kname, value.value_double);
+        break;
+    case 20302:
+        sprintf(kname, "mpg_speed");
+        m_ini_axis->SetDoubleValue(sname, kname, value.value_uint16);
+        break;
+    case 20400:	//定位加速度
+        sprintf(kname, "rapid_acc");
+        m_ini_axis->SetDoubleValue(sname, kname, value.value_double);
+        break;
+    case 20401:	//手动加速度
+        sprintf(kname, "manual_acc");
+        m_ini_axis->SetDoubleValue(sname, kname, value.value_double);
+        break;
+    case 20402:	//启动加速度
+        sprintf(kname, "start_acc");
+        m_ini_axis->SetDoubleValue(sname, kname, value.value_double);
+        break;
+    case 20403:
+        sprintf(kname, "mpg_acc_time");
+        m_ini_axis->SetDoubleValue(sname, kname, value.value_uint16);
+        break;
+    case 20404:
+        sprintf(kname, "mpg_deacc_time");
+        m_ini_axis->SetDoubleValue(sname, kname, value.value_uint16);
+        break;
+    case 20405:	//定位S型规划时间常数
+        sprintf(kname, "rapid_s_plan_filter_time");
+        m_ini_axis->SetIntValue(sname, kname, value.value_uint16);
+        break;
+    case 20406:
+        sprintf(kname, "corner_acc_limit");
+        m_ini_axis->SetDoubleValue(sname, kname, value.value_double);
+        break;
+    case 20407:	//插补后加减速滤波器类型
+        sprintf(kname, "post_filter_type");
+        m_ini_axis->SetIntValue(sname, kname, value.value_uint8);
+        break;
+    case 20408:	//插补后加减速滤波器时间常数1
+        sprintf(kname, "post_filter_time_1");
+        m_ini_axis->SetIntValue(sname, kname, value.value_uint16);
+        break;
+    case 20409:	//插补后加减速滤波器时间常数2
+        sprintf(kname, "post_filter_time_2");
+        m_ini_axis->SetIntValue(sname, kname, value.value_uint16);
+        break;
+    case 20500:	//跟随误差限制
+        sprintf(kname, "track_err_limit");
+        m_ini_axis->SetIntValue(sname, kname, value.value_uint32);
+        break;
+    case 20501:	//定位误差限制
+        sprintf(kname, "location_err_limit");
+        m_ini_axis->SetIntValue(sname, kname, value.value_uint16);
+        break;
+    case 20600:  //快速定位    0--关闭   1--打开
+        sprintf(kname, "fast_locate");
+        m_ini_axis->SetIntValue(sname, kname, value.value_uint8);
+        break;
+    case 20601:  //位置显示模式   0--循环模式（0~360）    1--非循环模式
+        sprintf(kname, "pos_disp_mode");
+        m_ini_axis->SetIntValue(sname, kname, value.value_uint8);
+        break;
+    case 20602:  //工件坐标是否循环显示  0--否  1--是
+        sprintf(kname, "pos_work_disp_mode");
+        m_ini_axis->SetIntValue(sname, kname, value.value_uint8);
+        break;
+    case 20603:  //相对坐标是否循环显示  0--否  1--是
+        sprintf(kname, "pos_rel_disp_mode");
+        m_ini_axis->SetIntValue(sname, kname, value.value_uint8);
+        break;
+    case 20604:  //旋转轴绝对指令的旋转方向  0--快捷方向  1--取决于指令符号
+        sprintf(kname, "rot_abs_dir");
+        m_ini_axis->SetIntValue(sname, kname, value.value_uint8);
+        break;
+    case 20700:  //是否同步轴
+        sprintf(kname, "sync_axis");
+        m_ini_axis->SetIntValue(sname, kname,value.value_uint8);
+        break;
+    case 20701:	//主动轴号
+        sprintf(kname, "master_axis_no");
+        m_ini_axis->SetIntValue(sname, kname,value.value_uint8);
+        break;
+    case 20702:	//显示坐标
+        sprintf(kname, "disp_coord");
+        m_ini_axis->SetIntValue(sname, kname,value.value_uint8);
+        break;
+    case 20703:	//主从轴基准位置偏差
+        sprintf(kname, "benchmark_offset");
+        m_ini_axis->SetDoubleValue(sname, kname,value.value_double);
+        break;
+    case 20704:	//位置同步误差报警阈值
+        sprintf(kname, "sync_err_max_pos");
+        m_ini_axis->SetIntValue(sname, kname,value.value_uint32);
+        break;
+    case 20705:	//坐标同步误差报警阈值
+        sprintf(kname, "sync_err_max_mach");
+        m_ini_axis->SetIntValue(sname, kname,value.value_uint32);
+        break;
+    case 20706:	//从动轴回参考点后自动同步校准
+        sprintf(kname, "auto_sync");
+        m_ini_axis->SetIntValue(sname, kname,value.value_uint8);
+        break;
+    case 20711:	//是否进行位置同步误差检测
+        sprintf(kname, "sync_pos_detect");
+        m_ini_axis->SetIntValue(sname, kname,value.value_uint8);
+        break;
+    case 20712:	//是否进行坐标同步误差检测
+        sprintf(kname, "sync_mach_detect");
+        m_ini_axis->SetIntValue(sname, kname,value.value_uint8);
+        break;
+    case 20720:	//是否串联控制
+        sprintf(kname, "series_ctrl_axis");
+        m_ini_axis->SetIntValue(sname, kname,value.value_uint8);
+        break;
+    case 20721:	//预载电流偏置
+        sprintf(kname, "sync_pre_load_torque");
+        m_ini_axis->SetIntValue(sname, kname,value.value_uint8);
+        break;
+    case 20722:	//预载串联速度
+        sprintf(kname, "serial_pre_speed");
+        m_ini_axis->SetIntValue(sname, kname,value.value_uint16);
+        break;
+    case 20723:	//串联力矩系数
+        sprintf(kname, "serial_torque_ratio");
+        m_ini_axis->SetIntValue(sname, kname,value.value_uint16);
+        break;
+    case 20724:	//是否进行扭矩同步误差检测
+        sprintf(kname, "sync_torque_detect");
+        m_ini_axis->SetIntValue(sname, kname,value.value_uint8);
+        break;
+    case 20725:	//扭矩同步误差报警阈值
+        sprintf(kname, "sync_err_max_torque");
+        m_ini_axis->SetIntValue(sname, kname,value.value_uint8);
+        break;
+    case 20800:	//是否PMC轴
 		sprintf(kname, "axis_pmc");
 		m_ini_axis->SetIntValue(sname, kname, value.value_uint8);
 		break;
-    case 1007:	//PMC轴快移速度来源
+    case 20801:	//PMC轴快移速度来源
         sprintf(kname, "pmc_g00_by_EIFg");
         m_ini_axis->SetIntValue(sname, kname,value.value_uint8);
         break;
-    case 1008:	//最小PMC移动速度
+    case 20802:	//最小PMC移动速度
         sprintf(kname, "pmc_min_speed");
         m_ini_axis->SetIntValue(sname, kname,value.value_uint16);
         break;
-    case 1009:	//最大PMC移动速度
+    case 20803:	//最大PMC移动速度
         sprintf(kname, "pmc_max_speed");
         m_ini_axis->SetIntValue(sname, kname,value.value_uint16);
         break;
+    case 21100:	//主轴变速比
+        sprintf(kname, "spd_gear_ratio");
+        m_ini_axis->SetIntValue(sname, kname, value.value_uint8);
+        break;
+    case 21101:	//零漂补偿
+        sprintf(kname, "zero_compensation");
+        m_ini_axis->SetIntValue(sname, kname, value.value_int16);
+        break;
+    case 21102:	//模拟输出增益
+        sprintf(kname, "spd_analog_gain");
+        m_ini_axis->SetIntValue(sname, kname,value.value_uint16);
+        break;
+    case 21103:	//主轴电压控制方式
+        sprintf(kname, "spd_vctrl_mode");
+        m_ini_axis->SetIntValue(sname, kname, value.value_uint8);
+        break;
+    case 21104:
+        sprintf(kname, "io_output_type");
+        m_ini_axis->SetIntValue(sname, kname, value.value_uint8);
+        break;
+    case 21105:	//主轴最高转速
+        sprintf(kname, "spd_max_speed");
+        m_ini_axis->SetIntValue(sname, kname, value.value_uint32);
+        break;
+    case 21106:	//主轴最低转速
+        sprintf(kname, "spd_min_speed");
+        m_ini_axis->SetIntValue(sname, kname, value.value_uint32);
+        break;
+    case 21107: //主轴启动时间
+        sprintf(kname, "spd_start_time");
+        m_ini_axis->SetIntValue(sname, kname, value.value_uint16);
+        break;
+    case 21108: //主轴制动时间
+        sprintf(kname, "spd_stop_time");
+        m_ini_axis->SetIntValue(sname, kname, value.value_uint16);
+        break;
+    case 21109:	//主轴转向是否受M03/M04影响
+        sprintf(kname, "spd_ctrl_TCW");
+        m_ini_axis->SetIntValue(sname, kname,value.value_uint8);
+        break;
+    case 21110:	//主轴转向取反
+        sprintf(kname, "spd_ctrl_CWM");
+        m_ini_axis->SetIntValue(sname, kname,value.value_uint8);
+        break;
+    case 21111:	//SOR信号用途
+        sprintf(kname, "spd_ctrl_GST");
+        m_ini_axis->SetIntValue(sname, kname,value.value_uint8);
+        break;
+    case 21112:	//主轴换挡方式
+        sprintf(kname, "spd_ctrl_SGB");
+        m_ini_axis->SetIntValue(sname, kname,value.value_uint8);
+        break;
+    case 21113:	//齿轮换挡时是否输出SF信号
+        sprintf(kname, "spd_ctrl_SFA");
+        m_ini_axis->SetIntValue(sname, kname,value.value_uint8);
+        break;
+    case 21114:	//主轴定向时的转向
+        sprintf(kname, "spd_ctrl_ORM");
+        m_ini_axis->SetIntValue(sname, kname,value.value_uint8);
+        break;
+    case 21115:	//主轴定向角度
+        sprintf(kname, "spd_locate_ang");
+        m_ini_axis->SetDoubleValue(sname, kname,value.value_double);
+        break;
+    case 21116:	//螺纹切削和刚性攻丝时，主轴倍率设置
+        sprintf(kname, "spd_ctrl_TSO");
+        m_ini_axis->SetIntValue(sname, kname,value.value_uint8);
+        break;
+    case 21117:	//主轴齿轮换档/定向时的主轴转速
+        sprintf(kname, "spd_sor_speed");
+        m_ini_axis->SetIntValue(sname, kname,value.value_uint16);
+        break;
+    case 21118:	//主轴电机最小钳制速度
+        sprintf(kname, "spd_motor_min_speed");
+        m_ini_axis->SetIntValue(sname, kname,value.value_uint16);
+        break;
+    case 21119:	//主轴电机最大钳制速度
+        sprintf(kname, "spd_motor_max_speed");
+        m_ini_axis->SetIntValue(sname, kname,value.value_uint16);
+        break;
+    case 21120:	//齿轮低档位最高转速
+        sprintf(kname, "spd_gear_speed_low");
+        m_ini_axis->SetIntValue(sname, kname,value.value_uint32);
+        break;
+    case 21121:	//齿轮中档位最高转速
+        sprintf(kname, "spd_gear_speed_middle");
+        m_ini_axis->SetIntValue(sname, kname,value.value_uint32);
+        break;
+    case 21122:	//齿轮高档位最高转速
+        sprintf(kname, "spd_gear_speed_high");
+        m_ini_axis->SetIntValue(sname, kname,value.value_uint32);
+        break;
+    case 21123:	//B方式档1->档2电机转速
+        sprintf(kname, "spd_gear_switch_speed1");
+        m_ini_axis->SetIntValue(sname, kname,value.value_uint16);
+        break;
+    case 21124:	//B方式档2->档3电机转速
+        sprintf(kname, "spd_gear_switch_speed2");
+        m_ini_axis->SetIntValue(sname, kname,value.value_uint16);
+        break;
+    case 21200:	//攻丝同步误差增益
+        printf("----- %lf\n", value.value_double);
+        sprintf(kname, "spd_sync_error_gain");
+        m_ini_axis->SetDoubleValue(sname, kname, value.value_double);
+        break;
+    case 21201:	//攻丝轴速度前馈增益
+        printf("----- %lf\n", value.value_double);
+        sprintf(kname, "spd_speed_feed_gain");
+        m_ini_axis->SetDoubleValue(sname, kname, value.value_double);
+        break;
+    case 21202:	//攻丝轴位置比例增益
+        printf("----- %lf\n", value.value_double);
+        sprintf(kname, "spd_pos_ratio_gain");
+        m_ini_axis->SetDoubleValue(sname, kname, value.value_double);
+        break;
+    case 21203:	//攻丝回退期间，倍率是否有效
+        sprintf(kname, "spd_rtnt_rate_on");
+        m_ini_axis->SetIntValue(sname, kname,value.value_uint8);
+        break;
+    case 21204:	//攻丝回退倍率
+        sprintf(kname, "spd_rtnt_rate");
+        m_ini_axis->SetIntValue(sname, kname,value.value_uint8);
+        break;
+    case 21205:	//攻丝回退的额外回退值
+        sprintf(kname, "spd_rtnt_distance");
+        m_ini_axis->SetIntValue(sname, kname,value.value_int32);
+        break;
+    case 21300:   //反向间隙是否生效  **************************
+        printf("update axis 1402 \n");
+        sprintf(kname, "backlash_enable");
+        m_ini_axis->SetIntValue(sname, kname, value.value_uint8);
+        this->m_sc_axis_config[axis_index].backlash_enable = value.value_uint8;
+        break;
+    case 21301:  //反向间隙，初始方向
+        sprintf(kname, "init_backlash_dir");
+        m_ini_axis->SetBoolValue(sname, kname, value.value_int8);
+        break;
+    case 21302:  //正向反向间隙
+        sprintf(kname, "backlash_forward");
+        //m_ini_axis->SetIntValue(sname, kname, value.value_int16);
+        m_ini_axis->SetDoubleValue(sname, kname, value.value_double);
+        break;
+    case 21303:  //反向间隙步长
+        sprintf(kname, "backlash_step");
+        m_ini_axis->SetIntValue(sname, kname, value.value_int16);
+        this->m_sc_axis_config[axis_index].backlash_step = value.value_int16;
+        break;
+    case 21320:  // 螺距补偿是否生效
+        printf("update axis 1408 \n");
+        sprintf(kname, "pc_enable");
+        m_ini_axis->SetIntValue(sname, kname, value.value_uint8);
+        this->m_sc_axis_config[axis_index].pc_enable = value.value_uint8;
+        break;
+    case 21321:	//螺距补偿类型  ****************************
+        printf("update axis 1407 \n");
+        sprintf(kname, "pc_type");
+        m_ini_axis->SetIntValue(sname, kname, value.value_uint8);
+        this->m_sc_axis_config[axis_index].pc_type = value.value_uint8;
+        break;
+    case 21322:  //补偿间隔
+        sprintf(kname, "pc_inter_dist");
+        m_ini_axis->SetDoubleValue(sname, kname, value.value_double);
+        this->m_sc_axis_config[axis_index].pc_inter_dist = value.value_double;
+        break;
+    case 21323: //螺距补偿点数
+        sprintf(kname, "pc_count");
+        m_ini_axis->SetIntValue(sname, kname, value.value_uint16);
+        this->m_sc_axis_config[axis_index].pc_count = value.value_uint16;
+        printf("===== %d\n", value.value_uint16);
+        break;
+    case 21324:  //螺距补偿起始点
+        sprintf(kname, "pc_offset");
+        m_ini_axis->SetIntValue(sname, kname, value.value_uint16);
+        this->m_sc_axis_config[axis_index].pc_offset = value.value_uint16;
+        break;
+    case 21325:  //参考点补偿位置
+        sprintf(kname, "pc_ref_index");
+        m_ini_axis->SetIntValue(sname, kname, value.value_uint16);
+        this->m_sc_axis_config[axis_index].pc_ref_index = value.value_uint16;
+        break;
+
+
+    /*
 	case 1100:	//自动比例参数
 		sprintf(kname, "kp1");
 		m_ini_axis->SetDoubleValue(sname, kname, value.value_double);
@@ -5206,253 +5590,30 @@ bool ParmManager::UpdateAxisParam(uint8_t axis_index, uint32_t param_no, ParamVa
 		sprintf(kname, "kaff");
 		m_ini_axis->SetIntValue(sname, kname, value.value_uint16);
 		break;
-	case 1107:	//跟随误差限制
-		sprintf(kname, "track_err_limit");
-		m_ini_axis->SetIntValue(sname, kname, value.value_uint32);
-		break;
-	case 1108:	//定位误差限制
-		sprintf(kname, "location_err_limit");
-		m_ini_axis->SetIntValue(sname, kname, value.value_uint16);
-		break;
-	case 1120:	//定位加速度
-		sprintf(kname, "rapid_acc");
-		m_ini_axis->SetDoubleValue(sname, kname, value.value_double);
-		break;
-	case 1121:	//手动加速度
-		sprintf(kname, "manual_acc");
-		m_ini_axis->SetDoubleValue(sname, kname, value.value_double);
-		break;
-	case 1122:	//启动加速度
-		sprintf(kname, "start_acc");
-		m_ini_axis->SetDoubleValue(sname, kname, value.value_double);
-		break;
-	case 1130:	//定位S型规划时间常数
-		sprintf(kname, "rapid_s_plan_filter_time");
-		m_ini_axis->SetIntValue(sname, kname, value.value_uint16);
-		break;
-	case 1135:
-		sprintf(kname, "corner_acc_limit");
-		m_ini_axis->SetDoubleValue(sname, kname, value.value_double);
-		break;
-	case 1140:	//插补后加减速滤波器类型
-		sprintf(kname, "post_filter_type");
-		m_ini_axis->SetIntValue(sname, kname, value.value_uint8);
-		break;
-	case 1141:	//插补后加减速滤波器时间常数1
-		sprintf(kname, "post_filter_time_1");
-		m_ini_axis->SetIntValue(sname, kname, value.value_uint16);
-		break;
-	case 1142:	//插补后加减速滤波器时间常数2
-		sprintf(kname, "post_filter_time_2");
-		m_ini_axis->SetIntValue(sname, kname, value.value_uint16);
-		break;
-	case 1200:	//电机每转计数
-		sprintf(kname, "motor_count_pr");
-		m_ini_axis->SetIntValue(sname, kname, value.value_uint32);
-		break;
-	case 1201:	//电机最大转速
-		sprintf(kname, "motor_speed_max");
-		m_ini_axis->SetIntValue(sname, kname, value.value_uint32);
-		break;
-	case 1202:	//每转移动量，即丝杆螺距
-		sprintf(kname, "move_pr");
-		m_ini_axis->SetDoubleValue(sname, kname, value.value_double);
-		break;
-	case 1203:	//电机旋转方向
-		sprintf(kname, "motor_dir");
-		m_ini_axis->SetIntValue(sname, kname, value.value_uint8);
-		break;
-	case 1204:	//反馈类型
-		sprintf(kname, "feedback_mode");
-		m_ini_axis->SetIntValue(sname, kname, value.value_uint8);
-		break;
-	case 1205:	//轴控制方式
-		sprintf(kname, "ctrl_mode");
-		m_ini_axis->SetIntValue(sname, kname, value.value_uint8);
-		break;
-	case 1206:	//每转输出脉冲数
-		sprintf(kname, "pulse_count_pr");
-		m_ini_axis->SetIntValue(sname, kname, value.value_uint32);
-		break;
-	case 1207:	//编码器单圈线数
-		sprintf(kname, "encoder_lines");
-		m_ini_axis->SetIntValue(sname, kname, value.value_uint8);
-		break;
-	case 1208:	//编码器整圈最大值
-		sprintf(kname, "encoder_max_cycle");
-		m_ini_axis->SetIntValue(sname, kname, value.value_uint16);
-		break;
-	case 1209:  //轴告警电平
-		sprintf(kname, "axis_alarm_level");
-		m_ini_axis->SetIntValue(sname, kname, value.value_uint8);
-		break;
-    case 1210:  //减速比例分子
-        sprintf(kname, "decelerate_numerator");
-        m_ini_axis->SetIntValue(sname, kname, value.value_uint8);
-        break;
-    case 1211:  //减速比例分母
-        sprintf(kname, "decelerate_denominator");
-        m_ini_axis->SetIntValue(sname, kname, value.value_uint8);
-        break;
 	case 1302:  //参考点基准误差
 		sprintf(kname, "ref_mark_err");
 		m_ini_axis->SetDoubleValue(sname, kname, value.value_double);
-		break;
-	case 1303:  //回参考点方式
-		sprintf(kname, "ret_ref_mode");
-		m_ini_axis->SetIntValue(sname, kname, value.value_uint8);
-		break;
-	case 1304:  //回参考点方向
-		sprintf(kname, "ret_ref_dir");
-		m_ini_axis->SetIntValue(sname, kname, value.value_uint8);
-		break;
-	case 1305:  //回参考点换向
-		sprintf(kname, "ret_ref_change_dir");
-		m_ini_axis->SetIntValue(sname, kname, value.value_uint8);
 		break;
 	case 1306:  //回参考点信号类型
 		sprintf(kname, "ref_signal");
 		m_ini_axis->SetIntValue(sname, kname, value.value_uint8);
 		break;
-	case 1308:  //回参考点速度
-		sprintf(kname, "ret_ref_speed");
-		m_ini_axis->SetDoubleValue(sname, kname, value.value_double);
-		break;
+
 	case 1309:  //回参考点顺序
 		sprintf(kname, "ret_ref_index");
 		m_ini_axis->SetIntValue(sname, kname, value.value_uint8);
 		break;
-    case 1315:  //回参考点低速
-        sprintf(kname, "ret_ref_speed_second");
-        m_ini_axis->SetDoubleValue(sname, kname, value.value_double);
-        break;
-    case 1316:  //回参考点后的偏移量
-        sprintf(kname, "ref_offset_pos");
-        m_ini_axis->SetDoubleValue(sname, kname, value.value_double);
-        break;
-    case 1317:  //搜索Z脉冲最大移动距离
-        sprintf(kname, "ref_z_distance_max");
-        m_ini_axis->SetDoubleValue(sname, kname, value.value_double);
-        break;
-    case 1318:
-        sprintf(kname, "absolute_ref_mode");
-        m_ini_axis->SetIntValue(sname, kname, value.value_int8);
-        break;
-    case 1319:
-        sprintf(kname, "ref_complete");
-        if (!value.value_int32)//只接收0值
-            m_ini_axis->SetIntValue(sname, kname, value.value_int32);
-        break;
-    //case 1320:
-    //    sprintf(kname, "init_backlash_dir");
-    //    m_ini_axis->SetBoolValue(sname, kname, value.value_int8);
-    //    break;
-    case 1330:  //粗精基准位置偏差检测
-        sprintf(kname, "ref_base_diff_check");
-        m_ini_axis->SetIntValue(sname, kname, value.value_uint8);
-        break;
-    case 1331:   //粗精基准位置偏差
-        sprintf(kname, "ref_base_diff");
-        m_ini_axis->SetIntValue(sname, kname, value.value_double);
-        break;
-    case 1332: 	//参考点编码器值
-        sprintf(kname, "ref_encoder");
-        m_ini_axis->SetInt64Value(sname, kname, value.value_int64);  //64位整型
-        break;
-	case 1350:	//手动速度
-		sprintf(kname, "manual_speed");
-		m_ini_axis->SetDoubleValue(sname, kname, value.value_double);
-		break;
-	case 1351:	//定位速度
-		sprintf(kname, "rapid_speed");
-		m_ini_axis->SetDoubleValue(sname, kname, value.value_double);
-		break;
+
 	case 1352:	//复位速度
 		sprintf(kname, "reset_speed");
 		m_ini_axis->SetDoubleValue(sname, kname, value.value_double);
 		break;
-	case 1400:  //正向反向间隙
-		sprintf(kname, "backlash_forward");
-        //m_ini_axis->SetIntValue(sname, kname, value.value_int16);
-        m_ini_axis->SetDoubleValue(sname, kname, value.value_double);
-		break;
+
 	case 1401:  //负向反向间隙
 		sprintf(kname, "backlash_negative");
         //m_ini_axis->SetIntValue(sname, kname, value.value_int16);
         m_ini_axis->SetDoubleValue(sname, kname, value.value_double);
 		break;
-	case 1402:   //反向间隙是否生效  **************************
-		printf("update axis 1402 \n");
-		sprintf(kname, "backlash_enable");
-		m_ini_axis->SetIntValue(sname, kname, value.value_uint8);
-		this->m_sc_axis_config[axis_index].backlash_enable = value.value_uint8;
-		break;
-	case 1403: //螺距补偿点数
-		sprintf(kname, "pc_count");
-		m_ini_axis->SetIntValue(sname, kname, value.value_uint16);
-		this->m_sc_axis_config[axis_index].pc_count = value.value_uint16;
-        printf("===== %d\n", value.value_uint16);
-		break;
-	case 1404:  //补偿间隔
-		sprintf(kname, "pc_inter_dist");
-		m_ini_axis->SetDoubleValue(sname, kname, value.value_double);
-		this->m_sc_axis_config[axis_index].pc_inter_dist = value.value_double;
-		break;
-	case 1405:  //参考点补偿位置
-		sprintf(kname, "pc_ref_index");
-		m_ini_axis->SetIntValue(sname, kname, value.value_uint16);
-		this->m_sc_axis_config[axis_index].pc_ref_index = value.value_uint16;
-		break;
-	case 1406:  //螺距补偿起始点
-		sprintf(kname, "pc_offset");
-		m_ini_axis->SetIntValue(sname, kname, value.value_uint16);
-		this->m_sc_axis_config[axis_index].pc_offset = value.value_uint16;
-		break;
-	case 1407:	//螺距补偿类型  ****************************
-		printf("update axis 1407 \n");
-		sprintf(kname, "pc_type");
-		m_ini_axis->SetIntValue(sname, kname, value.value_uint8);
-		this->m_sc_axis_config[axis_index].pc_type = value.value_uint8;
-		break;
-	case 1408:  // 螺距补偿是否生效
-		printf("update axis 1408 \n");
-		sprintf(kname, "pc_enable");
-		m_ini_axis->SetIntValue(sname, kname, value.value_uint8);
-		this->m_sc_axis_config[axis_index].pc_enable = value.value_uint8;
-        break;
-    case 1409:  //反向间隙步长
-        sprintf(kname, "backlash_step");
-        m_ini_axis->SetIntValue(sname, kname, value.value_int16);
-        this->m_sc_axis_config[axis_index].backlash_step = value.value_int16;
-        break;
-    case 1410:  //反向间隙，初始方向
-        sprintf(kname, "init_backlash_dir");
-        m_ini_axis->SetBoolValue(sname, kname, value.value_int8);
-        break;
-	case 1500: 	//软限位1
-		sprintf(kname, "soft_limit_max_1");
-		m_ini_axis->SetDoubleValue(sname, kname, value.value_double);
-		break;
-	case 1501:
-		sprintf(kname, "soft_limit_min_1");
-		m_ini_axis->SetDoubleValue(sname, kname, value.value_double);
-		break;
-//    case 1502:  // 限位开关不通过参数修改，改为通过信号控制
-//		sprintf(kname, "soft_limit_check_1");
-//		m_ini_axis->SetIntValue(sname, kname, value.value_uint8);
-//		break;
-	case 1503: 	//软限位2
-		sprintf(kname, "soft_limit_max_2");
-		m_ini_axis->SetDoubleValue(sname, kname, value.value_double);
-		break;
-	case 1504:
-		sprintf(kname, "soft_limit_min_2");
-		m_ini_axis->SetDoubleValue(sname, kname, value.value_double);
-		break;
-//	case 1505:  // 限位开关不通过参数修改，改为通过信号控制
-//		sprintf(kname, "soft_limit_check_2");
-//		m_ini_axis->SetIntValue(sname, kname, value.value_uint8);
-//		break;
 	case 1506: 	//软限位3
 		sprintf(kname, "soft_limit_max_3");
 		m_ini_axis->SetDoubleValue(sname, kname, value.value_double);
@@ -5460,248 +5621,25 @@ bool ParmManager::UpdateAxisParam(uint8_t axis_index, uint32_t param_no, ParamVa
 	case 1507:
 		sprintf(kname, "soft_limit_min_3");
 		m_ini_axis->SetDoubleValue(sname, kname, value.value_double);
-		break;
-//	case 1508:  // 限位开关不通过参数修改，改为通过信号控制
-//		sprintf(kname, "soft_limit_check_3");
-//		m_ini_axis->SetIntValue(sname, kname, value.value_uint8);
-//		break;
-	case 1520:
-	case 1521:
-	case 1522:
-	case 1523:
-	case 1524:
-	case 1525:
-	case 1526:
-	case 1527:
-	case 1528:
-	case 1529:  //参考点
-		sprintf(kname, "axis_home_pos_%d", param_no-1519);
-		m_ini_axis->SetDoubleValue(sname, kname, value.value_double);
-		break;
-	case 1550:  //快速定位    0--关闭   1--打开
-		sprintf(kname, "fast_locate");
-		m_ini_axis->SetIntValue(sname, kname, value.value_uint8);
-		break;
-	case 1551:  //位置显示模式   0--循环模式（0~360）    1--非循环模式
-		sprintf(kname, "pos_disp_mode");
-		m_ini_axis->SetIntValue(sname, kname, value.value_uint8);
-		break;
-    case 1552:  //工件坐标是否循环显示  0--否  1--是
-        sprintf(kname, "pos_work_disp_mode");
-        m_ini_axis->SetIntValue(sname, kname, value.value_uint8);
-        break;
-    case 1553:  //相对坐标是否循环显示  0--否  1--是
-        sprintf(kname, "pos_rel_disp_mode");
-        m_ini_axis->SetIntValue(sname, kname, value.value_uint8);
-        break;
-    case 1554:  //旋转轴绝对指令的旋转方向  0--快捷方向  1--取决于指令符号
-        sprintf(kname, "rot_abs_dir");
-        m_ini_axis->SetIntValue(sname, kname, value.value_uint8);
-        break;
-	case 1602:	//主轴变速比
-		sprintf(kname, "spd_gear_ratio");
-		m_ini_axis->SetIntValue(sname, kname, value.value_uint8);
-		break;
-	case 1603:	//零漂补偿
-		sprintf(kname, "zero_compensation");
-		m_ini_axis->SetIntValue(sname, kname, value.value_int16);
-		break;
-	case 1604:	//主轴最高转速
-		sprintf(kname, "spd_max_speed");
-		m_ini_axis->SetIntValue(sname, kname, value.value_uint32);
-		break;
-	case 1605: //主轴启动时间
-		sprintf(kname, "spd_start_time");
-		m_ini_axis->SetIntValue(sname, kname, value.value_uint16);
-		break;
-	case 1606: //主轴制动时间
-		sprintf(kname, "spd_stop_time");
-		m_ini_axis->SetIntValue(sname, kname, value.value_uint16);
-		break;
-	case 1607:	//主轴最低转速
-		sprintf(kname, "spd_min_speed");
-		m_ini_axis->SetIntValue(sname, kname, value.value_uint32);
-		break;
-	case 1610:	//主轴电压控制方式
-		sprintf(kname, "spd_vctrl_mode");
-		m_ini_axis->SetIntValue(sname, kname, value.value_uint8);
-		break;
-    case 1611:
-        sprintf(kname, "io_output_type");
-        m_ini_axis->SetIntValue(sname, kname, value.value_uint8);
         break;
 	case 1612:	//主轴设置转速(rpm)
 		sprintf(kname, "spd_set_speed");
 		m_ini_axis->SetIntValue(sname, kname, value.value_uint32);
 		break;
-	case 1650:  //是否同步轴
-        sprintf(kname, "sync_axis");
-		m_ini_axis->SetIntValue(sname, kname,value.value_uint8);
+    case 20109:  //粗精基准位置偏差检测
+        sprintf(kname, "ref_base_diff_check");
+        m_ini_axis->SetIntValue(sname, kname, value.value_uint8);
         break;
-    case 1651:	//主动轴号
-		sprintf(kname, "master_axis_no");
-		m_ini_axis->SetIntValue(sname, kname,value.value_uint8);
-		break;
-    case 1652:	//显示坐标
-		sprintf(kname, "disp_coord");
-		m_ini_axis->SetIntValue(sname, kname,value.value_uint8);
-		break;
-    case 1653:	//主从轴基准位置偏差
-		sprintf(kname, "benchmark_offset");
-		m_ini_axis->SetDoubleValue(sname, kname,value.value_double);
-		break;
-    case 1654:	//是否串联控制
-        sprintf(kname, "series_ctrl_axis");
-        m_ini_axis->SetIntValue(sname, kname,value.value_uint8);
+    case 20110:   //粗精基准位置偏差
+        sprintf(kname, "ref_base_diff");
+        m_ini_axis->SetIntValue(sname, kname, value.value_double);
         break;
-    case 1655:	//位置同步误差报警阈值
-        sprintf(kname, "sync_err_max_pos");
-		m_ini_axis->SetIntValue(sname, kname,value.value_uint32);
-		break;
-    case 1656:	//从动轴回参考点后自动同步校准
-		sprintf(kname, "auto_sync");
-		m_ini_axis->SetIntValue(sname, kname,value.value_uint8);
-		break;
-    case 1657:	//预载电流偏置
-        sprintf(kname, "sync_pre_load_torque");
-        m_ini_axis->SetIntValue(sname, kname,value.value_uint8);
+    case 1209:  //轴告警电平
+        sprintf(kname, "axis_alarm_level");
+        m_ini_axis->SetIntValue(sname, kname, value.value_uint8);
         break;
-    case 1658:	//扭矩同步误差报警阈值
-        sprintf(kname, "sync_err_max_torque");
-        m_ini_axis->SetIntValue(sname, kname,value.value_uint8);
-        break;
-    case 1659:	//坐标同步误差报警阈值
-        sprintf(kname, "sync_err_max_mach");
-        m_ini_axis->SetIntValue(sname, kname,value.value_uint32);
-        break;
-    case 1660:	//是否进行位置同步误差检测
-        sprintf(kname, "sync_pos_detect");
-        m_ini_axis->SetIntValue(sname, kname,value.value_uint8);
-        break;
-    case 1661:	//是否进行坐标同步误差检测
-        sprintf(kname, "sync_mach_detect");
-        m_ini_axis->SetIntValue(sname, kname,value.value_uint8);
-        break;
-    case 1662:	//是否进行扭矩同步误差检测
-        sprintf(kname, "sync_torque_detect");
-        m_ini_axis->SetIntValue(sname, kname,value.value_uint8);
-        break;
-    case 1663:	//串联力矩系数
-        sprintf(kname, "serial_torque_ratio");
-        m_ini_axis->SetIntValue(sname, kname,value.value_uint16);
-        break;
-    case 1664:	//预载串联速度
-        sprintf(kname, "serial_pre_speed");
-        m_ini_axis->SetIntValue(sname, kname,value.value_uint16);
-        break;
-    case 1700:	//SOR信号用途
-        sprintf(kname, "spd_ctrl_GST");
-        m_ini_axis->SetIntValue(sname, kname,value.value_uint8);
-        break;
-    case 1701:	//主轴换挡方式
-        sprintf(kname, "spd_ctrl_SGB");
-        m_ini_axis->SetIntValue(sname, kname,value.value_uint8);
-        break;
-    case 1702:	//齿轮换挡时是否输出SF信号
-        sprintf(kname, "spd_ctrl_SFA");
-        m_ini_axis->SetIntValue(sname, kname,value.value_uint8);
-        break;
-    case 1703:	//主轴定向时的转向
-        sprintf(kname, "spd_ctrl_ORM");
-        m_ini_axis->SetIntValue(sname, kname,value.value_uint8);
-        break;
-    case 1704:	//主轴转向是否受M03/M04影响
-        sprintf(kname, "spd_ctrl_TCW");
-        m_ini_axis->SetIntValue(sname, kname,value.value_uint8);
-        break;
-    case 1705:	//主轴转向取反
-        sprintf(kname, "spd_ctrl_CWM");
-        m_ini_axis->SetIntValue(sname, kname,value.value_uint8);
-        break;
-    case 1706:	//螺纹切削和刚性攻丝时，主轴倍率设置
-        sprintf(kname, "spd_ctrl_TSO");
-        m_ini_axis->SetIntValue(sname, kname,value.value_uint8);
-        break;
-    case 1707:	//模拟输出增益
-        sprintf(kname, "spd_analog_gain");
-        m_ini_axis->SetIntValue(sname, kname,value.value_uint16);
-        break;
-    case 1708:	//主轴齿轮换档/定向时的主轴转速
-        sprintf(kname, "spd_sor_speed");
-        m_ini_axis->SetIntValue(sname, kname,value.value_uint16);
-        break;
-    case 1709:	//主轴电机最小钳制速度
-        sprintf(kname, "spd_motor_min_speed");
-        m_ini_axis->SetIntValue(sname, kname,value.value_uint16);
-        break;
-    case 1710:	//主轴电机最大钳制速度
-        sprintf(kname, "spd_motor_max_speed");
-        m_ini_axis->SetIntValue(sname, kname,value.value_uint16);
-        break;
-    case 1711:	//齿轮低档位最高转速
-        sprintf(kname, "spd_gear_speed_low");
-        m_ini_axis->SetIntValue(sname, kname,value.value_uint32);
-        break;
-    case 1712:	//齿轮中档位最高转速
-        sprintf(kname, "spd_gear_speed_middle");
-        m_ini_axis->SetIntValue(sname, kname,value.value_uint32);
-        break;
-    case 1713:	//齿轮高档位最高转速
-        sprintf(kname, "spd_gear_speed_high");
-        m_ini_axis->SetIntValue(sname, kname,value.value_uint32);
-        break;
-    case 1714:	//B方式档1->档2电机转速
-        sprintf(kname, "spd_gear_switch_speed1");
-        m_ini_axis->SetIntValue(sname, kname,value.value_uint16);
-        break;
-    case 1715:	//B方式档2->档3电机转速
-    	sprintf(kname, "spd_gear_switch_speed2");
-        m_ini_axis->SetIntValue(sname, kname,value.value_uint16);
-        break;
-    case 1716:	//攻丝同步误差增益
-    	printf("----- %lf\n", value.value_double);
-    	sprintf(kname, "spd_sync_error_gain");
-        m_ini_axis->SetDoubleValue(sname, kname, value.value_double);
-        break;
-    case 1717:	//攻丝轴速度前馈增益
-    	printf("----- %lf\n", value.value_double);
-    	sprintf(kname, "spd_speed_feed_gain");
-        m_ini_axis->SetDoubleValue(sname, kname, value.value_double);
-        break;
-    case 1718:	//攻丝轴位置比例增益
-    	printf("----- %lf\n", value.value_double);
-        sprintf(kname, "spd_pos_ratio_gain");
-        m_ini_axis->SetDoubleValue(sname, kname, value.value_double);
-        break;
-    case 1719:	//攻丝回退期间，倍率是否有效
-        sprintf(kname, "spd_rtnt_rate_on");
-        m_ini_axis->SetIntValue(sname, kname,value.value_uint8);
-        break;
-    case 1720:	//攻丝回退倍率
-        sprintf(kname, "spd_rtnt_rate");
-        m_ini_axis->SetIntValue(sname, kname,value.value_uint8);
-        break;
-    case 1721:	//攻丝回退的额外回退值
-        sprintf(kname, "spd_rtnt_distance");
-        m_ini_axis->SetIntValue(sname, kname,value.value_int32);
-        break;
-    case 1726:	//主轴定向角度
-        sprintf(kname, "spd_locate_ang");
-        m_ini_axis->SetDoubleValue(sname, kname,value.value_double);
-        break;
-    case 1727:
-        sprintf(kname, "mpg_speed");
-        m_ini_axis->SetDoubleValue(sname, kname, value.value_uint16);
-        break;
-    case 1728:
-        sprintf(kname, "mpg_acc_time");
-        m_ini_axis->SetDoubleValue(sname, kname, value.value_uint16);
-        break;
-    case 1729:
-        sprintf(kname, "mpg_deacc_time");
-        m_ini_axis->SetDoubleValue(sname, kname, value.value_uint16);
-        break;
-	default:
+    */
+    default:
 		g_ptr_trace->PrintLog(LOG_ALARM, "轴参数更新，参数号非法：%d", param_no);
 		res = false;
 		return res;
@@ -5735,89 +5673,89 @@ bool ParmManager::UpdateChnProcParam(uint8_t chn_index, uint8_t group_index, uin
 	sprintf(sname, "channel_%hhu", chn_index);
 	group_index++;   //组号加一，从1开始
 	switch(param_no){
-	case 202:	//G00运行模式
+    case 10901:	//G00运行模式
 		sprintf(kname, "rapid_mode_%hhu", group_index);
 		m_ini_proc_chn->SetIntValue(sname, kname, value.value_uint8);
 	//	printf("update para 202 , value = %hhu\n", value.value_uint8);
 		break;
 
-	case 203:	//切削速度规划方式
+    case 10902:	//切削速度规划方式
 		sprintf(kname, "cut_plan_mode_%hhu", group_index);
 		m_ini_proc_chn->SetIntValue(sname, kname, value.value_uint8);
 		break;
-	case 204:	//定位速度规划方式
+    case 10903:	//定位速度规划方式
 		sprintf(kname, "rapid_plan_mode_%hhu", group_index);
 		m_ini_proc_chn->SetIntValue(sname, kname, value.value_uint8);
 		break;
-	case 210:	//通道最大限制速度
+    case 10905:	//通道最大限制速度
 		sprintf(kname, "chn_max_vel_%hhu", group_index);
 		m_ini_proc_chn->SetDoubleValue(sname, kname, value.value_double);
 		break;
-	case 211:	//通道最大加速度
+    case 10920:	//通道最大加速度
 		sprintf(kname, "chn_max_acc_%hhu", group_index);
 		m_ini_proc_chn->SetDoubleValue(sname, kname, value.value_double);
 		break;
-	case 212:	//通道最大减速度
+    case 10921:	//通道最大减速度
 		sprintf(kname, "chn_max_dec_%hhu", group_index);
 		m_ini_proc_chn->SetDoubleValue(sname, kname, value.value_double);
 		break;
-	case 214:	//拐角加速度
+    case 10922:	//拐角加速度
 		sprintf(kname, "chn_max_corner_acc_%hhu", group_index);
 		m_ini_proc_chn->SetDoubleValue(sname, kname, value.value_double);
 		break;
-	case 215:	//最大向心加速度
+    case 10923:	//最大向心加速度
 		sprintf(kname, "chn_max_arc_acc_%hhu", group_index);
 		m_ini_proc_chn->SetDoubleValue(sname, kname, value.value_double);
 		break;
-	case 216:	//切削进给S型规划时间常数
+    case 10926:	//切削进给S型规划时间常数
 		sprintf(kname, "chn_s_cut_filter_time_%hhu", group_index);
 		m_ini_proc_chn->SetIntValue(sname, kname, value.value_uint16);
 		break;
 
-	case 223:	//拐角准停控制
+    case 10943:	//拐角准停控制
 		sprintf(kname, "corner_stop_%hhu", group_index);
 		m_ini_proc_chn->SetIntValue(sname, kname, value.value_uint8);
 		break;
-	case 229:  //拐角准停下限角度
+    case 10944:  //拐角准停下限角度
 		sprintf(kname, "corner_stop_angle_min_%hhu", group_index);
 		m_ini_proc_chn->SetIntValue(sname, kname, value.value_uint8);
 		break;
 
-	case 225:	//转角加速度限制
+    case 10945:	//转角加速度限制
 		sprintf(kname, "corner_acc_limit_%hhu", group_index);
 		m_ini_proc_chn->SetIntValue(sname, kname, value.value_uint8);
 		break;
 
-	case 228:  //拐角准停使能
+    case 10942:  //拐角准停使能
 		sprintf(kname, "corner_stop_enable_%hhu", group_index);
 		m_ini_proc_chn->SetIntValue(sname, kname, value.value_uint8);
 		break;
 
-	case 231:	//基于轴速度差的转角速度钳制
+    case 10946:	//基于轴速度差的转角速度钳制
 		sprintf(kname, "chn_spd_limit_on_axis_%hhu", group_index);
 		m_ini_proc_chn->SetIntValue(sname, kname, value.value_uint8);
 		break;
-	case 232:	//基于加速度的小线段进给速度钳制
+    case 10948:	//基于加速度的小线段进给速度钳制
 		sprintf(kname, "chn_spd_limit_on_acc_%hhu", group_index);
 		m_ini_proc_chn->SetIntValue(sname, kname, value.value_uint8);
 		break;
-	case 233:	//基于曲率及向心加速的小线段进给速度钳制
+    case 10949:	//基于曲率及向心加速的小线段进给速度钳制
 		sprintf(kname, "chn_spd_limit_on_curvity_%hhu", group_index);
 		m_ini_proc_chn->SetIntValue(sname, kname, value.value_uint8);
 		break;
-	case 234:	//G00重叠等级
+    case 10950:	//G00重叠等级
 		sprintf(kname, "chn_rapid_overlap_level_%hhu", group_index);
 		m_ini_proc_chn->SetIntValue(sname, kname, value.value_uint8);
 		break;
-	case 235:  //小线段执行时间常数
+    case 10951:  //小线段执行时间常数
 		sprintf(kname, "chn_small_line_time_%hhu", group_index);
 		m_ini_proc_chn->SetIntValue(sname, kname, value.value_uint16);
 		break;
-	case 236:
+    case 11001:
 		sprintf(kname, "chn_G73back_%hhu", group_index);
 		m_ini_proc_chn->SetIntValue(sname, kname, value.value_double);
 		break;
-	case 237:
+    case 11002:
 		sprintf(kname, "chn_G83back_%hhu", group_index);
 		m_ini_proc_chn->SetIntValue(sname, kname, value.value_double);
         break;
@@ -5862,35 +5800,35 @@ bool ParmManager::UpdateAxisProcParam(uint8_t axis_index, uint8_t group_index, u
 	group_index++;   //组号加一，从1开始
 	switch(param_no){
 
-	case 1120:	//定位加速度
+    case 20400:	//定位加速度
 		sprintf(kname, "rapid_acc_%hhu", group_index);
 		m_ini_proc_axis->SetDoubleValue(sname, kname, value.value_double);
 		break;
-	case 1121:	//手动加速度
+    case 20401:	//手动加速度
 		sprintf(kname, "manual_acc_%hhu", group_index);
 		m_ini_proc_axis->SetDoubleValue(sname, kname, value.value_double);
 		break;
-	case 1122:	//启动加速度
+    case 20402:	//启动加速度
 		sprintf(kname, "start_acc_%hhu", group_index);
 		m_ini_proc_axis->SetDoubleValue(sname, kname, value.value_double);
 		break;
-	case 1130:	//定位S型规划时间常数
+    case 20405:	//定位S型规划时间常数
 		sprintf(kname, "rapid_s_plan_filter_time_%hhu", group_index);
 		m_ini_proc_axis->SetIntValue(sname, kname, value.value_uint16);
 		break;
-	case 1135:  //拐角速度差限制
+    case 20406:  //拐角速度差限制
 		sprintf(kname, "corner_acc_limit_%hhu", group_index);
 		m_ini_proc_axis->SetDoubleValue(sname, kname, value.value_double);
 		break;
-	case 1140:	//插补后加减速滤波器类型
+    case 20407:	//插补后加减速滤波器类型
 		sprintf(kname, "post_filter_type_%hhu", group_index);
 		m_ini_proc_axis->SetIntValue(sname, kname, value.value_uint8);
 		break;
-	case 1141:	//插补后加减速滤波器时间常数1
+    case 20408:	//插补后加减速滤波器时间常数1
 		sprintf(kname, "post_filter_time_1_%hhu", group_index);
 		m_ini_proc_axis->SetIntValue(sname, kname, value.value_uint16);
 		break;
-	case 1142:	//插补后加减速滤波器时间常数2
+    case 20409:	//插补后加减速滤波器时间常数2
 		sprintf(kname, "post_filter_time_2_%hhu", group_index);
 		m_ini_proc_axis->SetIntValue(sname, kname, value.value_uint16);
 		break;
@@ -6077,93 +6015,93 @@ void ParmManager::ActiveProcParam(ProcParamUpdate *data){
 void ParmManager::ActiveChnProcParam(uint8_t chn_index, uint32_t param_no, ParamValue &value, uint8_t proc_index){
 
 	switch(param_no){
-	case 202:	//G00运行模式
+    case 10901:	//G00运行模式
 		if(proc_index < kMaxProcParamCount){
 			this->m_p_chn_process_param[chn_index].chn_param[proc_index].rapid_mode = value.value_uint8;
 		}
 		break;
-	case 203:	//切削速度规划方式
+    case 10902:	//切削速度规划方式
 		if(proc_index < kMaxProcParamCount){
 			this->m_p_chn_process_param[chn_index].chn_param[proc_index].cut_plan_mode = value.value_uint8;
 		}
 		break;
-	case 204:	//定位速度规划方式
+    case 10903:	//定位速度规划方式
 		if(proc_index < kMaxProcParamCount){
 			this->m_p_chn_process_param[chn_index].chn_param[proc_index].rapid_plan_mode = value.value_uint8;
 		}
 		break;
-	case 210:	//通道最大限制速度
+    case 10905:	//通道最大限制速度
 		if(proc_index < kMaxProcParamCount){
 			this->m_p_chn_process_param[chn_index].chn_param[proc_index].chn_max_vel = value.value_double;
 		}
 		break;
-	case 211:	//通道最大加速度
+    case 10920:	//通道最大加速度
 		if(proc_index < kMaxProcParamCount){
 			this->m_p_chn_process_param[chn_index].chn_param[proc_index].chn_max_acc = value.value_double;
 		}
 		break;
-	case 212:	//通道最大减速度
+    case 10921:	//通道最大减速度
 		if(proc_index < kMaxProcParamCount){
 			this->m_p_chn_process_param[chn_index].chn_param[proc_index].chn_max_dec = value.value_double;
 		}
 		break;
-	case 214:	//拐角加速度
+    case 10922:	//拐角加速度
 		if(proc_index < kMaxProcParamCount){
 			this->m_p_chn_process_param[chn_index].chn_param[proc_index].chn_max_corner_acc = value.value_double;
 		}
 		break;
-	case 215:	//最大向心加速度
+    case 10923:	//最大向心加速度
 		if(proc_index < kMaxProcParamCount){
 			this->m_p_chn_process_param[chn_index].chn_param[proc_index].chn_max_arc_acc = value.value_double;
 		}
 		break;
-	case 216:	//切削进给S型规划时间常数
+    case 10926:	//切削进给S型规划时间常数
 		if(proc_index < kMaxProcParamCount){
 			this->m_p_chn_process_param[chn_index].chn_param[proc_index].chn_s_cut_filter_time = value.value_uint16;
 		}
 		break;
-	case 223:	//拐角准停控制
+    case 10943:	//拐角准停控制
 		if(proc_index < kMaxProcParamCount){
 			this->m_p_chn_process_param[chn_index].chn_param[proc_index].corner_stop = value.value_uint8;
 		}
 		break;
-	case 225:	//转角加速度限制
+    case 10945:	//转角加速度限制
 		if(proc_index < kMaxProcParamCount){
 			this->m_p_chn_process_param[chn_index].chn_param[proc_index].corner_acc_limit = value.value_uint8;
 		}
 		break;
-	case 228:	//拐角准停使能
+    case 10942:	//拐角准停使能
 		if(proc_index < kMaxProcParamCount){
 			this->m_p_chn_process_param[chn_index].chn_param[proc_index].corner_stop_enable = value.value_uint8;
 		}
 		break;
-	case 229:  //拐角准停下限角度
+    case 10944:  //拐角准停下限角度
 		if(proc_index < kMaxProcParamCount){
 			this->m_p_chn_process_param[chn_index].chn_param[proc_index].corner_stop_angle_min = value.value_uint8;
 		}
 		break;
 
-	case 231:	//基于轴速度差的转角速度钳制
+    case 10946:	//基于轴速度差的转角速度钳制
 		if(proc_index < kMaxProcParamCount){
 			this->m_p_chn_process_param[chn_index].chn_param[proc_index].chn_spd_limit_on_axis = value.value_uint8;
 		}
 		break;
-	case 232:	//基于加速度的小线段进给速度钳制
+    case 10948:	//基于加速度的小线段进给速度钳制
 		if(proc_index < kMaxProcParamCount){
 			this->m_p_chn_process_param[chn_index].chn_param[proc_index].chn_spd_limit_on_acc = value.value_uint8;
 		}
 		break;
-	case 233:	//基于曲率及向心加速的小线段进给速度钳制
+    case 10949:	//基于曲率及向心加速的小线段进给速度钳制
 		if(proc_index < kMaxProcParamCount){
 			this->m_p_chn_process_param[chn_index].chn_param[proc_index].chn_spd_limit_on_curvity = value.value_uint8;
 		}
 		break;
-	case 234:	//G00重叠等级
+    case 10950:	//G00重叠等级
 		if(proc_index < kMaxProcParamCount){
 			this->m_p_chn_process_param[chn_index].chn_param[proc_index].chn_rapid_overlap_level = value.value_uint8;
 		}
 		break;
-	case 235:	//小线段执行时间常数
+    case 10951:	//小线段执行时间常数
 		if(proc_index < kMaxProcParamCount){
 			this->m_p_chn_process_param[chn_index].chn_param[proc_index].chn_small_line_time = value.value_uint16;
 		}
@@ -6191,42 +6129,42 @@ void ParmManager::ActiveChnProcParam(uint8_t chn_index, uint32_t param_no, Param
 void ParmManager::ActiveAxisProcParam(uint8_t axis_index, uint32_t param_no, ParamValue &value, uint8_t proc_index){
 
 	switch(param_no){
-	case 1120:	//定位加速度
+    case 20400:	//定位加速度
 		if(proc_index < kMaxProcParamCount){
 			this->m_p_axis_process_param[axis_index].axis_param[proc_index].rapid_acc = value.value_double;
 		}
 		break;
-	case 1121:	//手动加速度
+    case 20401:	//手动加速度
 		if(proc_index < kMaxProcParamCount){
 			this->m_p_axis_process_param[axis_index].axis_param[proc_index].manual_acc = value.value_double;
 		}
 		break;
-	case 1122:	//起步加速度
+    case 20402:	//起步加速度
 		if(proc_index < kMaxProcParamCount){
 			this->m_p_axis_process_param[axis_index].axis_param[proc_index].start_acc = value.value_double;
 		}
 		break;
-	case 1130:	//定位S型速度规划时间常数
+    case 20405:	//定位S型速度规划时间常数
 		if(proc_index < kMaxProcParamCount){
 			this->m_p_axis_process_param[axis_index].axis_param[proc_index].rapid_s_plan_filter_time = value.value_uint16;
 		}
 		break;
-	case 1135:  //拐角速度差限制
+    case 20406:  //拐角速度差限制
 		if(proc_index < kMaxProcParamCount){
 			this->m_p_axis_process_param[axis_index].axis_param[proc_index].corner_acc_limit = value.value_double;
 		}
 		break;
-	case 1140:	//插补后滤波器类型
+    case 20407:	//插补后滤波器类型
 		if(proc_index < kMaxProcParamCount){ //滤波器类型
 			this->m_p_axis_process_param[axis_index].axis_param[proc_index].post_filter_type = value.value_uint8;
 		}
 		break;
-	case 1141:	//插补后滤波器时间常数1
+    case 20408:	//插补后滤波器时间常数1
 		if(proc_index < kMaxProcParamCount){ //一级滤波器时间常数
 			this->m_p_axis_process_param[axis_index].axis_param[proc_index].post_filter_time_1 = value.value_uint16;
 		}
 		break;
-	case 1142:	//插补后滤波器时间常数2
+    case 20409:	//插补后滤波器时间常数2
 		if(proc_index < kMaxProcParamCount){ //二级滤波器时间常数
 			this->m_p_axis_process_param[axis_index].axis_param[proc_index].post_filter_time_2 = value.value_uint16;
 		}
@@ -6321,16 +6259,17 @@ void ParmManager::ActiveGrindParam(uint32_t param_no, ParamValue &value){
 void ParmManager::ActiveSystemParam(uint32_t param_no, ParamValue &value){
 	ChannelEngine *chn_engine = ChannelEngine::GetInstance();
 	switch(param_no){
-	case 3: 	//通道数
+    case 2: 	//通道数
 		this->m_sc_system_config->chn_count = value.value_uint8;
 		break;
-	case 5:		//物理轴数
+    case 4:		//物理轴数
 		this->m_sc_system_config->axis_count = value.value_uint8;
 		break;
-	case 6:		//总线通讯周期
+    case 5:		//总线通讯周期
 		this->m_sc_system_config->bus_cycle = value.value_uint8;
 		break;
-	case 10:  //手轮编码格式
+    /*
+    case 10:  //手轮编码格式
 		this->m_sc_system_config->hw_code_type = value.value_uint8;
 		this->UpdateMiParam<uint8_t>(0xFF, 10, value.value_uint8);   //手轮编码类型
 		break;
@@ -6338,19 +6277,15 @@ void ParmManager::ActiveSystemParam(uint32_t param_no, ParamValue &value){
 		this->m_sc_system_config->hw_rev_trace = value.value_uint8;
 		chn_engine->EnableHWTraceToMi();
 		break;
-//	case 20:	//系统最大速度
-//		this->m_sc_system_config->max_sys_vel = value.value_double;
-//		break;
-//	case 24:	//拐角最大加速度
-//		this->m_sc_system_config->max_corner_acc = value.value_double;
-//		break;
-//	case 25:	//向心最大加速度
-//		this->m_sc_system_config->max_cent_acc = value.value_double;
-//		break;
-	case 30:	//轴名称下标
-		this->m_sc_system_config->axis_name_ex = value.value_uint8;
-		chn_engine->SetAxisNameEx(value.value_uint8);
-		break;
+    case 20:	//系统最大速度
+        this->m_sc_system_config->max_sys_vel = value.value_double;
+        break;
+    case 24:	//拐角最大加速度
+        this->m_sc_system_config->max_corner_acc = value.value_double;
+        break;
+    case 25:	//向心最大加速度
+        this->m_sc_system_config->max_cent_acc = value.value_double;
+        break;
 	case 31:	//回参考点时倍率固定
 		this->m_sc_system_config->fix_ratio_find_ref = value.value_uint8;
 		break;
@@ -6372,9 +6307,7 @@ void ParmManager::ActiveSystemParam(uint32_t param_no, ParamValue &value){
 	case 61:	//快速IO滤波时间
 		this->m_sc_system_config->fast_io_filter_time = value.value_uint32;
 		break;
-	case 90:	//背光延时时间
-		this->m_sc_system_config->backlight_delay_time = value.value_uint16;
-		break;
+
 	case 91:	//蜂鸣时间限制
 		this->m_sc_system_config->beep_time = value.value_uint8;
 		break;
@@ -6384,92 +6317,101 @@ void ParmManager::ActiveSystemParam(uint32_t param_no, ParamValue &value){
 	case 93:	//主板告警温度
 		this->m_sc_system_config->alarm_temperature = value.value_uint8;
 		break;
-    case 94:    //统计方式
+
+    */
+    case 100:	//轴名称下标
+        this->m_sc_system_config->axis_name_ex = value.value_uint8;
+        chn_engine->SetAxisNameEx(value.value_uint8);
+        break;
+    case 101:	//调试信息级别
+		this->m_sc_system_config->trace_level = value.value_uint8;
+		g_ptr_trace->set_trace_level(m_sc_system_config->trace_level);
+		break;
+    case 102:	//调试模式
+		this->m_sc_system_config->debug_mode = value.value_uint8;
+		break;
+    case 200:	//背光延时时间
+        this->m_sc_system_config->backlight_delay_time = value.value_uint16;
+        break;
+    case 201:    //统计方式
         this->m_sc_system_config->statistics_mode = value.value_uint8;
         {//统计方式改变要清除之前的数据统计
 
         }
         break;
-	case 99:	//调试信息级别
-		this->m_sc_system_config->trace_level = value.value_uint8;
-		g_ptr_trace->set_trace_level(m_sc_system_config->trace_level);
-		break;
-	case 100:	//调试模式
-		this->m_sc_system_config->debug_mode = value.value_uint8;
-		break;
 
-    case 65:   //位置开关
+    case 300:   //位置开关
         this->m_sc_system_config->pos_check_id_1 = value.value_uint8;
         break;
-    case 66:
+    case 301:
         this->m_sc_system_config->pos_check_id_2 = value.value_uint8;
         break;
-    case 67:
+    case 302:
         this->m_sc_system_config->pos_check_id_3 = value.value_uint8;
         break;
-    case 68:
+    case 303:
         this->m_sc_system_config->pos_check_id_4 = value.value_uint8;
         break;
-    case 69:
+    case 304:
         this->m_sc_system_config->pos_check_id_5 = value.value_uint8;
         break;
-    case 70:
+    case 305:
         this->m_sc_system_config->pos_check_id_6 = value.value_uint8;
         break;
-    case 71:
+    case 306:
         this->m_sc_system_config->pos_check_id_7 = value.value_uint8;
         break;
-    case 72:
+    case 307:
         this->m_sc_system_config->pos_check_id_8 = value.value_uint8;
         break;
 
-    case 73:   //位置开关最小值
+    case 308:   //位置开关最小值
         this->m_sc_system_config->pos_check_min_1 = value.value_double;
         break;
-    case 74:
+    case 309:
         this->m_sc_system_config->pos_check_min_2 = value.value_double;
         break;
-    case 75:
+    case 310:
         this->m_sc_system_config->pos_check_min_3 = value.value_double;
         break;
-    case 76:
+    case 311:
         this->m_sc_system_config->pos_check_min_4 = value.value_double;
         break;
-    case 77:
+    case 312:
         this->m_sc_system_config->pos_check_min_5 = value.value_double;
         break;
-    case 78:
+    case 313:
         this->m_sc_system_config->pos_check_min_6 = value.value_double;
         break;
-    case 79:
+    case 314:
         this->m_sc_system_config->pos_check_min_7 = value.value_double;
         break;
-    case 80:
+    case 315:
         this->m_sc_system_config->pos_check_min_8 = value.value_double;
         break;
 
-    case 81:   //位置开关最大值
+    case 316:   //位置开关最大值
         this->m_sc_system_config->pos_check_max_1 = value.value_double;
         break;
-    case 82:
+    case 317:
         this->m_sc_system_config->pos_check_max_2 = value.value_double;
         break;
-    case 83:
+    case 318:
         this->m_sc_system_config->pos_check_max_3 = value.value_double;
         break;
-    case 84:
+    case 319:
         this->m_sc_system_config->pos_check_max_4 = value.value_double;
         break;
-    case 85:
+    case 320:
         this->m_sc_system_config->pos_check_max_5 = value.value_double;
         break;
-    case 86:
+    case 321:
         this->m_sc_system_config->pos_check_max_6 = value.value_double;
         break;
-    case 87:
+    case 322:
         this->m_sc_system_config->pos_check_max_7 = value.value_double;
         break;
-    case 88:
+    case 323:
         this->m_sc_system_config->pos_check_max_8 = value.value_double;
         break;
 
@@ -6488,7 +6430,307 @@ void ParmManager::ActiveSystemParam(uint32_t param_no, ParamValue &value){
 void ParmManager::ActiveChnParam(uint8_t chn_index, uint32_t param_no, ParamValue &value, uint8_t proc_index){
 	ChannelEngine *chn_engine = ChannelEngine::GetInstance();
     ChannelControl *chn_ctrl = chn_engine->GetChnControl(chn_index);
-	switch(param_no){
+
+    switch(param_no){
+        case 10001:	//轴数量
+            this->m_sc_channel_config[chn_index].chn_axis_count = value.value_uint8;
+            break;
+        case 10002:   //通道所属方式组
+            chn_engine->ChangeChnGroupIndex(chn_index, m_sc_channel_config[chn_index].chn_group_index, value.value_uint8);
+            this->m_sc_channel_config[chn_index].chn_group_index = value.value_uint8;
+            break;
+        case 10003:	//基本轴X
+        case 10004:	//基本轴Y
+        case 10005:	//基本轴Z
+        case 10006:	//轴4
+        case 10007:	//轴5
+        case 10008:	//轴6
+        case 10009:	//轴7
+        case 10010:	//轴8
+            this->m_sc_channel_config[chn_index].chn_axis_phy[param_no-10002] = value.value_uint8;
+            break;
+        case 10011:  //轴名称
+        case 10012:
+        case 10013:
+        case 10014:
+        case 10015:
+        case 10016:
+        case 10017:
+        case 10018:
+            this->m_sc_channel_config[chn_index].chn_axis_name[param_no-10010] = value.value_uint8;
+            break;
+        case 10019:
+        case 10020:
+        case 10021:
+        case 10022:
+        case 10023:
+        case 10024:
+        case 10025:
+        case 10026:
+            this->m_sc_channel_config[chn_index].chn_axis_order[param_no-10018] = value.value_uint8;
+            break;
+        case 10027:  //轴名称扩展下标
+        case 10028:
+        case 10029:
+        case 10030:
+        case 10031:
+        case 10032:
+        case 10033:
+        case 10034:
+            this->m_sc_channel_config[chn_index].chn_axis_name_ex[param_no-10027] = value.value_uint8;
+            break;
+        case 10100:	//扩展工件坐标系数量
+            this->m_sc_channel_config[chn_index].ex_coord_count = value.value_uint8;
+            break;
+        case 10200:	//默认平面
+            this->m_sc_channel_config[chn_index].default_plane = value.value_uint8;
+            break;
+        case 10201:	//默认编程模式
+            this->m_sc_channel_config[chn_index].default_cmd_mode = value.value_uint8;
+            break;
+        case 10202:   //默认进给方式
+            this->m_sc_channel_config[chn_index].default_feed_mode = value.value_uint8;
+            break;
+        case 10300:{   //手轮3档的自定义步长
+            this->m_sc_channel_config[chn_index].mpg_level3_step = value.value_uint16;
+            if(chn_ctrl->GetManualStep() == MANUAL_STEP_100) // 如果当前为3档，需要往mi更新步长
+                chn_engine->SetManualStep(chn_index, 2);
+            }
+            break;
+        case 10301:{   //手轮4档的自定义步长
+            this->m_sc_channel_config[chn_index].mpg_level4_step = value.value_uint16;
+            if(chn_ctrl->GetManualStep() == MANUAL_STEP_1000) // 如果当前为4档，需要往mi更新步长
+                chn_engine->SetManualStep(chn_index, 3);
+            }
+            break;
+        case 10400:
+            this->m_sc_channel_config[chn_index].tool_number = value.value_uint8;
+            break;
+        case 10500:   //G31跳转信号有效电平
+            this->m_sc_channel_config[chn_index].g31_sig_level = value.value_uint8;
+            break;
+        case 10501:   //G31跳转信号
+            this->m_sc_channel_config[chn_index].g31_skip_signal1 = value.value_uint32;
+            break;
+        case 10502:   //G31跳转信号
+            this->m_sc_channel_config[chn_index].g31_skip_signal2 = value.value_uint32;
+            break;
+        case 10503:   //G31跳转信号
+            this->m_sc_channel_config[chn_index].g31_skip_signal3 = value.value_uint32;
+            break;
+        case 10504:   //G31跳转信号
+            this->m_sc_channel_config[chn_index].g31_skip_signal4 = value.value_uint32;
+            break;
+        case 10505:   //G31跳转信号
+            this->m_sc_channel_config[chn_index].g31_skip_signal5 = value.value_uint32;
+            break;
+        case 10506:   //G31跳转信号
+            this->m_sc_channel_config[chn_index].g31_skip_signal6 = value.value_uint32;
+            break;
+        case 10507:   //G31跳转信号
+            this->m_sc_channel_config[chn_index].g31_skip_signal7 = value.value_uint32;
+            break;
+        case 10508:   //G31跳转信号
+            this->m_sc_channel_config[chn_index].g31_skip_signal8 = value.value_uint32;
+            break;
+        case 10509:   //G31跳转信号
+            this->m_sc_channel_config[chn_index].g31_skip_signal_type = value.value_uint32;
+            break;
+        case 10600:
+            this->m_sc_channel_config[chn_index].order_prog_mode = value.value_uint16;
+            break;
+        case 10601:
+            this->m_sc_channel_config[chn_index].pre_prog_num = value.value_uint16;
+            break;
+        case 10602:
+            this->m_sc_channel_config[chn_index].end_prog_num = value.value_uint16;
+            break;
+        case 10620:
+            this->m_sc_channel_config[chn_index].feed_input_enable = value.value_int16;
+            break;
+        case 10621:
+            this->m_sc_channel_config[chn_index].feed_input = value.value_int16;
+            break;
+        case 10622:
+            this->m_sc_channel_config[chn_index].spindle_speed_input_enable = value.value_int16;
+            break;
+        case 10623:
+            this->m_sc_channel_config[chn_index].spindle_speed_input = value.value_int16;
+            break;
+        case 10900:	//插补模式
+            this->m_sc_channel_config[chn_index].intep_mode = value.value_uint8;
+            chn_engine->GetChnControl(chn_index)->SetMcChnPlanFun();
+            break;
+        case 10901:	//G00运行模式
+            this->m_sc_channel_config[chn_index].rapid_mode = value.value_uint8;
+            if(proc_index < kMaxProcParamCount){
+                this->m_p_chn_process_param[chn_index].chn_param[proc_index].rapid_mode = value.value_uint8;
+            }
+            break;
+        case 10902:	//切削速度规划方式
+            this->m_sc_channel_config[chn_index].cut_plan_mode = value.value_uint8;
+            chn_engine->GetChnControl(chn_index)->SetMcChnPlanMode();
+            if(proc_index < kMaxProcParamCount){
+                this->m_p_chn_process_param[chn_index].chn_param[proc_index].cut_plan_mode = value.value_uint8;
+            }
+            break;
+        case 10903:	//定位速度规划方式
+            this->m_sc_channel_config[chn_index].rapid_plan_mode = value.value_uint8;
+            chn_engine->GetChnControl(chn_index)->SetMcChnPlanMode();
+            if(proc_index < kMaxProcParamCount){
+                this->m_p_chn_process_param[chn_index].chn_param[proc_index].rapid_plan_mode = value.value_uint8;
+            }
+            break;
+        case 10904:	//刚性攻丝规划模式
+            this->m_sc_channel_config[chn_index].tap_plan_mode = value.value_int8;
+            chn_engine->GetChnControl(chn_index)->SetMcTapPlanParam();
+            break;
+        case 10905:	//通道最大限制速度
+            this->m_sc_channel_config[chn_index].chn_max_vel = value.value_double;
+            chn_engine->GetChnControl(chn_index)->SetMcChnPlanParam();
+            if(proc_index < kMaxProcParamCount){
+                this->m_p_chn_process_param[chn_index].chn_param[proc_index].chn_max_vel = value.value_double;
+            }
+            break;
+        case 10906:   //G01最高进给速度
+            this->m_sc_channel_config[chn_index].g01_max_speed = value.value_uint32;
+            chn_engine->GetChnControl(chn_index)->SetMcChnPlanParam2();
+            break;
+        case 10907:
+            this->m_sc_channel_config[chn_index].handle_sim_speed = value.value_uint32;
+            chn_engine->GetChnControl(chn_index)->SendMcHandleSimSpeed();
+            break;
+        case 10920:	//通道最大加速度
+            this->m_sc_channel_config[chn_index].chn_max_acc = value.value_double;
+            chn_engine->GetChnControl(chn_index)->SetMcChnPlanParam();
+            if(proc_index < kMaxProcParamCount){
+                this->m_p_chn_process_param[chn_index].chn_param[proc_index].chn_max_acc = value.value_double;
+            }
+            break;
+        case 10921:	//通道最大减速度
+            this->m_sc_channel_config[chn_index].chn_max_dec = value.value_double;
+            chn_engine->GetChnControl(chn_index)->SetMcChnPlanParam();
+            if(proc_index < kMaxProcParamCount){
+                this->m_p_chn_process_param[chn_index].chn_param[proc_index].chn_max_dec = value.value_double;
+            }
+            break;
+        case 10922:	//拐角加速度
+            this->m_sc_channel_config[chn_index].chn_max_corner_acc = value.value_double;
+            chn_engine->GetChnControl(chn_index)->SetMcChnPlanParam();
+            if(proc_index < kMaxProcParamCount){
+                this->m_p_chn_process_param[chn_index].chn_param[proc_index].chn_max_corner_acc = value.value_double;
+            }
+            break;
+        case 10923:	//最大向心加速度
+            this->m_sc_channel_config[chn_index].chn_max_arc_acc = value.value_double;
+            chn_engine->GetChnControl(chn_index)->SetMcChnPlanParam();
+            if(proc_index < kMaxProcParamCount){
+                this->m_p_chn_process_param[chn_index].chn_param[proc_index].chn_max_arc_acc = value.value_double;
+            }
+            break;
+        case 10924:	//刚性攻丝最大加速度
+            this->m_sc_channel_config[chn_index].tap_max_acc = value.value_double;
+            chn_engine->GetChnControl(chn_index)->SetMcTapPlanParam();
+            break;
+        case 10925:	//刚性攻丝最大减速度
+            this->m_sc_channel_config[chn_index].tap_max_dec = value.value_double;
+            chn_engine->GetChnControl(chn_index)->SetMcTapPlanParam();
+            break;
+        case 10926:	//切削进给S型规划时间常数
+            this->m_sc_channel_config[chn_index].chn_s_cut_filter_time = value.value_uint16;
+            chn_engine->GetChnControl(chn_index)->SetMcChnPlanParam();
+            if(proc_index < kMaxProcParamCount){
+                this->m_p_chn_process_param[chn_index].chn_param[proc_index].chn_s_cut_filter_time = value.value_uint16;
+            }
+            break;
+        case 10940:	//前瞻功能
+            this->m_sc_channel_config[chn_index].chn_look_ahead = value.value_uint8;
+            chn_engine->GetChnControl(chn_index)->SetMcChnPlanFun();
+            break;
+        case 10941:	//加工速度调整等级
+            this->m_sc_channel_config[chn_index].chn_feed_limit_level = value.value_uint8;
+            break;
+        case 10942:  //拐角准停使能
+            this->m_sc_channel_config[chn_index].corner_stop_enable = value.value_uint8;
+            chn_engine->GetChnControl(chn_index)->SetMcChnCornerStopParam();
+            if(proc_index < kMaxProcParamCount){
+                this->m_p_chn_process_param[chn_index].chn_param[proc_index].corner_stop_enable = value.value_uint8;
+            }
+            break;
+        case 10943:	//拐角准停控制
+            this->m_sc_channel_config[chn_index].corner_stop = value.value_uint8;
+            chn_engine->GetChnControl(chn_index)->SetMcChnCornerStopParam();
+            if(proc_index < kMaxProcParamCount){
+                this->m_p_chn_process_param[chn_index].chn_param[proc_index].corner_stop = value.value_uint8;
+            }
+            break;
+        case 10944:  //拐角准停下限角度
+            this->m_sc_channel_config[chn_index].corner_stop_angle_min = value.value_uint8;
+            chn_engine->GetChnControl(chn_index)->SetMcChnCornerStopParam();
+            if(proc_index < kMaxProcParamCount){
+                this->m_p_chn_process_param[chn_index].chn_param[proc_index].corner_stop_angle_min = value.value_uint8;
+            }
+            break;
+        case 10945:	//转角加速度限制
+            this->m_sc_channel_config[chn_index].corner_acc_limit = value.value_uint8;
+            if(proc_index < kMaxProcParamCount){
+                this->m_p_chn_process_param[chn_index].chn_param[proc_index].corner_acc_limit = value.value_uint8;
+            }
+            break;
+        case 10946:	//基于轴速度差的转角速度钳制
+            this->m_sc_channel_config[chn_index].chn_spd_limit_on_axis = value.value_uint8;
+            chn_engine->GetChnControl(chn_index)->SetMcChnPlanFun();
+            if(proc_index < kMaxProcParamCount){
+                this->m_p_chn_process_param[chn_index].chn_param[proc_index].chn_spd_limit_on_axis = value.value_uint8;
+            }
+            break;
+        case 10947:	//圆弧误差限制
+            this->m_sc_channel_config[chn_index].arc_err_limit = value.value_uint8;
+            break;
+        case 10948:	//基于加速度的小线段进给速度钳制
+            this->m_sc_channel_config[chn_index].chn_spd_limit_on_acc = value.value_uint8;
+            chn_engine->GetChnControl(chn_index)->SetMcChnPlanFun();
+            if(proc_index < kMaxProcParamCount){
+                this->m_p_chn_process_param[chn_index].chn_param[proc_index].chn_spd_limit_on_acc = value.value_uint8;
+            }
+            break;
+        case 10949:	//基于曲率及向心加速的小线段进给速度钳制
+            this->m_sc_channel_config[chn_index].chn_spd_limit_on_curvity = value.value_uint8;
+            chn_engine->GetChnControl(chn_index)->SetMcChnPlanFun();
+            if(proc_index < kMaxProcParamCount){
+                this->m_p_chn_process_param[chn_index].chn_param[proc_index].chn_spd_limit_on_curvity = value.value_uint8;
+            }
+            break;
+        case 10950:	//G00重叠等级
+            this->m_sc_channel_config[chn_index].chn_rapid_overlap_level = value.value_uint8;
+            chn_engine->GetChnControl(chn_index)->SetMcChnPlanFun();
+            if(proc_index < kMaxProcParamCount){
+                this->m_p_chn_process_param[chn_index].chn_param[proc_index].chn_rapid_overlap_level = value.value_uint8;
+            }
+            break;
+        case 10951:
+            this->m_sc_channel_config[chn_index].chn_small_line_time = value.value_uint16;
+            chn_engine->GetChnControl(chn_index)->SetMcChnPlanFun();
+            if(proc_index < kMaxProcParamCount){
+                this->m_p_chn_process_param[chn_index].chn_param[proc_index].chn_small_line_time = value.value_uint16;
+            }
+            break;
+        case 10952:   //复位时间
+            this->m_sc_channel_config[chn_index].rst_hold_time = value.value_uint16;
+            break;
+        case 11001:
+            this->m_sc_channel_config[chn_index].G73back = value.value_double;
+            break;
+        case 11002:
+            this->m_sc_channel_config[chn_index].G83back = value.value_double;
+            break;
+        default:	//
+            g_ptr_trace->PrintLog(LOG_ALARM, "通道参数更新，参数号非法：%d", param_no);
+            break;
+    }
+
+    /*
+    switch(param_no){
 	case 102:	//轴数量
 		this->m_sc_channel_config[chn_index].chn_axis_count = value.value_uint8;
 		break;
@@ -6846,7 +7088,7 @@ void ParmManager::ActiveChnParam(uint8_t chn_index, uint32_t param_no, ParamValu
 	default:	//
 		g_ptr_trace->PrintLog(LOG_ALARM, "通道参数激活，参数号非法：%d", param_no);
 		break;
-	}
+    }*/
 }
 
 void ParmManager::Active5AxisV2Param(uint8_t chn_index, uint32_t param_no, ParamValue &value){
@@ -6965,7 +7207,470 @@ void ParmManager::ActiveAxisParam(uint8_t axis_index, uint32_t param_no, ParamVa
 	uint8_t chan_axis = 0;
 	uint64_t tmp_64 = 0;   //临时变量
 	ChannelEngine *chn_engine = ChannelEngine::GetInstance();
-	switch(param_no){
+
+
+    switch(param_no){
+        case 20001:	//轴类型
+            this->m_sc_axis_config[axis_index].axis_type = value.value_uint8;
+            break;
+        case 20002:	//轴接口类型
+            this->m_sc_axis_config[axis_index].axis_interface = value.value_uint8;
+            break;
+        case 20003:	//从站号（总线轴）/对应轴口号（非总线轴）
+            this->m_sc_axis_config[axis_index].axis_port = value.value_uint8;
+            UpdateMiParam<uint8_t>(axis_index+1, param_no, value.value_uint8);
+            break;
+        case 20004:	//直线轴类型
+            this->m_sc_axis_config[axis_index].axis_linear_type = value.value_uint8;
+            break;
+        case 20005:	//反馈类型
+            this->m_sc_axis_config[axis_index].feedback_mode = value.value_uint8;
+            break;
+        case 20006:	//轴控制方式
+            this->m_sc_axis_config[axis_index].ctrl_mode = value.value_uint8;
+            break;
+        case 20007:	//电机旋转方向
+            this->m_sc_axis_config[axis_index].motor_dir = value.value_uint8;
+            break;
+        case 20008:	//电机每转计数
+            this->m_sc_axis_config[axis_index].motor_count_pr = value.value_uint32;
+            break;
+        case 20009:	//电机最大转速
+            this->m_sc_axis_config[axis_index].motor_speed_max = value.value_uint32;
+            break;
+        case 20010:	//每转移动量，即丝杆螺距
+            this->m_sc_axis_config[axis_index].move_pr = value.value_double;
+            break;
+        case 20011:	//每转输出脉冲数
+            this->m_sc_axis_config[axis_index].pulse_count_pr = value.value_uint32;
+            break;
+        case 20012:	//编码器单圈线数
+            this->m_sc_axis_config[axis_index].encoder_lines = value.value_uint8;
+            break;
+        case 20013:	//编码器整圈最大值
+            this->m_sc_axis_config[axis_index].encoder_max_cycle = value.value_uint16;
+            UpdateMiParam<uint16_t>(axis_index+1, param_no, value.value_uint16);
+            break;
+        case 20014:  //减速比例分子
+            this->m_sc_axis_config[axis_index].decelerate_numerator = value.value_uint8;
+            break;
+        case 20015:  //减速比例分母
+            this->m_sc_axis_config[axis_index].decelerate_denominator = value.value_uint8;
+            break;
+        case 20100:  //回参考点方式
+            this->m_sc_axis_config[axis_index].ret_ref_mode = value.value_uint8;
+
+            if(value.value_uint8 == 0){
+                chn_engine->SetRetRefFlag(axis_index, true);
+            }else{
+                chn_engine->SetRetRefFlag(axis_index, false);
+            }
+            break;
+        case 20101:
+            this->m_sc_axis_config[axis_index].absolute_ref_mode = value.value_int8;
+            break;
+        case 20102:  //回参考点方向
+            this->m_sc_axis_config[axis_index].ret_ref_dir = value.value_uint8;
+            break;
+        case 20103:  //回参考点换向
+            this->m_sc_axis_config[axis_index].ret_ref_change_dir = value.value_uint8;
+            break;
+        case 20104:  //回参考点速度
+            this->m_sc_axis_config[axis_index].ret_ref_speed = value.value_double;
+            break;
+        case 20105:  //回参考点低速
+            this->m_sc_axis_config[axis_index].ret_ref_speed_second = value.value_double;
+            break;
+        case 20106:  //回参考点后的偏移量
+            this->m_sc_axis_config[axis_index].ref_offset_pos = value.value_double;
+            break;
+        case 20107:  //搜索Z脉冲最大移动距离
+            this->m_sc_axis_config[axis_index].ref_z_distance_max = value.value_double;
+            break;
+        case 20108:
+            if (value.value_int32 == 0)
+            {
+                this->m_sc_axis_config[axis_index].ref_complete = 0;
+                g_ptr_chn_engine->ClearAxisRefEncoder(axis_index);
+            }
+            break;
+        /*
+        case 20109: 	//参考点编码器值
+            sprintf(kname, "ref_encoder");
+            m_ini_axis->SetInt64Value(sname, kname, value.value_int64);  //64位整型
+            break;
+        */
+        case 20200: 	//软限位1
+            this->m_sc_axis_config[axis_index].soft_limit_max_1 = value.value_double;
+            UpdateMiParam<double>(axis_index+1, param_no, value.value_double);
+            chan = g_ptr_chn_engine->GetAxisChannel(axis_index, chan_axis);
+            g_ptr_chn_engine->GetChnControl(chan)->SetChnAxisSoftLimitValue(chan_axis, 0);
+            break;
+        case 20201:
+            this->m_sc_axis_config[axis_index].soft_limit_min_1 = value.value_double;
+            UpdateMiParam<double>(axis_index+1, param_no, value.value_double);
+            chan = g_ptr_chn_engine->GetAxisChannel(axis_index, chan_axis);
+            g_ptr_chn_engine->GetChnControl(chan)->SetChnAxisSoftLimitValue(chan_axis, 0);
+            break;
+        case 20202: 	//软限位2
+            this->m_sc_axis_config[axis_index].soft_limit_max_2 = value.value_double;
+            UpdateMiParam<double>(axis_index+1, param_no, value.value_double);
+            chan = g_ptr_chn_engine->GetAxisChannel(axis_index, chan_axis);
+            g_ptr_chn_engine->GetChnControl(chan)->SetChnAxisSoftLimitValue(chan_axis, 1);
+            break;
+        case 20203:
+            this->m_sc_axis_config[axis_index].soft_limit_min_2 = value.value_double;
+            UpdateMiParam<double>(axis_index+1, param_no, value.value_double);
+            chan = g_ptr_chn_engine->GetAxisChannel(axis_index, chan_axis);
+            g_ptr_chn_engine->GetChnControl(chan)->SetChnAxisSoftLimitValue(chan_axis, 1);
+            break;
+        case 20210:
+        case 20211:
+        case 20212:
+        case 20213:
+        case 20214:
+        case 20215:
+        case 20216:
+        case 20217:
+        case 20218:
+        case 20219:  //参考点
+            this->m_sc_axis_config[axis_index].axis_home_pos[param_no-20210] = value.value_double;
+            break;
+        case 20300:	//定位速度
+            this->m_sc_axis_config[axis_index].rapid_speed = value.value_double;
+            chan = chn_engine->GetAxisChannel(axis_index, chan_axis);
+            chn_engine->GetChnControl(chan)->SetChnAxisSpeedParam(chan_axis);
+            break;
+        case 20301:	//手动速度
+            this->m_sc_axis_config[axis_index].manual_speed = value.value_double;
+            break;
+        case 20302:
+            this->m_sc_axis_config[axis_index].mpg_speed = value.value_uint16;
+            chn_engine->GetChnControl(chan)->SetChnAxisSpeedParam(axis_index);
+            break;
+        case 20400:	//定位加速度
+            this->m_sc_axis_config[axis_index].rapid_acc = value.value_double;
+            chan = chn_engine->GetAxisChannel(axis_index, chan_axis);
+            chn_engine->GetChnControl(chan)->SetChnAxisAccParam(chan_axis);
+            if(proc_index < kMaxProcParamCount){
+                this->m_p_axis_process_param[axis_index].axis_param[proc_index].rapid_acc = value.value_double;
+            }
+            break;
+        case 20401:	//手动加速度
+            this->m_sc_axis_config[axis_index].manual_acc = value.value_double;
+            chan = chn_engine->GetAxisChannel(axis_index, chan_axis);
+            chn_engine->GetChnControl(chan)->SetChnAxisAccParam(chan_axis);
+            if(proc_index < kMaxProcParamCount){
+                this->m_p_axis_process_param[axis_index].axis_param[proc_index].manual_acc = value.value_double;
+            }
+            break;
+        case 20402:	//启动加速度
+            this->m_sc_axis_config[axis_index].start_acc = value.value_double;
+            chan = chn_engine->GetAxisChannel(axis_index, chan_axis);
+            chn_engine->GetChnControl(chan)->SetChnAxisAccParam(chan_axis);
+            if(proc_index < kMaxProcParamCount){
+                this->m_p_axis_process_param[axis_index].axis_param[proc_index].start_acc = value.value_double;
+            }
+            break;
+        case 20403:
+            this->m_sc_axis_config[axis_index].mpg_acc_time = value.value_uint16;
+            chn_engine->GetChnControl(chan)->SetChnAxisAccParam(axis_index);
+            break;
+        case 20404:
+            this->m_sc_axis_config[axis_index].mpg_deacc_time = value.value_uint16;
+            chn_engine->GetChnControl(chan)->SetChnAxisAccParam(axis_index);
+            break;
+        case 20405:	//定位S型规划时间常数
+            this->m_sc_axis_config[axis_index].rapid_s_plan_filter_time = value.value_uint16;
+            chan = chn_engine->GetAxisChannel(axis_index, chan_axis);
+            chn_engine->GetChnControl(chan)->SetChnAxisAccParam(chan_axis);
+            if(proc_index < kMaxProcParamCount){
+                this->m_p_axis_process_param[axis_index].axis_param[proc_index].rapid_s_plan_filter_time = value.value_uint16;
+            }
+            break;
+        case 20406:
+            this->m_sc_axis_config[axis_index].corner_acc_limit = value.value_double;
+            chan = chn_engine->GetAxisChannel(axis_index, chan_axis);
+            chn_engine->GetChnControl(chan)->SetChnAxisSpeedParam(chan_axis);
+            if(proc_index < kMaxProcParamCount){
+                this->m_p_axis_process_param[axis_index].axis_param[proc_index].corner_acc_limit = value.value_double;
+            }
+            break;
+        case 20407:	//插补后加减速滤波器类型
+            this->m_sc_axis_config[axis_index].post_filter_type = value.value_uint8;
+            this->UpdateMiParam<uint8_t>(axis_index+1, 1140, value.value_uint8);   //滤波器类型
+            if(proc_index < kMaxProcParamCount){
+                this->m_p_axis_process_param[axis_index].axis_param[proc_index].post_filter_type = value.value_uint8;
+            }
+            break;
+        case 20408:	//插补后加减速滤波器时间常数1
+            this->m_sc_axis_config[axis_index].post_filter_time_1 = value.value_uint16;
+            this->UpdateMiParam<uint16_t>(axis_index+1, 1141, value.value_uint16);   //一级滤波器时间常数
+            if(proc_index < kMaxProcParamCount){
+                this->m_p_axis_process_param[axis_index].axis_param[proc_index].post_filter_time_1 = value.value_uint16;
+            }
+            break;
+        case 20409:	//插补后加减速滤波器时间常数2
+            this->m_sc_axis_config[axis_index].post_filter_time_2 = value.value_uint16;
+            this->UpdateMiParam<uint16_t>(axis_index+1, 1142, value.value_uint16);   //二级滤波器时间常数
+            if(proc_index < kMaxProcParamCount){
+                this->m_p_axis_process_param[axis_index].axis_param[proc_index].post_filter_time_2 = value.value_uint16;
+            }
+            break;
+        case 20500:	//跟随误差限制
+            this->m_sc_axis_config[axis_index].track_err_limit = value.value_uint32;
+            tmp_64 = static_cast<uint64_t>(value.value_uint32) * 1e4;   //转换单位：um-->0.1nm
+            this->UpdateMiParam<uint64_t>(axis_index+1, param_no, tmp_64);	//跟踪误差限
+            break;
+        case 20501:	//定位误差限制
+            this->m_sc_axis_config[axis_index].location_err_limit = value.value_uint16;
+            tmp_64 = static_cast<uint64_t>(value.value_uint16) * 1e4;   //转换单位：um-->0.1nm
+            this->UpdateMiParam<uint64_t>(axis_index+1, param_no, tmp_64);			//定位误差限
+            break;
+        case 20600:  //快速定位    0--关闭   1--打开
+            this->m_sc_axis_config[axis_index].fast_locate = value.value_uint8;
+            break;
+        case 20601:  //位置显示模式   0--循环模式（0~360）    1--非循环模式
+            this->m_sc_axis_config[axis_index].pos_disp_mode = value.value_uint8;
+            break;
+        case 20602:  //工件坐标是否循环显示  0--否  1--是
+            this->m_sc_axis_config[axis_index].pos_work_disp_mode = value.value_uint8;
+            break;
+        case 20603:  //相对坐标是否循环显示  0--否  1--是
+            this->m_sc_axis_config[axis_index].pos_rel_disp_mode = value.value_uint8;
+            break;
+        case 20604:  //旋转轴绝对指令的旋转方向  0--快捷方向  1--取决于指令符号
+            this->m_sc_axis_config[axis_index].rot_abs_dir = value.value_uint8;
+            break;
+        case 20700:  //是否同步轴
+            this->m_sc_axis_config[axis_index].sync_axis = value.value_uint8;
+            UpdateMiParam<uint8_t>(axis_index+1, param_no, value.value_uint8);
+            break;
+        case 20701:	//主动轴号
+            this->m_sc_axis_config[axis_index].master_axis_no = value.value_uint8;
+            UpdateMiParam<uint8_t>(axis_index+1, param_no, value.value_uint8);
+            break;
+        case 20702:	//显示坐标
+            this->m_sc_axis_config[axis_index].disp_coord = value.value_uint8;
+            break;
+        case 20703:	//主从轴基准位置偏差
+            this->m_sc_axis_config[axis_index].benchmark_offset = value.value_double;
+            UpdateMiParam<double>(axis_index+1, param_no, value.value_double); 	//基准偏差
+            break;
+        case 20704:	//位置同步误差报警阈值
+            this->m_sc_axis_config[axis_index].sync_err_max_pos = value.value_uint32;
+            UpdateMiParam<uint32_t>(axis_index+1, param_no, value.value_uint32); 	//允许的同步最大误差
+            break;
+        case 20705:	//坐标同步误差报警阈值
+            this->m_sc_axis_config[axis_index].sync_err_max_mach = value.value_uint32;
+            UpdateMiParam<uint8_t>(axis_index+1, param_no, value.value_uint32);
+            break;
+        case 20706:	//从动轴回参考点后自动同步校准
+            this->m_sc_axis_config[axis_index].auto_sync = value.value_uint8;
+            break;
+        case 20711:	//是否进行位置同步误差检测
+            this->m_sc_axis_config[axis_index].sync_pos_detect = value.value_uint8;
+            UpdateMiParam<uint8_t>(axis_index+1, param_no, value.value_uint8);
+            break;
+        case 20712:	//是否进行坐标同步误差检测
+            this->m_sc_axis_config[axis_index].sync_mach_detect = value.value_uint8;
+            UpdateMiParam<uint8_t>(axis_index+1, param_no, value.value_uint8);
+            break;
+        case 20720:	//是否串联控制
+            this->m_sc_axis_config[axis_index].series_ctrl_axis = value.value_uint8;
+            UpdateMiParam<uint8_t>(axis_index+1, param_no, value.value_uint8); 	//基准偏差
+            break;
+        case 20721:	//预载电流偏置
+            this->m_sc_axis_config[axis_index].sync_pre_load_torque = value.value_uint8;
+            UpdateMiParam<uint8_t>(axis_index+1, param_no, value.value_uint8);
+            break;
+        case 20722:	//预载串联速度
+            this->m_sc_axis_config[axis_index].serial_pre_speed = value.value_uint16;
+            UpdateMiParam<uint8_t>(axis_index+1, param_no, value.value_uint16);
+            break;
+        case 20723:	//串联力矩系数
+            this->m_sc_axis_config[axis_index].serial_torque_ratio = value.value_uint16;
+            UpdateMiParam<uint8_t>(axis_index+1, param_no, value.value_uint16);
+            break;
+        case 20724:	//是否进行扭矩同步误差检测
+            this->m_sc_axis_config[axis_index].sync_torque_detect = value.value_uint8;
+            UpdateMiParam<uint8_t>(axis_index+1, param_no, value.value_uint8);
+            break;
+        case 20725:	//扭矩同步误差报警阈值
+            this->m_sc_axis_config[axis_index].sync_err_max_torque = value.value_uint8;
+            UpdateMiParam<uint8_t>(axis_index+1, param_no, value.value_uint8);
+            break;
+        case 20800:	//是否PMC轴
+            this->m_sc_axis_config[axis_index].axis_pmc = value.value_uint8;
+            break;
+        case 20801:	//PMC轴快移速度来源
+            this->m_sc_axis_config[axis_index].pmc_g00_by_EIFg = value.value_uint8;
+            break;
+        case 20802:	//最小PMC移动速度
+            this->m_sc_axis_config[axis_index].pmc_min_speed = value.value_uint16;
+            break;
+        case 20803:	//最大PMC移动速度
+            this->m_sc_axis_config[axis_index].pmc_max_speed = value.value_uint16;
+            break;
+        case 21100:	//主轴变速比
+            this->m_sc_axis_config[axis_index].spd_gear_ratio = value.value_uint8;
+            break;
+        case 21101:	//零漂补偿
+            this->m_sc_axis_config[axis_index].zero_compensation = value.value_int16;
+            break;
+        case 21102:	//模拟输出增益
+            this->m_sc_axis_config[axis_index].spd_analog_gain = value.value_uint16;
+            break;
+        case 21103:	//主轴电压控制方式
+            this->m_sc_axis_config[axis_index].spd_vctrl_mode = value.value_uint8;
+            break;
+        case 21104:
+            this->m_sc_axis_config[axis_index].io_output_type = value.value_uint8;
+            break;
+        case 21105:	//主轴最高转速
+            this->m_sc_axis_config[axis_index].spd_max_speed = value.value_uint32;
+            break;
+        case 21106:	//主轴最低转速
+            this->m_sc_axis_config[axis_index].spd_min_speed = value.value_uint32;
+            break;
+        case 21107: //主轴启动时间
+            this->m_sc_axis_config[axis_index].spd_start_time = value.value_uint16;
+            UpdateMiParam<uint16_t>(axis_index+1, param_no, value.value_uint16);
+            break;
+        case 21108: //主轴制动时间
+            this->m_sc_axis_config[axis_index].spd_stop_time = value.value_uint16;
+            UpdateMiParam<uint16_t>(axis_index+1, param_no, value.value_uint16);
+            break;
+        case 21109:	//主轴转向是否受M03/M04影响
+            this->m_sc_axis_config[axis_index].spd_ctrl_TCW = value.value_uint8;
+            break;
+        case 21110:	//主轴转向取反
+            this->m_sc_axis_config[axis_index].spd_ctrl_CWM = value.value_uint8;
+            break;
+        case 21111:	//SOR信号用途
+            this->m_sc_axis_config[axis_index].spd_ctrl_GST = value.value_uint8;
+            break;
+        case 21112:	//主轴换挡方式
+            this->m_sc_axis_config[axis_index].spd_ctrl_SGB = value.value_uint8;
+            break;
+        case 21113:	//齿轮换挡时是否输出SF信号
+            this->m_sc_axis_config[axis_index].spd_ctrl_SFA = value.value_uint8;
+            break;
+        case 21114:	//主轴定向时的转向
+            this->m_sc_axis_config[axis_index].spd_ctrl_ORM = value.value_uint8;
+            break;
+        case 21115:	//主轴定向角度
+            this->m_sc_axis_config[axis_index].spd_locate_ang = value.value_double;
+            break;
+        case 21116:	//螺纹切削和刚性攻丝时，主轴倍率设置
+            this->m_sc_axis_config[axis_index].spd_ctrl_TSO = value.value_uint8;
+            break;
+        case 21117:	//主轴齿轮换档/定向时的主轴转速
+            this->m_sc_axis_config[axis_index].spd_sor_speed = value.value_uint16;
+            break;
+        case 21118:	//主轴电机最小钳制速度
+            this->m_sc_axis_config[axis_index].spd_motor_min_speed = value.value_uint16;
+            break;
+        case 21119:	//主轴电机最大钳制速度
+            this->m_sc_axis_config[axis_index].spd_motor_max_speed = value.value_uint16;
+            break;
+        case 21120:	//齿轮低档位最高转速
+            this->m_sc_axis_config[axis_index].spd_gear_speed_low = value.value_uint32;
+            break;
+        case 21121:	//齿轮中档位最高转速
+            this->m_sc_axis_config[axis_index].spd_gear_speed_middle = value.value_uint32;
+            break;
+        case 21122:	//齿轮高档位最高转速
+            this->m_sc_axis_config[axis_index].spd_gear_speed_high = value.value_uint32;
+            break;
+        case 21123:	//B方式档1->档2电机转速
+            this->m_sc_axis_config[axis_index].spd_gear_switch_speed1 = value.value_uint16;
+            break;
+        case 21124:	//B方式档2->档3电机转速
+            this->m_sc_axis_config[axis_index].spd_gear_switch_speed2 = value.value_uint16;
+            break;
+        case 21200:	//攻丝同步误差增益
+            this->m_sc_axis_config[axis_index].spd_sync_error_gain = value.value_double;
+            break;
+        case 21201:	//攻丝轴速度前馈增益
+            this->m_sc_axis_config[axis_index].spd_speed_feed_gain = value.value_double;
+            break;
+        case 21202:	//攻丝轴位置比例增益
+            this->m_sc_axis_config[axis_index].spd_pos_ratio_gain = value.value_double;
+            break;
+        case 21203:	//攻丝回退期间，倍率是否有效
+            this->m_sc_axis_config[axis_index].spd_rtnt_rate_on = value.value_uint8;
+            break;
+        case 21204:	//攻丝回退倍率
+            this->m_sc_axis_config[axis_index].spd_rtnt_rate = value.value_uint8;
+            break;
+        case 21205:	//攻丝回退的额外回退值
+            this->m_sc_axis_config[axis_index].spd_rtnt_distance = value.value_int32;
+            break;
+        case 21300:   //反向间隙是否生效  **************************
+            this->m_sc_axis_config[axis_index].backlash_enable = value.value_uint8;
+            chn_engine->SendMiBacklash(axis_index);
+            break;
+        case 21301:  //反向间隙，初始方向
+            this->m_sc_axis_config[axis_index].init_backlash_dir = value.value_int8;
+            break;
+        case 21302:  //正向反向间隙
+            this->m_sc_axis_config[axis_index].backlash_forward = value.value_double;
+            chn_engine->SendMiBacklash(axis_index);
+            break;
+        case 21303:  //反向间隙步长
+            this->m_sc_axis_config[axis_index].backlash_step = value.value_int16;
+            chn_engine->SendMiBacklash(axis_index);
+            break;
+        /*
+        case 21320:  // 螺距补偿是否生效
+            printf("update axis 1408 \n");
+            sprintf(kname, "pc_enable");
+            m_ini_axis->SetIntValue(sname, kname, value.value_uint8);
+            this->m_sc_axis_config[axis_index].pc_enable = value.value_uint8;
+            break;
+
+        case 21321:	//螺距补偿类型  ****************************
+            printf("update axis 1407 \n");
+            sprintf(kname, "pc_type");
+            m_ini_axis->SetIntValue(sname, kname, value.value_uint8);
+            this->m_sc_axis_config[axis_index].pc_type = value.value_uint8;
+            break;
+
+        case 21322:  //补偿间隔
+            sprintf(kname, "pc_inter_dist");
+            m_ini_axis->SetDoubleValue(sname, kname, value.value_double);
+            this->m_sc_axis_config[axis_index].pc_inter_dist = value.value_double;
+            break;
+
+        case 21323: //螺距补偿点数
+            sprintf(kname, "pc_count");
+            m_ini_axis->SetIntValue(sname, kname, value.value_uint16);
+            this->m_sc_axis_config[axis_index].pc_count = value.value_uint16;
+            printf("===== %d\n", value.value_uint16);
+            break;
+
+        case 21324:  //螺距补偿起始点
+            sprintf(kname, "pc_offset");
+            m_ini_axis->SetIntValue(sname, kname, value.value_uint16);
+            this->m_sc_axis_config[axis_index].pc_offset = value.value_uint16;
+            break;
+
+        case 21325:  //参考点补偿位置
+            sprintf(kname, "pc_ref_index");
+            m_ini_axis->SetIntValue(sname, kname, value.value_uint16);
+            this->m_sc_axis_config[axis_index].pc_ref_index = value.value_uint16;
+            break;
+        */
+        default:
+            g_ptr_trace->PrintLog(LOG_ALARM, "轴参数更新，参数号非法：%d", param_no);
+            break;
+    }
+
+
+
+    /*
+    switch(param_no){
 	case 1001:	//轴类型
 		this->m_sc_axis_config[axis_index].axis_type = value.value_uint8;
 		break;
@@ -7033,7 +7738,6 @@ void ParmManager::ActiveAxisParam(uint8_t axis_index, uint32_t param_no, ParamVa
 		break;
 	case 1120:	//定位加速度
 		this->m_sc_axis_config[axis_index].rapid_acc = value.value_double;
-//		chn_engine->SetAxisAccParam(axis_index);
 		chan = chn_engine->GetAxisChannel(axis_index, chan_axis);
 		chn_engine->GetChnControl(chan)->SetChnAxisAccParam(chan_axis);
 		if(proc_index < kMaxProcParamCount){
@@ -7042,7 +7746,6 @@ void ParmManager::ActiveAxisParam(uint8_t axis_index, uint32_t param_no, ParamVa
 		break;
 	case 1121:	//手动加速度
 		this->m_sc_axis_config[axis_index].manual_acc = value.value_double;
-//		chn_engine->SetAxisAccParam(axis_index);
 		chan = chn_engine->GetAxisChannel(axis_index, chan_axis);
 		chn_engine->GetChnControl(chan)->SetChnAxisAccParam(chan_axis);
 		if(proc_index < kMaxProcParamCount){
@@ -7051,7 +7754,6 @@ void ParmManager::ActiveAxisParam(uint8_t axis_index, uint32_t param_no, ParamVa
 		break;
 	case 1122:	//起步加速度
 		this->m_sc_axis_config[axis_index].start_acc = value.value_double;
-//		chn_engine->SetAxisAccParam(axis_index);
 		chan = chn_engine->GetAxisChannel(axis_index, chan_axis);
 		chn_engine->GetChnControl(chan)->SetChnAxisAccParam(chan_axis);
 		if(proc_index < kMaxProcParamCount){
@@ -7060,7 +7762,6 @@ void ParmManager::ActiveAxisParam(uint8_t axis_index, uint32_t param_no, ParamVa
 		break;
 	case 1130:	//定位S型速度规划时间常数
 		this->m_sc_axis_config[axis_index].rapid_s_plan_filter_time = value.value_uint16;
-//		chn_engine->SetAxisAccParam(axis_index);
 		chan = chn_engine->GetAxisChannel(axis_index, chan_axis);
 		chn_engine->GetChnControl(chan)->SetChnAxisAccParam(chan_axis);
 		if(proc_index < kMaxProcParamCount){
@@ -7069,7 +7770,6 @@ void ParmManager::ActiveAxisParam(uint8_t axis_index, uint32_t param_no, ParamVa
 		break;
 	case 1135:  //拐角速度差限制
 		this->m_sc_axis_config[axis_index].corner_acc_limit = value.value_double;
-//		chn_engine->SetAxisSpeedParam(axis_index);
 		chan = chn_engine->GetAxisChannel(axis_index, chan_axis);
 		chn_engine->GetChnControl(chan)->SetChnAxisSpeedParam(chan_axis);
 		if(proc_index < kMaxProcParamCount){
@@ -7195,7 +7895,6 @@ void ParmManager::ActiveAxisParam(uint8_t axis_index, uint32_t param_no, ParamVa
 		break;
 	case 1351:	//定位速度
 		this->m_sc_axis_config[axis_index].rapid_speed = value.value_double;
-//		chn_engine->SetAxisSpeedParam(axis_index);
 		chan = chn_engine->GetAxisChannel(axis_index, chan_axis);
 		chn_engine->GetChnControl(chan)->SetChnAxisSpeedParam(chan_axis);
 		break;
@@ -7226,7 +7925,6 @@ void ParmManager::ActiveAxisParam(uint8_t axis_index, uint32_t param_no, ParamVa
 	case 1500: 	//软限位1
 		this->m_sc_axis_config[axis_index].soft_limit_max_1 = value.value_double;
 		UpdateMiParam<double>(axis_index+1, param_no, value.value_double);
-//		g_ptr_chn_engine->SetAxisSoftLimitValue(axis_index, 0);
 		chan = g_ptr_chn_engine->GetAxisChannel(axis_index, chan_axis);
 		g_ptr_chn_engine->GetChnControl(chan)->SetChnAxisSoftLimitValue(chan_axis, 0);
 		break;
@@ -7234,7 +7932,6 @@ void ParmManager::ActiveAxisParam(uint8_t axis_index, uint32_t param_no, ParamVa
 		{
 		this->m_sc_axis_config[axis_index].soft_limit_min_1 = value.value_double;
 		UpdateMiParam<double>(axis_index+1, param_no, value.value_double);
-//		g_ptr_chn_engine->SetAxisSoftLimitValue(axis_index, 0);
 		chan = g_ptr_chn_engine->GetAxisChannel(axis_index, chan_axis);
 		g_ptr_chn_engine->GetChnControl(chan)->SetChnAxisSoftLimitValue(chan_axis, 0);
 		}
@@ -7249,14 +7946,12 @@ void ParmManager::ActiveAxisParam(uint8_t axis_index, uint32_t param_no, ParamVa
 	case 1503: 	//软限位2
 		this->m_sc_axis_config[axis_index].soft_limit_max_2 = value.value_double;
 		UpdateMiParam<double>(axis_index+1, param_no, value.value_double);
-//		g_ptr_chn_engine->SetAxisSoftLimitValue(axis_index, 1);
 		chan = g_ptr_chn_engine->GetAxisChannel(axis_index, chan_axis);
 		g_ptr_chn_engine->GetChnControl(chan)->SetChnAxisSoftLimitValue(chan_axis, 1);
 		break;
 	case 1504:
 		this->m_sc_axis_config[axis_index].soft_limit_min_2 = value.value_double;
 		UpdateMiParam<double>(axis_index+1, param_no, value.value_double);
-//		g_ptr_chn_engine->SetAxisSoftLimitValue(axis_index, 1);
 		chan = g_ptr_chn_engine->GetAxisChannel(axis_index, chan_axis);
 		g_ptr_chn_engine->GetChnControl(chan)->SetChnAxisSoftLimitValue(chan_axis, 1);
 		break;
@@ -7499,7 +8194,7 @@ void ParmManager::ActiveAxisParam(uint8_t axis_index, uint32_t param_no, ParamVa
 	default:
 		g_ptr_trace->PrintLog(LOG_ALARM, "轴参数激活，参数号非法：%d", param_no);
 		break;
-	}
+    }*/
 }
 
 /**

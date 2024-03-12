@@ -696,14 +696,14 @@ bool ParmManager::ReadChnConfig(){
 
 			m_sc_channel_config[i].chn_small_line_time = m_ini_chn->GetIntValueOrDefault(sname, "chn_small_line_time", 30);
 
-            m_sc_channel_config[i].g31_skip_signal1 = m_ini_chn->GetIntValueOrDefault(sname, "g31_skip_signal1", 0);
-            m_sc_channel_config[i].g31_skip_signal2 = m_ini_chn->GetIntValueOrDefault(sname, "g31_skip_signal2", 0);
-            m_sc_channel_config[i].g31_skip_signal3 = m_ini_chn->GetIntValueOrDefault(sname, "g31_skip_signal3", 0);
-            m_sc_channel_config[i].g31_skip_signal4 = m_ini_chn->GetIntValueOrDefault(sname, "g31_skip_signal4", 0);
-            m_sc_channel_config[i].g31_skip_signal5 = m_ini_chn->GetIntValueOrDefault(sname, "g31_skip_signal5", 0);
-            m_sc_channel_config[i].g31_skip_signal6 = m_ini_chn->GetIntValueOrDefault(sname, "g31_skip_signal6", 0);
-            m_sc_channel_config[i].g31_skip_signal7 = m_ini_chn->GetIntValueOrDefault(sname, "g31_skip_signal7", 0);
-            m_sc_channel_config[i].g31_skip_signal8 = m_ini_chn->GetIntValueOrDefault(sname, "g31_skip_signal8", 0);
+            m_sc_channel_config[i].g31_skip_signal[0] = m_ini_chn->GetIntValueOrDefault(sname, "g31_skip_signal1", 0);
+            m_sc_channel_config[i].g31_skip_signal[1] = m_ini_chn->GetIntValueOrDefault(sname, "g31_skip_signal2", 0);
+            m_sc_channel_config[i].g31_skip_signal[2] = m_ini_chn->GetIntValueOrDefault(sname, "g31_skip_signal3", 0);
+            m_sc_channel_config[i].g31_skip_signal[3] = m_ini_chn->GetIntValueOrDefault(sname, "g31_skip_signal4", 0);
+            m_sc_channel_config[i].g31_skip_signal[4] = m_ini_chn->GetIntValueOrDefault(sname, "g31_skip_signal5", 0);
+            m_sc_channel_config[i].g31_skip_signal[5] = m_ini_chn->GetIntValueOrDefault(sname, "g31_skip_signal6", 0);
+            m_sc_channel_config[i].g31_skip_signal[6] = m_ini_chn->GetIntValueOrDefault(sname, "g31_skip_signal7", 0);
+            m_sc_channel_config[i].g31_skip_signal[7] = m_ini_chn->GetIntValueOrDefault(sname, "g31_skip_signal8", 0);
             m_sc_channel_config[i].g31_skip_signal_type = m_ini_chn->GetIntValueOrDefault(sname, "g31_skip_signal_type", 0);
             m_sc_channel_config[i].g31_sig_level = m_ini_chn->GetIntValueOrDefault(sname, "g31_sig_level", 0);
             m_sc_channel_config[i].rst_hold_time = m_ini_chn->GetIntValueOrDefault(sname, "rst_hold_time", 16);
@@ -805,14 +805,14 @@ bool ParmManager::ReadChnConfig(){
 
 			m_sc_channel_config[i].chn_small_line_time = 30;
 
-            m_sc_channel_config[i].g31_skip_signal1 = 0;
-            m_sc_channel_config[i].g31_skip_signal2 = 0;
-            m_sc_channel_config[i].g31_skip_signal3 = 0;
-            m_sc_channel_config[i].g31_skip_signal4 = 0;
-            m_sc_channel_config[i].g31_skip_signal5 = 0;
-            m_sc_channel_config[i].g31_skip_signal6 = 0;
-            m_sc_channel_config[i].g31_skip_signal7 = 0;
-            m_sc_channel_config[i].g31_skip_signal8 = 0;
+            m_sc_channel_config[i].g31_skip_signal[0] = 0;
+            m_sc_channel_config[i].g31_skip_signal[1] = 0;
+            m_sc_channel_config[i].g31_skip_signal[2] = 0;
+            m_sc_channel_config[i].g31_skip_signal[3] = 0;
+            m_sc_channel_config[i].g31_skip_signal[4] = 0;
+            m_sc_channel_config[i].g31_skip_signal[5] = 0;
+            m_sc_channel_config[i].g31_skip_signal[6] = 0;
+            m_sc_channel_config[i].g31_skip_signal[7] = 0;
             m_sc_channel_config[i].g31_skip_signal_type = 0;
             m_sc_channel_config[i].g31_sig_level = 0;
             m_sc_channel_config[i].rst_hold_time = 16;
@@ -4308,6 +4308,9 @@ bool ParmManager::UpdateSystemParam(uint32_t param_no, ParamValue &value){
 	memset(sname, 0x00, sizeof(sname));
 	memset(kname, 0x00, sizeof(kname));
 
+
+    printf("UpdateSystemParam %d\n", param_no);
+
 	sprintf(sname, "system");
 	switch(param_no){
     case 2: 	//通道数
@@ -4675,6 +4678,10 @@ bool ParmManager::UpdateChnParam(uint8_t chn_index, uint32_t param_no, ParamValu
 		g_ptr_trace->PrintLog(LOG_ALARM, "通道参数更新，通道号非法：%hhu", chn_index);
 		return false;
 	}
+
+
+    printf("UpdateChnParam chn:%d param:%d\n",chn_index, param_no);
+
 	char sname[32];	//section name
 	char kname[64];	//key name
 
@@ -4768,35 +4775,14 @@ bool ParmManager::UpdateChnParam(uint8_t chn_index, uint32_t param_no, ParamValu
             m_ini_chn->SetIntValue(sname, kname, value.value_uint8);
             break;
         case 10501:   //G31跳转信号
-            sprintf(kname, "g31_skip_signal1");
-            m_ini_chn->SetIntValue(sname, kname, value.value_uint32);
-            break;
         case 10502:   //G31跳转信号
-            sprintf(kname, "g31_skip_signal2");
-            m_ini_chn->SetIntValue(sname, kname, value.value_uint32);
-            break;
         case 10503:   //G31跳转信号
-            sprintf(kname, "g31_skip_signal3");
-            m_ini_chn->SetIntValue(sname, kname, value.value_uint32);
-            break;
         case 10504:   //G31跳转信号
-            sprintf(kname, "g31_skip_signal4");
-            m_ini_chn->SetIntValue(sname, kname, value.value_uint32);
-            break;
         case 10505:   //G31跳转信号
-            sprintf(kname, "g31_skip_signal5");
-            m_ini_chn->SetIntValue(sname, kname, value.value_uint32);
-            break;
         case 10506:   //G31跳转信号
-            sprintf(kname, "g31_skip_signal6");
-            m_ini_chn->SetIntValue(sname, kname, value.value_uint32);
-            break;
         case 10507:   //G31跳转信号
-            sprintf(kname, "g31_skip_signal7");
-            m_ini_chn->SetIntValue(sname, kname, value.value_uint32);
-            break;
         case 10508:   //G31跳转信号
-            sprintf(kname, "g31_skip_signal8");
+            sprintf(kname, "g31_skip_signal%d", param_no-10500);
             m_ini_chn->SetIntValue(sname, kname, value.value_uint32);
             break;
         case 10509:   //G31 信号类型
@@ -5071,7 +5057,9 @@ bool ParmManager::UpdateAxisParam(uint8_t axis_index, uint32_t param_no, ParamVa
 		return false;
 	}
 
-    if(param_no == 1651){
+    printf("UpdateAxisParam axsi: %d param: %d\n", axis_index, param_no);
+
+    if(param_no == 20701){
         int master_axis = value.value_int8;
         if(m_sc_axis_config[master_axis-1].sync_axis == 1){
             CreateError(SET_SYNC_MASTER_AXIS_ERROR, ERROR_LEVEL, CLEAR_BY_MCP_RESET);
@@ -5659,6 +5647,10 @@ bool ParmManager::UpdateAxisParam(uint8_t axis_index, uint32_t param_no, ParamVa
  */
 bool ParmManager::UpdateChnProcParam(uint8_t chn_index, uint8_t group_index, uint32_t param_no, ParamValue &value){
 	bool res = true;
+
+
+    printf("UpdateChnProcParam chn: %d grp: %d param: %d\n", chn_index, group_index, param_no);
+
 //	if(chn_index >= this->m_sc_system_config->chn_count){
 	if(chn_index >= this->m_sc_system_config->max_chn_count){   //支持参数修改，一次重启
 		g_ptr_trace->PrintLog(LOG_ALARM, "通道参数更新，通道号非法：%hhu", chn_index);
@@ -5789,6 +5781,10 @@ bool ParmManager::UpdateAxisProcParam(uint8_t axis_index, uint8_t group_index, u
 		g_ptr_trace->PrintLog(LOG_ALARM, "轴工艺相关参数更新，轴号非法：%hhu", axis_index);
 		return false;
 	}
+
+    printf("UpdateAxisProcParam axis: %d grp: %d param: %d\n", axis_index, group_index, param_no);
+
+
 	char sname[32];	//section name
 	char kname[64];	//key name
 
@@ -6510,28 +6506,14 @@ void ParmManager::ActiveChnParam(uint8_t chn_index, uint32_t param_no, ParamValu
             this->m_sc_channel_config[chn_index].g31_sig_level = value.value_uint8;
             break;
         case 10501:   //G31跳转信号
-            this->m_sc_channel_config[chn_index].g31_skip_signal1 = value.value_uint32;
-            break;
-        case 10502:   //G31跳转信号
-            this->m_sc_channel_config[chn_index].g31_skip_signal2 = value.value_uint32;
-            break;
-        case 10503:   //G31跳转信号
-            this->m_sc_channel_config[chn_index].g31_skip_signal3 = value.value_uint32;
-            break;
-        case 10504:   //G31跳转信号
-            this->m_sc_channel_config[chn_index].g31_skip_signal4 = value.value_uint32;
-            break;
-        case 10505:   //G31跳转信号
-            this->m_sc_channel_config[chn_index].g31_skip_signal5 = value.value_uint32;
-            break;
-        case 10506:   //G31跳转信号
-            this->m_sc_channel_config[chn_index].g31_skip_signal6 = value.value_uint32;
-            break;
-        case 10507:   //G31跳转信号
-            this->m_sc_channel_config[chn_index].g31_skip_signal7 = value.value_uint32;
-            break;
-        case 10508:   //G31跳转信号
-            this->m_sc_channel_config[chn_index].g31_skip_signal8 = value.value_uint32;
+        case 10502:
+        case 10503:
+        case 10504:
+        case 10505:
+        case 10506:
+        case 10507:
+        case 10508:
+            this->m_sc_channel_config[chn_index].g31_skip_signal[param_no-10501] = value.value_uint32;
             break;
         case 10509:   //G31跳转信号
             this->m_sc_channel_config[chn_index].g31_skip_signal_type = value.value_uint32;

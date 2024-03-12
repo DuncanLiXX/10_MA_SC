@@ -458,6 +458,14 @@ void MICommunication::SendHardLimitState(bool is_positive,uint64_t mask)
     WriteCmd(cmd);
 }
 
+void MICommunication::ReadG31_1_MeasureData(void *data, int count)
+{
+
+    uint8_t * p_addr = (uint8_t *)SHARED_MEM_PMC_LADDER_BASE;
+
+    memcpy(data, p_addr, sizeof(int64_t)*count);
+}
+
 /**
  * @brief 初始化上下行命令通道，将所有命令帧的读写标志位置0
  */

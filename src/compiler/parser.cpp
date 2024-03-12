@@ -659,8 +659,15 @@ bool Parser::AnalyzeGCode(LexerGCode *gcode){
 			if(!CreateSkipRunMsg(m_gmode[0]))
 				return false;
 			else
-				has_move_code = true;
-		}else if(m_gmode[0] == G65_CMD){ //宏程序调用
+                has_move_code = true;
+
+        }else if(m_gmode[0] == G31_1_CMD){
+            if(!CreateSkipMessureMsg(m_gmode[0]))
+                return false;
+            else
+                has_move_code = true;
+
+        }else if(m_gmode[0] == G65_CMD){ //宏程序调用
 			if(!CreateMacroProgCallMsg())
 				return false;
 		}else if(m_gmode[0] == G37_CMD){
@@ -3088,8 +3095,6 @@ bool Parser::CreateSkipRunMsg(const int gcode){
 	DPointChn target = source;	//终点
 	uint32_t axis_mask = 0;
 
-
-
 	if(!GetTargetPos(target, axis_mask))
 		return false;
 
@@ -3100,7 +3105,7 @@ bool Parser::CreateSkipRunMsg(const int gcode){
 	}
 	
 
-	RecordMsg *new_msg = new SkipMsg(source, target, m_p_compiler_status->mode.f_mode, axis_mask);
+    RecordMsg *new_msg = new SkipMsg(source, target, m_p_compiler_status->mode.f_mode, axis_mask);
 	if(new_msg == nullptr){
 		//TODO 内存分配失败，告警
 		CreateError(ERR_MEMORY_NEW, FATAL_LEVEL, CLEAR_BY_RESET_POWER);
@@ -3115,6 +3120,21 @@ bool Parser::CreateSkipRunMsg(const int gcode){
 		((SkipMsg *)new_msg)->SetMachCoord(true);
 	}
 
+    double data;
+
+    if(GetCodeData(P_DATA, data)){
+
+        int idx = int(data) - 1;
+
+        // 选择DI通道 0~7
+        if(idx >= 0 && idx <= 7){
+            ((SkipMsg *)new_msg)->PData = idx;
+        }else{
+            m_error_code = ERR_NO_P_DATA;
+            return false;
+        }
+    }
+
 	m_p_parser_result->Append(new_msg);
 
 	ProcessLastBlockRec(new_msg);
@@ -3123,7 +3143,75 @@ bool Parser::CreateSkipRunMsg(const int gcode){
 
 //	printf("create Ref return msg, axis_mask = 0x%x\n", mask);
 
-	return true;
+    return true;
+}
+
+bool Parser::CreateSkipMessureMsg(const int gcode)
+{
+    DPointChn source = this->m_p_compiler_status->cur_pos;   //起点
+    DPointChn target = source;	//终点
+    uint32_t axis_mask = 0;
+
+    if(!GetTargetPos(target, axis_mask))
+        return false;
+
+    int move_axis_count = 0;
+
+    for(int i=0; i<8; i++){
+        if(axis_mask & (1<<i)) move_axis_count++;
+    }
+
+    if(move_axis_count != 1){
+        m_error_code = ERR_G31_1_INVALID;
+        return false;
+    }
+
+    if(!m_b_f_code){//未指定F值
+        printf("ERR_NO_F_DATA\n");
+        m_error_code = ERR_NO_F_DATA;
+        return false;
+    }
+
+    RecordMsg *new_msg = new SkipMeasureMsg(source, target, m_p_compiler_status->mode.f_mode, axis_mask);
+
+    if(new_msg == nullptr){
+        //TODO 内存分配失败，告警
+        CreateError(ERR_MEMORY_NEW, FATAL_LEVEL, CLEAR_BY_RESET_POWER);
+        return false;
+    }
+    new_msg->SetLineNo(this->m_p_lexer_result->line_no);  //设置当前行号
+    if(this->m_p_compiler_status->jump_flag)
+        new_msg->SetFlag(FLAG_JUMP, true);
+
+    //同行是否存在G53，即指定机械坐标
+    if(this->m_b_has_g53){
+        ((SkipMeasureMsg *)new_msg)->SetMachCoord(true);
+    }
+
+    double data;
+
+    if(GetCodeData(P_DATA, data)){
+
+        int idx = int(data) - 1;
+
+        // 选择DI通道 0~7
+        if(idx >= 0 && idx <= 7){
+            ((SkipMeasureMsg *)new_msg)->PData = idx;
+        }else{
+            m_error_code = ERR_NO_P_DATA;
+            return false;
+        }
+    }
+
+    m_p_parser_result->Append(new_msg);
+
+    ProcessLastBlockRec(new_msg);
+
+    this->m_p_compiler_status->mode.gmode[0] = gcode;
+
+//	printf("create Ref return msg, axis_mask = 0x%x\n", mask);
+
+    return true;
 }
 
 /**

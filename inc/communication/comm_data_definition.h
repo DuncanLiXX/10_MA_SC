@@ -249,6 +249,7 @@ enum MiCmdCode{
 	CMD_MI_SET_RET_REF_FLAG = 0x011C,       //设置轴回参考点结束标志
 	CMD_MI_GET_ZERO_ENCODER = 0x011D,       //SC获取指定轴的机械零点对应的编码器值
 	CMD_MI_ACTIVE_SKIP = 0x011E,			//SC激活MI的跳转功能，发送跳转信号及轴mask
+    CMD_MI_SKIP_MEASURE = 0x011F,           // MI 跳转测量信号
 	CMD_MI_SET_AXIS_SPEED  = 0x0120,       //设置轴运行速度值
 	CMD_MI_SET_AXIS_TORQUE = 0x0121,       //设置轴运行力矩值
     CMD_MI_SET_AXIS_CTRL_MODE = 0x0122,       //设置轴运行控制模式

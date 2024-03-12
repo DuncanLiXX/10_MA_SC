@@ -691,18 +691,33 @@ public:
 	virtual void SetData(void *rec);   //设置数据
 
 //	virtual int GetOutputData(GCodeFrame *data, uint32_t mask);   	//生成待输出给MC的运动控制数据包
-
 	virtual void PrintString();    //用于程序调试
-
 	uint8_t GetExecStep(){return m_n_exec_step;}		//获取当前步骤
 	void SetExecStep(uint8_t step){m_n_exec_step = step;} //设置执行步骤
-
-
 	SkipMsg &operator=(const SkipMsg &msg);   //赋值运算符
 	friend bool operator ==( const SkipMsg &one, SkipMsg &two);  //判断运算符
+    int PData = 0;
+
 private:
 	uint8_t m_n_exec_step;  //执行阶段标志
 
+};
+
+class SkipMeasureMsg: public LineMsg{
+public:
+    SkipMeasureMsg(const DPointChn &source, const DPointChn &target, const double feed, const uint32_t axis_mask);    //构造函数
+    virtual ~SkipMeasureMsg(){}
+    virtual void Execute();   	//执行函数
+    virtual void GetData(void *rec);   //获取数据
+    virtual void SetData(void *rec);   //设置数据
+    uint8_t GetExecStep(){return m_n_exec_step;}		//获取当前步骤
+    void SetExecStep(uint8_t step){m_n_exec_step = step;} //设置执行步骤
+    SkipMeasureMsg &operator=(const SkipMeasureMsg &msg);   //赋值运算符
+    friend bool operator ==( const SkipMeasureMsg &one, SkipMeasureMsg &two);  //判断运算符
+    int PData = 0;
+
+private:
+    uint8_t m_n_exec_step;  //执行阶段标志
 };
 
 /**

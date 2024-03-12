@@ -2221,6 +2221,9 @@ bool Compiler::RunMessage() {
             case SKIP_MSG:
                 res = this->RunSkipMsg(msg);
                 break;
+            case SKIP_MEASURE_MSG:
+                res = this->RunSkipMeasureMsg(msg);
+                break;
             case AUTO_TOOL_MEASURE_MSG:
                 res = this->RunAutoToolMeasureMsg(msg);
                 break;
@@ -3123,6 +3126,45 @@ bool Compiler::RunSkipMsg(RecordMsg *msg){
 
     //	m_compiler_status.cur_pos = tmp->GetTargetPos(); //更新编译当前位置
     this->SetCurPos(tmp->GetTargetPos());
+    return true;
+}
+
+bool Compiler::RunSkipMeasureMsg(RecordMsg *msg)
+{
+    if (msg == nullptr)
+        return true;
+
+    SkipMeasureMsg *tmp = (SkipMeasureMsg *) msg;
+    int gcode = tmp->GetGCode();
+
+    //处理增量编程指令
+    if(m_compiler_status.mode.gmode[3] == G91_CMD){  //增量编程模式
+        double *p_target_pos = tmp->GetTargetPos().m_df_point;
+        double *p_source_pos = m_compiler_status.cur_pos.m_df_point;
+        uint32_t mask = tmp->GetAxisMoveMask();
+        uint32_t tm = 0x01;
+
+        for(int i = 0; i < this->m_p_channel_config->chn_axis_count; i++){
+            if(mask & tm){
+                *p_target_pos += *p_source_pos;
+            }
+            tm = tm<<1;
+            p_target_pos++;
+            p_source_pos++;
+        }
+
+    }else{
+        //将目标位置换算为工件坐标系
+        if(tmp->IsMachCoord())
+            this->m_p_channel_control->TransMachCoordToWorkCoord(tmp->GetTargetPos(), m_compiler_status.mode.gmode[14],
+                m_compiler_status.mode.h_mode, tmp->GetAxisMoveMask());
+    }
+
+    tmp->SetFeed(m_compiler_status.mode.f_mode);
+
+    m_compiler_status.mode.gmode[0] = gcode;   //修改编译器状态
+    this->SetCurPos(tmp->GetTargetPos());
+    printf("11111\n");
     return true;
 }
 

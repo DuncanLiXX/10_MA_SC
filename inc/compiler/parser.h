@@ -85,6 +85,7 @@ private:
     bool CreateTimeWaitMsg();				//构造延时等待消息
     bool CreateRefReturnMsg(const int gcode);					//构造参考点返回消息
     bool CreateSkipRunMsg(const int gcode);	  //构造运行中中断跳转消息
+    bool CreateSkipMessureMsg(const int gcode);
     bool CreateMacroProgCallMsg();   //构造宏程序调用指令消息，并插入消息队列
     bool CreateAutoToolMeasureMsg();   //构造自动对刀指令消息，并插入消息队列
 	bool CreateInputMsg();			   // @add zk G10 L_ P_ R_

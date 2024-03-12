@@ -134,6 +134,7 @@ enum CodeMsgType{
 	SPEED_CTRL_MSG,     //28 速度指令消息
 	TORQUE_CTRL_MSG,    //29 力矩指令消息
 	SKIP_MSG,            //30 跳转指令信息
+    SKIP_MEASURE_MSG,    // G31.1 跳转信号测量消息
 	MACRO_PROG_CALL_MSG,  //31 宏程序调用消息
 	AUTO_TOOL_MEASURE_MSG, //32  自动对刀指令消息
 	RESTART_OVER_MSG,     //33   加工复位完成消息

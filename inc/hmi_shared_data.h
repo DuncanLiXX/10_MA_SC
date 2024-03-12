@@ -695,6 +695,7 @@ enum GCode{
 	G29_CMD = 290,
 	G30_CMD = 300,
 	G31_CMD = 310,
+    G31_1_CMD = 311,
 	G37_CMD = 370,         //自动对刀指令
 	G40_CMD = 400,
 	G41_CMD = 410,
@@ -1294,14 +1295,7 @@ struct HmiChnConfig{
 
 	uint16_t chn_small_line_time;   //小线段执行时间常数   单位：0.1ms   范围[0, 10000]
 
-    uint32_t g31_skip_signal1;       //G31跳转信号，例如X1004.7保存为10047，即乘10倍
-    uint32_t g31_skip_signal2;       //G31跳转信号，例如X1004.7保存为10047，即乘10倍
-    uint32_t g31_skip_signal3;       //G31跳转信号，例如X1004.7保存为10047，即乘10倍
-    uint32_t g31_skip_signal4;       //G31跳转信号，例如X1004.7保存为10047，即乘10倍
-    uint32_t g31_skip_signal5;       //G31跳转信号，例如X1004.7保存为10047，即乘10倍
-    uint32_t g31_skip_signal6;       //G31跳转信号，例如X1004.7保存为10047，即乘10倍
-    uint32_t g31_skip_signal7;       //G31跳转信号，例如X1004.7保存为10047，即乘10倍
-    uint32_t g31_skip_signal8;       //G31跳转信号，例如X1004.7保存为10047，即乘10倍
+    uint32_t g31_skip_signal[8];       //G31跳转信号，例如X1004.7保存为10047，即乘10倍
     uint32_t g31_skip_signal_type;       //G31跳转信号，例如X1004.7保存为10047，即乘10倍
 	uint8_t g31_sig_level;          //G31跳转信号有效电平    0--低电平    1--高电平
     uint16_t rst_hold_time;         //复位时间 单位:ms

@@ -642,7 +642,6 @@ void ChannelControl::InitialChannelStatus(){
  */
 void ChannelControl::Reset(){
 
-
     this->m_error_code = ERR_NONE;
 
 	Flag_SyncCrcPos = true;
@@ -1394,6 +1393,8 @@ bool ChannelControl::GetSysVarValue(const int index, double&value){
     	value = this->m_p_channel_config->G73back;
     }else if(index == 9001){
     	value = this->m_p_channel_config->G83back;
+    }else if(index >= 9301 && index <= 9400){
+        value = this->g31_1_measure_data[index-9301];
     }
     else if(index >= 12001 && index <= 12128){   //刀具半径磨损补偿
         int id = index - 12001;
@@ -6994,6 +6995,9 @@ bool ChannelControl::ExecuteMessage(){
         case SKIP_MSG:
             res = this->ExecuteSkipMsg(msg);
             break;
+        case SKIP_MEASURE_MSG:
+            res = this->ExecuteSkipMeasureMsg(msg);
+            break;
         case MACRO_PROG_CALL_MSG:
             res = this->ExecuteMacroProgCallMsg(msg);
             break;
@@ -11301,6 +11305,8 @@ bool ChannelControl::ExecuteSkipMsg(RecordMsg *msg){
 
     uint32_t axis_mask = skipmsg->GetAxisMoveMask();
 
+    int idx = skipmsg->PData;
+
 
     switch(skipmsg->GetExecStep()){
     case 0:{
@@ -11313,14 +11319,14 @@ bool ChannelControl::ExecuteSkipMsg(RecordMsg *msg){
         memset(&cmd, 0x00, sizeof(cmd));
         cmd.data.cmd = CMD_MI_ACTIVE_SKIP;
         cmd.data.reserved = 0;   //激活
-        cmd.data.data[0] = this->m_p_channel_config->g31_skip_signal1/10;  //跳转信号段号
-        cmd.data.data[1] = this->m_p_channel_config->g31_skip_signal1%10;  // 跳转信号位号
+        cmd.data.data[0] = this->m_p_channel_config->g31_skip_signal[idx]/10;  //跳转信号段号
+        cmd.data.data[1] = this->m_p_channel_config->g31_skip_signal[idx]%10;  // 跳转信号位号
         memcpy(&cmd.data.data[2], &axis_mask, sizeof(uint32_t));           //轴mask
         cmd.data.data[4] = this->m_n_channel_index+1;   //MI中通道号从1开始
         cmd.data.data[5] = this->m_p_channel_config->g31_sig_level;    //跳转信号有效电平
         this->m_p_mi_comm->WriteCmd(cmd);
 
-        printf("send skip cmd to mi, signal:%u, data[0]=%hu, data1=%hu, level=%hu\n", m_p_channel_config->g31_skip_signal1, cmd.data.data[0], cmd.data.data[1], cmd.data.data[5]);
+        printf("send skip cmd to mi, signal:%u, data[0]=%hu, data1=%hu, level=%hu\n", m_p_channel_config->g31_skip_signal[idx], cmd.data.data[0], cmd.data.data[1], cmd.data.data[5]);
 
         skipmsg->SetExecStep(1);	//跳转下一步
         return false;
@@ -11356,8 +11362,8 @@ bool ChannelControl::ExecuteSkipMsg(RecordMsg *msg){
             memset(&cmd, 0x00, sizeof(cmd));
             cmd.data.cmd = CMD_MI_ACTIVE_SKIP;
             cmd.data.reserved = 1;   //关闭
-            cmd.data.data[0] = this->m_p_channel_config->g31_skip_signal1/10;  //跳转信号段号
-            cmd.data.data[1] = this->m_p_channel_config->g31_skip_signal1%10;  // 跳转信号位号
+            cmd.data.data[0] = this->m_p_channel_config->g31_skip_signal[idx]/10;  //跳转信号段号
+            cmd.data.data[1] = this->m_p_channel_config->g31_skip_signal[idx]%10;  // 跳转信号位号
             memcpy(&cmd.data.data[2], &axis_mask, sizeof(uint32_t));           //轴mask
             cmd.data.data[4] = this->m_n_channel_index+1;   //MI中通道号从1开始
             cmd.data.data[5] = this->m_p_channel_config->g31_sig_level;    //跳转信号有效电平
@@ -11408,6 +11414,163 @@ bool ChannelControl::ExecuteSkipMsg(RecordMsg *msg){
     printf("execute skip msg over\n");
 
     return true;
+}
+
+bool ChannelControl::ExecuteSkipMeasureMsg(RecordMsg *msg)
+{
+    SkipMeasureMsg *tmp_msg = (SkipMeasureMsg *)msg;
+
+    if(this->m_n_restart_mode != NOT_RESTART &&
+            main_prog_line_number < this->m_n_restart_line
+        #ifdef USES_ADDITIONAL_PROGRAM
+            && this->m_n_add_prog_type == NONE_ADD      //非附加程序运行状态
+        #endif
+            ){//加工复位
+        this->m_mode_restart.pos_target = tmp_msg->GetTargetPos();  //更新目标位置
+        return true;
+    }
+
+    if(this->m_simulate_mode == SIM_OUTLINE || this->m_simulate_mode == SIM_TOOLPATH){  //轮廓仿真，刀路仿真
+
+        //设置当前行号
+        SetCurLineNo(tmp_msg->GetLineNo());
+
+        if(!OutputData(msg))
+            return false;
+
+        m_n_run_thread_state = RUN;
+
+        return true;
+    }
+
+    if(tmp_msg->GetExecStep() == 0){  //开始执行的阶段才需要等待MC执行完毕
+        int limit = 2;
+        if(this->IsStepMode())
+            limit = 4;	//单步模式需要多次验证，因为状态切换有延时
+
+        //等待MC分块的插补到位信号，以及MI的运行到位信号
+        int count = 0;
+        while(1){
+            bool block_over = CheckBlockOverFlag();
+            if(this->ReadMcMoveDataCount() > 0 || !block_over ||
+                    m_channel_status.machining_state == MS_PAUSED ||
+                    m_channel_status.machining_state == MS_WARNING){ //未达到执行条件
+                //	printf("RefReturnMsg exec return: %d, %d , %d\n", block_over, ReadMcMoveDataCount(), m_channel_status.machining_state);
+                return false;    //还未运行到位
+            }
+            else if(++count < limit){
+                usleep(5000);   //等待5ms，因为MC状态更新周期为5ms，需要等待状态确认
+                //		printf("execute RefReturnMsg[%d]: blockflag=%d, count = %d\n", refmsg->GetGCode(),block_over, count);
+
+            }else
+                break;
+        }
+    }
+
+    if(this->IsStepMode() && this->m_b_need_change_to_pause){//单段，切换暂停状态
+        this->m_b_need_change_to_pause = false;
+        m_n_run_thread_state = PAUSE;
+        SetMachineState(MS_PAUSED);
+        return false;
+    }
+
+
+    //设置当前行号
+    SetCurLineNo(tmp_msg->GetLineNo());
+
+    uint32_t axis_mask = tmp_msg->GetAxisMoveMask();
+
+    int idx = tmp_msg->PData;
+
+    switch(tmp_msg->GetExecStep()){
+    case 0:{
+        //第一步：通知MI开始测量
+        this->m_b_pos_captured = false;
+        this->m_n_mask_pos_capture = axis_mask;
+        this->m_n_mask_captured = 0;
+
+        MiCmdFrame cmd;
+        memset(&cmd, 0x00, sizeof(cmd));
+        cmd.data.cmd = CMD_MI_SKIP_MEASURE;
+        cmd.data.reserved = 0;   //激活
+
+        cmd.data.data[0] = 120; //this->m_p_channel_config->g31_skip_signal[idx]/10;  //跳转信号段号
+        cmd.data.data[1] = 0; //this->m_p_channel_config->g31_skip_signal[idx]%10;  // 跳转信号位号
+        memcpy(&cmd.data.data[2], &axis_mask, sizeof(uint32_t));           //轴mask
+        cmd.data.data[4] = this->m_n_channel_index+1;   //MI中通道号从1开始
+        cmd.data.data[5] = this->m_p_channel_config->g31_skip_signal_type;    //测量信号类型
+        this->m_p_mi_comm->WriteCmd(cmd);
+        g31_1_measure_finished = false;
+
+        printf("send skip cmd to mi, signal:%u, data[0]=%hu, data1=%hu, level=%hu\n", m_p_channel_config->g31_skip_signal[idx], cmd.data.data[0], cmd.data.data[1], cmd.data.data[5]);
+
+        tmp_msg->SetExecStep(1);	//跳转下一步
+        return false;
+    }
+    case 1:
+        //第二步：将运动数据发送至MC，并启动
+        usleep(1000);
+        if(!OutputData(msg))
+            return false;
+
+        this->StartMcIntepolate();   //启动MC执行
+            printf("@@@@Send g31.1 move cmd to mc\n");
+
+        tmp_msg->SetExecStep(2);  //跳转下一步
+        return false;
+
+    case 2:{
+        //第三步：等待MI捕获结果或者MC运行到位
+        if(CheckBlockOverFlag() && ReadMcMoveDataCount() == 0){//MC块到位并且缓冲无数据
+            //发送关闭G31指令命令
+            MiCmdFrame cmd;
+            memset(&cmd, 0x00, sizeof(cmd));
+            cmd.data.cmd = CMD_MI_SKIP_MEASURE;
+            cmd.data.reserved = 1;   //关闭
+            cmd.data.data[0] = this->m_p_channel_config->g31_skip_signal[idx]/10;  //跳转信号段号
+            cmd.data.data[1] = this->m_p_channel_config->g31_skip_signal[idx]%10;  // 跳转信号位号
+            memcpy(&cmd.data.data[2], &axis_mask, sizeof(uint32_t));           //轴mask
+            cmd.data.data[4] = this->m_n_channel_index+1;   //MI中通道号从1开始
+            cmd.data.data[5] = this->m_p_channel_config->g31_skip_signal_type;    //跳转信号有效电平
+            this->m_p_mi_comm->WriteCmd(cmd);
+            tmp_msg->SetExecStep(4);   //跳转第四步
+            printf("g31.1 motion finished\n");
+        }
+        return false;
+    }
+    case 3:
+        //第四步: 等待MI数据返回  同步坐标
+        if(g31_1_measure_finished){
+
+            if(!this->m_b_mc_on_arm)
+                this->m_p_mc_comm->ReadAxisIntpPos(m_n_channel_index, m_channel_mc_status.intp_pos, m_channel_mc_status.intp_tar_pos);
+            else
+                this->m_p_mc_arm_comm->ReadAxisIntpPos(m_n_channel_index, m_channel_mc_status.intp_pos, m_channel_mc_status.intp_tar_pos);
+
+            this->RefreshAxisIntpPos();
+
+            this->m_p_compiler->SetCurPos(this->m_channel_mc_status.intp_pos);   //同步编译器位置
+
+            tmp_msg->SetExecStep(4);  //跳转下一步
+        }
+
+        return false;
+
+    case 4:
+
+        tmp_msg->SetFlag(FLAG_AXIS_MOVE, false);//关闭轴移动属性，防止后面再发送MC启动命令
+
+        break;
+    default:
+        printf("skip measure msg execute error!\n");
+        break;
+    }
+
+    m_n_run_thread_state = RUN;
+    printf("execute skip measure msg over\n");
+
+    return true;
+
 }
 
 #ifdef USES_SPEED_TORQUE_CTRL
@@ -21272,6 +21435,30 @@ void ChannelControl::ProcessSkipCmdRsp(MiCmdFrame &cmd){
     if(m_n_mask_captured == m_n_mask_pos_capture){
         this->m_b_pos_captured = true;    //位置捕获完成
     }
+}
+
+void ChannelControl::ProcessSkipMeasure(MiCmdFrame &cmd)
+{
+
+    uint16_t capture_nums = 0;
+
+    memcpy(&capture_nums, &cmd.data.data[0], 2);
+
+
+    int64_t data[100];
+
+    printf("11111111111111111 %d\n", capture_nums);
+    if(capture_nums > 0 && capture_nums <= 100){
+        m_p_mi_comm->ReadG31_1_MeasureData(data, capture_nums);
+
+        for(int i=0; i<capture_nums; i++){
+            g31_1_measure_data[i] = data[i] / 10000000.0;
+
+            printf("%lf\n", g31_1_measure_data[i]);
+        }
+    }
+
+    g31_1_measure_finished = true;
 }
 
 /**

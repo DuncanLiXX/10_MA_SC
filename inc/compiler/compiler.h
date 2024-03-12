@@ -150,6 +150,7 @@ private://私有接口
 	bool RunTimeWaitMsg(RecordMsg *msg); 	//编译器中运行延时消息
 	bool RunRefReturnMsg(RecordMsg *msg);		//编译器中运行回参考点消息
 	bool RunSkipMsg(RecordMsg *msg);		   //编译器中运行跳转消息	
+    bool RunSkipMeasureMsg(RecordMsg *msg);    //编译器中运行跳转测量消息
 	bool RunMacroProgCallMsg(RecordMsg *msg);  //编译器中运行宏程序调用指令消息
 	bool RunAutoToolMeasureMsg(RecordMsg *msg);   //编译器中运行自动对刀指令消息
 	bool RunM06Msg(RecordMsg *msg);       //编译器中运行换刀指令消息

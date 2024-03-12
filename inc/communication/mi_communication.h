@@ -261,7 +261,10 @@ public:
     // mask: 告警掩码 每一bit代表一个轴是否处于告警状态
     void SendHardLimitState(bool is_positive,uint64_t mask);
 
-	bool ReadEncoderWarn(uint64_t &value);		//读取轴编码器告警标志
+    void ReadG31_1_MeasureData(void * data, int count);
+
+
+    bool ReadEncoderWarn(uint64_t &value);		//读取轴编码器告警标志
 	bool ReadServoHLimitFlag(bool pos_flag, uint64_t &value);   //读取伺服限位告警信息
     bool ReadServoWarn(uint64_t &value);			//读取轴伺服告警标志
     bool ReadServoWarnCode(uint8_t axis, uint32_t &value); 	//读取指定轴的伺服告警码
@@ -272,7 +275,6 @@ public:
     bool ReadIntpPosErr(uint64_t &value);      //读取轴位置指令过大告警
     bool ReadSyncTorqueErr(uint64_t &value);   //读取同步轴力矩偏差报警
     bool ReadSyncMachErr(uint64_t &value);     //读取同步轴机床坐标偏差报警
-
     bool WriteAxisHLimitFlag(bool pos_flag, const uint64_t value);   //写入物理轴硬限位标志
 
     template<typename T>

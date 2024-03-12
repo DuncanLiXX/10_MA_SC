@@ -654,7 +654,7 @@ void ShowSc::PrintChnConfig()
 
     AddPair(s,"chn_small_line_time",cfg->chn_small_line_time);
 
-    AddPair(s,"g31_skip_signal",cfg->g31_skip_signal1);
+    AddPair(s,"g31_skip_signal",cfg->g31_skip_signal[0]);
     AddPair(s,"g31_sig_level",cfg->g31_sig_level);
     AddPair(s,"rst_hold_time",cfg->rst_hold_time);
     AddPair(s,"rst_mode",cfg->rst_mode);

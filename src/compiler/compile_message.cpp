@@ -1443,6 +1443,80 @@ bool operator ==( const SkipMsg &one, SkipMsg &two){
 }
 
 
+/*****************************************************************SkipMeasureMsg类***************************************************************/
+/**
+ * @brief 构造函数
+ * @param source
+ * @param target
+ * @param feed
+ * @param axis_mask
+ */
+SkipMeasureMsg::SkipMeasureMsg(const DPointChn &source, const DPointChn &target, const double feed, const uint32_t axis_mask):LineMsg(source, target, feed, axis_mask){
+    this->m_n_exec_step = 0;
+    SetMsgType(SKIP_MEASURE_MSG);
+
+    SetFlag(FLAG_AXIS_MOVE, true);   //轴移动指令
+    SetFlag(FLAG_WAIT_MOVE_OVER, true);   //需要等待运动到位
+    SetFlag(FLAG_BLOCK_OVER, true);		//块结束
+}
+
+/**
+ * @brief
+ */
+void SkipMeasureMsg::Execute(){
+
+}
+
+void SkipMeasureMsg::GetData(void *rec){
+
+}
+
+void SkipMeasureMsg::SetData(void *rec){
+
+}
+
+
+/**
+ * @brief 赋值运算符
+ * @param msg
+ * @return
+ */
+SkipMeasureMsg& SkipMeasureMsg::operator=( const SkipMeasureMsg& msg){
+    if(&msg == this)
+        return *this;
+    this->m_n_type = msg.m_n_type;
+    this->m_n_line_no = msg.m_n_line_no;
+    this->m_n_flags.all = msg.m_n_flags.all;
+    this->m_point_source = msg.m_point_source;
+    this->m_point_target = msg.m_point_target;
+    this->m_axis_move_mask = msg.m_axis_move_mask;
+    this->m_df_feed = msg.m_df_feed;
+    this->m_io_data = msg.m_io_data;
+
+    return *this;
+}
+
+/**
+ * @brief 判断运算符
+ * @param one
+ * @param two
+ * @return
+ */
+
+bool operator ==( const SkipMeasureMsg &one, SkipMeasureMsg &two){
+    if(one.m_n_type == two.m_n_type &&
+            one.m_n_line_no == two.m_n_line_no &&
+            one.m_n_flags.all == two.m_n_flags.all &&
+            one.m_point_source == two.m_point_source &&
+            one.m_point_target == two.m_point_target &&
+            one.m_axis_move_mask == two.m_axis_move_mask &&
+            one.m_df_feed == two.m_df_feed &&
+            one.m_io_data == two.m_io_data)
+        return true;
+    return false;
+}
+
+
 /*****************************************************************AutoToolMeasureMsg类***************************************************************/
 
 /**

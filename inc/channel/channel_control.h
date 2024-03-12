@@ -364,6 +364,8 @@ public:
 
 	void ProcessSkipCmdRsp(MiCmdFrame &cmd);    //处理MI返回的跳转命令响应
 
+    void ProcessSkipMeasure(MiCmdFrame &cmd);   // 处理MI测量消息响应
+
 	void SetAxisNameEx(bool flag);   //设置轴名称扩展下标使能
 
 	bool PmcAxisRunOver(MiCmdFrame cmd);    //PMC轴运行到位
@@ -499,6 +501,8 @@ public:
     // M 代码映射表
     std::map<int16_t, int16_t> mcode_map;
 
+
+
 private:
 	void InitialChannelStatus();		//初始化通道状态
     static void *CompileThread(void *args);  //G代码运行线程函数
@@ -538,7 +542,8 @@ private:
 	bool ExecuteClearCirclePosMsg(RecordMsg *msg);    //执行清整数圈消息
 	bool ExecuteTimeWaitMsg(RecordMsg *msg);		//执行延时消息
 	bool ExecuteRefReturnMsg(RecordMsg *msg);	//执行参考点返回消息
-	bool ExecuteSkipMsg(RecordMsg *msg);	//执行参考点返回消息
+    bool ExecuteSkipMsg(RecordMsg *msg);	//执行跳转消息
+    bool ExecuteSkipMeasureMsg(RecordMsg *msg); //执行跳转测量消息
 	bool ExecuteMacroProgCallMsg(RecordMsg *msg); //实际执行宏程序调用消息
 	bool ExecuteAutoToolMeasureMsg(RecordMsg *msg);   //实际执行自动对刀指令消息
 	bool ExecuteRestartOverMsg(RecordMsg *msg);   //实际执行加工复位完成指令消息
@@ -912,6 +917,8 @@ private://私有成员变量
 	DPointChn m_point_capture;		    //捕获的轴位置，机械坐标系
 	bool m_b_pos_captured;             //轴位置捕获完成标志
 
+    double g31_1_measure_data[100];
+
 	//PMC轴运行mask
 	uint64_t m_mask_run_pmc;  //当前运行的轴的mask
 	uint64_t m_mask_runover_pmc;   //当前运行完成的轴的mask
@@ -989,6 +996,7 @@ private://私有成员变量
 	bool g43_4_active = false;
 	bool g44_active = false;
 	double custom_step_inc[32];        //自定义步长
+    bool g31_1_measure_finished = false;  //g31.1 等待测量MI数据返回
 };
 
 #endif /* INC_CHANNEL_CHANNEL_CONTROL_H_ */

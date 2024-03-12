@@ -1671,12 +1671,14 @@ void ChannelEngine::PoweroffHandler(int signo, siginfo_t *info, void *context){
 void ChannelEngine::SaveDataPoweroff(){
     system("date >> /cnc/bin/save.txt");
     system("echo \"start\" >> /cnc/bin/save.txt");
-    //system("echo 0 > /sys/class/gpio/gpio968/value");
+    system("echo 0 > /sys/class/gpio/gpio968/value");
 
+    //printf("11111 pmc\n");
     //保存PMC寄存器数据
     if((this->m_mask_import_param & (0x01<<CONFIG_PMC_REG)) == 0)
         this->m_p_pmc_reg->SaveRegData();
 
+    //printf("22222 macro var\n");
     //保存非易失性宏变量
     if((this->m_mask_import_param & (0x01<<CONFIG_MACRO_VAR)) == 0)
         this->SaveKeepMacroVar();
@@ -1685,19 +1687,20 @@ void ChannelEngine::SaveDataPoweroff(){
     //保存各通道当前需保存的状态
     //	g_ptr_parm_manager->SaveParm(CHN_STATE_SCENE);    //注释原因：此为低频操作，改为在通道状态修改时即时保存，不再掉电时增加耗时
 
+    //printf("33333 encoder\n");
     //保存各轴当前位置
     this->SaveCurPhyAxisEncoder();
 
     //for(int i = 0; i < this->m_p_general_config->chn_count; i++){
     m_p_channel_control[0].saveBreakPoint();
     //}
-
+    //printf("44444 sync\n");
     sync();
 
     delete g_ptr_trace;
     g_ptr_trace = nullptr;
 
-    //system("echo 1 > /sys/class/gpio/gpio968/value");
+    system("echo 1 > /sys/class/gpio/gpio968/value");
     system("date >> /cnc/bin/save.txt");
     system("echo \"end\" >> /cnc/bin/save.txt");
     system("sync");
@@ -2232,6 +2235,9 @@ void ChannelEngine::ProcessMiCmd(MiCmdFrame &cmd){
     case CMD_MI_ACTIVE_SKIP:    //G31跳转
         this->ProcessSkipCmdRsp(cmd);
         break;
+    case CMD_MI_SKIP_MEASURE:
+        this->ProcessSkipMeasure(cmd);
+        break;
     case CMD_MI_HW_TRACE_STATE_CHANGED:  //手轮跟踪状态切换
         this->ProcessMiHWTraceStateChanged(cmd);
         break;
@@ -2444,6 +2450,11 @@ void ChannelEngine::ProcessSkipCmdRsp(MiCmdFrame &cmd){
     if(chn < this->m_p_general_config->chn_count){
         this->m_p_channel_control[chn].ProcessSkipCmdRsp(cmd);
     }
+}
+
+void ChannelEngine::ProcessSkipMeasure(MiCmdFrame &cmd)
+{
+    this->m_p_channel_control[0].ProcessSkipMeasure(cmd);
 }
 
 /**
@@ -3026,7 +3037,6 @@ int32_t ChannelEngine::LoadEsbData(uint16_t index, uint16_t &flag){
     int32_t res = 0;
 
     flag = 0;  //默认后续无文件
-
 
     DIR *pdir = nullptr;
     struct dirent *ent = nullptr;
@@ -8443,14 +8453,16 @@ void ChannelEngine::InitMiParam(){
         index = i+1;   //MI中的轴号从1开始
 
         //发送插补后加减速相关参数
-       m_p_mi_comm->SendMiParam<uint8_t>(index, 1140, axis_config->post_filter_type);   //滤波器类型
-       m_p_mi_comm->SendMiParam<uint16_t>(index, 1141, axis_config->post_filter_time_1);   //一级滤波器时间常数
-       m_p_mi_comm->SendMiParam<uint16_t>(index, 1142, axis_config->post_filter_time_2);   //二级滤波器时间常数
+       m_p_mi_comm->SendMiParam<uint8_t>(index, 20407, axis_config->post_filter_type);   //滤波器类型
+       m_p_mi_comm->SendMiParam<uint16_t>(index, 20408, axis_config->post_filter_time_1);   //一级滤波器时间常数
+       m_p_mi_comm->SendMiParam<uint16_t>(index, 20409, axis_config->post_filter_time_2);   //二级滤波器时间常数
 
-       m_p_mi_comm->SendMiParam<uint8_t>(index, 1002, axis_config->axis_interface);   //轴接口类型
-       m_p_mi_comm->SendMiParam<uint8_t>(index, 1001, axis_config->axis_type);		//轴类型
-       m_p_mi_comm->SendMiParam<uint8_t>(index, 1003, axis_config->axis_port);		//从站号或者对应轴口号
+       m_p_mi_comm->SendMiParam<uint8_t>(index, 20002, axis_config->axis_interface);   //轴接口类型
+       m_p_mi_comm->SendMiParam<uint8_t>(index, 20001, axis_config->axis_type);		//轴类型
+       m_p_mi_comm->SendMiParam<uint8_t>(index, 20003, axis_config->axis_port);		//从站号或者对应轴口号
+       m_p_mi_comm->SendMiParam<uint8_t>(index, 20800, 0);         //pmc轴?
        //m_p_mi_comm->SendMiParam<uint8_t>(index, 1006, axis_config->axis_pmc);			//是否PMC轴
+       /*
        m_p_mi_comm->SendMiParam<uint8_t>(index, 1006, 0);                               //PMC轴由梯图来激活
        m_p_mi_comm->SendMiParam<double>(index, 1100, axis_config->kp1);			//kp1
        m_p_mi_comm->SendMiParam<double>(index, 1101, axis_config->kp2);			//kp2
@@ -8461,22 +8473,23 @@ void ChannelEngine::InitMiParam(){
        m_p_mi_comm->SendMiParam<double>(index, 1105, tmp);			//kvff
         tmp = static_cast<double>(axis_config->kaff);
        m_p_mi_comm->SendMiParam<double>(index, 1106, tmp);			//kaff
-        tmp_64 = static_cast<uint64_t>(axis_config->track_err_limit) * 1e4;   //转换单位：um-->0.1nm
-       m_p_mi_comm->SendMiParam<uint64_t>(index, 1107, tmp_64);	//跟踪误差限
+       */
+       tmp_64 = static_cast<uint64_t>(axis_config->track_err_limit) * 1e4;   //转换单位：um-->0.1nm
+       m_p_mi_comm->SendMiParam<uint64_t>(index, 20500, tmp_64);	//跟踪误差限
         tmp_64 = static_cast<uint64_t>(axis_config->location_err_limit) * 1e4;   //转换单位：um-->0.1nm
-       m_p_mi_comm->SendMiParam<uint64_t>(index, 1108, tmp_64);			//定位误差限
-       m_p_mi_comm->SendMiParam<uint32_t>(index, 1200, axis_config->motor_count_pr);	//电机每转计数
-       m_p_mi_comm->SendMiParam<uint32_t>(index, 1201, axis_config->motor_speed_max);	//电机最大转速
+       m_p_mi_comm->SendMiParam<uint64_t>(index, 20501, tmp_64);			//定位误差限
+       m_p_mi_comm->SendMiParam<uint32_t>(index, 20008, axis_config->motor_count_pr);	//电机每转计数
+       m_p_mi_comm->SendMiParam<uint32_t>(index, 20009, axis_config->motor_speed_max);	//电机最大转速
         tmp_64 = static_cast<uint64_t>(axis_config->move_pr * 1e7);   //转换单位：mm-->0.1nm
         // 		printf("write axis param idx = %d, value = %ld\n", index, tmp_64);
-       m_p_mi_comm->SendMiParam<uint64_t>(index, 1202, tmp_64);	//每转移动量
-       m_p_mi_comm->SendMiParam<uint8_t>(index, 1203, axis_config->motor_dir);	//电机旋转方向
+       m_p_mi_comm->SendMiParam<uint64_t>(index, 20010, tmp_64);	//每转移动量
+       m_p_mi_comm->SendMiParam<uint8_t>(index, 20007, axis_config->motor_dir);	//电机旋转方向
         tmp_8 = axis_config->feedback_mode;
         //		if(axis_config->axis_interface == VIRTUAL_AXIS)
         //			tmp_8 = 0xFF;    //虚拟轴
         //		else if(axis_config->axis_interface == BUS_AXIS)
         //			tmp_8 = 0x10;   //ethercat
-       m_p_mi_comm->SendMiParam<uint8_t>(index, 1204, tmp_8);	//反馈类型
+       m_p_mi_comm->SendMiParam<uint8_t>(index, 20005, tmp_8);	//反馈类型
         //		printf("send axis[%hhu] feedback_mode %hhu #####\n", index, tmp_8);
 
         tmp_8 = axis_config->ctrl_mode;
@@ -8484,16 +8497,16 @@ void ChannelEngine::InitMiParam(){
             tmp_8 = 0xFF;    //虚拟轴
         else if(axis_config->axis_interface == BUS_AXIS)
             tmp_8 = 0x10;   //ethercat
-       m_p_mi_comm->SendMiParam<uint8_t>(index, 1205, tmp_8);	//轴控制方式
-       m_p_mi_comm->SendMiParam<uint32_t>(index, 1206, axis_config->pulse_count_pr);	//控制每转输出脉冲数
-       m_p_mi_comm->SendMiParam<uint8_t>(index, 1207, axis_config->encoder_lines);	//单圈编码器线数
+       m_p_mi_comm->SendMiParam<uint8_t>(index, 20006, tmp_8);	//轴控制方式
+       m_p_mi_comm->SendMiParam<uint32_t>(index, 20011, axis_config->pulse_count_pr);	//控制每转输出脉冲数
+       m_p_mi_comm->SendMiParam<uint8_t>(index, 20012, axis_config->encoder_lines);	//单圈编码器线数
 
-       m_p_mi_comm->SendMiParam<uint16_t>(index, 1208, axis_config->encoder_max_cycle);   //旋转轴编码器整圈最大值
+       m_p_mi_comm->SendMiParam<uint16_t>(index, 20013, axis_config->encoder_max_cycle);   //旋转轴编码器整圈最大值
 
         //		this->SendMiParam<uint8_t>(index, 1209, axis_config->axis_alarm_level);	//轴告警电平
 
-       m_p_mi_comm->SendMiParam<uint8_t>(index, 1210, axis_config->decelerate_numerator);   //减速比例分子
-       m_p_mi_comm->SendMiParam<uint8_t>(index, 1211, axis_config->decelerate_denominator);   //减速比例分母
+       m_p_mi_comm->SendMiParam<uint8_t>(index, 20014, axis_config->decelerate_numerator);   //减速比例分子
+       m_p_mi_comm->SendMiParam<uint8_t>(index, 20015, axis_config->decelerate_denominator);   //减速比例分母
 
 
 // 增量编码器回零 与 软限位冲突
@@ -8509,27 +8522,27 @@ void ChannelEngine::InitMiParam(){
         this->m_p_mi_comm->SetAxisRef(index, axis_config->ref_encoder);
 
         //软限位
-       m_p_mi_comm->SendMiParam<double>(index, 1500, axis_config->soft_limit_max_1);
-       m_p_mi_comm->SendMiParam<double>(index, 1501, axis_config->soft_limit_min_1);
+       m_p_mi_comm->SendMiParam<double>(index, 20200, axis_config->soft_limit_max_1);
+       m_p_mi_comm->SendMiParam<double>(index, 20201, axis_config->soft_limit_min_1);
        //m_p_mi_comm->SendMiParam<uint8_t>(index, 1502, axis_config->soft_limit_check_1);//梯图控制
-       m_p_mi_comm->SendMiParam<uint8_t>(index, 1502, 0);//梯图控制
-       m_p_mi_comm->SendMiParam<double>(index, 1503, axis_config->soft_limit_max_2);
-       //m_p_mi_comm->SendMiParam<double>(index, 1504, axis_config->soft_limit_min_2);
-       m_p_mi_comm->SendMiParam<uint8_t>(index, 1504, 0);//梯图控制
-       m_p_mi_comm->SendMiParam<uint8_t>(index, 1505, axis_config->soft_limit_check_2);
-       m_p_mi_comm->SendMiParam<double>(index, 1506, axis_config->soft_limit_max_3);
-       m_p_mi_comm->SendMiParam<double>(index, 1507, axis_config->soft_limit_min_3);
-       m_p_mi_comm->SendMiParam<uint8_t>(index, 1508, axis_config->soft_limit_check_3);
+       //m_p_mi_comm->SendMiParam<uint8_t>(index, 1502, 0);//梯图控制
+       m_p_mi_comm->SendMiParam<double>(index, 20202, axis_config->soft_limit_max_2);
+       m_p_mi_comm->SendMiParam<double>(index, 20203, axis_config->soft_limit_min_2);
+       //m_p_mi_comm->SendMiParam<uint8_t>(index, 1504, 0);//梯图控制
+       //m_p_mi_comm->SendMiParam<uint8_t>(index, 1505, axis_config->soft_limit_check_2);
+       //m_p_mi_comm->SendMiParam<double>(index, 1506, axis_config->soft_limit_max_3);
+       // m_p_mi_comm->SendMiParam<double>(index, 1507, axis_config->soft_limit_min_3);
+       //m_p_mi_comm->SendMiParam<uint8_t>(index, 1508, axis_config->soft_limit_check_3);
 
         //发送主轴启动时间、制动时间
-       m_p_mi_comm->SendMiParam<uint16_t>(index, 1605, axis_config->spd_start_time);
-       m_p_mi_comm->SendMiParam<uint16_t>(index, 1606, axis_config->spd_stop_time);
+       m_p_mi_comm->SendMiParam<uint16_t>(index, 21107, axis_config->spd_start_time);
+       m_p_mi_comm->SendMiParam<uint16_t>(index, 21108, axis_config->spd_stop_time);
 
        //反向间隙初始化方向
-       m_p_mi_comm->SendMiParam<uint8_t>(index, 1410, axis_config->init_backlash_dir);
+       m_p_mi_comm->SendMiParam<uint8_t>(index, 21301, axis_config->init_backlash_dir);
 
        if(axis_config->axis_type == 2){
-    	   m_p_mi_comm->SendMiParam<uint8_t>(index, 1610, axis_config->spd_vctrl_mode);
+           m_p_mi_comm->SendMiParam<uint8_t>(index, 21103, axis_config->spd_vctrl_mode);
        }
 
         //发送反向间隙参数

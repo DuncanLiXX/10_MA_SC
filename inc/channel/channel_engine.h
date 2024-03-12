@@ -529,6 +529,7 @@ private:	//私有成员函数
 	void ProcessSetAxisRefRsp(MiCmdFrame &cmd);      //处理MI返回的设置轴参考点回复指令，回参考点时使用
 	void ProcessGetAxisZeroEncoderRsp(MiCmdFrame &cmd);    //处理MI返回的获取机械零点编码器值指令，回参考点时使用
 	void ProcessSkipCmdRsp(MiCmdFrame &cmd);    //处理MI返回的跳转命令响应
+    void ProcessSkipMeasure(MiCmdFrame &cmd);   // 处理 MI测量返回信息
 	void ProcessRefreshAxisZeroEncoder(MiCmdFrame &cmd);   //处理MI刷新轴零点编码器值命令
 	void ProcessMiEnSyncAxisRsp(MiCmdFrame &cmd);      //处理MI使能同步轴指令的响应
     void ProcessMiSpdLocateRsp(MiCmdFrame &cmd);    //处理MI主轴定位的响应

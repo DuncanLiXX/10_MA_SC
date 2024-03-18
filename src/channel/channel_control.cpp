@@ -5091,7 +5091,6 @@ void ChannelControl::SetWorkMode(uint8_t work_mode){
 
     bSaveAutoScene = true;
 
-    printf("33333\n");
 
     this->m_p_f_reg->MMEM = 0;
     this->m_p_f_reg->MMDI = 0;
@@ -7072,7 +7071,6 @@ bool ChannelControl::ExecuteMessage(){
                 ) &&    //运行状态或者手动对刀状态
                     msg->IsMoveMsg() && this->m_b_mc_need_start){
                 printf("move data send start, msg type = %d lino: %llu\n", msg->GetMsgType(), msg->GetLineNo());
-            	printf("start 22222\n");
             	this->StartMcIntepolate();
             }
 
@@ -21456,7 +21454,6 @@ void ChannelControl::ProcessSkipMeasure(MiCmdFrame &cmd)
 
     int64_t data[100];
 
-    printf("11111111111111111 %d\n", capture_nums);
     if(capture_nums > 0 && capture_nums <= 100){
         m_p_mi_comm->ReadG31_1_MeasureData(data, capture_nums);
 

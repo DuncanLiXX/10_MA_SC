@@ -852,6 +852,11 @@ public:
     void SetPmcAxisCount(uint8_t count);   //设置PMC轴的运动数据
     uint8_t GetPmcAxisCount(){return this->m_n_pmc_count;}   //获取运动PMC轴数
 
+    int get_direct(){return m_flag_direct;}
+    int get_flag_major(){return m_flag_major;}
+    int get_flag_circle(){return m_flag_circle;}
+
+
 private:
 	int8_t m_flag_direct;  	//轨迹方向标志，-1:clockwise,1:anticlockwise  //顺时针(-1)，逆时针(1)
 	int8_t m_flag_major;   	//优弧标志， 1:劣弧   -1:优弧

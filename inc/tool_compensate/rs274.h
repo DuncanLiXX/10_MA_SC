@@ -76,6 +76,10 @@ typedef struct block_struct
 
 	uint16_t flags;
 
+    uint8_t flag_circle;
+    uint8_t flag_major;
+    uint8_t flag_direct;
+
 } block;
 
 typedef block * block_pointer;

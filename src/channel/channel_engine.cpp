@@ -1665,13 +1665,24 @@ void ChannelEngine::PoweroffHandler(int signo, siginfo_t *info, void *context){
     printf("OUT\n");
 }
 
+
+FILE * fp;
+
 /**
  * @brief 掉电时保存数据
  */
 void ChannelEngine::SaveDataPoweroff(){
-    system("date >> /cnc/bin/save.txt");
-    system("echo \"start\" >> /cnc/bin/save.txt");
+    //system("date >> /cnc/bin/save.txt");
+    //system("echo \"start\" >> /cnc/bin/save.txt");
+
+    fp = fopen("/cnc/bin/save.txt", "a");
+    char data[30];
+
     system("echo 0 > /sys/class/gpio/gpio968/value");
+
+    memset(data, 0, 30);
+    sprintf(data, "%s", "start\n");
+    fwrite(data, 30, 1, fp);
 
     //printf("11111 pmc\n");
     //保存PMC寄存器数据
@@ -1700,10 +1711,14 @@ void ChannelEngine::SaveDataPoweroff(){
     delete g_ptr_trace;
     g_ptr_trace = nullptr;
 
+    sprintf(data, "%s", "end\n");
+    fwrite(data, 30, 1, fp);
+    fclose(fp);
+
     system("echo 1 > /sys/class/gpio/gpio968/value");
-    system("date >> /cnc/bin/save.txt");
-    system("echo \"end\" >> /cnc/bin/save.txt");
-    system("sync");
+    //system("date >> /cnc/bin/save.txt");
+    //system("echo \"end\" >> /cnc/bin/save.txt");
+    //system("sync");
 }
 
 /**
@@ -2173,7 +2188,9 @@ void ChannelEngine::ProcessMiCmd(MiCmdFrame &cmd){
         }
 
         this->SetWorkMode(this->m_p_channel_control[0].GetChnWorkMode());
+
         this->SetMiCurChannel();
+
 
         break;
     case CMD_MI_ALARM:	//MI告警
@@ -5920,16 +5937,17 @@ bool ChannelEngine::SetWorkMode(uint8_t work_mode){
     for(int i = 0; i < chn_count; i++){
         this->m_p_channel_control[i].SetWorkMode(work_mode);
     }
-*/
-
+*/  
     if(work_mode != REF_MODE && this->m_b_ret_ref){
         CreateError(ERR_SWITCH_MODE_IN_RET_REF, WARNING_LEVEL, CLEAR_BY_MCP_RESET);
         return false;
     }
 
     uint8_t chn_count = m_p_channel_mode_group[m_n_cur_chn_group_index].GetChannelCount();
-    for(uint8_t i = 0; i < chn_count; i++)
-        this->m_p_channel_control[m_p_channel_mode_group[m_n_cur_chn_group_index].GetChannel(i)].SetWorkMode(work_mode);
+    for(uint8_t i = 0; i < chn_count; i++){
+        this->m_p_channel_control[0].SetWorkMode(work_mode);  // 只支持单通道 默认给0
+    }
+    //  m_p_channel_mode_group[m_n_cur_chn_group_index].GetChannel(i)
 
     if(work_mode == MPG_MODE)
         this->SetMiWorkMode(0x10);
@@ -9253,6 +9271,10 @@ void ChannelEngine::RefreshPmcNotReady()
 }
 
 
+
+//std::chrono::time_point<std::chrono::steady_clock> start;
+//std::chrono::time_point<std::chrono::steady_clock> end1;
+
 /**
  * @brief 更新MI的状态
  * @return
@@ -9284,13 +9306,25 @@ bool ChannelEngine::RefreshMiStatusFun(){
 
     while(!g_sys_state.system_quit){
 
-    	if((g_sys_state.module_ready_mask & MI_READY) == 0){  //MI未准备好则等待
+//        start = std::chrono::steady_clock::now();
+//        std::chrono::duration<double> elapsed = start - end1;
+//        printf("pmc period %lf\n", elapsed.count());
+//        end1 = start;
+
+        if((g_sys_state.module_ready_mask & MI_READY) == 0){  //MI未准备好则等待
             printf("wait MI_READY signal!\n");
             usleep(8000);
             continue;
         }
+
+        //this->m_p_mi_comm->ReadUnderVoltWarn();
         //读取欠压信号
         //printf("%d %d %d\n", m_b_power_off, g_sys_state.system_ready, this->m_p_mc_comm->ReadUnderVoltWarn());
+
+        //if(!m_b_power_off && g_sys_state.system_ready && this->m_p_mc_comm->ReadUnderVoltWarn()){
+
+
+
 
         if(!m_b_power_off && g_sys_state.system_ready && this->m_p_mc_comm->ReadUnderVoltWarn()){
             printf("OFF\n");
@@ -9504,6 +9538,23 @@ bool ChannelEngine::RefreshMiStatusFun(){
                     }
 
                 }
+                if(warn_flag & (1<<9)){ //同步轴 同步校准轴偏差过大
+                    this->m_p_mi_comm->ReadSyncCalErr(value64);
+
+                    if(value64 != 0){
+                        uint64_t flag = 0x01;
+                        for(uint8_t i = 0; i < this->m_p_general_config->axis_count; i++){
+                            if(value64 & flag)
+                            {
+                                uint8_t chan_id = CHANNEL_ENGINE_INDEX, axis_id = NO_AXIS;
+                                GetPhyAxistoChanAxis(i, chan_id, axis_id);
+                                CreateError(ERR_SYNC_CAL, ERROR_LEVEL, CLEAR_BY_MCP_RESET, 0, chan_id, axis_id);
+
+                            }
+                            flag = flag << 1;
+                        }
+                    }
+                }
             }
 
             //进行过压，欠压、RTC电压低告警扫描
@@ -9562,7 +9613,7 @@ bool ChannelEngine::RefreshMiStatusFun(){
         count++;
     }
 
-    //	printf("exit ChannelEngine::RefreshMiStatusFun()\n");
+    printf("exit ChannelEngine::RefreshMiStatusFun()\n");
 
     return true;
 }
@@ -13247,6 +13298,7 @@ void ChannelEngine::EcatAxisFindRefNoZeroSignal(uint8_t phy_axis){
 void ChannelEngine::ReturnRefPoint(){
 
     int count = 0;
+
     for(uint i = 0; i < this->m_p_general_config->axis_count; i++){
 
         if((m_n_mask_ret_ref & (0x01<<i)) == 0 /*||
@@ -13279,6 +13331,7 @@ void ChannelEngine::ReturnRefPoint(){
             // 从轴所属组 正在建立同步控制
             if(flag_find && (g_reg->SYNC & (1 << grp_index))){
                 m_p_channel_control->SetRefPointFlag(i, true);
+                m_b_ret_ref = false;
                 CreateError(ERR_RET_SYNC_ERR, WARNING_LEVEL, CLEAR_BY_MCP_RESET, 0, m_n_cur_channle_index, i);
                 return;
             }

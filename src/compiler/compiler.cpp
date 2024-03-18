@@ -2191,7 +2191,6 @@ bool Compiler::RunMessage() {
                        res = this->RunMacroMsg(msg);
                 }catch(std::out_of_range a){
                     res = false;
-                    printf("22222222222222222\n");
                     CreateError(ERR_COMPILER_INTER, ERROR_LEVEL, CLEAR_BY_MCP_RESET);
                 }
                 break;
@@ -3164,7 +3163,6 @@ bool Compiler::RunSkipMeasureMsg(RecordMsg *msg)
 
     m_compiler_status.mode.gmode[0] = gcode;   //修改编译器状态
     this->SetCurPos(tmp->GetTargetPos());
-    printf("11111\n");
     return true;
 }
 
@@ -3321,7 +3319,7 @@ bool Compiler::RunMacroMsg(RecordMsg *msg) {
             //执行跳转
             //表达式运算成功,执行跳转动作
             res = FindJumpLabel(static_cast<int>(tmp->GetMacroExpResult(1).value), offset, line_no);
-            printf("jump res = %d, result = %lf, offset= %llu, line=%llu\n", res, tmp->GetMacroExpResult(1).value, offset, line_no);
+
             if (0 == res) {
                 //没有找到跳转点，产生告警
                 CreateErrorMsg(ERR_NO_JUMP_LABEL, tmp->GetLineNo()); //表达式计算异常
@@ -4631,11 +4629,11 @@ int Compiler::FindSubProgram(int sub_name, bool file_only, uint8_t scanMode) {  
  */
 int Compiler::FindJumpLabel(int label, uint64_t &offset, uint64_t &line_no) {
     //查找跳转点位置
-    int res = 2;
 
+    int res = 2;
     ListNode < LabelOffset > *node = m_p_list_label->HeadNode();
     while (node != nullptr) {
-        if (node->data.label == label) {
+        if (node->data.label == label && node->data.offset!=0) {
             offset = node->data.offset;
             line_no = node->data.line_no;
             res = 1;
@@ -4648,6 +4646,7 @@ int Compiler::FindJumpLabel(int label, uint64_t &offset, uint64_t &line_no) {
     if(res != 1 /*&& this->m_b_prescan_over*/)  //预扫描已结束，但是未找到跳转点
         res = 0;
 
+    printf("FindJumpLabel label: %d  res: %d\n", label, res);
 
     return res;
 }
@@ -4751,7 +4750,6 @@ bool Compiler::CheckJumpGoto(uint64_t line_src, uint64_t line_des){
     bool res = true;
     ListNode <LoopRec> *node = m_p_list_loop->HeadNode();
     LoopOffset loop;
-
 
     while (node != nullptr) {
         if (line_des > node->data.start_line_no && line_des < node->data.end_line_no) {  //目的行在循环体内

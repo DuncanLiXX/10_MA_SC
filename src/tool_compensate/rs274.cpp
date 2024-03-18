@@ -122,7 +122,6 @@ int Interp::arc_data_comp_ijk(int move,
 	if((arc_radius <= tool_radius and side == LEFT and move == 30) or (side == RIGHT and move == 20 and arc_radius <= tool_radius))
 	{
 		printf("TOOL_RADIUS_NOT_LESS_THAN_ARC_RADIUS_WITH_COMP");
-		//CreateError(TOOL_RADIUS_BIGGER_THAN_ARC, ERROR_LEVEL, CLEAR_BY_MCP_RESET);
 		err_code = TOOL_RADIUS_BIGGER_THAN_ARC;
 
 		return 0;
@@ -158,7 +157,6 @@ int Interp::arc_data_comp_r(int move,
 
 	if((abs_radius <= tool_radius) and ((side == LEFT && move == 30) or (side == LEFT && move == 20))){
 		printf("tool radius not less than arc radius with comp\n");
-		//CreateError(TOOL_RADIUS_BIGGER_THAN_ARC, ERROR_LEVEL, CLEAR_BY_MCP_RESET);
 		err_code = TOOL_RADIUS_BIGGER_THAN_ARC;
 
 		return 0;
@@ -474,11 +472,9 @@ int Interp::convert_arc_comp1(int move,
     comp_get_current(settings, &cx, &cy, &cz);
 
     if(hypot((end_x - cx), (end_y - cy)) <= tool_radius){
-    	printf("Radius of cutter compensation entry arc is not greater than the tool radius\n");
-    	//CreateError(TOOL_RADIUS_BIGGER_THAN_ARC, ERROR_LEVEL, CLEAR_BY_MCP_RESET);
-    	err_code = TOOL_RADIUS_BIGGER_THAN_ARC;
-
-    	return 0;
+        printf("Radius of cutter compensation entry arc is not greater than the tool radius\n");
+        err_code = TOOL_RADIUS_BIGGER_THAN_ARC;
+        return 0;
     }
 
     if (block->r_flag) {
@@ -523,7 +519,6 @@ int Interp::convert_arc_comp1(int move,
 
     if(fabs(cos(A_ang)) < TOLERANCE_EQUAL){
     	printf("tool radius not less than arc radius with comp\n");
-    	//CreateError(TOOL_RADIUS_BIGGER_THAN_ARC, ERROR_LEVEL, CLEAR_BY_MCP_RESET);
     	err_code = TOOL_RADIUS_BIGGER_THAN_ARC;
 
     	return 0;
@@ -621,7 +616,6 @@ int Interp::convert_arc_comp2(int move,
 
         if(arc_radius <= tool_radius){
         	printf("TOOL_RADIUS_NOT_LESS_THAN_ARC_RADIUS_WITH_COMP\n");
-        	//CreateError(TOOL_RADIUS_BIGGER_THAN_ARC, ERROR_LEVEL, CLEAR_BY_MCP_RESET);
         	err_code = TOOL_RADIUS_BIGGER_THAN_ARC;
 
         	return 0;
@@ -780,7 +774,7 @@ int Interp::convert_arc_comp2(int move,
         midx = opx + tool_radius * cos(delta);
         midy = opy + tool_radius * sin(delta);
         dequeue_canons(settings);
-        enqueue_ARC_FEED(settings, block->line_number,
+        enqueue_ARC_FEED(settings, /*block->line_number*/0,
                          0.0, // doesn't matter since we won't move this arc's endpoint
                          midx, midy, opx, opy, ((side == LEFT) ? -1 : 1),
                          cz,
@@ -1762,7 +1756,7 @@ void ARC_FEED(int line_number,
 		gcode = 30;
 	}
 
-	if(temp_point[0] == first_end and temp_point[1] == second_end)
+    if(fabs(temp_point[0] - first_end) < 0.001 && fabs(temp_point[1] - second_end) < 0.001)
 		circle_flag = 1;
 
 	temp_point[0] = first_end;

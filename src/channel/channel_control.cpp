@@ -5000,8 +5000,9 @@ uint8_t ChannelControl::GetWorkMode(){
  */
 void ChannelControl::SetWorkMode(uint8_t work_mode){
 
-    if(this->m_channel_status.chn_work_mode == work_mode)
+    if(this->m_channel_status.chn_work_mode == work_mode){
         return;
+    }
 
     //	if(work_mode == AUTO_MODE)
     //		mc_work_mode = 1;
@@ -5017,6 +5018,7 @@ void ChannelControl::SetWorkMode(uint8_t work_mode){
     	this->Pause();
         usleep(200000);
     }
+
 
     //处理当前模式的退出动作
     switch(m_channel_status.chn_work_mode){
@@ -5088,6 +5090,8 @@ void ChannelControl::SetWorkMode(uint8_t work_mode){
         this->SaveAutoScene();
 
     bSaveAutoScene = true;
+
+    printf("33333\n");
 
     this->m_p_f_reg->MMEM = 0;
     this->m_p_f_reg->MMDI = 0;
@@ -5197,6 +5201,8 @@ void ChannelControl::SetWorkMode(uint8_t work_mode){
     m_channel_status.chn_work_mode = work_mode;
 
     this->SendWorkModeCmdToHmi(work_mode); 	//通知HMI工作模式切换
+
+    return;
 }
 
 /**
@@ -5779,7 +5785,7 @@ bool ChannelControl::RefreshStatusFun(){
 
 			//更新当前轴插补位置
 			this->m_p_mc_comm->ReadAxisIntpPos(m_n_channel_index, m_channel_mc_status.intp_pos, m_channel_mc_status.intp_tar_pos);
-
+            //printf("intp_pos: %lf intp_tar_pos: %lf\n",m_channel_mc_status.intp_pos.x, m_channel_mc_status.intp_tar_pos.x);
 			//更新AUTO分块到位标志
 			m_channel_mc_status.auto_block_over = m_p_mc_comm->ReadAutoBlockRunOverFlag(m_n_channel_index);
 
@@ -6362,10 +6368,13 @@ bool ChannelControl::OutputData(RecordMsg *msg, bool flag_block){
             data_frame.data.ext_type |= 0x02;
         else if(plane == 1)  //XZ平面，G18
             data_frame.data.ext_type |= 0x04;
+
+        printf("===== write mc arc msg lino: %llu ext_type: %d\n", msg->GetLineNo(), data_frame.data.ext_type);
         break;
     }
     case LINE_MSG:{
-    	// 柜体模式且快钻功能打开
+        printf("===== write mc line msg lino: %llu\n", msg->GetLineNo());
+        // 柜体模式且快钻功能打开
         if(this->m_p_g_reg->BOXM && this->m_p_g_reg->QDE && (this->m_p_g_reg->QDAXIS != 0)){  //快钻功能激活
         	LineMsg *linemsg = static_cast<LineMsg *>(msg);
 
@@ -6408,6 +6417,7 @@ bool ChannelControl::OutputData(RecordMsg *msg, bool flag_block){
     }
     case COMPENSATE_MSG:
     case SKIP_MSG:
+    case SKIP_MEASURE_MSG:
         //bit2bit1设置插补模式：00-XYZ插补   01-所有轴插补
         if(m_p_channel_config->intep_mode == 1){
             data_frame.data.ext_type |= 0x02;   //所有轴插补
@@ -9977,7 +9987,6 @@ bool ChannelControl::ExecuteCompensateMsg(RecordMsg *msg){
             if(!OutputData(msg, true))
                 return false;
 
-            printf("start 33333\n");
             this->StartMcIntepolate();  //启动MC
             //			compmsg->SetExecStep(7);  //跳转下一步
             printf("execute g49 mode over\n");
@@ -11494,8 +11503,8 @@ bool ChannelControl::ExecuteSkipMeasureMsg(RecordMsg *msg)
         cmd.data.cmd = CMD_MI_SKIP_MEASURE;
         cmd.data.reserved = 0;   //激活
 
-        cmd.data.data[0] = 120; //this->m_p_channel_config->g31_skip_signal[idx]/10;  //跳转信号段号
-        cmd.data.data[1] = 0; //this->m_p_channel_config->g31_skip_signal[idx]%10;  // 跳转信号位号
+        cmd.data.data[0] = this->m_p_channel_config->g31_skip_signal[idx]/10;  //跳转信号段号
+        cmd.data.data[1] = this->m_p_channel_config->g31_skip_signal[idx]%10;  // 跳转信号位号
         memcpy(&cmd.data.data[2], &axis_mask, sizeof(uint32_t));           //轴mask
         cmd.data.data[4] = this->m_n_channel_index+1;   //MI中通道号从1开始
         cmd.data.data[5] = this->m_p_channel_config->g31_skip_signal_type;    //测量信号类型

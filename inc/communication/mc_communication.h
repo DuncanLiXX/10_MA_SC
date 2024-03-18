@@ -99,7 +99,7 @@ class ChannelEngine;
 #define SP6_VERSION	(MC_REGISTER_BASE+0x0768)		//SPARTAN6版本
 
 //欠压告警寄存器，最低位有效，高有效
-#define UNDER_VOLTAGE_ALARM     (MC_REGISTER_BASE+0x07A4)    //欠压告警寄存器
+#define UNDER_VOLTAGE_ALARM  (MC_REGISTER_BASE+0x07A4)    //欠压告警寄存器
 
 typedef ListBuffer<McCmdFrame> McCmdBuffer;   //待输出的指令消息队列
 

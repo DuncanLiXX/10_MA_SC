@@ -622,7 +622,14 @@ bool MICommunication::WriteAxisHLimitFlag(bool pos_flag, const uint64_t value){
 		this->WriteRegister64(SHARED_MEM_SC_STATUS_HLIMIT_NEG, value);
 	}
 
-	return res;
+    return res;
+}
+
+bool MICommunication::ReadUnderVoltWarn()
+{
+    uint8_t * data;
+    data = (uint8_t *)(m_p_shared_base + 0xFFF00);
+    return (*data)&1;
 }
 
 /**
@@ -750,6 +757,13 @@ bool MICommunication::ReadSyncMachErr(uint64_t &value)
     return res;
 }
 
+bool MICommunication::ReadSyncCalErr(uint64_t &value)
+{
+    bool res = true;
+    ReadRegister64_M(SHARED_MEM_MI_STATUS_SYNC_CAL_ERR, value);
+    return res;
+}
+
 /**
  * @brief 读取通道轴位置
  * @param pos_fb[out] : 数组，返回轴位置反馈
@@ -805,7 +819,11 @@ bool MICommunication::ReadPhyAxisCurFedBckPos(double *pos_fb, double *pos_intp,
             ReadRegister16U_M(SHARED_MEM_AXIS_SPD_ANGLE(i), angle_tmp); //读主轴角度
             angle[i] = angle_tmp/100.0;
         }
+
+        //printf("fp: %lf intp: %lf axis: %d \n", pos_fb[i], pos_intp[i], i);
 	}
+
+
 
 	WriteRegister32_M(SHARED_MEM_AXIS_READ_OVER, 1);  //置位读取完成标志
 

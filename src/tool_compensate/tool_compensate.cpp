@@ -181,9 +181,13 @@ void ToolCompensate::ProcessData(ListNode<RecordMsg *> *node){
 			pblock->u_number = tmsg->GetTargetPos().GetAxisValue(6);
 			pblock->v_number = tmsg->GetTargetPos().GetAxisValue(7);
 
-			pblock->flags = tmsg->GetFlags().all;
+            pblock->flags = tmsg->GetFlags().all;
 			pblock->f_number = tmsg->GetFeed();
 			pblock->line_number = tmsg->GetLineNo();
+
+            pblock->flag_circle = tmsg->get_flag_circle();
+            pblock->flag_major = tmsg->get_flag_major();
+            pblock->flag_direct = tmsg->get_direct();
 
 			if(tmsg->getR() != 0){
 				pblock->r_flag = true;

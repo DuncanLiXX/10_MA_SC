@@ -68,7 +68,7 @@ struct ChannelStatusCollect{
  * @brief 通道实时状态,此结构的状态都需要从MC、MI实时获取
  */
 struct ChannelRealtimeStatus{
-	DPointChn cur_pos_machine;   		//当前各轴反馈位置，机械坐标系，单位：mm
+    DPointChn cur_pos_machine;   	//当前各轴反馈位置，机械坐标系，单位：mm
 	DPointChn cur_pos_work;			//当前各轴插补位置，工件坐标系，单位：mm
 	DPointChn tar_pos_work;			//当前各轴目标位置，工件坐标系，单位：mm
 	int32_t spindle_cur_speed; 				//主轴当前转速，单位：转/分

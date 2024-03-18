@@ -18,12 +18,15 @@ void SyncAxisCtrl::SendMiSyncParams()
     for(int i = 0; i < chn_config->chn_axis_count; i++){
         mi->SendMiParam<uint8_t>(i+1, 20700, axis_config[i].sync_axis);   //是否同步轴
         mi->SendMiParam<uint8_t>(i+1, 20701, axis_config[i].master_axis_no); 	//主动轴号
-        mi->SendMiParam<double>(i+1, 20703, axis_config[i].benchmark_offset); 	//基准偏差
+        mi->SendMiParam<uint8_t>(i+1, 20702, axis_config[i].disp_coord); 	//同步校准功能
+        mi->SendMiParam<int64_t>(i+1, 20703, (int64_t)(axis_config[i].benchmark_offset*1000)); 	//校准最大偏差
+        mi->SendMiParam<uint32_t>(i+1, 20704, (int64_t)axis_config[i].sync_err_max_pos*1000);     //位置同步误差报警阈值
+        mi->SendMiParam<uint32_t>(i+1, 20705, (int64_t)axis_config[i].sync_err_max_mach*1000); 	//坐标同步误差报警阈值
         mi->SendMiParam<uint8_t>(i+1, 20720, axis_config[i].series_ctrl_axis); //是否串联控制
-        mi->SendMiParam<uint32_t>(i+1, 20704, axis_config[i].sync_err_max_pos); 	//位置同步误差报警阈值
+
         mi->SendMiParam<uint8_t>(i+1, 20721, axis_config[i].sync_pre_load_torque); //预载电流偏置
         mi->SendMiParam<uint8_t>(i+1, 20725, axis_config[i].sync_err_max_torque); 	//扭矩同步误差报警阈值
-        mi->SendMiParam<uint32_t>(i+1, 20705, axis_config[i].sync_err_max_mach); 	//坐标同步误差报警阈值
+
         mi->SendMiParam<uint8_t>(i+1, 20711, axis_config[i].sync_pos_detect);      //是否进行位置同步误差检测
         mi->SendMiParam<uint8_t>(i+1, 20712, axis_config[i].sync_mach_detect); 	//是否进行坐标同步误差检测
         mi->SendMiParam<uint8_t>(i+1, 20724, axis_config[i].sync_torque_detect); 	//是否进行扭矩同步误差检测

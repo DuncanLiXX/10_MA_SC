@@ -88,6 +88,7 @@ class ChannelEngine;   //通道引擎
 #define SHARED_MEM_MI_STATUS_SVO_INTP_POS_ERR  (SHARED_MEM_MI_STATUS_BASE + 0x40)      //位置指令过大告警
 #define SHARED_MEM_MI_STATUS_SVO_SYNC_TORQUE_ERR  (SHARED_MEM_MI_STATUS_BASE + 0x48)    //同步轴力矩偏差过大告警
 #define SHARED_MEM_MI_STATUS_SVO_SYNC_MACH_ERR  (SHARED_MEM_MI_STATUS_BASE + 0x50)      //同步轴机床坐标偏差过大告警
+#define SHARED_MEM_MI_STATUS_SYNC_CAL_ERR (SHARED_MEM_MI_STATUS_BASE + 0x58)
 
 #define SHARED_MEM_MI_STATUS_SVO_WARN_CODE(n)  (SHARED_MEM_MI_STATUS_BASE + 0x100 + 0x04*n)       //第n轴的伺服告警码
 
@@ -275,7 +276,10 @@ public:
     bool ReadIntpPosErr(uint64_t &value);      //读取轴位置指令过大告警
     bool ReadSyncTorqueErr(uint64_t &value);   //读取同步轴力矩偏差报警
     bool ReadSyncMachErr(uint64_t &value);     //读取同步轴机床坐标偏差报警
+    bool ReadSyncCalErr(uint64_t &value);     //读取同步轴 同步校准偏差过大报警
     bool WriteAxisHLimitFlag(bool pos_flag, const uint64_t value);   //写入物理轴硬限位标志
+
+    bool ReadUnderVoltWarn();
 
     template<typename T>
     void SendMiParam(uint8_t axis, uint32_t para_no, T data)  //发送MI参数

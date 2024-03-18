@@ -1566,10 +1566,10 @@ bool ParmManager::ReadAxisConfig(){
             m_sc_axis_config[i].master_axis_no = m_ini_axis->GetIntValueOrDefault(sname, "master_axis_no", 0);
 			m_sc_axis_config[i].disp_coord = m_ini_axis->GetIntValueOrDefault(sname, "disp_coord", 0);
 			m_sc_axis_config[i].benchmark_offset = m_ini_axis->GetDoubleValueOrDefault(sname, "benchmark_offset", 0);
-            m_sc_axis_config[i].sync_err_max_pos = m_ini_axis->GetIntValueOrDefault(sname, "sync_err_max_pos", 10000);
+            m_sc_axis_config[i].sync_err_max_pos = m_ini_axis->GetIntValueOrDefault(sname, "sync_err_max_pos", 10);
             m_sc_axis_config[i].auto_sync = m_ini_axis->GetIntValueOrDefault(sname, "auto_sync", 0);
             m_sc_axis_config[i].sync_pre_load_torque = m_ini_axis->GetIntValueOrDefault(sname, "sync_pre_load_torque", 10);
-            m_sc_axis_config[i].sync_err_max_mach = m_ini_axis->GetIntValueOrDefault(sname, "sync_err_max_mach", 10000);
+            m_sc_axis_config[i].sync_err_max_mach = m_ini_axis->GetIntValueOrDefault(sname, "sync_err_max_mach", 10);
             m_sc_axis_config[i].sync_err_max_torque = m_ini_axis->GetIntValueOrDefault(sname, "sync_err_max_torque", 20);
             m_sc_axis_config[i].sync_mach_detect = m_ini_axis->GetIntValueOrDefault(sname, "sync_mach_detect", 1);
             m_sc_axis_config[i].sync_pos_detect = m_ini_axis->GetIntValueOrDefault(sname, "sync_pos_detect", 1);
@@ -1738,10 +1738,10 @@ bool ParmManager::ReadAxisConfig(){
             m_sc_axis_config[i].master_axis_no = 0;
 			m_sc_axis_config[i].disp_coord = 0;
 			m_sc_axis_config[i].benchmark_offset = 0;
-            m_sc_axis_config[i].sync_err_max_pos = 10000;
+            m_sc_axis_config[i].sync_err_max_pos = 10;
             m_sc_axis_config[i].auto_sync = 0;
             m_sc_axis_config[i].sync_pre_load_torque = 10;
-            m_sc_axis_config[i].sync_err_max_mach = 10000;
+            m_sc_axis_config[i].sync_err_max_mach = 10;
             m_sc_axis_config[i].sync_err_max_torque = 20;
             m_sc_axis_config[i].sync_mach_detect = 1;
             m_sc_axis_config[i].sync_pos_detect = 1;
@@ -1899,10 +1899,10 @@ bool ParmManager::ReadAxisConfig(){
             m_ini_axis->AddKeyValuePair(string("master_axis_no"), string("0"), ns);
 			m_ini_axis->AddKeyValuePair(string("disp_coord"), string("0"), ns);
 			m_ini_axis->AddKeyValuePair(string("benchmark_offset"), string("0"), ns);
-            m_ini_axis->AddKeyValuePair(string("sync_err_max_pos"), string("10000"), ns);
+            m_ini_axis->AddKeyValuePair(string("sync_err_max_pos"), string("10"), ns);
             m_ini_axis->AddKeyValuePair(string("auto_sync"), string("0"), ns);
             m_ini_axis->AddKeyValuePair(string("sync_pre_load_torque"), string("10"), ns);
-            m_ini_axis->AddKeyValuePair(string("sync_err_max_mach"), string("10000"), ns);
+            m_ini_axis->AddKeyValuePair(string("sync_err_max_mach"), string("10"), ns);
             m_ini_axis->AddKeyValuePair(string("sync_err_max_torque"), string("20"), ns);
             m_ini_axis->AddKeyValuePair(string("sync_mach_detect"), string("1"), ns);
             m_ini_axis->AddKeyValuePair(string("sync_pos_detect"), string("1"), ns);
@@ -5309,11 +5309,11 @@ bool ParmManager::UpdateAxisParam(uint8_t axis_index, uint32_t param_no, ParamVa
         break;
     case 20704:	//位置同步误差报警阈值
         sprintf(kname, "sync_err_max_pos");
-        m_ini_axis->SetIntValue(sname, kname,value.value_uint32);
+        m_ini_axis->SetIntValue(sname, kname,value.value_double);
         break;
     case 20705:	//坐标同步误差报警阈值
         sprintf(kname, "sync_err_max_mach");
-        m_ini_axis->SetIntValue(sname, kname,value.value_uint32);
+        m_ini_axis->SetIntValue(sname, kname,value.value_double);
         break;
     case 20706:	//从动轴回参考点后自动同步校准
         sprintf(kname, "auto_sync");
@@ -7286,25 +7286,26 @@ void ParmManager::ActiveAxisParam(uint8_t axis_index, uint32_t param_no, ParamVa
             this->m_sc_axis_config[axis_index].soft_limit_max_1 = value.value_double;
             UpdateMiParam<double>(axis_index+1, param_no, value.value_double);
             chan = g_ptr_chn_engine->GetAxisChannel(axis_index, chan_axis);
-            g_ptr_chn_engine->GetChnControl(chan)->SetChnAxisSoftLimitValue(chan_axis, 0);
+            g_ptr_chn_engine->GetChnControl(0)->SetChnAxisSoftLimitValue(chan_axis, 0);
             break;
         case 20201:
             this->m_sc_axis_config[axis_index].soft_limit_min_1 = value.value_double;
             UpdateMiParam<double>(axis_index+1, param_no, value.value_double);
             chan = g_ptr_chn_engine->GetAxisChannel(axis_index, chan_axis);
-            g_ptr_chn_engine->GetChnControl(chan)->SetChnAxisSoftLimitValue(chan_axis, 0);
+            g_ptr_chn_engine->GetChnControl(0)->SetChnAxisSoftLimitValue(chan_axis, 0);
             break;
         case 20202: 	//软限位2
+            printf("axis_index : %d\n", axis_index);
             this->m_sc_axis_config[axis_index].soft_limit_max_2 = value.value_double;
             UpdateMiParam<double>(axis_index+1, param_no, value.value_double);
             chan = g_ptr_chn_engine->GetAxisChannel(axis_index, chan_axis);
-            g_ptr_chn_engine->GetChnControl(chan)->SetChnAxisSoftLimitValue(chan_axis, 1);
+            g_ptr_chn_engine->GetChnControl(0)->SetChnAxisSoftLimitValue(chan_axis, 1);
             break;
         case 20203:
             this->m_sc_axis_config[axis_index].soft_limit_min_2 = value.value_double;
             UpdateMiParam<double>(axis_index+1, param_no, value.value_double);
             chan = g_ptr_chn_engine->GetAxisChannel(axis_index, chan_axis);
-            g_ptr_chn_engine->GetChnControl(chan)->SetChnAxisSoftLimitValue(chan_axis, 1);
+            g_ptr_chn_engine->GetChnControl(0)->SetChnAxisSoftLimitValue(chan_axis, 1);
             break;
         case 20210:
         case 20211:
@@ -7321,19 +7322,19 @@ void ParmManager::ActiveAxisParam(uint8_t axis_index, uint32_t param_no, ParamVa
         case 20300:	//定位速度
             this->m_sc_axis_config[axis_index].rapid_speed = value.value_double;
             chan = chn_engine->GetAxisChannel(axis_index, chan_axis);
-            chn_engine->GetChnControl(chan)->SetChnAxisSpeedParam(chan_axis);
+            chn_engine->GetChnControl(0)->SetChnAxisSpeedParam(chan_axis);
             break;
         case 20301:	//手动速度
             this->m_sc_axis_config[axis_index].manual_speed = value.value_double;
             break;
         case 20302:
             this->m_sc_axis_config[axis_index].mpg_speed = value.value_uint16;
-            chn_engine->GetChnControl(chan)->SetChnAxisSpeedParam(axis_index);
+            chn_engine->GetChnControl(0)->SetChnAxisSpeedParam(axis_index);
             break;
         case 20400:	//定位加速度
             this->m_sc_axis_config[axis_index].rapid_acc = value.value_double;
             chan = chn_engine->GetAxisChannel(axis_index, chan_axis);
-            chn_engine->GetChnControl(chan)->SetChnAxisAccParam(chan_axis);
+            chn_engine->GetChnControl(0)->SetChnAxisAccParam(chan_axis);
             if(proc_index < kMaxProcParamCount){
                 this->m_p_axis_process_param[axis_index].axis_param[proc_index].rapid_acc = value.value_double;
             }
@@ -7341,7 +7342,7 @@ void ParmManager::ActiveAxisParam(uint8_t axis_index, uint32_t param_no, ParamVa
         case 20401:	//手动加速度
             this->m_sc_axis_config[axis_index].manual_acc = value.value_double;
             chan = chn_engine->GetAxisChannel(axis_index, chan_axis);
-            chn_engine->GetChnControl(chan)->SetChnAxisAccParam(chan_axis);
+            chn_engine->GetChnControl(0)->SetChnAxisAccParam(chan_axis);
             if(proc_index < kMaxProcParamCount){
                 this->m_p_axis_process_param[axis_index].axis_param[proc_index].manual_acc = value.value_double;
             }
@@ -7349,23 +7350,23 @@ void ParmManager::ActiveAxisParam(uint8_t axis_index, uint32_t param_no, ParamVa
         case 20402:	//启动加速度
             this->m_sc_axis_config[axis_index].start_acc = value.value_double;
             chan = chn_engine->GetAxisChannel(axis_index, chan_axis);
-            chn_engine->GetChnControl(chan)->SetChnAxisAccParam(chan_axis);
+            chn_engine->GetChnControl(0)->SetChnAxisAccParam(chan_axis);
             if(proc_index < kMaxProcParamCount){
                 this->m_p_axis_process_param[axis_index].axis_param[proc_index].start_acc = value.value_double;
             }
             break;
         case 20403:
             this->m_sc_axis_config[axis_index].mpg_acc_time = value.value_uint16;
-            chn_engine->GetChnControl(chan)->SetChnAxisAccParam(axis_index);
+            chn_engine->GetChnControl(0)->SetChnAxisAccParam(axis_index);
             break;
         case 20404:
             this->m_sc_axis_config[axis_index].mpg_deacc_time = value.value_uint16;
-            chn_engine->GetChnControl(chan)->SetChnAxisAccParam(axis_index);
+            chn_engine->GetChnControl(0)->SetChnAxisAccParam(axis_index);
             break;
         case 20405:	//定位S型规划时间常数
             this->m_sc_axis_config[axis_index].rapid_s_plan_filter_time = value.value_uint16;
             chan = chn_engine->GetAxisChannel(axis_index, chan_axis);
-            chn_engine->GetChnControl(chan)->SetChnAxisAccParam(chan_axis);
+            chn_engine->GetChnControl(0)->SetChnAxisAccParam(chan_axis);
             if(proc_index < kMaxProcParamCount){
                 this->m_p_axis_process_param[axis_index].axis_param[proc_index].rapid_s_plan_filter_time = value.value_uint16;
             }
@@ -7373,7 +7374,7 @@ void ParmManager::ActiveAxisParam(uint8_t axis_index, uint32_t param_no, ParamVa
         case 20406:
             this->m_sc_axis_config[axis_index].corner_acc_limit = value.value_double;
             chan = chn_engine->GetAxisChannel(axis_index, chan_axis);
-            chn_engine->GetChnControl(chan)->SetChnAxisSpeedParam(chan_axis);
+            chn_engine->GetChnControl(0)->SetChnAxisSpeedParam(chan_axis);
             if(proc_index < kMaxProcParamCount){
                 this->m_p_axis_process_param[axis_index].axis_param[proc_index].corner_acc_limit = value.value_double;
             }
@@ -7432,20 +7433,20 @@ void ParmManager::ActiveAxisParam(uint8_t axis_index, uint32_t param_no, ParamVa
             this->m_sc_axis_config[axis_index].master_axis_no = value.value_uint8;
             UpdateMiParam<uint8_t>(axis_index+1, param_no, value.value_uint8);
             break;
-        case 20702:	//显示坐标
+        case 20702:	//同步校准功能
             this->m_sc_axis_config[axis_index].disp_coord = value.value_uint8;
             break;
-        case 20703:	//主从轴基准位置偏差
+        case 20703:	//同步校准时位置误差补偿报警阀值(mm)
             this->m_sc_axis_config[axis_index].benchmark_offset = value.value_double;
             UpdateMiParam<double>(axis_index+1, param_no, value.value_double); 	//基准偏差
             break;
-        case 20704:	//位置同步误差报警阈值
-            this->m_sc_axis_config[axis_index].sync_err_max_pos = value.value_uint32;
-            UpdateMiParam<uint32_t>(axis_index+1, param_no, value.value_uint32); 	//允许的同步最大误差
+        case 20704:	//位置同步误差检测报警阀值(um)
+            this->m_sc_axis_config[axis_index].sync_err_max_pos = value.value_double;
+            UpdateMiParam<uint32_t>(axis_index+1, param_no, value.value_double); 	//允许的同步最大误差
             break;
-        case 20705:	//坐标同步误差报警阈值
-            this->m_sc_axis_config[axis_index].sync_err_max_mach = value.value_uint32;
-            UpdateMiParam<uint8_t>(axis_index+1, param_no, value.value_uint32);
+        case 20705:	//坐标同步误差检测报警阀值(um)
+            this->m_sc_axis_config[axis_index].sync_err_max_mach = value.value_double;
+            UpdateMiParam<uint8_t>(axis_index+1, param_no, value.value_double);
             break;
         case 20706:	//从动轴回参考点后自动同步校准
             this->m_sc_axis_config[axis_index].auto_sync = value.value_uint8;

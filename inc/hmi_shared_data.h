@@ -245,6 +245,10 @@ enum HMICmdCode {
 	CMD_HMI_CLEAR_TOOL_COMP,        // 清除刀具补偿
 	CMD_HMI_CLEAR_TOOL_OFFSET,      // 清除刀具偏置
     CMD_HMI_SET_EDITING,            // 设置编辑模式
+    CMD_HMI_GET_G31_MACH,           // 获取G31捕获机械坐标值
+    CMD_HMI_GET_G31_WORK,           // 获取G31捕获工件坐标值
+    CMD_HMI_GET_G31_1_MACH,         // 获取G31.1 机械坐标值
+    CMD_HMI_GET_G31_1_WORK,         // 获取G31.1 工件坐标值
 
 	//SC-->HMI
 	CMD_SC_NEW_ALARM = 1000,			//SC向HMI发送新的告警信息 100

@@ -1095,14 +1095,19 @@ void ChannelEngine::SendMiPhyAxisEncoder(){
 
     fclose(fp);
 
+    printf("============start read ==============\n");
+
+    for(int i=0; i<m_p_general_config->axis_count; i++){
+        printf("%lld - ", data[i]);
+    }
+    printf("\n");
+
     MiCmdFrame cmd;
     memset(&cmd, 0x00, sizeof(cmd));
     cmd.data.cmd = CMD_MI_SET_AXIS_INIT_ENCODER;
     for(uint8_t i = 0; i < m_p_general_config->axis_count; i++){
         cmd.data.axis_index = i+1;
-
         memcpy(cmd.data.data, &data[i], 8);
-
         this->m_p_mi_comm->WriteCmd(cmd);
     }
 }
@@ -1666,7 +1671,7 @@ void ChannelEngine::PoweroffHandler(int signo, siginfo_t *info, void *context){
 }
 
 
-FILE * fp;
+
 
 /**
  * @brief 掉电时保存数据
@@ -1675,15 +1680,19 @@ void ChannelEngine::SaveDataPoweroff(){
     //system("date >> /cnc/bin/save.txt");
     //system("echo \"start\" >> /cnc/bin/save.txt");
 
-    fp = fopen("/cnc/bin/save.txt", "a");
-    char data[30];
-
     system("echo 0 > /sys/class/gpio/gpio968/value");
 
-    memset(data, 0, 30);
-    sprintf(data, "%s", "start\n");
-    fwrite(data, 30, 1, fp);
 
+    int fd;
+    fd = open("/cnc/bin/save.txt", O_WRONLY|O_CREAT|O_APPEND, 0755);
+    char data[30];
+    memset(data, 0, sizeof (data));
+    sprintf(data, "%s", "start\n");
+    write(fd, data, 30);
+    fsync(fd);
+    close(fd);
+
+    //memset(data, 0, 30);
     //printf("11111 pmc\n");
     //保存PMC寄存器数据
     if((this->m_mask_import_param & (0x01<<CONFIG_PMC_REG)) == 0)
@@ -1711,9 +1720,12 @@ void ChannelEngine::SaveDataPoweroff(){
     delete g_ptr_trace;
     g_ptr_trace = nullptr;
 
+    fd = open("/cnc/bin/save.txt", O_WRONLY|O_CREAT|O_APPEND, 0755);
+    memset(data, 0, sizeof (data));
     sprintf(data, "%s", "end\n");
-    fwrite(data, 30, 1, fp);
-    fclose(fp);
+    write(fd, data, 30);
+    fsync(fd);
+    close(fd);
 
     system("echo 1 > /sys/class/gpio/gpio968/value");
     //system("date >> /cnc/bin/save.txt");
@@ -1782,6 +1794,12 @@ void ChannelEngine::SaveCurPhyAxisEncoder(){
 
     fsync(fileno(fp));
     fclose(fp);
+
+
+    for(int i=0; i<m_p_general_config->axis_count; i++){
+        printf("%lld - ", data[i]);
+    }
+    printf("\n");
 
 }
 
@@ -3263,6 +3281,10 @@ void ChannelEngine::ProcessHmiCmd(HMICmdFrame &cmd){
     case CMD_HMI_GET_USER_MCODE:
     case CMD_HMI_SET_SYSTEM_MCODE:
     case CMD_HMI_GET_SYSTEM_MCODE:
+    case CMD_HMI_GET_G31_MACH:
+    case CMD_HMI_GET_G31_WORK:
+    case CMD_HMI_GET_G31_1_MACH:
+    case CMD_HMI_GET_G31_1_WORK:
 		this->m_p_channel_control[0].ProcessHmiCmd(cmd);
 		// 暂时不考虑多通道
 		/*if(cmd.channel_index < this->m_p_general_config->chn_count)
@@ -3713,7 +3735,13 @@ void ChannelEngine::ProcessHmiSetToolByValue(HMICmdFrame &cmd)
     HmiToolPotOneConfig potValue;
     memcpy(&potValue, cmd.data, sizeof(HmiToolPotOneConfig));
 
-    GetChnControl(channelId)->SetToolValue(toolId, potValue);
+    if(toolId == 0xff){
+        for(int i=0; i<kMaxToolCount; i++){
+            m_p_channel_control[0].SetToolValue(i, potValue);
+        }
+    }else{
+        GetChnControl(channelId)->SetToolValue(toolId, potValue);
+    }
 
     cmd.cmd_extension = 1;
     this->m_p_hmi_comm->SendCmd(cmd);
@@ -9473,8 +9501,11 @@ bool ChannelEngine::RefreshMiStatusFun(){
                     }
 
                 }
+
+
                 if(warn_flag & (0x01 << 5)){  //同步轴位置指令偏差过大告警
                     this->m_p_mi_comm->ReadSyncPosErr(value64);
+
                     if(value64 != 0){
                         //有同步轴位置指令偏差过大告警
                         uint64_t flag = 0x01;
@@ -9549,7 +9580,6 @@ bool ChannelEngine::RefreshMiStatusFun(){
                                 uint8_t chan_id = CHANNEL_ENGINE_INDEX, axis_id = NO_AXIS;
                                 GetPhyAxistoChanAxis(i, chan_id, axis_id);
                                 CreateError(ERR_SYNC_CAL, ERROR_LEVEL, CLEAR_BY_MCP_RESET, 0, chan_id, axis_id);
-
                             }
                             flag = flag << 1;
                         }

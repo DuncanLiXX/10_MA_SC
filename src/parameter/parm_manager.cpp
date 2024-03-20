@@ -1443,8 +1443,8 @@ bool ParmManager::ReadAxisConfig(){
             m_sc_axis_config[i].ret_ref_mode = m_ini_axis->GetIntValueOrDefault(sname, "ret_ref_mode", 0);
             m_sc_axis_config[i].absolute_ref_mode = m_ini_axis->GetIntValueOrDefault(sname, "absolute_ref_mode", 0);
 			m_sc_axis_config[i].ret_ref_dir = m_ini_axis->GetIntValueOrDefault(sname, "ret_ref_dir", 0);
-            //m_sc_axis_config[i].ret_ref_change_dir = m_ini_axis->GetIntValueOrDefault(sname, "ret_ref_change_dir", 0);
-            m_sc_axis_config[i].ret_ref_change_dir = 0;
+            m_sc_axis_config[i].ret_ref_change_dir = m_ini_axis->GetIntValueOrDefault(sname, "ret_ref_change_dir", 0);
+            //m_sc_axis_config[i].ret_ref_change_dir = 0;
 			m_sc_axis_config[i].ref_mark_err = m_ini_axis->GetDoubleValueOrDefault(sname, "ref_mark_err", 0);
 
 			m_sc_axis_config[i].ref_signal = m_ini_axis->GetIntValueOrDefault(sname, "ref_signal", 0);
@@ -4474,66 +4474,66 @@ bool ParmManager::UpdateSystemParam(uint32_t param_no, ParamValue &value){
         m_ini_system->SetDoubleValue(sname, kname, value.value_double);
         break;
     case 309:
-        sprintf(kname, "pos_check_min_2");
-        m_ini_system->SetDoubleValue(sname, kname, value.value_double);
-        break;
-    case 310:
-        sprintf(kname, "pos_check_min_3");
-        m_ini_system->SetDoubleValue(sname, kname, value.value_double);
-        break;
-    case 311:
-        sprintf(kname, "pos_check_min_4");
-        m_ini_system->SetDoubleValue(sname, kname, value.value_double);
-        break;
-    case 312:
-        sprintf(kname, "pos_check_min_5");
-        m_ini_system->SetDoubleValue(sname, kname, value.value_double);
-        break;
-    case 313:
-        sprintf(kname, "pos_check_min_6");
-        m_ini_system->SetDoubleValue(sname, kname, value.value_double);
-        break;
-    case 314:
-        sprintf(kname, "pos_check_min_7");
-        m_ini_system->SetDoubleValue(sname, kname, value.value_double);
-        break;
-    case 315:
-        sprintf(kname, "pos_check_min_8");
-        m_ini_system->SetDoubleValue(sname, kname, value.value_double);
-        break;
-
-    case 316:
         sprintf(kname, "pos_check_max_1");
         m_ini_system->SetDoubleValue(sname, kname, value.value_double);
         break;
-    case 317:
+    case 310:
+        sprintf(kname, "pos_check_min_2");
+        m_ini_system->SetDoubleValue(sname, kname, value.value_double);
+        break;
+    case 311:
         sprintf(kname, "pos_check_max_2");
         m_ini_system->SetDoubleValue(sname, kname, value.value_double);
         break;
-    case 318:
+    case 312:
+        sprintf(kname, "pos_check_min_3");
+        m_ini_system->SetDoubleValue(sname, kname, value.value_double);
+        break;
+    case 313:
         sprintf(kname, "pos_check_max_3");
         m_ini_system->SetDoubleValue(sname, kname, value.value_double);
         break;
-    case 319:
+    case 314:
+        sprintf(kname, "pos_check_min_4");
+        m_ini_system->SetDoubleValue(sname, kname, value.value_double);
+        break;
+    case 315:
         sprintf(kname, "pos_check_max_4");
         m_ini_system->SetDoubleValue(sname, kname, value.value_double);
         break;
-    case 320:
+    case 316:
+        sprintf(kname, "pos_check_min_5");
+        m_ini_system->SetDoubleValue(sname, kname, value.value_double);
+        break;
+    case 317:
         sprintf(kname, "pos_check_max_5");
         m_ini_system->SetDoubleValue(sname, kname, value.value_double);
         break;
-    case 321:
+    case 318:
+        sprintf(kname, "pos_check_min_6");
+        m_ini_system->SetDoubleValue(sname, kname, value.value_double);
+        break;
+    case 319:
         sprintf(kname, "pos_check_max_6");
         m_ini_system->SetDoubleValue(sname, kname, value.value_double);
         break;
-    case 322:
+    case 320:
+        sprintf(kname, "pos_check_min_7");
+        m_ini_system->SetDoubleValue(sname, kname, value.value_double);
+        break;
+    case 321:
         sprintf(kname, "pos_check_max_7");
+        m_ini_system->SetDoubleValue(sname, kname, value.value_double);
+        break;
+    case 322:
+        sprintf(kname, "pos_check_min_8");
         m_ini_system->SetDoubleValue(sname, kname, value.value_double);
         break;
     case 323:
         sprintf(kname, "pos_check_max_8");
         m_ini_system->SetDoubleValue(sname, kname, value.value_double);
         break;
+
 
 	default:	//默认
 		g_ptr_trace->PrintLog(LOG_ALARM, "系统参数更新，参数号非法：%d", param_no);
@@ -6365,51 +6365,51 @@ void ParmManager::ActiveSystemParam(uint32_t param_no, ParamValue &value){
         this->m_sc_system_config->pos_check_min_1 = value.value_double;
         break;
     case 309:
-        this->m_sc_system_config->pos_check_min_2 = value.value_double;
-        break;
-    case 310:
-        this->m_sc_system_config->pos_check_min_3 = value.value_double;
-        break;
-    case 311:
-        this->m_sc_system_config->pos_check_min_4 = value.value_double;
-        break;
-    case 312:
-        this->m_sc_system_config->pos_check_min_5 = value.value_double;
-        break;
-    case 313:
-        this->m_sc_system_config->pos_check_min_6 = value.value_double;
-        break;
-    case 314:
-        this->m_sc_system_config->pos_check_min_7 = value.value_double;
-        break;
-    case 315:
-        this->m_sc_system_config->pos_check_min_8 = value.value_double;
-        break;
-
-    case 316:   //位置开关最大值
         this->m_sc_system_config->pos_check_max_1 = value.value_double;
         break;
-    case 317:
+    case 310:   //位置开关最小值
+        this->m_sc_system_config->pos_check_min_2 = value.value_double;
+        break;
+    case 311:
         this->m_sc_system_config->pos_check_max_2 = value.value_double;
         break;
-    case 318:
+    case 312:   //位置开关最小值
+        this->m_sc_system_config->pos_check_min_3 = value.value_double;
+        break;
+    case 313:
         this->m_sc_system_config->pos_check_max_3 = value.value_double;
         break;
-    case 319:
+    case 314:   //位置开关最小值
+        this->m_sc_system_config->pos_check_min_4 = value.value_double;
+        break;
+    case 315:
         this->m_sc_system_config->pos_check_max_4 = value.value_double;
         break;
-    case 320:
+    case 316:   //位置开关最小值
+        this->m_sc_system_config->pos_check_min_5 = value.value_double;
+        break;
+    case 317:
         this->m_sc_system_config->pos_check_max_5 = value.value_double;
         break;
-    case 321:
+    case 318:   //位置开关最小值
+        this->m_sc_system_config->pos_check_min_6 = value.value_double;
+        break;
+    case 319:
         this->m_sc_system_config->pos_check_max_6 = value.value_double;
         break;
-    case 322:
+    case 320:   //位置开关最小值
+        this->m_sc_system_config->pos_check_min_7 = value.value_double;
+        break;
+    case 321:
         this->m_sc_system_config->pos_check_max_7 = value.value_double;
+        break;
+    case 322:   //位置开关最小值
+        this->m_sc_system_config->pos_check_min_8 = value.value_double;
         break;
     case 323:
         this->m_sc_system_config->pos_check_max_8 = value.value_double;
         break;
+
 
 	default:	//默认
 		break;
@@ -7172,7 +7172,8 @@ void ParmManager::UpdateMiParam(uint8_t axis, uint32_t para_no, T data){
 	cmd.data.axis_index = axis;
 
 	memcpy(cmd.data.data, &para_no, 4);
-	memcpy(&cmd.data.data[2], &data, sizeof(T));
+
+    memcpy(&cmd.data.data[2], &data, sizeof(T));
 
 	MICommunication::GetInstance()->WriteCmd(cmd);
 }
@@ -7381,21 +7382,21 @@ void ParmManager::ActiveAxisParam(uint8_t axis_index, uint32_t param_no, ParamVa
             break;
         case 20407:	//插补后加减速滤波器类型
             this->m_sc_axis_config[axis_index].post_filter_type = value.value_uint8;
-            this->UpdateMiParam<uint8_t>(axis_index+1, 1140, value.value_uint8);   //滤波器类型
+            this->UpdateMiParam<uint8_t>(axis_index+1, param_no, value.value_uint8);   //滤波器类型
             if(proc_index < kMaxProcParamCount){
                 this->m_p_axis_process_param[axis_index].axis_param[proc_index].post_filter_type = value.value_uint8;
             }
             break;
         case 20408:	//插补后加减速滤波器时间常数1
             this->m_sc_axis_config[axis_index].post_filter_time_1 = value.value_uint16;
-            this->UpdateMiParam<uint16_t>(axis_index+1, 1141, value.value_uint16);   //一级滤波器时间常数
+            this->UpdateMiParam<uint16_t>(axis_index+1, param_no, value.value_uint16);   //一级滤波器时间常数
             if(proc_index < kMaxProcParamCount){
                 this->m_p_axis_process_param[axis_index].axis_param[proc_index].post_filter_time_1 = value.value_uint16;
             }
             break;
         case 20409:	//插补后加减速滤波器时间常数2
             this->m_sc_axis_config[axis_index].post_filter_time_2 = value.value_uint16;
-            this->UpdateMiParam<uint16_t>(axis_index+1, 1142, value.value_uint16);   //二级滤波器时间常数
+            this->UpdateMiParam<uint16_t>(axis_index+1, param_no, value.value_uint16);   //二级滤波器时间常数
             if(proc_index < kMaxProcParamCount){
                 this->m_p_axis_process_param[axis_index].axis_param[proc_index].post_filter_time_2 = value.value_uint16;
             }
@@ -7436,17 +7437,26 @@ void ParmManager::ActiveAxisParam(uint8_t axis_index, uint32_t param_no, ParamVa
         case 20702:	//同步校准功能
             this->m_sc_axis_config[axis_index].disp_coord = value.value_uint8;
             break;
-        case 20703:	//同步校准时位置误差补偿报警阀值(mm)
-            this->m_sc_axis_config[axis_index].benchmark_offset = value.value_double;
-            UpdateMiParam<double>(axis_index+1, param_no, value.value_double); 	//基准偏差
+        case 20703:{	//同步校准时位置误差补偿报警阀值(mm)
+            //同步轴特殊更改
+            this->m_sc_axis_config[axis_index].benchmark_offset = value.value_double;    
+            int64_t data = value.value_double*1000;
+            UpdateMiParam<int64_t>(axis_index+1, param_no, data); 	//基准偏差
+            }
             break;
-        case 20704:	//位置同步误差检测报警阀值(um)
+        case 20704:{	//位置同步误差检测报警阀值(um)
+            //同步轴特殊更改
             this->m_sc_axis_config[axis_index].sync_err_max_pos = value.value_double;
-            UpdateMiParam<uint32_t>(axis_index+1, param_no, value.value_double); 	//允许的同步最大误差
+            int64_t data = value.value_double*1000;
+            UpdateMiParam<int64_t>(axis_index+1, param_no, data); 	//允许的同步最大误差
+            }
             break;
-        case 20705:	//坐标同步误差检测报警阀值(um)
+        case 20705:{	//坐标同步误差检测报警阀值(um)
+            //同步轴特殊更改
             this->m_sc_axis_config[axis_index].sync_err_max_mach = value.value_double;
-            UpdateMiParam<uint8_t>(axis_index+1, param_no, value.value_double);
+            int64_t data = value.value_double*1000;
+            UpdateMiParam<int64_t>(axis_index+1, param_no, data);
+            }
             break;
         case 20706:	//从动轴回参考点后自动同步校准
             this->m_sc_axis_config[axis_index].auto_sync = value.value_uint8;

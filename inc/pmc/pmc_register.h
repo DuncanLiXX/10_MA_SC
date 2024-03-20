@@ -213,7 +213,7 @@ struct FRegBits{
 	//F69
 	uint8_t :8;
 	//F70
-    uint8_t PSW1:8;
+    uint8_t PSW1:8;   // Œª÷√ºÏ≤‚  min <= pos <= max –≈∫≈Œ™1
 	//F71
     uint8_t PSW2:8;
 	//F72

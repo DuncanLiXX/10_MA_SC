@@ -774,7 +774,7 @@ int Interp::convert_arc_comp2(int move,
         midx = opx + tool_radius * cos(delta);
         midy = opy + tool_radius * sin(delta);
         dequeue_canons(settings);
-        enqueue_ARC_FEED(settings, /*block->line_number*/0,
+        enqueue_ARC_FEED(settings, block->line_number,
                          0.0, // doesn't matter since we won't move this arc's endpoint
                          midx, midy, opx, opy, ((side == LEFT) ? -1 : 1),
                          cz,

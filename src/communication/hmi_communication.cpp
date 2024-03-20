@@ -1140,6 +1140,12 @@ int HMICommunication::ProcessHmiCmd(){
             case CMD_HMI_SET_MACRO_ARRAY:
             	m_p_channel_engine->ProcessHmiBigFrame(cmd);
             	break;
+            case CMD_HMI_GET_G31_MACH:
+            case CMD_HMI_GET_G31_WORK:
+            case CMD_HMI_GET_G31_1_MACH:
+            case CMD_HMI_GET_G31_1_WORK:
+                m_p_channel_engine->ProcessHmiCmd(cmd);
+                break;
             default:
 				g_ptr_trace->PrintLog(LOG_ALARM, "收到不支持的HMI指令cmd=%d", cmd.cmd);
 				break;

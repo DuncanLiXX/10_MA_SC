@@ -35,7 +35,6 @@ struct FRegBits;		//F寄存器点位定义
 struct GRegBits;		//G寄存器点位定义
 
 
-
 enum RunStep{
 	STEP_GETLINE = 1,
 	STEP_COMPILE = 2,
@@ -598,6 +597,7 @@ private:
     void ProcessHmiGetMcodeMap(HMICmdFrame &cmd);
     void ProcessHmiSetMcodeSystem(HMICmdFrame &cmd);
     void ProcessHmiGetMcodeSystem(HMICmdFrame &cmd);
+    void ProcessHmiGetSkipMsg(HMICmdFrame &cmd);
 
 #ifdef USES_LASER_MACHINE
 	void ProcessLaserCalibration();        //处理激光调高器标定
@@ -917,7 +917,9 @@ private://私有成员变量
 	DPointChn m_point_capture;		    //捕获的轴位置，机械坐标系
 	bool m_b_pos_captured;             //轴位置捕获完成标志
 
-    double g31_1_measure_data[100];
+    uint32_t g31_1_axis_mask = 0;              // G31.1 移动的是哪个轴
+    double g31_1_measure_work_data[100];  // g31.1 捕获工件坐标
+    double g31_1_measure_data[100];       // g31.1 捕获机械坐标
 
 	//PMC轴运行mask
 	uint64_t m_mask_run_pmc;  //当前运行的轴的mask

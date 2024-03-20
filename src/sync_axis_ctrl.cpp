@@ -19,9 +19,16 @@ void SyncAxisCtrl::SendMiSyncParams()
         mi->SendMiParam<uint8_t>(i+1, 20700, axis_config[i].sync_axis);   //是否同步轴
         mi->SendMiParam<uint8_t>(i+1, 20701, axis_config[i].master_axis_no); 	//主动轴号
         mi->SendMiParam<uint8_t>(i+1, 20702, axis_config[i].disp_coord); 	//同步校准功能
+
         mi->SendMiParam<int64_t>(i+1, 20703, (int64_t)(axis_config[i].benchmark_offset*1000)); 	//校准最大偏差
-        mi->SendMiParam<uint32_t>(i+1, 20704, (int64_t)axis_config[i].sync_err_max_pos*1000);     //位置同步误差报警阈值
-        mi->SendMiParam<uint32_t>(i+1, 20705, (int64_t)axis_config[i].sync_err_max_mach*1000); 	//坐标同步误差报警阈值
+        mi->SendMiParam<int64_t>(i+1, 20704, (int64_t)axis_config[i].sync_err_max_pos*1000);     //位置同步误差报警阈值
+        mi->SendMiParam<int64_t>(i+1, 20705, (int64_t)axis_config[i].sync_err_max_mach*1000); 	//坐标同步误差报警阈值
+        printf("===== %lld %lld %lld\n",
+               (int64_t)(axis_config[i].benchmark_offset*1000),
+               (int64_t)axis_config[i].sync_err_max_pos*1000,
+               (int64_t)axis_config[i].sync_err_max_mach*1000);
+
+
         mi->SendMiParam<uint8_t>(i+1, 20720, axis_config[i].series_ctrl_axis); //是否串联控制
 
         mi->SendMiParam<uint8_t>(i+1, 20721, axis_config[i].sync_pre_load_torque); //预载电流偏置

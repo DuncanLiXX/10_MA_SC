@@ -21495,7 +21495,9 @@ void ChannelControl::ProcessSkipMeasure(MiCmdFrame &cmd)
     int64_t data[100];
 
     if(capture_nums > 0 && capture_nums <= 100){
+
         m_p_mi_comm->ReadG31_1_MeasureData(data, capture_nums);
+
 
         for(int i=0; i<capture_nums; i++){
             g31_1_measure_data[i] = data[i] / 10000000.0;

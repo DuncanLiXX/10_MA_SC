@@ -461,7 +461,7 @@ void MICommunication::SendHardLimitState(bool is_positive,uint64_t mask)
 void MICommunication::ReadG31_1_MeasureData(void *data, int count)
 {
 
-    uint8_t * p_addr = (uint8_t *)SHARED_MEM_PMC_LADDER_BASE;
+    uint8_t * p_addr = (uint8_t *)(m_p_shared_base + 0x90000); //SHARED_MEM_PMC_LADDER_BASE;
 
     memcpy(data, p_addr, sizeof(int64_t)*count);
 }

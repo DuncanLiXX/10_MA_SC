@@ -21489,10 +21489,25 @@ void ChannelControl::ProcessSkipMeasure(MiCmdFrame &cmd)
 
     memcpy(&capture_nums, &cmd.data.data[0], 2);
 
-    printf("===== capture_nums: %d\n", capture_nums);
+    //printf("===== capture_nums: %d\n", capture_nums);
 
 
     int64_t data[100];
+
+
+    int axis = -1;
+    for(int i=0; i<8; i++){
+        if(g31_1_axis_mask & (0x01<<i))
+        {
+            axis = i;
+            break;
+        }
+    }
+
+    if(axis == -1)
+    {
+        printf("===== axis cnt != 1\n");
+    }
 
     if(capture_nums > 0 && capture_nums <= 100){
 
@@ -21505,9 +21520,9 @@ void ChannelControl::ProcessSkipMeasure(MiCmdFrame &cmd)
 
             g31_1_measure_work_data[i] = g31_1_measure_data[i];
 
-            TransMachCoordToWorkCoord(g31_1_measure_work_data[i], this->m_channel_status.gmode[14], g31_1_axis_mask);
+            TransMachCoordToWorkCoord(g31_1_measure_work_data[i], this->m_channel_status.gmode[14], axis);
 
-            printf("===== g31_1 count: %d mach: %lf coor: %lf\n", i, g31_1_measure_data[i], g31_1_measure_work_data[i]);
+            //printf("===== g31_1 count: %d mach: %lf coor: %lf\n", i, g31_1_measure_data[i], g31_1_measure_work_data[i]);
 
         }
     }

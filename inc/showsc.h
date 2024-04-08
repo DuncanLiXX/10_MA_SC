@@ -27,6 +27,7 @@ struct ChannelMcStatus;
 struct SCFiveAxisV2Config;
 
 void ScPrintf(const char * fmt,...);
+void ScPrintfTime(const char *s);
 
 const std::string SwitchTopic = "/sc/switch";  // 打印类型选择
 const std::string MarcoSelect = "/sc/marco/select"; //宏选择

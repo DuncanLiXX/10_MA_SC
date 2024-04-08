@@ -3203,6 +3203,10 @@ bool Parser::CreateSkipMessureMsg(const int gcode)
         }
     }
 
+    if(GetCodeData(Q_DATA, data)){
+        ((SkipMeasureMsg *)new_msg)->QData = data;
+    }
+
     m_p_parser_result->Append(new_msg);
 
     ProcessLastBlockRec(new_msg);

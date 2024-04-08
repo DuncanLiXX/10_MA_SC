@@ -715,6 +715,7 @@ public:
     SkipMeasureMsg &operator=(const SkipMeasureMsg &msg);   //赋值运算符
     friend bool operator ==( const SkipMeasureMsg &one, SkipMeasureMsg &two);  //判断运算符
     int PData = 0;
+    double QData = 0.0;
 
 private:
     uint8_t m_n_exec_step;  //执行阶段标志

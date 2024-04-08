@@ -7232,6 +7232,9 @@ bool ChannelControl::ExecuteMessage(){
  * @param msg : 指令消息
  * @return true--成功  false--失败，PL中缓冲已满或者等待运行到位
  */
+// @test
+//static std::chrono::time_point<std::chrono::steady_clock> t1;
+
 bool ChannelControl::ExecuteAuxMsg(RecordMsg *msg){
 
 	AuxMsg *tmp = (AuxMsg *)msg;
@@ -8188,6 +8191,9 @@ bool ChannelControl::ExecuteAuxMsg(RecordMsg *msg){
                 g_ptr_trace->PrintLog(LOG_ALARM, "default:执行的M代码：M%02d", mcode);
                 this->SendMCodeToPmc(mcode, m_index);
 
+                //printf("step 0 ...\n");
+                //t1 = std::chrono::steady_clock::now();
+
                 gettimeofday(&m_time_m_start[m_index], NULL);
                 tmp->IncreaseExecStep(m_index);
 
@@ -8223,7 +8229,10 @@ bool ChannelControl::ExecuteAuxMsg(RecordMsg *msg){
 
                 //llx test
                 gettimeofday(&m_time_test, NULL);
-
+                //std::chrono::time_point<std::chrono::steady_clock> t2 = std::chrono::steady_clock::now();
+                //std::chrono::duration<double> elapsed = t2 - t1;
+                //printf("step 1 ... %lf\n", elapsed.count());
+                //t1 = t2;
                 tmp->IncreaseExecStep(m_index);
 
                 // 如果当前在正转状态下再给M03，那么ProcessPMCSignal就扫描不到变化了
@@ -8241,6 +8250,8 @@ bool ChannelControl::ExecuteAuxMsg(RecordMsg *msg){
                 }
             }else if(tmp->GetExecStep(m_index) == 2){
             	//等待FIN信号
+
+
                 if(this->m_p_g_reg->FIN == 1 || this->GetMFINSig(m_index)) {
                     //gettimeofday(&m_time_m_start[m_index], NULL);   //开始计时
                 }
@@ -8255,9 +8266,16 @@ bool ChannelControl::ExecuteAuxMsg(RecordMsg *msg){
                         time_elpase_test = (time_now_test.tv_sec-m_time_test.tv_sec)*1000000+time_now_test.tv_usec-m_time_test.tv_usec;
                         CreateError(ERR_M_CODE, ERROR_LEVEL, CLEAR_BY_MCP_RESET, mcode, m_n_channel_index);
                         this->m_error_code = ERR_M_CODE;
-                    }else
+                    }else{
+
                         break;
+                    }
                 }
+
+                //std::chrono::time_point<std::chrono::steady_clock> t2 = std::chrono::steady_clock::now();
+                //std::chrono::duration<double> elapsed = t2 - t1;
+                //printf("step 2 ... %lf\n", elapsed.count());
+                //t1 = t2;
                 tmp->IncreaseExecStep(m_index);
             }else if(tmp->GetExecStep(m_index) == 3){
             	if(this->m_p_g_reg->FIN == 0 && !this->GetMFINSig(m_index)){
@@ -8272,6 +8290,10 @@ bool ChannelControl::ExecuteAuxMsg(RecordMsg *msg){
                     break;		//未到延时时间
 
                 this->SetMFSig(m_index, false);    //复位选通信号
+                //std::chrono::time_point<std::chrono::steady_clock> t2 = std::chrono::steady_clock::now();
+                //std::chrono::duration<double> elapsed = t2 - t1;
+                //printf("step 3 ... %lf\n", elapsed.count());
+                //t1 = t2;
                 tmp->IncreaseExecStep(m_index);
 
                 // 收到FIN后再清除通知信号，确保梯图已经读取
@@ -8285,14 +8307,23 @@ bool ChannelControl::ExecuteAuxMsg(RecordMsg *msg){
                 }
             }else if(tmp->GetExecStep(m_index) == 4){
             	//等待FIN信号复位
+                //printf("step4 FIN %d  MFIN %d\n", this->m_p_g_reg->FIN, this->GetMFINSig(m_index));
                 if(this->m_p_g_reg->FIN == 1 || this->GetMFINSig(m_index))
                     break;
 
                 //复位辅助指令信号和DEN信号
                 this->SendMCodeToPmc(0, m_index);
+                //std::chrono::time_point<std::chrono::steady_clock> t2 = std::chrono::steady_clock::now();
+                //std::chrono::duration<double> elapsed = t2 - t1;
+                //printf("step 4 ... %lf\n", elapsed.count());
+                //t1 = t2;
                 tmp->IncreaseExecStep(m_index);
             }else{
             	//this->ExecMCode(tmp, m_index);  //执行某些M代码需要系统执行的动作
+                //std::chrono::time_point<std::chrono::steady_clock> t2 = std::chrono::steady_clock::now();
+                //std::chrono::duration<double> elapsed = t2 - t1;
+                //printf("step 5 ... %lf\n", elapsed.count());
+                //t1 = t2;
                 tmp->SetExecStep(m_index, 0xFF);    //置位结束状态
             }
             break;
@@ -8301,6 +8332,10 @@ bool ChannelControl::ExecuteAuxMsg(RecordMsg *msg){
             bRet = false;
         else{
 
+            //std::chrono::time_point<std::chrono::steady_clock> t2 = std::chrono::steady_clock::now();
+            //std::chrono::duration<double> elapsed = t2 - t1;
+            //printf("step 6 ... %lf\n", elapsed.count());
+            //t1 = t2;
             // PMC 轴运动完成信号复位
             this->m_p_f_reg->EINPA = 0;
             this->m_p_f_reg->EINPB = 0;
@@ -11545,6 +11580,7 @@ bool ChannelControl::ExecuteSkipMeasureMsg(RecordMsg *msg)
         memcpy(&cmd.data.data[2], &axis_mask, sizeof(uint32_t));           //轴mask
         cmd.data.data[4] = this->m_n_channel_index+1;   //MI中通道号从1开始
         cmd.data.data[5] = this->m_p_channel_config->g31_skip_signal_type;    //测量信号类型
+        cmd.data.data[6] = static_cast<uint16_t>(tmp_msg->QData);
         this->m_p_mi_comm->WriteCmd(cmd);
         g31_1_measure_finished = false;
 
@@ -11566,7 +11602,7 @@ bool ChannelControl::ExecuteSkipMeasureMsg(RecordMsg *msg)
         return false;
 
     case 2:{
-        //第三步：等待MI捕获结果或者MC运行到位
+        //第三步：等待MC运行结束通知MI返回测量数据
         if(CheckBlockOverFlag() && ReadMcMoveDataCount() == 0){//MC块到位并且缓冲无数据
             //发送关闭G31指令命令
             MiCmdFrame cmd;

@@ -6495,7 +6495,7 @@ void ParmManager::ActiveChnParam(uint8_t chn_index, uint32_t param_no, ParamValu
             break;
         case 10301:{   //手轮4档的自定义步长
             this->m_sc_channel_config[chn_index].mpg_level4_step = value.value_uint16;
-            if(chn_ctrl->GetManualStep() == MANUAL_STEP_1000) // 如果当前为4档，需要往mi更新步长
+            if(chn_ctrl->GetManualStep() == MANUAL_STEP_500) // 如果当前为4档，需要往mi更新步长
                 chn_engine->SetManualStep(chn_index, 3);
             }
             break;

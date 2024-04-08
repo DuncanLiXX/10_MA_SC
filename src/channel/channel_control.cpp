@@ -5551,7 +5551,7 @@ int ChannelControl::Run(){
         }
         else if(m_n_run_thread_state == WAIT_EXECUTE)
         {
-        	pthread_mutex_lock(&m_mutex_change_state);
+            pthread_mutex_lock(&m_mutex_change_state);
             //printf("locked 10\n");
 
             bf = ExecuteMessage();
@@ -5582,7 +5582,7 @@ int ChannelControl::Run(){
         }
         else if(m_n_run_thread_state == WAIT_RUN)
         {
-        	pthread_mutex_lock(&m_mutex_change_state);
+            pthread_mutex_lock(&m_mutex_change_state);
             //printf("locked 11\n");
 
             bf = m_p_compiler->RunMessage();
@@ -8184,6 +8184,9 @@ bool ChannelControl::ExecuteAuxMsg(RecordMsg *msg){
 
 
             if(tmp->GetExecStep(m_index) == 0){
+
+                //ScPrintfTime("0.SetMCode");
+
                 //TODO 将代码发送给PMC
                 g_ptr_trace->PrintLog(LOG_ALARM, "default:执行的M代码：M%02d", mcode);
                 this->SendMCodeToPmc(mcode, m_index);
@@ -8218,6 +8221,8 @@ bool ChannelControl::ExecuteAuxMsg(RecordMsg *msg){
                 if(time_elpase < 16000)
                     break;		//未到延时时间
 
+                //ScPrintfTime("1.MF=1");
+
                 gettimeofday(&m_time_m_start[m_index], NULL);
                 this->SetMFSig(m_index, true);    //置位选通信号
 
@@ -8240,12 +8245,15 @@ bool ChannelControl::ExecuteAuxMsg(RecordMsg *msg){
                 	m_p_spindle->InputPolar(Polar::Stop);
                 }
             }else if(tmp->GetExecStep(m_index) == 2){
+
             	//等待FIN信号
                 if(this->m_p_g_reg->FIN == 1 || this->GetMFINSig(m_index)) {
                     //gettimeofday(&m_time_m_start[m_index], NULL);   //开始计时
                 }
                 else
                 {
+                    //ScPrintfTime("2.MFIN=0 0->1");
+
                     gettimeofday(&time_now, NULL);
                     time_elpase = (time_now.tv_sec-m_time_m_start[m_index].tv_sec)*1000000+time_now.tv_usec-m_time_m_start[m_index].tv_usec;
                     if(time_elpase > kMCodeTimeout && !this->GetMExcSig(m_index)
@@ -8271,6 +8279,8 @@ bool ChannelControl::ExecuteAuxMsg(RecordMsg *msg){
                 if(time_elpase < 16000)
                     break;		//未到延时时间
 
+                //ScPrintfTime("3.MFIN 0->1");
+
                 this->SetMFSig(m_index, false);    //复位选通信号
                 tmp->IncreaseExecStep(m_index);
 
@@ -8287,6 +8297,8 @@ bool ChannelControl::ExecuteAuxMsg(RecordMsg *msg){
             	//等待FIN信号复位
                 if(this->m_p_g_reg->FIN == 1 || this->GetMFINSig(m_index))
                     break;
+
+                //ScPrintfTime("4.MFIN close 0->1");
 
                 //复位辅助指令信号和DEN信号
                 this->SendMCodeToPmc(0, m_index);

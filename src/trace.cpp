@@ -51,6 +51,12 @@ TraceInfo::TraceInfo() :
 
 	pthread_mutex_init(&m_mutex, NULL);
 
+    // topic 形式的数据监控
+    GetHostAddressFrmFile();
+    mosqpp::lib_init();
+    m_topic_mosq.connect(m_topic_dest.c_str());
+    m_topic_mosq.loop_start();
+
 	//创建保存目录
 	char log_file_name[kMaxPathLen] = {0};
 	const char *paths[] = {LOG_PATH, TRACE_PATH, ALARM_PATH};
@@ -105,12 +111,6 @@ TraceInfo::TraceInfo() :
 		perror("Failed to open alarm file!");
 		return;
 	}
-
-    // topic 形式的数据监控
-    GetHostAddressFrmFile();
-    mosqpp::lib_init();
-    m_topic_mosq.connect(m_topic_dest.c_str());
-    m_topic_mosq.loop_start();
 }
 
 //由于m_instance为静态变量，所以系统会自动析构

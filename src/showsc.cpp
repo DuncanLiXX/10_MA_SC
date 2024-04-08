@@ -72,6 +72,25 @@ void ScPrintf(const char * fmt,...)
     showSc.SendMsg(s);
 }
 
+void ScPrintfTime(const char *s)
+{
+    // 获取当前时间戳
+    auto now = std::chrono::system_clock::now();
+
+    // 转换为时间戳的表示
+    std::time_t timestamp = std::chrono::system_clock::to_time_t(now);
+    auto milliseconds = std::chrono::duration_cast<std::chrono::milliseconds>(now.time_since_epoch()) % 1000;
+
+    // 定义时间字符串的格式
+    const int bufferSize = 30;
+    char buffer[bufferSize];
+    std::strftime(buffer, bufferSize, "(%H:%M:%S)", std::localtime(&timestamp));
+
+    // 附加毫秒部分到时间字符串
+    std::sprintf(buffer + strlen(buffer), ".%03ld", milliseconds.count());
+    ScPrintf("%s %s",s,buffer);
+}
+
 void ShowSc::ProcessPrintThread()
 {
     while(1){

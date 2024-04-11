@@ -11610,6 +11610,15 @@ bool ChannelControl::ExecuteSkipMeasureMsg(RecordMsg *msg)
     case 2:{
         //第三步：等待MC运行结束通知MI返回测量数据
         if(CheckBlockOverFlag() && ReadMcMoveDataCount() == 0){//MC块到位并且缓冲无数据
+            if(!this->m_b_mc_on_arm)
+                this->m_p_mc_comm->ReadAxisIntpPos(m_n_channel_index, m_channel_mc_status.intp_pos, m_channel_mc_status.intp_tar_pos);
+            else
+                this->m_p_mc_arm_comm->ReadAxisIntpPos(m_n_channel_index, m_channel_mc_status.intp_pos, m_channel_mc_status.intp_tar_pos);
+
+            this->RefreshAxisIntpPos();
+
+            this->m_p_compiler->SetCurPos(this->m_channel_mc_status.intp_pos);   //同步编译器位置
+
             //发送关闭G31指令命令
             MiCmdFrame cmd;
             memset(&cmd, 0x00, sizeof(cmd));

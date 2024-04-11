@@ -280,7 +280,7 @@ void ToolCompensate::ProcessData(ListNode<RecordMsg *> *node){
 
 			if(interp.isCompOn){
 
-				if(msg_type == SKIP_MSG){
+                if(msg_type == SKIP_MSG || msg_type == SKIP_MEASURE_MSG){
 					err_code = G31_NOT_ALLOWED;
 					return;
 				}

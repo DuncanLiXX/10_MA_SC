@@ -48,6 +48,7 @@ const map<int, SDLINK_SPEC> ChannelEngine::m_SDLINK_MAP =
     {5,     {"SD-LINK-B2",  7-3,    8,      true}},
     {6,     {"SD-LINK-E2",  12-3,   11,     true}},
     {7,     {"SD_LINK-B3", 3,       6,      false}},
+    {8,     {"SD-LINK-B4/B5", 7-3,  12,     true}},
 };
 
 const uint32_t MC_UPDATE_BLOCK_SIZE = 100;		//MC升级文件帧，每帧包含100字节数据,50个uint16

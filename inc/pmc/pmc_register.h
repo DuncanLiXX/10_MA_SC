@@ -839,8 +839,7 @@ struct GRegBits{
 	//G42
 	uint8_t :8;
 	//G43
-	uint8_t MD:3;       //方式选择，等同于fanuc的MD1/MD2/MD4   G43.0~G43.2
-	uint8_t :5;
+    uint8_t MD:8;       //方式选择，等同于fanuc的MD1/MD2/MD4   G43.0~G43.2
 	//G44
 	uint8_t BDT1:1;     //跳段信号    G44.0
     uint8_t MLK:1;      //所有轴机床锁住信号 G44.1

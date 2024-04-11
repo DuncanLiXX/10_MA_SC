@@ -6473,12 +6473,6 @@ bool ChannelControl::OutputData(RecordMsg *msg, bool flag_block){
         }
 
 
-        printf("data frame : %lld %lld %lld",
-        		data_frame.data.pos0,
-				data_frame.data.pos1,
-				data_frame.data.pos2);
-
-
         break;
     default:
         break;
@@ -8019,7 +8013,7 @@ bool ChannelControl::ExecuteAuxMsg(RecordMsg *msg){
             //		this->ProcessGrindM68(tmp);
             //		break;
 #endif
-        case 62://开始数据采集
+        case 21://开始数据采集
         {
             if(tmp->GetExecStep(m_index) == 0){
                 if (g_ptr_chn_engine->m_serverGuide.IsIdle())
@@ -8043,7 +8037,7 @@ bool ChannelControl::ExecuteAuxMsg(RecordMsg *msg){
             }
         }
         break;
-        case 63://结束数据采集
+        case 22://结束数据采集
         {
             g_ptr_chn_engine->m_serverGuide.PauseRecord();
             tmp->SetExecStep(m_index, 0xFF);    //置位结束状态
@@ -11435,7 +11429,7 @@ bool ChannelControl::ExecuteSkipMsg(RecordMsg *msg){
         return false;
     case 2:{
         //第三步：等待MI捕获结果或者MC运行到位
-        if(m_b_pos_captured){//MI未捕获到信号
+        if(m_b_pos_captured){//MI捕获到信号
 
             //给MC发送停止命令
             if(!m_b_mc_need_start)  //已经发送了MC启动命令才发送G31停止
@@ -22079,7 +22073,12 @@ bool ChannelControl::CallMacroProgram(uint16_t macro_index){
 
         char cmd_buf[256];
         memset (cmd_buf, 0x00, 256);
-        sprintf(cmd_buf, "G65P%hu", macro_index);
+        if(mode == AUTO_MODE){
+            return false;
+            sprintf(cmd_buf, "G65P%hu\nM30\n", macro_index);
+        }else{
+            sprintf(cmd_buf, "G65P%hu\n", macro_index);
+        }
 
         //打开MDA对应的NC文件
         int fp = open(m_str_mda_path, O_CREAT|O_TRUNC|O_WRONLY); //打开文件

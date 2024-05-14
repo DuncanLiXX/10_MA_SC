@@ -464,8 +464,8 @@ bool Compiler::SaveScene() {
  */
 bool Compiler::ReloadScene(bool bRecPos){
     CompilerScene scene;
-    DPointChn pos_tmp;
-    ModeCollect mode_tmp;
+    //DPointChn pos_tmp;
+    //ModeCollect mode_tmp;
 
     // @test zk
     printf("===== reload scene !!!\n");
@@ -488,15 +488,13 @@ bool Compiler::ReloadScene(bool bRecPos){
         *m_p_file_map_info = scene.file_map_info;
     }
 
-    if(!bRecPos){
-        pos_tmp = m_compiler_status.cur_pos;
-    }
+//    if(!bRecPos){
+//        pos_tmp = m_compiler_status.cur_pos;
+//    }
 
     //宏程序调用有部分模态不用恢复
     // @modify zk  测试得到 M98 类型为SUB_PROG G65 P、固定循环 类型为 MACRO_PROG
-    if(this->m_n_sub_program == MACRO_PROG){
-        mode_tmp = this->m_compiler_status.mode;
-    }
+//    mode_tmp = this->m_compiler_status.mode;
 
 
     scene.file_map_info.Clear();  //防止后面delete scene时将文件映射关闭
@@ -508,7 +506,7 @@ bool Compiler::ReloadScene(bool bRecPos){
 
     // 要实现子程序调用 固定循环保持模态 注释这个条件  但不知道会不会引发其他问题
     // if(this->m_n_sub_program != SUB_PROG) //子程序调用不用恢复模态
-    this->m_compiler_status = scene.compiler_status;
+    //this->m_compiler_status = scene.compiler_status;
 
     this->m_n_compile_state = scene.file_state;
     this->m_n_head_state = scene.head_state;
@@ -538,17 +536,17 @@ bool Compiler::ReloadScene(bool bRecPos){
     //	printf("reload compiler scene, spd_count=%d, scene=%d\n", m_p_list_spd_start->GetLength(), scene.list_spd_start.GetLength());
 #endif
 
-    if(!bRecPos){
-        this->m_compiler_status.cur_pos = pos_tmp;
-    }
+//    if(!bRecPos){
+//        this->m_compiler_status.cur_pos = pos_tmp;
+//    }
 
-    //宏程序调用有部分模态不用恢复
-    if(this->m_n_sub_program == MACRO_PROG){
-        this->m_compiler_status.mode.d_mode = mode_tmp.d_mode;
-        this->m_compiler_status.mode.h_mode = mode_tmp.h_mode;
-        this->m_compiler_status.mode.t_mode = mode_tmp.t_mode;
-        this->m_compiler_status.mode.f_mode = mode_tmp.f_mode;
-    }
+//    //宏程序调用有部分模态不用恢复
+//    if(this->m_n_sub_program == MACRO_PROG){
+//        this->m_compiler_status.mode.d_mode = mode_tmp.d_mode;
+//        this->m_compiler_status.mode.h_mode = mode_tmp.h_mode;
+//        this->m_compiler_status.mode.t_mode = mode_tmp.t_mode;
+//        this->m_compiler_status.mode.f_mode = mode_tmp.f_mode;
+//    }
 
     if (same_file) {
         m_p_file_map_info->JumpTo(this->m_ln_read_size);
@@ -559,8 +557,18 @@ bool Compiler::ReloadScene(bool bRecPos){
 
     if(strstr(m_p_file_map_info->str_file_name, "/cnc/nc_files/sys_sub/") != NULL){
         m_in_sys_sub = true;
+        m_in_sys_mac_sub = true;
     }else{
         m_in_sys_sub = false;
+        if(strstr(m_p_file_map_info->str_file_name, "/cnc/nc_files/mac_sub/") != NULL)
+        {
+            m_in_sys_mac_sub = true;
+        }
+        else
+        {
+            m_in_sys_mac_sub = false;
+        }
+
         //  恢复设置值
 
         if(!m_p_parser->flag_end_prog_call){
@@ -576,6 +584,8 @@ bool Compiler::ReloadScene(bool bRecPos){
             m_p_parser->flag_end_prog_call = false;
         }
     }
+
+
 
     return true;
 }
@@ -1417,8 +1427,13 @@ bool Compiler::OpenFile(const char *file, bool sub_flag) {
 
     if(strstr(file, "/cnc/nc_files/sys_sub/") != NULL){
         m_in_sys_sub = true;
+        m_in_sys_mac_sub = true;
+    }else if(strstr(file, "/cnc/nc_files/mac_sub/") != NULL){
+        m_in_sys_sub = false;
+        m_in_sys_mac_sub = true;
     }else{
         m_in_sys_sub = false;
+        m_in_sys_mac_sub = false;
     }
 
     //PreScan();
@@ -2300,6 +2315,38 @@ bool Compiler::RunAuxMsg(RecordMsg *msg) {
     uint8_t count = tmp->GetMCount();
 
     for(uint8_t i = 0; i < count; i++){
+        int mcode = tmp->GetMCode(i);
+
+        if(!m_in_sys_mac_sub)
+        {
+            // M代码重映射处理
+            // 处理逻辑:
+            // 1.sys_sub以及mac_sub中的文件使用内部的M代码标准，不受重映射功能影响
+            // 2.其他文件下，被映射的点位原来的M代码功能失效
+            //   例如: M18->M8 那么，该M代码跳过执行(设为-1)
+            map<int16_t, int16_t>::iterator iter;
+            iter = m_p_channel_control->mcode_map.find(mcode);
+
+            if(iter != m_p_channel_control->mcode_map.end()){
+                tmp->RemapMCode(i, iter->second);
+                ScPrintf("remap mcode:%d ---> %d\n", iter->first, iter->second);
+            }
+            else
+            {
+                iter = m_p_channel_control->mcode_map_rev.find(mcode);
+                if(iter != m_p_channel_control->mcode_map_rev.end()){
+                    tmp->RemapMCode(i, -1);
+                }
+            }
+
+            //    map<int16_t, int16_t>::iterator iter = m_p_channel_control->mcode_map.begin();
+
+            //    while (iter != m_p_channel_control->mcode_map.end()) {
+            //        ScPrintf("%d ---> %d\n", iter->first, iter->second);
+            //        iter ++;
+            //    }
+        }
+
         switch (tmp->GetMCode(i)) {
         case 30:  	//M30
         case 2:		//M02

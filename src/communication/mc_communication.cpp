@@ -228,6 +228,7 @@ bool MCCommunication::WriteGCodeData(uint8_t chn, GCodeFrame &data){
 	if(count >= kMaxGCodeFifoCount)
 		return false;   //FIFO数据满，无法写入
 
+    //ScPrintf("pos[%lld,%lld,%lld]", data.data.pos0,data.data.pos1,data.data.pos2);
 	//printf("arc radius: %lld\n", data.data.arc_radius);
 	WriteRegister(MC_GCODE_WRITE_OVER(chn), 0);  //写入前置零
 

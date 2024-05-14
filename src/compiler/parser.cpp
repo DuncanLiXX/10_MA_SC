@@ -2121,26 +2121,20 @@ bool Parser::CreateAuxMsg(int *mcode, uint8_t total){
 			return false;
 		}
 
-        // M代码重映射处理
-        int16_t tmp = *(mcode + i);
+//        // M代码重映射处理
+//        int16_t tmp = *(mcode + i);
 
-        printf("===== Parser::CreateAuxMsg %d\n", tmp);
+//        printf("===== Parser::CreateAuxMsg %d\n", tmp);
 
-        map<int16_t, int16_t>::iterator iter;
-        iter = m_p_channel_control->mcode_map.find(tmp);
+//        map<int16_t, int16_t>::iterator iter;
+//        iter = m_p_channel_control->mcode_map.find(tmp);
 
-        if(iter != m_p_channel_control->mcode_map.end()){
-            tmp = iter->second;
-            *(mcode + i) = tmp;
-        }
+//        if(iter != m_p_channel_control->mcode_map.end()){
+//            tmp = iter->second;
+//            *(mcode + i) = tmp;
+//            ScPrintf("remap mcode:%d ---> %d\n", iter->first, iter->second);
+//        }
 	}
-
-    map<int16_t, int16_t>::iterator iter = m_p_channel_control->mcode_map.begin();
-
-    while (iter != m_p_channel_control->mcode_map.end()) {
-        printf("%d ---> %d\n", iter->first, iter->second);
-        iter ++;
-    }
 
     if((*mcode == 30 || *mcode == 2) && !m_p_channel_control->b_in_end_prog){
 

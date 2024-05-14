@@ -561,7 +561,7 @@ bool HMICommunication::SendCmdToIp(HMICmdRecvNode &cmd_node){
 //#ifdef USES_MODBUS_PROTOCAL
 //	cmd_node.ip_addr.sin_port = htons(PORT_UDP_CMD_SEND);  //更改端口
 //#endif
-	cmd_node.ip_addr.sin_port = this->m_addr_udp_hmi.sin_port;  //更改端口
+    cmd_node.ip_addr.sin_port = this->m_addr_udp_hmi.sin_port;  //更改端口
 
 	//发送UDP包
 	int len = kHmiCmdHeadLen+cmd.data_len;
@@ -574,19 +574,19 @@ bool HMICommunication::SendCmdToIp(HMICmdRecvNode &cmd_node){
 
 #ifndef USES_MODBUS_PROTOCAL
     //将UDP命令包（响应包除外）放入重发队列
-	if((cmd.frame_number & 0x8000) == 0){//非响应包
-		HMICmdResendNode *pNode = new HMICmdResendNode();
-		if(pNode != NULL){
-			pNode->frame = cmd;
-			pNode->resend_count = kHmiCmdResend;
-			pNode->timeout = kHmiCmdTimeout;
+    if((cmd.frame_number & 0x8000) == 0){//非响应包
+        HMICmdResendNode *pNode = new HMICmdResendNode();
+        if(pNode != NULL){
+            pNode->frame = cmd;
+            pNode->resend_count = kHmiCmdResend;
+            pNode->timeout = kHmiCmdTimeout;
 
-			m_list_send->Append(pNode);  //此处只做添加，可以不用m_mutex_udp_send互斥，因为内部已互斥
+            m_list_send->Append(pNode);  //此处只做添加，可以不用m_mutex_udp_send互斥，因为内部已互斥
 //			if(ListNode<HMICmdResendNode *>::new_count > 0)
 //				printf("HMICmdResendNode new count :%d\n", ListNode<HMICmdResendNode *>::new_count);
-		}
+        }
 
-	}
+    }
 #endif
 
 	return true;

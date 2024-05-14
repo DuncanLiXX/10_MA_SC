@@ -149,6 +149,7 @@ ChannelControl::ChannelControl() {
     for(int i=0; i<300; i++){
         if(custom_mcode[i] > 0 && system_mcode[i] > 0){
             mcode_map.insert(pair<int16_t, int16_t>(custom_mcode[i], system_mcode[i]));
+            mcode_map_rev.insert(pair<int16_t, int16_t>(system_mcode[i], custom_mcode[i]));
         }
     }
 
@@ -4528,9 +4529,11 @@ void ChannelControl::ProcessHmiSetMcodeMap(HMICmdFrame &cmd)
 
     // 更新映射   重新生成map
     mcode_map.clear();
+    mcode_map_rev.clear();
     for(int i=0; i<300; i++){
         if(custom_mcode[i] > 0 && system_mcode[i] > 0){
             mcode_map.insert(pair<int16_t, int16_t>(custom_mcode[i], system_mcode[i]));
+            mcode_map_rev.insert(pair<int16_t, int16_t>(system_mcode[i], custom_mcode[i]));
         }
 
     }
@@ -4573,9 +4576,11 @@ void ChannelControl::ProcessHmiSetMcodeSystem(HMICmdFrame &cmd)
 
     // 更新映射   重新生成map
     mcode_map.clear();
+    mcode_map_rev.clear();
     for(int i=0; i<300; i++){
         if(custom_mcode[i] > 0 && system_mcode[i] > 0){
             mcode_map.insert(pair<int16_t, int16_t>(custom_mcode[i], system_mcode[i]));
+            mcode_map_rev.insert(pair<int16_t, int16_t>(system_mcode[i], custom_mcode[i]));
         }
 
     }
@@ -7236,6 +7241,8 @@ bool ChannelControl::ExecuteAuxMsg(RecordMsg *msg){
     uint8_t m_index = 0;
     int mcode = 0;
 
+
+
     if(this->m_n_restart_mode != NOT_RESTART &&
     		main_prog_line_number < this->m_n_restart_line
         #ifdef USES_ADDITIONAL_PROGRAM
@@ -7245,6 +7252,8 @@ bool ChannelControl::ExecuteAuxMsg(RecordMsg *msg){
 
     	for(m_index = 0; m_index < m_count; m_index++){
             mcode = tmp->GetMCode(m_index);
+            if(mcode == -1)
+                continue;
 
             if(mcode == 6){//换刀
                 this->m_mode_restart.cur_tool = this->m_mode_restart.cur_tcode;
@@ -7404,6 +7413,9 @@ bool ChannelControl::ExecuteAuxMsg(RecordMsg *msg){
             continue;       //已执行完成则直接跳过
 
         mcode = tmp->GetMCode(m_index);
+        if(mcode == -1)
+            continue;
+
 
         if(mcode != 300) // M300不需要显示
             NotifyHmiMCode(mcode);
@@ -9357,21 +9369,27 @@ bool ChannelControl::ExecuteModeMsg(RecordMsg *msg){
         return true;
     }
 
-    int count = 0;
-    while(count < 4 ){
-        //printf("ReadMcMoveDataCount: %d CheckBlockOverFlag: %d\n", ReadMcMoveDataCount(), CheckBlockOverFlag());
-        if(this->ReadMcMoveDataCount() > 0 || !this->CheckBlockOverFlag() ||
-                m_channel_status.machining_state == MS_PAUSED ||
-                m_channel_status.machining_state == MS_WARNING){
+    if(m_channel_status.machining_state == MS_PAUSED ||
+            m_channel_status.machining_state == MS_WARNING){
 
-            return false;    //还未运行到位
-        }
-        else{
-            count++;
-            //			printf("ExecuteModeMsg: step=%d, %d, c = %d\n", m_channel_mc_status.step_over,m_channel_mc_status.auto_block_over, count);
-            usleep(5000);   //等待5ms，因为MC状态更新周期为5ms，需要等待状态确认
-        }
+        return false;    //还未运行到位
     }
+
+//    int count = 0;
+//    while(count < 4 ){
+//        //printf("ReadMcMoveDataCount: %d CheckBlockOverFlag: %d\n", ReadMcMoveDataCount(), CheckBlockOverFlag());
+//        if(/*this->ReadMcMoveDataCount() > 0 || !this->CheckBlockOverFlag() ||*/
+//                m_channel_status.machining_state == MS_PAUSED ||
+//                m_channel_status.machining_state == MS_WARNING){
+
+//            return false;    //还未运行到位
+//        }
+//        else{
+//            count++;
+//            //			printf("ExecuteModeMsg: step=%d, %d, c = %d\n", m_channel_mc_status.step_over,m_channel_mc_status.auto_block_over, count);
+//            usleep(5000);   //等待5ms，因为MC状态更新周期为5ms，需要等待状态确认
+//        }
+//    }
 
     //单段模式
     if(this->IsStepMode()){
@@ -13716,6 +13734,7 @@ void ChannelControl::SetMcAxisOrigin(uint8_t axis_index){
  * @param axis_index : 轴号索引，从0开始
  */
 void ChannelControl::SetMcAxisOrigin(uint8_t axis_index, int64_t origin_pos){
+    ScPrintf("SetMcAxisOrigin(%u, %lld)",axis_index,origin_pos);
     McCmdFrame cmd;
     memset(&cmd, 0x00, sizeof(McCmdFrame));
 

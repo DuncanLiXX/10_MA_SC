@@ -495,11 +495,13 @@ public:
 
     // 保存断点
     void saveBreakPoint(bool force_save = false);
+
     char brk_file_name[256];
     uint32_t brk_line_number;
-    // M 代码映射表
+    // M 代码映射表  外部->内部
     std::map<int16_t, int16_t> mcode_map;
-
+    // M 代码映射表  内部->外部
+    std::map<int16_t, int16_t> mcode_map_rev;
 
 
 private:
@@ -757,7 +759,6 @@ private:
 	void ActiveTwiningFunc(int active);   //开关缠绕功能
 #endif
 	void setOrderIndex(int index);
-
 
 private://私有成员变量
 	uint8_t m_n_channel_index;   //通道索引号

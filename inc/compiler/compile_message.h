@@ -429,7 +429,8 @@ public:
 	virtual void PrintString();   //用于程序调试
 
 	int GetMCode(uint8_t index=0){return index<m_n_m_count?m_n_m_code[index]:-1;}   //返回M代码值,失败返回-1
-	uint8_t GetMCount(){return m_n_m_count;}   //返回M代码个数
+    void RemapMCode(uint8_t index,int mcode){m_n_m_code[index] = mcode;}
+    uint8_t GetMCount(){return m_n_m_count;}   //返回M代码个数
 
 	uint8_t GetExecStep(uint8_t index){return index<m_n_m_count?m_n_aux_exec_segment[index]:-1;}		//获取当前步骤，失败返回-1
 	void SetExecStep(uint8_t index, uint8_t step){if(index < m_n_m_count) m_n_aux_exec_segment[index] = step;} //设置执行步骤

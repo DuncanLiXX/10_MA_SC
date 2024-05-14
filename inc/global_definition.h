@@ -40,7 +40,7 @@
 
 //#define USES_TOOL_COMPENSATE    //支持刀具半径补偿
 
-#define USES_MODBUS_PROTOCAL   //支持组态通讯协议
+#define USES_MODBUS_PROTOCAL   //支持组态通讯协议 ----已弃用
 
 #define USES_PHYSICAL_MOP       //使用实体MOP
 

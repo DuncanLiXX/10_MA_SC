@@ -37,7 +37,6 @@ struct ChannelStatusCollect{
 	int32_t rated_spindle_speed;           	//用户设定主轴转速，单位：转/分
 	uint32_t rated_feed; 				//用户设定进给速度，单位：um/s
 	uint16_t gmode[kMaxGModeCount];     //G指令模态通道当前模态
-    uint8_t gmode_update;           //G模态是否有更新
 	uint8_t chn_work_mode;			    //通道模式, 自动、MDA、手动、手轮
 	uint8_t machining_state;       	    //加工状态
 	uint8_t cur_tool;               //当前刀号，从1开始编号，0为主轴刀号

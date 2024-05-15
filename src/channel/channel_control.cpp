@@ -9348,6 +9348,7 @@ bool ChannelControl::ExecuteModeMsg(RecordMsg *msg){
     //		}
     //	}
     ModeMsg *modemsg = (ModeMsg *)msg;
+    int cmd = modemsg->GetGCode();
 
     if(this->m_n_restart_mode != NOT_RESTART &&
     		main_prog_line_number < this->m_n_restart_line
@@ -9355,7 +9356,6 @@ bool ChannelControl::ExecuteModeMsg(RecordMsg *msg){
             && this->m_n_add_prog_type == NONE_ADD      //非附加程序运行状态
         #endif
             ){//加工复位
-        int cmd = modemsg->GetGCode();
         //	this->m_mode_restart.pos_target = loopmsg->GetTargetPos();
         this->m_mode_restart.gmode[GetModeGroup(cmd)] = cmd;
         if(cmd == G91_CMD)
@@ -9375,21 +9375,25 @@ bool ChannelControl::ExecuteModeMsg(RecordMsg *msg){
         return false;    //还未运行到位
     }
 
-//    int count = 0;
-//    while(count < 4 ){
-//        //printf("ReadMcMoveDataCount: %d CheckBlockOverFlag: %d\n", ReadMcMoveDataCount(), CheckBlockOverFlag());
-//        if(/*this->ReadMcMoveDataCount() > 0 || !this->CheckBlockOverFlag() ||*/
-//                m_channel_status.machining_state == MS_PAUSED ||
-//                m_channel_status.machining_state == MS_WARNING){
 
-//            return false;    //还未运行到位
-//        }
-//        else{
-//            count++;
-//            //			printf("ExecuteModeMsg: step=%d, %d, c = %d\n", m_channel_mc_status.step_over,m_channel_mc_status.auto_block_over, count);
-//            usleep(5000);   //等待5ms，因为MC状态更新周期为5ms，需要等待状态确认
-//        }
-//    }
+    if(GetModeGroup(cmd) != 3)
+    {
+        int count = 0;
+        while(count < 4 ){
+            //printf("ReadMcMoveDataCount: %d CheckBlockOverFlag: %d\n", ReadMcMoveDataCount(), CheckBlockOverFlag());
+            if(this->ReadMcMoveDataCount() > 0 || !this->CheckBlockOverFlag() ||
+                    m_channel_status.machining_state == MS_PAUSED ||
+                    m_channel_status.machining_state == MS_WARNING){
+
+                return false;    //还未运行到位
+            }
+            else{
+                count++;
+                //			printf("ExecuteModeMsg: step=%d, %d, c = %d\n", m_channel_mc_status.step_over,m_channel_mc_status.auto_block_over, count);
+                usleep(5000);   //等待5ms，因为MC状态更新周期为5ms，需要等待状态确认
+            }
+        }
+    }
 
     //单段模式
     if(this->IsStepMode()){
@@ -9413,7 +9417,7 @@ bool ChannelControl::ExecuteModeMsg(RecordMsg *msg){
 
 
     bool flag = this->m_n_hw_trace_state==REVERSE_TRACE?true:false;    //是否反向引导
-    int cmd = flag?modemsg->GetLastGCode():modemsg->GetGCode();
+    //int cmd = flag?modemsg->GetLastGCode():modemsg->GetGCode();
     //	printf("execute mode message1 : cmd = %d\n", cmd);
 
 
@@ -13734,7 +13738,7 @@ void ChannelControl::SetMcAxisOrigin(uint8_t axis_index){
  * @param axis_index : 轴号索引，从0开始
  */
 void ChannelControl::SetMcAxisOrigin(uint8_t axis_index, int64_t origin_pos){
-    ScPrintf("SetMcAxisOrigin(%u, %lld)",axis_index,origin_pos);
+    //ScPrintf("SetMcAxisOrigin(%u, %lld)",axis_index,origin_pos);
     McCmdFrame cmd;
     memset(&cmd, 0x00, sizeof(McCmdFrame));
 

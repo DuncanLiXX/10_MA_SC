@@ -1335,63 +1335,62 @@ bool MICommunication::SetPmcRegWord(const int reg_type, const uint16_t value){
  * @param share
  * @return
  */
-bool MICommunication::ReadPmcReg(int sec, uint8_t *reg){
+bool MICommunication::ReadPmcReg(int sec, uint8_t *reg,int index, int size){
 	//读取PMC寄存器，按地址段读取
 	uint32_t addr;
-	int size = 0;   //字节数
 	switch(sec){
 	case PMC_REG_X:
 		addr = SHARED_MEM_REG_TO_NC_X;
-		size = X_REG_COUNT;
+        size = size==0?X_REG_COUNT:size;
 		break;
 	case PMC_REG_Y:
 		addr = SHARED_MEM_REG_TO_NC_Y;
-		size = Y_REG_COUNT;
+        size = size==0?Y_REG_COUNT:size;
 		break;
 	case PMC_REG_G:
 		addr = SHARED_MEM_REG_TO_NC_G;
-		size = G_REG_COUNT;
+        size = size==0?G_REG_COUNT:size;
 		break;
 	case PMC_REG_R:
 		addr = SHARED_MEM_REG_TO_NC_R;
-		size = R_REG_COUNT;
+        size = size==0?R_REG_COUNT:size;
 		break;
 	case PMC_REG_K:
 		addr = SHARED_MEM_REG_TO_NC_K;
-		size = K_REG_COUNT;
+        size = size==0?K_REG_COUNT:size;
 		break;
 	case PMC_REG_A:
 		addr = SHARED_MEM_REG_TO_NC_A;
-		size = A_REG_COUNT;
+        size = size==0?A_REG_COUNT:size;
 		break;
 	case PMC_REG_D:
 		addr = SHARED_MEM_REG_TO_NC_D;
 #ifndef USES_PMC_2_0
-		size = D_REG_COUNT * 2;
+        size = size==0?D_REG_COUNT * 2:size;
 #else
-		size = D_REG_COUNT;
+        size = size==0?D_REG_COUNT:size;
 #endif
 		break;
 	case PMC_REG_C:
 		addr = SHARED_MEM_REG_TO_NC_C;
 #ifndef USES_PMC_2_0
-		size = C_REG_COUNT * 2;
+        size = size==0?C_REG_COUNT * 2:size;
 #else
-		size = C_REG_COUNT * 4;
+        size = size==0?C_REG_COUNT * 4:size;
 #endif
 		break;
 	case PMC_REG_T:
 		addr = SHARED_MEM_REG_TO_NC_T;
-		size = T_REG_COUNT * 2;
+        size = size==0?T_REG_COUNT * 2:size;
 		break;
 #ifndef USES_PMC_2_0
 	case PMC_REG_DC:
 		addr = SHARED_MEM_REG_TO_NC_DC;
-		size = C_REG_COUNT * 2;
+        size = size==0?C_REG_COUNT * 2:size;
 		break;
 	case PMC_REG_DT:
 		addr = SHARED_MEM_REG_TO_NC_DT;
-		size = T_REG_COUNT * 2;
+        size = size==0?T_REG_COUNT * 2:size;
 		break;
 #else
 //    case PMC_REG_T_C:
@@ -1404,14 +1403,16 @@ bool MICommunication::ReadPmcReg(int sec, uint8_t *reg){
 //        break;
 	case PMC_REG_E:
 		addr = SHARED_MEM_REG_TO_NC_E;
-		size = E_REG_COUNT;
+        size = size==0?E_REG_COUNT:size;
 		break;
 #endif
 	default:
 		g_ptr_trace->PrintTrace(TRACE_ERROR, MI_COMMUNICATION_SC, "无法读取的PMC寄存器类型[%d]", sec);
 		return false;
 	}
+    addr += index;
     int8_t *virt_addr = (int8_t*) (m_p_shared_base + ( addr & kSharedMemMapMask));
+    reg += index;
 
 	memcpy(reg, virt_addr, size);
 
@@ -1445,11 +1446,10 @@ bool MICommunication::ReadPmcPeriod(){
  * @param reg
  * @return
  */
-bool MICommunication::WritePmcReg(int sec, uint8_t *reg){
+bool MICommunication::WritePmcReg(int sec, uint8_t *reg,int index, int size){
 	//写入PMC寄存器，按地址段写入
 	//读取PMC寄存器，按地址段读取
 	uint32_t addr;
-	int size = 0;   //字节数
 	switch(sec){
 //	case PMC_REG_X:
 //		addr = SHARED_MEM_REG_TO_NC_X;
@@ -1461,7 +1461,7 @@ bool MICommunication::WritePmcReg(int sec, uint8_t *reg){
 //		break;
 	case PMC_REG_F:
 		addr = SHARED_MEM_REG_TO_PMC_F;
-		size = F_REG_COUNT;
+        size = size==0?F_REG_COUNT:size;
 		break;
 //	case PMC_REG_G:
 //		addr = SHARED_MEM_REG_TO_NC_G;
@@ -1503,8 +1503,10 @@ bool MICommunication::WritePmcReg(int sec, uint8_t *reg){
 		g_ptr_trace->PrintTrace(TRACE_ERROR, MI_COMMUNICATION_SC, "无法写入的PMC寄存器类型[%d]", sec);
 		return false;
 	}
+    addr += index;
     int8_t *virt_addr = (int8_t*) (m_p_shared_base + ( addr & kSharedMemMapMask));
 
+    reg += index;
 	memcpy(virt_addr, reg, size);
 
 	return true;

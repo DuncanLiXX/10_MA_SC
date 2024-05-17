@@ -1982,7 +1982,7 @@ bool ParmManager::Read5AxisV2Config(){
         }
         g_ptr_trace->PrintTrace(TRACE_INFO, PARAM_MANAGER, "读取新五轴配置文件成功！\n");
     }else{
-        ScPrintf("Load(FIVEAXIS_V2_CONFIG_FILE) fail");
+        //ScPrintf("Load(FIVEAXIS_V2_CONFIG_FILE) fail");
 
         if(m_ini_5axisV2->CreateFile(FIVEAXIS_V2_CONFIG_FILE)){
             g_ptr_trace->PrintTrace(TRACE_ERROR, PARAM_MANAGER, "创建默认新五轴配置文件失败！\n");

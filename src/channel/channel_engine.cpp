@@ -2085,7 +2085,7 @@ void ChannelEngine::ProcessMcCmdRsp(McCmdFrame &rsp){
     switch(rsp.data.cmd){
     case CMD_MC_SHAKEHANDS:
         if(rsp.data.data[0] == 0x1234 && rsp.data.data[1] == 0x5678){
-        	//握手成功
+            //握手成功
             g_sys_state.module_ready_mask |= MC_READY;  //MC模块就绪
 
 
@@ -3265,9 +3265,9 @@ void ChannelEngine::ProcessHmiCmd(HMICmdFrame &cmd){
     case CMD_HMI_CLEAR_TOTAL_PIECE:    //总共计数清零
     case CMD_HMI_SET_REQUIRE_PIECE:    //设置需求件数
     case CMD_HMI_APPEND_ORDER_LIST:
-	case CMD_HMI_CLEAR_ORDER_LIST:
-	case CMD_HMI_SET_ORDER_INDEX:
-	case CMD_HMI_SET_ORDER_MODE:
+    case CMD_HMI_CLEAR_ORDER_LIST:
+    case CMD_HMI_SET_ORDER_INDEX:
+    case CMD_HMI_SET_ORDER_MODE:
     case CMD_HMI_GET_ORDER_LEN:
     case CMD_HMI_GET_ORDER_FILE:
     case CMD_HMI_MEMSET_MACRO_VALUE:
@@ -3286,9 +3286,9 @@ void ChannelEngine::ProcessHmiCmd(HMICmdFrame &cmd){
     case CMD_HMI_GET_G31_WORK:
     case CMD_HMI_GET_G31_1_MACH:
     case CMD_HMI_GET_G31_1_WORK:
-		this->m_p_channel_control[0].ProcessHmiCmd(cmd);
-		// 暂时不考虑多通道
-		/*if(cmd.channel_index < this->m_p_general_config->chn_count)
+        this->m_p_channel_control[0].ProcessHmiCmd(cmd);
+        // 暂时不考虑多通道
+        /*if(cmd.channel_index < this->m_p_general_config->chn_count)
             m_p_channel_control[cmd.channel_index].ProcessHmiCmd(cmd);
         else if(cmd.channel_index == CHANNEL_ENGINE_INDEX){
             for(int i = 0; i < this->m_p_general_config->chn_count; i++){
@@ -3381,7 +3381,7 @@ void ChannelEngine::ProcessHmiCmd(HMICmdFrame &cmd){
         //        break;
     case CMD_HMI_GET_SYS_INFO:
     {
-    	FILE *stream;
+        FILE *stream;
         float val;
         float temp_value;
         char buf[20] = "";
@@ -3482,13 +3482,13 @@ void ChannelEngine::ProcessHmiCmd(HMICmdFrame &cmd){
 
 void ChannelEngine::ProcessHmiBigFrame(HMICmdFrame &cmd){
 
-	switch(cmd.cmd){
-	case CMD_HMI_SET_MACRO_ARRAY:
-		this->m_p_channel_control[0].ProcessHmiBigFrame(cmd);
-		break;
-	default:
-		break;
-	}
+    switch(cmd.cmd){
+    case CMD_HMI_SET_MACRO_ARRAY:
+        this->m_p_channel_control[0].ProcessHmiBigFrame(cmd);
+        break;
+    default:
+        break;
+    }
 }
 
 /**
@@ -5857,9 +5857,9 @@ bool ChannelEngine::Start(){
 
 
             if(m_p_channel_config[chn].order_prog_mode == 4 &&
-            		m_p_channel_control[chn].m_order_step == 0 &&
-					m_p_channel_control[chn].GetWorkMode() == AUTO_MODE){
-            	m_p_channel_control[chn].SetOrderStep(1);
+                    m_p_channel_control[chn].m_order_step == 0 &&
+                    m_p_channel_control[chn].GetWorkMode() == AUTO_MODE){
+                m_p_channel_control[chn].SetOrderStep(1);
             }
 
             m_p_channel_control[chn].StartRunGCode();
@@ -5886,7 +5886,7 @@ bool ChannelEngine::Pause(){
 // 会导致报警无法停止
             if(m_p_channel_control[0].m_b_dust_eliminate) return true;
 
-        	m_p_channel_control[0].Pause();
+            m_p_channel_control[0].Pause();
             //m_p_channel_control[m_p_channel_mode_group[m_n_cur_chn_group_index].GetChannel(i)].Pause();
         //}
 
@@ -5966,7 +5966,7 @@ bool ChannelEngine::SetWorkMode(uint8_t work_mode){
     for(int i = 0; i < chn_count; i++){
         this->m_p_channel_control[i].SetWorkMode(work_mode);
     }
-*/  
+*/
     if(work_mode != REF_MODE && this->m_b_ret_ref){
         CreateError(ERR_SWITCH_MODE_IN_RET_REF, WARNING_LEVEL, CLEAR_BY_MCP_RESET);
         return false;
@@ -9367,6 +9367,24 @@ bool ChannelEngine::RefreshMiStatusFun(){
         }
 
 
+        if(count % 8 != 0)
+        {   // 快速刷新  更新周期1ms
+            this->m_p_mi_comm->WritePmcReg(PMC_REG_F, p_f_reg, 7,1);    // MF1 - MF16
+            this->m_p_mi_comm->WritePmcReg(PMC_REG_F, p_f_reg, 8,1);
+            this->m_p_mi_comm->WritePmcReg(PMC_REG_F, p_f_reg, 170,2);
+
+            this->m_p_mi_comm->WritePmcReg(PMC_REG_F, p_f_reg, 10,8);   // mcode
+            this->m_p_mi_comm->WritePmcReg(PMC_REG_F, p_f_reg, 144,26);   // mcode
+
+
+            this->m_p_mi_comm->ReadPmcReg(PMC_REG_G, p_g_reg,4,1);    // FIN
+
+            usleep(1000);  //1ms*8周期，比PMC周期相同
+            count++;
+            continue;
+        }
+
+
         //更新写入F寄存器， 更新周期8ms
         this->m_p_mi_comm->WritePmcReg(PMC_REG_F, p_f_reg);
         memcpy(m_g_reg_last.all, p_g_reg, sizeof(m_g_reg_last.all));  //备份G寄存器
@@ -9388,7 +9406,7 @@ bool ChannelEngine::RefreshMiStatusFun(){
 #endif
 
         //读取最新的PMC寄存器值
-        if(count % 10 == 0){	//更新周期80ms
+        if(count % 80 == 0){	//更新周期80ms
             this->m_p_mi_comm->ReadPmcReg(PMC_REG_X, m_p_pmc_reg->GetRegPtr8(PMC_REG_X));
             this->m_p_mi_comm->ReadPmcReg(PMC_REG_Y, m_p_pmc_reg->GetRegPtr8(PMC_REG_Y));
             this->m_p_mi_comm->ReadPmcReg(PMC_REG_R, m_p_pmc_reg->GetRegPtr8(PMC_REG_R));
@@ -9409,7 +9427,7 @@ bool ChannelEngine::RefreshMiStatusFun(){
         Singleton<AxisStatusCtrl>::instance().UpdateSA(m_n_phy_axis_svo_on);
 
         if(!this->m_b_power_off){  //掉电后不处理
-        	debug_flag = 1;
+            debug_flag = 1;
             this->ProcessPmcSignal();
 
             //首先读取轴告警标志
@@ -9590,7 +9608,7 @@ bool ChannelEngine::RefreshMiStatusFun(){
 
             //进行过压，欠压、RTC电压低告警扫描
 #ifndef USES_MAIN_BOARD_10MA_OLD    //老板没有此功能
-            if(count%1000 == 0){
+            if(count%8000 == 0){
                 this->CheckBattery();
             }
 #endif
@@ -9605,7 +9623,7 @@ bool ChannelEngine::RefreshMiStatusFun(){
         this->m_p_mi_comm->WriteAxisHLimitFlag(false, m_hard_limit_negative);
 
         //TODO 更新轴的位置及速度数据
-        if(count%7 == 0){
+        if(count%60 == 0){
             if(!g_sys_state.hmi_comm_ready){  //未连接HMI时在此更新轴当前反馈位置
                 this->SendMonitorData(false, false);
             }
@@ -9613,7 +9631,7 @@ bool ChannelEngine::RefreshMiStatusFun(){
 
 #ifdef USES_LICENSE_FUNC
         //时间校验以及授权校验
-        if(count % 450000 == 0){
+        if(count % (450000*6) == 0){
             //一小时检查一次
 
             //检查系统时间
@@ -9640,7 +9658,7 @@ bool ChannelEngine::RefreshMiStatusFun(){
         }
 #endif
 
-        usleep(8000);  //8ms周期，比PMC周期相同
+        usleep(1000);  //1ms*8周期，比PMC周期相同
         count++;
     }
 
@@ -9789,12 +9807,12 @@ void ChannelEngine::ProcessPmcSignal(){
         }
 
         if(g_reg->ST_EXT && g_reg_last->ST_EXT == 0){
-        	NotifyExternalStartToHmi();
+            NotifyExternalStartToHmi();
         }
 
         if(g_reg->_SP == 0 && g_reg_last->_SP == 1 && f_reg->SPL == 0 && f_reg->STL == 1){ //循环保持
             // 会导致报警无法停止
-        	this->Pause();
+            this->Pause();
         }
 
         // @test zk
@@ -9823,7 +9841,7 @@ void ChannelEngine::ProcessPmcSignal(){
 
         if(g_reg->ERS == 1 && g_reg_last->ERS == 0){
             m_axis_status_ctrl->InputEsp(g_reg->_ESP);
-        	this->SystemReset();
+            this->SystemReset();
         }
 
         // 某个轴机械锁住信号发生了改变
@@ -9879,8 +9897,8 @@ void ChannelEngine::ProcessPmcSignal(){
         // 主轴正转，主轴反转信号
         if(g_reg->SRV != g_reg_last->SRV || g_reg->SFR != g_reg_last->SFR){
 
-        	if(g_reg->SRV == 0 && g_reg->SFR == 0){ // 主轴停
-            	ctrl->GetSpdCtrl()->InputPolar(Spindle::Stop);
+            if(g_reg->SRV == 0 && g_reg->SFR == 0){ // 主轴停
+                ctrl->GetSpdCtrl()->InputPolar(Spindle::Stop);
             }else if(g_reg->SFR == 1){  // 主轴正转
                 ctrl->GetSpdCtrl()->InputPolar(Spindle::Positive);
             }else if(g_reg->SRV == 1){  // 主轴反转
@@ -9930,7 +9948,7 @@ void ChannelEngine::ProcessPmcSignal(){
         }
         // 攻丝回退
         if(g_reg->RTNT != g_reg_last->RTNT){
-        	ctrl->GetSpdCtrl()->InputRTNT(g_reg->RTNT);
+            ctrl->GetSpdCtrl()->InputRTNT(g_reg->RTNT);
         }
         // 换刀信号
         if(g_reg->GTC != g_reg_last->GTC) {
@@ -9956,17 +9974,17 @@ void ChannelEngine::ProcessPmcSignal(){
         //通知类型的信号，只保留一个周期
         {
             // 一个周期梯图无法识别到
-        	if(f_reg_last->RTPT == 1)   // 攻丝回退结束信号
+            if(f_reg_last->RTPT == 1)   // 攻丝回退结束信号
                 f_reg->RTPT = 0;
 
-        	// @zk  满足复位RESET按键信号被梯图扫描到
-        	if(f_reg_last->MERS == 1){   // MDI复位请求
+            // @zk  满足复位RESET按键信号被梯图扫描到
+            if(f_reg_last->MERS == 1){   // MDI复位请求
                 reset_delay_count ++;
             }
 
             if(reset_delay_count >= 10){
-            	f_reg->MERS = 0;
-            	reset_delay_count = 0;
+                f_reg->MERS = 0;
+                reset_delay_count = 0;
             }
 
         }
@@ -9984,7 +10002,7 @@ void ChannelEngine::ProcessPmcSignal(){
 
         //单段信号  SBK
         if(g_reg->SBK != g_reg_last->SBK){
-        	if(g_reg->SBK)
+            if(g_reg->SBK)
                 this->SetFuncState(i, FS_SINGLE_LINE, 1);
             else
                 this->SetFuncState(i, FS_SINGLE_LINE, 0);
@@ -10029,7 +10047,7 @@ void ChannelEngine::ProcessPmcSignal(){
 
         //手动步长信号  MP
         if(g_reg->MP != g_reg_last->MP || !inited){
-        	this->SetManualStep(i, g_reg->MP);
+            this->SetManualStep(i, g_reg->MP);
         }
 
         //手动快速进给选择信号  RT
@@ -10096,15 +10114,15 @@ void ChannelEngine::ProcessPmcSignal(){
         //#endif
 
         if(g_reg_last->ELIMINATE != g_reg->ELIMINATE){
-        	if(g_reg->ELIMINATE == 1){
-        		m_p_channel_control->ProcessEliminate(1);
-        	}
+            if(g_reg->ELIMINATE == 1){
+                m_p_channel_control->ProcessEliminate(1);
+            }
         }
 
         if(g_reg_last->ELIMINATE2 != g_reg->ELIMINATE2){
-        	if(g_reg->ELIMINATE2 == 1){
-        		m_p_channel_control->ProcessEliminate(2);
-        	}
+            if(g_reg->ELIMINATE2 == 1){
+                m_p_channel_control->ProcessEliminate(2);
+            }
         }
 
 
@@ -10119,13 +10137,13 @@ void ChannelEngine::ProcessPmcSignal(){
         //处理PMC宏调用功能
         if(g_reg_last->EMPC == 0 && g_reg->EMPC == 1){  //处理PMC宏调用
             // @test zk 复位信号发生后 pmc有可能调用子程序 要禁止这种情况
-        	if(m_p_pmc_reg->FReg().bits[i].RST != 1)
-        	{
+            if(m_p_pmc_reg->FReg().bits[i].RST != 1)
+            {
                 if(sync_axis_ready){
                     this->m_p_channel_control[0].CallMacroProgram(g_reg->MPCS);
                     f_reg->MPCO = 1;   //调用结束
                 }
-        	}
+            }
         }else if(g_reg_last->EMPC == 1 && g_reg->EMPC == 0){
             f_reg->MPCO = 0;   //信号复位
         }
@@ -10148,30 +10166,30 @@ void ChannelEngine::ProcessPmcSignal(){
 
         //处理手动移动反馈信号灯，7个周期后才开始输出轴移动信号
         if(getAddrValueCount >= 7){
-        	int axisCounts = GetChnControl(i)->GetChnAxisCount();
-        	for(int j=0; j<axisCounts; j++){
-        	    int phy_axis = GetChnControl(i)->GetPhyAxis(j);
-        	    if(m_df_phy_axis_pos_intp[phy_axis]-m_df_phy_axis_pos_intp_last[phy_axis] > 0){  //正向移动
-        	        f_reg->MV |= (0x01<<phy_axis);   //置1
-        	        f_reg->MVD &= ~(0x01<<phy_axis); //置0
-        	       }
-        	    else if(m_df_phy_axis_pos_intp[phy_axis]-m_df_phy_axis_pos_intp_last[phy_axis] < 0){  //负向移动
-        	        f_reg->MV |= 0x01<<phy_axis;     //置1
-        	        f_reg->MVD |= 0x01<<phy_axis;    //置1
-        	    }
-        	    else{  //未移动
-        	        f_reg->MV &= ~(0x01<<phy_axis);  //置0
-        	    }
-        	    m_df_phy_axis_pos_intp_last[phy_axis] = m_df_phy_axis_pos_intp[phy_axis];
-        	}
+            int axisCounts = GetChnControl(i)->GetChnAxisCount();
+            for(int j=0; j<axisCounts; j++){
+                int phy_axis = GetChnControl(i)->GetPhyAxis(j);
+                if(m_df_phy_axis_pos_intp[phy_axis]-m_df_phy_axis_pos_intp_last[phy_axis] > 0){  //正向移动
+                    f_reg->MV |= (0x01<<phy_axis);   //置1
+                    f_reg->MVD &= ~(0x01<<phy_axis); //置0
+                   }
+                else if(m_df_phy_axis_pos_intp[phy_axis]-m_df_phy_axis_pos_intp_last[phy_axis] < 0){  //负向移动
+                    f_reg->MV |= 0x01<<phy_axis;     //置1
+                    f_reg->MVD |= 0x01<<phy_axis;    //置1
+                }
+                else{  //未移动
+                    f_reg->MV &= ~(0x01<<phy_axis);  //置0
+                }
+                m_df_phy_axis_pos_intp_last[phy_axis] = m_df_phy_axis_pos_intp[phy_axis];
+            }
         }
     }
 
     //7个周期后才开始输出轴移动信号
     if(getAddrValueCount >= 7){
-    	getAddrValueCount = 0;
+        getAddrValueCount = 0;
     }else{
-    	getAddrValueCount++;
+        getAddrValueCount++;
     }
 
     //处理轴的限位信号，虽然64个轴的限位信号平均分布在四个通道中，但是处理时不分通道
@@ -10296,7 +10314,7 @@ void ChannelEngine::ProcessPmcSignal(){
         }
         //第一参考点
         if(fabs(m_df_phy_axis_pos_feedback[i]-m_p_axis_config[i].axis_home_pos[0]) < prec){
-        	if(byte < 8)
+            if(byte < 8)
                 freg->ZP11 |= (0x01<<bit);
             else
                 freg->ZP12 |= (0x01<<bit);
@@ -13822,6 +13840,6 @@ void ChannelEngine::ProcessPMCProtect()
 }
 
 void ChannelEngine::refreshOrderList(){
-	m_p_channel_control[0].refreshOrderList();
+    m_p_channel_control[0].refreshOrderList();
 }
 

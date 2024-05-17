@@ -721,7 +721,7 @@ void PmcAxisCtrl::ExecuteCmd(){
                 }
 
                 speed = speed * 1000/60; // 单位转换：mm/min-->um/s
-                ScPrintf("Pmc cmd5, go home: speed = %u, dis=%lld",speed, dis);
+                //ScPrintf("Pmc cmd5, go home: speed = %u, dis=%lld",speed, dis);
 
                 PmcCmdFrame pmc_cmd;
                 pmc_cmd.data.cmd = 0x00;   //绝对坐标模式
@@ -763,7 +763,7 @@ void PmcAxisCtrl::ExecuteCmd(){
             //double cur_pos = m_p_channel_engine->GetPhyAxisMachPosFeedback(axis->axis_index);
             int64_t dis = axis->axis_home_pos[0]*1e7;       //移动距离，单位转换：mm-->0.1nm
 
-            ScPrintf("Pmc cmd7, go home: speed = %u, dis=%lld",speed, dis);
+            //ScPrintf("Pmc cmd7, go home: speed = %u, dis=%lld",speed, dis);
             if(speed < axis->pmc_min_speed || speed > axis->pmc_max_speed)
             {
                 CreateError(ERR_PMC_SPEED_ERROR,

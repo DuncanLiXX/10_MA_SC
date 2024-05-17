@@ -901,8 +901,8 @@ private://私有成员变量
 	const GRegBits *m_p_g_reg;			//本通道G寄存器指针
 
 	struct timeval m_time_m_start[kMaxMCodeInLine];     //M指令执行的开始时间
-	struct timeval m_time_t_start[kMaxTCodeInLine];     //T指令执行的开始时间
-	struct timeval m_time_start_maching;     //开始自动加工的时间，用于加工计时
+    struct timeval m_time_t_start[kMaxTCodeInLine];     //T指令执行的开始时间
+    struct timeval m_time_start_maching;     //开始自动加工的时间，用于加工计时
     int32_t        m_time_remain;            //剩余加工时间
     uint32_t       m_time_curfile_maching;   //当前文件加工时间
     uint32_t       m_cur_workpiece_count;    //当前文件的加工次数

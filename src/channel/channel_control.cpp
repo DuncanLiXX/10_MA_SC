@@ -5445,7 +5445,7 @@ int ChannelControl::Run(){
 						m_n_run_thread_state = ERROR; //编译出错
 					}
 					else
-						usleep(10000);
+                        usleep(8000); // 改为2000us
 				}
 			}else if(m_p_compiler->GetErrorCode() != ERR_NONE)
 			{
@@ -5484,7 +5484,7 @@ int ChannelControl::Run(){
 								g_ptr_trace->PrintTrace(TRACE_WARNING, CHANNEL_CONTROL_SC, "execute message error2, %d\n", m_error_code);
 								m_n_run_thread_state = ERROR; //编译出错
 							}else{  //执行未成功，转换为WAIT_EXECUTE状态
-								usleep(10000);   //休眠10ms
+                                usleep(8000);   //休眠10ms   // 改为2000us
 							}
 						}
 					}
@@ -5569,7 +5569,7 @@ int ChannelControl::Run(){
                     m_n_run_thread_state = ERROR; //编译出错
                 }
                 else{
-                    usleep(10000);
+                    usleep(8000);   // 改为8000us
 
                     if(m_b_dust_eliminate){
                     	if(m_channel_mc_status.step_over &&
@@ -5602,7 +5602,7 @@ int ChannelControl::Run(){
             pthread_mutex_unlock(&m_mutex_change_state);
             //printf("unlocked 11\n");
             if(!bf){
-            	usleep(10000);
+                usleep(8000);   // 改为2000us
                 m_n_run_thread_state = WAIT_RUN;    //防止在ExecuteMessage（）函数中修改m_n_run_thread_state
             }
             else if(m_n_run_thread_state != ERROR){
@@ -5611,7 +5611,7 @@ int ChannelControl::Run(){
         }
         else
         {
-        	usleep(10000);   //非运行状态，线程挂起10ms
+            usleep(8000);   //非运行状态，线程挂起10ms   // 改为2000us
 
         	// 除尘宏程序调用
         	if(m_b_dust_eliminate &&
@@ -7137,6 +7137,12 @@ bool ChannelControl::ExecuteMessage(){
 
             }
 
+//            if(IsStepMode() && msg->CheckFlag(FLAG_LAST_REC))
+//            {
+//                pause_flag = true;
+//                m_n_run_thread_state = PAUSE;
+//            }
+
             if(msg->IsEndMsg()){	//处理M02/M30消息
                 this->m_n_run_thread_state = STOP;
                 /*if(m_p_channel_config->order_prog_mode > 0 &&
@@ -7240,7 +7246,6 @@ bool ChannelControl::ExecuteAuxMsg(RecordMsg *msg){
     uint8_t m_count = tmp->GetMCount();   //一行中M代码总数
     uint8_t m_index = 0;
     int mcode = 0;
-
 
 
     if(this->m_n_restart_mode != NOT_RESTART &&
@@ -8193,6 +8198,9 @@ bool ChannelControl::ExecuteAuxMsg(RecordMsg *msg){
 
 
             if(tmp->GetExecStep(m_index) == 0){
+                // 等待FIN信号复位
+                if(this->m_p_g_reg->FIN == 1)
+                    break;
 
                 //ScPrintfTime("0.SetMCode");
 
@@ -8200,151 +8208,72 @@ bool ChannelControl::ExecuteAuxMsg(RecordMsg *msg){
                 g_ptr_trace->PrintLog(LOG_ALARM, "default:执行的M代码：M%02d", mcode);
                 this->SendMCodeToPmc(mcode, m_index);
 
-                //printf("step 0 ...\n");
-                //t1 = std::chrono::steady_clock::now();
+                //tmp->IncreaseExecStep(m_index);
 
-                gettimeofday(&m_time_m_start[m_index], NULL);
-                tmp->IncreaseExecStep(m_index);
+//                // 主轴不存在或者主轴为虚拟轴，不执行主轴辅助功能
+//                if((mcode == 3 || mcode == 4 || mcode == 5
+//                    || mcode == 19 || mcode == 20 || mcode == 26
+//                    || mcode == 27 || mcode == 28 || mcode == 29)
+//                        && m_p_spindle->Type() != 2){
 
-            }else if(tmp->GetExecStep(m_index) == 1){
-
-            	// 主轴不存在或者主轴为虚拟轴，不执行主轴辅助功能
-                if((mcode == 3 || mcode == 4 || mcode == 5
-                    || mcode == 19 || mcode == 20 || mcode == 26
-                    || mcode == 27 || mcode == 28 || mcode == 29)
-                        && m_p_spindle->Type() != 2){
-
-                	gettimeofday(&time_now, NULL);
-                    time_elpase = (time_now.tv_sec-m_time_m_start[m_index].tv_sec)*1000000+time_now.tv_usec-m_time_m_start[m_index].tv_usec;
-                    if(time_elpase < 100000){
-                        this->SetMFSig(m_index, true);    //置位选通信号
-                    }else{
-                        //this->SetMFSig(m_index, false);    //复位选通信号
-                        tmp->IncreaseExecStep(m_index);
-                        //tmp->SetExecStep(m_index, 0xFF);    //置位结束状态
-                    }
-                    //tmp->IncreaseExecStep(m_index);
-                    break;
-                }
-
-                //等待TMF延时，置位MF选通信号
-                gettimeofday(&time_now, NULL);
-                time_elpase = (time_now.tv_sec-m_time_m_start[m_index].tv_sec)*1000000+time_now.tv_usec-m_time_m_start[m_index].tv_usec;
-                if(time_elpase < 16000)
-                    break;		//未到延时时间
-
-                //ScPrintfTime("1.MF=1");
-
-                gettimeofday(&m_time_m_start[m_index], NULL);
-                this->SetMFSig(m_index, true);    //置位选通信号
-
-                //llx test
-                gettimeofday(&m_time_test, NULL);
-                //std::chrono::time_point<std::chrono::steady_clock> t2 = std::chrono::steady_clock::now();
-                //std::chrono::duration<double> elapsed = t2 - t1;
-                //printf("step 1 ... %lf\n", elapsed.count());
-                //t1 = t2;
-                tmp->IncreaseExecStep(m_index);
+//                    gettimeofday(&time_now, NULL);
+//                    time_elpase = (time_now.tv_sec-m_time_m_start[m_index].tv_sec)*1000000+time_now.tv_usec-m_time_m_start[m_index].tv_usec;
+//                    if(time_elpase < 100000){
+//                        this->SetMFSig(m_index, true);    //置位选通信号
+//                    }else{
+//                        //this->SetMFSig(m_index, false);    //复位选通信号
+//                        tmp->IncreaseExecStep(m_index);
+//                        //tmp->SetExecStep(m_index, 0xFF);    //置位结束状态
+//                    }
+//                    //tmp->IncreaseExecStep(m_index);
+//                    break;
+//                }
 
                 // 如果当前在正转状态下再给M03，那么ProcessPMCSignal就扫描不到变化了
                 // 这里需要做特殊处理
                 if(mcode == 3 && m_p_g_reg->SFR && m_p_spindle->Type() == 2){
 
-                	m_p_spindle->InputPolar(Polar::Positive);
+                    m_p_spindle->InputPolar(Polar::Positive);
                 }else if(mcode == 4 && m_p_g_reg->SRV && m_p_spindle->Type() == 2){
 
-                	m_p_spindle->InputPolar(Polar::Negative);
+                    m_p_spindle->InputPolar(Polar::Negative);
                 }else if(mcode == 5 && m_p_g_reg->SFR == 0 && m_p_g_reg->SRV == 0
                          && m_p_spindle->Type() == 2){
 
-                	m_p_spindle->InputPolar(Polar::Stop);
+                    m_p_spindle->InputPolar(Polar::Stop);
                 }
-            }else if(tmp->GetExecStep(m_index) == 2){
 
-            	//等待FIN信号
+                this->SetMFSig(m_index, true);    //置位选通信号
+                tmp->IncreaseExecStep(m_index);
 
+            }else if(tmp->GetExecStep(m_index) == 1){
+                // 等待FIN信号为1,复位选通信号
+                if(this->m_p_g_reg->FIN == 1)
+                {
+                    //ScPrintfTime("1.FIN=1 reset MF MCode");
+                    this->SetMFSig(m_index, false);    //复位选通信号
+                    this->SendMCodeToPmc(0, m_index);
+                    tmp->SetExecStep(m_index, 0xFF);
 
-                if(this->m_p_g_reg->FIN == 1 || this->GetMFINSig(m_index)) {
-                    //gettimeofday(&m_time_m_start[m_index], NULL);   //开始计时
+                    // 收到FIN后再清除通知信号，确保梯图已经读取
+                    if((mcode == 3 || mcode == 4) && m_p_f_reg->SAR == 1){ // 速度到达
+                        m_p_f_reg->SAR = 0;
+                    }else if(mcode == 5 && m_p_f_reg->SST == 1){ // 零速
+                        m_p_f_reg->SST = 0;
+                    }else if(mcode == 19 && m_p_f_reg->ORAR == 1){ // 定位结束
+                        //@modify zk  连续两次M19 第二次定位不清零
+                        //m_p_f_reg->ORAR = 0;
+                    }
+
+                    //usleep(16000);  // 维持16ms的低电平,确保梯图扫描到MF信号
                 }
                 else
                 {
-                    //ScPrintfTime("2.MFIN=0 0->1");
-
-                    gettimeofday(&time_now, NULL);
-                    time_elpase = (time_now.tv_sec-m_time_m_start[m_index].tv_sec)*1000000+time_now.tv_usec-m_time_m_start[m_index].tv_usec;
-                    if(time_elpase > kMCodeTimeout && !this->GetMExcSig(m_index)
-                        && this->m_p_g_reg->FIN == 0 && !this->GetMFINSig(m_index)/*再次判断FIN，此时的内存数据可能已经刷新*/){//超过200ms任未进入执行状态，则告警“不支持的M代码”
-
-                        gettimeofday(&time_now_test, NULL);
-                        time_elpase_test = (time_now_test.tv_sec-m_time_test.tv_sec)*1000000+time_now_test.tv_usec-m_time_test.tv_usec;
-                        CreateError(ERR_M_CODE, ERROR_LEVEL, CLEAR_BY_MCP_RESET, mcode, m_n_channel_index);
-                        this->m_error_code = ERR_M_CODE;
-                    }else{
-
-                        break;
-                    }
-                }
-
-                //std::chrono::time_point<std::chrono::steady_clock> t2 = std::chrono::steady_clock::now();
-                //std::chrono::duration<double> elapsed = t2 - t1;
-                //printf("step 2 ... %lf\n", elapsed.count());
-                //t1 = t2;
-                tmp->IncreaseExecStep(m_index);
-            }else if(tmp->GetExecStep(m_index) == 3){
-            	if(this->m_p_g_reg->FIN == 0 && !this->GetMFINSig(m_index)){
-                    tmp->SetExecStep(m_index, 2);
                     break;
                 }
-
-                //等待TFIN延时，复位MF信号
-                gettimeofday(&time_now, NULL);
-                time_elpase = (time_now.tv_sec-m_time_m_start[m_index].tv_sec)*1000000+time_now.tv_usec-m_time_m_start[m_index].tv_usec;
-                if(time_elpase < 16000)
-                    break;		//未到延时时间
-
-                //ScPrintfTime("3.MFIN 0->1");
-
-                this->SetMFSig(m_index, false);    //复位选通信号
-                //std::chrono::time_point<std::chrono::steady_clock> t2 = std::chrono::steady_clock::now();
-                //std::chrono::duration<double> elapsed = t2 - t1;
-                //printf("step 3 ... %lf\n", elapsed.count());
-                //t1 = t2;
-                tmp->IncreaseExecStep(m_index);
-
-                // 收到FIN后再清除通知信号，确保梯图已经读取
-                if((mcode == 3 || mcode == 4) && m_p_f_reg->SAR == 1){ // 速度到达
-                    m_p_f_reg->SAR = 0;
-                }else if(mcode == 5 && m_p_f_reg->SST == 1){ // 零速
-                    m_p_f_reg->SST = 0;
-                }else if(mcode == 19 && m_p_f_reg->ORAR == 1){ // 定位结束
-                	//@modify zk  连续两次M19 第二次定位不清零
-                	//m_p_f_reg->ORAR = 0;
-                }
-            }else if(tmp->GetExecStep(m_index) == 4){
-            	//等待FIN信号复位
-                //printf("step4 FIN %d  MFIN %d\n", this->m_p_g_reg->FIN, this->GetMFINSig(m_index));
-                if(this->m_p_g_reg->FIN == 1 || this->GetMFINSig(m_index))
-                    break;
-
-                //ScPrintfTime("4.MFIN close 0->1");
-
-                //复位辅助指令信号和DEN信号
-                this->SendMCodeToPmc(0, m_index);
-                //std::chrono::time_point<std::chrono::steady_clock> t2 = std::chrono::steady_clock::now();
-                //std::chrono::duration<double> elapsed = t2 - t1;
-                //printf("step 4 ... %lf\n", elapsed.count());
-                //t1 = t2;
-                tmp->IncreaseExecStep(m_index);
             }else{
-            	//this->ExecMCode(tmp, m_index);  //执行某些M代码需要系统执行的动作
-                //std::chrono::time_point<std::chrono::steady_clock> t2 = std::chrono::steady_clock::now();
-                //std::chrono::duration<double> elapsed = t2 - t1;
-                //printf("step 5 ... %lf\n", elapsed.count());
-                //t1 = t2;
                 tmp->SetExecStep(m_index, 0xFF);    //置位结束状态
             }
-            break;
         }
         if(tmp->GetExecStep(m_index) != 0xFF)//还未执行结束，返回false
             bRet = false;
@@ -8550,7 +8479,7 @@ bool ChannelControl::ExecuteLineMsg(RecordMsg *msg, bool flag_block){
         if((mask & (0x01<<i)) == 0)
             continue;
         if (g_ptr_chn_engine->GetPmcActive(GetPhyAxis(i))) {
-            ScPrintf("execute lineMsg. %d\n", i);
+            //ScPrintf("execute lineMsg. %d\n", i);
             m_error_code = ERR_PMC_IVALID_USED;
             CreateError(ERR_PMC_IVALID_USED, ERROR_LEVEL, CLEAR_BY_MCP_RESET, 0, m_n_channel_index, i);
             return false;
@@ -8640,7 +8569,7 @@ bool ChannelControl::ExecuteRapidMsg(RecordMsg *msg, bool flag_block){
         if((mask & (0x01<<i)) == 0)
             continue;
         if (g_ptr_chn_engine->GetPmcActive(GetPhyAxis(i))) {
-            ScPrintf("execute ExecuteRapidMsg. %d\n", i);
+            //ScPrintf("execute ExecuteRapidMsg. %d\n", i);
             m_error_code = ERR_PMC_IVALID_USED;
             CreateError(ERR_PMC_IVALID_USED, ERROR_LEVEL, CLEAR_BY_MCP_RESET, 0, m_n_channel_index, i);
             return false;
@@ -8734,7 +8663,7 @@ bool ChannelControl::ExecuteArcMsg(RecordMsg *msg, bool flag_block){
             continue;
 
         if (g_ptr_chn_engine->GetPmcActive(GetPhyAxis(i))) {
-            ScPrintf("execute ExecuteArcMsg. %d\n", i);
+            //ScPrintf("execute ExecuteArcMsg. %d\n", i);
             m_error_code = ERR_PMC_IVALID_USED;
             CreateError(ERR_PMC_IVALID_USED, ERROR_LEVEL, CLEAR_BY_MCP_RESET, 0, m_n_channel_index);
             return false;

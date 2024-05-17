@@ -5175,7 +5175,7 @@ void Compiler::ProcessFiveAxisRotPos(DPointChn &tar, DPointChn &src, uint32_t ma
  */
 void Compiler::ProcessRotateAxisPos(DPointChn &tar, DPointChn &src, uint32_t mask){
 
-    ScPrintf("ProcessRotateAxisPos");
+    //ScPrintf("ProcessRotateAxisPos");
     if(this->m_compiler_status.mode.gmode[3] == G91_CMD)
         return;   //增量式编程不做就近路径
 

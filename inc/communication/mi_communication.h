@@ -205,8 +205,8 @@ public:
 	bool GetPmcRegWord(const int reg_type, uint16_t &value);  	//获取PMC双字节字节寄存器的值
 	bool SetPmcRegWord(const int reg_type, const uint16_t value);	//设置PMC双字节寄存器的值
 
-	bool ReadPmcReg(int sec, uint8_t *reg);		//读取PMC寄存器，按地址段读取
-    bool WritePmcReg(int sec, uint8_t *reg);    //写入PMC寄存器，按地址段写入
+    bool ReadPmcReg(int sec, uint8_t *reg,int index = 0, int size = 0);		//读取PMC寄存器，按地址段读取
+    bool WritePmcReg(int sec, uint8_t *reg,int index = 0, int size = 0);    //写入PMC寄存器，按地址段写入
 	bool ReadPmcPeriod();
     //bool ReadESPSignal();                       //读取X急停信号
 
